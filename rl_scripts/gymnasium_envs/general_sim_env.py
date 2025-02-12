@@ -28,6 +28,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.super_channel_space = self.sim_dict['super_channel_space']
 
         self.iteration = 0
+        self.trial = None
         self.options = None
         self.optimize = None
         self.callback = custom_callback
@@ -62,21 +63,21 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         :rtype: tuple
         """
         super().reset(seed=seed)
+        self.trial = seed
         self.rl_props.arrival_list = list()
         self.rl_props.depart_list = list()
 
         if self.optimize is None:
-            self.iteration = 0
             self.setup()
             print_flag = False
         else:
             print_flag = True
 
-        self._init_props_envs(print_flag=print_flag)
+        self._init_props_envs(seed=seed, print_flag=print_flag)
         if not self.sim_dict['is_training'] and self.iteration == 0:
             self._load_models()
         if seed is None:
-            seed = self.iteration + 1
+            seed = self.iteration
 
         self.rl_help_obj.reset_reqs_dict(seed=seed)
         obs = self.step_helper.get_obs()
@@ -92,9 +93,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _load_models(self):
         self.setup_helper.load_models()
 
-    def _init_props_envs(self, print_flag: bool):
+    def _init_props_envs(self, seed: int, print_flag: bool):
         self.rl_props.arrival_count = 0
-        self.engine_obj.init_iter(iteration=self.iteration, print_flag=print_flag)
+        self.engine_obj.init_iter(seed=seed, trial=self.trial, iteration=self.iteration, print_flag=print_flag)
         self.engine_obj.create_topology()
         self.rl_help_obj.topology = self.engine_obj.topology
         self.rl_props.num_nodes = len(self.engine_obj.topology.nodes)
@@ -125,13 +126,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         was_allocated = req_id in reqs_status_dict
         path_length = self.route_obj.route_props.weights_list[0]
-        self.step_helper.handle_test_train_step(was_allocated=was_allocated, path_length=path_length)
+        self.step_helper.handle_test_train_step(was_allocated=was_allocated, path_length=path_length,
+                                                trial=self.trial)
         self.rl_help_obj.update_snapshots()
 
         if was_allocated:
-            drl_reward = self.engine_obj.engine_props['reward']
+            reward = self.engine_obj.engine_props['reward']
         else:
-            drl_reward = self.engine_obj.engine_props['penalty']
+            reward = self.engine_obj.engine_props['penalty']
 
         self.rl_props.arrival_count += 1
         terminated = self.step_helper.check_terminated()
@@ -139,7 +141,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         truncated = False
         info = self._get_info()
 
-        return new_obs, drl_reward, terminated, truncated, info
+        return new_obs, reward, terminated, truncated, info
 
     @staticmethod
     def _get_info():

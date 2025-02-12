@@ -38,7 +38,11 @@ module load python/3.11.7
 # Activate the virtual environment
 # Create the virtual environment if it doesn't exist
 if [ ! -d "venvs/unity_venv/venv" ]; then
+<<<<<<< HEAD
 	./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
+=======
+  ./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
+>>>>>>> 85c5608d2803eaae553273159f6783ebe22654ad
 fi
 source venvs/unity_venv/venv/bin/activate
 
@@ -84,7 +88,11 @@ penalty="${penalty_list[$penalty_idx]}"
 # Run the Python script with the extracted parameters
 python run_rl_sim.py \
   --erlang_start 50 \
+<<<<<<< HEAD
   --erlang_stop 100 \
+=======
+  --erlang_end 100 \
+>>>>>>> 85c5608d2803eaae553273159f6783ebe22654ad
   --network "$network" \
   --k_paths "$k" \
   --epsilon_start "$eps" \

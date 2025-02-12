@@ -1,6 +1,7 @@
 import os
 
 import optuna
+import numpy as np
 
 from helper_scripts.sim_helpers import modify_multiple_json_values
 from helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
@@ -9,6 +10,7 @@ from rl_scripts.helpers.setup_helpers import print_info
 from rl_scripts.model_manager import get_trained_model, get_model, save_model
 
 from rl_scripts.helpers.hyperparam_helpers import get_optuna_hyperparams
+from rl_scripts.helpers.general_helpers import save_arr
 
 from rl_scripts.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
 
@@ -38,25 +40,50 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     :param model: The RL model to be used; required only if not in training mode.
     """
     completed_episodes = 0
-    obs, _ = env.reset()
-    while True:
+    completed_trials = 0
+    episodic_reward = 0
+    rewards_matrix = np.zeros((sim_dict['n_trials'], sim_dict['max_iters']))
+    episodic_rew_arr = np.array([])
+    obs, _ = env.reset(seed=completed_trials)
+
+    while completed_trials < sim_dict['n_trials']:
         if is_training:
             if drl_agent:
                 _run_drl_training(env=env, sim_dict=sim_dict)
-                # StableBaselines3 Handles all training, we can terminate here
-                is_terminated, is_truncated = True, True
-            else:
-                obs, _, is_terminated, is_truncated, _ = env.step(0)
+                print("Training of DRL agent completed. No trial/reward tracking required.")
+                break
+
+            obs, reward, is_terminated, is_truncated, _ = env.step(0)
         else:
             action, _states = model.predict(obs)
-            obs, _, is_terminated, is_truncated, _ = env.step(action)
+            obs, reward, is_terminated, is_truncated, _ = env.step(action)
 
-        if completed_episodes >= sim_dict['max_iters']:
-            break
+        episodic_reward += reward
         if is_terminated or is_truncated:
-            obs, _ = env.reset()
+            episodic_rew_arr = np.append(episodic_rew_arr, episodic_reward)
+            episodic_reward = 0
             completed_episodes += 1
-            print(f'{completed_episodes} episodes completed out of {sim_dict["max_iters"]}.')
+            print(f"{completed_episodes} episodes completed out of {sim_dict['max_iters']}.")
+
+            if completed_episodes == sim_dict['max_iters']:
+                env.iteration = 0
+                env.trial += 1
+                rewards_matrix[completed_trials] = episodic_rew_arr
+                episodic_rew_arr = np.array([])
+
+                completed_trials += 1
+                completed_episodes = 0
+                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
+
+            obs, _ = env.reset(seed=completed_trials)
+
+    if not (is_training and drl_agent):
+        means_arr = np.mean(rewards_matrix, axis=0)
+        save_arr(arr=means_arr, sim_dict=sim_dict, file_name="average_rewards.npy")
+
+        return np.sum(means_arr)
+
+    return None
 
 
 def run_testing(env: object, sim_dict: dict):
@@ -84,12 +111,14 @@ def run(env: object, sim_dict: dict):
     if sim_dict['is_training']:
         # Print info function should already error check valid input, no need to raise an error here
         if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
-            run_iters(env=env, sim_dict=sim_dict, is_training=True,
-                      drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS)
+            sum_returns = run_iters(env=env, sim_dict=sim_dict, is_training=True,
+                                    drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS)
         else:
             raise NotImplementedError
     else:
-        run_testing(sim_dict=sim_dict, env=env)
+        sum_returns = run_testing(sim_dict=sim_dict, env=env)
+
+    return sum_returns
 
 
 def run_optuna_study(env, sim_dict):

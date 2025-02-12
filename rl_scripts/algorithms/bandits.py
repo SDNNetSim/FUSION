@@ -24,41 +24,43 @@ def load_model(train_fp: str):
 
 def _get_base_fp(is_path: bool, erlang: float, cores_per_link: int):
     if is_path:
-        base_fp = f"e{erlang}_routes_c{cores_per_link}.npy"
+        base_fp = f"e{erlang}_routes_c{cores_per_link}"
     else:
-        base_fp = f"e{erlang}_cores_c{cores_per_link}.npy"
+        base_fp = f"e{erlang}_cores_c{cores_per_link}"
 
     return base_fp
 
 
-def _save_model(state_values_dict: dict, erlang: float, cores_per_link: int, save_dir: str, is_path: bool):
+def _save_model(state_values_dict: dict, erlang: float, cores_per_link: int, save_dir: str, is_path: bool,
+                trial: int):
     if state_values_dict is None:
         return
     # Convert tuples to strings and arrays to lists for JSON format
     state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
 
     if is_path:
-        state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}.json"
+        state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}_t{trial + 1}.json"
     else:
-        state_vals_fp = f"state_vals_e{erlang}_cores_c{cores_per_link}.json"
+        raise NotImplementedError
     save_fp = os.path.join(os.getcwd(), save_dir, state_vals_fp)
     with open(save_fp, 'w', encoding='utf-8') as file_obj:
         json.dump(state_values_dict, file_obj)
 
 
-def save_model(iteration: int, algorithm: str, self: object):
+def save_model(iteration: int, algorithm: str, self: object, trial: int):
     """
     Saves a trained bandit model.
 
     :param iteration: Current iteration.
     :param algorithm: The algorithm used.
+    :param trial: Current trial number.
     :param self: The object to be saved.
     """
     max_iters = self.engine_props['max_iters']
     rewards_matrix = self.props.rewards_matrix
-    # TODO: (drl_path_agents) Hard coded to save every 50 iterations, should be in the configuration file
-    if (iteration in (max_iters - 1, (max_iters - 1) % 50)) and \
-            (len(self.props.rewards_matrix[iteration]) == self.engine_props['num_requests']):
+
+    if (iteration % self.engine_props['save_step'] == 0 or iteration == max_iters - 1) and \
+            len(self.props.rewards_matrix[iteration]) == self.engine_props['num_requests']:
         rewards_matrix = np.array(rewards_matrix)
         rewards_arr = rewards_matrix.mean(axis=0)
 
@@ -71,12 +73,12 @@ def save_model(iteration: int, algorithm: str, self: object):
         cores_per_link = self.engine_props['cores_per_link']
         base_fp = _get_base_fp(is_path=self.is_path, erlang=erlang, cores_per_link=cores_per_link)
 
-        rewards_fp = f'rewards_{base_fp}'
+        rewards_fp = f'rewards_{base_fp}_t{trial + 1}_iter_{iteration}.npy'
         save_fp = os.path.join(os.getcwd(), save_dir, rewards_fp)
         np.save(save_fp, rewards_arr)
 
         _save_model(state_values_dict=self.values, erlang=erlang, cores_per_link=cores_per_link,
-                    save_dir=save_dir, is_path=self.is_path)
+                    save_dir=save_dir, is_path=self.is_path, trial=trial)
 
 
 def get_q_table(self: object):
@@ -105,7 +107,8 @@ def get_q_table(self: object):
     return self.counts, self.values
 
 
-def _update_bandit(self: object, iteration: int, reward: float, arm: int, algorithm: str):
+def _update_bandit(self: object, iteration: int, reward: float, arm: int, algorithm: str,
+                   trial: int):
     if self.is_path:
         pair = (self.source, self.dest)
     else:
@@ -121,7 +124,7 @@ def _update_bandit(self: object, iteration: int, reward: float, arm: int, algori
     self.props.rewards_matrix[self.iteration].append(reward)
 
     # Check if we need to save the model
-    save_model(iteration=iteration, algorithm=algorithm, self=self)
+    save_model(iteration=iteration, algorithm=algorithm, self=self, trial=trial)
 
 
 class EpsilonGreedyBandit:
@@ -187,15 +190,17 @@ class EpsilonGreedyBandit:
         state_action_pair = (source, dest, path_index)
         return self._get_action(state_action_pair=state_action_pair)
 
-    def update(self, arm: int, reward: int, iteration: int):
+    def update(self, arm: int, reward: int, iteration: int, trial: int):
         """
         Make updates to the bandit after each time step or episode.
 
         :param arm: The arm selected.
         :param reward: Reward received from R(s, a).
-        :param iteration: Current episode or iteration.
+        :param iteration: Current episode or iteration.:
+        :param trial: Current trial number.
         """
-        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy_bandit')
+        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy_bandit',
+                       trial=trial)
 
 
 class UCBBandit:
@@ -264,12 +269,14 @@ class UCBBandit:
 
         return self._get_action(state_action_pair=state_action_pair)
 
-    def update(self, arm: int, reward: int, iteration: int):
+    def update(self, arm: int, reward: int, iteration: int, trial: int):
         """
         Make updates to the bandit after each time step or episode.
 
         :param arm: The arm selected.
         :param reward: Reward received from R(s, a).
         :param iteration: Current episode or iteration.
+        :param trial: Current trial number.
         """
-        _update_bandit(iteration=iteration, arm=arm, reward=reward, self=self, algorithm='ucb_bandit')
+        _update_bandit(iteration=iteration, arm=arm, reward=reward, self=self, algorithm='ucb_bandit',
+                       trial=trial)
