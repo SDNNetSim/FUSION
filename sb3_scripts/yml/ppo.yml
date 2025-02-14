@@ -1,7 +1,7 @@
 SimEnv:
 #  normalize: true
 #  n_envs: 32
-  n_timesteps: 5000
+  n_timesteps: 500000
   policy: 'MultiInputPolicy'
   n_steps: 8
   batch_size: 64
