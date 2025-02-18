@@ -136,20 +136,20 @@ class MenuCreator:
         return plot_menu_obj
 
 
-def load_license_text(file_path: str = "LICENSE") -> str:
+def load_license_text(file_path: str) -> str:
     """
     Reads the license text from the specified file path.
 
-    :param file_path: Path to the LICENSE file. Defaults to "LICENSE".
-    :return: Content of the LICENSE file as a string. Error message if issue occurs.
+    :param file_path: Path to the LICENSE file.
+    :return: Content of the LICENSE file as a string.
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     except FileNotFoundError:
-        return f"{file_path} file not found."
+        return "LICENSE file not found."
     except Exception as e:
-        return f"An error occurred while loading the {file_path} file: {e}"
+        return f"An error occurred while loading the LICENSE file: {e}"
 
 
 class AboutDialog(qtw.QDialog):
@@ -191,15 +191,7 @@ class AboutDialog(qtw.QDialog):
         license_layout = qtw.QVBoxLayout(license_tab)
 
         # Read the license text from the LICENSE file
-        license_text = load_license_text(file_path="LICENSE")  # Adjust the file path as needed
-
-        #Check if the license text contains an error
-        if "not found" in license_text or "An error occurred" in license_text:
-            license_text = (
-                "License file is unavailable or could not be loaded. Ensure the file exists in the correct location."
-            )
-
-        # Display the license text in the read-only QPlainTextEdit widget
+        license_text = load_license_text("LICENSE")  # Adjust the file path as needed
         license_text_area = qtw.QPlainTextEdit(license_text)
         license_text_area.setReadOnly(True)  # Make it read-only
         license_layout.addWidget(license_text_area)
