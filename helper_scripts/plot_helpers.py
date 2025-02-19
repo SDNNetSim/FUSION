@@ -90,6 +90,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
     def _find_mod_info(self):
         mods_used_dict = self.erlang_dict['iter_stats']['0']['mods_used_dict']
+        mods_used_dict = {k: v for k, v in mods_used_dict.items() if k.isdigit()}
+        # fixme: Modulation stats got into mods used dict?
         for bandwidth, mod_dict in mods_used_dict.items():
             for modulation in mod_dict:
                 filters_list = ['mods_used_dict', bandwidth]
@@ -98,6 +100,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
                 modulations_dict = self.plot_props.plot_dict[self.time][self.sim_num].modulations_dict
                 modulations_dict.setdefault(bandwidth, {})
+
                 modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
 
     def _find_sim_info(self, input_dict: dict):
