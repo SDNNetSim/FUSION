@@ -25,7 +25,7 @@ def retry_request(max_retries: int = 3, delay: float = 1.0,
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args, **kwargs) -> Any:  # pylint: disable=inconsistent-return-statements
             attempt = 0
             while attempt < max_retries:
                 try:
