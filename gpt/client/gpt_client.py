@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+
 """
 gpt_client.py
 
@@ -5,14 +7,15 @@ This module provides the GptClient class, which handles communication with the G
 It abstracts HTTP requests, error handling, and response parsing for the GPT module.
 """
 
-import requests
 import logging
+
+import requests
 
 from gpt.config.gpt_config import GptConfig
 from gpt.models.gpt_request import GptRequest
 from gpt.models.gpt_response import GptResponse
 from gpt.errors.gpt_errors import GptApiError, GptConnectionError
-from gpt.utils.helpers import retry_request  # Assumed to be a decorator for retry logic
+from gpt.utils.helpers import retry_request
 
 
 class GptClient:
