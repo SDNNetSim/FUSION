@@ -1,3 +1,5 @@
+# pylint: disable=unnecessary-pass
+
 """
 gpt_errors.py
 
