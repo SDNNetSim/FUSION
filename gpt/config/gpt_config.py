@@ -44,6 +44,6 @@ class GptConfig:
             raise ValueError("Environment variable GPT_API_KEY is not set.")
 
         endpoint = os.getenv("GPT_ENDPOINT", cls.endpoint)
-        timeout = int(os.getenv("GPT_TIMEOUT", cls.timeout))
+        timeout = int(os.getenv("GPT_TIMEOUT", str(cls.timeout)))
 
         return cls(api_key=api_key, endpoint=endpoint, timeout=timeout)
