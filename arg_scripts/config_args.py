@@ -68,6 +68,7 @@ ARASH_REQUIRED_OPTIONS = {
         'save_step': int,
         'can_partially_serve': str_to_bool,
         'transponder_usage_per_node': str_to_bool,
+        'blocking_type_ci': str_to_bool,
     },
     'topology_settings': {
         'network': str,
@@ -237,6 +238,7 @@ COMMAND_LINE_PARAMS = [
     ['save_step', int, ''],
     ['can_partially_serve', bool, ''],
     ['transponder_usage_per_node', bool, ''],
+    ['blocking_type_ci', bool, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
