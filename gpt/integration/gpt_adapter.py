@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+
 """
 gpt_adapter.py
 
@@ -6,7 +8,7 @@ It translates simulation data into GPT prompts and processes the API responses t
 """
 
 from gpt.client.gpt_client import GptClient
-from gpt.errors.gpt_errors import GptApiError
+from gpt.errors.gpt_errors import GptApiError  # pylint: disable=unused-import
 from gpt.models.gpt_response import GptResponse
 
 
