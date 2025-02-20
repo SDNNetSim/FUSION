@@ -1,7 +1,7 @@
 from rl_scripts.gymnasium_envs.general_sim_env import SimEnv
 
 from rl_scripts.helpers.setup_helpers import setup_rl_sim
-from rl_scripts.helpers.callback_helpers import GetModelParams
+from rl_scripts.helpers.callback_helpers import EpisodicRewardCallback
 
 
 def create_environment():
@@ -10,7 +10,7 @@ def create_environment():
 
     :return: A tuple consisting of the SimEnv object and its sim_dict.
     """
-    callback = GetModelParams()
+    callback = EpisodicRewardCallback(verbose=1)
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
     env.sim_dict['callback'] = callback
-    return env, env.sim_dict
+    return env, env.sim_dict, callback

@@ -87,3 +87,6 @@ PyQt5~=5.15.10
 
 # testing
 pytest
+
+# gpt
+openai
