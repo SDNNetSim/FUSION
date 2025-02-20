@@ -5,8 +5,7 @@
 #SBATCH -G 0
 #SBATCH --mem=32000
 #SBATCH -t 1-00:00:00
-#SBATCH -o slurm-%A_%a.out  # Output file for each task
-#SBATCH --array=0
+#SBATCH -o /dev/null   # Disable default SLURM output redirection
 
 # Stop the script if any command fails
 set -e
@@ -40,4 +39,30 @@ pip install -r requirements.txt
 # (Re)register the custom RL environments
 ./bash_scripts/register_rl_env.sh ppo SimEnv
 
-python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./sb3_scripts/yml/ppo.yml -optimize --n-trials 50 --n-timesteps 250000
+# Define the algorithm (in this case, ppo)
+alg="ppo"
+
+# Create an output directory (you can prepend a string if needed)
+# For example, to prepend "experiment1/", use:
+# output_dir="experiment1/${alg}"
+output_dir="${alg}"
+mkdir -p "$output_dir"
+output_file="${output_dir}/slurm_${SLURM_JOB_ID}_${alg}.out"
+
+# Run the simulation and redirect stdout and stderr to the output file
+{
+  echo "Job ID: $SLURM_JOB_ID"
+  echo "Algorithm: $alg"
+  echo "-------------------------"
+  
+  python -m rl_zoo3.train \
+    --algo ppo \
+    --env SimEnv \
+    --conf-file ./sb3_scripts/yml/ppo.yml \
+    -optimize \
+    --n-trials 50 \
+    --n-timesteps 250000
+  
+  echo "-------------------------"
+  echo "Finished simulation for $alg"
+} &> "$output_file"

@@ -1,24 +1,24 @@
 SimEnv:
 #  normalize: true
 #  n_envs: 32
-  n_timesteps: 500000
+  n_timesteps: 1000000
   policy: 'MultiInputPolicy'
   n_steps: 8
-  batch_size: 64
-  gae_lambda: 1.0
-  gamma: 0.99
-  n_epochs: 5
-  vf_coef: 0.17
-  ent_coef: 0.000085
+  batch_size: 256
+  gae_lambda: 0.95
+  gamma: 0.995
+  n_epochs: 10
+  vf_coef: 0.65
+  ent_coef: 0.00005
 #  use_sde: True
   max_grad_norm: 0.3
-  learning_rate: 0.01
+  learning_rate: 0.001
 #  sde_sample_freq: 4
   clip_range: 0.4
   policy_kwargs: "dict(
                     ortho_init=False,
                     activation_fn=nn.ReLU,
-                    net_arch=dict(pi=[64], vf=[64])
+                    net_arch=dict(pi=[128,128], vf=[128,128])
                   )"
   callback:
     - rl_scripts.helpers.callback_helpers.GetModelParams:
