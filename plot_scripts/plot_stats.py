@@ -74,7 +74,7 @@ class PlotStats:
 
         plt.axhline(y=0.055, color='r', linestyle='--', linewidth=1.5, label='y=0.055')
 
-        plt.legend(['Epsilon Greedy', 'Thompson Sampling', 'Q-Learning', 'UCB', 'KSP-FF'])
+        plt.legend(['Here'])
         plt.xlim([-5, 199])
         self._save_plot(file_name=file_name)
         plt.show()
@@ -97,7 +97,8 @@ class PlotStats:
                         if force_legend:
                             legend_list.append(legend_val)
                         else:
-                            legend_list.append(info_dict[legend_val])
+                            pass
+                            # legend_list.append(info_dict[legend_val])
                         color_count += 1
 
                     color_count = 0
@@ -172,8 +173,8 @@ class PlotStats:
             self._plot_helper_two(y_vals_list=['block_per_iter'], erlang=250, file_name='bp_e250')
         else:
             self._plot_helper_one(x_vals='erlang_list', y_vals_list=['blocking_list'],
-                                  legend_val_list=['Trained US', 'Trained Euro', 'Baseline', 'Combined Model'],
-                                  force_legend=True, file_name='average_bp')
+                                  legend_val_list=['path_algorithm'],
+                                  force_legend=False, file_name='average_bp')
 
 
 def main():
@@ -184,22 +185,19 @@ def main():
         'and_filter_list': [
         ],
         'or_filter_list': [
-            ['sim_start', '17_07_02_823817'],
-            ['sim_start', '17_25_05_247014'],
-            ['sim_start', '17_53_02_873894'],
-            ['sim_start', '20_26_35_936142'],
-            ['sim_start', '11_19_35_314638'],
+            # ['path_algorithm', 'epsilon_greedy_bandit'],
+            # ['path_algorithm', 'ucb_bandit'],
+            ['path_algorithm', 'ppo'],
         ],
         'not_filter_list': [
-            # ['max_segments', 4],
-            # ['max_segments', 8],
         ]
     }
 
-    sims_info_dict = find_times(dates_dict={'0624': 'NSFNet', '0625': 'NSFNet'}, filter_dict=filter_dict)
+    sims_info_dict = find_times(dates_dict={'0217': 'NSFNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    plot_obj.plot_blocking(art_int=True)
+    plot_obj.plot_blocking(art_int=False)
+    plot_obj.plot_rewards(erlang_list=[50, 150, 250, 350, 450, 550, 650, 750])
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ from helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlan
 from rl_scripts.helpers.rl_zoo_helpers import run_rl_zoo
 from rl_scripts.gymnasium_envs.general_sim_env import SimEnv
 from rl_scripts.helpers.setup_helpers import print_info, setup_rl_sim
-from rl_scripts.helpers.callback_helpers import GetModelParams
+from rl_scripts.helpers.callback_helpers import EpisodicRewardCallback
 from rl_scripts.model_manager import get_trained_model, get_model, save_model
 
 from rl_scripts.helpers.hyperparam_helpers import get_optuna_hyperparams
@@ -32,7 +32,7 @@ def _run_drl_training(env: object, sim_dict: dict):
 
 
 # TODO: (drl_path_agents) Break this function up for organizational purposes
-def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None):
+def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None):
     """
     Runs the specified number of episodes in the reinforcement learning environment.
 
@@ -41,6 +41,7 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     :param is_training: A boolean flag indicating whether the model should train or evaluate.
     :param drl_agent: A boolean flag indicating whether the model is a DRL agent.
     :param model: The RL model to be used; required only if not in training mode.
+    :param callback_obj: A callback object to be passed to the callback function.
     """
     completed_episodes = 0
     completed_trials = 0
@@ -54,10 +55,18 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
         if is_training:
             if drl_agent:
                 _run_drl_training(env=env, sim_dict=sim_dict)
-                print("Training of DRL agent completed. No trial/reward tracking required.")
-                break
+                rewards_matrix[completed_trials] = callback_obj.episode_rewards
+                callback_obj.episode_rewards = np.array([])
+                completed_trials += 1
+                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
 
-            obs, reward, is_terminated, is_truncated, _ = env.step(0)
+                callback = EpisodicRewardCallback()
+                env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
+                env.sim_dict['callback'] = callback
+                obs, _ = env.reset(seed=completed_trials)
+                continue
+            else:
+                obs, reward, is_terminated, is_truncated, _ = env.step(0)
         else:
             action, _states = model.predict(obs)
             obs, reward, is_terminated, is_truncated, _ = env.step(action)
@@ -82,14 +91,14 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
 
             obs, _ = env.reset(seed=completed_trials)
 
-    if not (is_training and drl_agent):
+    if is_training:
         means_arr = np.mean(rewards_matrix, axis=0)
-        cum_reward = np.sum(means_arr)
+        sum_reward = np.sum(means_arr)
         save_arr(arr=means_arr, sim_dict=sim_dict, file_name="average_rewards.npy")
+    else:
+        raise NotImplementedError
 
-        return cum_reward
-
-    return None
+    return sum_reward
 
 
 def run_testing(env: object, sim_dict: dict):
@@ -103,7 +112,7 @@ def run_testing(env: object, sim_dict: dict):
     run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
 
 
-def run(env: object, sim_dict: dict):
+def run(env: object, sim_dict: dict, callback_obj: object = None):
     """
     Manages the execution of simulations for training or testing RL models.
 
@@ -111,6 +120,7 @@ def run(env: object, sim_dict: dict):
 
     :param env: The reinforcement learning environment.
     :param sim_dict: The simulation configuration dictionary containing paths, algorithms, and statistical parameters.
+    :param callback_obj: The custom callback to monitor episodic rewards from SB3.
     """
     print_info(sim_dict=sim_dict)
 
@@ -118,7 +128,8 @@ def run(env: object, sim_dict: dict):
         # Print info function should already error check valid input, no need to raise an error here
         if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
             sum_returns = run_iters(env=env, sim_dict=sim_dict, is_training=True,
-                                    drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS)
+                                    drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS,
+                                    callback_obj=callback_obj)
         else:
             raise NotImplementedError
     else:
@@ -137,7 +148,7 @@ def run_optuna_study(sim_dict):
 
     # Define the Optuna objective function
     def objective(trial: optuna.Trial):
-        callback = GetModelParams()
+        callback = EpisodicRewardCallback()
         env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
         env.sim_dict['callback'] = callback
 

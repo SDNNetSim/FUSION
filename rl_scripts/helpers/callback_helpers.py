@@ -1,3 +1,5 @@
+import numpy as np
+
 from stable_baselines3.common.callbacks import BaseCallback
 
 
@@ -20,4 +22,26 @@ class GetModelParams(BaseCallback):
 
         obs = self.locals['obs_tensor']
         self.value_estimate = self.model.policy.predict_values(obs=obs)[0][0].item()
+        return True
+
+
+class EpisodicRewardCallback(BaseCallback):
+    def __init__(self, verbose=0):
+        super(EpisodicRewardCallback, self).__init__(verbose)
+        self.episode_rewards = np.array([])
+        self.current_episode_reward = 0
+
+        self.iter = 0
+
+    def _on_step(self) -> bool:
+        reward = self.locals.get("rewards", 0)[0]
+        done = self.locals.get("dones", False)[0]
+        self.current_episode_reward += reward
+
+        if done:
+            self.episode_rewards = np.append(self.episode_rewards, self.current_episode_reward)
+            if self.verbose:
+                print(f"Episode {len(self.episode_rewards)} finished with reward: {self.current_episode_reward}")
+            self.current_episode_reward = 0
+
         return True
