@@ -56,7 +56,7 @@ def setup_ppo(env: object, device: str):
 
     return model
 
-def setup_A2C(env: object, device: str): #TODO Set this up
+def setup_A2C(env: object, device: str):
     """
     Setups up the StableBaselines3 A2C model.
 
