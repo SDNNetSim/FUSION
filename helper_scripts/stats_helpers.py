@@ -160,7 +160,7 @@ class SimStats:
             data_type = getattr(self.stats_props, stat_key)
             if isinstance(data_type, list):
                 # Only reset sim_block_list when we encounter a new traffic volume
-                if self.iteration != 0 and stat_key in ['sim_block_list', 'total_transponder_usage_list']:
+                if self.iteration != 0 and stat_key in ['sim_block_list', 'total_transponder_usage_list', 'sim_br_block_list']:
                     continue
                 setattr(self.stats_props, stat_key, list())
 
@@ -184,10 +184,13 @@ class SimStats:
         """
         if self.engine_props['num_requests'] == 0:
             blocking_prob = 0
+            br_blocking_prob = 0
         else:
             blocking_prob = self.blocked_reqs / self.engine_props['num_requests']
+            br_blocking_prob = self.bit_rate_blocked / self.bit_rate_request
 
         self.stats_props.sim_block_list.append(blocking_prob)
+        self.stats_props.sim_br_block_list.append(br_blocking_prob)
 
     def _handle_iter_lists(self, sdn_data: object, new_lp_index: list):
         for stat_key in sdn_data.stat_key_list:
@@ -312,28 +315,66 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props.sim_block_list)
+        self.bit_rate_block_mean = mean(self.stats_props.sim_br_block_list)
         if len(self.stats_props.sim_block_list) <= 1:
             return False
         
         self.block_variance = variance(self.stats_props.sim_block_list)
+        self.bit_rate_block_variance = variance(self.stats_props.sim_br_block_list)
 
-        if self.block_mean == 0.0:
-            return False
+
+        if self.engine_props['blocking_type_ci'] == 'request': 
+            
+            try:
+                block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
+                self.block_ci = block_ci_rate
+                block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
+                self.block_ci_percent = block_ci_percent
+            except ZeroDivisionError:
+                return False
+            
+            try:
+                bit_rate_block_ci = 1.645 * (math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
+                self.bit_rate_block_ci = bit_rate_block_ci
+                bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
+                self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
+            except ZeroDivisionError:
+                self.bit_rate_block_ci = None
+                self.bit_rate_block_ci_percent = None
         
-        try:
-            block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
-            self.block_ci = block_ci_rate
-            block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
-            self.block_ci_percent = block_ci_percent
-        except ZeroDivisionError:
-            return False
+            # TODO: Add to configuration file (ci percent, same as above)
+            if block_ci_percent <= 5:
+                print(f"Confidence interval of {round(block_ci_percent, 2)}% reached. "
+                    f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
+                self.save_stats(base_fp='data')
+                return True
+        else:
 
-        # TODO: Add to configuration file (ci percent, same as above)
-        if block_ci_percent <= 5:
-            print(f"Confidence interval of {round(block_ci_percent, 2)}% reached. "
-                  f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
-            self.save_stats(base_fp='data')
-            return True
+            try:
+                block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
+                self.block_ci = block_ci_rate
+                block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
+                self.block_ci_percent = block_ci_percent
+            except ZeroDivisionError:
+                self.block_ci = None
+                self.block_ci_percent = None
+
+            try:
+                bit_rate_block_ci = 1.645 * (math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
+                self.bit_rate_block_ci = bit_rate_block_ci
+                bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
+                self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
+            except ZeroDivisionError:
+                return False
+        
+            # TODO: Add to configuration file (ci percent, same as above)
+            if bit_rate_block_ci_percent <= 5:
+                print(f"Confidence interval of {round(bit_rate_block_ci_percent, 2)}% reached. "
+                    f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
+                self.save_stats(base_fp='data')
+                return True
+            
+            
 
         return False
 
@@ -361,6 +402,10 @@ class SimStats:
         self.save_dict['blocking_variance'] = self.block_variance
         self.save_dict['ci_rate_block'] = self.block_ci
         self.save_dict['ci_percent_block'] = self.block_ci_percent    
+        self.save_dict['bit_rate_blocking_mean'] = self.bit_rate_block_mean
+        self.save_dict['bit_rate_blocking_variance'] = self.bit_rate_block_variance
+        self.save_dict['ci_rate_bit_rate_block'] = self.bit_rate_block_ci
+        self.save_dict['ci_percent_bit_rate_block'] = self.bit_rate_block_ci_percent   
         self.save_dict['total_transponder_usage']  = round(float(mean(self.stats_props.total_transponder_usage_list)),2)
 
         self.save_dict['iter_stats'][self.iteration] = dict()
