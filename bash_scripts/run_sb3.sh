@@ -4,7 +4,8 @@
 #SBATCH -c 1
 #SBATCH -G 0
 #SBATCH --mem=32000
-#SBATCH -t 1-00:00:00
+#SBATCH -t 0-10:00:00
+#SBATCH --array=0-2   # One job per traffic volume: 50, 400, 750
 #SBATCH -o /dev/null   # Disable default SLURM output redirection
 
 # Stop the script if any command fails
@@ -42,27 +43,41 @@ pip install -r requirements.txt
 # Define the algorithm (in this case, ppo)
 alg="ppo"
 
-# Create an output directory (you can prepend a string if needed)
-# For example, to prepend "experiment1/", use:
-# output_dir="experiment1/${alg}"
-output_dir="${alg}"
+# Define the traffic volumes
+traffic_volumes=(50 400 750)
+
+# Use SLURM_ARRAY_TASK_ID to select the traffic volume
+erlang_start=${traffic_volumes[$SLURM_ARRAY_TASK_ID]}
+erlang_stop=$((erlang_start + 100))  # Keeping erlang_step 100
+
+echo "Running simulation with:"
+echo "  Algorithm:      $alg"
+echo "  Erlang range:   $erlang_start to $erlang_stop"
+
+# Generate a timestamp with picosecond precision
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S.%N" | cut -c1-26)
+
+# Create an output directory based on the algorithm and traffic volume
+output_dir="bash_scripts/slurm/${alg}/${erlang_start}"
 mkdir -p "$output_dir"
-output_file="${output_dir}/slurm_${SLURM_JOB_ID}_${alg}.out"
+
+# Define the output file with timestamp
+output_file="${output_dir}/slurm_${SLURM_JOB_ID}_${alg}_${timestamp}.out"
 
 # Run the simulation and redirect stdout and stderr to the output file
 {
   echo "Job ID: $SLURM_JOB_ID"
   echo "Algorithm: $alg"
+  echo "Erlang start: $erlang_start"
+  echo "Erlang stop: $erlang_stop"
   echo "-------------------------"
   
-  python -m rl_zoo3.train \
-    --algo ppo \
-    --env SimEnv \
-    --conf-file ./sb3_scripts/yml/ppo.yml \
-    -optimize \
-    --n-trials 50 \
-    --n-timesteps 250000
+  python run_rl_sim.py \
+    --erlang_start "$erlang_start" \
+    --erlang_stop "$erlang_stop" \
+    --erlang_step 100 \
+    --path_algorithm "$alg"
   
   echo "-------------------------"
-  echo "Finished simulation for $alg"
+  echo "Finished simulation for $alg with traffic volume $erlang_start"
 } &> "$output_file"
