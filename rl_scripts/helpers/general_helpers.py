@@ -228,6 +228,7 @@ class CoreUtilHelpers:
         :param seed: The random seed.
         """
         self._last_processed_index = 0
+        self.engine_obj.reqs_status_dict = dict()
         self.engine_obj.generate_requests(seed=seed)
 
         for req_time in self.engine_obj.reqs_dict:
