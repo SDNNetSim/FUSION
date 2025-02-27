@@ -69,6 +69,7 @@ ARASH_REQUIRED_OPTIONS = {
         'can_partially_serve': str_to_bool,
         'transponder_usage_per_node': str_to_bool,
         'blocking_type_ci': str_to_bool,
+        'fragmentation_metrics': ast.literal_eval,
     },
     'topology_settings': {
         'network': str,
@@ -239,6 +240,7 @@ COMMAND_LINE_PARAMS = [
     ['can_partially_serve', bool, ''],
     ['transponder_usage_per_node', bool, ''],
     ['blocking_type_ci', bool, ''],
+    ['fragmentation_metrics', list, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
