@@ -231,22 +231,29 @@ class Engine:
         self.generate_requests(seed)
 
     def run(self):
-        """
-        Controls the Engine class methods.
-        """
         self.create_topology()
-        for iteration in range(self.engine_props["max_iters"]):
+        max_iters = self.engine_props["max_iters"]
+        progress_key = self.engine_props.get('progress_key')
+        progress_dict = self.engine_props.get('progress_dict')
+        for iteration in range(max_iters):
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
                 self.handle_request(curr_time=curr_time, req_num=req_num)
-
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
                     req_num += 1
-
             end_iter = self.end_iter(iteration=iteration)
+            progress_fraction = (iteration + 1) / max_iters
+            progress_value = int(progress_fraction * 1000)
+            if progress_dict is not None and progress_key is not None:
+                progress_dict[progress_key] = progress_value
+            print(f"PROGRESS: {progress_value}")
+            import sys
+            sys.stdout.flush()
+            import time
+            time.sleep(0.2)
             if end_iter:
                 break
 
-        print(f"Erlang: {self.engine_props['erlang']} finished for "
-              f"simulation number: {self.engine_props['thread_num']}.")
+        print(f"Erlang: {self.engine_props['erlang']} finished for simulation number: {self.engine_props['thread_num']}.")
+
