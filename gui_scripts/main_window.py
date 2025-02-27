@@ -183,36 +183,92 @@ class MainWindow(QtWidgets.QMainWindow):
     def apply_styles(self):
         self.setStyleSheet(STYLE_SHEET)
 
-    def poll_progress(self):
-        if self.shared_progress_dict is not None and self.total_simulations > 0:
-            total = sum(self.shared_progress_dict.values())
-            global_progress = int(total / self.total_simulations)
-            # Instead of directly setting the value, animate the change:
-            self.button_help_obj.update_progress(global_progress)
-            if not self.progress_bar.isVisible():
-                self.progress_bar.setVisible(True)
-
     def set_shared_progress_dict(self, progress_dict):
+        """
+        Sets the shared progress dictionary and records the fixed number of simulations.
+        """
         self.shared_progress_dict = progress_dict
         self.total_simulations = len(progress_dict)
-        # If simulation_config is already set, update each config
-        if self.simulation_config is not None:
-            for key, conf in self.simulation_config.items():
-                conf['progress_dict'] = self.shared_progress_dict
+        print("Total simulations (from GUI):", self.total_simulations)
+
+    def poll_progress(self):
+        """
+        Called by a QTimer every 500 ms. Drains the progress_queue of (thread_id, done_units) updates.
+        The sum of done_units across all threads is divided by self.global_work_units to get a fraction.
+        That fraction is turned into a 0..1000 scale for the progress bar.
+        """
+        # If we haven't set up the queue yet, nothing to do.
+        if not hasattr(self, 'progress_queue'):
+            return
+
+        # Drain the queue fully
+        while not self.progress_queue.empty():
+            thread_id, done_units = self.progress_queue.get()
+            # Overwrite the completed units for that child
+            self.progress_values[thread_id] = done_units
+
+        # Sum across all children
+        total_done = sum(self.progress_values.values())
+
+        # If for some reason global_work_units is zero, guard to avoid division by zero
+        if getattr(self, 'global_work_units', 0) == 0:
+            fraction = 0.0
+        else:
+            fraction = total_done / self.global_work_units
+
+        global_progress = int(fraction * 1000)
+
+        print(f"poll_progress => progress_values: {dict(self.progress_values)}")
+        print(f"poll_progress => total_done={total_done}, fraction={fraction:.3f}, global_progress={global_progress}")
+
+        # Animate the progress bar to the new global_progress
+        self.button_help_obj.update_progress(global_progress)
+
+        if not self.progress_bar.isVisible():
+            self.progress_bar.setVisible(True)
 
     def set_simulation_config(self, config):
+        """
+        Stores the simulation configuration and sets up two queues for progress and logs.
+        Also calculates the global total of iteration units across all processes
+        so we know how to map partial completions to a 0..1000 scale.
+        """
+        import multiprocessing
+
         self.simulation_config = config
-        # Create a Manager for sharing objects between processes
-        manager = Manager()
-        self.log_queue = manager.Queue()
-        # Inject the shared progress dictionary and the log queue into each simulation's config.
+
+        # Queues for child processes to send back logs or progress
+        self.progress_queue = multiprocessing.Queue()
+        self.log_queue = multiprocessing.Queue()
+
+        # This dict tracks how many iteration units each process has completed so far.
+        self.progress_values = {}
+
+        # Compute how many total iteration units exist across ALL processes.
+        # Each process might run multiple Erlang volumes, each with a certain number of iterations.
+        total_work_units = 0
         for key, conf in self.simulation_config.items():
-            conf['progress_dict'] = self.shared_progress_dict
+            erlangs = conf['erlangs']
+            start, stop, step = erlangs['start'], erlangs['stop'], erlangs['step']
+            count_erlangs = len(range(start, stop, step))
+            max_iters = conf['max_iters']
+            # That process will do count_erlangs * max_iters iteration units
+            total_work_units += (count_erlangs * max_iters)
+
+        # Store that globally in the GUI, used by poll_progress()
+        self.global_work_units = total_work_units
+
+        # Insert the queues into each process config.
+        # They will push logs & partial iteration counts to these queues.
+        for key, conf in self.simulation_config.items():
+            conf['progress_queue'] = self.progress_queue
             conf['log_queue'] = self.log_queue
-        # Also inject it into your button helpers for later use.
+
+        # Also store them on the button helpers if needed.
         if self.button_help_obj is not None:
             self.button_help_obj.simulation_config = self.simulation_config
             self.button_help_obj.log_queue = self.log_queue
+            self.button_help_obj.progress_queue = self.progress_queue
 
 
 if __name__ == '__main__':

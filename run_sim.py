@@ -19,101 +19,115 @@ class NetworkSimulator:
         self.properties = None
 
     def _run_generic_sim(self, erlang: float, first_erlang: bool, erlang_index: int,
-                         total_erlangs: int, progress_dict):
+                         progress_dict, done_offset: int):
+        """
+        Handles one Erlang in this single process. We set arrival_rate,
+        pass done_offset to avoid resetting progress between volumes,
+        and call Engine.run(), which returns how many iteration units are now done.
+        """
         import copy
         from helper_scripts.setup_helpers import create_input, save_input
         from src.engine import Engine
 
-        # Temporarily remove unpickleable keys from self.properties before deepcopy
+        # Remove unpickleable keys so we can deepcopy
         unpickleable_keys = {}
-        for key in ['progress_dict', 'log_queue']:
+        for key in ['log_queue', 'progress_queue']:
             if key in self.properties:
                 unpickleable_keys[key] = self.properties.pop(key)
 
-        # Perform deepcopy on the cleaned self.properties
         engine_props = copy.deepcopy(self.properties)
 
-        # Restore the removed keys to self.properties for future use
+        # Restore the queues
         self.properties.update(unpickleable_keys)
-
-        # Inject the unpickleable objects into engine_props from the current context
-        engine_props['progress_dict'] = progress_dict
         if 'log_queue' in unpickleable_keys:
             engine_props['log_queue'] = unpickleable_keys['log_queue']
+        if 'progress_queue' in unpickleable_keys:
+            engine_props['progress_queue'] = unpickleable_keys['progress_queue']
 
-        # Set additional simulation-specific parameters
-        engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
-        engine_props['erlang'] = erlang
-        engine_props['erlang_index'] = erlang_index
-        engine_props['total_erlangs'] = total_erlangs
+        # Keep or remove progress_dict references as needed
+        engine_props['progress_dict'] = progress_dict
         engine_props['progress_key'] = erlang_index
-        engine_props['band_list'] = list()
 
-        # Create a sanitized copy for saving/configuration updates.
-        # Remove keys that are not JSON serializable.
+        # Set 'erlang' and 'arrival_rate'
+        engine_props['erlang'] = erlang
+        engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
+
+        # We also pass our offset so the engine knows how many iteration units we've done so far
+        engine_props['done_offset'] = done_offset
+
+        # We already stored 'my_iteration_units' in run_generic_sim()
+        engine_props['my_iteration_units'] = self.properties.get('my_iteration_units', engine_props['max_iters'])
+
+        # Make a sanitized copy for saving
         clean_engine_props = engine_props.copy()
-        clean_engine_props.pop('progress_dict', None)
-        clean_engine_props.pop('progress_key', None)
-        clean_engine_props.pop('log_queue', None)
+        for badkey in ['progress_dict', 'progress_key', 'log_queue', 'progress_queue', 'done_offset']:
+            clean_engine_props.pop(badkey, None)
 
-        # Update topology and other details.
         updated_props = create_input(base_fp='data', engine_props=clean_engine_props)
         engine_props.update(updated_props)
 
+        # Save input if first Erlang
         if first_erlang:
             save_input(
                 base_fp='data',
-                properties=clean_engine_props,  # Use the sanitized dictionary for saving.
+                properties=clean_engine_props,
                 file_name=f"sim_input_{updated_props['thread_num']}.json",
                 data_dict=updated_props
             )
 
+        print(f"[Simulation {erlang_index}] progress_dict id: {id(engine_props['progress_dict'])}")
+
         engine = Engine(engine_props=engine_props)
-        engine.run()
+        # Let the engine run. It returns how many iteration units are done so far
+        final_done_units = engine.run()
+
+        return final_done_units
 
     def run_generic_sim(self):
+        """
+        If this single process runs multiple Erlangs sequentially, we do them all here
+        without resetting the progress. We'll unify iteration-based progress across them.
+        """
         erlang_dict = self.properties['erlangs']
         start, stop, step = erlang_dict['start'], erlang_dict['stop'], erlang_dict['step']
-        erlang_list = [float(erlang) for erlang in range(start, stop, step)]
-        total_erlangs = len(erlang_list)
+        erlang_list = [float(x) for x in range(start, stop, step)]
+        print("Launching simulations for erlangs:", erlang_list)
 
-        # Use the shared dictionary if provided; else create a new one.
-        if 'progress_dict' in self.properties:
-            progress_dict = self.properties['progress_dict']
-        else:
-            manager = multiprocessing.Manager()
-            progress_dict = manager.dict()
-            for erlang_index, erlang in enumerate(erlang_list):
-                progress_dict[erlang_index] = 0
+        # Each Erlang does self.properties['max_iters'] iterations => total for this process
+        max_iters = self.properties['max_iters']
+        my_iteration_units = len(erlang_list) * max_iters
+        self.properties['my_iteration_units'] = my_iteration_units
 
-        # Initialize all keys to 0.
+        # If you're still using a shared progress_dict, keep or remove as needed
+        if 'progress_dict' not in self.properties:
+            from multiprocessing import Manager
+            manager = Manager()
+            self.properties['progress_dict'] = manager.dict()
+
+        progress_dict = self.properties['progress_dict']
+        print("Initial shared progress dict:", dict(progress_dict))
+
+        # We'll track how many iteration units have been completed so far across these Erlangs
+        done_units_so_far = 0
+
         for erlang_index, erlang in enumerate(erlang_list):
-            progress_dict[erlang_index] = 0
+            first_erlang = (erlang_index == 0)
 
-        if self.properties['thread_erlangs']:
-            with concurrent.futures.ProcessPoolExecutor() as executor:
-                futures_list = []
-                for erlang_index, erlang in enumerate(erlang_list):
-                    first_erlang = (erlang_index == 0)
-                    future = executor.submit(self._run_generic_sim,
-                                             erlang=erlang,
-                                             first_erlang=first_erlang,
-                                             erlang_index=erlang_index,
-                                             total_erlangs=total_erlangs,
-                                             progress_dict=progress_dict)
-                    futures_list.append(future)
-                for future in concurrent.futures.as_completed(futures_list):
-                    future.result()
-        else:
-            for erlang_index, erlang in enumerate(erlang_list):
-                first_erlang = (erlang_index == 0)
-                self._run_generic_sim(erlang=erlang,
-                                      first_erlang=first_erlang,
-                                      erlang_index=erlang_index,
-                                      total_erlangs=total_erlangs,
-                                      progress_dict=progress_dict)
+            # We call the helper function that sets 'arrival_rate', calls Engine, etc.
+            done_units_so_far = self._run_generic_sim(
+                erlang=erlang,
+                first_erlang=first_erlang,
+                erlang_index=erlang_index,
+                progress_dict=progress_dict,
+                done_offset=done_units_so_far
+            )
+
+        # That completes all the Erlangs for this single process
 
     def run_sim(self, **kwargs):
+        """
+        Entry point for this process. We set up self.properties, then call run_generic_sim().
+        """
         self.properties = kwargs['thread_params']
         # The date and current time derived from the simulation start.
         self.properties['date'] = kwargs['sim_start'].split('_')[0]
@@ -121,16 +135,24 @@ class NetworkSimulator:
         time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
         self.properties['sim_start'] = time_string
         self.properties['thread_num'] = kwargs['thread_num']
+
+        # Now we do multiple Erlangs
         self.run_generic_sim()
 
-def run(sims_dict: dict):
-    from datetime import datetime
-    import concurrent.futures
 
-    # Retrieve the log_queue from the simulation config
-    # (Assuming all simulation configs have the same log_queue)
+def run(sims_dict: dict):
+    """
+    Spawns a separate process for each simulation config.
+    Each process might handle multiple Erlangs via run_generic_sim().
+    We'll rely on iteration-based progress in engine.py (child increments done_units each iteration).
+    """
+    from datetime import datetime
+    from multiprocessing import Process
+
+    # If there's at least one simulation, retrieve the parent's log/progress queues
     any_conf = list(sims_dict.values())[0]
     log_queue = any_conf.get('log_queue')
+    progress_queue = any_conf.get('progress_queue')
 
     def log(message):
         if log_queue:
@@ -138,17 +160,32 @@ def run(sims_dict: dict):
         else:
             print(message)
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures_list = []
-        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-        for thread_num, thread_params in sims_dict.items():
-            curr_sim = NetworkSimulator()
-            class_inst = curr_sim.run_sim
-            log(f"Starting simulation for thread {thread_num} at {sim_start}.")
-            future = executor.submit(class_inst, thread_num=thread_num, thread_params=thread_params, sim_start=sim_start)
-            futures_list.append(future)
-        for future in concurrent.futures.as_completed(futures_list):
-            future.result()
+    processes = []
+    sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+
+    from run_sim import NetworkSimulator
+
+    for thread_num, thread_params in sims_dict.items():
+        # Insert the parent's queues if not already set
+        thread_params['progress_queue'] = progress_queue
+
+        log(f"Starting simulation for thread {thread_num} at {sim_start}.")
+        curr_sim = NetworkSimulator()
+
+        p = Process(
+            target=curr_sim.run_sim,
+            kwargs={
+                'thread_num': thread_num,
+                'thread_params': thread_params,
+                'sim_start': sim_start
+            }
+        )
+        processes.append(p)
+        p.start()
+
+    # Wait for all child processes
+    for p in processes:
+        p.join()
 
 
 if __name__ == '__main__':

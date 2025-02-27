@@ -53,15 +53,27 @@ class ButtonHelpers:
         pass
 
     def start_simulation(self):
-        self.bottom_right_pane.clear()
+        """
+        Starts the simulation in a separate process (rather than a separate thread),
+        ensuring that the multiprocessing.Manager dictionary is shared properly.
+        """
+        import multiprocessing
         from run_sim import run
-        import threading
+
+        self.bottom_right_pane.clear()
+
         if self.simulation_config is None:
             print("Error: simulation configuration is not set!")
             return
-        sim_thread = threading.Thread(target=run, kwargs={'sims_dict': self.simulation_config})
-        sim_thread.start()
-        self.simulation_process = sim_thread
+
+        # Create and start a separate process that runs the simulations
+        sim_process = multiprocessing.Process(
+            target=run,
+            kwargs={'sims_dict': self.simulation_config}
+        )
+        sim_process.start()
+
+        self.simulation_process = sim_process
         print("Multiprocess simulation launched directly.")
         self.start_button.setText("Start")
 

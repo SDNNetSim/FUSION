@@ -231,10 +231,30 @@ class Engine:
         self.generate_requests(seed)
 
     def run(self):
+        """
+        Runs the simulation by creating the topology, processing requests,
+        and sending iteration-based updates to the parent's queue.
+
+        We do not produce a local fraction. Instead, each iteration => done_units += 1,
+        which we push to the parent's queue. If done_offset is given, we start from that offset.
+        """
         self.create_topology()
+
         max_iters = self.engine_props["max_iters"]
-        progress_key = self.engine_props.get('progress_key')
-        progress_dict = self.engine_props.get('progress_dict')
+        progress_queue = self.engine_props.get('progress_queue')
+        thread_num = self.engine_props.get('thread_num', 'unknown')
+
+        # The total # of iteration units in this process
+        my_iteration_units = self.engine_props.get('my_iteration_units', max_iters)
+        # The offset for if we've completed some from previous Erlangs in the same process
+        done_offset = self.engine_props.get('done_offset', 0)
+
+        # Start from done_offset
+        done_units = done_offset
+
+        print(f"[Engine] thread={thread_num}, offset={done_offset}, "
+              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}")
+
         for iteration in range(max_iters):
             self.init_iter(iteration=iteration)
             req_num = 1
@@ -242,18 +262,24 @@ class Engine:
                 self.handle_request(curr_time=curr_time, req_num=req_num)
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
                     req_num += 1
+
             end_iter = self.end_iter(iteration=iteration)
-            progress_fraction = (iteration + 1) / max_iters
-            progress_value = int(progress_fraction * 1000)
-            if progress_dict is not None and progress_key is not None:
-                progress_dict[progress_key] = progress_value
-            print(f"PROGRESS: {progress_value}")
-            import sys
-            sys.stdout.flush()
+
+            done_units += 1  # finished another iteration
+            if progress_queue:
+                progress_queue.put((thread_num, done_units))
+
+            print(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}")
+
             import time
             time.sleep(0.2)
+
             if end_iter:
                 break
 
-        print(f"Erlang: {self.engine_props['erlang']} finished for simulation number: {self.engine_props['thread_num']}.")
+        print(
+            f"Simulation finished for Erlang: {self.engine_props['erlang']} "
+            f"finished for simulation number: {thread_num}."
+        )
 
+        return done_units
