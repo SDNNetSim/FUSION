@@ -44,7 +44,7 @@ class Engine:
         :param curr_time: The current simulated time.
         """
         sdn_props = self.sdn_obj.sdn_props
-        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
+        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props, net_spec_dict = self.net_spec_dict)
         if sdn_props.was_routed or (sdn_props.was_partially_routed and self.engine_props['can_partially_serve']):
             self.stats_obj.curr_trans = sdn_props.num_trans
 
