@@ -9,7 +9,7 @@ import pandas as pd
 
 from arg_scripts.stats_args import StatsProps
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len, find_core_cong
+from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_entropy_frag
 from helper_scripts.os_helpers import create_dir
 
 
@@ -138,6 +138,14 @@ class SimStats:
                 self.stats_props.mods_used_dict[bandwidth][modulation] = 0
 
             self.stats_props.block_bw_dict[bandwidth] = 0
+    def _init_frag_vlaue_dict(self):
+        for method in self.engine_props['fragmentation_metrics']:
+            self.stats_props.frag_dict[method] = {}
+            # for req_cnt in range(1, self.engine_props['num_requests']+1):
+            for req_cnt in range(100, self.engine_props['num_requests'] + 1, 100):
+                for band in self.engine_props['band_list']:
+                    for core_num in range(self.engine_props['cores_per_link']):
+                        self.stats_props.frag_dict[method][req_cnt] = {}
 
     def _init_stat_dicts(self):
         for stat_key, data_type in vars(self.stats_props).items():
@@ -145,6 +153,8 @@ class SimStats:
                 continue
             if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict'):
                 self._init_mods_weights_bws()
+            elif stat_key in ('frag_dict'):
+                self._init_frag_vlaue_dict()
             elif stat_key == 'snapshots_dict':
                 if self.engine_props['save_snapshots']:
                     self._init_snapshots()
@@ -220,7 +230,15 @@ class SimStats:
                     self.stats_props.bandwidth_list.append(int(data))
                 
 
-    def iter_update(self, req_data: dict, sdn_data: object):
+    def update_frag_metric_iter(self, req_id: int, net_spec_dict: dict):
+        spectral_slots = {}
+        for band in self.engine_props['band_list']:
+            spectral_slots.update({band:self.engine_props[band+'_band']})
+        for method in self.engine_props['fragmentation_metrics']:
+            if method == 'entropy' and req_id in self.stats_props.frag_dict[method]:
+                self.stats_props.frag_dict[method][req_id] = get_entropy_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict)
+
+    def iter_update(self, req_data: dict, sdn_data: object, net_spec_dict: dict):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 
@@ -253,6 +271,9 @@ class SimStats:
             path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
             self.stats_props.lengths_list.append(round(float(path_len),2))
 
+            if self.engine_props['fragmentation_metrics']:
+                self.update_frag_metric_iter(req_id = sdn_data.req_id, net_spec_dict= net_spec_dict )
+            
             self._handle_iter_lists(sdn_data=sdn_data, new_lp_index = new_lp_index)
             self.stats_props.route_times_list.append(sdn_data.route_time)
             self.total_trans += sdn_data.num_trans
@@ -431,6 +452,14 @@ class SimStats:
                     if self.engine_props["transponder_usage_per_node"]:
                         save_key = f"{stat_key.split('list')[0]}"
                         self.save_dict['iter_stats'][self.iteration][save_key] = self.stats_props.total_transponder_usage_list[self.iteration]
+                    continue
+                if stat_key == 'frag_dict':
+                    data = copy.deepcopy(getattr(self.stats_props,stat_key))
+                    converted_data = {}
+                    for method in data:
+                        for req in data[method]:
+                            converted_data[method][req] = {str(key): value for key, value in data[method][req].items()}
+                    self.save_dict['iter_stats'][self.iteration][stat_key] = converted_data
                     continue
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(getattr(self.stats_props,
                                                                                                stat_key))
