@@ -11,6 +11,7 @@ class StatsProps:
         self.weights_dict = dict()  # Weights of paths
         self.mods_used_dict = dict()  # Modulations used in simulation(s)
         self.block_bw_dict = dict()  # Block per bandwidth
+        self.frag_dict = dict() # Track of different fragmentation metrics
         self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}  # Block reasons
         self.sim_block_list = list()  # List of blocking probabilities per simulation
         self.sim_br_block_list = list()  # List of bit rate blocking probabilities per simulation
