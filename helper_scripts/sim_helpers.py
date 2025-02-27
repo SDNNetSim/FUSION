@@ -502,6 +502,34 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     return np.array(potential_super_channels)
 
 
+def find_available_blocks(input_dict):
+    results = {}
+
+    for key, arr in input_dict.items():
+        arr = np.array(arr)
+        is_zero = arr == 0
+
+        # Pad to detect zero blocks at the edges without special checks
+        padded = np.pad(is_zero, ((0, 0), (1, 1)), constant_values=False)
+        diff = np.diff(padded.astype(int), axis=1)
+
+        # Start indices where diff == 1, End indices where diff == -1
+        start_indices = np.argwhere(diff == 1)
+        end_indices = np.argwhere(diff == -1)
+
+        key_results = [[] for _ in range(arr.shape[0])]
+
+        # Explicitly convert NumPy integers to native Python integers
+        for (row_start, col_start), (row_end, col_end) in zip(start_indices, end_indices):
+            key_results[int(row_start)].append((int(col_start), int(col_end - 1)))
+
+        results[key] = key_results
+
+    return results
+
+
+
+
 # TODO: Add reference
 # Please refer to this paper for the formulation:
 def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
@@ -552,6 +580,31 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     resp_frag_arr = np.where(resp_frag_arr == 1, np.inf, resp_frag_arr)
 
     return sc_index_mat, resp_frag_arr
+
+
+def calculate_h2(link_open_blcoks, spectral_slots: dict):
+    h2_results = {}
+    for band, rows in link_open_blcoks.items():
+        h2_results[band] = []
+        for row in rows:
+            if row:  # Avoid division by zero
+                terms = [((block[1] - block[0] +1) / spectral_slots[band]) * np.log((block[1] - block[0] +1) / spectral_slots[band])  for block in row]
+                h2 = -sum(terms)
+            else:
+                h2 = np.inf  # No contiguous blocks
+            h2_results[band].append(h2)
+    return h2_results
+
+def get_entropy_frag(spectral_slots: dict, net_spec_dict: dict):
+    
+
+    frag_results = {}
+    for src_dest, spec_matrix in net_spec_dict.items():
+        link_open_blcoks = find_available_blocks(input_dict = spec_matrix['cores_matrix'])
+        frag_results[src_dest] = calculate_h2(link_open_blcoks=link_open_blcoks, spectral_slots=spectral_slots)
+
+
+    return frag_results
 
 
 def classify_cong(curr_cong: float):
