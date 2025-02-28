@@ -1,9 +1,9 @@
 import numpy as np
 import optuna
 
-from rl_scripts.algorithms.bandits import get_q_table
+from reinforcement_learning.algorithms.bandits import get_q_table
 
-from rl_scripts.args.general_args import EPISODIC_STRATEGIES
+from reinforcement_learning.args.general_args import EPISODIC_STRATEGIES
 
 
 class HyperparamConfig:  # pylint: disable=too-few-public-methods

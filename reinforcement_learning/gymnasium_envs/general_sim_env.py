@@ -1,12 +1,12 @@
 import gymnasium as gym
 
-from rl_scripts.utils.env_util import SimEnvUtils
-from rl_scripts.utils.setup_helpers import setup_rl_sim, SetupHelper
-from rl_scripts.utils.general_helpers import CoreUtilHelpers, SimEnvHelpers
-from rl_scripts.agents.path_agent import PathAgent
-from rl_scripts.utils.drl_helpers import get_obs_space, get_action_space
+from reinforcement_learning.utils.sim_env import SimEnvUtils
+from reinforcement_learning.utils.setup import setup_rl_sim, SetupHelper
+from reinforcement_learning.utils.general_utils import CoreUtilHelpers, SimEnvHelpers
+from reinforcement_learning.agents.path_agent import PathAgent
+from reinforcement_learning.utils.deep_rl import get_obs_space, get_action_space
 
-from rl_scripts.algorithms.algorithm_props import RLProps
+from reinforcement_learning.algorithms.algorithm_props import RLProps
 
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method

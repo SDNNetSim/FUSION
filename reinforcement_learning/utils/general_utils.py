@@ -7,7 +7,7 @@ from src.spectrum_assignment import SpectrumAssignment
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
 
-from rl_scripts.args.general_args import VALID_PATH_ALGORITHMS
+from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS
 from arg_scripts.sdn_args import SDNProps
 
 
