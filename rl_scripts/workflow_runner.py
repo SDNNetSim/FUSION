@@ -5,14 +5,14 @@ import numpy as np
 
 from helper_scripts.sim_helpers import modify_multiple_json_values, update_dict_from_list
 from helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
-from rl_scripts.helpers.rl_zoo_helpers import run_rl_zoo
+from rl_scripts.utils.rl_zoo_helpers import run_rl_zoo
 from rl_scripts.gymnasium_envs.general_sim_env import SimEnv
-from rl_scripts.helpers.setup_helpers import print_info, setup_rl_sim
-from rl_scripts.helpers.callback_helpers import EpisodicRewardCallback
+from rl_scripts.utils.setup_helpers import print_info, setup_rl_sim
+from rl_scripts.utils.callback_helpers import EpisodicRewardCallback
 from rl_scripts.model_manager import get_trained_model, get_model, save_model
 
-from rl_scripts.helpers.hyperparam_helpers import get_optuna_hyperparams
-from rl_scripts.helpers.general_helpers import save_arr
+from rl_scripts.utils.hyperparam_helpers import get_optuna_hyperparams
+from rl_scripts.utils.general_helpers import save_arr
 
 from rl_scripts.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
 

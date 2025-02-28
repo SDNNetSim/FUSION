@@ -3,6 +3,7 @@ import os
 import math
 import copy
 from statistics import mean, variance, stdev
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -414,6 +415,8 @@ class SimStats:
             base_fp = 'data'
         save_fp = os.path.join(base_fp, 'output', self.sim_info, self.engine_props['thread_num'])
         create_dir(save_fp)
+        sim_end_time = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        self.save_dict['sim_end_time'] = sim_end_time
         if self.engine_props['file_type'] == 'json':
             with open(f"{save_fp}/{self.engine_props['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
                 json.dump(self.save_dict, file_path, indent=4)
