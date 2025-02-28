@@ -14,7 +14,7 @@ def _plot_matrix(axes, color_matrix, n_nodes, t_label, path_colors, pair_dict, g
     axes.set_yticks(ticks)
     axes.set_xticklabels(ticks)
     axes.set_yticklabels(ticks)
-    # Build legend patches
+
     max_paths = max((len(vals) for vals in pair_dict.values()), default=0)
     patches = [Patch(facecolor=path_colors[i] if i < len(path_colors) else (1, 1, 1), label=f"Path {i}")
                for i in range(max_paths)]
@@ -38,6 +38,9 @@ def _plot_bar_chart(pair_dict, t_label):
 
 
 def plot_best_path_matrix(averaged_state_values_by_volume, path_colors=None):
+    """
+    Plots a heat map of state-values for best paths.
+    """
     if path_colors is None:
         path_colors = [
             (1, 0, 0), (0, 1, 0), (0, 0, 1),
