@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from rl_scripts.helpers.hyperparam_helpers import HyperparamConfig
+from rl_scripts.utils.hyperparam_helpers import HyperparamConfig
 
 from rl_scripts.algorithms.q_learning import QLearning
 from rl_scripts.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
