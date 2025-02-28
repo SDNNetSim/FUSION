@@ -601,7 +601,7 @@ def get_entropy_frag(spectral_slots: dict, net_spec_dict: dict):
     frag_results = {}
     for src_dest, spec_matrix in net_spec_dict.items():
         link_open_blcoks = find_available_blocks(input_dict = spec_matrix['cores_matrix'])
-        frag_results[src_dest] = calculate_h2(link_open_blcoks=link_open_blcoks, spectral_slots=spectral_slots)
+        frag_results[str(src_dest)] = calculate_h2(link_open_blcoks=link_open_blcoks, spectral_slots=spectral_slots)
 
 
     return frag_results
