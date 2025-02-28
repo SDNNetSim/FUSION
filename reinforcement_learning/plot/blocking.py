@@ -9,7 +9,7 @@ def plot_blocking_probabilities(final_result):
     Parameters:
         final_result (dict): Processed simulation data for blocking probabilities.
     """
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 4), dpi=200)
     for algo_key, traffic_data in final_result.items():
         erlang_values = []
         blocking_probs = []

@@ -10,7 +10,7 @@ from reinforcement_learning.utils.sim_data import (
 from reinforcement_learning.plot.blocking import plot_blocking_probabilities
 from reinforcement_learning.plot.state_values import plot_best_path_matrix
 from reinforcement_learning.plot.rewards import (
-    plot_rewards_per_seed_with_variance,
+    plot_rewards_per_seed,
     plot_rewards_averaged_with_variance,
     plot_average_rewards,
 )
@@ -58,7 +58,7 @@ def main():
 
     plot_blocking_probabilities(final_result)
     plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
-    plot_rewards_per_seed_with_variance(all_rewards_data)
+    plot_rewards_per_seed(all_rewards_data)
     plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
 
