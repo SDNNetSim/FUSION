@@ -9,6 +9,7 @@ from reinforcement_learning.utils.sim_data import (
 )
 from reinforcement_learning.plot.blocking import plot_blocking_probabilities
 from reinforcement_learning.plot.state_values import plot_best_path_matrix
+from reinforcement_learning.plot.sim_times import plot_sim_times
 from reinforcement_learning.plot.rewards import (
     plot_rewards_per_seed,
     plot_rewards_averaged_with_variance,
@@ -56,11 +57,12 @@ def main():
     all_rewards_data = load_all_rewards_files(simulation_times, base_logs_dir, base_dir)
     averaged_state_values_by_volume = load_and_average_state_values(simulation_times, base_logs_dir, base_dir)
 
-    plot_blocking_probabilities(final_result)
-    plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
-    plot_rewards_per_seed(all_rewards_data)
-    plot_rewards_averaged_with_variance(all_rewards_data)
+    # plot_blocking_probabilities(final_result)
+    # plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
+    # plot_rewards_per_seed(all_rewards_data)
+    # plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
+    plot_sim_times(simulation_times, base_dir)
 
 
 if __name__ == '__main__':
