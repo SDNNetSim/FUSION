@@ -116,7 +116,7 @@ def find_times(dates_dict: Dict[str, str], filter_dict: Dict[str, List[List[Any]
     info_dict = {}
 
     for date, network in dates_dict.items():
-        times_path = os.path.join('..', 'data', 'input', network, date)
+        times_path = os.path.join('..', '..', 'data', 'input', network, date)
         if not os.path.isdir(times_path):
             continue
 
@@ -144,19 +144,23 @@ def find_times(dates_dict: Dict[str, str], filter_dict: Dict[str, List[List[Any]
                     info_dict[curr_time] = {
                         'sim_list': [],
                         'network_list': [],
-                        'dates_list': []
+                        'dates_list': [],
+                        'algorithm_list': []
                     }
                 # Assuming the simulation number is the third element separated by underscores.
                 sim = input_file.split('_')[2].split('.')[0]
+                algo_name = file_dict.get("path_algorithm", "Unknown Algorithm")
                 info_dict[curr_time]['sim_list'].append(sim)
                 info_dict[curr_time]['network_list'].append(network)
                 info_dict[curr_time]['dates_list'].append(date)
+                info_dict[curr_time]['algorithm_list'].append(algo_name)
 
-    # Convert info_dict to lists
+    resp['algorithms_matrix'] = []
     for time, obj in info_dict.items():
         resp['times_matrix'].append([time])
         resp['sims_matrix'].append(obj['sim_list'])
         resp['networks_matrix'].append(obj['network_list'])
         resp['dates_matrix'].append(obj['dates_list'])
+        resp['algorithms_matrix'].append(obj['algorithm_list'])
 
     return resp

@@ -181,7 +181,8 @@ def load_rewards(simulation_times, base_logs_dir, base_dir):
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
             reward_file = os.path.join(
-                base_logs_dir, alg_snake, "NSFNet", "0227", sim_time, "average_rewards.npy"
+                # TODO: (drl_path_agents) Hard coded
+                base_logs_dir, alg_snake, "NSFNet", "0228", sim_time, "average_rewards.npy"
             )
             if not os.path.exists(reward_file):
                 print(f"Warning: Reward file does not exist: {reward_file}")
