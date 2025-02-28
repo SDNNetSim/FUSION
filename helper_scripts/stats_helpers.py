@@ -141,11 +141,8 @@ class SimStats:
     def _init_frag_vlaue_dict(self):
         for method in self.engine_props['fragmentation_metrics']:
             self.stats_props.frag_dict[method] = {}
-            # for req_cnt in range(1, self.engine_props['num_requests']+1):
-            for req_cnt in range(100, self.engine_props['num_requests'] + 1, 100):
-                for band in self.engine_props['band_list']:
-                    for core_num in range(self.engine_props['cores_per_link']):
-                        self.stats_props.frag_dict[method][req_cnt] = {}
+            for req_cnt in range(self.engine_props['frag_calc_step'], self.engine_props['num_requests'] + 1, self.engine_props['frag_calc_step']):
+                self.stats_props.frag_dict[method][req_cnt] = {"arrival": {}, "release": {}}
 
     def _init_stat_dicts(self):
         for stat_key, data_type in vars(self.stats_props).items():
@@ -230,13 +227,13 @@ class SimStats:
                     self.stats_props.bandwidth_list.append(int(data))
                 
 
-    def update_frag_metric_iter(self, req_id: int, net_spec_dict: dict):
+    def update_frag_metric_iter(self, req_id: int, net_spec_dict: dict, req_type: str):
         spectral_slots = {}
         for band in self.engine_props['band_list']:
             spectral_slots.update({band:self.engine_props[band+'_band']})
         for method in self.engine_props['fragmentation_metrics']:
             if method == 'entropy' and req_id in self.stats_props.frag_dict[method]:
-                self.stats_props.frag_dict[method][req_id] = get_entropy_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict)
+                self.stats_props.frag_dict[method][req_id][req_type] = get_entropy_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict)
 
     def iter_update(self, req_data: dict, sdn_data: object, net_spec_dict: dict):
         """
@@ -271,8 +268,6 @@ class SimStats:
             path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
             self.stats_props.lengths_list.append(round(float(path_len),2))
 
-            if self.engine_props['fragmentation_metrics']:
-                self.update_frag_metric_iter(req_id = sdn_data.req_id, net_spec_dict= net_spec_dict )
             
             self._handle_iter_lists(sdn_data=sdn_data, new_lp_index = new_lp_index)
             self.stats_props.route_times_list.append(sdn_data.route_time)
@@ -452,14 +447,6 @@ class SimStats:
                     if self.engine_props["transponder_usage_per_node"]:
                         save_key = f"{stat_key.split('list')[0]}"
                         self.save_dict['iter_stats'][self.iteration][save_key] = self.stats_props.total_transponder_usage_list[self.iteration]
-                    continue
-                if stat_key == 'frag_dict':
-                    data = copy.deepcopy(getattr(self.stats_props,stat_key))
-                    converted_data = {}
-                    for method in data:
-                        for req in data[method]:
-                            converted_data[method][req] = {str(key): value for key, value in data[method][req].items()}
-                    self.save_dict['iter_stats'][self.iteration][stat_key] = converted_data
                     continue
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(getattr(self.stats_props,
                                                                                                stat_key))
