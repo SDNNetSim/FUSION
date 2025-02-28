@@ -1,9 +1,13 @@
 import os
 
 from reinforcement_learning.utils.sim_filters import find_times
-from reinforcement_learning.utils.sim_data import load_blocking_data, load_rewards
+from reinforcement_learning.utils.sim_data import load_blocking_data, load_rewards, load_all_rewards_files
 from reinforcement_learning.plot.blocking import plot_blocking_probabilities
-from reinforcement_learning.plot.rewards import plot_average_rewards
+from reinforcement_learning.plot.rewards import (
+    plot_rewards_per_seed_with_variance,
+    plot_rewards_averaged_with_variance,
+    plot_average_rewards,
+)
 
 
 def main():
@@ -43,8 +47,11 @@ def main():
 
     final_result = load_blocking_data(simulation_times, base_dir)
     rewards_data = load_rewards(simulation_times, base_logs_dir, base_dir)
+    all_rewards_data = load_all_rewards_files(simulation_times, base_logs_dir, base_dir)
 
     plot_blocking_probabilities(final_result)
+    plot_rewards_per_seed_with_variance(all_rewards_data)
+    plot_rewards_averaged_with_variance(all_rewards_data)
     plot_average_rewards(rewards_data)
 
 
