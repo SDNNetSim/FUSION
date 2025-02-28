@@ -3,6 +3,8 @@ import os
 import optuna
 import numpy as np
 
+import psutil
+
 from helper_scripts.sim_helpers import modify_multiple_json_values, update_dict_from_list
 from helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
 from reinforcement_learning.utils.rl_zoo import run_rl_zoo
@@ -43,6 +45,9 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     :param model: The RL model to be used; required only if not in training mode.
     :param callback_obj: A callback object to be passed to the callback function.
     """
+    process = psutil.Process()
+    memory_usage_list = []
+
     completed_episodes = 0
     completed_trials = 0
     episodic_reward = 0
@@ -52,6 +57,9 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     obs, _ = env.reset(seed=completed_trials)
 
     while completed_trials < sim_dict['n_trials']:
+        mem_usage = process.memory_info().rss / (1024 * 1024)
+        memory_usage_list.append(mem_usage)
+
         if is_training:
             if drl_agent:
                 _run_drl_training(env=env, sim_dict=sim_dict)
@@ -95,6 +103,7 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
         means_arr = np.mean(rewards_matrix, axis=0)
         sum_reward = np.sum(means_arr)
         save_arr(arr=means_arr, sim_dict=sim_dict, file_name="average_rewards.npy")
+        save_arr(arr=memory_usage_list, sim_dict=sim_dict, file_name="memory_usage.npy")
     else:
         raise NotImplementedError
 
