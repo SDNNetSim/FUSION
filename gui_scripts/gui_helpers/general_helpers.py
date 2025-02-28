@@ -141,23 +141,31 @@ class SimulationThread(QtCore.QThread):
 
     def _run(self):
         for output_line in self.simulation_process.stdout:
+            # Debug: print every output line
+            # print("SimulationThread received:", output_line.strip())
+
+            if output_line.startswith("PROGRESS:"):
+                try:
+                    progress_val = int(output_line.split(":", 1)[1].strip())
+                    # Debug print to confirm progress was parsed:
+                    print("SimulationThread parsed progress:", progress_val)
+                    self.progress_changed.emit(progress_val)
+                except Exception as e:
+                    print("Error parsing progress:", e)
+                continue  # Skip further processing of this line
+
             with QtCore.QMutexLocker(self.mutex):
                 if self.stopped:
                     break
-
                 while self.paused:
-                    self.pause_condition.wait(
-                        self.mutex
-                    )
-
+                    self.pause_condition.wait(self.mutex)
             self.output_hints_signal.emit(output_line)
 
         self.simulation_process.stdout.close()
         self.simulation_process.wait()
 
         self.finished_signal.emit('Simulation done')
-        self.output_hints_signal.emit(
-            'Done...cleaning up simulation from thread')
+        self.output_hints_signal.emit('Done...cleaning up simulation from thread')
 
     def run(self):
         """

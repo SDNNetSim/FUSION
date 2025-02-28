@@ -1,17 +1,10 @@
-# main.py
-import sys
 import sys
 import multiprocessing
-from PyQt5 import QtWidgets as qtw, QtCore as qtc
+from PyQt5 import QtWidgets as qtw
 
-# Assuming these imports are available from your project
-from gui_scripts.gui_helpers.menu_helpers import MenuBar
-from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
-from gui_scripts.gui_helpers.highlight_helpers import PythonHighlighter
-from gui_scripts.gui_helpers.general_helpers import DirectoryTreeView
-from gui_scripts.gui_args.style_args import STYLE_SHEET
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
+from gui_scripts.main_window import MainWindow
 
 if __name__ == '__main__':
     # Parse command-line arguments and configuration.
@@ -33,19 +26,10 @@ if __name__ == '__main__':
 
     # Launch the GUI. (Simulation will only start when the user clicks “Run”.)
     app = qtw.QApplication(sys.argv)
-    app.setStyle('Fusion')
     window = MainWindow()
-    # Inject simulation configuration and shared progress dictionary into the GUI.
-    args_dict = parse_args()
-    all_sims_dict = read_config(args_dict=args_dict, config_path=args_dict['config_path'])
-    manager = multiprocessing.Manager()
-    shared_progress_dict = manager.dict()
-    first_key = list(all_sims_dict.keys())[0]
-    erlang_conf = all_sims_dict[first_key]['erlangs']
-    total_erlangs = len(range(erlang_conf['start'], erlang_conf['stop'], erlang_conf['step']))
-    for i in range(total_erlangs):
-        shared_progress_dict[i] = 0
 
+    # Inject simulation configuration and shared progress dictionary into the GUI.
     window.set_simulation_config(all_sims_dict)
     window.set_shared_progress_dict(shared_progress_dict)
+    window.show()
     sys.exit(app.exec_())

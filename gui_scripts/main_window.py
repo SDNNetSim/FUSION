@@ -18,7 +18,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SD-EON Simulator")
+        self.setWindowTitle("FUSION Simulator")
         self.resize(1280, 720)
 
         self.menu_help_obj = MenuHelpers()

@@ -89,6 +89,9 @@ class ButtonHelpers:
             self.progress_bar.setValue(0)
             self.progress_bar.setVisible(False)
             self.simulation_process = None
+
+        self.simulation_thread.stop()
+
         self.start_button.setText("Start")
 
     def create_start_button(self):
