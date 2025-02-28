@@ -270,6 +270,8 @@ class Engine:
         else:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
                                       f'got: {req_type}')
+        if self.engine_props['fragmentation_metrics']:
+            self.stats_obj.update_frag_metric_iter(req_id = self.reqs_dict[curr_time]['req_id'], net_spec_dict= self.net_spec_dict, req_type =  req_type)
 
     def end_iter(self, iteration: int, print_flag: bool = True, base_fp: str = None):
         """
