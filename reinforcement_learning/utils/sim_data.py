@@ -6,6 +6,68 @@ from collections import defaultdict
 import numpy as np
 
 
+def load_and_average_state_values(simulation_times, base_logs_dir, base_dir):
+    """
+    Load state-value files for each traffic volume, then average them across seeds.
+    """
+    # We'll store data in a nested structure: traffic_data[traffic_label][(src, dst)][path_idx] = [...]
+    traffic_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for algorithm, sim_time_lists in simulation_times.items():
+        if algorithm.lower() == "baselines":
+            continue
+
+        alg_snake = algorithm.lower().replace(" ", "_")
+
+        for sim_time_wrapper in sim_time_lists:
+            sim_time = sim_time_wrapper[0]
+
+            logs_dir = os.path.join(base_logs_dir, alg_snake, "NSFNet", "0228", sim_time)
+            if not os.path.isdir(logs_dir):
+                continue
+
+            # Identify the traffic_label (the same way you do in load_rewards)
+            # e.g., extracting from JSON or fallback to sim_time
+            traffic_label = ...  # your existing logic here
+
+            json_files = [f for f in os.listdir(logs_dir)
+                          if f.startswith("state_vals") and f.endswith(".json")]
+
+            for json_file in json_files:
+                file_path = os.path.join(logs_dir, json_file)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                except (OSError, json.JSONDecodeError):
+                    continue
+
+                for link_str, path_vals in data.items():
+                    try:
+                        link_tuple = eval(link_str)
+                    except (SyntaxError, NameError):
+                        continue
+                    for p_idx, val in enumerate(path_vals):
+                        traffic_data[traffic_label][link_tuple][p_idx].append(val)
+
+    # Now average across seeds
+    # final_data = { traffic_label: { (src,dst): [mean_path_0, mean_path_1, ...], ... } }
+    final_data = {}
+    for t_label, link_map in traffic_data.items():
+        final_data[t_label] = {}
+        for link_tuple, pidx_map in link_map.items():
+            max_p_idx = max(pidx_map.keys())
+            path_vals_list = []
+            for p_idx in range(max_p_idx + 1):
+                raw_list = pidx_map.get(p_idx, [])
+                if raw_list:
+                    path_vals_list.append(float(np.mean(raw_list)))
+                else:
+                    path_vals_list.append(0.0)
+            final_data[t_label][link_tuple] = path_vals_list
+
+    return final_data
+
+
 def _extract_traffic_label(sim_time_path: str) -> str:
     """
     Extract a traffic label from the simulation time folder.
