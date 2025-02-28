@@ -24,7 +24,7 @@ NETWORK = 'NSFNet'
 
 def main():
     """
-    Controls the plots module.
+    Controls the plotting module.
     """
     dates_dict = {
         DATE: NETWORK,
