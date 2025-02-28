@@ -2,30 +2,37 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_rewards_per_seed_with_variance(all_rewards_data):
+def plot_rewards_per_seed(all_rewards_data):
     """
-    Plot each seed (trial) as a separate line with variance shading
-    across the steps in each episode.
+    Plot each seed (trial) as a separate line of mean rewards across episodes,
+    and overlay a dashed line representing the aggregate average across seeds.
     """
     for algorithm, traffic_dict in all_rewards_data.items():
         for traffic_label, trial_dict in traffic_dict.items():
-            plt.figure(figsize=(8, 5))
+            plt.figure(figsize=(6, 4), dpi=200)
+            all_episodes = set()
+            for trial_index, episodes_dict in trial_dict.items():
+                all_episodes.update(episodes_dict.keys())
+            all_episodes = sorted(all_episodes)
+
+            # Plot each seed's curve
             for trial_index, episodes_dict in trial_dict.items():
                 episode_indices = sorted(episodes_dict.keys())
-                means = []
-                lower_bounds = []
-                upper_bounds = []
-
-                for ep_idx in episode_indices:
-                    rewards_array = episodes_dict[ep_idx]
-                    mean_val = np.mean(rewards_array)
-                    std_val = np.std(rewards_array)
-                    means.append(mean_val)
-                    lower_bounds.append(mean_val - std_val)
-                    upper_bounds.append(mean_val + std_val)
-
+                means = [np.mean(episodes_dict[ep_idx]) for ep_idx in episode_indices]
                 plt.plot(episode_indices, means, marker='o', label=f"Trial {trial_index}")
-                plt.fill_between(episode_indices, lower_bounds, upper_bounds, alpha=0.2)
+
+            # Compute aggregate average for each episode over all seeds
+            agg_means = []
+            for ep_idx in all_episodes:
+                trial_means = []
+                for trial_index, episodes_dict in trial_dict.items():
+                    if ep_idx in episodes_dict:
+                        trial_means.append(np.mean(episodes_dict[ep_idx]))
+                if trial_means:
+                    agg_means.append(np.mean(trial_means))
+                else:
+                    agg_means.append(np.nan)
+            plt.plot(all_episodes, agg_means, 'k--', linewidth=2, label="Aggregate Average")
 
             plt.title(f"Per-Seed Rewards: {algorithm} (Traffic: {traffic_label})")
             plt.xlabel("Episode (iter)")
@@ -38,12 +45,12 @@ def plot_rewards_per_seed_with_variance(all_rewards_data):
 def plot_rewards_averaged_with_variance(all_rewards_data):
     """
     Plot the average across all seeds, per episode, with variance shading
-    across seeds (i.e., the standard deviation across seeds for that episode).
+    across seeds (i.e., the standard deviation across seeds for that episode)
+    for each traffic volume (for a single algorithm) on the same plot.
     """
     for algorithm, traffic_dict in all_rewards_data.items():
+        plt.figure(figsize=(6, 4), dpi=200)
         for traffic_label, trial_dict in traffic_dict.items():
-            plt.figure(figsize=(8, 5))
-
             all_episodes = set()
             for trial_index in trial_dict:
                 all_episodes.update(trial_dict[trial_index].keys())
@@ -51,7 +58,6 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
             means = []
             lower_bounds = []
             upper_bounds = []
-
             for ep_idx in all_episodes:
                 trial_means = []
                 for trial_index in trial_dict:
@@ -68,20 +74,18 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
                     means.append(np.nan)
                     lower_bounds.append(np.nan)
                     upper_bounds.append(np.nan)
-
             all_episodes_arr = np.array(all_episodes)
             means = np.array(means)
             lower_bounds = np.array(lower_bounds)
             upper_bounds = np.array(upper_bounds)
-
-            plt.plot(all_episodes_arr, means, marker='o', label="Average across seeds")
+            plt.plot(all_episodes_arr, means, marker='o', label=f"Traffic: {traffic_label}")
             plt.fill_between(all_episodes_arr, lower_bounds, upper_bounds, alpha=0.2)
-            plt.title(f"Averaged Rewards: {algorithm} (Traffic: {traffic_label})")
-            plt.xlabel("Episode (iter)")
-            plt.ylabel("Reward (mean across steps, averaged across seeds)")
-            plt.legend()
-            plt.grid(True)
-            plt.show()
+        plt.title(f"Averaged Rewards: {algorithm}")
+        plt.xlabel("Episode (iter)")
+        plt.ylabel("Reward (mean across steps, averaged across seeds)")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
 
 def plot_average_rewards(rewards_data):
@@ -92,7 +96,7 @@ def plot_average_rewards(rewards_data):
         rewards_data (dict): Mapping from algorithm to traffic label to rewards array.
     """
     for algorithm, traffic_rewards in rewards_data.items():
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(6, 4), dpi=200)
         for traffic_label, rewards in traffic_rewards.items():
             episodes = np.arange(len(rewards))
             plt.plot(episodes, rewards, linewidth=1.5, label=traffic_label)

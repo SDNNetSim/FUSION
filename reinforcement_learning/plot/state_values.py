@@ -27,7 +27,7 @@ def _plot_bar_chart(pair_dict, t_label):
     for vals in pair_dict.values():
         if vals:
             path_counts[np.argmax(vals)] += 1
-    plt.figure(figsize=(6, 4), dpi=150)
+    plt.figure(figsize=(6, 4), dpi=200)
     plt.bar(np.arange(max_paths), path_counts, color='gray')
     plt.xticks(np.arange(max_paths), [f"Path {i}" for i in range(max_paths)])
     plt.xlabel("Path Index")
