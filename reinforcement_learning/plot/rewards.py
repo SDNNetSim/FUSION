@@ -11,7 +11,6 @@ def plot_rewards_per_seed_with_variance(all_rewards_data):
         for traffic_label, trial_dict in traffic_dict.items():
             plt.figure(figsize=(8, 5))
             for trial_index, episodes_dict in trial_dict.items():
-                # Gather means and std devs across episodes
                 episode_indices = sorted(episodes_dict.keys())
                 means = []
                 lower_bounds = []
@@ -25,9 +24,7 @@ def plot_rewards_per_seed_with_variance(all_rewards_data):
                     lower_bounds.append(mean_val - std_val)
                     upper_bounds.append(mean_val + std_val)
 
-                # Plot a line for this seed
                 plt.plot(episode_indices, means, marker='o', label=f"Trial {trial_index}")
-                # Shaded variance region
                 plt.fill_between(episode_indices, lower_bounds, upper_bounds, alpha=0.2)
 
             plt.title(f"Per-Seed Rewards: {algorithm} (Traffic: {traffic_label})")
@@ -47,14 +44,10 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
         for traffic_label, trial_dict in traffic_dict.items():
             plt.figure(figsize=(8, 5))
 
-            # First, figure out the union of all episodes across all trials
             all_episodes = set()
             for trial_index in trial_dict:
                 all_episodes.update(trial_dict[trial_index].keys())
             all_episodes = sorted(all_episodes)
-
-            # For each episode, gather the average reward across steps for each trial
-            # Then compute mean and std dev across trials.
             means = []
             lower_bounds = []
             upper_bounds = []
@@ -62,10 +55,8 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
             for ep_idx in all_episodes:
                 trial_means = []
                 for trial_index in trial_dict:
-                    # If this trial has the current episode
                     if ep_idx in trial_dict[trial_index]:
                         rewards_array = trial_dict[trial_index][ep_idx]
-                        # Average across steps in this episode
                         trial_means.append(np.mean(rewards_array))
                 if trial_means:
                     ep_mean = np.mean(trial_means)
@@ -74,12 +65,10 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
                     lower_bounds.append(ep_mean - ep_std)
                     upper_bounds.append(ep_mean + ep_std)
                 else:
-                    # If no trials had this episode, just skip it
                     means.append(np.nan)
                     lower_bounds.append(np.nan)
                     upper_bounds.append(np.nan)
 
-            # Convert episodes to an array for plotting
             all_episodes_arr = np.array(all_episodes)
             means = np.array(means)
             lower_bounds = np.array(lower_bounds)
