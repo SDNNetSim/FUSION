@@ -1,20 +1,20 @@
 SimEnv:
-#  normalize: true
+  normalize: false
 #  n_envs: 32
-  n_timesteps: 1000000
+  n_timesteps: 150000
   policy: 'MultiInputPolicy'
-  n_steps: 8
-  batch_size: 256
-  gae_lambda: 0.95
-  gamma: 0.995
+  n_steps: 512
+  batch_size: 128
+  gae_lambda: 0.9
+  gamma: 0.99
   n_epochs: 10
-  vf_coef: 0.65
-  ent_coef: 0.00005
+  vf_coef: 0.5
+  ent_coef: 0.00001
 #  use_sde: True
-  max_grad_norm: 0.3
-  learning_rate: 0.001
+  max_grad_norm: 0.8
+  learning_rate: 0.0005  # Use a constant value for now, schedule can be added in code
 #  sde_sample_freq: 4
-  clip_range: 0.4
+  clip_range: 0.3
   policy_kwargs: "dict(
                     ortho_init=False,
                     activation_fn=nn.ReLU,
@@ -23,4 +23,3 @@ SimEnv:
   callback:
     - rl_scripts.helpers.callback_helpers.GetModelParams:
         verbose: 1
-
