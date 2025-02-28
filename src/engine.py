@@ -192,7 +192,8 @@ class Engine:
             resp = bool(self.stats_obj.get_conf_inter())
         else:
             resp = False
-        if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
+        if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0 or (iteration + 1) == \
+                self.engine_props['max_iters']:
             self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
         if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == \

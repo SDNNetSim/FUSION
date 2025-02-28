@@ -1,12 +1,12 @@
 import os
 import numpy as np
 
-from rl_scripts.utils.hyperparam_helpers import HyperparamConfig
+from reinforcement_learning.utils.hyperparams import HyperparamConfig
 
-from rl_scripts.algorithms.q_learning import QLearning
-from rl_scripts.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
-from rl_scripts.algorithms.ppo import PPO
-from rl_scripts.algorithms.a2c import A2C
+from reinforcement_learning.algorithms.q_learning import QLearning
+from reinforcement_learning.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
+from reinforcement_learning.algorithms.ppo import PPO
+from reinforcement_learning.algorithms.a2c import A2C
 
 
 class BaseAgent:
