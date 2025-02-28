@@ -6,6 +6,41 @@ from collections import defaultdict
 import numpy as np
 
 
+def _extract_traffic_label(sim_time_path):
+    # Look for a file named like "600.0_erlang.json" or any JSON
+    for item in os.listdir(sim_time_path):
+        item_path = os.path.join(sim_time_path, item)
+        if os.path.isdir(item_path):
+            # seed folder "s1", "s2", etc.
+            for f in os.listdir(item_path):
+                if f.endswith("erlang.json"):
+                    return f.split('_')[0]  # e.g. "600.0"
+    return ""
+
+
+def load_memory_usage(simulation_times, base_logs_dir, base_dir):
+    memory_usage_data = {}
+    for algorithm, sim_time_lists in simulation_times.items():
+        alg_snake = algorithm.lower().replace(" ", "_")
+        memory_usage_data[algorithm] = {}
+        for sim_time_wrapper in sim_time_lists:
+            sim_time = sim_time_wrapper[0]
+            mem_file = os.path.join(base_logs_dir, alg_snake, "NSFNet", "0228", sim_time, "memory_usage.npy")
+            sim_time_path = os.path.join(base_dir, sim_time)
+
+            # Use your existing extraction logic:
+            traffic_label = _extract_traffic_label(sim_time_path)
+            if not traffic_label:
+                traffic_label = sim_time  # fallback
+
+            if os.path.exists(mem_file):
+                memory_usage = np.load(mem_file)
+                memory_usage_data[algorithm].setdefault(traffic_label, memory_usage)
+            else:
+                print(f"Memory usage file not found: {mem_file}")
+    return memory_usage_data
+
+
 def load_and_average_state_values(simulation_times, base_logs_dir, base_dir):
     """
     Load state-value files for each traffic volume, then average them across seeds.

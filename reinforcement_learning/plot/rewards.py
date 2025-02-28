@@ -1,3 +1,5 @@
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -42,6 +44,27 @@ def plot_rewards_per_seed(all_rewards_data):
             plt.show()
 
 
+def compute_confidence_interval_for_traffic(trial_dict, all_episodes):
+    """Compute a 95% confidence interval string for a traffic volume."""
+    se_list = []
+    for ep_idx in all_episodes:
+        trial_means = []
+        for trial_index in trial_dict:
+            if ep_idx in trial_dict[trial_index]:
+                rewards_array = trial_dict[trial_index][ep_idx]
+                trial_means.append(np.mean(rewards_array))
+        if trial_means:
+            std = np.std(trial_means)
+            n = len(trial_means)
+            se = std / math.sqrt(n)
+            se_list.append(se)
+    if se_list:
+        avg_se = np.mean(se_list)
+        ci = 1.96 * avg_se
+        return f"(CI: ±{ci:.2f})"
+    return ""
+
+
 def plot_rewards_averaged_with_variance(all_rewards_data):
     """
     Plot the average across all seeds, per episode, with variance shading
@@ -78,7 +101,8 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
             means = np.array(means)
             lower_bounds = np.array(lower_bounds)
             upper_bounds = np.array(upper_bounds)
-            plt.plot(all_episodes_arr, means, marker='o', label=f"Traffic: {traffic_label}")
+            ci_str = compute_confidence_interval_for_traffic(trial_dict, all_episodes)
+            plt.plot(all_episodes_arr, means, marker='o', label=f"Traffic: {traffic_label} {ci_str}")
             plt.fill_between(all_episodes_arr, lower_bounds, upper_bounds, alpha=0.2)
         plt.title(f"Averaged Rewards: {algorithm}")
         plt.xlabel("Episode (iter)")
