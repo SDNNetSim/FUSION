@@ -24,23 +24,20 @@ class SpectrumHelpers:
         core_arr = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][self.curr_band][self.core_num]
         rev_core_arr = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix'][self.curr_band][self.core_num]
         if self.spectrum_props.slots_needed == 1 and self.engine_props['guard_slots'] == 0:
-            if core_arr[self.start_index] == 0.0 and rev_core_arr[self.start_index] == 0.0:
-                return True
-            else:
-                return False
+            return bool(core_arr[self.start_index] == 0.0 and rev_core_arr[self.start_index] == 0.0)
+
+        if self.engine_props['guard_slots'] == 0:
+            tmp_end_index = self.end_index + 1
         else:
-            if self.engine_props['guard_slots'] == 0:
-                tmp_end_index = self.end_index + 1
-            else:
-                tmp_end_index = self.end_index
+            tmp_end_index = self.end_index
 
-            spectrum_set = core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
-            rev_spectrum_set = rev_core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
+        spectrum_set = core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
+        rev_spectrum_set = rev_core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
 
-        if set(spectrum_set) == {} or set(rev_spectrum_set) == {}:
+        if set(spectrum_set) == {} or set(rev_spectrum_set) == {}:  # pylint: disable=use-implicit-booleaness-not-comparison
             raise ValueError('Spectrum set cannot be empty.')
 
-        if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
+        if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}: # pylint: disable=use-implicit-booleaness-not-comparison
             return True
 
         return False

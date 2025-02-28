@@ -52,11 +52,11 @@ class Engine:
                 "is_sliced": sdn_props.is_sliced,
                 "was_routed": sdn_props.was_routed,
                 "core_list": sdn_props.core_list,
-                "start_slot_list":sdn_props.start_slot_list,
-                "end_slot_list":sdn_props.end_slot_list,
-                "bandwidth_list": sdn_props.bandwidth_list,
-                # TODO: Update
                 "band": sdn_props.band_list,
+                "start_slot_list": sdn_props.start_slot_list,
+                "end_slot_list": sdn_props.end_slot_list,
+                "bandwidth_list": sdn_props.bandwidth_list,
+                "snr_cost": sdn_props.xt_list,
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -72,7 +72,7 @@ class Engine:
         :param force_core: Force a certain core for allocation.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            # TODO: This should be changed in reqs_dict eventually
+            # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
                 req_key = 'mod_formats_dict'
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
@@ -91,7 +91,7 @@ class Engine:
         :param curr_time: The arrival time of the request.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            # TODO: This should be changed in reqs_dict eventually
+            # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
                 req_key = 'mod_formats_dict'
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
@@ -111,7 +111,8 @@ class Engine:
         self.net_spec_dict = {}
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
 
-        # TODO: Improve this
+        # TODO: (drl_path_agents) This list should be stored somewhere else, like an arguments script
+        self.engine_props['band_list'] = list()
         for band in ['c', 'l', 's', 'o', 'e']:
             try:
                 if self.engine_props[f'{band}_band']:
@@ -125,7 +126,7 @@ class Engine:
 
             cores_matrix = dict()
             for band in self.engine_props['band_list']:
-                # TODO: We might want to name it the same thing
+                # TODO: This variable name for bands changes and is not consistent
                 band_slots = self.engine_props[f'{band}_band']
                 cores_matrix[band] = np.zeros((link_data['fiber']['num_cores'], band_slots))
 
@@ -144,8 +145,7 @@ class Engine:
 
         :param seed: The seed to use for the random generation.
         """
-        # TODO: Needs to be a flag for artificial intelligence (especially RL) simulations
-        # seed = 0
+        # TODO: (drl_path_agent) Add a flag for AI simulations which want to have a constant seed
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
@@ -196,10 +196,10 @@ class Engine:
         if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
             self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
-        if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == self.engine_props['max_iters']:
+        if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == \
+                self.engine_props['max_iters']:
             self.stats_obj.save_stats(base_fp=base_fp)
 
-        
         return resp
 
     def init_iter(self, iteration: int):
@@ -232,21 +232,54 @@ class Engine:
 
     def run(self):
         """
-        Controls the Engine class methods.
+        Runs the simulation by creating the topology, processing requests,
+        and sending iteration-based updates to the parent's queue.
+
+        We do not produce a local fraction. Instead, each iteration => done_units += 1,
+        which we push to the parent's queue. If done_offset is given, we start from that offset.
         """
         self.create_topology()
-        for iteration in range(self.engine_props["max_iters"]):
+
+        max_iters = self.engine_props["max_iters"]
+        progress_queue = self.engine_props.get('progress_queue')
+        thread_num = self.engine_props.get('thread_num', 'unknown')
+
+        # The total # of iteration units in this process
+        my_iteration_units = self.engine_props.get('my_iteration_units', max_iters)
+        # The offset for if we've completed some from previous Erlangs in the same process
+        done_offset = self.engine_props.get('done_offset', 0)
+
+        # Start from done_offset
+        done_units = done_offset
+
+        print(f"[Engine] thread={thread_num}, offset={done_offset}, "
+              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}")
+
+        for iteration in range(max_iters):
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
                 self.handle_request(curr_time=curr_time, req_num=req_num)
-
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
                     req_num += 1
 
             end_iter = self.end_iter(iteration=iteration)
+
+            done_units += 1  # finished another iteration
+            if progress_queue:
+                progress_queue.put((thread_num, done_units))
+
+            print(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}")
+
+            import time
+            time.sleep(0.2)
+
             if end_iter:
                 break
 
-        print(f"Erlang: {self.engine_props['erlang']} finished for "
-              f"simulation number: {self.engine_props['thread_num']}.")
+        print(
+            f"Simulation finished for Erlang: {self.engine_props['erlang']} "
+            f"finished for simulation number: {thread_num}."
+        )
+
+        return done_units

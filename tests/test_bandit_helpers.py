@@ -1,3 +1,5 @@
+# pylint: disable=protected-access
+
 import unittest
 from unittest.mock import patch, mock_open, MagicMock
 import os
@@ -145,15 +147,26 @@ class TestEpsilonGreedyBandit(unittest.TestCase):
         """
         bandit = self.create_bandit(is_path=True)
         state_action_pair = (0, 0)
-        action = bandit._get_action(state_action_pair=state_action_pair)  # pylint: disable=protected-access
 
-        self.assertEqual(action, 0)
+        bandit.epsilon = 0.5
+        bandit.n_arms = 5
+        bandit.values = {state_action_pair: [0, 1, 2, 3, 4]}
+
+        with patch('numpy.random.rand', return_value=0.6):
+            action = bandit._get_action(state_action_pair=state_action_pair)
+            self.assertEqual(action, 4)
+
+        with patch('numpy.random.rand', return_value=0.4):
+            with patch('numpy.random.randint', return_value=2):
+                action = bandit._get_action(state_action_pair=state_action_pair)
+                self.assertEqual(action, 2)
 
     def test_select_path_arm(self):
         """
         Test the select_path_arm method.
         """
         bandit = self.create_bandit(is_path=True)
+        bandit.epsilon = 0.0
         action = bandit.select_path_arm(source=0, dest=0)
 
         self.assertEqual(action, 0)

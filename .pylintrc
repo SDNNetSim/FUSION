@@ -165,6 +165,7 @@ disable=raw-checker-failed,
         redefined-outer-name,
         missing-module-docstring,
         unsubscriptable-object,
+        use-implicit-booleaness-not-comparison
 
 
 # Enable the message, report, category or checker with the given id(s). You can

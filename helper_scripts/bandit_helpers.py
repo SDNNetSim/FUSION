@@ -56,7 +56,7 @@ def save_model(iteration: int, algorithm: str, self: object):
     """
     max_iters = self.engine_props['max_iters']
     rewards_matrix = self.props.rewards_matrix
-    # TODO: Add save every 'x' iters to the configuration file (It's now 50)
+    # TODO: (drl_path_agents) Hard coded to save every 50 iterations, should be in the configuration file
     if (iteration in (max_iters - 1, (max_iters - 1) % 50)) and \
             (len(self.props.rewards_matrix[iteration]) == self.engine_props['num_requests']):
         rewards_matrix = np.array(rewards_matrix)
@@ -146,7 +146,7 @@ class EpsilonGreedyBandit:
         else:
             self.n_arms = engine_props['cores_per_link']
 
-        self.epsilon = engine_props['epsilon_start']
+        self.epsilon = None
         self.num_nodes = rl_props.num_nodes
         self.counts, self.values = get_q_table(self=self)  # Amount of times an action has been taken and every V(s,a)
 
@@ -194,7 +194,7 @@ class EpsilonGreedyBandit:
         :param reward: Reward received from R(s, a).
         :param iteration: Current episode or iteration.
         """
-        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy')
+        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy_bandit')
 
 
 class UCBBandit:

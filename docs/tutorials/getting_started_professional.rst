@@ -4,7 +4,7 @@ Getting Started for Professionals
 Running a Simulation
 --------------------
 
-Welcome to the Software Defined Elastic Optical Networking Simulator! In this tutorial, we'll guide you through the
+Welcome to the Flexible Unified System for Intelligent Optical Networking! In this tutorial, we'll guide you through the
 process of running your first simulations and visualizing the results.
 
 Go to the following path ``ini`` > ``example_ini``. There are two files that can be modified to your needs. Pick one of

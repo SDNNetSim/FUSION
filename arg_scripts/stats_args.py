@@ -13,6 +13,7 @@ class StatsProps:
         self.block_bw_dict = dict()  # Block per bandwidth
         self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}  # Block reasons
         self.sim_block_list = list()  # List of blocking probabilities per simulation
+        self.sim_br_block_list = list()  # List of blocking probabilities per simulation
         self.trans_list = list()  # List of transponders used per simulation
         self.hops_list = list()  # Average hops per simulation
         self.lengths_list = list()  # Average lengths per simulation

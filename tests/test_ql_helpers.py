@@ -26,7 +26,11 @@ class TestQLearningHelpers(unittest.TestCase):
             'date': '2023-08-12',
             'sim_start': 'start_time',
             'erlang': 10,
-            'is_training': True
+            'is_training': True,
+            'alpha_start': 0.5,
+            'alpha_end': 0.02,
+            'epsilon_update': 'linear_decay',
+            'alpha_update': 'linear_decay',
         }
 
         # Add nodes and edges to the topology to avoid NodeNotFound error
@@ -51,32 +55,11 @@ class TestQLearningHelpers(unittest.TestCase):
             self.assertIsInstance(self.q_learning_helpers.props.cores_matrix, np.ndarray)
             mock_init_q_tables.assert_called_once()
 
-    def test_decay_epsilon(self):
-        """Test the decay_epsilon method with a single decay step."""
-        # Set initial conditions
-        self.q_learning_helpers.props.epsilon = 1.0  # Starting epsilon
-        self.q_learning_helpers.iteration = 0  # Start at the first iteration
-
-        # Calculate the expected epsilon after one decay
-        decay_rate = (self.engine_props['epsilon_start'] - self.engine_props['epsilon_end']) / self.engine_props[
-            'max_iters']
-        expected_epsilon = 1.0 - decay_rate  # Expected epsilon after one decay step
-
-        # Perform the epsilon decay
-        self.q_learning_helpers.decay_epsilon()
-
-        # Assert that the actual epsilon matches the expected epsilon
-        self.assertAlmostEqual(self.q_learning_helpers.props.epsilon, expected_epsilon, places=7)
-
-        # Test that epsilon below 0.0 raises ValueError
-        self.q_learning_helpers.props.epsilon = -0.1
-        with self.assertRaises(ValueError):
-            self.q_learning_helpers.decay_epsilon()
-
     def test_update_routes_matrix(self):
         """Test the update_routes_matrix method."""
         # Initialize the environment to ensure routes_matrix is set up
         self.q_learning_helpers.setup_env()
+        self.q_learning_helpers.learn_rate = 0.5
 
         reward = 10.0
         level_index = 0
@@ -114,6 +97,7 @@ class TestQLearningHelpers(unittest.TestCase):
         """Test the update_cores_matrix method."""
         # Initialize the environment to ensure cores_matrix is set up
         self.q_learning_helpers.setup_env()
+        self.q_learning_helpers.learn_rate = 0.5
 
         reward = 15.0
         core_index = 1
@@ -145,7 +129,7 @@ class TestQLearningHelpers(unittest.TestCase):
         self.q_learning_helpers.save_model(path_algorithm=path_algorithm, core_algorithm=core_algorithm)
 
         # Verify that the directory creation function was called
-        save_dir = os.path.join('logs', 'ql', self.engine_props['network'], self.engine_props['date'],
+        save_dir = os.path.join('logs', 'q_learning', self.engine_props['network'], self.engine_props['date'],
                                 self.engine_props['sim_start'])
         mock_create_dir.assert_called_once_with(file_path=save_dir)
 

@@ -1,6 +1,6 @@
 import math
-
-from arg_scripts.data_args import YUE_MOD_ASSUMPTIONS, ARASH_MOD_ASSUMPTIONS
+import json
+import os
 
 
 def create_pt(cores_per_link: int, net_spec_dict: dict):
@@ -38,23 +38,32 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
             'span_length': 100,
         }
         topology_dict['links'][link_num] = link_props_dict
-
     return topology_dict
 
 
-def create_bw_info(sim_type: str):
+def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
     """
     Determines reach and slots needed for each bandwidth and modulation format.
 
-    :param sim_type: Controls which assumptions to be used.
+    :param mod_assumption: Controls which assumptions to be used.
+    :param mod_assumptions_path: Path to modulation assumptions file.
     :return: The number of spectral slots needed for each bandwidth and modulation format pair.
     :rtype: dict
     """
-    if sim_type == 'yue':
-        bw_mod_dict = YUE_MOD_ASSUMPTIONS
-    elif sim_type == 'arash':
-        bw_mod_dict = ARASH_MOD_ASSUMPTIONS
-    else:
-        raise NotImplementedError(f"Invalid simulation type '{sim_type}'")
+    if mod_assumptions_path is None or mod_assumptions_path == 'None':
+        base_fp = os.path.join('data', 'json_input', 'run_mods')
+        mod_assumptions_path = os.path.join(base_fp, 'mod_formats.json')
 
-    return bw_mod_dict
+    try:
+        mod_assumptions_path = os.path.join(mod_assumptions_path)
+        with open(mod_assumptions_path, 'r', encoding='utf-8') as mod_assumptions_fp:
+            mod_formats_obj = json.load(mod_assumptions_fp)
+
+        if mod_assumption in mod_formats_obj.keys():
+            return mod_formats_obj[mod_assumption]
+    except json.JSONDecodeError as json_decode_error:
+        raise FileExistsError(f"Could not parse: {json_decode_error.doc}")  # pylint: disable=raise-missing-from
+    except FileNotFoundError as file_not_found:
+        raise FileNotFoundError(f"Could not find: {file_not_found.strerror}: {file_not_found.filename}") # pylint: disable=raise-missing-from
+
+    raise NotImplementedError(f"Unknown modulation assumption '{mod_assumption}'")

@@ -3,7 +3,7 @@ Getting Started for Students
 
 Running Your First Simulation
 -----------------------------
-Welcome to the Software Defined Elastic Optical Networking Simulator! In this tutorial, we'll guide you through the
+Welcome to the Flexible Unified System for Intelligent Optical Networking! In this tutorial, we'll guide you through the
 process of running your first simulations and visualizing the results.
 
 Note: make sure you have the most updated version by running ``git fetch``.

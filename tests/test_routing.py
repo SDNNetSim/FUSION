@@ -22,7 +22,9 @@ class TestRouting(unittest.TestCase):
             'k_paths': 2,
             'xt_type': 'with_length',
             'beta': 0.5,
-            'route_method': 'k_shortest_path'
+            'route_method': 'k_shortest_path',
+            'pre_calc_mod_selection': False,
+            'network': 'USbackbone60',
         }
         self.engine_props['topology'].add_edge('A', 'B', weight=1, xt_cost=10, length=1)
         self.engine_props['topology'].add_edge('B', 'C', weight=1, xt_cost=5, length=1)
@@ -45,6 +47,22 @@ class TestRouting(unittest.TestCase):
         self.sdn_props.bandwidth = '50GHz'
 
         self.route_props = RoutingProps()
+        self.route_props.loaded_data_dict_mock = [
+            [
+                None,  # Placeholder for irrelevant indices
+                None,
+                None,
+                [[np.float64(10)]],  # Path lengths for index 3
+                [None],  # Placeholder for irrelevant indices (index 4)
+                [
+                    [
+                        [  # src_dest_index = 5
+                            [1, 2, 3, 4],  # First valid path
+                        ]
+                    ]
+                ],
+            ]
+        ]
 
         self.instance = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         self.instance.route_props = self.route_props
@@ -138,6 +156,83 @@ class TestRouting(unittest.TestCase):
             for link_list in list(self.sdn_props.net_spec_dict.keys())[::2]:
                 source, destination = link_list
                 self.assertIn('xt_cost', self.sdn_props.topology[source][destination], "XT cost not set for link")
+
+    def test_load_k_shortest_success(self):
+        """
+        Test the successful loading of k-shortest paths from a file.
+        """
+        self.engine_props['k_paths'] = 2  # Set k-paths to test with
+        self.sdn_props.source = '1'
+        self.sdn_props.destination = '4'
+
+        # Mock mod_formats_dict
+        self.sdn_props.mod_formats_dict = {
+            'QPSK': {'max_length': 10},
+            '16-QAM': {'max_length': 20},
+            '64-QAM': {'max_length': 30}
+        }
+
+        # Mock sort_nested_dict_vals
+        with patch('helper_scripts.sim_helpers.sort_nested_dict_vals', return_value={
+            '64-QAM': {'max_length': 30},
+            '16-QAM': {'max_length': 20},
+            'QPSK': {'max_length': 10}
+        }):
+            # Mock np.load to return the mock loaded_data_dict
+            with patch('numpy.load', return_value=self.route_props.loaded_data_dict_mock):
+                self.instance.load_k_shortest()
+
+                # Verify that paths_matrix has been populated correctly
+                expected_paths = [['1', '2', '3', '4']]
+                expected_weights = [10]
+
+                self.assertEqual(len(self.instance.route_props.paths_matrix), 1)
+                self.assertEqual(self.instance.route_props.paths_matrix, expected_paths)
+                self.assertEqual(self.instance.route_props.weights_list[:1], expected_weights)
+
+                # Verify modulation formats were added in reverse order
+                expected_mod_formats = ['64-QAM', '16-QAM', 'QPSK']
+                self.assertGreater(len(self.instance.route_props.mod_formats_matrix[0]), 0)
+                self.assertEqual(
+                    self.instance.route_props.mod_formats_matrix[0],
+                    expected_mod_formats
+                )
+
+    def test_load_k_shortest_no_matching_paths(self):
+        """
+        Test load_k_shortest when there are no matching paths for the source and destination.
+        """
+        self.engine_props['k_paths'] = 2  # Set k-paths to test with
+        self.sdn_props.source = '5'
+        self.sdn_props.destination = '6'
+
+        # Reuse mock loaded_data_dict from context
+        with patch('numpy.load', return_value=self.route_props.loaded_data_dict_mock):
+            self.instance.load_k_shortest()
+
+            # Verify that no paths were added
+            self.assertEqual(len(self.instance.route_props.paths_matrix), 0)
+            self.assertEqual(len(self.instance.route_props.weights_list), 0)
+
+    def test_load_k_shortest_partial_match(self):
+        """
+        Test load_k_shortest when only partial matching paths exist.
+        """
+        self.engine_props['k_paths'] = 2  # Set k-paths to test with
+        self.sdn_props.source = '1'
+        self.sdn_props.destination = '4'
+
+        # Reuse mock loaded_data_dict from context
+        with patch('numpy.load', return_value=self.route_props.loaded_data_dict_mock):
+            self.instance.load_k_shortest()
+
+            # Verify that only the matching path was added
+            expected_paths = [['1', '2', '3', '4']]
+            expected_weights = [10]
+
+            self.assertEqual(len(self.instance.route_props.paths_matrix), 1)
+            self.assertEqual(self.instance.route_props.paths_matrix, expected_paths)
+            self.assertEqual(self.instance.route_props.weights_list[:1], expected_weights)
 
 
 if __name__ == '__main__':

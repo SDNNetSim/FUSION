@@ -47,6 +47,7 @@ class TestSnrMeasurements(unittest.TestCase):
             }
         }
 
+        self.route_props = {'connection_index': 0}
         self.spectrum_props = MagicMock()
         self.spectrum_props.path_list = ['A', 'B', 'C']
         self.spectrum_props.start_slot = 10
@@ -58,7 +59,8 @@ class TestSnrMeasurements(unittest.TestCase):
         self.snr_measurements = SnrMeasurements(
             engine_props=self.engine_props,
             sdn_props=self.sdn_props,
-            spectrum_props=self.spectrum_props
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props
         )
 
     def test_calculate_sci_psd(self):

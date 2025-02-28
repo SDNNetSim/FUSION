@@ -7,6 +7,7 @@ class SDNProps:
 
     def __init__(self):
         self.path_list = None  # List of nodes for the current request
+        self.path_index = None  # Index of selected path in the computed path set
         self.was_routed = None  # Flag to determine successful route
         self.topology = None  # Networkx topology
         self.net_spec_dict = None  # Current network spectrum database
@@ -20,8 +21,8 @@ class SDNProps:
         self.core_list = []  # List of cores used (typically for light-segment slicing)
         self.band_list = []  # List of bands used (typically for light-segment slicing)
         self.xt_list = []  # List of crosstalk calculations for a single request
-        self.start_slot_list = [] # List of allocated start slot  index for slicing approach
-        self.end_slot_list = [] # List of allocated end slot  index for slicing approach
+        self.start_slot_list = []  # List of allocated start slot  index for slicing approach
+        self.end_slot_list = []  # List of allocated end slot  index for slicing approach
         self.num_trans = None  # Number of transponders a single request has used
         self.arrive = None  # Arrival time for a single request
         self.depart = None  # Departure time for a single request
@@ -30,9 +31,9 @@ class SDNProps:
         self.single_core = False  # Whether to force single-core
         self.block_reason = None  # Reason for blocking a request
         self.mod_formats_dict = None  # List of valid modulation formats for this bandwidth
-        
 
-        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list', 'band_list', 'start_slot_list', 'end_slot_list']  # Statistical keys used to save results
+        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list', 'band_list', 'start_slot_list',
+                              'end_slot_list']  # Statistical keys used to save results
 
     def update_params(self, key: str, spectrum_key: str, spectrum_obj: object, value: int = None):
         """
@@ -65,7 +66,6 @@ class SDNProps:
         self.start_slot_list = list()
         self.end_slot_list = list()
 
-    # TODO: Update standards and guidelines, this should be a standardized function name.
     def get_data(self, key: str):
         """
         Retrieve a property of the object.

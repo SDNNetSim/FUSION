@@ -1,6 +1,7 @@
 import os
 import copy
 import subprocess
+import optuna
 
 from torch import nn  # pylint: disable=unused-import
 import gymnasium as gym
@@ -13,11 +14,17 @@ from helper_scripts.rl_setup_helpers import setup_rl_sim, print_info, setup_ppo
 from helper_scripts.setup_helpers import create_input, save_input
 from helper_scripts.rl_helpers import RLHelpers
 from helper_scripts.callback_helpers import GetModelParams
-from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod
+from helper_scripts.sim_helpers import get_start_time, find_path_len, get_path_mod, modify_multiple_json_values
+from helper_scripts.sim_helpers import get_arrival_rates, run_simulation_for_arrival_rates, save_study_results
 from helper_scripts.multi_agent_helpers import PathAgent, CoreAgent, SpectrumAgent
 from arg_scripts.rl_args import RLProps, LOCAL_RL_COMMANDS_LIST, VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
-from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS
+from arg_scripts.rl_args import VALID_SPECTRUM_ALGORITHMS, get_optuna_hyperparams
 
+
+# TODO: (drl_path_agents) No support for core or spectrum assignment
+# TODO: (drl_path_agents) Does not support multi-band
+# TODO: (drl_path_agents) Result verification for 5.1.1, if it's the same as before
+# TODO: This should become 2 files most likely...(drl_path_agents)
 
 class SimEnv(gym.Env):  # pylint: disable=abstract-method
     """
@@ -46,7 +53,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.engine_obj = None
         self.route_obj = None
 
-        # TODO: Change all inputs to account for the new object
+        # TODO: (drl_path_agents) Change all inputs to account for the new object
         self.rl_help_obj = RLHelpers(rl_props=self.rl_props, engine_obj=self.engine_obj, route_obj=self.route_obj)
         self._setup_agents()
 
@@ -90,7 +97,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             self.rl_help_obj.rl_props.forced_index = None
 
-        # TODO: Definitely make sure this is a pointer (comparing results)
         self.rl_help_obj.rl_props = self.rl_props
         self.rl_help_obj.engine_obj = self.engine_obj
         self.rl_help_obj.handle_releases()
@@ -153,7 +159,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.route_obj.get_route()
 
         self.path_agent.get_route(route_obj=self.route_obj)
-        # TODO: Update to chosen path list, be very careful as this affects results easily for the agents if done wrong
         self.rl_help_obj.rl_props.chosen_path_list = [self.rl_props.chosen_path_list]
         self.route_obj.route_props.paths_matrix = self.rl_help_obj.rl_props.chosen_path_list
         self.rl_props.core_index = None
@@ -185,7 +190,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self._determine_core_penalty()
 
         self.rl_props.forced_index = None
-        # TODO: Check to make sure this doesn't affect anything
+        # TODO: (drl_path_agents) Check to make sure this doesn't affect anything
         # try:
         #     req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
         # except IndexError:
@@ -197,7 +202,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj.sdn_props = self.rl_props.mock_sdn_dict
         self.route_obj.engine_props['route_method'] = 'shortest_path'
         self.route_obj.get_route()
-        # TODO: Change name in rl props eventually
+        # TODO: (drl_path_agents) Change name in rl props
         self.rl_props.paths_list = self.route_obj.route_props.paths_matrix
         self.rl_props.chosen_path = self.route_obj.route_props.paths_matrix
         self.rl_props.path_index = 0
@@ -223,7 +228,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         return path_mod
 
-    # fixme
+    # fixme (drl_path_agents)
     def _get_spectrum_obs(self, curr_req: dict):  # pylint: disable=unused-argument
         # path_mod = self._handle_test_train_obs(curr_req=curr_req)
         # if path_mod is not False:
@@ -258,6 +263,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.destination = int(curr_req['destination'])
         self.rl_props.mock_sdn_dict = self.rl_help_obj.update_mock_sdn(curr_req=curr_req)
 
+        # TODO: (drl_path_agents) This is for spectrum assignment, ignored return for now
+        _ = self._handle_test_train_obs(curr_req=curr_req)
         slots_needed, source_obs, dest_obs, super_channels = self._get_spectrum_obs(curr_req=curr_req)
         obs_dict = {
             'slots_needed': slots_needed,
@@ -279,7 +286,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     def _create_input(self):
         base_fp = os.path.join('data')
         self.sim_dict['thread_num'] = 's1'
-        # fixme
+        # fixme (drl_path_agents)
         # Added only for structure consistency
         # time.sleep(20)
         get_start_time(sim_dict={'s1': self.sim_dict})
@@ -289,7 +296,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.route_obj = Routing(engine_props=self.engine_obj.engine_props,
                                  sdn_props=self.rl_props.mock_sdn_dict)
 
-        # fixme
+        # fixme (drl_path_agents)
         # time.sleep(30)
         self.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_dict)
         self.modified_props = copy.deepcopy(self.sim_props)
@@ -303,7 +310,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         save_input(base_fp=base_fp, properties=self.modified_props, file_name=file_name,
                    data_dict=self.modified_props)
 
-    # TODO: Options to have select AI agents
+    # TODO: Options to have select AI agents (drl_path_agents)
     def _load_models(self):
         self.path_agent.engine_props = self.engine_obj.engine_props
         self.path_agent.rl_props = self.rl_props
@@ -322,16 +329,17 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.optimize = self.sim_dict['optimize']
         self.rl_props.k_paths = self.sim_dict['k_paths']
         self.rl_props.cores_per_link = self.sim_dict['cores_per_link']
-        self.rl_props.spectral_slots = self.sim_dict['spectral_slots']
+        # TODO: Only support for 'c' band...Maybe add multi-band (drl_path_agents)
+        self.rl_props.spectral_slots = self.sim_dict['c_band']
 
         self._create_input()
 
-        # fixme
-        try:
-            start_arr_rate = float(self.sim_dict['arrival_rate']['start'])
-        except TypeError:
-            start_arr_rate = self.sim_dict['arrival_rate'] / self.sim_dict['cores_per_link']
-
+        self.sim_dict['arrival_dict'] = {
+            'start': self.sim_dict['arrival_start'],
+            'stop': self.sim_dict['arrival_stop'],
+            'step': self.sim_dict['arrival_step'],
+        }
+        start_arr_rate = float(self.sim_dict['arrival_start'])
         self.engine_obj.engine_props['erlang'] = start_arr_rate / self.sim_dict['holding_time']
         self.engine_obj.engine_props['arrival_rate'] = start_arr_rate * self.sim_dict['cores_per_link']
 
@@ -362,7 +370,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.arrival_list = list()
         self.rl_props.depart_list = list()
 
-        if self.optimize or self.optimize is None:
+        # TODO: fixme statement breaks for DRL (drl_path_agents)
+        if self.optimize is None:
             self.iteration = 0
             self.setup()
 
@@ -370,7 +379,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         if not self.sim_dict['is_training'] and self.iteration == 0:
             self._load_models()
         if seed is None:
-            # fixme
+            # fixme (drl_path_agents)
             # seed = self.iteration + 1
             seed = 0
 
@@ -387,7 +396,7 @@ def _run_iters(env: object, sim_dict: dict, is_training: bool, model=None):
         if is_training:
             obs, _, is_terminated, is_truncated, _ = env.step([0])
         else:
-            # TODO: Implement
+            # TODO: Implement (drl_path_agents)
             action, _states = model.predict(obs)
             # action = [0]
             obs, _, is_terminated, is_truncated, _ = env.step(action)
@@ -425,7 +434,7 @@ def _get_trained_model(env: object, sim_dict: dict):
 
 
 def _run_rl_zoo(sim_dict: dict):
-    # TODO: Detect if working locally or on the cluster
+    # TODO: Detect if working locally or on the cluster (drl_path_agents)
     for command in LOCAL_RL_COMMANDS_LIST:
         subprocess.run(command, shell=True, check=True)
 
@@ -439,7 +448,7 @@ def _run_rl_zoo(sim_dict: dict):
 def _run_testing(env: object, sim_dict: dict):
     model = _get_trained_model(env=env, sim_dict=sim_dict)
     _run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
-    # TODO: Hard coded
+    # fixme: Hard coded (drl_path_agents)
     save_fp = os.path.join('logs', 'ppo', env.modified_props['network'], env.modified_props['date'],
                            env.modified_props['sim_start'], 'ppo_model.zip')
     model.save(save_fp)
@@ -472,14 +481,61 @@ def _run(env: object, sim_dict: dict):
         _run_testing(sim_dict=sim_dict, env=env)
 
 
+# fixme: Saves extra input directory (drl_path_agents)
+# fixme: Saves to second traffic volume file (400 to 500) (drl_path_agents)
 def run_rl_sim():
     """
-    The main function that controls reinforcement learning simulations.
+    The main function that controls reinforcement learning simulations, including hyperparameter optimization.
     """
+
+    def objective(trial: optuna.Trial):
+        """
+        Objective function for Optuna, used to optimize hyperparameters during simulations.
+
+        :param trial: The Optuna trial object used to suggest hyperparameters.
+        :return: The mean of total rewards from all simulations.
+        :rtype: float
+        """
+        callback = GetModelParams()
+        env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
+        env.sim_dict['callback'] = callback
+
+        hyperparam_dict = get_optuna_hyperparams(sim_dict=env.sim_dict, trial=trial)
+        update_list = list()
+        for param, value in hyperparam_dict.items():
+            if param not in env.sim_dict:
+                raise NotImplementedError(f'Param: {param} does not exist in simulation dictionary.')
+            env.sim_dict[param] = value
+            update_list.append((param, value))
+
+        # Overrides the previous input file
+        file_path = os.path.join('data', 'input', env.sim_dict['network'], env.sim_dict['date'],
+                                 env.sim_dict['sim_start'], 'sim_input_s1.json')
+        modify_multiple_json_values(file_path=file_path, update_list=update_list)
+
+        arrival_list = get_arrival_rates(arrival_dict=env.sim_dict['arrival_dict'])
+        mean_reward = run_simulation_for_arrival_rates(env=env, arrival_list=arrival_list, run_func=_run)
+        trial.set_user_attr("sim_start_time", env.sim_dict['sim_start'])
+
+        return mean_reward
+
     callback = GetModelParams()
     env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
     env.sim_dict['callback'] = callback
-    _run(env=env, sim_dict=env.sim_dict)
+
+    if not env.sim_dict['optimize']:
+        _run(env=env, sim_dict=env.sim_dict)
+    else:
+        study_name = "hyperparam_study.pkl"
+        study = optuna.create_study(direction='maximize', study_name=study_name)
+        n_trials = env.sim_dict['n_trials']
+        study.optimize(objective, n_trials=n_trials)
+
+        best_trial = study.best_trial
+        best_reward = best_trial.value
+        best_start_time = best_trial.user_attrs.get("sim_start_time")
+        best_params = study.best_params
+        save_study_results(study, env, study_name, best_params, best_reward, best_start_time)
 
 
 if __name__ == '__main__':

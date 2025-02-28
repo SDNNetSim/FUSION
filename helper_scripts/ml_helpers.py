@@ -18,7 +18,7 @@ def _plot_pie(input_df: pd.DataFrame, erlang: float, save_fp: str):
         plt.figure(figsize=(6, 6), dpi=300)
         counts = input_df[column].value_counts()
         input_df[column].value_counts().plot(kind='pie', autopct=lambda p: f'{p:.1f}%',
-                                       textprops={'color': 'white', 'weight': 'bold'})
+                                             textprops={'color': 'white', 'weight': 'bold'})
         plt.title(f'Pie Chart for {column} - Erlang {erlang}', weight='bold')
 
         # Create custom labels for the legend

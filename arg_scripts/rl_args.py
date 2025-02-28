@@ -1,4 +1,37 @@
 # pylint: disable=too-few-public-methods
+import optuna
+
+
+# TODO: (drl_path_agents) Support only for path selection for all functions
+# TODO: (drl_path_agents) UCB Bandit 'c' variable is a constant
+def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
+    """
+    Suggests hyperparameters for the Optuna trial.
+    """
+    resp_dict = dict()
+
+    # There is no alpha in bandit algorithms
+    if 'bandit' not in sim_dict['path_algorithm']:
+        resp_dict['alpha_start'] = trial.suggest_float('alpha_start', low=0.01, high=0.5, log=False, step=0.01)
+        resp_dict['alpha_end'] = trial.suggest_float('alpha_end', low=0.01, high=0.1, log=False, step=0.01)
+    else:
+        resp_dict['alpha_start'], resp_dict['alpha_end'] = None, None
+
+    resp_dict['epsilon_start'] = trial.suggest_float('epsilon_start', low=0.01, high=0.5, log=False, step=0.01)
+    resp_dict['epsilon_end'] = trial.suggest_float('epsilon_end', low=0.01, high=0.1, log=False, step=0.01)
+
+    if 'q_learning' in (sim_dict['path_algorithm']):
+        resp_dict['discount_factor'] = trial.suggest_float('discount_factor', low=0.8, high=1.0, step=0.01)
+    else:
+        resp_dict['discount_factor'] = None
+
+    if 'exp_decay' in (sim_dict['epsilon_update'], sim_dict['alpha_update']):
+        resp_dict['decay_rate'] = trial.suggest_float('decay_rate', low=0.1, high=0.5, step=0.01)
+    else:
+        resp_dict['decay_rate'] = None
+
+    return resp_dict
+
 
 class RLProps:
     """
@@ -62,7 +95,8 @@ class QProps:
         # All important parameters to be saved in a QL simulation run
         self.save_params_dict = {
             'q_params_list': ['rewards_dict', 'errors_dict', 'epsilon_list', 'sum_rewards_dict', 'sum_errors_dict'],
-            'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'learn_rate', 'discount_factor']
+            'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'alpha_start', 'alpha_end',
+                                   'discount_factor', 'epsilon_update', 'alpha_update']
         }
 
     def get_data(self, key: str):
@@ -95,7 +129,7 @@ class BanditProps:
         return f"BanditProps({self.__dict__})"
 
 
-# TODO: Add support for deep reinforcement learning agent
+# TODO: (drl_path_agents) Add support for DRL agents
 class PPOProps:
     """
     Not implemented at this time.
@@ -121,7 +155,7 @@ VALID_SPECTRUM_ALGORITHMS = [
     'a2c',
 ]
 
-# TODO: Detect if running on Unity cluster or locally
+# TODO: (drl_path_agents) Detect if running on Unity cluster or locally
 LOCAL_RL_COMMANDS_LIST = [
     # 'rm -rf venvs/unity_venv/venv',
     # 'module load python/3.11.0',

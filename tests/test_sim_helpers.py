@@ -1,9 +1,10 @@
 # pylint: disable=too-many-public-methods
 
 import unittest
+import os
 import copy
 from datetime import datetime
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 
 import networkx as nx
 import numpy as np
@@ -14,7 +15,8 @@ from helper_scripts.sim_helpers import (
     find_free_channels, find_taken_channels, snake_to_title, int_to_string,
     dict_to_list, list_to_title, calc_matrix_stats, combine_and_one_hot,
     get_start_time, find_core_cong, find_core_frag_cong, min_max_scale,
-    get_super_channels, get_hfrag, classify_cong, parse_yaml_file
+    get_super_channels, get_hfrag, classify_cong, parse_yaml_file, get_arrival_rates,
+    run_simulation_for_arrival_rates, save_study_results, modify_multiple_json_values
 )
 
 
@@ -293,6 +295,84 @@ class TestSimHelpers(unittest.TestCase):
 
         mock_open_file.assert_called_once_with(yaml_file, "r", encoding='utf-8')
         mock_yaml_load.assert_called_once()
+
+    def test_get_arrival_rates(self):
+        """Test generating a list of arrival rates from a configuration dictionary."""
+        arrival_dict = {'start': 10, 'stop': 50, 'step': 10}
+        expected_arrival_rates = [10, 20, 30, 40, 50]
+        result = get_arrival_rates(arrival_dict)
+        self.assertEqual(result, expected_arrival_rates)
+
+    @patch('helper_scripts.sim_helpers.run_simulation_for_arrival_rates')
+    def test_run_simulation_for_arrival_rates(self, mock_run_func):
+        """Test running the simulation for each arrival rate."""
+
+        class MockEnv:  # pylint: disable=too-few-public-methods
+            """ Mock and environment. """
+
+            def __init__(self):
+                self.engine_obj = MagicMock()
+                self.engine_obj.engine_props = {}
+                self.sim_dict = {'holding_time': 2, 'cores_per_link': 4}
+                self.path_agent = MagicMock()
+                self.path_agent.reward_penalty_list = [10, -5, 15]
+
+        env = MockEnv()
+        arrival_list = [10, 20, 30]
+        expected_mean_reward = np.mean([np.sum(env.path_agent.reward_penalty_list)] * len(arrival_list))
+
+        result = run_simulation_for_arrival_rates(env, arrival_list, mock_run_func)
+        self.assertAlmostEqual(result, expected_mean_reward, places=5)
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    @patch('pickle.dump')
+    def test_save_study_results(self, mock_pickle_dump, mock_makedirs, mock_open_file):
+        """Test saving the study results."""
+
+        class MockEnv:  # pylint: disable=too-few-public-methods
+            """ Mock an environment. """
+
+            def __init__(self):
+                self.engine_obj = MagicMock()
+                self.engine_obj.engine_props = {
+                    'network': 'test_network',
+                    'date': '2025-01-01',
+                    'sim_start': '12:00:00',
+                    'path_algorithm': 'q_learning'
+                }
+
+        env = MockEnv()
+        study = MagicMock()
+        best_params = {'param1': 0.5, 'param2': 10}
+        best_reward = 100.0
+        start_time = '2025-01-01 12:00:00'
+        study_name = 'test_study'
+
+        save_study_results(study, env, study_name, best_params, best_reward, start_time)
+        mock_makedirs.assert_called_once_with(
+            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01', '12:00:00'), exist_ok=True
+        )
+        mock_pickle_dump.assert_called_once()
+        mock_open_file.assert_any_call(
+            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01', '12:00:00', 'best_hyperparams.txt'),
+            'w',
+            encoding='utf-8'
+        )
+
+    @patch('json.load', return_value={'key1': 'value1', 'key2': 'value2'})
+    @patch('json.dump')
+    @patch('builtins.open', new_callable=mock_open)
+    def test_modify_multiple_json_values(self, mock_open_file, mock_json_dump, mock_json_load): # pylint: disable=unused-argument
+        """Test modifying multiple JSON values."""
+        file_path = 'test.json'
+        update_list = [('key1', 'new_value1'), ('key2', 'new_value2')]
+
+        modify_multiple_json_values(file_path, update_list)
+        mock_open_file.assert_called_with(file_path, 'w', encoding='utf-8')
+        mock_json_dump.assert_called_once_with(
+            {'key1': 'new_value1', 'key2': 'new_value2'}, mock_open_file(), indent=4
+        )
 
 
 if __name__ == '__main__':

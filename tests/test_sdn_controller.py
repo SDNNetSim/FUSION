@@ -55,7 +55,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.spectrum_obj.spectrum_props.end_slot = 3
         self.controller.spectrum_obj.spectrum_props.core_num = 0
         self.controller.spectrum_obj.spectrum_props.curr_band = 'c'
-        self.controller.engine_props['guard_slots'] = True
+        self.controller.engine_props['guard_slots'] = 1
         self.controller.allocate()
 
         for link in zip(self.controller.sdn_props.path_list, self.controller.sdn_props.path_list[1:]):
@@ -125,6 +125,109 @@ class TestSDNController(unittest.TestCase):
 
         mock_allocate.assert_called_once()
         self.assertTrue(self.controller.sdn_props.was_routed)
+
+    def test_allocate_without_guard_band(self):
+        """
+        Test the allocate method when no guard band is present.
+        """
+        self.controller.spectrum_obj.spectrum_props.start_slot = 0
+        self.controller.spectrum_obj.spectrum_props.end_slot = 2
+        self.controller.spectrum_obj.spectrum_props.core_num = 0
+        self.controller.spectrum_obj.spectrum_props.curr_band = 'c'
+        self.controller.engine_props['guard_slots'] = 0
+
+        # Perform allocation
+        self.controller.allocate()
+
+        for link in zip(self.controller.sdn_props.path_list, self.controller.sdn_props.path_list[1:]):
+            core_matrix = self.controller.sdn_props.net_spec_dict[link]['cores_matrix']['c'][0]
+
+            # Check allocation
+            self.assertTrue(np.all(core_matrix[:3] == self.controller.sdn_props.req_id),
+                            "Request not properly allocated")
+
+            # Ensure no guard band is allocated
+            self.assertNotIn(self.controller.sdn_props.req_id * -1, core_matrix,
+                             "Guard band should not be allocated.")
+
+    def test_handle_dynamic_slicing_success(self):
+        """
+        Test _handle_dynamic_slicing for a successful allocation scenario.
+        """
+        self.controller.sdn_props.bandwidth = '100'
+        self.controller.engine_props['mod_per_bw'] = {
+            '50': {'QPSK': {'max_length': 100}},
+            '100': {'16QAM': {'max_length': 200}}
+        }
+        self.controller.engine_props['fixed_grid'] = True
+        self.controller.engine_props['topology'] = {
+            ('A', 'B'): {'length': 50},
+            ('B', 'C'): {'length': 50}
+        }
+        self.controller.sdn_props.path_list = ['A', 'B', 'C']
+        self.controller.sdn_props.num_trans = 0
+
+        # Set spectrum to free
+        self.controller.spectrum_obj.spectrum_props.is_free = True
+
+        with patch('src.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
+                   return_value=('16QAM', 50)) as mock_get_spectrum, \
+                patch.object(self.controller, 'allocate') as mock_allocate, \
+                patch.object(self.controller, '_update_req_stats') as mock_update_stats, \
+                patch('src.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
+            self.controller._handle_dynamic_slicing(path_list=['A', 'B', 'C'], path_index=0, forced_segments=1)
+
+            # Verify methods were called
+            mock_get_spectrum.assert_called()
+            mock_allocate.assert_called()
+            mock_update_stats.assert_called_with(bandwidth='50')
+            mock_find_path_len.assert_called_with(path_list=['A', 'B', 'C'],
+                                                  topology=self.controller.engine_props['topology'])
+
+            # TODO: Forced segments isn't used in dynamic slicing?
+            self.assertEqual(self.controller.sdn_props.num_trans, 2)
+            self.assertTrue(self.controller.sdn_props.is_sliced)
+
+    def test_handle_dynamic_slicing_congestion(self):
+        """
+        Test _handle_dynamic_slicing for a congestion scenario.
+        """
+        self.controller.sdn_props.bandwidth = '100'
+        self.controller.engine_props['mod_per_bw'] = {
+            '50': {'QPSK': {'max_length': 100}},
+            '100': {'16QAM': {'max_length': 200}}
+        }
+        self.controller.engine_props['fixed_grid'] = True
+        self.controller.engine_props['topology'] = {
+            ('A', 'B'): {'length': 50},
+            ('B', 'C'): {'length': 50}
+        }
+        self.controller.sdn_props.path_list = ['A', 'B', 'C']
+        self.controller.sdn_props.num_trans = 0
+
+        with patch('src.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
+                   return_value=('16QAM', 50)) as mock_get_spectrum, \
+                patch.object(self.controller, 'allocate') as mock_allocate, \
+                patch('src.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
+            # Use the real _handle_congestion function
+            with patch.object(self.controller, '_handle_congestion',
+                              wraps=self.controller._handle_congestion) as mock_handle_congestion:
+                # Simulate no free spectrum
+                self.controller.spectrum_obj.spectrum_props.is_free = False
+
+                self.controller._handle_dynamic_slicing(path_list=['A', 'B', 'C'], path_index=0, forced_segments=1)
+
+                # Verify methods were called
+                mock_get_spectrum.assert_called()
+                mock_handle_congestion.assert_called_with(remaining_bw=100)
+                mock_allocate.assert_not_called()
+                mock_find_path_len.assert_called_with(path_list=['A', 'B', 'C'],
+                                                      topology=self.controller.engine_props['topology'])
+
+                # Verify properties were updated
+                self.assertFalse(self.controller.sdn_props.was_routed)
+                self.assertEqual(self.controller.sdn_props.block_reason, 'congestion')
+                self.assertFalse(self.controller.sdn_props.is_sliced)
 
 
 if __name__ == '__main__':

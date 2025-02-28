@@ -3,14 +3,11 @@ import copy
 import os
 
 
-# TODO: Update standards and guidelines to say we should use classes and the must end with 'Props' or 'Args'
 class PlotProps:
     """
     Properties used in the main plot_stats.py script.
     """
 
-    # TODO: Add commenting these to the standards and guidelines
-    # TODO: Also, double check standards and guidelines for the 'props' section
     def __init__(self):
         self.sims_info_dict = None  # Contains all necessary information for each simulation run to be plotted
         self.plot_dict = None  # Contains only information related to plotting for each simulation run
@@ -50,7 +47,8 @@ class PlotArgs:
         self.cong_block_list = []  # Percentage of blocking due to a congestion constraint
         self.holding_time = None  # Holding time for the simulation run
         self.cores_per_link = None  # Number of cores per link
-        self.spectral_slots = None  # Spectral slots per core
+        # TODO: (drl_path_agents) Does not support all bands, check on this
+        self.c_band = None  # Spectral slots per core for the c-band
         self.learn_rate = None  # For artificial intelligence (AI), learning rate used if any
         self.discount_factor = None  # For AI, discount factor used if any
 
@@ -59,8 +57,26 @@ class PlotArgs:
         self.sum_errors_list = []  # For RL, sum of errors per episode
         self.epsilon_list = []  # For RL, decay of epsilon w.r.t. each episode
 
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, key)
+        except AttributeError as exc:
+            raise KeyError(f'{key} not found') from exc
+
+    def __delitem__(self, key):
+        try:
+            delattr(self, key)
+        except AttributeError as exc:
+            raise KeyError(f"'{key}' not found") from exc
+
+    def __contains__(self, key):
+        return hasattr(self, key)
+
     @staticmethod
-    def update_info_dict(plot_props: dict, input_dict: dict, info_item_list: list, time: str, sim_num: str):
+    def update_info_dict(plot_props: PlotProps, input_dict: dict, info_item_list: list, time: str, sim_num: str):
         """
         Updates various items in the plot dictionary.
 

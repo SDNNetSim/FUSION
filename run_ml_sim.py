@@ -113,9 +113,9 @@ def _setup_ml_sim():
     :return: The simulation input parameters.
     :rtype: dict
     """
-    args_obj = parse_args()
+    args_dict = parse_args()
     config_path = os.path.join('ini', 'run_ini', 'config.ini')
-    sim_dict = read_config(args_obj=args_obj, config_path=config_path)
+    sim_dict = read_config(args_dict=args_dict, config_path=config_path)
 
     return sim_dict
 

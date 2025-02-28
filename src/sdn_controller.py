@@ -58,8 +58,7 @@ class SDNController:
         band = self.spectrum_obj.spectrum_props.curr_band
 
         if self.engine_props['guard_slots'] != 0:
-            if self.spectrum_obj.spectrum_props.slots_needed != 1:
-                end_slot = end_slot - 1
+            end_slot = end_slot - 1
         else:
             end_slot += 1
 
@@ -151,34 +150,52 @@ class SDNController:
 
             self.sdn_props.is_sliced = False
 
-    def _handle_dynamic_slicing(self, path_list: list, path_index: int, forced_segments: int ):
+    def _handle_congestion(self, remaining_bw):
+        """
+        Handles the case where allocation fails due to congestion.
+        """
+        self.sdn_props.was_routed = False
+        self.sdn_props.block_reason = 'congestion'
+        self.sdn_props.num_trans = 1
+
+        if remaining_bw != int(self.sdn_props.bandwidth):
+            self.release()
+
+        self.sdn_props.is_sliced = False
+
+    def _handle_dynamic_slicing(self, path_list: list, path_index: int,
+                                forced_segments: int):  # pylint: disable=unused-argument
+        """
+        Handles dynamic slicing for a network request.
+        """
         remaining_bw = int(self.sdn_props.bandwidth)
-        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
-        bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+        # TODO: Ignored?
+        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])  # pylint: disable=unused-variable
+        bw_mod_dict = sort_dict_keys(self.engine_props['mod_per_bw'])  # pylint: disable=unused-variable
+
         self.spectrum_obj.spectrum_props.path_list = path_list
+        self.sdn_props.num_trans = 0
+
         while remaining_bw > 0:
-            if self.engine_props['fixed_grid']:
-                self.sdn_props.was_routed = True
-                mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_list = [], path_index = path_index)
-                if self.spectrum_obj.spectrum_props.is_free:
-                    self.allocate()
-                    dedicated_bw = bw if remaining_bw > bw else remaining_bw
-                    self._update_req_stats(bandwidth=str(dedicated_bw))
-                    remaining_bw -= bw
-                    self.sdn_props.is_sliced = True
-                else:
-                    self.sdn_props.was_routed = False
-                    self.sdn_props.block_reason = 'congestion'
-                    if remaining_bw != int(self.sdn_props.bandwidth):
-                        self.release()
-                    self.sdn_props.is_sliced = False
-                    break
+            if not self.engine_props['fixed_grid']:
+                raise NotImplementedError("Dynamic slicing for non-fixed grid is not implemented.")
+
+            # TODO: Mod format list ignored?
+            self.sdn_props.was_routed = True
+            _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
+                mod_format_list=[], path_index=path_index
+            )
+
+            if self.spectrum_obj.spectrum_props.is_free:
+                self.allocate()
+                dedicated_bw = min(bandwidth, remaining_bw)
+                self._update_req_stats(bandwidth=str(dedicated_bw))
+                remaining_bw -= bandwidth
+                self.sdn_props.num_trans += 1
+                self.sdn_props.is_sliced = True
             else:
-                # mod_format = get_path_mod(mods_dict=mods_dict, path_len=path_len)
-                # TODO: develop dynamic slicing to flexigrid 
-                raise NotImplementedError("TO BE DEVELOPED")
-                bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
-                
+                self._handle_congestion(remaining_bw=remaining_bw)
+                break
 
     def _init_req_stats(self):
         self.sdn_props.bandwidth_list = list()
@@ -215,17 +232,19 @@ class SDNController:
             route_matrix = self.route_obj.route_props.paths_matrix
         else:
             route_matrix = force_route_matrix
-            # TODO: This is an inconsistency
+            # TODO: (drl_path_agents) This is an inconsistency when forcing a modulation format
             self.route_obj.route_props.mod_formats_matrix = [force_mod_format]
-            # TODO: This must be fixed
+            # fixme (drl_path_agents)
             self.route_obj.route_props.weights_list = [0]
         route_time = time.time() - start_time
 
         segment_slicing = False
-        while True:
+        # TODO: Improve SDN controller's structure
+        while True:  # pylint: disable=too-many-nested-blocks
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     self.sdn_props.path_list = path_list
+                    self.sdn_props.path_index = path_index
                     mod_format_list = self.route_obj.route_props.mod_formats_matrix[path_index]
 
                     if ml_model is not None:
@@ -239,7 +258,8 @@ class SDNController:
                     if segment_slicing or force_slicing or forced_segments > 1:
                         force_slicing = True
                         if self.engine_props['dynamic_lps']:
-                            self._handle_dynamic_slicing(path_list= path_list, path_index= path_index, forced_segments= force_slicing )
+                            self._handle_dynamic_slicing(path_list=path_list, path_index=path_index,
+                                                         forced_segments=force_slicing)
                             if not self.sdn_props.was_routed:
                                 continue
                         else:
@@ -252,7 +272,7 @@ class SDNController:
                         self.spectrum_obj.spectrum_props.forced_core = force_core
                         self.spectrum_obj.spectrum_props.path_list = path_list
                         self.spectrum_obj.spectrum_props.forced_band = forced_band
-                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, path_index = path_index)
+                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props.is_free is not True:
                             self.sdn_props.block_reason = 'congestion'

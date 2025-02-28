@@ -1,3 +1,5 @@
+import os
+
 import networkx as nx
 import numpy as np
 
@@ -117,14 +119,15 @@ class Routing:
                 break
             path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
             chosen_bw = self.sdn_props.bandwidth
-            if self.engine_props['pre_calc_mod_selection']:
-                mod_formats = [get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)]
+            if not self.engine_props['pre_calc_mod_selection']:
+                mod_formats_list = [
+                    get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)]
             else:
                 mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
-                                                    nested_key='max_length')
-                mod_formats = list(mod_formats_dict.keys())
+                                                         nested_key='max_length')
+                mod_formats_list = list(mod_formats_dict.keys())
             self.route_props.paths_matrix.append(path_list)
-            self.route_props.mod_formats_matrix.append(mod_formats)
+            self.route_props.mod_formats_matrix.append(mod_formats_list)
             self.route_props.weights_list.append(path_len)
 
     def find_least_nli(self):
@@ -183,50 +186,57 @@ class Routing:
         self.route_props.paths_matrix = list()
         self.route_props.mod_formats_matrix = list()
         self.route_props.weights_list = list()
-        self.route_props.connection_index = list()
-        self.route_props.path_index = list()
+        self.route_props.path_index_list = list()
+        self.route_props.connection_index = None
 
+    # TODO: Put all pre-loaded stuff in a JSON or similar file structure
     def load_k_shortest(self):
         """
         Load the k-shortest paths from an external file.
         """
-        loaded_data_dict = np.load('USB6014-10SP.npy', allow_pickle=True)
+        base_path = os.path.join('data', 'pre_calc', self.engine_props['network'], 'paths')
+
+        if self.engine_props['network'] == 'USbackbone60':
+            file_path = os.path.join(base_path, 'USB6014-10SP.npy')
+            loaded_data_dict = np.load(file_path, allow_pickle=True)
+        elif self.engine_props['network'] == 'Spainbackbone30':
+            file_path = os.path.join(base_path, 'SPNB3014-10SP.npy')
+            loaded_data_dict = np.load(file_path, allow_pickle=True)
+        else:
+            raise ValueError(f"Missing precalculated path dataset for '{self.engine_props['network']}' topology")
         src_des_list = [int(self.sdn_props.source), int(self.sdn_props.destination)]
-        
+
         path_cnt = 0
-        for item in loaded_data_dict:
-            cnt = 0
-            first_element = item[5][0][0][0][0]
-            last_element = item[5][0][0][0][-1]
-            if first_element in src_des_list and last_element in src_des_list:
-                self.route_props.connection_index.append(path_cnt)
-                for path in item[5][0]:
-                    if cnt == 3:
+        for pre_comp_matrix in loaded_data_dict:
+            paths_calculated = 0
+            src_dest_index = 5
+            first_node = pre_comp_matrix[src_dest_index][0][0][0][0]
+            last_node = pre_comp_matrix[src_dest_index][0][0][0][-1]
+            if first_node in src_des_list and last_node in src_des_list:
+                self.route_props.connection_index = path_cnt
+                for path in pre_comp_matrix[5][0]:
+                    if paths_calculated == self.engine_props['k_paths']:
                         break
-                    if first_element == int(self.sdn_props.source):
+                    if first_node == int(self.sdn_props.source):
                         temp_path = list(path[0])
                     else:
                         temp_path = list(path[0][::-1])
 
-                    
                     temp_path = list(map(str, temp_path))
-                    path_len1 = find_path_len(path_list=temp_path, topology=self.engine_props['topology'])
-                    path_len = item[3][0][cnt]
+                    path_len = pre_comp_matrix[3][0][paths_calculated]
+                    if path_len.dtype != np.float64:
+                        path_len = path_len.astype(np.float64)
                     mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
-                                                    nested_key='max_length')
-                    mod_formats = list(mod_formats_dict.keys())
+                                                             nested_key='max_length')
+                    mod_formats_list = list(mod_formats_dict.keys())
                     self.route_props.paths_matrix.append(temp_path)
-                    self.route_props.mod_formats_matrix.append(mod_formats[::-1])
+                    self.route_props.mod_formats_matrix.append(mod_formats_list[::-1])
                     self.route_props.weights_list.append(path_len)
-                    self.route_props.path_index.append(cnt)
+                    self.route_props.path_index_list.append(paths_calculated)
 
-                    cnt += 1
+                    paths_calculated += 1
                 break
             path_cnt += 1
-
-                
-
-
 
     def get_route(self):
         """

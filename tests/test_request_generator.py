@@ -11,7 +11,9 @@ class TestGetRequests(unittest.TestCase):
     def setUp(self):
         self.seed = 12345
 
+        # TODO: Write a test for 'core nodes', we should only use these nodes
         self.engine_props = {
+            'core_nodes': ['A', 'B'],
             'topology_info': {
                 'nodes': {'A': {}, 'B': {}, 'C': {}},  # Example nodes
             },
@@ -27,6 +29,7 @@ class TestGetRequests(unittest.TestCase):
             'arrival_rate': 1.0,
             'holding_time': 2.0,
             'sim_type': 'default',  # Adjust as needed
+            'is_only_core_node': True
         }
 
     def test_requests_length(self):

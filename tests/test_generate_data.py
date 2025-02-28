@@ -1,8 +1,8 @@
 import unittest
 import json
+import os
 from unittest.mock import mock_open, patch
 
-from arg_scripts.data_args import YUE_MOD_ASSUMPTIONS, ARASH_MOD_ASSUMPTIONS
 from data_scripts.generate_data import create_pt, create_bw_info
 
 
@@ -84,31 +84,36 @@ class TestGenerateData(unittest.TestCase):
             check_top_dict['links'][int(link_num)] = data_dict
         self.assertEqual(topology_dict, check_top_dict)
 
-    def test_create_bw_info_yue(self):
+    def test_create_bw_info_example_mod_a(self):
         """
         Tests creating Yue's bandwidth assumptions.
         """
-        sim_type = 'yue'
-        expected_bw_mod_dict = YUE_MOD_ASSUMPTIONS
-        bw_mod_dict = create_bw_info(sim_type)
-        self.assertEqual(bw_mod_dict, expected_bw_mod_dict)
+        mod_assumption = 'example_mod_a'
+        input_mod_format = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
+        with open(input_mod_format, 'r', encoding='utf-8') as mod_format_obj:
+            expected_bw_mod_dict = json.load(mod_format_obj)
+        bw_mod_dict = create_bw_info(mod_assumption, input_mod_format)
+        self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
-    def test_create_bw_info_arash(self):
+    def test_create_bw_info_example_mod_b(self):
         """
         Tests creating Arash's bandwidth assumptions.
         """
-        sim_type = 'arash'
-        expected_bw_mod_dict = ARASH_MOD_ASSUMPTIONS
-        bw_mod_dict = create_bw_info(sim_type)
-        self.assertEqual(bw_mod_dict, expected_bw_mod_dict)
+        mod_assumption = 'example_mod_b'
+        input_mod_format = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
+        with open(input_mod_format, 'r', encoding='utf-8') as mod_format_obj:
+            expected_bw_mod_dict = json.load(mod_format_obj)
+        bw_mod_dict = create_bw_info(mod_assumption, input_mod_format)
+        self.assertEqual(bw_mod_dict, expected_bw_mod_dict[mod_assumption])
 
     def test_create_bw_info_invalid(self):
         """
         Tests an invalid bandwidth assumption.
         """
-        sim_type = 'invalid'
+        mod_assumption = 'invalid'
+        mod_assumption_path = os.path.join('tests', 'fixtures', 'test_mod_formats.json')
         with self.assertRaises(NotImplementedError):
-            create_bw_info(sim_type)
+            create_bw_info(mod_assumption, mod_assumption_path)
 
 
 if __name__ == '__main__':
