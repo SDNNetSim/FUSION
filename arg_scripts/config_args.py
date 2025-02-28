@@ -70,6 +70,7 @@ ARASH_REQUIRED_OPTIONS = {
         'transponder_usage_per_node': str_to_bool,
         'blocking_type_ci': str_to_bool,
         'fragmentation_metrics': ast.literal_eval,
+        'frag_calc_step': int,
     },
     'topology_settings': {
         'network': str,
@@ -241,6 +242,7 @@ COMMAND_LINE_PARAMS = [
     ['transponder_usage_per_node', bool, ''],
     ['blocking_type_ci', bool, ''],
     ['fragmentation_metrics', list, ''],
+    ['frag_calc_step', int, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
