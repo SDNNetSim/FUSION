@@ -607,6 +607,33 @@ def get_entropy_frag(spectral_slots: dict, net_spec_dict: dict):
     return frag_results
 
 
+
+def average_bandwidth_usage(bw_dict, departure_time):
+        
+        sorted_times = sorted(bw_dict.keys())
+
+        total_bw_time = 0  
+        total_time = 0      
+
+        for i in range(len(sorted_times)):
+            start_time = sorted_times[i]
+            bw = bw_dict[start_time]
+
+
+            if i < len(sorted_times) - 1:
+                end_time = sorted_times[i + 1]
+            else:
+                end_time = departure_time  
+
+            duration = end_time - start_time  
+            total_bw_time += bw * duration
+            total_time += duration
+
+        resp = round(total_bw_time / total_time, 2) if total_time > 0 else 0
+        return resp
+    
+
+
 def classify_cong(curr_cong: float):
     """
     Classifies congestion percentages to 'levels'.
