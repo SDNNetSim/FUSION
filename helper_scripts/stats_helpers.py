@@ -355,7 +355,6 @@ class SimStats:
                                 'max': max(data_list)
                             }
         self.stats_props.sim_lp_utilization_list.append(self.stats_props.lp_bw_utilization_dict["overall"]["mean"])
-        print("here")
         
 
 
