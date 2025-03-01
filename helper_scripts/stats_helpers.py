@@ -144,6 +144,17 @@ class SimStats:
             for req_cnt in range(self.engine_props['frag_calc_step'], self.engine_props['num_requests'] + 1, self.engine_props['frag_calc_step']):
                 self.stats_props.frag_dict[method][req_cnt] = {"arrival": {}, "release": {}}
 
+
+    def _init_lp_bw_utilization_dict(self):
+        for bandwidth, obj in self.engine_props['mod_per_bw'].items():
+            self.stats_props.lp_bw_utilization_dict[bandwidth] = dict()
+            for band in self.engine_props['band_list']:
+                self.stats_props.lp_bw_utilization_dict[bandwidth][band] = {}
+                for core_num in range(self.engine_props['cores_per_link']):
+                    self.stats_props.lp_bw_utilization_dict[bandwidth][band][core_num] = []
+        self.stats_props.lp_bw_utilization_dict["overall"] = []
+
+
     def _init_stat_dicts(self):
         for stat_key, data_type in vars(self.stats_props).items():
             if not isinstance(data_type, dict):
@@ -152,6 +163,8 @@ class SimStats:
                 self._init_mods_weights_bws()
             elif stat_key in ('frag_dict'):
                 self._init_frag_vlaue_dict()
+            elif stat_key == 'lp_bw_utilization_dict':
+                self._init_lp_bw_utilization_dict()
             elif stat_key == 'snapshots_dict':
                 if self.engine_props['save_snapshots']:
                     self._init_snapshots()
@@ -235,6 +248,13 @@ class SimStats:
             if method == 'entropy' and req_id in self.stats_props.frag_dict[method]:
                 self.stats_props.frag_dict[method][req_id][req_type] = get_entropy_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict)
 
+
+    def update_utilization_dict(self, utilization_dict: dict):
+        for lp_id in utilization_dict:
+            self.stats_props.lp_bw_utilization_dict[str(utilization_dict[lp_id]["bit_rate"])][utilization_dict[lp_id]["band"]][utilization_dict[lp_id]["core"]].append(utilization_dict[lp_id]["utilization"])
+            self.stats_props.lp_bw_utilization_dict["overall"].append(utilization_dict[lp_id]["utilization"])
+
+
     def iter_update(self, req_data: dict, sdn_data: object, net_spec_dict: dict):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
@@ -300,6 +320,42 @@ class SimStats:
                         deviation = stdev(data_list)
                     mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}
+                    
+        for bw, bw_obj in self.stats_props.lp_bw_utilization_dict.items():
+            if bw == 'overall':
+                if len(bw_obj) == 0:
+                    self.stats_props.lp_bw_utilization_dict[bw] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                else:
+                    if len(bw_obj) == 1:
+                        deviation = 0.0
+                    else:
+                        deviation = stdev(bw_obj)
+
+                    self.stats_props.lp_bw_utilization_dict[bw] = {
+                        'mean': round(mean(bw_obj), 2), 
+                        'std': round(deviation, 2),
+                        'min': min(bw_obj), 
+                        'max': max(bw_obj)
+                    }
+            else:
+                for band, band_obj in bw_obj.items():
+                    for core, data_list in band_obj.items():
+                        if len(data_list) == 0:
+                            band_obj[core] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                        else:
+                            if len(data_list) == 1:
+                                deviation = 0.0
+                            else:
+                                deviation = stdev(data_list)
+
+                            band_obj[core] = {
+                                'mean': round(mean(data_list), 2),
+                                'std': round(deviation, 2),
+                                'min': min(data_list),
+                                'max': max(data_list)
+                            }
+        self.stats_props.sim_lp_utilization_list.append(self.stats_props.lp_bw_utilization_dict["overall"]["mean"])
+        print("here")
         
 
 
@@ -423,6 +479,7 @@ class SimStats:
         self.save_dict['ci_rate_bit_rate_block'] = self.bit_rate_block_ci
         self.save_dict['ci_percent_bit_rate_block'] = self.bit_rate_block_ci_percent   
         self.save_dict['total_transponder_usage']  = round(float(mean(self.stats_props.total_transponder_usage_list)),2)
+        self.save_dict["lightpath_utilization"] = mean(self.stats_props.sim_lp_utilization_list)
 
         self.save_dict['iter_stats'][self.iteration] = dict()
         for stat_key in vars(self.stats_props).keys():
