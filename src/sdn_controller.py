@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len, sort_nested_dict_vals
+from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len, sort_nested_dict_vals, average_bandwidth_usage
 from helper_scripts.ml_helpers import get_ml_obs
 from arg_scripts.sdn_args import SDNProps
 from src.routing import Routing
@@ -57,6 +57,13 @@ class SDNController:
         
 
             light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
+            # TODO: save it in stats 
+            average_bw_usage = average_bandwidth_usage(bw_dict = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['time_bw_usage'], departure_time = self.sdn_props.depart)
+            
+            self.sdn_props.lp_bw_utilization_dict.update({lightpath_id:{"band":  self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['band'], 
+                                                                        "core": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]["core"], 
+                                                                        "bit_rate": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['lightpath_bandwidth'], 
+                                                                        "utilization": average_bw_usage}})
             if self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['requests_dict'] and self.engine_props['is_grooming_enabled']:
                 raise ValueError('The releasing lightpath are currently using')
             self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
