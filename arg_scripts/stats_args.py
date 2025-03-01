@@ -12,6 +12,7 @@ class StatsProps:
         self.mods_used_dict = dict()  # Modulations used in simulation(s)
         self.block_bw_dict = dict()  # Block per bandwidth
         self.frag_dict = dict() # Track of different fragmentation metrics
+        self.lp_bw_utilization_dict = dict() # Average lightpath bandwidth utilization
         self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}  # Block reasons
         self.sim_block_list = list()  # List of blocking probabilities per simulation
         self.sim_br_block_list = list()  # List of bit rate blocking probabilities per simulation
@@ -26,6 +27,7 @@ class StatsProps:
         self.modulation_list = list() # Tracks the modulation
         self.bandwidth_list = list() # # Tracks the bandwidth
         self.total_transponder_usage_list = list() # Tracks of total transponder
+        self.sim_lp_utilization_list = list() # Track of lightpath utilization
 
     def __repr__(self):
         return f"StatsProps({self.__dict__})"
