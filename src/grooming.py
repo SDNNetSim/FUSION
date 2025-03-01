@@ -55,6 +55,8 @@ class Grooming:
                         self.sdn_props.is_sliced = True
                     self.sdn_props.lightpath_status_dict[light_id][lp_id]["requests_dict"].update({self.sdn_props.req_id:tmp_remaining_bw})
                     self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"] -= tmp_remaining_bw
+                    lp_usage = (1-(self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"]/self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth']))
+                    self.sdn_props.lightpath_status_dict[light_id][lp_id]["time_bw_usage"].update({self.sdn_props.arrive: lp_usage * 100})
                     self.sdn_props.bandwidth_list.append(str(tmp_remaining_bw))
                     self.sdn_props.core_list.append(self.sdn_props.lightpath_status_dict[light_id][lp_id]["core"])
                     self.sdn_props.band_list.append(self.sdn_props.lightpath_status_dict[light_id][lp_id]["band"])
@@ -98,6 +100,9 @@ class Grooming:
             self.sdn_props.lightpath_bandwidth_list.pop(index)
             if self.sdn_props.lightpath_status_dict[light_id][lp_id]['remaining_bandwidth'] == self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth'] :
                 release_lp.append(lp_id)
+            else:
+                lp_usage = (1-(self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"]/self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth']))
+                self.sdn_props.lightpath_status_dict[light_id][lp_id]["time_bw_usage"].update({self.sdn_props.depart: lp_usage * 100})
         return release_lp
 
     def handle_grooming(self, request_type):
