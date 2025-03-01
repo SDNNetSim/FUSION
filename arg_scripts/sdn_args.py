@@ -16,6 +16,7 @@ class SDNProps:
         self.net_spec_dict = None  # Current network spectrum database
         self.lightpath_status_dict = None # Current lightpath status
         self.transponder_usage_dict = None # Transponder usage status per node
+        self.lp_bw_utilization_dict = None # average lightpath utilization over time
 
         self.req_id = None  # Current request ID number
         self.source = None  # Source node
@@ -68,6 +69,7 @@ class SDNProps:
         """
         Reset select lists used to track statistics.
         """
+        self.lp_bw_utilization_dict = dict()
         self.modulation_list = list()
         self.xt_list = list()
         self.core_list = list()
