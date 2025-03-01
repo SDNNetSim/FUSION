@@ -86,6 +86,7 @@ class Engine:
                     "lightpath_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt], # TODO: check
                     "remaining_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt] - int(sdn_props.bandwidth_list[lp_cnt]),
                     'requests_dict':{self.reqs_dict[curr_time]['req_id']: int(sdn_props.bandwidth_list[lp_cnt])},
+                    'time_bw_usage':{sdn_props.arrive: (int(sdn_props.bandwidth_list[lp_cnt])/sdn_props.lightpath_bandwidth_list[lp_cnt])*100},
                 }
             for node in [sdn_props.source, sdn_props.destination]:
 
@@ -163,6 +164,7 @@ class Engine:
             self.update_release_param(curr_time)
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
             self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
+            self.stats_obj.update_utilization_dict(self.sdn_obj.sdn_props.lp_bw_utilization_dict)
             self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
             self.lightpath_status_dict = self.sdn_obj.sdn_props.lightpath_status_dict
             self.transponder_usage_dict = self.sdn_obj.sdn_props.transponder_usage_dict
