@@ -28,126 +28,126 @@ YUE_MOD_ASSUMPTIONS = {
 #             "64-QAM": {"max_length": 219, "slots_needed": 4}}
 # }
 
-# ARASH_MOD_ASSUMPTIONS = {
-#     "100": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "200": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "300": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "400": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "500": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "600": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "700": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     },
-#     "800": {
-#         "BPSK": {"max_length": 40660, "slots_needed": 1},
-#         "QPSK": {"max_length": 40670, "slots_needed": 1},
-#         "8-QAM": {"max_length": 40800, "slots_needed": 1},
-#         "16-QAM": {"max_length": 41000, "slots_needed": 1},
-#         "32-QAM": {"max_length": 41210, "slots_needed": 1},
-#         "64-QAM": {"max_length": 41460, "slots_needed": 1}
-#     }
-# }
+ARASH_MOD_ASSUMPTIONS = {
+    "100": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "200": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "300": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "400": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "500": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "600": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "700": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670 , "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    },
+    "800": {
+        "BPSK": {"max_length": 41460, "slots_needed": 1},
+        "QPSK": {"max_length": 41210, "slots_needed": 1},
+        "8-QAM": {"max_length": 41000, "slots_needed": 1},
+        "16-QAM": {"max_length": 40800, "slots_needed": 1},
+        "32-QAM": {"max_length": 40670, "slots_needed": 1},
+        "64-QAM": {"max_length": 40660, "slots_needed": 1}
+    }
+}
 
 
-ARASH_MOD_ASSUMPTIONS = {'100': {'BPSK': {'max_length': 40660, 'slots_needed': 4},
-                                'QPSK': {'max_length': 40670, 'slots_needed': 3},
-                                '8-QAM': {'max_length': 40800, 'slots_needed': 3},
-                                '16-QAM': {'max_length': 41000, 'slots_needed': 3},
-                                '32-QAM': {'max_length': 41210, 'slots_needed': 3},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 3}},
-                        '200': {         
-                                'BPSK': {'max_length': 40660, 'slots_needed': 8},
-                                'QPSK': {'max_length': 40670, 'slots_needed': 4},
-                                '8-QAM': {'max_length': 40800, 'slots_needed': 3},
-                                '16-QAM': {'max_length': 41000, 'slots_needed': 3},
-                                '32-QAM': {'max_length': 41210, 'slots_needed': 3},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 3}},
-                        '300': {
-                                'BPSK': {'max_length': 40660, 'slots_needed': 12},
-                                'QPSK': {'max_length': 40670, 'slots_needed': 6},
-                                '8-QAM': {'max_length': 40800, 'slots_needed': 4},
-                                '16-QAM': {'max_length': 41000, 'slots_needed': 3},
-                                '32-QAM': {'max_length': 41210, 'slots_needed': 3},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 3}},
-                        '400': {
-                                'BPSK': {'max_length': 40660, 'slots_needed': 16},
-                                'QPSK': {'max_length': 40670, 'slots_needed': 8},
-                                '8-QAM': {'max_length': 40800, 'slots_needed': 6},
-                                '16-QAM': {'max_length': 41000, 'slots_needed': 4},
-                                '32-QAM': {'max_length': 41210, 'slots_needed': 4},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 3}},
-                        '500': {         
-                                'BPSK': {'max_length': 40660, 'slots_needed': 20},
-                                'QPSK': {'max_length': 40670, 'slots_needed': 10},
-                                '8-QAM': {'max_length': 40800, 'slots_needed': 7},
-                                '16-QAM': {'max_length': 41000, 'slots_needed': 5},
-                                '32-QAM': {'max_length': 41210, 'slots_needed': 4},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 4}},
-                        '600': {
-                                'BPSK': {'max_length': 40660, 'slots_needed': 24},
-                                'QPSK': {'max_length': 40670, 'slots_needed': 12},
-                                '8-QAM': {'max_length': 40800, 'slots_needed': 8},
-                                '16-QAM': {'max_length': 41000, 'slots_needed': 6},
-                                '32-QAM': {'max_length': 41210, 'slots_needed': 5},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 4}},
-                        '700': {
-                                'BPSK': {'max_length': 41460, 'slots_needed': 28},
-                                'QPSK': {'max_length': 41460, 'slots_needed': 14},
-                                '8-QAM': {'max_length': 41460, 'slots_needed': 10},
-                                '16-QAM': {'max_length': 41460, 'slots_needed': 7},
-                                '32-QAM': {'max_length': 41460, 'slots_needed': 6},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 5}},
-                        '800': {
-                                'BPSK': {'max_length': 41460, 'slots_needed': 32},
-                                'QPSK': {'max_length': 41460, 'slots_needed': 16},
-                                '8-QAM': {'max_length': 41460, 'slots_needed': 11},
-                                '16-QAM': {'max_length': 41460, 'slots_needed': 8},
-                                '32-QAM': {'max_length': 41460, 'slots_needed': 7},
-                                '64-QAM': {'max_length': 41460, 'slots_needed': 6}}}
+# ARASH_MOD_ASSUMPTIONS = {'100': {'BPSK': {"max_length": 41460, 'slots_needed': 4},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 3},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 3},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 3},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 3},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 3}},
+#                         '200': {         
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 8},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 4},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 3},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 3},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 3},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 3}},
+#                         '300': {
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 12},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 6},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 4},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 3},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 3},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 3}},
+#                         '400': {
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 16},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 8},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 6},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 4},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 4},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 3}},
+#                         '500': {         
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 20},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 10},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 7},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 5},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 4},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 4}},
+#                         '600': {
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 24},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 12},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 8},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 6},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 5},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 4}},
+#                         '700': {
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 28},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 14},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 10},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 7},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 6},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 5}},
+#                         '800': {
+#                                 'BPSK': {"max_length": 41460, 'slots_needed': 32},
+#                                 'QPSK': {"max_length": 41210, 'slots_needed': 16},
+#                                 '8-QAM': {"max_length": 41000, 'slots_needed': 11},
+#                                 '16-QAM': {"max_length": 40800, 'slots_needed': 8},
+#                                 '32-QAM': {"max_length": 40670, 'slots_needed': 7},
+#                                 '64-QAM': {"max_length": 40660, 'slots_needed': 6}}}
