@@ -26,8 +26,12 @@ class GetModelParams(BaseCallback):
 
 
 class EpisodicRewardCallback(BaseCallback):
+    """
+    Finds rewards episodically for any DRL algorithm from SB3.
+    """
+
     def __init__(self, verbose=0):
-        super(EpisodicRewardCallback, self).__init__(verbose)
+        super(EpisodicRewardCallback, self).__init__(verbose)  # pylint: disable=super-with-arguments
         self.episode_rewards = np.array([])
         self.current_episode_reward = 0
 

@@ -1,6 +1,6 @@
-from rl_scripts.args.general_args import VALID_PATH_ALGORITHMS
-from rl_scripts.helpers.general_helpers import determine_model_type
-from rl_scripts.args.registry_args import ALGORITHM_REGISTRY
+from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS
+from reinforcement_learning.utils.general_utils import determine_model_type
+from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
 
 
 # TODO: (drl_path_agents) Only works for 's1'

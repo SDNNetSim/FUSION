@@ -1,6 +1,6 @@
 import os
 
-from rl_scripts.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
+from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 
 
 class SimEnvUtils:

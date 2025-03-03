@@ -1,6 +1,6 @@
-from rl_scripts.args.registry_args import ALGORITHM_REGISTRY
-from rl_scripts.workflow_runner import run_optuna_study, run
-from rl_scripts.utils.gym_env_util import create_environment
+from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
+from reinforcement_learning.workflow_runner import run_optuna_study, run
+from reinforcement_learning.utils.gym_envs import create_environment
 
 
 # TODO: (drl_path_agents) Put 'utils' file ending (imports) in the standards and guidelines

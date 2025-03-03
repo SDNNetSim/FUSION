@@ -22,4 +22,8 @@ SimEnv:
                   )"
   callback:
     - rl_scripts.helpers.callback_helpers.GetModelParams:
+<<<<<<< HEAD
         verbose: 1
+=======
+        verbose: 1
+>>>>>>> 1f52b86dd1dd359a55ed3e3a65460946d498524c

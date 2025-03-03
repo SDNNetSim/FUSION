@@ -1,9 +1,9 @@
 import numpy as np
 
-from rl_scripts.args.general_args import VALID_DRL_ALGORITHMS
-from rl_scripts.agents.base_agent import BaseAgent
+from reinforcement_learning.args.general_args import VALID_DRL_ALGORITHMS
+from reinforcement_learning.agents.base_agent import BaseAgent
 
-from rl_scripts.args.general_args import EPISODIC_STRATEGIES
+from reinforcement_learning.args.general_args import EPISODIC_STRATEGIES
 
 
 class PathAgent(BaseAgent):

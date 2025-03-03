@@ -1,7 +1,7 @@
-from rl_scripts.gymnasium_envs.general_sim_env import SimEnv
+from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
 
-from rl_scripts.helpers.setup_helpers import setup_rl_sim
-from rl_scripts.helpers.callback_helpers import EpisodicRewardCallback
+from reinforcement_learning.utils.setup import setup_rl_sim
+from reinforcement_learning.utils.callbacks import EpisodicRewardCallback
 
 
 def create_environment():

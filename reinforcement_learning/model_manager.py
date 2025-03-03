@@ -2,8 +2,8 @@ import os
 
 from helper_scripts.sim_helpers import parse_yaml_file
 
-from rl_scripts.helpers.general_helpers import determine_model_type
-from rl_scripts.args.registry_args import ALGORITHM_REGISTRY
+from reinforcement_learning.utils.general_utils import determine_model_type
+from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
 
 
 def get_model(sim_dict: dict, device: str, env: object):

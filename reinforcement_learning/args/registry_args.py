@@ -1,5 +1,5 @@
-from rl_scripts.helpers.setup_helpers import setup_ppo
-from rl_scripts.algorithms.ppo import PPO
+from reinforcement_learning.utils.setup import setup_ppo
+from reinforcement_learning.algorithms.ppo import PPO
 
 ALGORITHM_REGISTRY = {
     'ppo': {
