@@ -3,9 +3,9 @@
 #SBATCH -p cpu
 #SBATCH -c 1
 #SBATCH -G 0
-#SBATCH --mem=32000
-#SBATCH -t 0-5:00:00
-#SBATCH --array=0-14   # 15 traffic volumes * 4 algorithms = 60 jobs
+#SBATCH --mem=16000
+#SBATCH -t 0-0:10:00
+#SBATCH --array=0   # 15 traffic volumes * 4 algorithms = 60 jobs
 #SBATCH -o /dev/null  # Disable default SLURM output redirection
 
 # Stop the script if any command fails
