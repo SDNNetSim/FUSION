@@ -34,6 +34,7 @@ class EpisodicRewardCallback(BaseCallback):
         super(EpisodicRewardCallback, self).__init__(verbose)  # pylint: disable=super-with-arguments
         self.episode_rewards = np.array([])
         self.current_episode_reward = 0
+        self.max_iters = None
 
         self.iter = 0
 
@@ -46,6 +47,10 @@ class EpisodicRewardCallback(BaseCallback):
             self.episode_rewards = np.append(self.episode_rewards, self.current_episode_reward)
             if self.verbose:
                 print(f"Episode {len(self.episode_rewards)} finished with reward: {self.current_episode_reward}")
+                if len(self.episode_rewards) == self.max_iters:
+                    self.current_episode_reward = 0
+                    return False
+
             self.current_episode_reward = 0
 
         return True

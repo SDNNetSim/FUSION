@@ -54,6 +54,9 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     rewards_matrix = np.zeros((sim_dict['n_trials'], sim_dict['max_iters']))
     episodic_rew_arr = np.array([])
 
+    if callback_obj:
+        callback_obj.max_iters = sim_dict['max_iters']
+
     obs, _ = env.reset(seed=completed_trials)
 
     while completed_trials < sim_dict['n_trials']:

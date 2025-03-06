@@ -1,7 +1,7 @@
 SimEnv:
   normalize: false
 #  n_envs: 32
-  n_timesteps: 150000
+  n_timesteps: 25000
   policy: 'MultiInputPolicy'
   n_steps: 512
   batch_size: 128
@@ -21,9 +21,14 @@ SimEnv:
                     net_arch=dict(pi=[128,128], vf=[128,128])
                   )"
   callback:
+<<<<<<< HEAD
     - rl_scripts.helpers.callback_helpers.GetModelParams:
 <<<<<<< HEAD
         verbose: 1
 =======
         verbose: 1
 >>>>>>> 1f52b86dd1dd359a55ed3e3a65460946d498524c
+=======
+    - reinforcement_learning.utils.callbacks.GetModelParams:
+        verbose: 1
+>>>>>>> 2fefd9cb6e1093671afd8551d30b85445d76d9d5
