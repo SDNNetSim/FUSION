@@ -60,12 +60,12 @@ def main():
     averaged_state_values_by_volume = load_and_average_state_values(simulation_times, base_logs_dir, base_dir)
     memory_usage_data = load_memory_usage(simulation_times, base_logs_dir, base_dir)
 
-    # plot_blocking_probabilities(final_result)
-    # plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
-    # plot_rewards_per_seed(all_rewards_data)
-    # plot_rewards_averaged_with_variance(all_rewards_data)
+    plot_blocking_probabilities(final_result)
+    plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
+    plot_rewards_per_seed(all_rewards_data)
+    plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
-    # plot_sim_times(simulation_times, base_dir)
+    plot_sim_times(simulation_times, base_dir)
     plot_memory_usage(memory_usage_data)
 
 
