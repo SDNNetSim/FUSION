@@ -8,6 +8,7 @@ from reinforcement_learning.utils.gym_envs import create_environment
 # TODO: (drl_path_agents) Does not support multi-band
 # TODO: (drl_path_agents) Q-Learning does not save iteratively
 # TODO: (drl_path_agents) Create run mods directory and raise an error if it doesn't exist
+# TODO: (base_agent) Fix load_model function to prevent file_prefix error outiside of training
 
 def run_rl_sim():
     """
