@@ -34,7 +34,7 @@ def main():
         'not_filter_list': [
             # Example: [['config', 'exclude'], 'value_to_exclude']
             # ['penalty', -1]
-            # ['path_algorithm', 'ppo']
+            ['path_algorithm', 'ppo']
         ],
         'or_filter_list': [
             # Example: [['config', 'include'], 'desired_value']
