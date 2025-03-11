@@ -72,15 +72,26 @@ def collect_simulation_durations_for_algo(sim_list, base_dir):
 
 
 def plot_simulation_times_for_algo(durations_by_traffic, algorithm):
-    """Plot total simulation durations by traffic volume with the algorithm name in the title."""
+    """
+    Plot total simulation durations by traffic volume with the algorithm name in the title.
+    """
+    # Sort traffic volumes in numeric order and prepare data
     traffic_labels = sorted(durations_by_traffic.keys(), key=float)
     data = [durations_by_traffic[t] for t in traffic_labels]
-    plt.figure(figsize=(6, 4), dpi=200)
+
+    # Increase figure width (e.g., 8 wide, 4 tall)
+    plt.figure(figsize=(8, 4), dpi=200)
+
     plt.boxplot(data, labels=traffic_labels, showmeans=True)
     plt.xlabel("Traffic Volume")
     plt.ylabel("Time Taken (seconds)")
     plt.title(f"Simulation Duration by Traffic Volume for {algorithm}")
+
+    # Rotate the x-axis labels
+    plt.xticks(rotation=45, ha='right')
+
     plt.grid(True)
+    plt.tight_layout()  # helps avoid label clipping
     plt.show()
 
 

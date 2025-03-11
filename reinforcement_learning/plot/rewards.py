@@ -72,15 +72,19 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
     for each traffic volume (for a single algorithm) on the same plot.
     """
     for algorithm, traffic_dict in all_rewards_data.items():
-        plt.figure(figsize=(6, 4), dpi=200)
+        # Make the figure a bit taller (e.g., 8 wide, 6 tall)
+        plt.figure(figsize=(8, 6), dpi=200)
+
         for traffic_label, trial_dict in traffic_dict.items():
             all_episodes = set()
             for trial_index in trial_dict:
                 all_episodes.update(trial_dict[trial_index].keys())
             all_episodes = sorted(all_episodes)
+
             means = []
             lower_bounds = []
             upper_bounds = []
+
             for ep_idx in all_episodes:
                 trial_means = []
                 for trial_index in trial_dict:
@@ -97,18 +101,29 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
                     means.append(np.nan)
                     lower_bounds.append(np.nan)
                     upper_bounds.append(np.nan)
+
             all_episodes_arr = np.array(all_episodes)
             means = np.array(means)
             lower_bounds = np.array(lower_bounds)
             upper_bounds = np.array(upper_bounds)
+
             ci_str = compute_confidence_interval_for_traffic(trial_dict, all_episodes)
             plt.plot(all_episodes_arr, means, marker='o', label=f"Traffic: {traffic_label} {ci_str}")
             plt.fill_between(all_episodes_arr, lower_bounds, upper_bounds, alpha=0.2)
+
         plt.title(f"Averaged Rewards: {algorithm}")
         plt.xlabel("Episode (iter)")
-        plt.ylabel("Reward (mean across steps, averaged across seeds)")
-        plt.legend()
+        # Break y-axis label onto two lines to save space:
+        plt.ylabel("Reward (mean across steps,\naveraged across seeds)")
+
+        # Reduce legend text size & move it off to the right
+        plt.legend(fontsize='small',
+                   bbox_to_anchor=(1.05, 1),
+                   loc='upper left',
+                   borderaxespad=0.)
+
         plt.grid(True)
+        plt.tight_layout()  # Helps avoid clipping when legend is outside
         plt.show()
 
 
@@ -120,13 +135,23 @@ def plot_average_rewards(rewards_data):
         rewards_data (dict): Mapping from algorithm to traffic label to rewards array.
     """
     for algorithm, traffic_rewards in rewards_data.items():
-        plt.figure(figsize=(6, 4), dpi=200)
+        plt.figure(figsize=(8, 4), dpi=200)  # Wider figure for extra legend space
         for traffic_label, rewards in traffic_rewards.items():
             episodes = np.arange(len(rewards))
             plt.plot(episodes, rewards, linewidth=1.5, label=traffic_label)
+
         plt.xlabel("Number of Episodes")
         plt.ylabel("Reward")
         plt.title(f"Average Rewards for {algorithm}")
-        plt.legend(title="Traffic Volume")
+
+        # Move legend off to the right
+        plt.legend(
+            title="Traffic Volume",
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            borderaxespad=0.,
+        )
+
         plt.grid(True)
+        plt.tight_layout()  # Helps fit labels/legend
         plt.show()

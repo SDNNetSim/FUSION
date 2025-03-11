@@ -18,14 +18,14 @@ def _extract_traffic_label(sim_time_path):
     return ""
 
 
-def load_memory_usage(simulation_times, base_logs_dir, base_dir):
+def load_memory_usage(simulation_times, base_logs_dir, base_dir, network, date):
     memory_usage_data = {}
     for algorithm, sim_time_lists in simulation_times.items():
         alg_snake = algorithm.lower().replace(" ", "_")
         memory_usage_data[algorithm] = {}
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            mem_file = os.path.join(base_logs_dir, alg_snake, "NSFNet", "0228", sim_time, "memory_usage.npy")
+            mem_file = os.path.join(base_logs_dir, alg_snake, network, date, sim_time, "memory_usage.npy")
             sim_time_path = os.path.join(base_dir, sim_time)
 
             # Use your existing extraction logic:
@@ -41,14 +41,30 @@ def load_memory_usage(simulation_times, base_logs_dir, base_dir):
     return memory_usage_data
 
 
-def load_and_average_state_values(simulation_times, base_logs_dir, base_dir):
+def _extract_traffic_label_from_filename(fname: str, fallback: str) -> str:
     """
-    Load state-value files for each traffic volume, then average them across seeds.
+    Try to parse something like 'e400.0' (the traffic volume) from the filename.
+    If it fails, just use the fallback.
     """
-    # We'll store data in a nested structure: traffic_data[traffic_label][(src, dst)][path_idx] = [...]
+    match = re.search(r'e(\d+(?:\.\d+)?)', fname)
+    if match:
+        return match.group(1)
+    return fallback
+
+
+def load_and_average_state_values(simulation_times, base_logs_dir, date, network, base_dir):
+    """
+    Load state-value data from:
+      - JSON files ("state_vals_e###.json") for most algorithms.
+      - NumPy arrays (e.g. "e###.0_routes_cX_tY.npy") for Q-learning,
+        where each element is an array of 2 tuples: [(path_or_None, q_value), (path_or_None, q_value)].
+    Collect by (traffic_label, link_tuple, path_index), then average across seeds.
+    """
+    # traffic_data[traffic_label][(src, dst)][path_idx] = [values across seeds]
     traffic_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for algorithm, sim_time_lists in simulation_times.items():
+        # Skip "baselines"
         if algorithm.lower() == "baselines":
             continue
 
@@ -56,75 +72,52 @@ def load_and_average_state_values(simulation_times, base_logs_dir, base_dir):
 
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-
-            logs_dir = os.path.join(base_logs_dir, alg_snake, "NSFNet", "0228", sim_time)
+            logs_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
             if not os.path.isdir(logs_dir):
                 continue
 
-            # Identify the traffic_label (the same way you do in load_rewards)
-            # e.g., extracting from JSON or fallback to sim_time
-            traffic_label = ...  # your existing logic here
+            # Fallback label if nothing else is parsed from filenames
+            dir_label = _extract_traffic_label(logs_dir) or sim_time
 
-            json_files = [f for f in os.listdir(logs_dir)
-                          if f.startswith("state_vals") and f.endswith(".json")]
-
+            json_files = [
+                fname for fname in os.listdir(logs_dir)
+                if fname.startswith("state_vals") and fname.endswith(".json")
+            ]
             for json_file in json_files:
                 file_path = os.path.join(logs_dir, json_file)
+                traffic_label = _extract_traffic_label_from_filename(json_file, dir_label)
+
+                # Load JSON data
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                 except (OSError, json.JSONDecodeError):
                     continue
 
+                # data: { "(src,dst)": [val_path0, val_path1, ...], ... }
                 for link_str, path_vals in data.items():
                     try:
-                        link_tuple = eval(link_str)
+                        link_tuple = eval(link_str)  # e.g. "(1, 3)" -> (1,3)
                     except (SyntaxError, NameError):
                         continue
                     for p_idx, val in enumerate(path_vals):
                         traffic_data[traffic_label][link_tuple][p_idx].append(val)
 
-    # Now average across seeds
-    # final_data = { traffic_label: { (src,dst): [mean_path_0, mean_path_1, ...], ... } }
     final_data = {}
     for t_label, link_map in traffic_data.items():
         final_data[t_label] = {}
         for link_tuple, pidx_map in link_map.items():
-            max_p_idx = max(pidx_map.keys())
-            path_vals_list = []
+            max_p_idx = max(pidx_map.keys()) if pidx_map else -1
+            path_means = []
             for p_idx in range(max_p_idx + 1):
-                raw_list = pidx_map.get(p_idx, [])
-                if raw_list:
-                    path_vals_list.append(float(np.mean(raw_list)))
-                else:
-                    path_vals_list.append(0.0)
-            final_data[t_label][link_tuple] = path_vals_list
+                values_for_path = pidx_map.get(p_idx, [])
+                path_means.append(float(np.mean(values_for_path)) if values_for_path else 0.0)
+            final_data[t_label][link_tuple] = path_means
 
     return final_data
 
 
-def _extract_traffic_label(sim_time_path: str) -> str:
-    """
-    Extract a traffic label from the simulation time folder.
-    Looks into the first JSON file encountered and attempts to parse its name.
-    """
-    if not os.path.isdir(sim_time_path):
-        return ""
-    for sim_run in os.listdir(sim_time_path):
-        run_path = os.path.join(sim_time_path, sim_run)
-        if not os.path.isdir(run_path):
-            continue
-        for filename in os.listdir(run_path):
-            if filename.endswith(".json"):
-                parts = filename.split('.')
-                try:
-                    return str(float(parts[0]))
-                except ValueError:
-                    return parts[0]
-    return ""
-
-
-def load_all_rewards_files(simulation_times, base_logs_dir, base_dir):
+def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, date):
     """
     Load all per-episode, per-trial reward files for each algorithm.
     """
@@ -140,7 +133,7 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir):
 
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            rewards_dir = os.path.join(base_logs_dir, alg_snake, "NSFNet", "0228", sim_time)
+            rewards_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
             if not os.path.exists(rewards_dir):
                 print(f"Warning: Directory does not exist: {rewards_dir}")
                 continue
@@ -264,6 +257,7 @@ def _process_sim_time(sim_time_path: str):
     for tv, lists in sim_time_data.items():
         if not lists:
             continue
+
         arr = np.array(lists)
         averaged_data[str(tv)] = lists[0] if arr.shape[0] == 1 else np.mean(arr, axis=0).tolist()
     return averaged_data
@@ -295,7 +289,7 @@ def load_blocking_data(simulation_times, base_dir):
             if data is None:
                 continue
 
-            if sim_time == "14_43_00_326842":
+            if sim_time == "08_39_34_463723":
                 if "s1" in data:
                     final_result.setdefault("KSP Baseline", {}).update(data["s1"])
                 if "s2" in data:
@@ -312,7 +306,7 @@ def load_blocking_data(simulation_times, base_dir):
     return final_result
 
 
-def load_rewards(simulation_times, base_logs_dir, base_dir):
+def load_rewards(simulation_times, base_logs_dir, base_dir, network, date):
     """
     Load average rewards from .npy files for each non-baseline algorithm.
     """
@@ -325,7 +319,7 @@ def load_rewards(simulation_times, base_logs_dir, base_dir):
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
             reward_file = os.path.join(
-                base_logs_dir, alg_snake, "NSFNet", "0228", sim_time, "average_rewards.npy"
+                base_logs_dir, alg_snake, network, date, sim_time, "average_rewards.npy"
             )
             if not os.path.exists(reward_file):
                 print(f"Warning: Reward file does not exist: {reward_file}")
