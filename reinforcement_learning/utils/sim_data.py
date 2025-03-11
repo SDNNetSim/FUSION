@@ -185,14 +185,14 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
 def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, date):
     """
     Load all per-episode, per-trial reward files for each algorithm.
+    Includes files that may or may not have "_iter_" in their filenames.
     """
-    pattern = re.compile(r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)_iter_(\d+)\.npy$")
+    pattern = re.compile(r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)(?:_iter_(\d+))?\.npy$")
     all_rewards_data = {}
 
     for algorithm, sim_time_lists in simulation_times.items():
         if algorithm.lower() == "baselines":
             continue
-
         alg_snake = algorithm.lower().replace(" ", "_")
         all_rewards_data[algorithm] = {}
 
@@ -204,10 +204,7 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
                 continue
 
             sim_time_path = os.path.join(base_dir, sim_time)
-            traffic_label = _extract_traffic_label(sim_time_path)
-            if not traffic_label:
-                traffic_label = sim_time  # fallback
-
+            traffic_label = _extract_traffic_label(sim_time_path) or sim_time
             if traffic_label not in all_rewards_data[algorithm]:
                 all_rewards_data[algorithm][traffic_label] = {}
 
@@ -215,14 +212,12 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
                 match = pattern.match(fname)
                 if not match:
                     continue
-                # Unpack, ignore erlang value since it's unused.
-                _, trial_str, episode_str = match.groups()
+                _, trial_str, iteration_str = match.groups()
                 trial_index = int(trial_str)
-                episode_index = int(episode_str)
+                episode_index = int(iteration_str) if iteration_str else 0
 
                 file_path = os.path.join(rewards_dir, fname)
                 rewards_array = np.load(file_path)
-
                 if trial_index not in all_rewards_data[algorithm][traffic_label]:
                     all_rewards_data[algorithm][traffic_label][trial_index] = {}
                 all_rewards_data[algorithm][traffic_label][trial_index][episode_index] = rewards_array
