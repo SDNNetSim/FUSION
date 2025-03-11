@@ -17,13 +17,11 @@ def plot_rewards_per_seed(all_rewards_data):
                 all_episodes.update(episodes_dict.keys())
             all_episodes = sorted(all_episodes)
 
-            # Plot each seed's curve
             for trial_index, episodes_dict in trial_dict.items():
                 episode_indices = sorted(episodes_dict.keys())
                 means = [np.mean(episodes_dict[ep_idx]) for ep_idx in episode_indices]
                 plt.plot(episode_indices, means, marker='o', label=f"Trial {trial_index}")
 
-            # Compute aggregate average for each episode over all seeds
             agg_means = []
             for ep_idx in all_episodes:
                 trial_means = []
@@ -72,9 +70,7 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
     for each traffic volume (for a single algorithm) on the same plot.
     """
     for algorithm, traffic_dict in all_rewards_data.items():
-        # Make the figure a bit taller (e.g., 8 wide, 6 tall)
         plt.figure(figsize=(8, 6), dpi=200)
-
         for traffic_label, trial_dict in traffic_dict.items():
             all_episodes = set()
             for trial_index in trial_dict:
@@ -113,17 +109,14 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
 
         plt.title(f"Averaged Rewards: {algorithm}")
         plt.xlabel("Episode (iter)")
-        # Break y-axis label onto two lines to save space:
         plt.ylabel("Reward (mean across steps,\naveraged across seeds)")
-
-        # Reduce legend text size & move it off to the right
         plt.legend(fontsize='small',
                    bbox_to_anchor=(1.05, 1),
                    loc='upper left',
                    borderaxespad=0.)
 
         plt.grid(True)
-        plt.tight_layout()  # Helps avoid clipping when legend is outside
+        plt.tight_layout()
         plt.show()
 
 
@@ -143,8 +136,6 @@ def plot_average_rewards(rewards_data):
         plt.xlabel("Number of Episodes")
         plt.ylabel("Reward")
         plt.title(f"Average Rewards for {algorithm}")
-
-        # Move legend off to the right
         plt.legend(
             title="Traffic Volume",
             bbox_to_anchor=(1.05, 1),
@@ -153,5 +144,5 @@ def plot_average_rewards(rewards_data):
         )
 
         plt.grid(True)
-        plt.tight_layout()  # Helps fit labels/legend
+        plt.tight_layout()
         plt.show()
