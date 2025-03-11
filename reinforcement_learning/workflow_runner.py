@@ -34,6 +34,7 @@ def _run_drl_training(env: object, sim_dict: dict):
 
 
 # TODO: (drl_path_agents) Break this function up for organizational purposes
+#   - You have repeat logic
 def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None):
     """
     Runs the specified number of episodes in the reinforcement learning environment.
@@ -71,7 +72,9 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
 
                 callback_obj.episode_rewards = np.array([])
                 completed_trials += 1
-                callback_obj.trial = completed_trials
+                env.trial = completed_trials
+                callback_obj.trial += 1
+                env.iteration = 0
 
                 print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
                 obs, _ = env.reset(seed=completed_trials)

@@ -41,7 +41,10 @@ class EpisodicRewardCallback(BaseCallback):
         self.sim_dict = None
 
         self.iter = 0
-        self.trial = 0
+        self.trial = 1
+        self.curr_step = 0
+
+        self.rewards_matrix = None
 
     def _save_drl_trial_rewards(self):
         erlang = float(self.sim_dict['erlang_start'])
@@ -51,12 +54,18 @@ class EpisodicRewardCallback(BaseCallback):
         create_dir(file_path=file_path)
 
         file_name = os.path.join(file_path, f'rewards_e{erlang}_routes_c{cores}_t{self.trial}_iter_{self.iter}.npy')
-        np.save(file_name, self.episode_rewards)
+        rewards_matrix = self.rewards_matrix[:self.iter + 1, :].mean(axis=0)
+        np.save(file_name, rewards_matrix)
 
     def _on_step(self) -> bool:
+        if self.rewards_matrix is None:
+            self.rewards_matrix = np.empty((self.sim_dict['max_iters'], self.sim_dict['num_requests']))
+
         reward = self.locals.get("rewards", 0)[0]
         done = self.locals.get("dones", False)[0]
         self.current_episode_reward += reward
+        self.rewards_matrix[self.iter, self.curr_step] = reward
+        self.curr_step += 1
 
         if done:
             self.episode_rewards = np.append(self.episode_rewards, self.current_episode_reward)
@@ -64,6 +73,7 @@ class EpisodicRewardCallback(BaseCallback):
                 self._save_drl_trial_rewards()
 
             self.iter += 1
+            self.curr_step = 0
             if self.verbose:
                 print(f"Episode {len(self.episode_rewards)} finished with reward: {self.current_episode_reward}")
                 if len(self.episode_rewards) == self.max_iters:
