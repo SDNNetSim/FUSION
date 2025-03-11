@@ -35,7 +35,7 @@ def _run_drl_training(env: object, sim_dict: dict):
 
 def _save_drl_trial_rewards(trial, rewards_arr: np.array, sim_dict: dict):
     erlang = float(sim_dict['erlang_start'])
-    cores = float(sim_dict['cores_per_link'])
+    cores = int(sim_dict['cores_per_link'])
     file_name = os.path.join('logs', sim_dict['path_algorithm'], sim_dict['network'], sim_dict['date'])
     file_name = os.path.join(file_name, sim_dict['sim_start'], f'rewards_e{erlang}_routes_c{cores}_t{trial}.npy')
 
