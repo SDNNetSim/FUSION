@@ -33,15 +33,6 @@ def _run_drl_training(env: object, sim_dict: dict):
         save_model(sim_dict=sim_dict, env=env, model=model)
 
 
-def _save_drl_trial_rewards(trial, rewards_arr: np.array, sim_dict: dict):
-    erlang = float(sim_dict['erlang_start'])
-    cores = int(sim_dict['cores_per_link'])
-    file_name = os.path.join('logs', sim_dict['path_algorithm'], sim_dict['network'], sim_dict['date'])
-    file_name = os.path.join(file_name, sim_dict['sim_start'], f'rewards_e{erlang}_routes_c{cores}_t{trial}.npy')
-
-    np.save(file_name, rewards_arr)
-
-
 # TODO: (drl_path_agents) Break this function up for organizational purposes
 def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None):
     """
@@ -65,6 +56,7 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
 
     if callback_obj:
         callback_obj.max_iters = sim_dict['max_iters']
+        callback_obj.sim_dict = sim_dict
 
     obs, _ = env.reset(seed=completed_trials)
 
@@ -77,12 +69,11 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
                 _run_drl_training(env=env, sim_dict=sim_dict)
                 rewards_matrix[completed_trials] = callback_obj.episode_rewards
 
-                _save_drl_trial_rewards(trial=completed_trials, rewards_arr=rewards_matrix[completed_trials],
-                                        sim_dict=sim_dict)
                 callback_obj.episode_rewards = np.array([])
                 completed_trials += 1
-                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
+                callback_obj.trial = completed_trials
 
+                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
                 obs, _ = env.reset(seed=completed_trials)
                 continue
 
