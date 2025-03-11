@@ -26,6 +26,9 @@ class QLearning:
         self.completed_sim = False
         self._initialize_matrices()
 
+        self.rewards_stats_dict = None
+        self.error_stats_dict = None
+
     def _initialize_matrices(self):
         """Initializes Q-tables for paths and cores."""
         self.props.epsilon = self.engine_props['epsilon_start']
@@ -94,7 +97,7 @@ class QLearning:
 
         return max_index, max_obj
 
-    def update_q_matrix(self, reward, level_index, net_spec_dict, flag, trial: int, core_index=None):
+    def update_q_matrix(self, reward, level_index, net_spec_dict, flag, trial: int, iteration, core_index=None):
         """Updates Q-values for either path or core selection."""
         matrix = self.props.cores_matrix if flag == 'core' else self.props.routes_matrix
         matrix = matrix[self.rl_props.source, self.rl_props.destination]
@@ -108,14 +111,12 @@ class QLearning:
         td_error = current_q - delta
         new_q = ((1 - self.learn_rate) * current_q) + (self.learn_rate * delta)
 
+        self.iteration = iteration
         self.update_q_stats(reward, td_error, 'cores_dict' if flag == 'core' else 'routes_dict', trial=trial)
         matrix[core_index if flag == 'core' else level_index]['q_value'] = new_q
 
     def update_q_stats(self, reward, td_error, stats_flag, trial: int):
         """Updates statistics related to Q-learning performance."""
-        if self.completed_sim:
-            return
-
         episode = str(self.iteration)
         if episode not in self.props.rewards_dict[stats_flag]['rewards']:
             self.props.rewards_dict[stats_flag]['rewards'][episode] = [reward]
@@ -124,33 +125,73 @@ class QLearning:
             self.props.rewards_dict[stats_flag]['rewards'][episode].append(reward)
             self.props.errors_dict[stats_flag]['errors'][episode].append(td_error)
 
-        self._calc_q_averages(stats_flag, episode, trial=trial)
+        if (self.iteration % self.engine_props['save_step'] == 0 or self.iteration == self.engine_props[
+            'max_iters'] - 1) and \
+                len(self.props.rewards_dict[stats_flag]['rewards'][episode]) == self.engine_props['num_requests']:
+            self._calc_q_averages(stats_flag, trial=trial)
 
-    def _calc_q_averages(self, stats_flag, episode, trial: int):
-        """Calculates averages for rewards and errors at the end of an episode."""
-        if len(self.props.rewards_dict[stats_flag]['rewards'][episode]) == self.engine_props['num_requests']:
-            self.completed_sim = True
-            self.props.rewards_dict[stats_flag] = calc_matrix_stats(self.props.rewards_dict[stats_flag]['rewards'])
-            self.props.errors_dict[stats_flag] = calc_matrix_stats(self.props.errors_dict[stats_flag]['errors'])
-            self.save_model(trial=trial)
+    def _calc_q_averages(self, stats_flag, trial: int):
+        """
+        Calculates averages for rewards and errors at the end of an episode.
+        Once the number of requests is reached, mark sim as complete, compute final stats,
+        and trigger save_model with the current iteration.
+        """
+        self.rewards_stats_dict = calc_matrix_stats(self.props.rewards_dict[stats_flag]['rewards'])
+        self.error_stats_dict = calc_matrix_stats(self.props.errors_dict[stats_flag]['errors'])
+        self.save_model(trial)
+
+    def _convert_q_tables_to_dict(self, which_table: str):
+        """
+        Converts either 'routes_matrix' or 'cores_matrix' into a dict suitable for JSON.
+        which_table: 'routes' or 'cores'
+        """
+        q_dict = {}
+        if which_table == 'routes':
+            for src in range(self.rl_props.num_nodes):
+                for dst in range(self.rl_props.num_nodes):
+                    if src == dst:
+                        continue
+                    q_vals_list = list()
+                    for k in range(self.rl_props.k_paths):
+                        entry = self.props.routes_matrix[src, dst, k, 0]
+                        current_q = entry[1]
+                        q_vals_list.append(current_q)
+
+                    q_dict[str((src, dst))] = q_vals_list
+        elif which_table == 'cores':
+            raise NotImplementedError
+
+        return q_dict
 
     def save_model(self, trial: int):
-        """Saves the Q-learning model."""
-        save_dir = os.path.join('logs', 'q_learning', self.engine_props['network'], self.engine_props['date'],
-                                self.engine_props['sim_start'])
+        """
+        Saves the Q-learning model similarly to bandits:
+          - Uses iteration-based checks (if 'save_step' > 0).
+          - Saves Q-tables to NumPy and also to JSON.
+          - Names files consistently with 'e{erlang}_routes_c{...}' or 'e{erlang}_cores_c{...}'.
+        """
+        save_dir = os.path.join(
+            'logs',
+            'q_learning',
+            self.engine_props['network'],
+            self.engine_props['date'],
+            self.engine_props['sim_start']
+        )
         create_dir(save_dir)
 
         erlang = self.engine_props['erlang']
         cores_per_link = self.engine_props['cores_per_link']
-        filename = f"e{erlang}_{'routes' if self.engine_props['path_algorithm'] == 'q_learning' else 'cores'}_c{cores_per_link}_t{trial + 1}.npy"
-        save_path = os.path.join(save_dir, filename)
-        np.save(save_path, self.props.routes_matrix if 'routes' in filename else self.props.cores_matrix)
-        self._save_params(save_dir)
+        base_str = 'routes' if self.engine_props['path_algorithm'] == 'q_learning' else 'cores'
+        filename_npy = f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}_iter_{self.iteration}.npy"
+        save_path_npy = os.path.join(save_dir, filename_npy)
 
-    def _save_params(self, save_dir):
-        """Saves model parameters as a JSON file."""
-        params_dict = {key: self.engine_props[key] for key in self.props.save_params_dict['engine_params_list']}
-        param_fp = os.path.join(save_dir,
-                                f"e{self.engine_props['erlang']}_params_c{self.engine_props['cores_per_link']}.json")
-        with open(param_fp, 'w', encoding='utf-8') as file:
-            json.dump(params_dict, file)
+        if 'routes' in base_str:
+            np.save(save_path_npy, self.rewards_stats_dict['average'])
+            q_dict = self._convert_q_tables_to_dict('routes')
+        else:
+            raise NotImplementedError
+
+        json_filename = f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
+        save_path_json = os.path.join(save_dir, json_filename)
+        with open(save_path_json, 'w', encoding='utf-8') as file_obj:
+            json.dump(q_dict, file_obj)
