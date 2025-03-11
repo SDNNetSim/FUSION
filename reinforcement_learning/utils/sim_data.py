@@ -52,6 +52,71 @@ def _extract_traffic_label_from_filename(fname: str, fallback: str) -> str:
     return fallback
 
 
+# def load_and_average_state_values(simulation_times, base_logs_dir, date, network, base_dir):
+#     """
+#     Load state-value data from:
+#       - JSON files ("state_vals_e###.json") for most algorithms.
+#       - NumPy arrays (e.g. "e###.0_routes_cX_tY.npy") for Q-learning,
+#         where each element is an array of 2 tuples: [(path_or_None, q_value), (path_or_None, q_value)].
+#     Collect by (traffic_label, link_tuple, path_index), then average across seeds.
+#     """
+#     # traffic_data[traffic_label][(src, dst)][path_idx] = [values across seeds]
+#     traffic_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+#
+#     for algorithm, sim_time_lists in simulation_times.items():
+#         # Skip "baselines"
+#         if algorithm.lower() == "baselines":
+#             continue
+#
+#         alg_snake = algorithm.lower().replace(" ", "_")
+#
+#         for sim_time_wrapper in sim_time_lists:
+#             sim_time = sim_time_wrapper[0]
+#             logs_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
+#             if not os.path.isdir(logs_dir):
+#                 continue
+#
+#             # Fallback label if nothing else is parsed from filenames
+#             dir_label = _extract_traffic_label(logs_dir) or sim_time
+#
+#             json_files = [
+#                 fname for fname in os.listdir(logs_dir)
+#                 if fname.startswith("state_vals") and fname.endswith(".json")
+#             ]
+#             for json_file in json_files:
+#                 file_path = os.path.join(logs_dir, json_file)
+#                 traffic_label = _extract_traffic_label_from_filename(json_file, dir_label)
+#
+#                 # Load JSON data
+#                 try:
+#                     with open(file_path, 'r', encoding='utf-8') as f:
+#                         data = json.load(f)
+#                 except (OSError, json.JSONDecodeError):
+#                     continue
+#
+#                 # data: { "(src,dst)": [val_path0, val_path1, ...], ... }
+#                 for link_str, path_vals in data.items():
+#                     try:
+#                         link_tuple = eval(link_str)  # e.g. "(1, 3)" -> (1,3)
+#                     except (SyntaxError, NameError):
+#                         continue
+#                     for p_idx, val in enumerate(path_vals):
+#                         traffic_data[traffic_label][link_tuple][p_idx].append(val)
+#
+#     final_data = {}
+#     for t_label, link_map in traffic_data.items():
+#         final_data[t_label] = {}
+#         for link_tuple, pidx_map in link_map.items():
+#             max_p_idx = max(pidx_map.keys()) if pidx_map else -1
+#             path_means = []
+#             for p_idx in range(max_p_idx + 1):
+#                 values_for_path = pidx_map.get(p_idx, [])
+#                 path_means.append(float(np.mean(values_for_path)) if values_for_path else 0.0)
+#             final_data[t_label][link_tuple] = path_means
+#
+#     return final_data
+
+
 def load_and_average_state_values(simulation_times, base_logs_dir, date, network, base_dir):
     """
     Load state-value data from:
@@ -59,26 +124,28 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
       - NumPy arrays (e.g. "e###.0_routes_cX_tY.npy") for Q-learning,
         where each element is an array of 2 tuples: [(path_or_None, q_value), (path_or_None, q_value)].
     Collect by (traffic_label, link_tuple, path_index), then average across seeds.
+    Returns a dict of the form:
+      {
+          algorithm_1: {
+              traffic_label_1: { (src, dst): [path_val_0, path_val_1, ...], ... },
+              traffic_label_2: ...
+          },
+          algorithm_2: { ... },
+          ...
+      }
     """
-    # traffic_data[traffic_label][(src, dst)][path_idx] = [values across seeds]
-    traffic_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
+    all_algorithms_data = {}
     for algorithm, sim_time_lists in simulation_times.items():
-        # Skip "baselines"
         if algorithm.lower() == "baselines":
             continue
-
         alg_snake = algorithm.lower().replace(" ", "_")
-
+        traffic_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
             logs_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
             if not os.path.isdir(logs_dir):
                 continue
-
-            # Fallback label if nothing else is parsed from filenames
             dir_label = _extract_traffic_label(logs_dir) or sim_time
-
             json_files = [
                 fname for fname in os.listdir(logs_dir)
                 if fname.startswith("state_vals") and fname.endswith(".json")
@@ -86,35 +153,33 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
             for json_file in json_files:
                 file_path = os.path.join(logs_dir, json_file)
                 traffic_label = _extract_traffic_label_from_filename(json_file, dir_label)
-
-                # Load JSON data
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                 except (OSError, json.JSONDecodeError):
                     continue
-
-                # data: { "(src,dst)": [val_path0, val_path1, ...], ... }
                 for link_str, path_vals in data.items():
                     try:
-                        link_tuple = eval(link_str)  # e.g. "(1, 3)" -> (1,3)
+                        link_tuple = eval(link_str)
                     except (SyntaxError, NameError):
                         continue
                     for p_idx, val in enumerate(path_vals):
                         traffic_data[traffic_label][link_tuple][p_idx].append(val)
-
-    final_data = {}
-    for t_label, link_map in traffic_data.items():
-        final_data[t_label] = {}
-        for link_tuple, pidx_map in link_map.items():
-            max_p_idx = max(pidx_map.keys()) if pidx_map else -1
-            path_means = []
-            for p_idx in range(max_p_idx + 1):
-                values_for_path = pidx_map.get(p_idx, [])
-                path_means.append(float(np.mean(values_for_path)) if values_for_path else 0.0)
-            final_data[t_label][link_tuple] = path_means
-
-    return final_data
+        final_data = {}
+        for t_label, link_map in traffic_data.items():
+            final_data[t_label] = {}
+            for link_tuple, pidx_map in link_map.items():
+                max_p_idx = max(pidx_map.keys()) if pidx_map else -1
+                path_means = []
+                for p_idx in range(max_p_idx + 1):
+                    values_for_path = pidx_map.get(p_idx, [])
+                    if values_for_path:
+                        path_means.append(float(np.mean(values_for_path)))
+                    else:
+                        path_means.append(0.0)
+                final_data[t_label][link_tuple] = path_means
+        all_algorithms_data[algorithm] = final_data
+    return all_algorithms_data
 
 
 def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, date):
