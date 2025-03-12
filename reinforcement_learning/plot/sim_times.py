@@ -3,6 +3,7 @@ import json
 from json import JSONDecodeError
 import datetime
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 
 def parse_time_string(time_str):
@@ -71,24 +72,96 @@ def collect_simulation_durations_for_algo(sim_list, base_dir):
     return durations_by_traffic
 
 
-def plot_simulation_times_for_algo(durations_by_traffic, algorithm):
-    """Plot total simulation durations by traffic volume with the algorithm name in the title."""
-    traffic_labels = sorted(durations_by_traffic.keys(), key=float)
-    data = [durations_by_traffic[t] for t in traffic_labels]
-    plt.figure(figsize=(6, 4), dpi=200)
-    plt.boxplot(data, labels=traffic_labels, showmeans=True)
-    plt.xlabel("Traffic Volume")
-    plt.ylabel("Time Taken (seconds)")
-    plt.title(f"Simulation Duration by Traffic Volume for {algorithm}")
-    plt.grid(True)
-    plt.show()
+def style_boxplot_elements(bp, box_algos, algo_colors):
+    """
+    Colorize the boxplot elements using the provided mappings.
+    """
+    whiskers_iter = iter(bp['whiskers'])
+    caps_iter = iter(bp['caps'])
+    for i, box in enumerate(bp['boxes']):
+        algo = box_algos[i]
+        c = algo_colors[algo]
+        box.set_facecolor(c)
+        box.set_edgecolor(c)
+        bp['medians'][i].set_color(c)
+        bp['means'][i].set(markerfacecolor=c, markeredgecolor='black')
+        bp['fliers'][i].set(markerfacecolor=c, markeredgecolor=c)
+        for _ in range(2):
+            next(whiskers_iter).set_color(c)
+        for _ in range(2):
+            next(caps_iter).set_color(c)
 
 
 def plot_sim_times(simulation_times, base_dir):
-    """Collect and plot total simulation durations per algorithm from simulation_times and base_dir."""
+    """
+    Shows a single figure with grouped boxplots:
+    each traffic volume on the x-axis, one box per algorithm in each group,
+    with correct color coding and a matching legend.
+    """
+    if not simulation_times:
+        return
+    available_styles = plt.style.available
+    if 'seaborn-whitegrid' in available_styles:
+        plt.style.use('seaborn-whitegrid')
+    elif 'seaborn-white' in available_styles:
+        plt.style.use('seaborn-white')
+    else:
+        plt.style.use('default')
+
+    sim_times_dict = {}
+    all_algorithms = set()
     for algorithm, sim_list in simulation_times.items():
-        durations = collect_simulation_durations_for_algo(sim_list, base_dir)
-        if not durations:
-            print(f"No simulation duration data collected for {algorithm}.")
-            continue
-        plot_simulation_times_for_algo(durations, algorithm)
+        durations_by_label = collect_simulation_durations_for_algo(sim_list, base_dir)
+        for label, dlist in durations_by_label.items():
+            sim_times_dict.setdefault(label, {})[algorithm] = dlist
+        all_algorithms.add(algorithm)
+    all_algorithms = sorted(all_algorithms)
+    traffic_labels = sorted(sim_times_dict.keys(), key=float)
+
+    data_for_boxplot = []
+    box_algos = []
+    positions = []
+    group_width = 0.8
+    box_width = group_width / len(all_algorithms)
+    current_center = 1
+    label_positions = []
+
+    for label in traffic_labels:
+        for i, algo in enumerate(all_algorithms):
+            durations_list = sim_times_dict[label].get(algo, [])
+            data_for_boxplot.append(durations_list)
+            box_algos.append(algo)
+            pos = current_center - group_width / 2 + (i + 0.5) * box_width
+            positions.append(pos)
+        label_positions.append(current_center)
+        current_center += 2
+
+    plt.figure(figsize=(10, 5), dpi=300)
+    bp = plt.boxplot(
+        data_for_boxplot,
+        positions=positions,
+        widths=box_width,
+        showmeans=True,
+        patch_artist=True
+    )
+
+    plt.xticks(label_positions, traffic_labels, rotation=45, ha='right', fontsize=12)
+    plt.xlabel("Traffic Volume", fontsize=14, fontweight='bold')
+    plt.ylabel("Simulation Time (seconds)", fontsize=14, fontweight='bold')
+    plt.title("Boxplot of Simulation Times", fontsize=16, fontweight='bold')
+    plt.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    algo_colors = {algo: colors[i % len(colors)] for i, algo in enumerate(all_algorithms)}
+    style_boxplot_elements(bp, box_algos, algo_colors)
+
+    legend_elements = [
+        Line2D([0], [0], marker='s', color='w', markerfacecolor=algo_colors[algo],
+               label=algo, markersize=10)
+        for algo in all_algorithms
+    ]
+    plt.legend(handles=legend_elements, title="Algorithm",
+               bbox_to_anchor=(1.05, 1), loc="upper left",
+               fontsize=12, title_fontsize=12)
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    plt.show()
