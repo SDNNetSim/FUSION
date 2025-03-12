@@ -100,6 +100,13 @@ def plot_sim_times(simulation_times, base_dir):
     """
     if not simulation_times:
         return
+    available_styles = plt.style.available
+    if 'seaborn-whitegrid' in available_styles:
+        plt.style.use('seaborn-whitegrid')
+    elif 'seaborn-white' in available_styles:
+        plt.style.use('seaborn-white')
+    else:
+        plt.style.use('default')
 
     sim_times_dict = {}
     all_algorithms = set()
@@ -129,7 +136,7 @@ def plot_sim_times(simulation_times, base_dir):
         label_positions.append(current_center)
         current_center += 2
 
-    plt.figure(figsize=(10, 5), dpi=200)
+    plt.figure(figsize=(10, 5), dpi=300)
     bp = plt.boxplot(
         data_for_boxplot,
         positions=positions,
@@ -138,20 +145,23 @@ def plot_sim_times(simulation_times, base_dir):
         patch_artist=True
     )
 
-    plt.xticks(label_positions, traffic_labels, rotation=45, ha='right')
-    plt.xlabel("Traffic Volume")
-    plt.ylabel("Simulation Time (seconds)")
-    plt.title("Grouped Boxplot of Simulation Times (All Algorithms)")
-    plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+    plt.xticks(label_positions, traffic_labels, rotation=45, ha='right', fontsize=12)
+    plt.xlabel("Traffic Volume", fontsize=14, fontweight='bold')
+    plt.ylabel("Simulation Time (seconds)", fontsize=14, fontweight='bold')
+    plt.title("Boxplot of Simulation Times", fontsize=16, fontweight='bold')
+    plt.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
 
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     algo_colors = {algo: colors[i % len(colors)] for i, algo in enumerate(all_algorithms)}
     style_boxplot_elements(bp, box_algos, algo_colors)
 
     legend_elements = [
-        Line2D([0], [0], marker='s', color='w', markerfacecolor=algo_colors[algo], label=algo)
+        Line2D([0], [0], marker='s', color='w', markerfacecolor=algo_colors[algo],
+               label=algo, markersize=10)
         for algo in all_algorithms
     ]
-    plt.legend(handles=legend_elements, title="Algorithm")
-    plt.tight_layout()
+    plt.legend(handles=legend_elements, title="Algorithm",
+               bbox_to_anchor=(1.05, 1), loc="upper left",
+               fontsize=12, title_fontsize=12)
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
     plt.show()
