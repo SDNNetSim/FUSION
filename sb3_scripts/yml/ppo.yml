@@ -1,34 +1,25 @@
 SimEnv:
   normalize: false
 #  n_envs: 32
-  n_timesteps: 25000
+  n_timesteps: 500000
   policy: 'MultiInputPolicy'
-  n_steps: 512
+  n_steps: 2048
   batch_size: 128
-  gae_lambda: 0.9
-  gamma: 0.99
+  gae_lambda: 0.92
+  gamma: 0.9
   n_epochs: 10
-  vf_coef: 0.5
-  ent_coef: 0.00001
+  vf_coef: 0.6
+  ent_coef: 0.000026
 #  use_sde: True
-  max_grad_norm: 0.8
-  learning_rate: 0.0005  # Use a constant value for now, schedule can be added in code
+  max_grad_norm: 0.6
+  learning_rate: 0.019  # Use a constant value for now, schedule can be added in code
 #  sde_sample_freq: 4
-  clip_range: 0.3
+  clip_range: 0.1
   policy_kwargs: "dict(
                     ortho_init=False,
                     activation_fn=nn.ReLU,
-                    net_arch=dict(pi=[128,128], vf=[128,128])
+                    net_arch=dict(pi=[64,64], vf=[64,64])
                   )"
   callback:
-<<<<<<< HEAD
-    - rl_scripts.helpers.callback_helpers.GetModelParams:
-<<<<<<< HEAD
-        verbose: 1
-=======
-        verbose: 1
->>>>>>> 1f52b86dd1dd359a55ed3e3a65460946d498524c
-=======
     - reinforcement_learning.utils.callbacks.GetModelParams:
         verbose: 1
->>>>>>> 2fefd9cb6e1093671afd8551d30b85445d76d9d5

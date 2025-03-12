@@ -1,135 +1,68 @@
 #!/bin/bash
-
 #SBATCH -p cpu
 #SBATCH -c 1
 #SBATCH -G 0
 #SBATCH --mem=32000
-#SBATCH -t 0-10:00:00   # Job time increased to 10 hours
-#SBATCH --array=0-2     # Only used in simulation mode
-# (No -o flag so that SLURM's default output file is used)
+#SBATCH -t 2-00:00:00   # Job time increased to 3 days
+#SBATCH -o /dev/null   # Suppress SLURM’s default output
 
-# Exit immediately if a command fails
-set -e
+# -----------------------------------------------------------------------------
+# Compute log variables as early as possible (before any output occurs)
+# -----------------------------------------------------------------------------
+BASE_LOG_DIR="slurm_logs"
+alg="ppo"
+output_dir="${BASE_LOG_DIR}/${alg}/optimize"
+mkdir -p "$output_dir"
 
-# Set the default directory
-DEFAULT_DIR="/work/pi_vinod_vokkarane_uml_edu/git/FUSION/"
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+output_file="${output_dir}/slurm_output_${timestamp}.out"
 
-# Parse arguments:
-# If the first argument exists and does not start with "--", use it as the working directory.
-# Otherwise, use DEFAULT_DIR.
-if [ "$#" -ge 1 ] && [[ "$1" != --* ]]; then
-  echo "Changing to user-specified directory: $1"
-  cd "$1"
-else
-  echo "No valid directory provided. Using default directory: $DEFAULT_DIR"
-  cd "$DEFAULT_DIR"
-fi
+# Redirect all subsequent output (stdout & stderr) to our computed log file.
+exec > "$output_file" 2>&1
 
-# Determine if optimize flag was provided. Look at second argument if first argument was used,
-# or first argument if no directory was provided.
-if [ "$#" -ge 2 ]; then
-  optimize_flag="$2"
-elif [ "$#" -eq 1 ] && [[ "$1" == --* ]]; then
-  optimize_flag="$1"
-else
-  optimize_flag=""
-fi
+echo "Job started at $(date)"
+echo "SLURM Job ID: $SLURM_JOB_ID"
+echo "Algorithm: $alg"
+echo "Running in optimization mode"
+echo "----------------------------------------------------------"
 
-# Debug: Print SLURM variables and working directory at start
-echo "===== Starting Job ====="
-echo "SLURM_JOB_ID: ${SLURM_JOB_ID}"
-echo "SLURM_ARRAY_TASK_ID: ${SLURM_ARRAY_TASK_ID}"
-echo "Current working directory: $(pwd)"
-echo "Optimize flag: ${optimize_flag}"
-echo "========================"
+# Set the working directory to your repository root.
+DEFAULT_DIR="/work/pi_vinod_vokkarane_uml_edu/git/FUSION"
+cd "$DEFAULT_DIR"
+echo "Working directory: $(pwd)"
 
-# Load required Python module
+# Load the required Python module
 module load python/3.11.7
 
-# Activate (or create if necessary) the virtual environment
-if [ ! -d "venvs/unity_venv/venv" ]; then
-  ./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
-  ./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
+# Ensure the virtual environment directory exists in the repository root.
+VENV_DIR="venvs/unity_venv"
+if [ ! -d "$VENV_DIR" ]; then
+  echo "Directory '$VENV_DIR' does not exist. Creating it now..."
+  mkdir -p "$VENV_DIR"
+  ./bash_scripts/make_unity_venv.sh "$VENV_DIR" python3.11
 fi
-source venvs/unity_venv/venv/bin/activate
 
-# Install required packages
+# Check that the virtual environment was created successfully.
+if [ ! -d "$VENV_DIR/venv" ]; then
+  echo "Virtual environment creation failed. Exiting."
+  exit 1
+fi
+
+# Activate the virtual environment.
+source "$VENV_DIR/venv/bin/activate"
+
+# Install required Python packages.
 pip install -r requirements.txt
 
-# (Re)register custom RL environments
+# (Re)register the custom RL environments.
 ./bash_scripts/register_rl_env.sh ppo SimEnv
 
-# Define the algorithm (ppo)
-alg="ppo"
+# Run the optimization command.
+echo "Running optimization command:"
+python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./sb3_scripts/yml/ppo.yml \
+  -optimize --n-trials 20 --n-timesteps 250000 || echo "Error running optimization for algorithm $alg"
 
-# Determine mode: simulation or optimization based on the optimize_flag
-if [ "$optimize_flag" = "--optimize" ]; then
-  mode="optimize"
-else
-  mode="simulation"
-fi
-
-# Set a timestamp for our custom log file
-timestamp=$(date +"%Y-%m-%d_%H-%M-%S.%N" | cut -c1-26)
-
-if [ "$mode" = "simulation" ]; then
-  # Define traffic volumes and pick one based on SLURM_ARRAY_TASK_ID
-  traffic_volumes=(50 400 750)
-  erlang_start=${traffic_volumes[$SLURM_ARRAY_TASK_ID]}
-  erlang_stop=$((erlang_start + 100))  # Keep erlang_step as 100
-  
-  echo "Running simulation with:"
-  echo "  Algorithm:      $alg"
-  echo "  Erlang range:   $erlang_start to $erlang_stop"
-  
-  output_dir="bash_scripts/slurm/${alg}/${erlang_start}"
-  output_file="${output_dir}/slurm_${SLURM_JOB_ID}_${alg}_${timestamp}.out"
-else
-  # For optimization mode, ignore SLURM_ARRAY_TASK_ID
-  echo "Running optimization for algorithm: $alg"
-  
-  output_dir="bash_scripts/slurm/${alg}/optimize"
-  output_file="${output_dir}/slurm_${SLURM_JOB_ID}_${alg}_optimize_${timestamp}.out"
-fi
-
-# Create the output directory for our custom log file
-mkdir -p "$output_dir"
-echo "Custom log file will be: $output_file"
-
-# Write a header to the custom log file for debugging
-{
-  echo "===== Custom Log File for Job ${SLURM_JOB_ID} ====="
-  echo "Mode: $mode"
-  echo "Timestamp: $timestamp"
-  if [ "$mode" = "simulation" ]; then
-    echo "Erlang start: $erlang_start"
-    echo "Erlang stop: $erlang_stop"
-  fi
-  echo "======================================"
-} > "$output_file"
-
-# Run the appropriate command and tee output to our custom log file
-{
-  echo "Job ID: $SLURM_JOB_ID"
-  echo "Algorithm: $alg"
-  if [ "$mode" = "simulation" ]; then
-    echo "Erlang start: $erlang_start"
-    echo "Erlang stop: $erlang_stop"
-    echo "-------------------------"
-    
-    python run_rl_sim.py \
-      --erlang_start "$erlang_start" \
-      --erlang_stop "$erlang_stop" \
-      --erlang_step 100 \
-      --path_algorithm "$alg"
-  else
-    echo "Mode: Optimization"
-    echo "-------------------------"
-    
-    python -m rl_zoo3.train --algo ppo --env SimEnv --conf-file ./sb3_scripts/yml/ppo.yml \
-      -optimize --n-trials 15 --n-timesteps 250000
-  fi
-  
-  echo "-------------------------"
-  echo "Finished job for $alg in $mode mode"
-} 2>&1 | tee -a "$output_file"
+echo "----------------------------------------------------------"
+echo "Finished optimization for $alg"
+echo "Job ended at $(date)"
+echo "Output saved to $output_file"
