@@ -1,9 +1,9 @@
 import os
 import json
 from json import JSONDecodeError
+import numpy as np
 import datetime
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 
 
 def parse_time_string(time_str):
@@ -94,74 +94,76 @@ def style_boxplot_elements(bp, box_algos, algo_colors):
 
 def plot_sim_times(simulation_times, base_dir):
     """
-    Shows a single figure with grouped boxplots:
-    each traffic volume on the x-axis, one box per algorithm in each group,
-    with correct color coding and a matching legend.
+    Creates a grouped bar chart where the x-axis is traffic volumes,
+    and each traffic-volume group contains bars for each algorithm.
+    The height of the bar represents the mean simulation time for that
+    traffic volume / algorithm combination.
     """
     if not simulation_times:
         return
-    available_styles = plt.style.available
-    if 'seaborn-whitegrid' in available_styles:
-        plt.style.use('seaborn-whitegrid')
-    elif 'seaborn-white' in available_styles:
-        plt.style.use('seaborn-white')
-    else:
-        plt.style.use('default')
 
     sim_times_dict = {}
     all_algorithms = set()
+
+    # Collect raw duration data
     for algorithm, sim_list in simulation_times.items():
         durations_by_label = collect_simulation_durations_for_algo(sim_list, base_dir)
-        for label, dlist in durations_by_label.items():
-            sim_times_dict.setdefault(label, {})[algorithm] = dlist
+        for label, duration_list in durations_by_label.items():
+            sim_times_dict.setdefault(label, {})[algorithm] = duration_list
         all_algorithms.add(algorithm)
+
     all_algorithms = sorted(all_algorithms)
     traffic_labels = sorted(sim_times_dict.keys(), key=float)
 
-    data_for_boxplot = []
-    box_algos = []
-    positions = []
-    group_width = 0.8
-    box_width = group_width / len(all_algorithms)
-    current_center = 1
-    label_positions = []
-
+    # Compute means
+    means_matrix = []
     for label in traffic_labels:
-        for i, algo in enumerate(all_algorithms):
-            durations_list = sim_times_dict[label].get(algo, [])
-            data_for_boxplot.append(durations_list)
-            box_algos.append(algo)
-            pos = current_center - group_width / 2 + (i + 0.5) * box_width
-            positions.append(pos)
-        label_positions.append(current_center)
-        current_center += 2
+        algo_means = []
+        for algo in all_algorithms:
+            durations = sim_times_dict[label].get(algo, [])
+            if not durations:
+                algo_means.append(0)
+            else:
+                algo_means.append(np.mean(durations))
+        means_matrix.append(algo_means)
 
-    plt.figure(figsize=(10, 5), dpi=300)
-    bp = plt.boxplot(
-        data_for_boxplot,
-        positions=positions,
-        widths=box_width,
-        showmeans=True,
-        patch_artist=True
-    )
+    means_matrix = np.array(means_matrix)  # shape: (num_traffic_labels, num_algorithms)
 
-    plt.xticks(label_positions, traffic_labels, rotation=45, ha='right', fontsize=12)
-    plt.xlabel("Traffic Volume", fontsize=14, fontweight='bold')
-    plt.ylabel("Simulation Time (seconds)", fontsize=14, fontweight='bold')
-    plt.title("Boxplot of Simulation Times", fontsize=16, fontweight='bold')
-    plt.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+    # One position for each traffic volume
+    x = np.arange(len(traffic_labels))
+    bar_width = 0.8 / len(all_algorithms)  # Make sure bars fit side by side
 
+    # Make the figure wider
+    plt.figure(figsize=(14, 6), dpi=300)
+
+    # Default color cycle
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     algo_colors = {algo: colors[i % len(colors)] for i, algo in enumerate(all_algorithms)}
-    style_boxplot_elements(bp, box_algos, algo_colors)
 
-    legend_elements = [
-        Line2D([0], [0], marker='s', color='w', markerfacecolor=algo_colors[algo],
-               label=algo, markersize=10)
-        for algo in all_algorithms
-    ]
-    plt.legend(handles=legend_elements, title="Algorithm",
-               bbox_to_anchor=(1.05, 1), loc="upper left",
+    for i, algo in enumerate(all_algorithms):
+        offset = i * bar_width
+        # Remove yerr and capsize to eliminate the black error bars
+        plt.bar(
+            x + offset,
+            means_matrix[:, i],
+            bar_width,
+            label=algo,
+            color=algo_colors[algo],
+            alpha=0.9
+        )
+
+    plt.xticks(
+        x + bar_width * (len(all_algorithms) / 2 - 0.5),
+        traffic_labels,
+        rotation=45,
+        ha='right',
+        fontsize=12
+    )
+    plt.xlabel("Traffic Volume", fontsize=14, fontweight='bold')
+    plt.ylabel("Mean Simulation Time (seconds)", fontsize=14, fontweight='bold')
+    plt.title("Bar Chart of Simulation Times", fontsize=16, fontweight='bold')
+    plt.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.legend(title="Algorithm", bbox_to_anchor=(1.05, 1), loc="upper left",
                fontsize=12, title_fontsize=12)
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     plt.show()
