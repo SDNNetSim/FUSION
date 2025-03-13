@@ -4,12 +4,21 @@ import numpy as np
 
 def plot_blocking_probabilities(final_result):
     """
-    Plot the blocking probability versus Erlang values using the final_result data.
+    Plot the blocking probability versus Erlang values using the final_result data
+    with a publication-quality style.
 
     Parameters:
         final_result (dict): Processed simulation data for blocking probabilities.
     """
-    plt.figure(figsize=(6, 4), dpi=200)
+    available_styles = plt.style.available
+    if 'seaborn-whitegrid' in available_styles:
+        plt.style.use('seaborn-whitegrid')
+    elif 'seaborn-white' in available_styles:
+        plt.style.use('seaborn-white')
+    else:
+        plt.style.use('default')
+
+    plt.figure(figsize=(10, 6), dpi=300)
     for algo_key, traffic_data in final_result.items():
         erlang_values = []
         blocking_probs = []
@@ -28,15 +37,23 @@ def plot_blocking_probabilities(final_result):
                 avg_block = np.mean(final_blocks)
                 erlang_values.append(tv)
                 blocking_probs.append(avg_block)
+
         if erlang_values:
             sorted_pairs = sorted(zip(erlang_values, blocking_probs), key=lambda x: x[0])
             sorted_erlangs, sorted_blocks = zip(*sorted_pairs)
-            plt.plot(sorted_erlangs, sorted_blocks, marker='o', label=algo_key)
-    plt.xlabel('Erlang Values')
-    plt.ylabel('Blocking Probability')
+            plt.plot(sorted_erlangs, sorted_blocks,
+                     marker='o', linewidth=2, markersize=6, label=algo_key)
+
+    plt.xlabel('Erlang Values', fontsize=14, fontweight='bold')
+    plt.ylabel('Blocking Probability', fontsize=14, fontweight='bold')
+    plt.title('Blocking Probability vs Erlang Values', fontsize=16, fontweight='bold')
+
     plt.yscale('log')
     plt.ylim(10 ** -4, 10 ** -0.5)
-    plt.title('Blocking Probability vs Erlang Values')
-    plt.legend()
-    plt.grid(True)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.grid(True, which="both", linestyle='--', linewidth=0.5)
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=12)
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+
     plt.show()

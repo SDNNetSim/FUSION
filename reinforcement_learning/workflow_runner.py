@@ -34,6 +34,7 @@ def _run_drl_training(env: object, sim_dict: dict):
 
 
 # TODO: (drl_path_agents) Break this function up for organizational purposes
+#   - You have repeat logic
 def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None):
     """
     Runs the specified number of episodes in the reinforcement learning environment.
@@ -56,6 +57,7 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
 
     if callback_obj:
         callback_obj.max_iters = sim_dict['max_iters']
+        callback_obj.sim_dict = sim_dict
 
     obs, _ = env.reset(seed=completed_trials)
 
@@ -67,17 +69,18 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
             if drl_agent:
                 _run_drl_training(env=env, sim_dict=sim_dict)
                 rewards_matrix[completed_trials] = callback_obj.episode_rewards
+
                 callback_obj.episode_rewards = np.array([])
                 completed_trials += 1
-                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
+                env.trial = completed_trials
+                callback_obj.trial += 1
+                env.iteration = 0
 
-                callback = EpisodicRewardCallback()
-                env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
-                env.sim_dict['callback'] = callback
+                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
                 obs, _ = env.reset(seed=completed_trials)
                 continue
-            else:
-                obs, reward, is_terminated, is_truncated, _ = env.step(0)
+
+            obs, reward, is_terminated, is_truncated, _ = env.step(0)
         else:
             action, _states = model.predict(obs)
             obs, reward, is_terminated, is_truncated, _ = env.step(action)
