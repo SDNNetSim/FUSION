@@ -1,25 +1,19 @@
 SimEnv:
-  normalize: false
-#  n_envs: 32
-  n_timesteps: 25000
+  normalize: false  # Remove normalization to match previous better performance
+  n_timesteps: 1000000  # Reset training cycles to analyze learning faster
   policy: 'MultiInputPolicy'
-  n_steps: 512
-  batch_size: 128
-  gae_lambda: 0.9
-  gamma: 0.99
-  n_epochs: 10
-  vf_coef: 0.5
-  ent_coef: 0.00001
-#  use_sde: True
-  max_grad_norm: 0.8
-  learning_rate: 0.0005  # Use a constant value for now, schedule can be added in code
-#  sde_sample_freq: 4
-  clip_range: 0.3
+  n_steps: 4096  # Keep long rollouts for better gradient updates
+  batch_size: 256  # Keep batch size large for stable updates
+  gae_lambda: 0.95  # Good balance for long-term reward assignment
+  gamma: 0.97  # Keep long-term planning focus
+  n_epochs: 5  # Keep reduced epochs for stable updates
+  vf_coef: 0.6
+  ent_coef: 0.005  # Increase to encourage more exploration
+  max_grad_norm: 0.6
+  learning_rate: 0.0005  # Slightly increase for faster adaptation
+  clip_range: 0.2  # Restore flexibility in policy updates
   policy_kwargs: "dict(
                     ortho_init=False,
                     activation_fn=nn.ReLU,
                     net_arch=dict(pi=[128,128], vf=[128,128])
                   )"
-  callback:
-    - reinforcement_learning.utils.callbacks.GetModelParams:
-        verbose: 1

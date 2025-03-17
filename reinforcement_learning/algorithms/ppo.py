@@ -1,3 +1,5 @@
+import numpy as np
+
 from gymnasium import spaces
 
 
@@ -19,9 +21,12 @@ class PPO:
         """
         Gets the observation space for the ppo reinforcement learning framework.
         """
+        bw_set = {d["bandwidth"] for d in self.rl_props.arrival_list}
         resp_obs = spaces.Dict({
             'source': spaces.MultiBinary(self.rl_props.num_nodes),
             'destination': spaces.MultiBinary(self.rl_props.num_nodes),
+            'request_bandwidth': spaces.MultiBinary(len(bw_set)),
+            'holding_time': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32)
         })
 
         return resp_obs
