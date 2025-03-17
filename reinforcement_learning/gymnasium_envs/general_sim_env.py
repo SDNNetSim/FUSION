@@ -80,7 +80,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             seed = self.iteration
 
         self.rl_help_obj.reset_reqs_dict(seed=seed)
-        obs = self.step_helper.get_obs()
+        req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
+        bandwidth = req_info_dict['bandwidth']
+        holding_time = req_info_dict['depart'] - req_info_dict['arrive']
+        obs = self.step_helper.get_obs(bandwidth=bandwidth, holding_time=holding_time)
         info = self._get_info()
         return obs, info
 
@@ -119,6 +122,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         req_info_dict = self.rl_props.arrival_list[self.rl_props.arrival_count]
         req_id = req_info_dict['req_id']
         bandwidth = req_info_dict['bandwidth']
+        holding_time = req_info_dict['depart'] - req_info_dict['arrive']
 
         self.sim_env_helper.update_helper_obj(action=action, bandwidth=bandwidth)
         self.rl_help_obj.allocate()
@@ -137,7 +141,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self.rl_props.arrival_count += 1
         terminated = self.step_helper.check_terminated()
-        new_obs = self.step_helper.get_obs()
+        new_obs = self.step_helper.get_obs(bandwidth=bandwidth, holding_time=holding_time)
         truncated = False
         info = self._get_info()
 
