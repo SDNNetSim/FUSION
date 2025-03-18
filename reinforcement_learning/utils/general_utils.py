@@ -252,6 +252,9 @@ class SimEnvHelpers:
         """
         self.sim_env = sim_env
 
+        self.lowest_holding = None
+        self.highest_holding = None
+
     def update_helper_obj(self, action: int, bandwidth: str):
         """
         Updates the helper object with new actions and configurations.
@@ -310,7 +313,21 @@ class SimEnvHelpers:
         else:
             self.sim_env.step_helpers.handle_path_train_test()
 
-    def get_drl_obs(self):
+    def _scale_req_holding(self, holding_time):
+        req_dict = self.sim_env.engine_obj.reqs_dict
+        if self.lowest_holding is None or self.highest_holding is None:
+            differences = [value['depart'] - arrival for arrival, value in req_dict.items()]
+
+            self.lowest_holding = min(differences)
+            self.highest_holding = max(differences)
+
+        if self.lowest_holding == self.highest_holding:
+            raise ValueError("x_max and x_min cannot be the same value.")
+
+        scaled_holding = (holding_time - self.lowest_holding) / (self.highest_holding - self.lowest_holding)
+        return scaled_holding
+
+    def get_drl_obs(self, bandwidth, holding_time):
         """
         Creates observation data for Deep Reinforcement Learning (DRL) in a graph-based
         environment.
@@ -320,7 +337,16 @@ class SimEnvHelpers:
         dest_obs = np.zeros(self.sim_env.rl_props.num_nodes)
         dest_obs[self.sim_env.rl_props.destination] = 1.0
 
-        return source_obs, dest_obs
+        if not hasattr(self.sim_env, "bw_obs_list"):
+            des_dict = self.sim_env.sim_dict['request_distribution']
+            self.sim_env.bw_obs_list = sorted([k for k, v in des_dict.items() if v != 0], key=int)
+
+        bw_index = self.sim_env.bw_obs_list.index(bandwidth)
+        req_obs = np.zeros(len(self.sim_env.bw_obs_list))
+        req_obs[bw_index] = 1.0
+        req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
+
+        return source_obs, dest_obs, req_obs, req_holding_scaled
 
 
 # TODO: (drl_path_agents) Only works for s1
