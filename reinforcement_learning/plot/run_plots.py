@@ -24,7 +24,7 @@ NETWORK = 'NSFNet'
 
 def main():
     """
-    Controls the plotting module.
+    Controls the plots module.
     """
     dates_dict = {
         DATE: NETWORK,
@@ -69,8 +69,6 @@ def main():
     # plot_rewards_per_seed(all_rewards_data)
     # plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
-    plot_sim_times(simulation_times, base_dir)
-    plot_memory_usage(memory_usage_data)
     # plot_sim_times(simulation_times, base_dir)
     plot_memory_usage(memory_usage_data)
 

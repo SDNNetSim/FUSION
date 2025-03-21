@@ -1,5 +1,5 @@
 SimEnv:
-  normalize: false
+  normalize: false  # Remove normalization to match previous better performance
   n_timesteps: 1000000  # Reset training cycles to analyze learning faster
   policy: 'MultiInputPolicy'
   n_steps: 4096  # Keep long rollouts for better gradient updates
