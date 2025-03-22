@@ -2,6 +2,7 @@ import os
 import copy
 
 from stable_baselines3 import PPO
+from stable_baselines3 import A2C
 from torch import nn  # pylint: disable=unused-import
 
 from src.engine import Engine
@@ -55,6 +56,41 @@ def setup_ppo(env: object, device: str):
 
     return model
 
+def setup_A2C(env: object, device: str):
+    """
+    Setups up the StableBaselines3 A2C model.
+
+    :param env: Custom environment created.
+    :param device: Device to use, cpu or gpu.
+    :return: An A2C model.
+    :rtype: object
+    """
+    yaml_path = os.path.join('sb3_scripts', 'yml', 'a2c.yml')
+    yaml_dict = parse_yaml_file(yaml_path)
+    env_name = list(yaml_dict.keys())[0]
+    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+
+    model = A2C(env=env,
+                device=                 device,
+                policy=                 yaml_dict[env_name]['policy'],
+                learning_rate=          yaml_dict[env_name]['learning_rate'],
+                n_steps=                yaml_dict[env_name]['n_steps'],
+                gae_lambda=             yaml_dict[env_name]['gae_lambda'],
+                gamma=                  yaml_dict[env_name]['gamma'],
+                vf_coef=                yaml_dict[env_name]['vf_coef'],
+                ent_coef=               yaml_dict[env_name]['ent_coef'],
+                max_grad_norm=          yaml_dict[env_name]['max_grad_norm'],
+                use_sde=                yaml_dict[env_name]['use_sde'],
+                sde_sample_freq=        yaml_dict[env_name]['sde_sample_freq'],
+                rollout_buffer_class=   yaml_dict[env_name]['rollout_buffer_class'],
+                rollout_buffer_kwargs=  yaml_dict[env_name]['rollout_buffer_kwargs'],
+                stats_window_size=      yaml_dict[env_name]['stats_window_size'],
+                tensorboard_log=        yaml_dict[env_name]['tensorboard_log'],
+                verbose=                yaml_dict[env_name]['verbose'],
+                seed=                   yaml_dict[env_name]['seed'],
+                policy_kwargs=          kwargs_dict)
+
+    return model
 
 def print_info(sim_dict: dict):
     """
