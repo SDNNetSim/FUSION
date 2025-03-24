@@ -20,6 +20,7 @@ class ButtonHelpers:
         self.media_dir = 'media'
         self.simulation_config = None  # To be set by MainWindow
         self.shared_progress_dict = None  # To be set by MainWindow
+        self.stop_flag = multiprocessing.Event()  # Shared flag for stopping the simulation
 
     def output_hints(self, message: str):
         self.bottom_right_pane.appendPlainText(message)
@@ -66,10 +67,12 @@ class ButtonHelpers:
             print("Error: simulation configuration is not set!")
             return
 
+        self.stop_flag.clear()  # Clear the stop flag before starting the simulation
+
         # Create and start a separate process that runs the simulations
         sim_process = multiprocessing.Process(
             target=run,
-            kwargs={'sims_dict': self.simulation_config}
+            kwargs={'sims_dict': self.simulation_config, 'stop_flag': self.stop_flag}
         )
         sim_process.start()
 
@@ -85,12 +88,16 @@ class ButtonHelpers:
 
     def stop_simulation(self):
         if self.simulation_process and self.simulation_process.is_alive():
-            self.simulation_process.terminate()
-            self.progress_bar.setValue(0)
-            self.progress_bar.setVisible(False)
+            self.stop_flag.set()  # Set the stop flag to signal the simulation process to stop
+            self.simulation_process.join()  # Wait for the simulation process to finish
             self.simulation_process = None
 
-        self.simulation_thread.stop()
+        # Reset the progress bar and other relevant state variables
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
+        self.bottom_right_pane.clear()
+        self.simulation_config = None  # Clear the simulation configuration
+        self.shared_progress_dict = None  # Clear the shared progress dictionary
 
         self.start_button.setText("Start")
 

@@ -34,6 +34,7 @@ class Engine:
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
 
         self.ml_model = None
+        self.stop_flag = engine_props.get('stop_flag')  # Get the stop flag from engine_props
 
     def update_arrival_params(self, curr_time: float):
         """
@@ -256,6 +257,11 @@ class Engine:
               f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}")
 
         for iteration in range(max_iters):
+            if self.stop_flag.is_set():  # Check if the stop flag is set
+                print(f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
+                      f"simulation number: {thread_num}.")
+                break
+
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:

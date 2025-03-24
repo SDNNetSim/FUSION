@@ -15,7 +15,6 @@ class NetworkSimulator:
     Controls all simulations for this project.
     """
     def __init__(self):
-        # Contains all the desired network simulator parameters for every simulation.
         self.properties = None
 
     def _run_generic_sim(self, erlang: float, first_erlang: bool, erlang_index: int,
@@ -31,7 +30,7 @@ class NetworkSimulator:
 
         # Remove unpickleable keys so we can deepcopy
         unpickleable_keys = {}
-        for key in ['log_queue', 'progress_queue']:
+        for key in ['log_queue', 'progress_queue', 'stop_flag']:
             if key in self.properties:
                 unpickleable_keys[key] = self.properties.pop(key)
 
@@ -43,6 +42,8 @@ class NetworkSimulator:
             engine_props['log_queue'] = unpickleable_keys['log_queue']
         if 'progress_queue' in unpickleable_keys:
             engine_props['progress_queue'] = unpickleable_keys['progress_queue']
+        if 'stop_flag' in unpickleable_keys:
+            engine_props['stop_flag'] = unpickleable_keys['stop_flag']
 
         # Keep or remove progress_dict references as needed
         engine_props['progress_dict'] = progress_dict
@@ -60,7 +61,7 @@ class NetworkSimulator:
 
         # Make a sanitized copy for saving
         clean_engine_props = engine_props.copy()
-        for badkey in ['progress_dict', 'progress_key', 'log_queue', 'progress_queue', 'done_offset']:
+        for badkey in ['progress_dict', 'progress_key', 'log_queue', 'progress_queue', 'done_offset', 'stop_flag']:
             clean_engine_props.pop(badkey, None)
 
         updated_props = create_input(base_fp='data', engine_props=clean_engine_props)
@@ -140,7 +141,7 @@ class NetworkSimulator:
         self.run_generic_sim()
 
 
-def run(sims_dict: dict):
+def run(sims_dict: dict, stop_flag: multiprocessing):
     """
     Spawns a separate process for each simulation config.
     Each process might handle multiple Erlangs via run_generic_sim().
@@ -168,6 +169,7 @@ def run(sims_dict: dict):
     for thread_num, thread_params in sims_dict.items():
         # Insert the parent's queues if not already set
         thread_params['progress_queue'] = progress_queue
+        thread_params['stop_flag'] = stop_flag  # Pass the stop flag to the simulation process
 
         log(f"Starting simulation for thread {thread_num} at {sim_start}.")
         curr_sim = NetworkSimulator()
@@ -191,4 +193,5 @@ def run(sims_dict: dict):
 if __name__ == '__main__':
     args_dict = parse_args()
     all_sims_dict = read_config(args_dict=args_dict, config_path=args_dict['config_path'])
-    run(sims_dict=all_sims_dict)
+    stop_flag = multiprocessing.Event()
+    run(sims_dict=all_sims_dict, stop_flag=stop_flag)
