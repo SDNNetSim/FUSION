@@ -1,6 +1,7 @@
 # pylint: disable=protected-access
 
 import unittest
+from unittest.mock import patch
 from unittest.mock import MagicMock
 import numpy as np
 from src.snr_measurements import SnrMeasurements
@@ -14,6 +15,9 @@ class TestSnrMeasurements(unittest.TestCase):
         self.engine_props = {
             'bw_per_slot': 12.5,
             'input_power': 0.001,
+            'multi_fiber': False,
+            'cores_per_link':2,
+            'network':'USbackbone60',
             'topology_info': {
                 'links': {
                     0: {
@@ -28,6 +32,8 @@ class TestSnrMeasurements(unittest.TestCase):
                 }
             },
             'c_band': 40,
+            'l_band': 40,
+            's_band': 50,
             'egn_model': False,
             'xt_noise': False,
             'phi': {'QPSK': 0.5},
@@ -113,6 +119,44 @@ class TestSnrMeasurements(unittest.TestCase):
 
         self.assertTrue(resp)
         self.assertAlmostEqual(cross_talk, expected_cross_talk, places=10)
+
+    @patch('src.snr_measurements.get_loaded_files')
+    def test_check_snr_ext(self, path_index: int):
+        """Test checking SNR using external resources."""
+        self.snr_measurements.get_loaded_files = MagicMock(return_value=([], []))
+        self.snr_measurements.get_slot_index = MagicMock(return_value=0)
+        self.snr_measurements.compute_response = MagicMock(return_value=('success', 25))
+
+        # Test check_snr_ext with mock data
+        resp, snr_val = self.snr_measurements.check_snr_ext(path_index=0)
+
+        # Verify the response
+        self.assertEqual(resp, 'success')
+        self.assertEqual(snr_val, 25)
+
+    def test_check_snr_ext_slicing(self):
+        """Test checking SNR using external resources with slicing."""
+        self.snr_measurements.get_loaded_files.return_value = ([[[1]]], [])
+        self.snr_measurements.get_slot_index.return_value = 0
+
+        # Simulate modulation format and bandwidth
+        mod_format, supported_bw, snr_val = self.snr_measurements.check_snr_ext_slicing(path_index=0)
+
+        # Verify the response
+        self.assertEqual(mod_format, 'QPSK')
+        self.assertEqual(supported_bw, 50)
+        self.assertEqual(snr_val, 0)
+
+    def test_check_snr_ext_open_slots(self):
+        """Test checking open slots for SNR."""
+        open_slots_list = [1, 2, 3]
+        self.snr_measurements.get_loaded_files.return_value = ([[[1]]], [])
+
+        # Test check_snr_ext_open_slots with mock data
+        open_slots_list = self.snr_measurements.check_snr_ext_open_slots(path_index=0, open_slots_list=open_slots_list)
+
+        # Verify the open slots after checking
+        self.assertNotIn(2, open_slots_list)  # Slot 2 should be removed
 
 
 if __name__ == '__main__':

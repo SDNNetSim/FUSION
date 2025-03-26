@@ -32,6 +32,14 @@ class TestOSHelpers(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "File path cannot be None.")
 
+    def test_create_dir_empty_string(self):
+        """
+        Test the create_dir function to ensure it raises a ValueError if the file_path is an empty string.
+        """
+        with self.assertRaises(ValueError) as context:
+            create_dir("")
+
+        self.assertEqual(str(context.exception), "File path cannot be empty.")
 
 if __name__ == '__main__':
     unittest.main()

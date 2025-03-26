@@ -9,6 +9,7 @@ class SDNProps:
         self.path_list = None  # List of nodes for the current request
         self.path_index = None  # Index of selected path in the computed path set
         self.was_routed = None  # Flag to determine successful route
+        self.is_sliced = None
         self.topology = None  # Networkx topology
         self.net_spec_dict = None  # Current network spectrum database
 
