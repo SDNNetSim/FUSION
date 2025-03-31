@@ -4,12 +4,14 @@ import multiprocessing
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
 from PyQt5 import QtWidgets, QtGui, QtCore
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
+from gui_scripts.gui_helpers.general_helpers import SimulationThread
 
 # We import the simulation runner's run() function.
 from run_sim import run
 
 class ButtonHelpers:
     def __init__(self):
+        self.simulation_thread = None
         self.bottom_right_pane = None
         self.progress_bar = None
         self.start_button = None
@@ -75,6 +77,13 @@ class ButtonHelpers:
             kwargs={'sims_dict': self.simulation_config, 'stop_flag': self.stop_flag}
         )
         sim_process.start()
+
+        self.simulation_thread = SimulationThread()
+        self.simulation_thread.output_hints_signal.connect(self.output_hints)
+        self.simulation_thread.progress_changed.connect(self.update_progress)
+        self.simulation_thread.finished_signal.connect(self.simulation_finished)
+        self.simulation_thread.finished.connect(self.simulation_thread.deleteLater)
+        self.simulation_thread.start()
 
         self.simulation_process = sim_process
         print("Multiprocess simulation launched directly.")
