@@ -27,7 +27,7 @@ def get_requests(seed: int, engine_props: dict):
     num_destinations = engine_props.get('num_destinations', 2)  
 
     # Validate that the number of sources/destinations does not exceed available nodes  
-    if engine_props['multi_source_multi_destination']:  
+    if engine_props['MSMD']:  
         if num_sources > len(nodes_list) or num_destinations > len(nodes_list):  
             raise ValueError("Number of sources or destinations specified exceeds the number of available nodes.")  
 
@@ -43,13 +43,16 @@ def get_requests(seed: int, engine_props: dict):
                          'either change the number of requests, or change the percentages for the bandwidth values'  
                          'selected.')  
 
+    # Store source-destination pairs  
+    sdn_pairs = set()  
+
     # Generate requests  
     while len(requests_dict) < (engine_props['num_requests'] * 2):  
         current_time += get_exponential_rv(scale_param=engine_props['arrival_rate'])  
         depart_time = current_time + get_exponential_rv(scale_param=1 / engine_props['holding_time'])  
 
         # Select sources and destinations  
-        if engine_props['multi_source_multi_destination']:  
+        if engine_props['MSMD']:  
             sources = sample(nodes_list, num_sources)  
             remaining_nodes = [node for node in nodes_list if node not in sources]  
             destinations = sample(remaining_nodes, num_destinations)  
@@ -58,6 +61,14 @@ def get_requests(seed: int, engine_props: dict):
             dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]  
             while dest == source:  
                 dest = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]  
+
+        # Store the source-destination pairs  
+        if engine_props['MSMD']:  
+            for src in sources:  
+                for dst in destinations:  
+                    sdn_pairs.add((src, dst))  
+        else:  
+            sdn_pairs.add((source, dest))  
 
         # Choose bandwidth  
         while True:  
@@ -70,8 +81,8 @@ def get_requests(seed: int, engine_props: dict):
         if current_time not in requests_dict and depart_time not in requests_dict:  
             request_data = {  
                 "req_id": request_id,  
-                "source": sources if engine_props['multi_source_multi_destination'] else source,  
-                "destination": destinations if engine_props['multi_source_multi_destination'] else dest,  
+                "source": sources if engine_props['MSMD'] else source,  
+                "destination": destinations if engine_props['MSMD'] else dest,  
                 "arrive": current_time,  
                 "depart": depart_time,  
                 "request_type": "arrival",  
@@ -82,8 +93,8 @@ def get_requests(seed: int, engine_props: dict):
 
             release_data = {  
                 "req_id": request_id,  
-                "source": sources if engine_props['multi_source_multi_destination'] else source,  
-                "destination": destinations if engine_props['multi_source_multi_destination'] else dest,  
+                "source": sources if engine_props['MSMD'] else source,  
+                "destination": destinations if engine_props['MSMD'] else dest,  
                 "arrive": current_time,  
                 "depart": depart_time,  
                 "request_type": "release",  
@@ -96,4 +107,7 @@ def get_requests(seed: int, engine_props: dict):
         else:  
             bw_counts_dict[chosen_bandwidth] += 1  
 
-    return requests_dict
+    # Convert set to list to maintain order  
+    sdn_pairs = list(sdn_pairs)  
+
+    return requests_dict, sdn_pairs  # Returning both
