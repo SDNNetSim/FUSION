@@ -44,6 +44,7 @@ SIM_REQUIRED_OPTIONS = {
         'is_only_core_node': str_to_bool,
         'multi_fiber': str_to_bool,
         'multi_source_multi_destination': str_to_bool,
+        'disjoint': str_to_bool,
     },
     'spectrum_settings': {
         'c_band': int,
