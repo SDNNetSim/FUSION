@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 from src.spectrum_assignment import SpectrumAssignment
+from src.routing import Routing
 
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
@@ -327,6 +328,28 @@ class SimEnvHelpers:
         scaled_holding = (holding_time - self.lowest_holding) / (self.highest_holding - self.lowest_holding)
         return scaled_holding
 
+    def _get_paths_slots(self, bandwidth):
+        # TODO: Can move this to the constructor...
+        routing_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
+                              sdn_props=self.sim_env.engine_obj.sdn_obj.sdn_props)
+
+        routing_obj.sdn_props.bandwidth = bandwidth
+        routing_obj.sdn_props.source = str(self.sim_env.rl_props.source)
+        routing_obj.sdn_props.destination = str(self.sim_env.rl_props.destination)
+        routing_obj.get_route()
+        route_props = routing_obj.route_props
+
+        slots_needed_list = list()
+        mod_bw_dict = self.sim_env.engine_obj.engine_props['mod_per_bw']
+        for mod_format in route_props.mod_formats_matrix:
+            if not mod_format[0]:
+                slots_needed = -1
+            else:
+                slots_needed = mod_bw_dict[bandwidth][mod_format[0]]['slots_needed']
+            slots_needed_list.append(slots_needed)
+
+        return slots_needed_list, route_props.weights_list
+
     def get_drl_obs(self, bandwidth, holding_time):
         """
         Creates observation data for Deep Reinforcement Learning (DRL) in a graph-based
@@ -346,7 +369,11 @@ class SimEnvHelpers:
         req_obs[bw_index] = 1.0
         req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
 
-        return source_obs, dest_obs, req_obs, req_holding_scaled
+        # TODO: Add and initialize bandwidth in self
+        slots_needed, path_lengths = self._get_paths_slots(bandwidth=bandwidth)
+
+        return {'source_obs': source_obs, 'dest_obs': dest_obs, 'req_obs': req_obs, 'req_holding': req_holding_scaled,
+                'slots_needed': slots_needed, 'path_lengths': path_lengths}
 
 
 # TODO: (drl_path_agents) Only works for s1

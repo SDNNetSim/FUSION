@@ -77,9 +77,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         self._init_props_envs(seed=seed, print_flag=print_flag)
 
-        self.frag_tracker = FragmentationTracker(num_nodes=self.rl_props.num_nodes,
-                                                 core_count=self.rl_props.cores_per_link,
-                                                 spectral_slots=self.rl_props.spectral_slots)
+        # self.frag_tracker = FragmentationTracker(num_nodes=self.rl_props.num_nodes,
+        #                                          core_count=self.rl_props.cores_per_link,
+        #                                          spectral_slots=self.rl_props.spectral_slots)
 
 
         if not self.sim_dict['is_training'] and self.iteration == 0:
