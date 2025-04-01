@@ -1,5 +1,6 @@
 import os
 
+
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 
 
@@ -122,6 +123,10 @@ class SimEnvUtils:
         self.sim_env.rl_props.destination = int(curr_req['destination'])
         self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(curr_req=curr_req)
 
+        frag = self.sim_env.frag_tracker.get_fragmentation(
+            chosen_path=self.sim_env.rl_props.chosen_path_list,
+            core_index=self.sim_env.rl_props.core_index)
+
         source_obs, dest_obs, req_obs, req_holding = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth,
                                                                                              holding_time=holding_time)
         obs_dict = {
@@ -129,5 +134,10 @@ class SimEnvUtils:
             'destination': dest_obs,
             'request_bandwidth': req_obs,
             'holding_time': req_holding,
+            'fragmentation': frag['fragmentation'],
+            'path_frag': frag['path_frag']
+
         }
         return obs_dict
+
+

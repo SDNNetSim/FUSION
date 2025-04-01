@@ -26,7 +26,9 @@ class PPO:
             'source': spaces.MultiBinary(self.rl_props.num_nodes),
             'destination': spaces.MultiBinary(self.rl_props.num_nodes),
             'request_bandwidth': spaces.MultiBinary(len(bw_set)),
-            'holding_time': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32)
+            'holding_time': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
+            #'fragmentation': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
+            #'path_frag': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
         })
 
         return resp_obs

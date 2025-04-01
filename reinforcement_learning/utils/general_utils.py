@@ -380,3 +380,88 @@ def save_arr(arr: np.array, sim_dict: dict, file_name: str):
     network, date, time = sim_dict['network'], sim_dict['date'], sim_dict['sim_start']
     file_path = os.path.join('logs', algorithm_type, network, date, time, file_name)
     np.save(file_path, arr)
+
+
+
+
+class FragmentationTracker:
+    def __init__(self, num_nodes, core_count, spectral_slots):
+        """
+        Initializes the fragmentation tracker.
+
+        :param num_nodes: Total number of nodes in the network topology.
+        :param core_count: Number of cores per link.
+        :param spectral_slots: Number of spectral slots per core.
+        """
+        self.num_nodes = num_nodes
+        self.core_count = core_count
+        self.spectral_slots = spectral_slots
+
+        # Bitmask: [src, dst, core, slots]
+        self.core_masks = np.zeros((num_nodes, num_nodes, core_count, spectral_slots), dtype=np.uint8)
+
+        # Dirty mask to avoid unnecessary recomputation
+        self.dirty_cores = np.zeros((num_nodes, num_nodes, core_count), dtype=bool)
+
+        # Normalize by max possible transitions per core (not including zero-padding)
+        self.norm_factor = (spectral_slots // 3) + 1
+
+    def update(self, src: int, dst: int, core_index: int, start_slot: int, end_slot: int, is_allocate: bool = True):
+        """
+        Updates the core mask for a specific link (src→dst), core, and slot range.
+
+        :param src: Source node index
+        :param dst: Destination node index
+        :param core_index: Core used for allocation
+        :param start_slot: First slot index allocated
+        :param end_slot: Last slot index allocated (inclusive)
+        :param is_allocate: If True, mark as allocated (1); if False, free (0)
+        """
+        slot_indices = np.arange(start_slot, end_slot + 1)
+        if is_allocate:
+            self.core_masks[src, dst, core_index, slot_indices] = 1
+        else:
+            self.core_masks[src, dst, core_index, slot_indices] = 0
+
+        self.dirty_cores[src, dst, core_index] = True
+
+    def get_fragmentation(self, chosen_path: list[int], core_index: int):
+        """
+        Computes fragmentation for the specified core and chosen path.
+
+        :param chosen_path: List of node indices representing the path.
+        :param core_index: Core used during allocation.
+        :return: Dictionary with formatted NumPy arrays for Gym observations.
+        """
+        # 1. Core-level fragmentation (last link in path)
+        core_frag = 0.0
+        if len(chosen_path) >= 2:
+            last_src, last_dst = chosen_path[-2], chosen_path[-1]
+            if self.dirty_cores[last_src, last_dst, core_index]:
+                core_mask = self.core_masks[last_src, last_dst, core_index]
+                padded = np.pad(core_mask, (1,), 'constant')
+                transitions = np.abs(np.diff(padded))
+                core_frag = np.sum(transitions) / (2 * self.norm_factor)
+
+        # 2. Path-level fragmentation (avg across all links in path, all cores)
+        path_transitions = 0
+        total_links = len(chosen_path) - 1
+
+        for i in range(total_links):
+            src, dst = chosen_path[i], chosen_path[i + 1]
+            for c in range(self.core_count):
+                padded = np.pad(self.core_masks[src, dst, c], (1,), 'constant')
+                transitions = np.abs(np.diff(padded))
+                path_transitions += np.sum(transitions)
+
+        if total_links > 0:
+            path_frag = path_transitions / (2 * self.norm_factor * total_links * self.core_count)
+        else:
+            path_frag = 0.0
+
+        self.dirty_cores.fill(False)
+
+        return {
+            'fragmentation': np.array([core_frag], dtype=np.float32),
+            'path_frag': np.array([path_frag], dtype=np.float32)
+        }
