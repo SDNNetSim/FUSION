@@ -1,7 +1,0 @@
-Job ID: 29458283
-Algorithm: epsilon_greedy_bandit
-Erlang start: 50
-Erlang stop: 150
-Extra parameters: --epsilon_start 0.27 --epsilon_end 0.04 --decay_rate 0.29
-Timestamp: 2025-03-05_17-45-09
--------------------------

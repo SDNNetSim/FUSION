@@ -18,7 +18,7 @@ from reinforcement_learning.plot.rewards import (
     plot_average_rewards,
 )
 
-DATE = '0311'
+DATE = '0312'
 NETWORK = 'NSFNet'
 
 
@@ -34,7 +34,7 @@ def main():
         'not_filter_list': [
             # Example: [['config', 'exclude'], 'value_to_exclude']
             # ['penalty', -1]
-            ['path_algorithm', 'ppo']
+            # ['path_algorithm', 'ppo']
         ],
         'or_filter_list': [
             # Example: [['config', 'include'], 'desired_value']
@@ -69,15 +69,7 @@ def main():
     # plot_rewards_per_seed(all_rewards_data)
     # plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
-<<<<<<< HEAD
-<<<<<<< HEAD
     # plot_sim_times(simulation_times, base_dir)
-=======
-    plot_sim_times(simulation_times, base_dir)
->>>>>>> 1e89950b9d958719fcf1e0ac44311cb2ae751863
-=======
-    # plot_sim_times(simulation_times, base_dir)
->>>>>>> 3e3d1f34c2008b80a3aec83adad9989f52088576
     plot_memory_usage(memory_usage_data)
 
 

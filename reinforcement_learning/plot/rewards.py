@@ -1,5 +1,6 @@
 import math
 
+import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -95,7 +96,7 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
 
     for algorithm, traffic_dict in all_rewards_data.items():
         plt.figure(figsize=(10, 6), dpi=300)
-        for traffic_label, trial_dict in traffic_dict.items():
+        for i, (traffic_label, trial_dict) in enumerate(traffic_dict.items()):
             # Collect all episodes across trials
             all_episodes = set()
             for trial_index in trial_dict:
@@ -130,7 +131,7 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
 
             ci_str = compute_confidence_interval_for_traffic(trial_dict, all_episodes)
             plt.plot(all_episodes_arr, means,
-                     marker='o', markersize=5, linewidth=2,
+                     marker='^' if i < len(traffic_dict) / 2 else 'o', markersize=5, linewidth=2,
                      label=f"Traffic: {traffic_label} {ci_str}")
             plt.fill_between(all_episodes_arr, lower_bounds, upper_bounds, alpha=0.2)
 
@@ -143,10 +144,6 @@ def plot_rewards_averaged_with_variance(all_rewards_data):
         plt.grid(True, which="both", linestyle='--', linewidth=0.5)
         plt.tight_layout(rect=[0, 0, 0.85, 1])
         plt.show()
-
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 
 def plot_average_rewards(rewards_data):
@@ -166,9 +163,31 @@ def plot_average_rewards(rewards_data):
 
     for algorithm, traffic_rewards in rewards_data.items():
         plt.figure(figsize=(10, 6), dpi=300)
-        for traffic_label, rewards in traffic_rewards.items():
+
+        num_lines = len(traffic_rewards)
+        colors = sns.color_palette("bright", num_lines)
+        items = list(traffic_rewards.items())
+
+        half = num_lines // 2
+
+        for idx, (traffic_label, rewards) in enumerate(items):
             episodes = np.arange(len(rewards))
-            plt.plot(episodes, rewards, linewidth=1.5, marker='o', markersize=5, label=traffic_label)
+            if idx < half:
+                plt.plot(
+                    episodes, rewards,
+                    linewidth=1.5,
+                    marker='^',
+                    markevery=10,
+                    color=colors[idx],
+                    label=traffic_label
+                )
+            else:
+                plt.plot(
+                    episodes, rewards,
+                    linewidth=1.5,
+                    color=colors[idx],
+                    label=traffic_label
+                )
 
         plt.xlabel("Number of Episodes", fontsize=14, fontweight='bold')
         plt.ylabel("Reward", fontsize=14, fontweight='bold')

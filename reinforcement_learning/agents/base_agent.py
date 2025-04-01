@@ -6,6 +6,7 @@ from reinforcement_learning.utils.hyperparams import HyperparamConfig
 from reinforcement_learning.algorithms.q_learning import QLearning
 from reinforcement_learning.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
 from reinforcement_learning.algorithms.ppo import PPO
+from reinforcement_learning.algorithms.a2c import A2C
 
 
 class BaseAgent:
@@ -42,6 +43,8 @@ class BaseAgent:
             self.algorithm_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=is_path)
         elif self.algorithm == 'ppo':
             self.algorithm_obj = PPO(rl_props=self.rl_props, engine_obj=self.engine_props)
+        elif self.algorithm == 'a2c':
+            self.algorithm_obj = A2C(rl_props=self.rl_props, engine_obj=self.engine_props)
         else:
             raise NotImplementedError
 

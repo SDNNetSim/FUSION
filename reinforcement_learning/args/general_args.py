@@ -5,6 +5,7 @@ VALID_PATH_ALGORITHMS = [
     'epsilon_greedy_bandit',
     'ucb_bandit',
     'ppo',
+    'a2c'
 ]
 
 VALID_CORE_ALGORITHMS = [
@@ -15,4 +16,5 @@ VALID_CORE_ALGORITHMS = [
 
 VALID_DRL_ALGORITHMS = [
     'ppo',
+    'a2c',
 ]
