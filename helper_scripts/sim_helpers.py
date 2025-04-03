@@ -605,7 +605,7 @@ def get_erlang_vals(sim_dict: dict):
     return list(range(start, stop, step))
 
 
-def run_simulation_for_erlangs(env, erlang_list: list, sim_dict: dict, run_func):
+def run_simulation_for_erlangs(env, erlang_list: list, sim_dict: dict, run_func, callback_obj: object):
     """
     Run the simulation for each arrival rate in the given list.
 
@@ -621,7 +621,7 @@ def run_simulation_for_erlangs(env, erlang_list: list, sim_dict: dict, run_func)
         env.engine_obj.engine_props['erlang'] = erlang
         env.engine_obj.engine_props['arrival_rate'] = sim_dict['cores_per_link'] * erlang
         env.engine_obj.engine_props['arrival_rate'] /= sim_dict['holding_time']
-        sum_returns = run_func(env=env, sim_dict=env.sim_dict)
+        sum_returns = run_func(env=env, sim_dict=env.sim_dict, callback_obj=callback_obj)
         total_rewards.append(sum_returns)
 
     return np.mean(total_rewards)

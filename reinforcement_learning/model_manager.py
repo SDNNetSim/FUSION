@@ -6,7 +6,7 @@ from reinforcement_learning.utils.general_utils import determine_model_type
 from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
 
 
-def get_model(sim_dict: dict, device: str, env: object):
+def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
     """
     Creates or retrieves a new reinforcement learning model based on the specified algorithm.
 
@@ -21,12 +21,16 @@ def get_model(sim_dict: dict, device: str, env: object):
     if algorithm not in ALGORITHM_REGISTRY:
         raise NotImplementedError(f"Algorithm '{algorithm}' is not supported.")
 
-    yaml_file = os.path.join('sb3_scripts', 'yml', f'{algorithm}.yml')
-    yaml_dict = parse_yaml_file(yaml_file=yaml_file)
-    model = ALGORITHM_REGISTRY[algorithm]['setup'](env=env, device=device)
+    if yaml_dict is None:
+        yaml_file = os.path.join('sb3_scripts', 'yml', f'{algorithm}.yml')
+        yaml_dict = parse_yaml_file(yaml_file=yaml_file)
+        env_name = list(yaml_dict.keys())[0]
+        param_dict = yaml_dict[env_name]
+    else:
+        param_dict = yaml_dict
 
-    env_name = list(yaml_dict.keys())[0]
-    return model, yaml_dict[env_name]
+    model = ALGORITHM_REGISTRY[algorithm]['setup'](env=env, device=device)
+    return model, param_dict
 
 
 def get_trained_model(env: object, sim_dict: dict):

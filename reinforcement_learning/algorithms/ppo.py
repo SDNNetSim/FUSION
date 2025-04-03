@@ -22,13 +22,21 @@ class PPO:
         Gets the observation space for the ppo reinforcement learning framework.
         """
         bw_set = {d["bandwidth"] for d in self.rl_props.arrival_list}
+        num_set = {int(s) for s in bw_set}
+        max_bw = str(max(num_set))
+        mod_per_bw_dict = self.engine_obj.engine_props['mod_per_bw']
+        max_slots = mod_per_bw_dict[max_bw]['QPSK']['slots_needed']
+        max_paths = self.rl_props.k_paths
+
         resp_obs = spaces.Dict({
             'source': spaces.MultiBinary(self.rl_props.num_nodes),
             'destination': spaces.MultiBinary(self.rl_props.num_nodes),
             'request_bandwidth': spaces.MultiBinary(len(bw_set)),
             'holding_time': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
-            #'fragmentation': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
-            #'path_frag': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
+            'slots_needed': spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32),
+            'path_lengths': spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32),
+            # 'fragmentation': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
+            # 'path_frag': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
         })
 
         return resp_obs

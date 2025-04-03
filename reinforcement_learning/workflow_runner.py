@@ -19,18 +19,18 @@ from reinforcement_learning.utils.general_utils import save_arr
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
 
 
-def _run_drl_training(env: object, sim_dict: dict):
+def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
     """
     Trains a deep reinforcement learning model with StableBaselines3.
     """
-    if sim_dict['optimize_hyperparameters'] or sim_dict['optimize']:
-        run_rl_zoo(sim_dict=sim_dict)
-    else:
-        model, yaml_dict = get_model(sim_dict=sim_dict, device=sim_dict['device'], env=env)
-        model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
-                    callback=sim_dict['callback'])
+    # if sim_dict['optimize_hyperparameters'] or sim_dict['optimize']:
+    #     run_rl_zoo(sim_dict=sim_dict)
+    # else:
+    model, yaml_dict = get_model(sim_dict=sim_dict, device=sim_dict['device'], env=env, yaml_dict=yaml_dict)
+    model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
+                callback=sim_dict['callback'])
 
-        save_model(sim_dict=sim_dict, env=env, model=model)
+    save_model(sim_dict=sim_dict, env=env, model=model)
 
 
 # TODO: (drl_path_agents) Break this function up for organizational purposes
@@ -153,7 +153,7 @@ def run(env: object, sim_dict: dict, callback_obj: object = None):
     return sum_returns
 
 
-def run_optuna_study(sim_dict):
+def run_optuna_study(sim_dict, callback_obj):
     """
     Runs Optuna study for hyperparameter optimization.
     
@@ -163,22 +163,28 @@ def run_optuna_study(sim_dict):
 
     # Define the Optuna objective function
     def objective(trial: optuna.Trial):
-        callback = EpisodicRewardCallback()
-        env = SimEnv(render_mode=None, custom_callback=callback, sim_dict=setup_rl_sim())
-        env.sim_dict['callback'] = callback
+        env = SimEnv(render_mode=None, custom_callback=callback_obj, sim_dict=setup_rl_sim())
+        callback_obj.sim_dict = env.sim_dict
+        callback_obj.max_iters = sim_dict['max_iters']
+        env.sim_dict['callback'] = callback_obj
 
         hyperparam_dict = get_optuna_hyperparams(sim_dict=sim_dict, trial=trial)
         update_list = [(param, value) for param, value in hyperparam_dict.items() if param in sim_dict]
 
         modify_multiple_json_values(trial_num=trial.number, file_path=file_path, update_list=update_list)
         env.sim_dict = update_dict_from_list(input_dict=env.sim_dict, updates_list=update_list)
-
         erlang_list = get_erlang_vals(sim_dict=sim_dict)
-        mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run)
+
+        mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run,
+                                                 callback_obj=callback_obj)
         mean_reward = mean_reward / sim_dict['n_trials'] / sim_dict['max_iters']
+        if "callback" in env.sim_dict:
+            del env.sim_dict["callback"]
+            del env.callback
 
         trial.set_user_attr("sim_start_time", sim_dict['sim_start'])
         trial.set_user_attr("env", env)
+
         return mean_reward
 
     # Run the optimization

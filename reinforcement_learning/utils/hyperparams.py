@@ -1,6 +1,8 @@
 import numpy as np
 import optuna
 
+import torch.nn as nn
+
 from reinforcement_learning.algorithms.bandits import get_q_table
 
 from reinforcement_learning.args.general_args import EPISODIC_STRATEGIES
@@ -195,11 +197,80 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self.counts, self.values = get_q_table(self=self)
 
 
+def _get_nn_params(trial: optuna.trial):
+    activation_name = trial.suggest_categorical("activation_fn", ["tanh", "relu"])
+    activation_fn = nn.Tanh if activation_name == "tanh" else nn.ReLU
+    layer_choices = [32, 64, 128, 256]
+    pi_layer_1 = trial.suggest_categorical("pi_layer_1", layer_choices)
+    pi_layer_2 = trial.suggest_categorical("pi_layer_2", layer_choices)
+    vf_layer_1 = trial.suggest_categorical("vf_layer_1", layer_choices)
+    vf_layer_2 = trial.suggest_categorical("vf_layer_2", layer_choices)
+    return dict(
+        ortho_init=True,
+        activation_fn=activation_fn,
+        net_arch=dict(
+            pi=[pi_layer_1, pi_layer_2],
+            vf=[vf_layer_1, vf_layer_2]
+        )
+    )
+
+
+def _ppo_hyperparams(sim_dict: dict, trial: optuna.trial):
+    params = dict()
+    params["normalize"] = True
+    params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
+    params["policy"] = "MultiInputPolicy"
+    params["n_steps"] = trial.suggest_int("n_steps", 32, 4096, step=32)
+    params["batch_size"] = trial.suggest_int("batch_size", 16, 256, step=16)
+    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.5, 1.0, step=0.1)
+    params["gamma"] = trial.suggest_float("gamma", 0.5, 1.0, step=0.1)
+    params["n_epochs"] = trial.suggest_int("n_epochs", 3, 20, step=1)
+    params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0, step=0.1)
+    params["ent_coef"] = trial.suggest_float("ent_coef", 0.0, 0.1, step=0.01)
+    params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.3, 1.0, step=0.1)
+    params["learning_rate"] = trial.suggest_float("learning_rate", 0.00001, 0.01, step=0.0001)
+    params["clip_range"] = trial.suggest_float("clip_range", 0.1, 0.3, step=0.01)
+    params["policy_kwargs"] = _get_nn_params(trial=trial)
+
+    return params
+
+
+def _a2c_hyperparams(sim_dict: dict, trial: optuna.Trial):
+    params = dict()
+    params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
+    params["policy"] = "MultiInputPolicy"
+    params["n_steps"] = trial.suggest_int("n_steps", 5, 48, step=1)
+    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.5, 1.0, step=0.05)
+    params["gamma"] = trial.suggest_float("gamma", 0.5, 1.0, step=0.01)
+    params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0, step=0.05)
+    params["ent_coef"] = trial.suggest_float("ent_coef", 0.000001, 0.01, step=0.00001)
+    params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.1, 1.0, step=0.1)
+    params["learning_rate"] = trial.suggest_float("learning_rate", 0.00001, 0.01, step=0.00001)
+    params["policy_kwargs"] = _get_nn_params(trial=trial)
+
+    return params
+
+
+def _drl_hyperparams(sim_dict: dict, trial: optuna.trial):
+    if sim_dict['path_algorithm'] == 'a2c':
+        resp_dict = _a2c_hyperparams(sim_dict=sim_dict, trial=trial)
+    elif sim_dict['path_algorithm'] == 'ppo':
+        resp_dict = _ppo_hyperparams(sim_dict=sim_dict, trial=trial)
+    else:
+        raise NotImplementedError('DRL algorithm not recognized.')
+
+    return resp_dict
+
+
 def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
     """
     Suggests hyperparameters for the Optuna trial.
     """
     resp_dict = dict()
+
+    if 'a2c' in sim_dict['path_algorithm'] or 'ppo' in sim_dict['path_algorithm']:
+        resp_dict = _drl_hyperparams(sim_dict=sim_dict, trial=trial)
+        return resp_dict
 
     # There is no alpha in bandit algorithms
     if 'bandit' not in sim_dict['path_algorithm']:

@@ -123,19 +123,20 @@ class SimEnvUtils:
         self.sim_env.rl_props.destination = int(curr_req['destination'])
         self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(curr_req=curr_req)
 
-        frag = self.sim_env.frag_tracker.get_fragmentation(
-            chosen_path=self.sim_env.rl_props.chosen_path_list,
-            core_index=self.sim_env.rl_props.core_index)
+        # frag = self.sim_env.frag_tracker.get_fragmentation(
+        #     chosen_path=self.sim_env.rl_props.chosen_path_list,
+        #     core_index=self.sim_env.rl_props.core_index)
 
-        source_obs, dest_obs, req_obs, req_holding = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth,
-                                                                                             holding_time=holding_time)
+        resp_dict = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth, holding_time=holding_time)
         obs_dict = {
-            'source': source_obs,
-            'destination': dest_obs,
-            'request_bandwidth': req_obs,
-            'holding_time': req_holding,
-            'fragmentation': frag['fragmentation'],
-            'path_frag': frag['path_frag']
+            'source': resp_dict['source_obs'],
+            'destination': resp_dict['dest_obs'],
+            'request_bandwidth': resp_dict['req_obs'],
+            'holding_time': resp_dict['req_holding'],
+            'slots_needed': resp_dict['slots_needed'],
+            'path_lengths': resp_dict['path_lengths'],
+            # 'fragmentation': frag['fragmentation'],
+            # 'path_frag': frag['path_frag']
 
         }
         return obs_dict

@@ -1,4 +1,4 @@
-from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
+# from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
 from reinforcement_learning.workflow_runner import run_optuna_study, run
 from reinforcement_learning.utils.gym_envs import create_environment
 
@@ -20,10 +20,10 @@ def run_rl_sim():
         run(env=env, sim_dict=sim_dict, callback_obj=callback_obj)
     else:
         # For DRL only
-        if sim_dict['path_algorithm'] in ALGORITHM_REGISTRY:
-            run(env=env, sim_dict=sim_dict, callback_obj=callback_obj)
-        else:
-            run_optuna_study(sim_dict=sim_dict)
+        # if sim_dict['path_algorithm'] in ALGORITHM_REGISTRY:
+        #     run(env=env, sim_dict=sim_dict, callback_obj=callback_obj)
+        # else:
+        run_optuna_study(sim_dict=sim_dict, callback_obj=callback_obj)
 
 
 if __name__ == '__main__':
