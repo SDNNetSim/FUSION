@@ -348,7 +348,9 @@ class SimEnvHelpers:
                 slots_needed = mod_bw_dict[bandwidth][mod_format[0]]['slots_needed']
             slots_needed_list.append(slots_needed)
 
-        return slots_needed_list, route_props.weights_list
+        # TODO: (drl_path_agents) Probably don't need to do this since we can normalize via the yml
+        norm_list = [x / 1000 for x in route_props.weights_list]
+        return slots_needed_list, norm_list
 
     def get_drl_obs(self, bandwidth, holding_time):
         """
@@ -407,8 +409,6 @@ def save_arr(arr: np.array, sim_dict: dict, file_name: str):
     network, date, time = sim_dict['network'], sim_dict['date'], sim_dict['sim_start']
     file_path = os.path.join('logs', algorithm_type, network, date, time, file_name)
     np.save(file_path, arr)
-
-
 
 
 class FragmentationTracker:
