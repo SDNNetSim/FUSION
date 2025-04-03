@@ -1,17 +1,17 @@
 SimEnv:
   # Training parameters
-  n_timesteps: 1000000
+  n_timesteps: 500000
   policy: 'MultiInputPolicy'  # Specify the policy to use
-  n_steps: 8  # Number of steps per update
-  gae_lambda: 0.95  # Trade-off for bias vs variance
-  gamma: 0.995  # Discount factor
-  vf_coef: 0.65  # Weight of the value function in the loss
-  ent_coef: 0.00005  # Entropy coefficient for exploration
-  max_grad_norm: 0.3  # Gradient clipping threshold
-  learning_rate: 0.001  # Learning rate for optimization
+  n_steps: 4096  # Number of steps per update
+  gae_lambda: 0.8  # Trade-off for bias vs variance
+  gamma: 0.99  # Discount factor
+  vf_coef: 0.5 # Weight of the value function in the loss
+  ent_coef: 0.001  # Entropy coefficient for exploration
+  max_grad_norm: 0.2  # Gradient clipping threshold
+  learning_rate: 0.0004  # Learning rate for optimization
 
   # Exploration settings
-  use_sde: False  # Whether to use State-Dependent Exploration (SDE)
+  use_sde: False # Whether to use State-Dependent Exploration (SDE)
   sde_sample_freq: -1  # Sample frequency for generalized SDE noise
 
   # Rollout buffer
@@ -21,19 +21,17 @@ SimEnv:
   # Logging and verbosity
   stats_window_size: 100  # Rolling window size for logging statistics
   tensorboard_log: null  # Path to Tensorboard logs (set to null for no logging)
-  verbose: 1  # Verbosity level (0 = no output, 1 = info, 2 = debug)
+  verbose: 0  # Verbosity level (0 = no output, 1 = info, 2 = debug)
 
   # Reproducibility
   seed: null  # Random seed for reproducibility
 
   # Policy customization
   policy_kwargs: "dict(
-                    ortho_init=False,
+                    ortho_init=True,
                     activation_fn=nn.ReLU,
-                    net_arch=dict(pi=[128,128], vf=[128,128])
+                    net_arch=dict(pi=[256,256], vf=[256,256])
                   )"
 
-  # Callbacks (optional)
-  callback:
-    - rl_scripts.helpers.callback_helpers.GetModelParams:
-        verbose: 1
+
+
