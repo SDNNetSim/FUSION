@@ -222,13 +222,13 @@ def _ppo_hyperparams(sim_dict: dict, trial: optuna.trial):
     params["policy"] = "MultiInputPolicy"
     params["n_steps"] = trial.suggest_int("n_steps", 32, 4096, step=32)
     params["batch_size"] = trial.suggest_int("batch_size", 16, 256, step=16)
-    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0, step=0.1)
-    params["gamma"] = trial.suggest_float("gamma", 0.5, 0.9, step=0.1)
+    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.5, 1.0, step=0.1)
+    params["gamma"] = trial.suggest_float("gamma", 0.5, 1.0, step=0.1)
     params["n_epochs"] = trial.suggest_int("n_epochs", 3, 20, step=1)
     params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0, step=0.1)
     params["ent_coef"] = trial.suggest_float("ent_coef", 0.0, 0.1, step=0.01)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.3, 1.0, step=0.1)
-    params["learning_rate"] = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
+    params["learning_rate"] = trial.suggest_float("learning_rate", 0.00001, 0.01, step=0.0001)
     params["clip_range"] = trial.suggest_float("clip_range", 0.1, 0.3, step=0.01)
     params["policy_kwargs"] = _get_nn_params(trial=trial)
 
@@ -237,15 +237,15 @@ def _ppo_hyperparams(sim_dict: dict, trial: optuna.trial):
 
 def _a2c_hyperparams(sim_dict: dict, trial: optuna.Trial):
     params = dict()
-    params["n_timesteps"] = sim_dict['n_timesteps']
+    params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
     params["policy"] = "MultiInputPolicy"
-    params["n_steps"] = trial.suggest_int("n_steps", 5, 16, step=1)
-    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0, step=0.05)
-    params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999, step=0.01)
+    params["n_steps"] = trial.suggest_int("n_steps", 5, 48, step=1)
+    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.5, 1.0, step=0.05)
+    params["gamma"] = trial.suggest_float("gamma", 0.5, 1.0, step=0.01)
     params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0, step=0.05)
-    params["ent_coef"] = trial.suggest_float("ent_coef", 1e-6, 1e-2, log=True)
+    params["ent_coef"] = trial.suggest_float("ent_coef", 0.000001, 0.01, step=0.00001)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.1, 1.0, step=0.1)
-    params["learning_rate"] = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
+    params["learning_rate"] = trial.suggest_float("learning_rate", 0.00001, 0.01, step=0.00001)
     params["policy_kwargs"] = _get_nn_params(trial=trial)
 
     return params

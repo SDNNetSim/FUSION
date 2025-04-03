@@ -21,7 +21,7 @@ SimEnv:
   # Logging and verbosity
   stats_window_size: 100  # Rolling window size for logging statistics
   tensorboard_log: null  # Path to Tensorboard logs (set to null for no logging)
-  verbose: 1  # Verbosity level (0 = no output, 1 = info, 2 = debug)
+  verbose: 0  # Verbosity level (0 = no output, 1 = info, 2 = debug)
 
   # Reproducibility
   seed: null  # Random seed for reproducibility

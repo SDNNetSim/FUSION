@@ -175,13 +175,8 @@ def run_optuna_study(sim_dict, callback_obj):
         env.sim_dict = update_dict_from_list(input_dict=env.sim_dict, updates_list=update_list)
         erlang_list = get_erlang_vals(sim_dict=sim_dict)
 
-        if sim_dict['path_algorithm'] in ('a2c', 'ppo'):
-            _run_drl_training(env=env, sim_dict=sim_dict, yaml_dict=hyperparam_dict)
-            # TODO: (drl_path_agents) Update mean reward
-            mean_reward = -5
-        else:
-            mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run)
-
+        mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run,
+                                                 callback_obj=callback_obj)
         mean_reward = mean_reward / sim_dict['n_trials'] / sim_dict['max_iters']
         if "callback" in env.sim_dict:
             del env.sim_dict["callback"]

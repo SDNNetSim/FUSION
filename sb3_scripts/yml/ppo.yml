@@ -1,19 +1,19 @@
 SimEnv:
-  normalize: false
-  n_timesteps: 1000000
-  policy: 'MultiInputPolicy'
-  n_steps: 4096
-  batch_size: 128
-  gae_lambda: 0.92
-  gamma: 0.985
-  n_epochs: 10
-  vf_coef: 0.6
-  ent_coef: 0.01
-  max_grad_norm: 0.5
-  learning_rate: 0.0003
-  clip_range: 0.15
+  normalize: true                 # Good practice, keep this
+  n_timesteps: 1000000           # Standard training length
+  policy: 'MultiInputPolicy'     # Fine if you're using multiple inputs
+  n_steps: 2048                  # ⬅️ Recommended default, much larger than 64
+  batch_size: 64                 # ⬅️ 8 is too small; 64 is more typical
+  gae_lambda: 0.95               # Slightly more standard than 0.9
+  gamma: 0.99                    # Much more common than 0.5 (which heavily discounts rewards)
+  n_epochs: 10                   # Default is 10; 2 may be too few for PPO
+  vf_coef: 0.5                   # 0.5 is default, 0.6 is okay
+  ent_coef: 0.0                  # 0.0 or 0.01 are more typical unless you want exploration
+  max_grad_norm: 0.5             # 0.5 is default
+  learning_rate: 0.0003          # ✅ Standard, good
+  clip_range: 0.2                # 0.2 is more typical
   policy_kwargs: "dict(
                     ortho_init=True,
-                    activation_fn=nn.ReLU,
-                    net_arch=dict(pi=[128,128], vf=[256,256])
+                    activation_fn=nn.Tanh,
+                    net_arch=dict(pi=[32,32], vf=[32,32])
                  )"
