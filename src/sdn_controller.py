@@ -352,7 +352,7 @@ class SDNController:
                     force_route_matrix = [self.sdn_props.path_list]
                     mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
                                                         nested_key='max_length')
-                    force_mod_format = [list(mod_formats_dict.keys())[::-1]]
+                    force_mod_format = [list(mod_formats_dict.keys())]
         start_time = time.time()
         if force_route_matrix is None:
             self.route_obj.get_route()

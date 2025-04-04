@@ -525,7 +525,7 @@ class SnrMeasurements:
         if self.spectrum_props.slicing_flag and self.engine_props['fixed_grid'] and self.engine_props['dynamic_lps']:
             mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
                                             nested_key='max_length')
-            force_mod_format = list(mod_formats_dict.keys())[::-1]
+            force_mod_format = list(mod_formats_dict.keys())
             for mod in force_mod_format:
                 if GSNR_LP_dB >= self.snr_props.req_snr[mod]:
                     resp = mod
@@ -920,7 +920,7 @@ class SnrMeasurements:
         if self.spectrum_props.slicing_flag and self.engine_props['fixed_grid'] and self.engine_props['dynamic_lps']:
             mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
                                             nested_key='max_length')
-            force_mod_format = list(mod_formats_dict.keys())[::-1]
+            force_mod_format = list(mod_formats_dict.keys())
             for mod in force_mod_format:
                 if GSNR_LP_dB >= self.snr_props.req_snr[mod]:
                     resp = mod
