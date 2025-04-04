@@ -260,7 +260,7 @@ class SpectrumAssignment:
         else:
             mod_format = sort_nested_dict_vals(original_dict=mod_format_dict,
                                                         nested_key='max_length')
-            mod_format_list = list(mod_format.keys())[::-1]
+            mod_format_list = list(mod_format.keys())
             for mod in mod_format_list:
                 self.spectrum_props.slots_needed = mod_format_dict[mod]['slots_needed']
                 self.spectrum_props.modulation = mod

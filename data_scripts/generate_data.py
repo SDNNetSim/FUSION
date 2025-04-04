@@ -13,9 +13,9 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
     :rtype: dict
     """
     fiber_props_dict = {
-        'attenuation': 0.2 / 4.343 * 1e-3,
-        'non_linearity': 1.3e-3,
-        'dispersion': -21.3e-27, #(16e-6 * 1550e-9 ** 2) / (2 * math.pi * 3e8),
+        'attenuation': 0.2 / 4.343 * 1e-3,                      # alpha
+        'non_linearity': 1.3e-3,                            # gamma
+        'dispersion': -21.3e-27, #(16e-6 * 1550e-9 ** 2) / (2 * math.pi * 3e8), D
         'num_cores': cores_per_link,
         'fiber_type': 0,
         'bending_radius': 0.05,
@@ -24,7 +24,12 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
         'core_pitch': 4e-5,
         'frequency_start_c': 3e8 / 1565e-9,
         'frequency_end_c':  ((3e8 / 1565e-9)+ 6.0e12),
+        'frequency_start_l': 3e8 / 1620e-9,
+        'frequency_end_l':  ((3e8 / 1620e-9)+ 6.0e12),
         'c_band_bw': 6.0e12,
+        'raman_gain_slope': 0.028 / (1e3)/ (1e12),           #C_r
+        'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),      # beta2
+        'gvd_slope': (0.14) * ((1e-12) * (1e-12) * (1e-12)) / ( 1e3),       # beta3
     }
 
     topology_dict = {
