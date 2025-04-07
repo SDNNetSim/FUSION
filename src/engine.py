@@ -239,6 +239,15 @@ class Engine:
         We do not produce a local fraction. Instead, each iteration => done_units += 1,
         which we push to the parent's queue. If done_offset is given, we start from that offset.
         """
+        # Create a local logging helper that uses the shared log_queue if available.
+        log_queue = self.engine_props.get('log_queue')
+
+        def log(message):
+            if log_queue:
+                log_queue.put(message)
+            else:
+                print(message)
+
         self.create_topology()
 
         max_iters = self.engine_props["max_iters"]
@@ -253,12 +262,12 @@ class Engine:
         # Start from done_offset
         done_units = done_offset
 
-        print(f"[Engine] thread={thread_num}, offset={done_offset}, "
+        log(f"[Engine] thread={thread_num}, offset={done_offset}, "
               f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}")
 
         for iteration in range(max_iters):
             if self.stop_flag.is_set():  # Check if the stop flag is set
-                print(f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
+                log(f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
                       f"simulation number: {thread_num}.")
                 break
 
@@ -275,7 +284,7 @@ class Engine:
             if progress_queue:
                 progress_queue.put((thread_num, done_units))
 
-            print(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}")
+            log(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}")
 
             import time
             time.sleep(0.2)
@@ -283,7 +292,7 @@ class Engine:
             if end_iter:
                 break
 
-        print(
+        log(
             f"Simulation finished for Erlang: {self.engine_props['erlang']} "
             f"finished for simulation number: {thread_num}."
         )

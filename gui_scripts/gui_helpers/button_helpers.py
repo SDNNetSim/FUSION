@@ -4,7 +4,6 @@ import multiprocessing
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
 from PyQt5 import QtWidgets, QtGui, QtCore
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
-from gui_scripts.gui_helpers.general_helpers import SimulationThread
 
 # We import the simulation runner's run() function.
 from run_sim import run
@@ -44,16 +43,9 @@ class ButtonHelpers:
         self.progress_anim.start()
 
     def simulation_finished(self):
-        # Do not hide or reset the progress bar immediately,
-        # so the final progress (1000) remains visible.
-        # self.progress_bar.setVisible(False)
-        # self.progress_bar.setValue(0)
-        self.simulation_thread = None
-
-    def setup_simulation_thread(self):
-        # In this multi-process mode, we will not use SimulationThread,
-        # so we do not set it up here.
-        pass
+        # Called when simulation completes
+        self.simulation_process = None
+        self.start_button.setText("Start")
 
     def start_simulation(self):
         """
@@ -77,17 +69,11 @@ class ButtonHelpers:
             kwargs={'sims_dict': self.simulation_config, 'stop_flag': self.stop_flag}
         )
         sim_process.start()
-
-        self.simulation_thread = SimulationThread()
-        self.simulation_thread.output_hints_signal.connect(self.output_hints)
-        self.simulation_thread.progress_changed.connect(self.update_progress)
-        self.simulation_thread.finished_signal.connect(self.simulation_finished)
-        self.simulation_thread.finished.connect(self.simulation_thread.deleteLater)
-        self.simulation_thread.start()
-
         self.simulation_process = sim_process
+
         print("Multiprocess simulation launched directly.")
         self.start_button.setText("Start")
+        self.output_hints("Simulation started.")
 
     def pause_simulation(self):
         if self.simulation_process and self.simulation_process.is_alive():
@@ -96,19 +82,23 @@ class ButtonHelpers:
             self.start_button.setText("Resume")
 
     def stop_simulation(self):
+        """
+        Signals the simulation process to stop and waits for it to finish.
+        """
         if self.simulation_process and self.simulation_process.is_alive():
             self.stop_flag.set()  # Set the stop flag to signal the simulation process to stop
             self.simulation_process.join()  # Wait for the simulation process to finish
             self.simulation_process = None
 
-        # Reset the progress bar and other relevant state variables
+        # Reset progress bar and clear logs
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(False)
         self.bottom_right_pane.clear()
-        self.simulation_config = None  # Clear the simulation configuration
-        self.shared_progress_dict = None  # Clear the shared progress dictionary
+        self.simulation_config = None
+        self.shared_progress_dict = None
 
         self.start_button.setText("Start")
+        self.output_hints("Simulation stopped.")
 
     def create_start_button(self):
         self.start_button = QtWidgets.QAction()
