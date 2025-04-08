@@ -67,6 +67,7 @@ class Grooming:
                     self.sdn_props.xt_list.append(self.sdn_props.lightpath_status_dict[light_id][lp_id]["snr_cost"])
                     self.sdn_props.lightpath_bandwidth_list.append(self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth'])
                     self.sdn_props.lightpath_id_list.append(lp_id)
+                    self.sdn_props.path_weight = self.sdn_props.lightpath_status_dict[light_id][lp_id]['path_weight']
                     if remaining_bw == 0:
                         self.sdn_props.was_routed = True
                         self.sdn_props.was_groomed = True
