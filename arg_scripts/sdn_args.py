@@ -87,6 +87,7 @@ class SDNProps:
         self.was_partially_routed = False
         self.remaining_bw = None
         self.is_sliced = None
+        self.path_weight = None
 
     def get_lightpath_id(self):
         self.lightpath_counter += 1
