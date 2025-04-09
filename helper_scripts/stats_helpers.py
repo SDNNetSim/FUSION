@@ -537,6 +537,9 @@ class SimStats:
                         save_key = f"{stat_key.split('list')[0]}"
                         self.save_dict['iter_stats'][self.iteration][save_key] = self.stats_props.total_transponder_usage_list[self.iteration]
                     continue
+                if stat_key in ['start_slot_list', 'end_slot_list'] and not self.engine_props['save_start_end_slots']:
+                    self.save_dict['iter_stats'][self.iteration][stat_key] = []
+                    continue
                 self.save_dict['iter_stats'][self.iteration][stat_key] = copy.deepcopy(getattr(self.stats_props,
                                                                                                stat_key))
 

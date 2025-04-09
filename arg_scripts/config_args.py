@@ -71,6 +71,7 @@ ARASH_REQUIRED_OPTIONS = {
         'blocking_type_ci': str_to_bool,
         'fragmentation_metrics': ast.literal_eval,
         'frag_calc_step': int,
+        'save_start_end_slots': str_to_bool,
     },
     'topology_settings': {
         'network': str,
@@ -243,7 +244,8 @@ COMMAND_LINE_PARAMS = [
     ['blocking_type_ci', bool, ''],
     ['fragmentation_metrics', list, ''],
     ['frag_calc_step', int, ''],
-
+    ['save_start_end_slots', bool, ''],
+    
     # StableBaselines3 arguments
     ['algo', str, ''],
     ['env-id', str, ''],
