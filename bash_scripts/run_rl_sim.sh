@@ -1,96 +1,67 @@
 #!/bin/bash
 
-#SBATCH -p cpu-preempt
+#SBATCH -p cpu
 #SBATCH -c 1
 #SBATCH -G 0
-#SBATCH --mem=16000
-#SBATCH -t 0-01:00:00
-#SBATCH -o slurm-%A_%a.out  # Output file for each task
-#SBATCH --array=0  # Define array size based on total combinations
+#SBATCH --mem=32000
+#SBATCH -t 1-00:00:00
+#SBATCH --array=0-7
+#SBATCH -o /dev/null
 
-# This script is designed to run a reinforcement learning simulation on the Unity cluster at UMass Amherst.
-# It sets up the necessary environment, installs dependencies, registers custom environments, and runs
-# the simulation with different parameter combinations. Note that it uses the SLURM job scheduler.
-
-# Ensure the script stops if any command fails
 set -e
 
-# Change to the home directory and then to the SDN simulator directory
-# shellcheck disable=SC2164
-cd
-# shellcheck disable=SC2164
-# Default directory
 DEFAULT_DIR="/work/pi_vinod_vokkarane_uml_edu/git/FUSION/"
 
-# Check for user input
 if [ -z "$1" ]; then
   echo "No directory provided. Using default directory: $DEFAULT_DIR"
-  cd "$DEFAULT_DIR"
+  cd "$DEFAULT_DIR" || exit
 else
   echo "Changing to user-specified directory: $1"
-  cd "$1"
+  cd "$1" || exit
 fi
-
 echo "Current directory: $(pwd)"
 
 module load python/3.11.7
-
-# Activate the virtual environment
-# Create the virtual environment if it doesn't exist
 if [ ! -d "venvs/unity_venv/venv" ]; then
   ./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
+  pip install -r requirements.txt
+  ./bash_scripts/register_rl_env.sh ppo SimEnv
+  ./bash_scripts/register_rl_env.sh a2c SimEnv
 fi
 source venvs/unity_venv/venv/bin/activate
 
-# Install the required Python packages
-pip install -r requirements.txt
+algorithms=( "ppo" "a2c" )
+traffic_volumes=( "200" "300" "500" "750" )
 
-# Register custom reinforcement learning environments in Stable Baselines 3
-./bash_scripts/register_rl_env.sh ppo SimEnv
-./bash_scripts/register_rl_env.sh a2c SimEnv
+network="NSFNet"
+k_paths="3"
 
-# Declare arrays for parameter values
-algorithm_list=("epsilon_greedy_bandit")
-network_list=("NSFNet")
-k_paths_list=("3")
-epsilon_start_list=("0.8")
-reward_list=("1")
-penalty_list=("-10")
+alg_idx=$(( SLURM_ARRAY_TASK_ID / 4 ))      # each algorithm has 4 volumes
+traffic_idx=$(( SLURM_ARRAY_TASK_ID % 4 ))  # remainder picks which volume
 
-# Calculate the number of combinations
-num_algorithms=${#algorithm_list[@]}
-num_networks=${#network_list[@]}
-num_k_paths=${#k_paths_list[@]}
-num_epsilons=${#epsilon_start_list[@]}
-num_rewards=${#reward_list[@]}
-num_penalties=${#penalty_list[@]}
-total_combinations=$((num_algorithms * num_networks * num_k_paths * num_epsilons * num_rewards * num_penalties))
+alg="${algorithms[$alg_idx]}"
+erlang="${traffic_volumes[$traffic_idx]}"
 
-# Calculate the indices for each parameter
-alg_idx=$((SLURM_ARRAY_TASK_ID % num_algorithms))
-network_idx=$(((SLURM_ARRAY_TASK_ID / num_algorithms) % num_networks))
-k_idx=$(((SLURM_ARRAY_TASK_ID / (num_algorithms * num_networks)) % num_k_paths))
-eps_idx=$(((SLURM_ARRAY_TASK_ID / (num_algorithms * num_networks * num_k_paths)) % num_epsilons))
-reward_idx=$(((SLURM_ARRAY_TASK_ID / (num_algorithms * num_networks * num_k_paths * num_epsilons)) % num_rewards))
-penalty_idx=$(((SLURM_ARRAY_TASK_ID / (num_algorithms * num_networks * num_k_paths * num_epsilons * num_rewards)) % num_penalties))
+time_tag=$(date +%Y%m%d_%H%M%S)
+log_dir="bash_scripts/slurm_logs/${alg}/$(date +%Y%m%d)/${network}/${erlang}"
+mkdir -p "$log_dir"
 
-# Extract parameters based on the computed indices
-alg="${algorithm_list[$alg_idx]}"
-network="${network_list[$network_idx]}"
-k="${k_paths_list[$k_idx]}"
-eps="${epsilon_start_list[$eps_idx]}"
-reward="${reward_list[$reward_idx]}"
-penalty="${penalty_list[$penalty_idx]}"
+exec > "${log_dir}/slurm_${time_tag}.out" 2>&1
 
-# Run the Python script with the extracted parameters
+echo "================================"
+echo "SLURM Array ID  : $SLURM_ARRAY_TASK_ID"
+echo "Algorithm       : $alg"
+echo "Traffic Volume  : $erlang"
+echo "Network         : $network"
+echo "k_paths         : $k_paths"
+echo "Log Directory   : $log_dir"
+echo "Time Tag        : $time_tag"
+echo "================================"
+
 python run_rl_sim.py \
-  --erlang_start 50 \
-  --erlang_end 100 \
+  --erlang_start "$erlang" \
+  --erlang_stop "$((erlang+100))" \
   --network "$network" \
-  --k_paths "$k" \
-  --epsilon_start "$eps" \
-  --reward "$reward" \
-  --penalty "$penalty" \
+  --k_paths "$k_paths" \
   --path_algorithm "$alg" \
-  --core_algorithm first_fit ||
-  echo "Error running Python script for job $SLURM_ARRAY_TASK_ID"
+|| echo "Error running Python script for job $SLURM_ARRAY_TASK_ID"
