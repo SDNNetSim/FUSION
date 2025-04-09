@@ -201,8 +201,8 @@ def run_optuna_study(sim_dict, callback_obj):
     file_path = os.path.join('data', 'input', sim_dict['network'], sim_dict['date'],
                              sim_dict['sim_start'])
     pruner = HyperbandPruner(
-        min_resource=1,
-        max_resource='auto',
+        min_resource=20,
+        max_resource=sim_dict['max_iters'],
         reduction_factor=3
     )
     study = optuna.create_study(direction='maximize', study_name=study_name, pruner=pruner)
