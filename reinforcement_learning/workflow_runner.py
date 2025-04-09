@@ -1,6 +1,7 @@
 import os
 
 import optuna
+from optuna.pruners import HyperbandPruner
 import numpy as np
 
 import psutil
@@ -35,7 +36,8 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
 
 # TODO: (drl_path_agents) Break this function up for organizational purposes
 #   - You have repeat logic
-def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None):
+def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None,
+              trial=None):
     """
     Runs the specified number of episodes in the reinforcement learning environment.
 
@@ -91,6 +93,13 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
             episodic_reward = 0
             completed_episodes += 1
 
+            if trial is not None:
+                current_mean_reward = np.mean(episodic_rew_arr) if episodic_rew_arr.size > 0 else 0
+                trial.report(current_mean_reward, completed_episodes)
+
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
+
             print(f"{completed_episodes} episodes completed out of {sim_dict['max_iters']}.")
 
             if completed_episodes == sim_dict['max_iters']:
@@ -127,7 +136,7 @@ def run_testing(env: object, sim_dict: dict):
     run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
 
 
-def run(env: object, sim_dict: dict, callback_obj: object = None):
+def run(env: object, sim_dict: dict, callback_obj: object = None, trial = None):
     """
     Manages the execution of simulations for training or testing RL models.
 
@@ -144,7 +153,7 @@ def run(env: object, sim_dict: dict, callback_obj: object = None):
         if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
             sum_returns = run_iters(env=env, sim_dict=sim_dict, is_training=True,
                                     drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS,
-                                    callback_obj=callback_obj)
+                                    callback_obj=callback_obj, trial=trial)
         else:
             raise NotImplementedError
     else:
@@ -176,8 +185,8 @@ def run_optuna_study(sim_dict, callback_obj):
         erlang_list = get_erlang_vals(sim_dict=sim_dict)
 
         mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run,
-                                                 callback_obj=callback_obj)
-        mean_reward = mean_reward / sim_dict['n_trials'] / sim_dict['max_iters']
+                                                 callback_obj=callback_obj, trial=trial)
+        mean_reward = mean_reward / sim_dict['max_iters']
         if "callback" in env.sim_dict:
             del env.sim_dict["callback"]
             del env.callback
@@ -191,7 +200,12 @@ def run_optuna_study(sim_dict, callback_obj):
     study_name = "hyperparam_study.pkl"
     file_path = os.path.join('data', 'input', sim_dict['network'], sim_dict['date'],
                              sim_dict['sim_start'])
-    study = optuna.create_study(direction='maximize', study_name=study_name)
+    pruner = HyperbandPruner(
+        min_resource=1,
+        max_resource='auto',
+        reduction_factor=3
+    )
+    study = optuna.create_study(direction='maximize', study_name=study_name, pruner=pruner)
     n_trials = sim_dict['optuna_trials']
     study.optimize(objective, n_trials=n_trials)
 
