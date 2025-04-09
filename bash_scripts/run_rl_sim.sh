@@ -4,7 +4,7 @@
 #SBATCH -c 1
 #SBATCH -G 0
 #SBATCH --mem=32000
-#SBATCH -t 1-00:00:00
+#SBATCH -t 2-00:00:00
 #SBATCH --array=0-7
 #SBATCH -o /dev/null
 
