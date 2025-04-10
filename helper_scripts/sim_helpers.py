@@ -608,6 +608,71 @@ def get_entropy_frag(spectral_slots: dict, net_spec_dict: dict):
 
 
 
+def get_network_slot_occupancy(band: str, slot_index:int, num_core: int, net_spec_dict: dict):
+    slot_status = [[] for _ in range(num_core)]
+    visited_pairs = set()
+    
+    for src_dest, spec_matrix in net_spec_dict.items():
+        canonical_pair = tuple(sorted(src_dest))
+
+        if canonical_pair in visited_pairs:
+            continue
+        visited_pairs.add(canonical_pair)
+
+        for key, arr in spec_matrix['cores_matrix'].items():
+            for core_num, row in enumerate(arr):
+                slot_status[core_num].append(int(row[slot_index] != 0.0))
+
+    return slot_status
+
+def calculate_rss(num_core: int, slot_status: dict, spectral_slots: dict,):
+    rss_metric = {}
+    rss_overal = 0.0
+    for band, band_matrix in slot_status.items():
+        rss_metric.update({band:{}})
+        rss_band = 0.0
+        for slot_num, core_matrix in band_matrix.items():
+            rss_metric[band].update({slot_num:[[] for _ in range(num_core)]})
+            for core_num, arr in enumerate(core_matrix):
+
+                free_blocks = []
+                current_block_size = 0
+
+                for slot in arr:
+                    if slot == 0:
+                        current_block_size += 1
+                    else:
+                        if current_block_size > 0:
+                            free_blocks.append(current_block_size)
+                            current_block_size = 0
+
+                if current_block_size > 0:
+                    free_blocks.append(current_block_size)
+
+                if not free_blocks:
+                    rss_metric[band][slot_num][core_num] = 1.0  
+                else:
+                    numerator = np.sqrt(sum(b**2 for b in free_blocks))
+                    denominator = sum(free_blocks)
+                    rss_metric[band][slot_num][core_num] = numerator / denominator
+                rss_band += rss_metric[band][slot_num][core_num]
+        rss_metric[band]["overall"] = (rss_band / spectral_slots[band])
+        rss_overal += rss_band 
+    rss_metric["overall"] = rss_overal / sum(list(spectral_slots.values()))
+    return rss_metric
+
+def get_rss_frag(spectral_slots: dict, net_spec_dict: dict, num_core: int):
+    slot_status = {}
+
+    for band, slot_band in spectral_slots.items():
+        slot_status.update({band:{}})
+        for slot_index in range(slot_band):
+            slot_status[band].update({slot_index:get_network_slot_occupancy(band = band, slot_index = slot_index, num_core = num_core, net_spec_dict = net_spec_dict)})
+    
+    return calculate_rss(num_core, slot_status, spectral_slots)
+
+
+
 def average_bandwidth_usage(bw_dict, departure_time):
         
         sorted_times = sorted(bw_dict.keys())

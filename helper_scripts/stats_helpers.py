@@ -9,7 +9,7 @@ import pandas as pd
 
 from arg_scripts.stats_args import StatsProps
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_entropy_frag
+from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_entropy_frag, get_rss_frag
 from helper_scripts.os_helpers import create_dir
 
 
@@ -264,7 +264,8 @@ class SimStats:
         for method in self.engine_props['fragmentation_metrics']:
             if method == 'entropy' and req_id in self.stats_props.frag_dict[method]:
                 self.stats_props.frag_dict[method][req_id][req_type] = get_entropy_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict)
-
+            elif method == 'rss' and req_id in self.stats_props.frag_dict[method]:
+                self.stats_props.frag_dict[method][req_id][req_type] = get_rss_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict, num_core = self.engine_props['cores_per_link'])
 
     def update_utilization_dict(self, utilization_dict: dict):
         for lp_id in utilization_dict:
