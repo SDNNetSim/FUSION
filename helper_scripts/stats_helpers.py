@@ -130,7 +130,9 @@ class SimStats:
                 self.stats_props.snapshots_dict[req_num][key] = list()
 
     def _init_mods_weights_bws(self):
+        self.stats_props.demand_realization_ratio["overall"] = list()
         for bandwidth, obj in self.engine_props['mod_per_bw'].items():
+            self.stats_props.demand_realization_ratio[bandwidth] = list()
             self.stats_props.mods_used_dict[bandwidth] = dict()
             self.stats_props.weights_dict[bandwidth] = dict()
             for modulation in obj.keys():
@@ -170,7 +172,7 @@ class SimStats:
         for stat_key, data_type in vars(self.stats_props).items():
             if not isinstance(data_type, dict):
                 continue
-            if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict'):
+            if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict', 'demand_realization_ratio'):
                 self._init_mods_weights_bws()
             elif stat_key in ('frag_dict'):
                 self._init_frag_vlaue_dict()
@@ -306,7 +308,9 @@ class SimStats:
             path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
             self.stats_props.lengths_list.append(round(float(path_len),2))
 
-            
+            if self.engine_props["can_partially_serve"]:
+                self.stats_props.demand_realization_ratio[sdn_data.bandwidth].append(( int(sdn_data.bandwidth) - int(sdn_data.remaining_bw)) / int(sdn_data.bandwidth))
+                self.stats_props.demand_realization_ratio["overall"].append(( int(sdn_data.bandwidth) - int(sdn_data.remaining_bw)) / int(sdn_data.bandwidth))
             self._handle_iter_lists(sdn_data=sdn_data, new_lp_index = new_lp_index)
             self.stats_props.route_times_list.append(sdn_data.route_time)
             self.total_trans += sdn_data.num_trans
@@ -390,6 +394,24 @@ class SimStats:
                             }
         self.stats_props.sim_lp_utilization_list.append(self.stats_props.lp_bw_utilization_dict["overall"]["mean"])
         
+        if self.engine_props["can_partially_serve"]:
+            for bw, bw_obj in self.stats_props.demand_realization_ratio.items():
+                if len(bw_obj) == 1:
+                    deviation = 0.0
+                else:
+                    deviation = stdev(bw_obj)
+
+                self.stats_props.demand_realization_ratio[bw] = {
+                    'mean': round(mean(bw_obj), 2), 
+                    'std': round(deviation, 2),
+                    'min': min(bw_obj), 
+                    'max': max(bw_obj),
+                    'num_full_served': sum(1 for val in bw_obj if val == 1),
+                }
+                if bw == 'overall':
+                    self.stats_props.demand_realization_ratio[bw]['ratio_full_served'] = self.stats_props.demand_realization_ratio[bw]['num_full_served'] / self.engine_props['num_requests']
+                else:
+                    self.stats_props.demand_realization_ratio[bw]['ratio_full_served'] = self.stats_props.demand_realization_ratio[bw]['num_full_served'] / (self.engine_props['request_distribution'][bw] * self.engine_props['num_requests'])
 
 
     def end_iter_update(self, total_transponders: int = None):

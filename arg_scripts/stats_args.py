@@ -10,6 +10,7 @@ class StatsProps:
         self.cores_dict = dict()  # Cores used in simulation(s)
         self.weights_dict = dict()  # Weights of paths
         self.mods_used_dict = dict()  # Modulations used in simulation(s)
+        self.demand_realization_ratio = dict()  # Realization ratio when services can serve partially
         self.block_bw_dict = dict()  # Block per bandwidth
         self.frag_dict = dict() # Track of different fragmentation metrics
         self.lp_bw_utilization_dict = dict() # Average lightpath bandwidth utilization
