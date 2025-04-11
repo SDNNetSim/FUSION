@@ -72,20 +72,22 @@ Kimberly Tice. We welcome contributions from the community to help make this pro
 
 If you use **FUSION** in your research, please cite the following paper:
 
-> **McCann, R., Rezaee, A., & Vokkarane, V. M. (2024).**  
-> *FUSION: A Flexible Unified Simulator for Intelligent Optical Networking.*  
-> IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS 2024).  
-> [arXiv:2410.13999](https://arxiv.org/abs/2410.13999)
+> **R. McCann, A. Rezaee, and V. M. Vokkarane**,  
+> *"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"*  
+> 2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS), Guwahati, India, 2024, pp. 1-6.  
+> DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
 ### 📄 BibTeX
 
 ```bibtex
-@inproceedings{mccann2024fusion,
-  title     = {{FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}},
-  author    = {McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
-  booktitle = {IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)},
-  year      = {2024},
-  archivePrefix = {arXiv},
-  eprint    = {2410.13999},
-  url       = {https://arxiv.org/abs/2410.13999}
+@INPROCEEDINGS{10898199,
+  author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-6},
+  keywords={Performance evaluation; Optical fibers; Technological innovation; Elastic optical networks; Optical network units; Telecommunications; Telecommunication network reliability; Usability; Software defined networking; Graphical user interfaces; Software-Defined Optical Networks (SDONs); Optical Network Simulation; Reinforcement Learning; Machine Learning; Open-Source},
+  doi={10.1109/ANTS63515.2024.10898199}
 }
