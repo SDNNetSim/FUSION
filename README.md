@@ -85,9 +85,6 @@ If you use **FUSION** in your research, please cite the following paper:
   booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
   title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
   year={2024},
-  volume={},
-  number={},
   pages={1-6},
-  keywords={Performance evaluation; Optical fibers; Technological innovation; Elastic optical networks; Optical network units; Telecommunications; Telecommunication network reliability; Usability; Software defined networking; Graphical user interfaces; Software-Defined Optical Networks (SDONs); Optical Network Simulation; Reinforcement Learning; Machine Learning; Open-Source},
   doi={10.1109/ANTS63515.2024.10898199}
 }
