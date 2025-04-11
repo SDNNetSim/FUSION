@@ -223,7 +223,7 @@ class Engine:
 
         if iteration == 0:
             print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
-                  f"simulation number: {self.engine_props['thread_num']}.")
+                  f"simulation number: {self.engine_props['thread_num']}.\n")
 
             if self.engine_props['deploy_model']:
                 self.ml_model = load_model(engine_props=self.engine_props)
@@ -263,12 +263,12 @@ class Engine:
         done_units = done_offset
 
         log(f"[Engine] thread={thread_num}, offset={done_offset}, "
-              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}")
+              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}\n")
 
         for iteration in range(max_iters):
             if self.stop_flag.is_set():  # Check if the stop flag is set
                 log(f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
-                      f"simulation number: {thread_num}.")
+                      f"simulation number: {thread_num}.\n")
                 break
 
             self.init_iter(iteration=iteration)
@@ -284,7 +284,7 @@ class Engine:
             if progress_queue:
                 progress_queue.put((thread_num, done_units))
 
-            log(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}")
+            log(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}\n")
 
             import time
             time.sleep(0.2)
@@ -294,7 +294,7 @@ class Engine:
 
         log(
             f"Simulation finished for Erlang: {self.engine_props['erlang']} "
-            f"finished for simulation number: {thread_num}."
+            f"finished for simulation number: {thread_num}.\n"
         )
 
         return done_units

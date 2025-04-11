@@ -107,6 +107,7 @@ class MainWindow(QtWidgets.QMainWindow):
         init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
         self.mw_topology_view_area.setWidget(init_topology_data)
         self.mw_topology_view_area.setAlignment(QtCore.Qt.AlignCenter)
+        self.mw_topology_view_area.setWidgetResizable(True)
         self.tab_widget.setStyleSheet("font-size: 12pt")
         self.tab_widget.addTab(self.mw_topology_view_area, "Topology View")
         self.horizontal_splitter.addWidget(self.tab_widget)
