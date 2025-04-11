@@ -1,4 +1,5 @@
 # pylint: disable=c-extension-no-member
+# pylint: disable=duplicate-code
 import sys
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -105,8 +106,10 @@ def load_license_text(file_path: str) -> str:
             return file.read()
     except FileNotFoundError:
         return "LICENSE file not found."
-    except Exception as e: # Error checking
-        return f"An error occurred while loading the LICENSE file: {e}"
+    except PermissionError:
+        return "Permission denied when trying to read the LICENSE file."
+    except OSError as e:
+        return f"An OS error occurred while loading the LICENSE file: {e}"
 
 class AboutDialog(QDialog): # pylint: disable=too-few-public-methods
     """
@@ -223,7 +226,10 @@ class ActionHelpers:
             print(settings_dialog.get_settings())
 
     def _display_topology(self, net_name: str):
-        topology_information_dict, core_nodes_list = create_network(net_name=net_name)
+        """
+        Displays a network topology.
+        """
+        topology_information_dict, core_nodes_list = create_network(net_name=net_name) # pylint: disable=unused-variable
 
         edge_list = [(src, des, {'weight': link_len}) for (src, des), link_len in topology_information_dict.items()] # pylint: disable=no-member
         network_topo = nx.Graph(edge_list)
@@ -245,7 +251,7 @@ class ActionHelpers:
 
     def display_topology(self):
         """
-        Displays a network topology.
+        Selection for network topology.
         """
         network_selection_dialog = QtWidgets.QDialog()
         network_selection_dialog.setSizeGripEnabled(True)

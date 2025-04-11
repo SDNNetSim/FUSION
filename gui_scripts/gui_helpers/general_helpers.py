@@ -150,7 +150,7 @@ class SimulationThread(QtCore.QThread):
                     # Debug print to confirm progress was parsed:
                     print("SimulationThread parsed progress:", progress_val)
                     self.progress_changed.emit(progress_val)
-                except Exception as e: # Error checking
+                except ValueError as e:
                     print("Error parsing progress:", e)
                 continue  # Skip further processing of this line
 
@@ -199,7 +199,7 @@ class SimulationThread(QtCore.QThread):
         Pauses a single simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGSTOP)
+            os.kill(self.simulation_process.pid, signal.SIGSTOP) # pylint: disable=no-member
             self.paused = True
             self.output_hints_signal.emit('Pausing simulation from thread')
 
@@ -208,7 +208,7 @@ class SimulationThread(QtCore.QThread):
         Resumes a simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGCONT)
+            os.kill(self.simulation_process.pid, signal.SIGCONT) # pylint: disable=no-member
             self.paused = False
             self.output_hints_signal.emit('Resuming simulation from thread')
         self.pause_condition.wakeOne()
@@ -218,7 +218,7 @@ class SimulationThread(QtCore.QThread):
         Stops a simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGKILL)
+            os.kill(self.simulation_process.pid, signal.SIGKILL) # pylint: disable=no-member
             self.stopped = True
             self.paused = False
             self.output_hints_signal.emit('Stopping simulation from thread')

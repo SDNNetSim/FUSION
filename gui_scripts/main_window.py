@@ -83,6 +83,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.bottom_pane.appendPlainText(message)
 
     def init_ui(self):
+        """
+        Initialize the main user-interface.
+        """
         self.main_widget = QtWidgets.QWidget()
         self.setCentralWidget(self.main_widget)
         self.main_layout = QtWidgets.QVBoxLayout(self.main_widget)
@@ -133,6 +136,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.addWidget(self.vertical_splitter, stretch=1)
 
     def on_tree_item_dclicked(self, index):
+        """
+        Performs an action when treeview is double-clicked.
+
+        :param index: Index of file path displayed in the tree.
+        """
         file_path = self.file_model.filePath(index)
         if QtCore.QFileInfo(file_path).isFile():
             file_index = self.tab_widget.indexOf(self.file_editor)
@@ -144,11 +152,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tab_widget.setCurrentWidget(self.file_editor)
 
     def save_file(self):
+        """
+        Saves a file edited.
+        """
         if hasattr(self, 'current_file_path') and self.current_file_path:
             with open(self.current_file_path, 'w', encoding='utf-8') as file:
                 file.write(self.file_editor.toPlainText())
 
     def init_menu_bar(self):
+        """
+        Initialize the menu bar.
+        """
         self.menu_bar = self.menuBar()
         self.menu_help_obj.menu_bar_obj = self.menu_bar
         self.menu_help_obj.create_file_menu()
@@ -166,6 +180,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ac_help_obj.create_about_action()
 
     def init_tool_bar(self):
+        """
+        Initialize the toolbar.
+        """
         self.tool_bar = self.addToolBar('Main Toolbar')
         self.tool_bar.setMovable(False)
         self.tool_bar.setIconSize(QtCore.QSize(15, 15))
@@ -186,6 +203,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tool_bar.addWidget(self.button_help_obj.settings_button)
 
     def init_status_bar(self):
+        """
+        Initialize the status bar.
+        """
         self.status_bar = self.statusBar()
         self.status_bar.showMessage('Active')
         self.status_bar.addWidget(self.progress_bar)
@@ -193,6 +213,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setVisible(False)
 
     def apply_styles(self):
+        """
+        Apply styles to the display.
+        """
         self.setStyleSheet(STYLE_SHEET)
 
     def set_shared_progress_dict(self, progress_dict):
@@ -257,7 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Compute how many total iteration units exist across ALL processes.
         # Each process might run multiple Erlang volumes, each with a certain number of iterations.
         total_work_units = 0
-        for key, conf in self.simulation_config.items():
+        for key, conf in self.simulation_config.items(): # pylint: disable=unused-variable
             erlangs = conf['erlangs']
             start, stop, step = erlangs['start'], erlangs['stop'], erlangs['step']
             count_erlangs = len(range(start, stop, step))

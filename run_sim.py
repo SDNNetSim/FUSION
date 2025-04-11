@@ -1,10 +1,9 @@
 # run_sim.py
-import time
 import multiprocessing
 import copy
 from datetime import datetime
-import concurrent.futures
 
+from multiprocessing import Manager, Process
 from helper_scripts.setup_helpers import create_input, save_input
 from src.engine import Engine
 from config_scripts.setup_config import read_config
@@ -98,7 +97,6 @@ class NetworkSimulator:
 
         # If you're still using a shared progress_dict, keep or remove as needed
         if 'progress_dict' not in self.properties:
-            from multiprocessing import Manager
             manager = Manager()
             self.properties['progress_dict'] = manager.dict()
 
@@ -109,7 +107,7 @@ class NetworkSimulator:
         done_units_so_far = 0
 
         for erlang_index, erlang in enumerate(erlang_list):
-            first_erlang = (erlang_index == 0)
+            first_erlang = erlang_index == 0
 
             # We call the helper function that sets 'arrival_rate', calls Engine, etc.
             done_units_so_far = self._run_generic_sim(
@@ -144,8 +142,6 @@ def run(sims_dict: dict, stop_flag: multiprocessing):
     Each process might handle multiple Erlangs via run_generic_sim().
     We'll rely on iteration-based progress in engine.py (child increments done_units each iteration).
     """
-    from datetime import datetime
-    from multiprocessing import Process
 
     # If there's at least one simulation, retrieve the parent's log/progress queues
     any_conf = list(sims_dict.values())[0]
@@ -160,8 +156,6 @@ def run(sims_dict: dict, stop_flag: multiprocessing):
 
     processes = []
     sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-
-    from run_sim import NetworkSimulator
 
     for thread_num, thread_params in sims_dict.items():
         # Insert the parent's queues if not already set

@@ -13,6 +13,9 @@ class Alert(qtw.QMessageBox): # pylint: disable=too-few-public-methods
         super().__init__(parent=self.arguments.get('parent', None))
 
     def alert(self, alert_code: AlertCode = 0):
+        """
+        Displays an alert dialog.
+        """
         parent = self.arguments.get('parent', None)
         title = self.arguments.get('title', '')
         text = self.arguments.get('text', '')

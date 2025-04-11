@@ -1,4 +1,5 @@
 # pylint: disable=c-extension-no-member
+# pylint: disable=no-name-in-module
 import os
 import multiprocessing
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
