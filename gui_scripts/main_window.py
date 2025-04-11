@@ -1,8 +1,10 @@
-# run_gui.py
+# pylint: disable=c-extension-no-member
+# pylint: disable=no-name-in-module
+
 import sys
-from multiprocessing import Manager
+import multiprocessing
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileSystemModel, QTreeView, QTabWidget, QPlainTextEdit
+from PyQt5.QtWidgets import QFileSystemModel, QTabWidget, QPlainTextEdit
 from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
 from gui_scripts.gui_helpers.action_helpers import ActionHelpers
 from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
@@ -28,6 +30,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar = QtWidgets.QProgressBar()
         self.simulation_config = None  # Will hold simulation configuration (sims_dict)
         self.shared_progress_dict = None  # Will hold the Manager dictionary
+        self.progress_values = None
+        self.progress_queue = multiprocessing.Queue()
+        self.log_queue = None
+        self.total_simulations = None
+        self.global_work_units = None
 
         # Other GUI variables...
         self.current_file_path = None
@@ -40,6 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_editor = None
         self.mw_topology_view_area = None
         self.vertical_splitter = None
+        self.first_info_pane = None
         self.bottom_pane = None
         self.menu_bar = None
         self.tool_bar = None
@@ -66,6 +74,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_timer.start(500)  # Adjust polling interval as needed
 
     def poll_log_queue(self):
+        """
+        Checks the log queue for new messages and appends them to bottom pane.
+        """
         if hasattr(self, 'log_queue'):
             while not self.log_queue.empty():
                 message = self.log_queue.get()
@@ -234,12 +245,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Also calculates the global total of iteration units across all processes
         so we know how to map partial completions to a 0..1000 scale.
         """
-        import multiprocessing
 
         self.simulation_config = config
 
-        # Queues for child processes to send back logs or progress
-        self.progress_queue = multiprocessing.Queue()
+        # Queues for child processes to send backlogs or progress
         self.log_queue = multiprocessing.Queue()
 
         # This dict tracks how many iteration units each process has completed so far.

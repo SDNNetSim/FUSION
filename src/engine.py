@@ -2,6 +2,7 @@
 import copy
 import os
 import signal
+import time
 
 # Third party library imports
 import networkx as nx
@@ -286,7 +287,6 @@ class Engine:
 
             log(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}\n")
 
-            import time
             time.sleep(0.2)
 
             if end_iter:

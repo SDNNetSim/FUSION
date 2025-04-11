@@ -150,7 +150,7 @@ class SimulationThread(QtCore.QThread):
                     # Debug print to confirm progress was parsed:
                     print("SimulationThread parsed progress:", progress_val)
                     self.progress_changed.emit(progress_val)
-                except Exception as e:
+                except Exception as e: # Error checking
                     print("Error parsing progress:", e)
                 continue  # Skip further processing of this line
 

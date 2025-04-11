@@ -1,3 +1,4 @@
+# pylint: disable=c-extension-no-member
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure

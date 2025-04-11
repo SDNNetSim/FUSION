@@ -4,7 +4,7 @@ import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QDialog, QTabWidget, QWidget, QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QDialog, QTabWidget, QWidget, QVBoxLayout # pylint: disable=no-name-in-module
 from gui_scripts.gui_args.config_args import GUI_DEFAULTS
 
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
@@ -105,10 +105,10 @@ def load_license_text(file_path: str) -> str:
             return file.read()
     except FileNotFoundError:
         return "LICENSE file not found."
-    except Exception as e:
+    except Exception as e: # Error checking
         return f"An error occurred while loading the LICENSE file: {e}"
 
-class AboutDialog(QDialog):
+class AboutDialog(QDialog): # pylint: disable=too-few-public-methods
     """
     A dialog showing information about the application with three tabs:
     About, License, and a blank tab for future use.

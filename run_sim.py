@@ -24,9 +24,6 @@ class NetworkSimulator:
         pass done_offset to avoid resetting progress between volumes,
         and call Engine.run(), which returns how many iteration units are now done.
         """
-        import copy
-        from helper_scripts.setup_helpers import create_input, save_input
-        from src.engine import Engine
 
         # Remove unpickleable keys so we can deepcopy
         unpickleable_keys = {}

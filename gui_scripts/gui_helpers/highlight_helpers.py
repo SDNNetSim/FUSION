@@ -1,4 +1,5 @@
 # pylint: disable=no-name-in-module
+# pylint: disable=c-extension-no-member
 
 from PyQt5 import QtCore as qtc, QtGui as qtg
 

@@ -1,15 +1,19 @@
-# button_helpers.py
+# pylint: disable=c-extension-no-member
 import os
 import multiprocessing
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtGui
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 
 # We import the simulation runner's run() function.
 from run_sim import run
 
 class ButtonHelpers:
+    """
+    Contains methods related to setting up the buttons and their potential options.
+    """
     def __init__(self):
+        self.progress_anim = None
         self.simulation_thread = None
         self.bottom_right_pane = None
         self.progress_bar = None
@@ -24,6 +28,9 @@ class ButtonHelpers:
         self.stop_flag = multiprocessing.Event()  # Shared flag for stopping the simulation
 
     def output_hints(self, message: str):
+        """
+        Outputs hints.
+        """
         self.bottom_right_pane.appendPlainText(message)
 
     def update_progress(self, new_value: int):
@@ -43,7 +50,9 @@ class ButtonHelpers:
         self.progress_anim.start()
 
     def simulation_finished(self):
-        # Called when simulation completes
+        """
+        Finish the simulation.
+        """
         self.simulation_process = None
         self.start_button.setText("Start")
 
@@ -52,8 +61,6 @@ class ButtonHelpers:
         Starts the simulation in a separate process (rather than a separate thread),
         ensuring that the multiprocessing.Manager dictionary is shared properly.
         """
-        import multiprocessing
-        from run_sim import run
 
         self.bottom_right_pane.clear()
 
@@ -76,6 +83,9 @@ class ButtonHelpers:
         self.output_hints("Simulation started.")
 
     def pause_simulation(self):
+        """
+        Pauses the simulation.
+        """
         if self.simulation_process and self.simulation_process.is_alive():
             # Pause/resume logic would need to be implemented;
             # in a multiprocessing.Process, pausing isn't trivial.
@@ -101,6 +111,9 @@ class ButtonHelpers:
         self.output_hints("Simulation stopped.")
 
     def create_start_button(self):
+        """
+        Creates the start button and action.
+        """
         self.start_button = QtWidgets.QAction()
         resource_name = "light-green-play-button.png"
         self.media_dir = os.path.join('gui_scripts', 'media')
@@ -109,6 +122,9 @@ class ButtonHelpers:
         self.start_button.triggered.connect(self.start_simulation)
 
     def create_pause_button(self):
+        """
+        Creates the pause button and action.
+        """
         self.pause_button = QtWidgets.QAction()
         resource_name = "pause.png"
         self.pause_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
@@ -116,6 +132,9 @@ class ButtonHelpers:
         self.pause_button.triggered.connect(self.pause_simulation)
 
     def create_stop_button(self):
+        """
+        Creates the stop button and action.
+        """
         self.stop_button = QtWidgets.QAction()
         resource_name = "light-red-stop-button.png"
         self.stop_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
@@ -124,6 +143,9 @@ class ButtonHelpers:
 
     @staticmethod
     def open_settings():
+        """
+        Opens the settings panel.
+        """
         settings_dialog = SettingsDialog()
         settings_dialog.setModal(True)
         settings_dialog.setStyleSheet("background-color: white;")
@@ -131,6 +153,9 @@ class ButtonHelpers:
             print(settings_dialog.get_settings())
 
     def create_settings_button(self):
+        """
+        Creates the settings button and action.
+        """
         self.settings_button = QtWidgets.QToolButton()
         resource_name = "gear.png"
         self.settings_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))

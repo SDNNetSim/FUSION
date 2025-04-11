@@ -114,6 +114,9 @@ GUI_DEFAULTS = {
 
 
 class AlertCode(Enum):
+    """
+    Number representing types of alert dialogs.
+    """
     INFORMATION = 0
     CRITICAL = 1
     QUESTION = 2

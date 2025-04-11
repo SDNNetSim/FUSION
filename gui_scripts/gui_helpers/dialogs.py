@@ -1,8 +1,12 @@
+# pylint: disable=c-extension-no-member
 from PyQt5 import QtWidgets as qtw
 from gui_scripts.gui_args.config_args import AlertCode
 
 
-class Alert(qtw.QMessageBox):
+class Alert(qtw.QMessageBox): # pylint: disable=too-few-public-methods
+    """
+    Display Various types of alerts.
+    """
 
     def __init__(self, **kwargs):
         self.arguments = kwargs
