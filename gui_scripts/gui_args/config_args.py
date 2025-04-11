@@ -1,3 +1,5 @@
+from enum import Enum
+
 SETTINGS_CONFIG_DICT = [
     {
         "category": "General",
@@ -102,3 +104,20 @@ SETTINGS_CONFIG_DICT = [
         ]
     }
 ]
+
+# TODO: update documentation to reflect this.
+GUI_DEFAULTS = {
+    'supported_networks': ['USNet', 'NSFNet', 'Pan-European', 'USbackbone60'],
+    'plots': ['Blocking', 'Block Reasons', 'Errors', 'Hops', 'Path Length', 'Rewards'],
+    'license_file_path': 'LICENSE'
+}
+
+
+class AlertCode(Enum):
+    """
+    Number representing types of alert dialogs.
+    """
+    INFORMATION = 0
+    CRITICAL = 1
+    QUESTION = 2
+    WARNING = 3

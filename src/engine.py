@@ -2,6 +2,7 @@
 import copy
 import os
 import signal
+import time
 
 # Third party library imports
 import networkx as nx
@@ -34,6 +35,7 @@ class Engine:
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
 
         self.ml_model = None
+        self.stop_flag = engine_props.get('stop_flag')  # Get the stop flag from engine_props
 
     def update_arrival_params(self, curr_time: float):
         """
@@ -222,7 +224,7 @@ class Engine:
 
         if iteration == 0:
             print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
-                  f"simulation number: {self.engine_props['thread_num']}.")
+                  f"simulation number: {self.engine_props['thread_num']}.\n")
 
             if self.engine_props['deploy_model']:
                 self.ml_model = load_model(engine_props=self.engine_props)
@@ -232,21 +234,67 @@ class Engine:
 
     def run(self):
         """
-        Controls the Engine class methods.
+        Runs the simulation by creating the topology, processing requests,
+        and sending iteration-based updates to the parent's queue.
+
+        We do not produce a local fraction. Instead, each iteration => done_units += 1,
+        which we push to the parent's queue. If done_offset is given, we start from that offset.
         """
+        # Create a local logging helper that uses the shared log_queue if available.
+        log_queue = self.engine_props.get('log_queue')
+
+        def log(message):
+            if log_queue:
+                log_queue.put(message)
+            else:
+                print(message)
+
         self.create_topology()
-        for iteration in range(self.engine_props["max_iters"]):
+
+        max_iters = self.engine_props["max_iters"]
+        progress_queue = self.engine_props.get('progress_queue')
+        thread_num = self.engine_props.get('thread_num', 'unknown')
+
+        # The total # of iteration units in this process
+        my_iteration_units = self.engine_props.get('my_iteration_units', max_iters)
+        # The offset for if we've completed some from previous Erlangs in the same process
+        done_offset = self.engine_props.get('done_offset', 0)
+
+        # Start from done_offset
+        done_units = done_offset
+
+        log(f"[Engine] thread={thread_num}, offset={done_offset}, "
+              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}\n")
+
+        for iteration in range(max_iters):
+            if self.stop_flag.is_set():  # Check if the stop flag is set
+                log(f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
+                      f"simulation number: {thread_num}.\n")
+                break
+
             self.init_iter(iteration=iteration)
             req_num = 1
             for curr_time in self.reqs_dict:
                 self.handle_request(curr_time=curr_time, req_num=req_num)
-
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
                     req_num += 1
 
             end_iter = self.end_iter(iteration=iteration)
+
+            done_units += 1  # finished another iteration
+            if progress_queue:
+                progress_queue.put((thread_num, done_units))
+
+            log(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}\n")
+
+            time.sleep(0.2)
+
             if end_iter:
                 break
 
-        print(f"Erlang: {self.engine_props['erlang']} finished for "
-              f"simulation number: {self.engine_props['thread_num']}.")
+        log(
+            f"Simulation finished for Erlang: {self.engine_props['erlang']} "
+            f"finished for simulation number: {thread_num}.\n"
+        )
+
+        return done_units

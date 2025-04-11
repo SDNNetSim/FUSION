@@ -1,9 +1,12 @@
 # pylint: disable=c-extension-no-member
+# pylint: disable=duplicate-code
 import sys
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtWidgets import QDialog, QTabWidget, QWidget, QVBoxLayout # pylint: disable=no-name-in-module
+from gui_scripts.gui_args.config_args import GUI_DEFAULTS
 
 from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 from data_scripts.structure_data import create_network
@@ -91,6 +94,99 @@ class TopologyCanvas(FigureCanvas):
         dialog.activateWindow()
         dialog.exec_()
 
+def load_license_text(file_path: str) -> str:
+    """
+    Reads the license text from the specified file path.
+
+    :param file_path: Path to the LICENSE file.
+    :return: Content of the LICENSE file as a string.
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        return "LICENSE file not found."
+    except PermissionError:
+        return "Permission denied when trying to read the LICENSE file."
+    except OSError as e:
+        return f"An OS error occurred while loading the LICENSE file: {e}"
+
+class AboutDialog(QDialog): # pylint: disable=too-few-public-methods
+    """
+    A dialog showing information about the application with three tabs:
+    About, License, and a blank tab for future use.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("About FUSION Simulator")
+        self.setMinimumSize(600, 400)
+        layout = QVBoxLayout(self)
+
+        # Create the tab widget
+        self.tab_widget = QTabWidget(self)
+
+        # Add tabs
+        self._add_about_tab()
+        self._add_license_tab()
+        self._add_blank_tab()
+
+        layout.addWidget(self.tab_widget)
+        self.setLayout(layout)
+
+    def _add_about_tab(self):
+        """
+        Create and add the 'About' tab.
+        """
+        about_tab = QWidget()
+        about_layout = QVBoxLayout(about_tab)
+
+        about_text = QtWidgets.QLabel(
+            "FUSION Simulator\n\n"
+            "Welcome to FUSION, an open-source venture into the future of networking.\n\n"
+            "For more information, visit:"
+        )
+        about_text.setWordWrap(True)  # Enable word wrapping
+        about_layout.addWidget(about_text)
+
+        # Hyperlink
+        link_label = QtWidgets.QLabel(
+            '<a href="https://github.com/SDNNetSim/FUSION/" style="color: blue;">'
+            'https://github.com/SDNNetSim/FUSION/</a>'
+        )
+        link_label.setOpenExternalLinks(True)  # Make the link clickable
+        about_layout.addWidget(link_label)
+
+        self.tab_widget.addTab(about_tab, "About")
+
+    def _add_license_tab(self):
+        """
+        Create and add the 'License' tab.
+        """
+        license_tab = QWidget()
+        license_layout = QVBoxLayout(license_tab)
+
+        # Read the license text from the LICENSE file
+        license_text = load_license_text(GUI_DEFAULTS['license_file_path'])  # Adjust the file path as needed
+        license_text_area = QtWidgets.QPlainTextEdit(license_text)
+        license_text_area.setReadOnly(True)  # Make it read-only
+        license_layout.addWidget(license_text_area)
+
+        self.tab_widget.addTab(license_tab, "License")
+
+    def _add_blank_tab(self):
+        """
+        Create and add a blank tab for future use.
+        """
+        blank_tab = QWidget()
+        blank_layout = QVBoxLayout(blank_tab)
+
+        placeholder_label = QtWidgets.QLabel("Future functionality will go here.")
+        blank_layout.addWidget(placeholder_label)
+
+        self.tab_widget.addTab(blank_tab, "Blank Tab")
+
 
 class ActionHelpers:
     """
@@ -130,7 +226,10 @@ class ActionHelpers:
             print(settings_dialog.get_settings())
 
     def _display_topology(self, net_name: str):
-        topology_information_dict = create_network(net_name=net_name)
+        """
+        Displays a network topology.
+        """
+        topology_information_dict, core_nodes_list = create_network(net_name=net_name) # pylint: disable=unused-variable
 
         edge_list = [(src, des, {'weight': link_len}) for (src, des), link_len in topology_information_dict.items()] # pylint: disable=no-member
         network_topo = nx.Graph(edge_list)
@@ -152,7 +251,7 @@ class ActionHelpers:
 
     def display_topology(self):
         """
-        Displays a network topology.
+        Selection for network topology.
         """
         network_selection_dialog = QtWidgets.QDialog()
         network_selection_dialog.setSizeGripEnabled(True)
@@ -212,14 +311,21 @@ class ActionHelpers:
         Create about action to display relevant about information regarding the simulator.
         """
         about_action = QtWidgets.QAction('&About', self.menu_bar_obj)
-        about_action.triggered.connect(self.about)
+        about_action.triggered.connect(self.show_about_dialog)
         self.menu_help_obj.help_menu_obj.addAction(about_action)
+
+    def show_about_dialog(self):
+        """
+        Display the About dialog.
+        """
+        about_dialog = AboutDialog(self.menu_bar_obj)
+        about_dialog.exec_()  # Open dialog modally
 
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = QtWidgets.QMainWindow()
-    window.setWindowTitle('SDN Simulator')
+    window.setWindowTitle('FUSION Simulator')
 
     action_helpers = ActionHelpers()
     action_helpers.menu_bar_obj = window.menuBar()

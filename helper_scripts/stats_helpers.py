@@ -433,7 +433,15 @@ class SimStats:
         :param print_flag: Determine if we want to print or not.
         :return: None
         """
+        log_queue = self.engine_props.get('log_queue')
+
+        def log(message):
+            if log_queue:
+                log_queue.put(message)
+            else:
+                print(message)
+
         if print_flag:
-            print(f"Iteration {self.iteration + 1} out of {max_iters} completed for "
-                  f"Erlang: {self.engine_props['erlang']}")
-            print(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}")
+            log(f"Iteration {self.iteration + 1} out of {max_iters} completed for "
+                  f"Erlang: {self.engine_props['erlang']}\n")
+            log(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}\n")
