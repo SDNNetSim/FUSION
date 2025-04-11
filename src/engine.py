@@ -71,12 +71,24 @@ class Engine:
         :param force_mod_format: Forces a modulation format.
         :param force_core: Force a certain core for allocation.
         """
+        #get MSMD on or off from dictionary, check if on or off and conduct subsequent logic
+        multi_source_multi_destination = self.engine_props.get("multi_source_multi_destination", False)
+        if multi_source_multi_destination:
+            print("MSMD mode is on under handle_arrival.")
+            #from here i can either implement the same logic for MSMD or i can refactor this 
+            #whole original function with MSMD variables in mind.
+                           
+        #iterating over the items in dictionary - conducts conditional checks
         for req_key, req_value in self.reqs_dict[curr_time].items():
             # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
                 req_key = 'mod_formats_dict'
+        #updating the properties of the sdn controller with the new parameters from the current request
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
+        #Calls handle_event with all the parameters it needs to handle this arrival
+        #After handle_event is conducted, updates the .net_spec_dict is updated with the SDN properties
+        #Calls update_arrival_params with the current time as an argument - done to further update additional parameters
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
                                   ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time],
@@ -90,17 +102,28 @@ class Engine:
 
         :param curr_time: The arrival time of the request.
         """
+
+        #get MSMD on or off from dictionary, check if on or off and conduct subsequent logic
+        multi_source_multi_destination = self.engine_props.get("multi_source_multi_destination", False)
+        if multi_source_multi_destination:
+            print("MSMD mode is on under handle_release.")
+            #from here i can either implement the same logic for MSMD or i can refactor this 
+            #whole original function with MSMD variables in mind.
+        
+        #iterating through request dictionary over each key-value pair for the curr_time
         for req_key, req_value in self.reqs_dict[curr_time].items():
             # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
                 req_key = 'mod_formats_dict'
+            #update parameters
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
+        #Check if request is in the request status dictionary- if it is, gets the path, calls function to handle the event, and updates net_spec_dict with current SDN properties
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
             self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
             self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
-        # Request was blocked, nothing to release
+        # Request was blocked, nothing to release, function simply passes
         else:
             pass
 
@@ -156,8 +179,17 @@ class Engine:
         :param curr_time: The current simulated time.
         :param req_num: The request number.
         """
+        #get MSMD on or off from dictionary, check if on or off and conduct subsequent logic
+        multi_source_multi_destination = self.engine_props.get("multi_source_multi_destination", False)
+        if multi_source_multi_destination:
+            print("MSMD mode is on under handle_request.")
+            #from here i can either implement the same logic for MSMD or i can refactor this 
+            #whole original function with MSMD variables in mind.
+        
+        #checks if the request is either type arrival or release from the dictionary for the current time
         req_type = self.reqs_dict[curr_time]["request_type"]
-        if req_type == "arrival":
+        if req_type == "arrival": #handles the arrival request - why arent we just calling handle_arrival like in handle_release below?
+            #create copies of the spec and then call the function to handle the arrival
             old_net_spec_dict = copy.deepcopy(self.net_spec_dict)
             old_req_info_dict = copy.deepcopy(self.reqs_dict[curr_time])
             self.handle_arrival(curr_time=curr_time)
@@ -172,7 +204,7 @@ class Engine:
                     self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
                                                      net_spec_dict=old_net_spec_dict)
 
-        elif req_type == "release":
+        elif req_type == "release": #simply calls the function to handle it and raises an error otherwise
             self.handle_release(curr_time=curr_time)
         else:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '

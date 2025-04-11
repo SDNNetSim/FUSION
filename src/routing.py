@@ -238,6 +238,105 @@ class Routing:
                 break
             path_cnt += 1
 
+    def MSMD_Routing(self, sdn_pairs: List[Tuple[str, str]]) -> None:  
+        """  
+        Multi-Source Multi-Destination Routing that finds k paths for each source-destination pair.  
+        Updates route_props with paths, modulation formats, and path lengths.  
+    
+        Args:  
+            sdn_pairs: List of (source, destination) node pairs to route between  
+        """  
+        topology = self.engine_props['topology']  
+        k = self.engine_props.get('k_paths', 3)  
+        disjoint_flag = self.engine_props.get('disjoint', False)  
+    
+        # Get number of unique sources/destinations for algorithm selection  
+        num_sources = len({src for src, _ in sdn_pairs})  
+        num_destinations = len({dst for _, dst in sdn_pairs})  
+        total_nodes = num_sources + num_destinations  
+
+        for source, destination in sdn_pairs:  
+            try:  
+                # Choose routing method based on network size  
+                if total_nodes > 100:  
+                    paths = self._AStar_Search(source, destination, k, disjoint_flag)  
+                else:  
+                    paths = self._SuurballesAlgorithm(source, destination, k, disjoint_flag)  
+
+                # Process each found path  
+                for path in paths:  
+                    path_len = self._find_path_len(path, topology)  
+                    chosen_bw = self.sdn_props.bandwidth  
+                
+                    # Determine modulation formats  
+                    if not self.engine_props.get('pre_calc_mod_selection', False):  
+                        mod_formats_list = [  
+                            self._get_path_mod(  
+                                mods_dict=self.engine_props['mod_per_bw'][chosen_bw],  
+                                path_len=path_len  
+                            )  
+                        ]  
+                    else:  
+                        mod_formats_dict = self._sort_nested_dict_vals(  
+                            original_dict=self.sdn_props.mod_formats_dict,  
+                            nested_key='max_length'  
+                        )  
+                        mod_formats_list = list(mod_formats_dict.keys())  
+                
+                    # Update route properties directly  
+                    self.route_props.paths_matrix.append(path)  
+                    self.route_props.mod_formats_matrix.append(mod_formats_list)  
+                    self.route_props.weights_list.append(path_len)  
+
+            except nx.NetworkXNoPath:  
+                print(f"No path found between {source} and {destination}")  
+            except Exception as e:  
+                print(f"Error routing between {source} and {destination}: {e}")  
+
+    def _AStar_Search(self, source: str, destination: str, k: int, disjoint: bool) -> List[List[str]]:  
+        """Find up to k paths using A* search (Dijkstra's with zero heuristic)"""  
+        paths = []  
+        G_temp = self.engine_props['topology'].copy()  
+    
+        for _ in range(k):  
+            try:  
+                path = nx.astar_path(G_temp, source, destination, heuristic=lambda u, v: 0, weight='length')  
+                paths.append(path)  
+                if disjoint:  
+                    # Remove intermediate nodes for disjoint paths  
+                    for node in path[1:-1]:  
+                        G_temp.remove_node(node)  
+            except nx.NetworkXNoPath:  
+                break  
+        return paths  
+
+    def _SuurballesAlgorithm(self, source: str, destination: str, k: int, disjoint: bool) -> List[List[str]]:  
+        """  
+        Custom implementation to find up to k node-disjoint shortest paths.  
+        If 'disjoint' is True, paths will be node-disjoint by removing intermediate nodes.  
+        """  
+        topology = self.engine_props['topology']  
+        paths = []  
+        temp_graph = topology.copy()  # Work on a temporary copy of the topology  
+
+        for _ in range(k):  
+            try:  
+                # Find the shortest path in the current state of the temporary graph  
+                path = nx.shortest_path(temp_graph, source=source, target=destination, weight='length')  
+                paths.append(path)  
+
+                if disjoint:  
+                    # Remove intermediate nodes to enforce node-disjointness  
+                    # Skip the source and destination nodes  
+                    for node in path[1:-1]:  
+                        if node in temp_graph:  
+                            temp_graph.remove_node(node)  
+
+            except nx.NetworkXNoPath:  
+                break  # No more paths available  
+
+        return paths  
+
     def get_route(self):
         """
         Controls the class by finding the appropriate routing function.
@@ -257,6 +356,8 @@ class Routing:
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
         elif self.engine_props['route_method'] == 'external_ksp':
-            self.load_k_shortest()
+            self.load_k_shortest() 
+        elif self.engine_props['route_method'] == 'MSMD':
+            self.MSMD_Routing()
         else:
             raise NotImplementedError(f"Routing method not recognized, got: {self.engine_props['route_method']}.")
