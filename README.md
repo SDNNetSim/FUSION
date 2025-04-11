@@ -65,5 +65,26 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 
 ## Contributors
 
-This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and 
+This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, Kojo Bempah, and 
 Kimberly Tice. We welcome contributions from the community to help make this project even better!
+
+## 📖 How to Cite This Work
+
+If you use **FUSION** in your research, please cite the following paper:
+
+> **R. McCann, A. Rezaee, and V. M. Vokkarane**,  
+> *"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"*  
+> 2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS), Guwahati, India, 2024, pp. 1-6.  
+> DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
+
+### 📄 BibTeX
+
+```bibtex
+@INPROCEEDINGS{10898199,
+  author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  year={2024},
+  pages={1-6},
+  doi={10.1109/ANTS63515.2024.10898199}
+}
