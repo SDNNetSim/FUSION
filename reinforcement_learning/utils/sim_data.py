@@ -236,12 +236,24 @@ def _process_sim_time(sim_time_path: str):
             sim_time_data[traffic_volume].append(blocking)
 
     averaged_data = {}
-    for tv, lists in sim_time_data.items():
-        if not lists:
+    for tv, lists_of_runs in sim_time_data.items():
+        if not lists_of_runs:
             continue
 
-        arr = np.array(lists)
-        averaged_data[str(tv)] = lists[0] if arr.shape[0] == 1 else np.mean(arr, axis=0).tolist()
+        max_length = max(len(run_data) for run_data in lists_of_runs)
+        padded_runs = []
+        for run_data in lists_of_runs:
+            pad_size = max_length - len(run_data)
+            padded_run_data = run_data + [float('nan')] * pad_size
+            padded_runs.append(padded_run_data)
+
+        arr = np.array(padded_runs, dtype=float)
+        if arr.shape[0] == 1:
+            averaged_data[str(tv)] = arr[0].tolist()
+        else:
+            mean_vals = np.nanmean(arr, axis=0)  # ignores NaNs
+            averaged_data[str(tv)] = mean_vals.tolist()
+
     return averaged_data
 
 
@@ -253,7 +265,7 @@ def _process_single_sim_time(sim_time: str, base_dir: str):
     if not os.path.isdir(sim_time_path):
         print(f"Warning: Path does not exist: {sim_time_path}")
         return None
-    if sim_time == "16_45_07_996720":
+    if sim_time == "17_47_10_532187":
         return _process_baseline(sim_time_path)
     return _process_sim_time(sim_time_path)
 
@@ -271,7 +283,7 @@ def load_blocking_data(simulation_times, base_dir):
             if data is None:
                 continue
 
-            if sim_time == "16_45_07_996720":
+            if sim_time == "17_47_10_532187":
                 if "s1" in data:
                     final_result.setdefault("KSP Baseline", {}).update(data["s1"])
                 if "s2" in data:

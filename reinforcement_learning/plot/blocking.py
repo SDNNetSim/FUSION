@@ -30,7 +30,10 @@ def plot_blocking_probabilities(final_result):
             final_blocks = []
             for block_vector in sim_block_vectors:
                 if isinstance(block_vector, list) and len(block_vector) > 0:
-                    final_blocks.append(block_vector[-1])
+                    # final_blocks.append(block_vector[-1])
+                    # Average the last X amount of iterations
+                    final_blocks.extend(block_vector[-50:])
+                # TODO: What?
                 elif isinstance(block_vector, (int, float)):
                     final_blocks.append(block_vector)
             if final_blocks:

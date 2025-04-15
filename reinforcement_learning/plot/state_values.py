@@ -64,7 +64,12 @@ def plot_best_path_matrix(averaged_state_values_by_volume, path_colors=None):
     plots:
       1) A matrix of best-path values (colored heatmap).
       2) A bar chart of best-path usage counts.
+
+    Changes made:
+      - Zero is explicitly colored white.
+      - Negative values remain on the same color scale but with reduced intensity.
     """
+
     if path_colors is None:
         path_colors = [
             (1, 0, 0), (0, 1, 0), (0, 0, 1),
@@ -86,29 +91,56 @@ def plot_best_path_matrix(averaged_state_values_by_volume, path_colors=None):
                 continue
 
             n_nodes = max(all_nodes) + 1
+            # If no values exist, default to 1e-12 to avoid division by zero
             global_max_val = max(
                 (max(vals) for vals in pair_dict.values() if vals),
                 default=1e-12
             )
 
             color_matrix = np.ones((n_nodes, n_nodes, 3), dtype=float)
+
+            # Factor by which negative values are "toned down"
+            NEGATIVE_FACTOR = 0.5
+
             for (src, dst), path_vals in pair_dict.items():
                 if not path_vals:
                     continue
-                best_path_idx = np.argmax(path_vals)
-                scale = path_vals[best_path_idx] / global_max_val
-                base_color = (
-                    path_colors[best_path_idx]
-                    if best_path_idx < len(path_colors)
-                    else (1, 1, 1)
-                )
-                color_matrix[src, dst] = (
-                        (1 - scale) * np.array([1, 1, 1])
-                        + scale * np.array(base_color)
-                )
 
+                # Use the "best path" (highest value among the path values)
+                best_path_idx = np.argmax(path_vals)
+                val = path_vals[best_path_idx]
+
+                # Pick the base color (fallback is white if out of range)
+                if best_path_idx < len(path_colors):
+                    base_color = path_colors[best_path_idx]
+                else:
+                    base_color = (1, 1, 1)
+
+                if val == 0:
+                    # Explicitly set zero to pure white
+                    color_matrix[src, dst] = [1, 1, 1]
+                else:
+                    scale = abs(val) / global_max_val
+
+                    if val > 0:
+                        # Positive => scale up to full intensity
+                        color_matrix[src, dst] = (
+                                (1 - scale) * np.array([1, 1, 1])
+                                + scale * np.array(base_color)
+                        )
+                    else:
+                        # Negative => use a reduced scale factor so negative is "lighter"
+                        scale *= NEGATIVE_FACTOR
+                        color_matrix[src, dst] = (
+                                (1 - scale) * np.array([1, 1, 1])
+                                + scale * np.array(base_color)
+                        )
+
+            # --- Plot the matrix ---
             fig, ax = plt.subplots(figsize=(10, 8), dpi=300)
             _plot_matrix(ax, color_matrix, n_nodes)
+
+            # Prepare legend
             max_paths = max((len(vals) for vals in pair_dict.values()), default=0)
             patches = [
                 Patch(facecolor='none', edgecolor='none',
@@ -137,4 +169,6 @@ def plot_best_path_matrix(averaged_state_values_by_volume, path_colors=None):
 
             fig.tight_layout(rect=[0.1, 0, 0.8, 1])
             plt.show()
+
+            # --- Plot the bar chart ---
             _plot_bar_chart(pair_dict, t_label, algo)
