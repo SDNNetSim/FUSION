@@ -3,9 +3,9 @@
 #SBATCH -p cpu
 #SBATCH -c 1
 #SBATCH -G 0
-#SBATCH --mem=32000
-#SBATCH -t 2-00:00:00
-#SBATCH --array=0-7
+#SBATCH --mem=16000
+#SBATCH -t 0-6:00:00
+#SBATCH --array=70-74  # 14 traffic steps * 5 algorithms = 70 jobs (0-based index)
 #SBATCH -o /dev/null
 
 set -e
@@ -22,46 +22,102 @@ fi
 echo "Current directory: $(pwd)"
 
 module load python/3.11.7
+
 if [ ! -d "venvs/unity_venv/venv" ]; then
   ./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
   pip install -r requirements.txt
   ./bash_scripts/register_rl_env.sh ppo SimEnv
   ./bash_scripts/register_rl_env.sh a2c SimEnv
 fi
+
 source venvs/unity_venv/venv/bin/activate
 
-algorithms=( "ppo" "a2c" )
-traffic_volumes=( "200" "300" "500" "750" )
+# Define algorithms and traffic volumes
+algorithms=( "ppo" "a2c" "epsilon_greedy_bandit" "q_learning" "ucb_bandit" )
+traffic_volumes=( $(seq 50 50 750) )  # Generates: 50, 100, 150, ..., 750
+erlang_step=50
 
 network="NSFNet"
 k_paths="3"
 
-alg_idx=$(( SLURM_ARRAY_TASK_ID / 4 ))      # each algorithm has 4 volumes
-traffic_idx=$(( SLURM_ARRAY_TASK_ID % 4 ))  # remainder picks which volume
+# Calculate indices based on SLURM_ARRAY_TASK_ID
+alg_idx=$(( SLURM_ARRAY_TASK_ID / ${#traffic_volumes[@]} ))
+traffic_idx=$(( SLURM_ARRAY_TASK_ID % ${#traffic_volumes[@]} ))
 
 alg="${algorithms[$alg_idx]}"
 erlang="${traffic_volumes[$traffic_idx]}"
+erlang_stop=$(( erlang + erlang_step ))
 
+# Create log directory
 time_tag=$(date +%Y%m%d_%H%M%S)
 log_dir="bash_scripts/slurm_logs/${alg}/$(date +%Y%m%d)/${network}/${erlang}"
 mkdir -p "$log_dir"
 
-exec > "${log_dir}/slurm_${time_tag}.out" 2>&1
+exec > "${log_dir}/slurm_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_${SLURM_JOB_ID}_${time_tag}.out" 2>&1
 
 echo "================================"
-echo "SLURM Array ID  : $SLURM_ARRAY_TASK_ID"
-echo "Algorithm       : $alg"
-echo "Traffic Volume  : $erlang"
-echo "Network         : $network"
-echo "k_paths         : $k_paths"
-echo "Log Directory   : $log_dir"
-echo "Time Tag        : $time_tag"
+echo "SLURM Array ID    : $SLURM_ARRAY_TASK_ID"
+echo "Algorithm         : $alg"
+echo "Traffic Volume    : $erlang"
+echo "Traffic Step      : $erlang_step"
+echo "Erlang Stop       : $erlang_stop"
+echo "Network           : $network"
+echo "k_paths           : $k_paths"
+echo "Log Directory     : $log_dir"
+echo "Time Tag          : $time_tag"
 echo "================================"
 
-python run_rl_sim.py \
-  --erlang_start "$erlang" \
-  --erlang_stop "$((erlang+100))" \
-  --network "$network" \
-  --k_paths "$k_paths" \
-  --path_algorithm "$alg" \
-|| echo "Error running Python script for job $SLURM_ARRAY_TASK_ID"
+# Default parameters
+params=(
+  --erlang_start "$erlang"
+  --erlang_stop "$erlang_stop"
+  --network "$network"
+  --k_paths "$k_paths"
+  --path_algorithm "$alg"
+  --max_iters 200
+  --num_requests 5000
+  --cores_per_link 3
+)
+
+# Algorithm-specific parameters
+if [[ "$alg" == "epsilon_greedy_bandit" ]]; then
+  params+=( 
+    --epsilon_start 0.3 
+    --epsilon_end 0.05 
+    --epsilon_update exp_decay 
+    --decay_rate 0.22 
+    --reward 1 
+    --penalty -10
+  )
+elif [[ "$alg" == "ucb_bandit" ]]; then
+  params+=(
+    --conf_param 3
+    --reward 1
+    --penalty -10
+  )
+elif [[ "$alg" == "q_learning" ]]; then
+  params+=(
+    --epsilon_start 0.09
+    --epsilon_end 0.07
+    --epsilon_update exp_decay
+    --decay_rate 0.28
+    --alpha_start 0.15
+    --alpha_end 0.08
+    --alpha_update linear_decay
+    --gamma 0.9
+    --reward 1
+    --penalty -10
+  )
+else
+  # For PPO and A2C
+  params+=(
+    --reward 1
+    --penalty -1
+  )
+fi
+
+echo "Running command:"
+echo "python run_rl_sim.py ${params[*]}"
+echo "================================"
+
+python run_rl_sim.py "${params[@]}" || echo "Error running Python script for job $SLURM_ARRAY_TASK_ID"
