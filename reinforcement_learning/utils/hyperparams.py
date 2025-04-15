@@ -216,6 +216,12 @@ def _get_nn_params(trial: optuna.trial):
 
 
 def _ppo_hyperparams(sim_dict: dict, trial: optuna.trial):
+    """
+    Returns hyperparams for PPO, letting Optuna pick alpha_start/end and
+    epsilon_start/end. We'll treat alpha_start=learning_rate,
+    epsilon_start=ent_coef for SB3's initial values, while the
+    callback will handle scheduling.
+    """
     params = dict()
     params["normalize"] = True
     params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
@@ -226,31 +232,54 @@ def _ppo_hyperparams(sim_dict: dict, trial: optuna.trial):
     params["gamma"] = trial.suggest_float("gamma", 0.8, 1.0)
     params["n_epochs"] = trial.suggest_int("n_epochs", 3, 20)
     params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0)
-    params["ent_coef"] = trial.suggest_float("ent_coef", 1e-8, 1e-1, log=True)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.3, 1.0)
-    params["learning_rate"] = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
     params["clip_range"] = trial.suggest_float("clip_range", 0.1, 0.3)
     params["policy_kwargs"] = _get_nn_params(trial=trial)
+
+    params["alpha_start"] = trial.suggest_float("alpha_start (learn rate)", 1e-5, 1e-3, log=True)
+    params["alpha_end"] = trial.suggest_float("alpha_end (learn rate)", 1e-6, params["alpha_start"], log=True)
+
+    params["epsilon_start"] = trial.suggest_float("epsilon_start (ent coef)", 1e-3, 1e-1, log=True)
+    params["epsilon_end"] = trial.suggest_float("epsilon_end (ent coef)", 1e-4, params["epsilon_start"], log=True)
+
+    params["learning_rate"] = params["alpha_start"]
+    params["ent_coef"] = params["epsilon_start"]
+
+    params["decay_rate"] = trial.suggest_float("decay_rate", 0.10, 0.9999, log=True)
 
     return params
 
 
-
 def _a2c_hyperparams(sim_dict: dict, trial: optuna.Trial):
+    """
+    Returns hyperparams for A2C, letting Optuna pick alpha_start/end and
+    epsilon_start/end. We'll treat alpha_start=learning_rate,
+    epsilon_start=ent_coef for SB3's initial values, while the
+    callback will handle scheduling.
+    """
     params = dict()
     params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
     params["policy"] = "MultiInputPolicy"
+
     params["n_steps"] = trial.suggest_categorical("n_steps", [5, 16, 32, 64])
     params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0)
     params["gamma"] = trial.suggest_float("gamma", 0.8, 1.0)
     params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0)
-    params["ent_coef"] = trial.suggest_float("ent_coef", 1e-8, 1e-2, log=True)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.1, 1.0)
-    params["learning_rate"] = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
     params["policy_kwargs"] = _get_nn_params(trial=trial)
 
-    return params
+    params["alpha_start"] = trial.suggest_float("alpha_start (learn rate)", 1e-5, 1e-2, log=True)
+    params["alpha_end"] = trial.suggest_float("alpha_end (learn rate)", 1e-6, params["alpha_start"], log=True)
 
+    params["epsilon_start"] = trial.suggest_float("epsilon_start (ent coef)", 1e-3, 1e-1, log=True)
+    params["epsilon_end"] = trial.suggest_float("epsilon_end (ent coef)", 1e-4, params["epsilon_start"], log=True)
+
+    params["learning_rate"] = params["alpha_start"]
+    params["ent_coef"] = params["epsilon_start"]
+
+    params["decay_rate"] = trial.suggest_float("decay_rate", 0.10, 0.9999, log=True)
+
+    return params
 
 
 def _drl_hyperparams(sim_dict: dict, trial: optuna.trial):

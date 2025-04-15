@@ -14,16 +14,16 @@ def run_rl_sim():
     """
     The main function that controls reinforcement learning simulations, including hyperparameter optimization.
     """
-    env, sim_dict, callback_obj = create_environment()
+    env, sim_dict, callback_list = create_environment()
 
     if not sim_dict['optimize'] and not sim_dict['optimize_hyperparameters']:
-        run(env=env, sim_dict=sim_dict, callback_obj=callback_obj)
+        run(env=env, sim_dict=sim_dict, callback_list=callback_list)
     else:
         # For DRL only
         # if sim_dict['path_algorithm'] in ALGORITHM_REGISTRY:
         #     run(env=env, sim_dict=sim_dict, callback_obj=callback_obj)
         # else:
-        run_optuna_study(sim_dict=sim_dict, callback_obj=callback_obj)
+        run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
 
 
 if __name__ == '__main__':

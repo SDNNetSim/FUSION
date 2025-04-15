@@ -84,3 +84,46 @@ class EpisodicRewardCallback(BaseCallback):
             self.current_episode_reward = 0
 
         return True
+
+
+class LearnRateEntCallback(BaseCallback):
+    """
+    Callback to decay learning rate linearly and entropy coefficient exponentially
+    after each episode, using the same done-based logic as EpisodicRewardCallback.
+    """
+
+    def __init__(self, verbose=1):
+        super(LearnRateEntCallback, self).__init__(verbose)
+        self.sim_dict = None
+        self.iter = 0
+        self.trial = 1
+
+        self.current_ent = None
+        self.current_lr = None
+
+    # TODO: (drl_path_agents) Reset after a trial completes
+    #   Also, have the parameters actually changed inside the sb3 model?
+    def _on_step(self) -> bool:
+        done = self.locals.get("dones", [False])[0]
+        if done:
+            if self.current_ent is None:
+                self.current_ent = self.sim_dict['epsilon_start']
+                self.current_lr = self.sim_dict['alpha_start']
+
+            self.iter += 1
+
+            progress = min(self.iter / self.sim_dict['max_iters'], 1.0)
+            self.current_lr = self.sim_dict['alpha_start'] + (
+                        self.sim_dict['alpha_end'] - self.sim_dict['alpha_start']) * progress
+            # for param_group in self.model.policy.optimizer.param_groups:
+            #     param_group["lr"] = self.current_lr
+
+            self.current_ent = max(self.sim_dict['epsilon_end'], self.current_ent * self.sim_dict['decay_rate'])
+            self.model.ent_coef = self.current_ent
+            self.model.learning_rate = self.current_lr
+
+            if self.verbose > 0:
+                print(f"[LearnRateEntCallback] Episode {self.iter} finished. "
+                      f"LR: {self.current_lr:.6f}, EntCoef: {self.current_ent:.6f}")
+
+        return True
