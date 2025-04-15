@@ -35,8 +35,8 @@ class PPO:
             'holding_time': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
             'slots_needed': spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32),
             'path_lengths': spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32),
-            # 'fragmentation': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
-            # 'path_frag': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
+            # 'path_cong': None,
+            # 'path_frag': None,
         })
 
         return resp_obs

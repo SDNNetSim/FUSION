@@ -12,6 +12,7 @@ from reinforcement_learning.utils.rl_zoo import run_rl_zoo
 from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
 from reinforcement_learning.utils.setup import print_info, setup_rl_sim
 from reinforcement_learning.utils.callbacks import EpisodicRewardCallback
+from stable_baselines3.common.callbacks import CallbackList
 from reinforcement_learning.model_manager import get_trained_model, get_model, save_model
 
 from reinforcement_learning.utils.hyperparams import get_optuna_hyperparams
@@ -36,7 +37,7 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
 
 # TODO: (drl_path_agents) Break this function up for organizational purposes
 #   - You have repeat logic
-def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_obj: object = None,
+def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_list: list = None,
               trial=None):
     """
     Runs the specified number of episodes in the reinforcement learning environment.
@@ -57,9 +58,10 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     rewards_matrix = np.zeros((sim_dict['n_trials'], sim_dict['max_iters']))
     episodic_rew_arr = np.array([])
 
-    if callback_obj:
-        callback_obj.max_iters = sim_dict['max_iters']
-        callback_obj.sim_dict = sim_dict
+    if callback_list:
+        for callback_obj in callback_list.callbacks:
+            callback_obj.max_iters = sim_dict['max_iters']
+            callback_obj.sim_dict = sim_dict
 
     obs, _ = env.reset(seed=completed_trials)
 
@@ -70,12 +72,20 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
         if is_training:
             if drl_agent:
                 _run_drl_training(env=env, sim_dict=sim_dict)
-                rewards_matrix[completed_trials] = callback_obj.episode_rewards
+                rewards_matrix[completed_trials] = callback_list.callbacks[0].episode_rewards
 
-                callback_obj.episode_rewards = np.array([])
+                callback_list.callbacks[0].episode_rewards = np.array([])
                 completed_trials += 1
                 env.trial = completed_trials
-                callback_obj.trial += 1
+
+                for callback_obj in callback_list.callbacks:
+                    callback_obj.trial += 1
+
+                # Reset dynamic params after a trial
+                # TODO (drl_path_agents) this may not be needed
+                callback_list.callbacks[1].current_ent = sim_dict['epsilon_start']
+                callback_list.callbacks[1].current_lr = sim_dict['alpha_start']
+                callback_list.callbacks[1].iter = 0
                 env.iteration = 0
 
                 print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
@@ -136,7 +146,7 @@ def run_testing(env: object, sim_dict: dict):
     run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
 
 
-def run(env: object, sim_dict: dict, callback_obj: object = None, trial = None):
+def run(env: object, sim_dict: dict, callback_list: list = None, trial = None):
     """
     Manages the execution of simulations for training or testing RL models.
 
@@ -153,7 +163,7 @@ def run(env: object, sim_dict: dict, callback_obj: object = None, trial = None):
         if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
             sum_returns = run_iters(env=env, sim_dict=sim_dict, is_training=True,
                                     drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS,
-                                    callback_obj=callback_obj, trial=trial)
+                                    callback_list=callback_list, trial=trial)
         else:
             raise NotImplementedError
     else:
@@ -162,7 +172,7 @@ def run(env: object, sim_dict: dict, callback_obj: object = None, trial = None):
     return sum_returns
 
 
-def run_optuna_study(sim_dict, callback_obj):
+def run_optuna_study(sim_dict, callback_list):
     """
     Runs Optuna study for hyperparameter optimization.
     
@@ -172,10 +182,12 @@ def run_optuna_study(sim_dict, callback_obj):
 
     # Define the Optuna objective function
     def objective(trial: optuna.Trial):
-        env = SimEnv(render_mode=None, custom_callback=callback_obj, sim_dict=setup_rl_sim())
-        callback_obj.sim_dict = env.sim_dict
-        callback_obj.max_iters = sim_dict['max_iters']
-        env.sim_dict['callback'] = callback_obj
+        env = SimEnv(render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim())
+
+        for callback_obj in callback_list.callbacks:
+            callback_obj.sim_dict = env.sim_dict
+            callback_obj.max_iters = sim_dict['max_iters']
+        env.sim_dict['callback'] = callback_list.callbacks
 
         hyperparam_dict = get_optuna_hyperparams(sim_dict=sim_dict, trial=trial)
         update_list = [(param, value) for param, value in hyperparam_dict.items() if param in sim_dict]
@@ -185,7 +197,7 @@ def run_optuna_study(sim_dict, callback_obj):
         erlang_list = get_erlang_vals(sim_dict=sim_dict)
 
         mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run,
-                                                 callback_obj=callback_obj, trial=trial)
+                                                 callback_list=callback_list, trial=trial)
         mean_reward = mean_reward / sim_dict['max_iters']
         if "callback" in env.sim_dict:
             del env.sim_dict["callback"]
