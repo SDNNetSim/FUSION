@@ -1,8 +1,6 @@
 SimEnv:
   # Training parameters
-
-  obs_space: 'obs_1'
-  n_timesteps: 1000000
+  n_timesteps: 10000
   policy: 'MultiInputPolicy'  # Specify the policy to use
   n_steps: 8  # Number of steps per update
   gae_lambda: 0.95  # Trade-off for bias vs variance

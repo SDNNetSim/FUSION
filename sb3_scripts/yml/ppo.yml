@@ -1,7 +1,6 @@
 SimEnv:
-  obs_space: 'obs_1'
   normalize: true                 # Good practice, keep this
-  n_timesteps: 1000000           # Standard training length
+  n_timesteps: 10000           # Standard training length
   policy: 'MultiInputPolicy'     # Fine if you're using multiple inputs
   n_steps: 2048                  # ⬅️ Recommended default, much larger than 64
   batch_size: 64                 # ⬅️ 8 is too small; 64 is more typical
