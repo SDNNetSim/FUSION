@@ -1,13 +1,14 @@
 SimEnv:
   # Training parameters
-  n_timesteps: 10000
+  normalize: true
+  n_timesteps: 2000000
   policy: 'MultiInputPolicy'  # Specify the policy to use
-  n_steps: 16  # Number of steps per update
-  gae_lambda: 0.91  # Trade-off for bias vs variance
-  gamma: 0.93  # Discount factor
-  vf_coef: 0.3 # Weight of the value function in the loss
+  n_steps: 5  # Number of steps per update
+  gae_lambda: 0.9  # Trade-off for bias vs variance
+  gamma: 0.95  # Discount factor
+  vf_coef: 0.7 # Weight of the value function in the loss
   ent_coef: 0.0000001  # Entropy coefficient for exploration
-  max_grad_norm: 0.8  # Gradient clipping threshold
+  max_grad_norm: 0.75  # Gradient clipping threshold
   learning_rate: 0.00025  # Learning rate for optimization
 
   # Exploration settings
@@ -30,7 +31,7 @@ SimEnv:
   policy_kwargs: "dict(
                     ortho_init=True,
                     activation_fn=nn.ReLU,
-                    net_arch=dict(pi=[64, 128], vf=[64,64])
+                    net_arch=dict(pi=[64, 128], vf=[128,64])
                   )"
 
 

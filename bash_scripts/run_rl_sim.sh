@@ -3,9 +3,9 @@
 #SBATCH -p cpu
 #SBATCH -c 1
 #SBATCH -G 0
-#SBATCH --mem=16000
-#SBATCH -t 0-6:00:00
-#SBATCH --array=70-74  # 14 traffic steps * 5 algorithms = 70 jobs (0-based index)
+#SBATCH --mem=32000
+#SBATCH -t 0-7:00:00
+#SBATCH --array=0-29  # 2 algorithms * 15 traffic volumes = 30 jobs
 #SBATCH -o /dev/null
 
 set -e
@@ -33,8 +33,8 @@ fi
 source venvs/unity_venv/venv/bin/activate
 
 # Define algorithms and traffic volumes
-algorithms=( "ppo" "a2c" "epsilon_greedy_bandit" "q_learning" "ucb_bandit" )
-traffic_volumes=( $(seq 50 50 750) )  # Generates: 50, 100, 150, ..., 750
+algorithms=( "ppo" "a2c" )
+traffic_volumes=( 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 )
 erlang_step=50
 
 network="NSFNet"
@@ -77,42 +77,26 @@ params=(
   --max_iters 200
   --num_requests 5000
   --cores_per_link 3
+  --reward 1
+  --penalty -1
 )
 
-# Algorithm-specific parameters
-if [[ "$alg" == "epsilon_greedy_bandit" ]]; then
-  params+=( 
-    --epsilon_start 0.3 
-    --epsilon_end 0.05 
-    --epsilon_update exp_decay 
-    --decay_rate 0.22 
-    --reward 1 
-    --penalty -10
-  )
-elif [[ "$alg" == "ucb_bandit" ]]; then
+# Add algorithm-specific dynamic params
+if [ "$alg" = "ppo" ]; then
   params+=(
-    --conf_param 3
-    --reward 1
-    --penalty -10
+    --alpha_start 0.00036
+    --alpha_end 0.00001
+    --decay_rate 0.4
+    --epsilon_start 0.01
+    --epsilon_end 0.0001
   )
-elif [[ "$alg" == "q_learning" ]]; then
+elif [ "$alg" = "a2c" ]; then
   params+=(
-    --epsilon_start 0.09
-    --epsilon_end 0.07
-    --epsilon_update exp_decay
-    --decay_rate 0.28
-    --alpha_start 0.15
-    --alpha_end 0.08
-    --alpha_update linear_decay
-    --gamma 0.9
-    --reward 1
-    --penalty -10
-  )
-else
-  # For PPO and A2C
-  params+=(
-    --reward 1
-    --penalty -1
+    --alpha_start 0.0003
+    --alpha_end 0.00001
+    --decay_rate 0.4
+    --epsilon_start 0.01
+    --epsilon_end 0.0005
   )
 fi
 
