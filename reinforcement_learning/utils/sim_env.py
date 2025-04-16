@@ -135,9 +135,8 @@ class SimEnvUtils:
             'holding_time': resp_dict['req_holding'],
             'slots_needed': resp_dict['slots_needed'],
             'path_lengths': resp_dict['path_lengths'],
-            # 'fragmentation': frag['fragmentation'],
-            # 'path_frag': frag['path_frag']
-
+            'req_id': curr_req['req_id'],
+            'paths_cong': resp_dict['paths_cong'],
         }
         return obs_dict
 

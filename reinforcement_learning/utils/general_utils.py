@@ -348,9 +348,13 @@ class SimEnvHelpers:
                 slots_needed = mod_bw_dict[bandwidth][mod_format[0]]['slots_needed']
             slots_needed_list.append(slots_needed)
 
-        # TODO: (drl_path_agents) Probably don't need to do this since we can normalize via the yml
-        norm_list = [x / 1000 for x in route_props.weights_list]
-        return slots_needed_list, norm_list
+        paths_cong = list()
+        for curr_path in route_props.paths_matrix:
+            paths_cong.append(find_path_cong(path_list=curr_path, net_spec_dict=self.sim_env.engine_obj.net_spec_dict))
+
+        # Multiply by negative one to see if this is considered "bad" in the observation space
+        norm_list = [(x / 1000) for x in route_props.weights_list]
+        return slots_needed_list, norm_list, paths_cong
 
     def get_drl_obs(self, bandwidth, holding_time):
         """
@@ -372,10 +376,10 @@ class SimEnvHelpers:
         req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
 
         # TODO: Add and initialize bandwidth in self
-        slots_needed, path_lengths = self._get_paths_slots(bandwidth=bandwidth)
+        slots_needed, path_lengths, paths_cong = self._get_paths_slots(bandwidth=bandwidth)
 
         return {'source_obs': source_obs, 'dest_obs': dest_obs, 'req_obs': req_obs, 'req_holding': req_holding_scaled,
-                'slots_needed': slots_needed, 'path_lengths': path_lengths}
+                'slots_needed': slots_needed, 'path_lengths': path_lengths, 'paths_cong': paths_cong}
 
 
 # TODO: (drl_path_agents) Only works for s1
