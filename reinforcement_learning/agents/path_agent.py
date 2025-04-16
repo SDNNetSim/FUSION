@@ -126,7 +126,7 @@ class PathAgent(BaseAgent):
         self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
     def _drl_route(self, route_obj: object, action: int):
-        if self.algorithm in ('ppo', 'a2c'):
+        if self.algorithm in ('ppo', 'a2c', 'dqn'):
             self.rl_props.chosen_path_index = action
             self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[action]
         else:
@@ -140,7 +140,7 @@ class PathAgent(BaseAgent):
             self._ql_route()
         elif self.algorithm in ('epsilon_greedy_bandit', 'thompson_sampling_bandit', 'ucb_bandit'):
             self._bandit_route(route_obj=kwargs['route_obj'])
-        elif self.algorithm in ('ppo', 'a2c'):
+        elif self.algorithm in ('ppo', 'a2c', 'dqn'):
             self._drl_route(route_obj=kwargs['route_obj'], action=kwargs['action'])
         else:
             raise NotImplementedError

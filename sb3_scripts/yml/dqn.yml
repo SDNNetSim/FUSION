@@ -1,14 +1,19 @@
 SimEnv:
-  n_timesteps: !!float  10000
-  policy: 'MultiInputPolicy'
-  learning_rate: !!float 0.00044
-  batch_size: 32
-  buffer_size: 1000000
-  learning_starts: 20000
+  normalize: true
+  n_timesteps: 10000
+  policy: "MultiInputPolicy"
+  learning_rate: 0.0003
+  buffer_size: 10000
+  learning_starts: 500
+  batch_size: 64
   gamma: 0.99
-  target_update_interval: 5000
-  train_freq: 128
-  gradient_steps: -1
-  exploration_fraction:  0.341
-  exploration_final_eps: 0.085
+  tau: 1.0
+  train_freq: 1
+  gradient_steps: 1
+  target_update_interval: 500
+  exploration_fraction: 0.4
+  exploration_final_eps: 0.05
+  max_grad_norm: 10
+  verbose: 1
   policy_kwargs: "dict(net_arch=[128, 128])"
+
