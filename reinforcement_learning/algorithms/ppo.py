@@ -33,41 +33,31 @@ class PPO:
             "obs_2": ["source", "destination", "request_bandwidth"],
             "obs_3": ["source", "destination", "holding_time"],
             "obs_4": ["source", "destination", "request_bandwidth", "holding_time"],
-            "obs_5": ["source", "destination", "request_bandwidth", "holding_time", "slot_needed", "path_lengths"],
+            "obs_5": ["source", "destination", "request_bandwidth", "holding_time", "slots_needed", "path_lengths"],
+            "obs_6": ["source", "destination", "request_bandwidth", "holding_time", "slots_needed", "path_lengths",
+                      "req_id", "paths_cong"],
         }
 
-        if (self.engine_obj.engine_props['obs_space'] is not None):
-            obs_features = obs_combo_dict[self.engine_obj.engine_props['obs_space']]
-            print("Observation space: ", obs_features)
-        else:
-            obs_features = obs_combo_dict["obs_1"]
+        obs_key = self.engine_obj.engine_props.get('obs_space', 'obs_1')
+        obs_features = obs_combo_dict.get(obs_key, obs_combo_dict['obs_1'])
+        print("Observation space: ", obs_features)
 
+        feature_space_map = {
+            "source": lambda: spaces.MultiBinary(self.rl_props.num_nodes),
+            "destination": lambda: spaces.MultiBinary(self.rl_props.num_nodes),
+            "request_bandwidth": lambda: spaces.MultiBinary(len(bw_set)),
+            "holding_time": lambda: spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
+            "slots_needed": lambda: spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32),
+            "path_lengths": lambda: spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32),
+            "req_id": lambda: spaces.Discrete(5005),
+            "paths_cong": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
+        }
 
-        obs_space_dict = {}
-
-        if "source" in obs_features:
-            obs_space_dict["source"] = spaces.MultiBinary(self.rl_props.num_nodes)
-
-        if "destination" in obs_features:
-            obs_space_dict["destination"] = spaces.MultiBinary(self.rl_props.num_nodes)
-
-        if "request_bandwidth" in obs_features:
-            obs_space_dict["request_bandwidth"] = spaces.MultiBinary(len(bw_set))
-
-        if "holding_time" in obs_features:
-            obs_space_dict["holding_time"] = spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
-
-        if "slots_needed" in obs_features:
-            obs_space_dict["slots_needed"] = spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32)
-
-        if "path_lengths" in obs_features:
-            obs_space_dict["path_lengths"] = spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32)
-
-        # if "fragmentation" in obs_features:
-        # 'fragmentation': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
-
-        # if "path_frag" in obs_features:
-        # 'path_frag': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32)
+        obs_space_dict = {
+            feature: space_fn()
+            for feature, space_fn in feature_space_map.items()
+            if feature in obs_features
+        }
 
         return spaces.Dict(obs_space_dict)
 
