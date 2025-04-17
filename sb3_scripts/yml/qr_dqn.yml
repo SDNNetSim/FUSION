@@ -1,13 +1,13 @@
 SimEnv:
   normalize: true
-  n_timesteps: 500000
+  n_timesteps: 250000
   policy: "MultiInputPolicy"
-  learning_rate: 0.0005
+  learning_rate: 0.002
   buffer_size: 100000
   learning_starts: 5000
   batch_size: 128                  # QRDQN benefits from larger batches
-  gamma: 0.97                      # Slightly lower for better convergence under bursty rewards
-  tau: 1.0                         # Hard target update; could reduce for soft updates
+  gamma: 0.95                      # Slightly lower for better convergence under bursty rewards
+  tau: 0.02                         # Hard target update; could reduce for soft updates
   train_freq: 1
   gradient_steps: 8                # QRDQN can benefit from more gradient steps
   target_update_interval: 3000
