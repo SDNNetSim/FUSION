@@ -24,7 +24,8 @@ def get_observation_space(rl_props: object, engine_obj: object):
         "holding_time": lambda: spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
         "slots_needed": lambda: spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32),
         "path_lengths": lambda: spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32),
-        "req_id": lambda: spaces.Discrete(5005),
+        "available_slots": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
+        "is_feasible": lambda: spaces.MultiBinary(max_paths),
         "paths_cong": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
     }
 

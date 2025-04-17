@@ -128,16 +128,6 @@ class SimEnvUtils:
         #     core_index=self.sim_env.rl_props.core_index)
 
         resp_dict = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth, holding_time=holding_time)
-        obs_dict = {
-            'source': resp_dict['source_obs'],
-            'destination': resp_dict['dest_obs'],
-            'request_bandwidth': resp_dict['req_obs'],
-            'holding_time': resp_dict['req_holding'],
-            'slots_needed': resp_dict['slots_needed'],
-            'path_lengths': resp_dict['path_lengths'],
-            'req_id': curr_req['req_id'],
-            'paths_cong': resp_dict['paths_cong'],
-        }
-        return obs_dict
+        return resp_dict
 
 

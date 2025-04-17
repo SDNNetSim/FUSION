@@ -94,34 +94,43 @@ def find_path_len(path_list: list, topology: nx.Graph):
 # TODO: Defaulting to 'c' band
 def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     """
-    Finds the average percentage of congestion for a given path.
+    Computes average path congestion and scaled available capacity, accounting for multiple cores per link.
 
-    :param path_list: The path to be analyzed.
-    :param net_spec_dict: The current up-to-date network spectrum database.
-    :param band: Band to find congestion on.
-    :return: The average congestion as a decimal.
-    :rtype: float
+    :param path_list: Sequence of nodes in the path.
+    :param net_spec_dict: Current spectrum allocation info.
+    :param band: Spectral band to evaluate.
+    :return: (average congestion [0,1], scaled available capacity [0,1])
+    :rtype: tuple[float, float]
     """
-    # Divide by the total length of that array
-    links_cong_list = list()
+    links_cong_list = []
+    total_slots_available = 0.0
+    # total_slots_capacity = 0.0
+
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
-
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores_per_link = float(len(cores_matrix[band]))
+        cores = cores_matrix[band]
 
-        for curr_band in net_spec_dict[src_dest]['cores_matrix']:
-            # Every core will have the same number of spectral slots
-            total_slots = len(cores_matrix[curr_band][0])
-            slots_taken = 0
-            for curr_core in cores_matrix[curr_band]:
-                core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
-                slots_taken += core_slots_taken
+        num_cores = len(cores)
+        num_slots_per_core = len(cores[0])
 
-            links_cong_list.append(slots_taken / (total_slots * cores_per_link))
+        slots_taken = 0.0
+        for core in cores:
+            core_slots_taken = float(np.count_nonzero(core))
+            slots_taken += core_slots_taken
+
+        total_slots = num_cores * num_slots_per_core
+        slots_available = total_slots - slots_taken
+
+        links_cong_list.append(slots_taken / total_slots)
+        total_slots_available += slots_available
+        # total_slots_capacity += total_slots
 
     average_path_cong = np.mean(links_cong_list)
-    return average_path_cong
+    scaled_available_capacity = total_slots_available
+
+    return average_path_cong, scaled_available_capacity
+
 
 
 def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
