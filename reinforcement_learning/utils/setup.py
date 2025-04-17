@@ -90,7 +90,6 @@ def setup_a2c(env: object, device: str):
                 stats_window_size=yaml_dict[env_name]['stats_window_size'],
                 tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
                 verbose=yaml_dict[env_name]['verbose'],
-                seed=yaml_dict[env_name]['seed'],
                 policy_kwargs=kwargs_dict)
 
     return model
@@ -123,13 +122,16 @@ def setup_dqn(env: object, device: str):
         train_freq=yaml_dict[env_name]['train_freq'],
         gradient_steps=yaml_dict[env_name]['gradient_steps'],
         target_update_interval=yaml_dict[env_name]['target_update_interval'],
+        exploration_initial_eps=yaml_dict[env_name].get('exploration_initial_eps', 1.0),
         exploration_fraction=yaml_dict[env_name]['exploration_fraction'],
         exploration_final_eps=yaml_dict[env_name]['exploration_final_eps'],
         max_grad_norm=yaml_dict[env_name].get('max_grad_norm'),
+        replay_buffer_class=yaml_dict[env_name].get('replay_buffer_class', None),
+        replay_buffer_kwargs=yaml_dict[env_name].get('replay_buffer_kwargs', None),
+        optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
         policy_kwargs=kwargs_dict,
-        tensorboard_log=yaml_dict[env_name].get('tensorboard_log', None),
-        verbose=yaml_dict[env_name].get('verbose'),
-        seed=yaml_dict[env_name].get('seed'),
+        verbose=yaml_dict[env_name].get('verbose', 1),
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
     )
 
     return model
@@ -162,13 +164,16 @@ def setup_qr_dqn(env: object, device: str):
         train_freq=yaml_dict[env_name]['train_freq'],
         gradient_steps=yaml_dict[env_name]['gradient_steps'],
         target_update_interval=yaml_dict[env_name]['target_update_interval'],
+        exploration_initial_eps=yaml_dict[env_name].get('exploration_initial_eps', 1.0),
         exploration_fraction=yaml_dict[env_name]['exploration_fraction'],
         exploration_final_eps=yaml_dict[env_name]['exploration_final_eps'],
         max_grad_norm=yaml_dict[env_name].get('max_grad_norm'),
+        replay_buffer_class=yaml_dict[env_name].get('replay_buffer_class', None),
+        replay_buffer_kwargs=yaml_dict[env_name].get('replay_buffer_kwargs', None),
+        optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
         policy_kwargs=kwargs_dict,
-        tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
-        verbose=yaml_dict[env_name].get('verbose'),
-        seed=yaml_dict[env_name].get('seed'),
+        verbose=yaml_dict[env_name].get('verbose', 1),
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
     )
 
     return model

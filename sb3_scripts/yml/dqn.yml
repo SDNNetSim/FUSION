@@ -1,19 +1,31 @@
 SimEnv:
   normalize: true
-  n_timesteps: 10000
-  policy: "MultiInputPolicy"
-  learning_rate: 0.0003
-  buffer_size: 10000
-  learning_starts: 500
-  batch_size: 64
-  gamma: 0.99
-  tau: 1.0
-  train_freq: 1
-  gradient_steps: 1
-  target_update_interval: 500
-  exploration_fraction: 0.4
-  exploration_final_eps: 0.05
-  max_grad_norm: 10
-  verbose: 1
-  policy_kwargs: "dict(net_arch=[128, 128])"
+  n_timesteps: 25000
 
+  # Core algorithm settings
+  policy: "MultiInputPolicy"
+  learning_rate: 0.0005                          # Can be float or a callable (e.g. get_linear_fn)
+  buffer_size: 100000                            # Replay buffer size
+  learning_starts: 5000                          # Steps before training starts
+  batch_size: 64
+  tau: 1.0                                       # Hard target update by default
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: 4
+  target_update_interval: 3000
+
+  # Exploration parameters
+  exploration_initial_eps: 1.0
+  exploration_fraction: 0.1
+  exploration_final_eps: 0.01
+
+  # Replay buffer settings
+  replay_buffer_class: null                      # Use default buffer; customize if needed
+  replay_buffer_kwargs: null                     # e.g., {"alpha": 0.6, "beta": 0.4} for PER
+  optimize_memory_usage: false                   # True = more RAM efficient
+
+  # Optimization and logging
+  max_grad_norm: 10
+  policy_kwargs: "dict(net_arch=[256, 128, 64])"
+  verbose: 1
+  _init_setup_model: true
