@@ -8,6 +8,7 @@ from reinforcement_learning.algorithms.bandits import EpsilonGreedyBandit, UCBBa
 from reinforcement_learning.algorithms.ppo import PPO
 from reinforcement_learning.algorithms.a2c import A2C
 from reinforcement_learning.algorithms.dqn import DQN
+from reinforcement_learning.algorithms.qr_dqn import QrDQN
 
 
 class BaseAgent:
@@ -48,6 +49,8 @@ class BaseAgent:
             self.algorithm_obj = A2C(rl_props=self.rl_props, engine_obj=self.engine_props)
         elif self.algorithm == 'dqn':
             self.algorithm_obj = DQN(rl_props=self.rl_props, engine_obj=self.engine_props)
+        elif self.algorithm == 'qr_dqn':
+            self.algorithm_obj = QrDQN(rl_props=self.rl_props, engine_obj=self.engine_props)
         else:
             raise NotImplementedError
 

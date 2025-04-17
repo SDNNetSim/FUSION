@@ -1,9 +1,11 @@
 from reinforcement_learning.utils.setup import setup_ppo
 from reinforcement_learning.utils.setup import setup_a2c
 from reinforcement_learning.utils.setup import setup_dqn
+from reinforcement_learning.utils.setup import setup_qr_dqn
 from reinforcement_learning.algorithms.ppo import PPO
 from reinforcement_learning.algorithms.a2c import A2C
 from reinforcement_learning.algorithms.dqn import DQN
+from reinforcement_learning.algorithms.qr_dqn import QrDQN
 
 
 ALGORITHM_REGISTRY = {
@@ -21,5 +23,10 @@ ALGORITHM_REGISTRY = {
         'setup': setup_dqn,
         'load': None,
         'class': DQN,
-    }
+    },
+    'qr_dqn': {
+        'setup': setup_qr_dqn,
+        'load': None,
+        'class': QrDQN,
+    },
 }

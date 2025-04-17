@@ -3,7 +3,7 @@ import numpy as np
 from gymnasium import spaces
 
 
-class DQN:
+class QrDQN:
     """
     Facilitates DQN for reinforcement learning.
     """

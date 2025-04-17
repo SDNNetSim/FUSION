@@ -118,12 +118,17 @@ class LearnRateEntCallback(BaseCallback):
             # for param_group in self.model.policy.optimizer.param_groups:
             #     param_group["lr"] = self.current_lr
 
-            self.current_ent = max(self.sim_dict['epsilon_end'], self.current_ent * self.sim_dict['decay_rate'])
-            self.model.ent_coef = self.current_ent
+            if self.sim_dict['path_algorithm'] in ('ppo', 'a2c'):
+                self.current_ent = max(self.sim_dict['epsilon_end'], self.current_ent * self.sim_dict['decay_rate'])
+                self.model.ent_coef = self.current_ent
             self.model.learning_rate = self.current_lr
 
             if self.verbose > 0:
-                print(f"[LearnRateEntCallback] Episode {self.iter} finished. "
-                      f"LR: {self.current_lr:.6f}, EntCoef: {self.current_ent:.6f}")
+                if self.sim_dict['path_algorithm'] in ('ppo', 'a2c'):
+                    print(f"[LearnRateEntCallback] Episode {self.iter} finished. "
+                          f"LR: {self.current_lr:.6f}, EntCoef: {self.current_ent:.6f}")
+                else:
+                    print(f"[LearnRateEntCallback] Episode {self.iter} finished. "
+                          f"LR: {self.current_lr:.6f}")
 
         return True

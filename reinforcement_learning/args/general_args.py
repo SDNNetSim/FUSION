@@ -7,6 +7,7 @@ VALID_PATH_ALGORITHMS = [
     'ppo',
     'a2c',
     'dqn',
+    'qr_dqn',
 ]
 
 VALID_CORE_ALGORITHMS = [
@@ -19,4 +20,5 @@ VALID_DRL_ALGORITHMS = [
     'ppo',
     'a2c',
     'dqn',
+    'qr_dqn'
 ]
