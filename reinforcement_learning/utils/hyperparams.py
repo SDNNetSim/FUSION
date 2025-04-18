@@ -197,100 +197,125 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self.counts, self.values = get_q_table(self=self)
 
 
-def _get_nn_params(trial: optuna.trial):
-    activation_name = trial.suggest_categorical("activation_fn", ["tanh", "relu"])
-    activation_fn = nn.Tanh if activation_name == "tanh" else nn.ReLU
-    layer_choices = [32, 64, 128, 256]
-    pi_layer_1 = trial.suggest_categorical("pi_layer_1", layer_choices)
-    pi_layer_2 = trial.suggest_categorical("pi_layer_2", layer_choices)
-    vf_layer_1 = trial.suggest_categorical("vf_layer_1", layer_choices)
-    vf_layer_2 = trial.suggest_categorical("vf_layer_2", layer_choices)
+def _get_activation(trial: optuna.Trial):
+    name = trial.suggest_categorical("activation_fn", ["relu", "tanh", "elu"])
+    return {"relu": nn.ReLU, "tanh": nn.Tanh, "elu": nn.ELU}[name]
+
+
+def _mlp_arch(trial: optuna.Trial, prefix: str, min_layers: int = 2, max_layers: int = 3):
+    layer_choices = [32, 64, 128, 256, 512]
+    n_layers = trial.suggest_int(f"{prefix}_n_layers", min_layers, max_layers)
+    return [trial.suggest_categorical(f"{prefix}_layer_{i + 1}", layer_choices) for i in range(n_layers)]
+
+
+def _policy_kwargs_actor_critic(trial: optuna.Trial):
     return dict(
         ortho_init=True,
-        activation_fn=activation_fn,
-        net_arch=dict(
-            pi=[pi_layer_1, pi_layer_2],
-            vf=[vf_layer_1, vf_layer_2]
-        )
+        activation_fn=_get_activation(trial),
+        net_arch=dict(pi=_mlp_arch(trial, "pi"), vf=_mlp_arch(trial, "vf"))
     )
 
 
-def _ppo_hyperparams(sim_dict: dict, trial: optuna.trial):
-    """
-    Returns hyperparams for PPO, letting Optuna pick alpha_start/end and
-    epsilon_start/end. We'll treat alpha_start=learning_rate,
-    epsilon_start=ent_coef for SB3's initial values, while the
-    callback will handle scheduling.
-    """
+def _policy_kwargs_dqn(trial: optuna.Trial, prefix: str):
+    return dict(net_arch=_mlp_arch(trial, prefix))
+
+
+def _ppo_hyperparams(sim_dict: dict, trial: optuna.Trial):
     params = dict()
     params["normalize"] = True
-    params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
+    params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
     params["policy"] = "MultiInputPolicy"
     params["n_steps"] = trial.suggest_categorical("n_steps", [128, 256, 512, 1024, 2048])
     params["batch_size"] = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
-    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0)
-    params["gamma"] = trial.suggest_float("gamma", 0.8, 1.0)
     params["n_epochs"] = trial.suggest_int("n_epochs", 3, 20)
-    params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0)
+    params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999)
+    params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0)
+    params["clip_range"] = trial.suggest_float("clip_range", 0.1, 0.4)
+    params["clip_range_vf"] = trial.suggest_float("clip_range_vf", 0.0, 0.4)
+    params["normalize_advantage"] = trial.suggest_categorical("normalize_advantage", [True, False])
+    params["vf_coef"] = trial.suggest_float("vf_coef", 0.2, 1.0)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.3, 1.0)
-    params["clip_range"] = trial.suggest_float("clip_range", 0.1, 0.3)
-    params["policy_kwargs"] = _get_nn_params(trial=trial)
-
-    params["alpha_start"] = trial.suggest_float("alpha_start (learn rate)", 1e-5, 1e-3, log=True)
-    params["alpha_end"] = trial.suggest_float("alpha_end (learn rate)", 1e-6, params["alpha_start"], log=True)
-
-    params["epsilon_start"] = trial.suggest_float("epsilon_start (ent coef)", 1e-3, 1e-1, log=True)
-    params["epsilon_end"] = trial.suggest_float("epsilon_end (ent coef)", 1e-4, params["epsilon_start"], log=True)
-
+    params["alpha_start"] = trial.suggest_float("learning_rate_start", 1e-5, 1e-3, log=True)
+    params["alpha_end"] = trial.suggest_float("learning_rate_end", 1e-6, params["alpha_start"], log=True)
+    params["epsilon_start"] = trial.suggest_float("ent_coef_start", 1e-4, 1e-1, log=True)
+    params["epsilon_end"] = trial.suggest_float("ent_coef_end", 1e-5, params["epsilon_start"], log=True)
     params["learning_rate"] = params["alpha_start"]
     params["ent_coef"] = params["epsilon_start"]
-
     params["decay_rate"] = trial.suggest_float("decay_rate", 0.10, 0.9999, log=True)
-
+    params["use_sde"] = trial.suggest_categorical("use_sde", [False, True])
+    params["sde_sample_freq"] = trial.suggest_int("sde_sample_freq", -1, 16)
+    params["policy_kwargs"] = _policy_kwargs_actor_critic(trial)
     return params
 
 
 def _a2c_hyperparams(sim_dict: dict, trial: optuna.Trial):
-    """
-    Returns hyperparams for A2C, letting Optuna pick alpha_start/end and
-    epsilon_start/end. We'll treat alpha_start=learning_rate,
-    epsilon_start=ent_coef for SB3's initial values, while the
-    callback will handle scheduling.
-    """
     params = dict()
-    params["n_timesteps"] = sim_dict['num_requests'] * sim_dict['max_iters']
+    params["normalize"] = True
+    params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
     params["policy"] = "MultiInputPolicy"
-
-    params["n_steps"] = trial.suggest_categorical("n_steps", [5, 16, 32, 64])
+    params["n_steps"] = trial.suggest_categorical("n_steps", [5, 16, 32, 64, 128])
+    params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999)
     params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0)
-    params["gamma"] = trial.suggest_float("gamma", 0.8, 1.0)
-    params["vf_coef"] = trial.suggest_float("vf_coef", 0.1, 1.0)
+    params["vf_coef"] = trial.suggest_float("vf_coef", 0.2, 1.0)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.1, 1.0)
-    params["policy_kwargs"] = _get_nn_params(trial=trial)
-
-    params["alpha_start"] = trial.suggest_float("alpha_start (learn rate)", 1e-5, 1e-2, log=True)
-    params["alpha_end"] = trial.suggest_float("alpha_end (learn rate)", 1e-6, params["alpha_start"], log=True)
-
-    params["epsilon_start"] = trial.suggest_float("epsilon_start (ent coef)", 1e-3, 1e-1, log=True)
-    params["epsilon_end"] = trial.suggest_float("epsilon_end (ent coef)", 1e-4, params["epsilon_start"], log=True)
-
+    params["alpha_start"] = trial.suggest_float("learning_rate_start", 1e-5, 1e-2, log=True)
+    params["alpha_end"] = trial.suggest_float("learning_rate_end", 1e-6, params["alpha_start"], log=True)
+    params["epsilon_start"] = trial.suggest_float("ent_coef_start", 1e-4, 1e-1, log=True)
+    params["epsilon_end"] = trial.suggest_float("ent_coef_end", 1e-5, params["epsilon_start"], log=True)
     params["learning_rate"] = params["alpha_start"]
     params["ent_coef"] = params["epsilon_start"]
-
     params["decay_rate"] = trial.suggest_float("decay_rate", 0.10, 0.9999, log=True)
-
+    params["use_rms_prop"] = trial.suggest_categorical("use_rms_prop", [True, False])
+    params["rms_prop_eps"] = trial.suggest_float("rms_prop_eps", 1e-6, 1e-4, log=True)
+    params["policy_kwargs"] = _policy_kwargs_actor_critic(trial)
     return params
 
 
-def _drl_hyperparams(sim_dict: dict, trial: optuna.trial):
-    if sim_dict['path_algorithm'] == 'a2c':
-        resp_dict = _a2c_hyperparams(sim_dict=sim_dict, trial=trial)
-    elif sim_dict['path_algorithm'] == 'ppo':
-        resp_dict = _ppo_hyperparams(sim_dict=sim_dict, trial=trial)
-    else:
-        raise NotImplementedError('DRL algorithm not recognized.')
+def _dqn_hyperparams(sim_dict: dict, trial: optuna.Trial):
+    params = dict()
+    params["normalize"] = True
+    params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
+    params["policy"] = "MultiInputPolicy"
+    params["alpha_start"] = trial.suggest_float("learning_rate_start", 1e-5, 1e-2, log=True)
+    params["alpha_end"] = trial.suggest_float("learning_rate_end", 1e-6, params["alpha_start"], log=True)
+    params["learning_rate"] = params['alpha_start']
+    params["buffer_size"] = trial.suggest_int("buffer_size", 50000, 500000, step=50000)
+    params["learning_starts"] = trial.suggest_int("learning_starts", 1000, 10000, step=1000)
+    params["batch_size"] = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
+    params["tau"] = trial.suggest_float("tau", 0.005, 1.0, log=True)
+    params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999)
+    params["train_freq"] = trial.suggest_categorical("train_freq", [1, 2, 4])
+    params["gradient_steps"] = trial.suggest_int("gradient_steps", 1, 8)
+    params["target_update_interval"] = trial.suggest_int("target_update_interval", 500, 5000, step=500)
+    params["exploration_initial_eps"] = 1.0
+    params["exploration_fraction"] = trial.suggest_float("exploration_fraction", 0.05, 0.3)
+    params["exploration_final_eps"] = trial.suggest_float("exploration_final_eps", 0.01, 0.1)
+    params["max_grad_norm"] = trial.suggest_int("max_grad_norm", 5, 20)
+    params["policy_kwargs"] = _policy_kwargs_dqn(trial, "dqn")
+    return params
 
-    return resp_dict
+
+def _qr_dqn_hyperparams(sim_dict: dict, trial: optuna.Trial):
+    params = _dqn_hyperparams(sim_dict, trial)
+    params["n_quantiles"] = trial.suggest_int("n_quantiles", 25, 200, step=25)
+    params["policy_kwargs"] = dict(
+        net_arch=_mlp_arch(trial, "qr_dqn"),
+        n_quantiles=params["n_quantiles"],
+    )
+    return params
+
+
+def _drl_hyperparams(sim_dict: dict, trial: optuna.Trial):
+    alg = sim_dict["path_algorithm"].lower()
+    if alg == "a2c":
+        return _a2c_hyperparams(sim_dict, trial)
+    if alg == "ppo":
+        return _ppo_hyperparams(sim_dict, trial)
+    if alg == "dqn":
+        return _dqn_hyperparams(sim_dict, trial)
+    if alg == "qr_dqn":
+        return _qr_dqn_hyperparams(sim_dict, trial)
+    raise NotImplementedError(f"Algorithm '{alg}' not supported.")
 
 
 def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
@@ -299,7 +324,7 @@ def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
     """
     resp_dict = dict()
 
-    if 'a2c' in sim_dict['path_algorithm'] or 'ppo' in sim_dict['path_algorithm']:
+    if sim_dict['path_algorithm'] in ('a2c', 'ppo', 'dqn', 'qr_dqn'):
         resp_dict = _drl_hyperparams(sim_dict=sim_dict, trial=trial)
         return resp_dict
 

@@ -71,7 +71,6 @@ def setup_ppo(env: object, device: str):
         tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
         policy_kwargs=kwargs_dict,
         verbose=yaml_dict[env_name].get('verbose'),
-        seed=yaml_dict[env_name].get('seed'),
         device=device,
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model')
     )
@@ -112,7 +111,6 @@ def setup_a2c(env: object, device: str):
         stats_window_size=yaml_dict[env_name]['stats_window_size'],
         tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
         verbose=yaml_dict[env_name]['verbose'],
-        seed=yaml_dict[env_name]['seed'],
         policy_kwargs=kwargs_dict,
         device=device,
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True)
