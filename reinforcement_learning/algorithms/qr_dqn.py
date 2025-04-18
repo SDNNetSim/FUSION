@@ -3,14 +3,9 @@ from gymnasium import spaces
 from reinforcement_learning.utils.observation_space import get_observation_space
 
 
-class PPO:
+class QrDQN:
     """
-    Facilitates Proximal Policy Optimization (PPO) for reinforcement learning.
-
-    This class provides functionalities for handling observation space, action space,
-    and rewards specific to the PPO framework for reinforcement learning. It's driven
-    by the properties passed during initialization to define the behavior and attributes
-    of the reinforcement learning environment and its engine.
+    Facilitates DQN for reinforcement learning.
     """
 
     def __init__(self, rl_props: object, engine_obj: object):

@@ -7,11 +7,11 @@ SimEnv:
   buffer_size: 100000
   learning_starts: 5000
   batch_size: 64
-  tau: 1.0
-  gamma: 0.99
-  train_freq: 1
-  gradient_steps: 4
-  target_update_interval: 3000
+  tau: 0.02
+  gamma: 0.95
+  train_freq: 2
+  gradient_steps: 6
+  target_update_interval: 1500
 
   exploration_initial_eps: 1.0
   exploration_fraction: 0.1
@@ -22,6 +22,8 @@ SimEnv:
   optimize_memory_usage: false
 
   max_grad_norm: 10
-  policy_kwargs: "dict(net_arch=[256, 128, 64])"
+  stats_window_size: 10
+  policy_kwargs: "dict(net_arch=[128, 64], n_quantiles=25)"
   verbose: 1
   _init_setup_model: true
+

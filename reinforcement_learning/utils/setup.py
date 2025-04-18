@@ -3,6 +3,8 @@ import copy
 
 from stable_baselines3 import PPO
 from stable_baselines3 import A2C
+from stable_baselines3 import DQN
+from sb3_contrib import QRDQN
 from torch import nn  # pylint: disable=unused-import
 
 from src.engine import Engine
@@ -45,18 +47,38 @@ def setup_ppo(env: object, device: str):
     env_name = list(yaml_dict.keys())[0]
     kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
 
-    model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'],
-                n_steps=yaml_dict[env_name]['n_steps'],
-                batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
-                gamma=yaml_dict[env_name]['gamma'], n_epochs=yaml_dict[env_name]['n_epochs'],
-                vf_coef=yaml_dict[env_name]['vf_coef'], ent_coef=yaml_dict[env_name]['ent_coef'],
-                max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
-                learning_rate=yaml_dict[env_name]['learning_rate'], clip_range=yaml_dict[env_name]['clip_range'],
-                policy_kwargs=kwargs_dict)
+    model = PPO(
+        policy=yaml_dict[env_name]['policy'],
+        env=env,
+        learning_rate=yaml_dict[env_name]['learning_rate'],
+        n_steps=yaml_dict[env_name]['n_steps'],
+        batch_size=yaml_dict[env_name]['batch_size'],
+        n_epochs=yaml_dict[env_name]['n_epochs'],
+        gamma=yaml_dict[env_name]['gamma'],
+        gae_lambda=yaml_dict[env_name]['gae_lambda'],
+        clip_range=yaml_dict[env_name]['clip_range'],
+        clip_range_vf=yaml_dict[env_name].get('clip_range_vf'),
+        normalize_advantage=yaml_dict[env_name].get('normalize_advantage'),
+        ent_coef=yaml_dict[env_name]['ent_coef'],
+        vf_coef=yaml_dict[env_name]['vf_coef'],
+        max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
+        use_sde=yaml_dict[env_name].get('use_sde', False),
+        sde_sample_freq=yaml_dict[env_name].get('sde_sample_freq'),
+        rollout_buffer_class=yaml_dict[env_name].get('rollout_buffer_class'),
+        rollout_buffer_kwargs=yaml_dict[env_name].get('rollout_buffer_kwargs'),
+        target_kl=yaml_dict[env_name].get('target_kl'),
+        stats_window_size=yaml_dict[env_name].get('stats_window_size'),
+        tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
+        policy_kwargs=kwargs_dict,
+        verbose=yaml_dict[env_name].get('verbose'),
+        device=device,
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model')
+    )
 
     return model
 
-def setup_A2C(env: object, device: str):
+
+def setup_a2c(env: object, device: str):
     """
     Setups up the StableBaselines3 A2C model.
 
@@ -70,27 +92,117 @@ def setup_A2C(env: object, device: str):
     env_name = list(yaml_dict.keys())[0]
     kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
 
-    model = A2C(env=env,
-                device=                 device,
-                policy=                 yaml_dict[env_name]['policy'],
-                learning_rate=          yaml_dict[env_name]['learning_rate'],
-                n_steps=                yaml_dict[env_name]['n_steps'],
-                gae_lambda=             yaml_dict[env_name]['gae_lambda'],
-                gamma=                  yaml_dict[env_name]['gamma'],
-                vf_coef=                yaml_dict[env_name]['vf_coef'],
-                ent_coef=               yaml_dict[env_name]['ent_coef'],
-                max_grad_norm=          yaml_dict[env_name]['max_grad_norm'],
-                use_sde=                yaml_dict[env_name]['use_sde'],
-                sde_sample_freq=        yaml_dict[env_name]['sde_sample_freq'],
-                rollout_buffer_class=   yaml_dict[env_name]['rollout_buffer_class'],
-                rollout_buffer_kwargs=  yaml_dict[env_name]['rollout_buffer_kwargs'],
-                stats_window_size=      yaml_dict[env_name]['stats_window_size'],
-                tensorboard_log=        yaml_dict[env_name]['tensorboard_log'],
-                verbose=                yaml_dict[env_name]['verbose'],
-                seed=                   yaml_dict[env_name]['seed'],
-                policy_kwargs=          kwargs_dict)
+    model = A2C(
+        policy=yaml_dict[env_name]['policy'],
+        env=env,
+        learning_rate=yaml_dict[env_name]['learning_rate'],
+        n_steps=yaml_dict[env_name]['n_steps'],
+        gamma=yaml_dict[env_name]['gamma'],
+        gae_lambda=yaml_dict[env_name]['gae_lambda'],
+        ent_coef=yaml_dict[env_name]['ent_coef'],
+        vf_coef=yaml_dict[env_name]['vf_coef'],
+        max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
+        rms_prop_eps=yaml_dict[env_name].get('rms_prop_eps'),
+        use_rms_prop=yaml_dict[env_name].get('use_rms_prop'),
+        use_sde=yaml_dict[env_name]['use_sde'],
+        sde_sample_freq=yaml_dict[env_name]['sde_sample_freq'],
+        rollout_buffer_class=yaml_dict[env_name].get('rollout_buffer_class'),
+        rollout_buffer_kwargs=yaml_dict[env_name].get('rollout_buffer_kwargs'),
+        stats_window_size=yaml_dict[env_name]['stats_window_size'],
+        tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
+        verbose=yaml_dict[env_name]['verbose'],
+        policy_kwargs=kwargs_dict,
+        device=device,
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True)
+    )
 
     return model
+
+
+
+def setup_dqn(env: object, device: str):
+    """
+    Sets up the StableBaselines3 DQN model.
+
+    :param env: Custom environment created.
+    :param device: Device to use, cpu or gpu.
+    :return: A DQN model.
+    :rtype: object
+    """
+    yaml_path = os.path.join('sb3_scripts', 'yml', 'dqn.yml')
+    yaml_dict = parse_yaml_file(yaml_path)
+    env_name = list(yaml_dict.keys())[0]
+    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+
+    model = DQN(
+        env=env,
+        device=device,
+        policy=yaml_dict[env_name]['policy'],
+        learning_rate=yaml_dict[env_name]['learning_rate'],
+        buffer_size=yaml_dict[env_name]['buffer_size'],
+        learning_starts=yaml_dict[env_name]['learning_starts'],
+        batch_size=yaml_dict[env_name]['batch_size'],
+        tau=yaml_dict[env_name].get('tau'),
+        gamma=yaml_dict[env_name]['gamma'],
+        train_freq=yaml_dict[env_name]['train_freq'],
+        gradient_steps=yaml_dict[env_name]['gradient_steps'],
+        target_update_interval=yaml_dict[env_name]['target_update_interval'],
+        exploration_initial_eps=yaml_dict[env_name].get('exploration_initial_eps', 1.0),
+        exploration_fraction=yaml_dict[env_name]['exploration_fraction'],
+        exploration_final_eps=yaml_dict[env_name]['exploration_final_eps'],
+        max_grad_norm=yaml_dict[env_name].get('max_grad_norm'),
+        replay_buffer_class=yaml_dict[env_name].get('replay_buffer_class', None),
+        replay_buffer_kwargs=yaml_dict[env_name].get('replay_buffer_kwargs', None),
+        optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
+        policy_kwargs=kwargs_dict,
+        verbose=yaml_dict[env_name].get('verbose', 1),
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
+    )
+
+    return model
+
+
+def setup_qr_dqn(env: object, device: str):
+    """
+    Sets up the SB3-Contrib QRDQN model (distributional DQN with dueling support).
+
+    :param env: Custom environment created.
+    :param device: Device to use, cpu or gpu.
+    :return: A QRDQN model.
+    :rtype: object
+    """
+    yaml_path = os.path.join('sb3_scripts', 'yml', 'qr_dqn.yml')
+    yaml_dict = parse_yaml_file(yaml_path)
+    env_name = list(yaml_dict.keys())[0]
+    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+
+    model = QRDQN(
+        env=env,
+        device=device,
+        policy=yaml_dict[env_name]['policy'],
+        learning_rate=yaml_dict[env_name]['learning_rate'],
+        buffer_size=yaml_dict[env_name]['buffer_size'],
+        learning_starts=yaml_dict[env_name]['learning_starts'],
+        batch_size=yaml_dict[env_name]['batch_size'],
+        tau=yaml_dict[env_name].get('tau'),
+        gamma=yaml_dict[env_name]['gamma'],
+        train_freq=yaml_dict[env_name]['train_freq'],
+        gradient_steps=yaml_dict[env_name]['gradient_steps'],
+        target_update_interval=yaml_dict[env_name]['target_update_interval'],
+        exploration_initial_eps=yaml_dict[env_name].get('exploration_initial_eps', 1.0),
+        exploration_fraction=yaml_dict[env_name]['exploration_fraction'],
+        exploration_final_eps=yaml_dict[env_name]['exploration_final_eps'],
+        max_grad_norm=yaml_dict[env_name].get('max_grad_norm'),
+        replay_buffer_class=yaml_dict[env_name].get('replay_buffer_class', None),
+        replay_buffer_kwargs=yaml_dict[env_name].get('replay_buffer_kwargs', None),
+        optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
+        policy_kwargs=kwargs_dict,
+        verbose=yaml_dict[env_name].get('verbose', 1),
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
+    )
+
+    return model
+
 
 def print_info(sim_dict: dict):
     """

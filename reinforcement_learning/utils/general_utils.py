@@ -4,6 +4,7 @@ import numpy as np
 
 from src.spectrum_assignment import SpectrumAssignment
 from src.routing import Routing
+from reinforcement_learning.args.observation_args import OBS_DICT
 
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
@@ -349,37 +350,65 @@ class SimEnvHelpers:
             slots_needed_list.append(slots_needed)
 
         paths_cong = list()
+        available_slots = list()
         for curr_path in route_props.paths_matrix:
-            paths_cong.append(find_path_cong(path_list=curr_path, net_spec_dict=self.sim_env.engine_obj.net_spec_dict))
+            curr_cong, curr_slots = find_path_cong(path_list=curr_path,
+                                                   net_spec_dict=self.sim_env.engine_obj.net_spec_dict)
+            paths_cong.append(curr_cong)
+            available_slots.append(curr_slots)
 
         # Multiply by negative one to see if this is considered "bad" in the observation space
-        norm_list = [(x / 1000) for x in route_props.weights_list]
-        return slots_needed_list, norm_list, paths_cong
+        # norm_list = [(x / 1000) for x in route_props.weights_list]
+        norm_list = [x for x in route_props.weights_list]
+        return slots_needed_list, norm_list, paths_cong, available_slots
 
+    # TODO: Split this into more functions/methods
     def get_drl_obs(self, bandwidth, holding_time):
         """
         Creates observation data for Deep Reinforcement Learning (DRL) in a graph-based
         environment.
         """
-        source_obs = np.zeros(self.sim_env.rl_props.num_nodes)
-        source_obs[self.sim_env.rl_props.source] = 1.0
-        dest_obs = np.zeros(self.sim_env.rl_props.num_nodes)
-        dest_obs[self.sim_env.rl_props.destination] = 1.0
+        resp_dict = dict()
+        obs_space_key = self.sim_env.engine_obj.engine_props['obs_space']
+
+        if 'source' in OBS_DICT[obs_space_key]:
+            source_obs = np.zeros(self.sim_env.rl_props.num_nodes)
+            source_obs[self.sim_env.rl_props.source] = 1.0
+            resp_dict['source'] = source_obs
+        if 'destination' in OBS_DICT[obs_space_key]:
+            dest_obs = np.zeros(self.sim_env.rl_props.num_nodes)
+            dest_obs[self.sim_env.rl_props.destination] = 1.0
+            resp_dict['destination'] = dest_obs
 
         if not hasattr(self.sim_env, "bw_obs_list"):
             des_dict = self.sim_env.sim_dict['request_distribution']
             self.sim_env.bw_obs_list = sorted([k for k, v in des_dict.items() if v != 0], key=int)
+        if 'request_bandwidth' in OBS_DICT[obs_space_key]:
+            bw_index = self.sim_env.bw_obs_list.index(bandwidth)
+            req_band = np.zeros(len(self.sim_env.bw_obs_list))
+            req_band[bw_index] = 1.0
+            resp_dict['request_bandwidth'] = req_band
 
-        bw_index = self.sim_env.bw_obs_list.index(bandwidth)
-        req_obs = np.zeros(len(self.sim_env.bw_obs_list))
-        req_obs[bw_index] = 1.0
-        req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
+        if 'holding_time' in OBS_DICT[obs_space_key]:
+            req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
+            resp_dict['holding_time'] = req_holding_scaled
 
         # TODO: Add and initialize bandwidth in self
-        slots_needed, path_lengths, paths_cong = self._get_paths_slots(bandwidth=bandwidth)
+        # TODO: Filter these later, but they may not always be in the observation space
+        slots_needed, path_lengths, paths_cong, available_slots = self._get_paths_slots(bandwidth=bandwidth)
 
-        return {'source_obs': source_obs, 'dest_obs': dest_obs, 'req_obs': req_obs, 'req_holding': req_holding_scaled,
-                'slots_needed': slots_needed, 'path_lengths': path_lengths, 'paths_cong': paths_cong}
+        if 'slots_needed' in OBS_DICT[obs_space_key]:
+            resp_dict['slots_needed'] = slots_needed
+        if 'path_lengths' in OBS_DICT[obs_space_key]:
+            resp_dict['path_lengths'] = path_lengths
+        if 'paths_cong' in OBS_DICT[obs_space_key]:
+            resp_dict['paths_cong'] = paths_cong
+        if 'available_slots' in OBS_DICT[obs_space_key]:
+            resp_dict['available_slots'] = available_slots
+        if 'is_feasible' in OBS_DICT[obs_space_key]:
+            raise NotImplementedError
+
+        return resp_dict
 
 
 # TODO: (drl_path_agents) Only works for s1
