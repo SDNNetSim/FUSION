@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH -G 0
 #SBATCH --mem=32000
-#SBATCH -t 0-7:00:00
-#SBATCH --array=0-29  # 2 algorithms * 15 traffic volumes = 30 jobs
+#SBATCH -t 0-24:00:00
+#SBATCH --array=0-13  # 2 algorithms * 7 traffic volumes = 14 jobs
 #SBATCH -o /dev/null
 
 set -e
@@ -27,14 +27,14 @@ if [ ! -d "venvs/unity_venv/venv" ]; then
   ./bash_scripts/make_unity_venv.sh venvs/unity_venv python3.11
   pip install -r requirements.txt
   ./bash_scripts/register_rl_env.sh ppo SimEnv
-  ./bash_scripts/register_rl_env.sh a2c SimEnv
+  ./bash_scripts/register_rl_env.sh qr_dqn SimEnv
 fi
 
 source venvs/unity_venv/venv/bin/activate
 
 # Define algorithms and traffic volumes
-algorithms=( "ppo" "a2c" )
-traffic_volumes=( 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 )
+algorithms=( "ppo" "qr_dqn" )
+traffic_volumes=( 100 200 300 400 500 600 700 )
 erlang_step=50
 
 network="NSFNet"
@@ -67,38 +67,19 @@ echo "Log Directory     : $log_dir"
 echo "Time Tag          : $time_tag"
 echo "================================"
 
-# Default parameters
+# Base parameters
 params=(
   --erlang_start "$erlang"
   --erlang_stop "$erlang_stop"
   --network "$network"
   --k_paths "$k_paths"
   --path_algorithm "$alg"
-  --max_iters 200
+  --max_iters 50
   --num_requests 5000
   --cores_per_link 3
   --reward 1
   --penalty -1
 )
-
-# Add algorithm-specific dynamic params
-if [ "$alg" = "ppo" ]; then
-  params+=(
-    --alpha_start 0.00036
-    --alpha_end 0.00001
-    --decay_rate 0.4
-    --epsilon_start 0.01
-    --epsilon_end 0.0001
-  )
-elif [ "$alg" = "a2c" ]; then
-  params+=(
-    --alpha_start 0.0003
-    --alpha_end 0.00001
-    --decay_rate 0.4
-    --epsilon_start 0.01
-    --epsilon_end 0.0005
-  )
-fi
 
 echo "Running command:"
 echo "python run_rl_sim.py ${params[*]}"
