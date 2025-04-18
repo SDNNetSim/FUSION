@@ -1,19 +1,30 @@
 SimEnv:
-  normalize: true                 # Good practice, keep this
-  n_timesteps: 10000           # Standard training length
-  policy: 'MultiInputPolicy'     # Fine if you're using multiple inputs
-  n_steps: 2048                  # ⬅️ Recommended default, much larger than 64
-  batch_size: 64                 # ⬅️ 8 is too small; 64 is more typical
-  gae_lambda: 0.95               # Slightly more standard than 0.9
-  gamma: 0.99                    # Much more common than 0.5 (which heavily discounts rewards)
-  n_epochs: 10                   # Default is 10; 2 may be too few for PPO
-  vf_coef: 0.5                   # 0.5 is default, 0.6 is okay
-  ent_coef: 0.0                  # 0.0 or 0.01 are more typical unless you want exploration
-  max_grad_norm: 0.5             # 0.5 is default
-  learning_rate: 0.0003          # ✅ Standard, good
-  clip_range: 0.2                # 0.2 is more typical
+  normalize: true
+  n_timesteps: 2000000
+  policy: 'MultiInputPolicy'
+  learning_rate: 0.0003
+  n_steps: 512
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.98
+  gae_lambda: 0.95
+  clip_range: 0.2
+  clip_range_vf: null
+  normalize_advantage: true
+  ent_coef: 0.01
+  vf_coef: 0.8
+  max_grad_norm: 0.75
+  use_sde: false
+  sde_sample_freq: -1
+  rollout_buffer_class: null
+  rollout_buffer_kwargs: null
+  target_kl: null
+  stats_window_size: 100
+  tensorboard_log: null
   policy_kwargs: "dict(
                     ortho_init=True,
-                    activation_fn=nn.Tanh,
-                    net_arch=dict(pi=[32,32], vf=[32,32])
+                    activation_fn=nn.ReLU,
+                    net_arch=dict(pi=[64,256], vf=[256,128])
                  )"
+  verbose: 0
+  _init_setup_model: true

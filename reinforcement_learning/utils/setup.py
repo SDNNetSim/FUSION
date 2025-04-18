@@ -47,14 +47,34 @@ def setup_ppo(env: object, device: str):
     env_name = list(yaml_dict.keys())[0]
     kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
 
-    model = PPO(env=env, device=device, policy=yaml_dict[env_name]['policy'],
-                n_steps=yaml_dict[env_name]['n_steps'],
-                batch_size=yaml_dict[env_name]['batch_size'], gae_lambda=yaml_dict[env_name]['gae_lambda'],
-                gamma=yaml_dict[env_name]['gamma'], n_epochs=yaml_dict[env_name]['n_epochs'],
-                vf_coef=yaml_dict[env_name]['vf_coef'], ent_coef=yaml_dict[env_name]['ent_coef'],
-                max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
-                learning_rate=yaml_dict[env_name]['learning_rate'], clip_range=yaml_dict[env_name]['clip_range'],
-                policy_kwargs=kwargs_dict)
+    model = PPO(
+        policy=yaml_dict[env_name]['policy'],
+        env=env,
+        learning_rate=yaml_dict[env_name]['learning_rate'],
+        n_steps=yaml_dict[env_name]['n_steps'],
+        batch_size=yaml_dict[env_name]['batch_size'],
+        n_epochs=yaml_dict[env_name]['n_epochs'],
+        gamma=yaml_dict[env_name]['gamma'],
+        gae_lambda=yaml_dict[env_name]['gae_lambda'],
+        clip_range=yaml_dict[env_name]['clip_range'],
+        clip_range_vf=yaml_dict[env_name].get('clip_range_vf'),
+        normalize_advantage=yaml_dict[env_name].get('normalize_advantage'),
+        ent_coef=yaml_dict[env_name]['ent_coef'],
+        vf_coef=yaml_dict[env_name]['vf_coef'],
+        max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
+        use_sde=yaml_dict[env_name].get('use_sde', False),
+        sde_sample_freq=yaml_dict[env_name].get('sde_sample_freq'),
+        rollout_buffer_class=yaml_dict[env_name].get('rollout_buffer_class'),
+        rollout_buffer_kwargs=yaml_dict[env_name].get('rollout_buffer_kwargs'),
+        target_kl=yaml_dict[env_name].get('target_kl'),
+        stats_window_size=yaml_dict[env_name].get('stats_window_size'),
+        tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
+        policy_kwargs=kwargs_dict,
+        verbose=yaml_dict[env_name].get('verbose'),
+        seed=yaml_dict[env_name].get('seed'),
+        device=device,
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model')
+    )
 
     return model
 
@@ -73,26 +93,33 @@ def setup_a2c(env: object, device: str):
     env_name = list(yaml_dict.keys())[0]
     kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
 
-    model = A2C(env=env,
-                device=device,
-                policy=yaml_dict[env_name]['policy'],
-                learning_rate=yaml_dict[env_name]['learning_rate'],
-                n_steps=yaml_dict[env_name]['n_steps'],
-                gae_lambda=yaml_dict[env_name]['gae_lambda'],
-                gamma=yaml_dict[env_name]['gamma'],
-                vf_coef=yaml_dict[env_name]['vf_coef'],
-                ent_coef=yaml_dict[env_name]['ent_coef'],
-                max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
-                use_sde=yaml_dict[env_name]['use_sde'],
-                sde_sample_freq=yaml_dict[env_name]['sde_sample_freq'],
-                rollout_buffer_class=yaml_dict[env_name]['rollout_buffer_class'],
-                rollout_buffer_kwargs=yaml_dict[env_name]['rollout_buffer_kwargs'],
-                stats_window_size=yaml_dict[env_name]['stats_window_size'],
-                tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
-                verbose=yaml_dict[env_name]['verbose'],
-                policy_kwargs=kwargs_dict)
+    model = A2C(
+        policy=yaml_dict[env_name]['policy'],
+        env=env,
+        learning_rate=yaml_dict[env_name]['learning_rate'],
+        n_steps=yaml_dict[env_name]['n_steps'],
+        gamma=yaml_dict[env_name]['gamma'],
+        gae_lambda=yaml_dict[env_name]['gae_lambda'],
+        ent_coef=yaml_dict[env_name]['ent_coef'],
+        vf_coef=yaml_dict[env_name]['vf_coef'],
+        max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
+        rms_prop_eps=yaml_dict[env_name].get('rms_prop_eps'),
+        use_rms_prop=yaml_dict[env_name].get('use_rms_prop'),
+        use_sde=yaml_dict[env_name]['use_sde'],
+        sde_sample_freq=yaml_dict[env_name]['sde_sample_freq'],
+        rollout_buffer_class=yaml_dict[env_name].get('rollout_buffer_class'),
+        rollout_buffer_kwargs=yaml_dict[env_name].get('rollout_buffer_kwargs'),
+        stats_window_size=yaml_dict[env_name]['stats_window_size'],
+        tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
+        verbose=yaml_dict[env_name]['verbose'],
+        seed=yaml_dict[env_name]['seed'],
+        policy_kwargs=kwargs_dict,
+        device=device,
+        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True)
+    )
 
     return model
+
 
 
 def setup_dqn(env: object, device: str):

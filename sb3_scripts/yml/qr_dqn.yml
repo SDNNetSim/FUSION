@@ -2,30 +2,28 @@ SimEnv:
   normalize: true
   n_timesteps: 250000
 
-  # Model core
   policy: "MultiInputPolicy"
-  learning_rate: 0.002                           # You can also use get_linear_fn(...)
+  learning_rate: 0.0005
   buffer_size: 100000
   learning_starts: 5000
-  batch_size: 128
+  batch_size: 64
   tau: 0.02
   gamma: 0.95
-  train_freq: 1
-  gradient_steps: 8
-  target_update_interval: 3000
+  train_freq: 2
+  gradient_steps: 6
+  target_update_interval: 1500
 
-  # Exploration
-  exploration_initial_eps: 1.0                   # Default value, can be tuned
+  exploration_initial_eps: 1.0
   exploration_fraction: 0.1
   exploration_final_eps: 0.01
 
-  # Replay buffer
-  replay_buffer_class: null                      # null = default buffer; set to custom class if needed
-  replay_buffer_kwargs: null                     # e.g., {"alpha": 0.6, "beta": 0.4} for prioritized
-  optimize_memory_usage: false                   # Can be true if RAM is a concern
+  replay_buffer_class: null
+  replay_buffer_kwargs: null
+  optimize_memory_usage: false
 
-  # Optimization & logging
   max_grad_norm: 10
-  policy_kwargs: "dict(net_arch=[256, 128, 64])"
+  stats_window_size: 10
+  policy_kwargs: "dict(net_arch=[128, 64], n_quantiles=25)"
   verbose: 1
   _init_setup_model: true
+
