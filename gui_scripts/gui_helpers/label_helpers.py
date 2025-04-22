@@ -2,42 +2,32 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=super-with-arguments
 
-from PyQt5.QtWidgets import (
-    QLabel, QSizePolicy,
-)
-
-from PyQt5.QtGui import (
-    QIcon,
-)
-
-from PyQt5.QtCore import (
-    QSize, pyqtSignal,
-)
+from PyQt5 import QtWidgets as qtw, QtCore as qtc, QtGui as qtg
 
 
-class HoverLabel(QLabel):
+class HoverLabel(qtw.QLabel):
     """
     Handles all labels for hover actions.
     """
-    hover_changed = pyqtSignal(bool)
+    hover_changed = qtc.pyqtSignal(bool)
 
     def __init__(self, parent=None):
-        super(HoverLabel, self).__init__(parent)
+        super().__init__(parent)
         self.setMouseTracking(True)
         self.setToolTip("This is the data displayed on hover.")
-        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.setSizePolicy(qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Minimum)
         self.setMaximumSize(60, 60)
 
         self.icon = None
         self.pixmap = None
 
-    def set_icon(self, icon_path, size=QSize(64, 64)):
+    def set_icon(self, icon_path, size=qtc.QSize(64, 64)):
         """
         Sets a specific icon.
         :param icon_path: The icon location.
         :param size: Desired size of the icon.
         """
-        self.icon = QIcon(icon_path)
+        self.icon = qtg.QIcon(icon_path)
         self.pixmap = self.icon.pixmap(size)
         self.setPixmap(self.pixmap)
         self.resize(self.pixmap.size())
@@ -50,7 +40,7 @@ class HoverLabel(QLabel):
         """
         self.setText(self.hoverText)
         self.hover_changed.emit(True)
-        super(HoverLabel, self).enterEvent(event)
+        super().enterEvent(event)
 
     def leave_event(self, event):
         """
@@ -60,7 +50,7 @@ class HoverLabel(QLabel):
         """
         self.setText(self.normalText)
         self.hover_changed.emit(False)
-        super(HoverLabel, self).leaveEvent(event)
+        super().leaveEvent(event)
 
     def update_tool_tip(self, new_data):
         """

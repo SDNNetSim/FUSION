@@ -141,23 +141,31 @@ class SimulationThread(QtCore.QThread):
 
     def _run(self):
         for output_line in self.simulation_process.stdout:
+            # Debug: print every output line
+            # print("SimulationThread received:", output_line.strip())
+
+            if output_line.startswith("PROGRESS:"):
+                try:
+                    progress_val = int(output_line.split(":", 1)[1].strip())
+                    # Debug print to confirm progress was parsed:
+                    print("SimulationThread parsed progress:", progress_val)
+                    self.progress_changed.emit(progress_val)
+                except ValueError as e:
+                    print("Error parsing progress:", e)
+                continue  # Skip further processing of this line
+
             with QtCore.QMutexLocker(self.mutex):
                 if self.stopped:
                     break
-
                 while self.paused:
-                    self.pause_condition.wait(
-                        self.mutex
-                    )
-
+                    self.pause_condition.wait(self.mutex)
             self.output_hints_signal.emit(output_line)
 
         self.simulation_process.stdout.close()
         self.simulation_process.wait()
 
         self.finished_signal.emit('Simulation done')
-        self.output_hints_signal.emit(
-            'Done...cleaning up simulation from thread')
+        self.output_hints_signal.emit('Done...cleaning up simulation from thread')
 
     def run(self):
         """
@@ -191,7 +199,7 @@ class SimulationThread(QtCore.QThread):
         Pauses a single simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGSTOP)
+            os.kill(self.simulation_process.pid, signal.SIGSTOP) # pylint: disable=no-member
             self.paused = True
             self.output_hints_signal.emit('Pausing simulation from thread')
 
@@ -200,7 +208,7 @@ class SimulationThread(QtCore.QThread):
         Resumes a simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGCONT)
+            os.kill(self.simulation_process.pid, signal.SIGCONT) # pylint: disable=no-member
             self.paused = False
             self.output_hints_signal.emit('Resuming simulation from thread')
         self.pause_condition.wakeOne()
@@ -210,7 +218,7 @@ class SimulationThread(QtCore.QThread):
         Stops a simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGKILL)
+            os.kill(self.simulation_process.pid, signal.SIGKILL) # pylint: disable=no-member
             self.stopped = True
             self.paused = False
             self.output_hints_signal.emit('Stopping simulation from thread')
