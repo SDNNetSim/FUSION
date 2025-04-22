@@ -1,11 +1,12 @@
 Using the GUI
 =============
 
-To open the GUI, run the command:
+To open the GUI:
 
-.. code-block:: bash
-
-    ./start_simulator_gui.sh
+.. image:: _images/start_simulator_gui.png
+   :alt: Simulator GUI
+   :align: center
+   :width: 600px
 
 Main Window Overview
 --------------------
