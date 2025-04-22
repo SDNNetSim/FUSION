@@ -119,7 +119,6 @@ def setup_a2c(env: object, device: str):
     return model
 
 
-
 def setup_dqn(env: object, device: str):
     """
     Sets up the StableBaselines3 DQN model.

@@ -7,7 +7,6 @@ from reinforcement_learning.algorithms.a2c import A2C
 from reinforcement_learning.algorithms.dqn import DQN
 from reinforcement_learning.algorithms.qr_dqn import QrDQN
 
-
 ALGORITHM_REGISTRY = {
     'ppo': {
         'setup': setup_ppo,

@@ -8,12 +8,9 @@ import psutil
 
 from helper_scripts.sim_helpers import modify_multiple_json_values, update_dict_from_list
 from helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
-from reinforcement_learning.utils.rl_zoo import run_rl_zoo
 from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
 from reinforcement_learning.utils.setup import print_info, setup_rl_sim
-from reinforcement_learning.utils.callbacks import EpisodicRewardCallback
-from stable_baselines3.common.callbacks import CallbackList
-from reinforcement_learning.model_manager import get_trained_model, get_model, save_model
+from reinforcement_learning.model_manager import get_model, save_model
 
 from reinforcement_learning.utils.hyperparams import get_optuna_hyperparams
 from reinforcement_learning.utils.general_utils import save_arr
@@ -25,9 +22,6 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
     """
     Trains a deep reinforcement learning model with StableBaselines3.
     """
-    # if sim_dict['optimize_hyperparameters'] or sim_dict['optimize']:
-    #     run_rl_zoo(sim_dict=sim_dict)
-    # else:
     model, yaml_dict = get_model(sim_dict=sim_dict, device=sim_dict['device'], env=env, yaml_dict=yaml_dict)
     model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
                 callback=sim_dict['callback'])
@@ -35,19 +29,80 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
     save_model(sim_dict=sim_dict, env=env, model=model)
 
 
-# TODO: (drl_path_agents) Break this function up for organizational purposes
-#   - You have repeat logic
-def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, model=None, callback_list: list = None,
-              trial=None):
-    """
-    Runs the specified number of episodes in the reinforcement learning environment.
+def _setup_callbacks(callback_list, sim_dict):
+    """Initialise callback attributes that depend on the simulation settings."""
+    if callback_list:
+        for cb in callback_list.callbacks:
+            cb.max_iters = sim_dict['max_iters']
+            cb.sim_dict = sim_dict
 
-    :param env: The reinforcement learning environment.
-    :param sim_dict: A dictionary containing simulation settings, such as maximum iterations.
-    :param is_training: A boolean flag indicating whether the model should train or evaluate.
-    :param drl_agent: A boolean flag indicating whether the model is a DRL agent.
-    :param model: The RL model to be used; required only if not in training mode.
-    :param callback_obj: A callback object to be passed to the callback function.
+
+def _train_drl_trial(env, sim_dict, callback_list, completed_trials, rewards_matrix):
+    """
+    Runs one full DRL training trial (all episodes) and returns the new
+    observation and updated completed_trials counter.
+    """
+    _run_drl_training(env=env, sim_dict=sim_dict)
+    rewards_matrix[completed_trials] = callback_list.callbacks[0].episode_rewards
+    callback_list.callbacks[0].episode_rewards = np.array([])
+
+    completed_trials += 1
+    env.trial = completed_trials
+
+    for cb in callback_list.callbacks:
+        cb.trial += 1
+
+    callback_list.callbacks[1].current_ent = sim_dict['epsilon_start']
+    callback_list.callbacks[1].current_lr = sim_dict['alpha_start']
+    callback_list.callbacks[1].iter = 0
+    env.iteration = 0
+
+    print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
+    obs, _ = env.reset(seed=completed_trials)
+    return obs, completed_trials
+
+
+def _update_episode_stats(obs, reward, terminated, truncated, episodic_reward, episodic_rew_arr, completed_episodes,
+                          completed_trials, env, sim_dict, rewards_matrix, trial):
+    """
+    Consolidates the bookkeeping that happens whenever an episode ends.
+    Returns the updated state so the caller’s loop stays perfectly in sync.
+    """
+    episodic_reward += reward
+    if not (terminated or truncated):
+        return obs, episodic_reward, episodic_rew_arr, completed_episodes, completed_trials
+
+    episodic_rew_arr = np.append(episodic_rew_arr, episodic_reward)
+    episodic_reward = 0
+    completed_episodes += 1
+
+    if trial is not None:
+        current_mean_reward = np.mean(episodic_rew_arr) if episodic_rew_arr.size else 0
+        trial.report(current_mean_reward, completed_episodes)
+        if trial.should_prune():
+            raise optuna.TrialPruned()
+
+    print(f"{completed_episodes} episodes completed out of {sim_dict['max_iters']}.")
+
+    if completed_episodes == sim_dict['max_iters']:
+        env.iteration = 0
+        env.trial += 1
+        rewards_matrix[completed_trials] = episodic_rew_arr
+        episodic_rew_arr = np.array([])
+        completed_trials += 1
+        completed_episodes = 0
+        print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
+
+    obs, _ = env.reset(seed=completed_trials)
+    return obs, episodic_reward, episodic_rew_arr, completed_episodes, completed_trials
+
+
+def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool,
+              model=None, callback_list: list = None, trial=None):
+    """
+    Runs the specified number of episodes/trials in the reinforcement‑learning
+    environment, exactly as before – just with the heavy lifting delegated to
+    helpers for clarity.
     """
     process = psutil.Process()
     memory_usage_list = []
@@ -58,95 +113,55 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool, m
     rewards_matrix = np.zeros((sim_dict['n_trials'], sim_dict['max_iters']))
     episodic_rew_arr = np.array([])
 
-    if callback_list:
-        for callback_obj in callback_list.callbacks:
-            callback_obj.max_iters = sim_dict['max_iters']
-            callback_obj.sim_dict = sim_dict
+    _setup_callbacks(callback_list, sim_dict)
 
     obs, _ = env.reset(seed=completed_trials)
 
     while completed_trials < sim_dict['n_trials']:
-        mem_usage = process.memory_info().rss / (1024 * 1024)
-        memory_usage_list.append(mem_usage)
+        memory_usage_list.append(process.memory_info().rss / (1024 * 1024))
+
+        if is_training and drl_agent:
+            obs, completed_trials = _train_drl_trial(
+                env, sim_dict, callback_list, completed_trials, rewards_matrix
+            )
+            continue
 
         if is_training:
-            if drl_agent:
-                _run_drl_training(env=env, sim_dict=sim_dict)
-                rewards_matrix[completed_trials] = callback_list.callbacks[0].episode_rewards
-
-                callback_list.callbacks[0].episode_rewards = np.array([])
-                completed_trials += 1
-                env.trial = completed_trials
-
-                for callback_obj in callback_list.callbacks:
-                    callback_obj.trial += 1
-
-                # Reset dynamic params after a trial
-                # TODO (drl_path_agents) this may not be needed
-                callback_list.callbacks[1].current_ent = sim_dict['epsilon_start']
-                callback_list.callbacks[1].current_lr = sim_dict['alpha_start']
-                callback_list.callbacks[1].iter = 0
-                env.iteration = 0
-
-                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
-                obs, _ = env.reset(seed=completed_trials)
-                continue
-
-            obs, reward, is_terminated, is_truncated, _ = env.step(0)
+            obs, reward, term, trunc, _ = env.step(0)
         else:
-            action, _states = model.predict(obs)
-            obs, reward, is_terminated, is_truncated, _ = env.step(action)
+            action, _st = model.predict(obs)
+            obs, reward, term, trunc, _ = env.step(action)
 
-        episodic_reward += reward
-        if is_terminated or is_truncated:
-            episodic_rew_arr = np.append(episodic_rew_arr, episodic_reward)
-            episodic_reward = 0
-            completed_episodes += 1
-
-            if trial is not None:
-                current_mean_reward = np.mean(episodic_rew_arr) if episodic_rew_arr.size > 0 else 0
-                trial.report(current_mean_reward, completed_episodes)
-
-                if trial.should_prune():
-                    raise optuna.TrialPruned()
-
-            print(f"{completed_episodes} episodes completed out of {sim_dict['max_iters']}.")
-
-            if completed_episodes == sim_dict['max_iters']:
-                env.iteration = 0
-                env.trial += 1
-                rewards_matrix[completed_trials] = episodic_rew_arr
-                episodic_rew_arr = np.array([])
-
-                completed_trials += 1
-                completed_episodes = 0
-                print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
-
-            obs, _ = env.reset(seed=completed_trials)
+        obs, episodic_reward, episodic_rew_arr, completed_episodes, completed_trials = \
+            _update_episode_stats(
+                obs, reward, term, trunc,
+                episodic_reward, episodic_rew_arr,
+                completed_episodes, completed_trials,
+                env, sim_dict, rewards_matrix, trial
+            )
 
     if is_training:
-        means_arr = np.mean(rewards_matrix, axis=0)
-        sum_reward = np.sum(means_arr)
-        save_arr(arr=means_arr, sim_dict=sim_dict, file_name="average_rewards.npy")
-        save_arr(arr=memory_usage_list, sim_dict=sim_dict, file_name="memory_usage.npy")
+        mean_per_iter = np.mean(rewards_matrix, axis=0)
+        sum_reward = np.sum(mean_per_iter)
+        save_arr(mean_per_iter, sim_dict, "average_rewards.npy")
+        save_arr(memory_usage_list, sim_dict, "memory_usage.npy")
     else:
         raise NotImplementedError
 
     return sum_reward
 
 
-def run_testing(env: object, sim_dict: dict):
+def run_testing():
     """
     Runs pre-trained RL model evaluation in the environment for the number of episodes specified in `sim_dict`.
 
     :param env: The reinforcement learning environment.
     :param sim_dict: A dictionary containing simulation-specific parameters (e.g., model type, paths).
     """
-    model = get_trained_model(env=env, sim_dict=sim_dict)
-    run_iters(env=env, sim_dict=sim_dict, is_training=False, model=model)
+    raise NotImplementedError
 
 
-def run(env: object, sim_dict: dict, callback_list: list = None, trial = None):
+def run(env: object, sim_dict: dict, callback_list: list = None, trial=None):
     """
     Manages the execution of simulations for training or testing RL models.
 
@@ -167,7 +182,7 @@ def run(env: object, sim_dict: dict, callback_list: list = None, trial = None):
         else:
             raise NotImplementedError
     else:
-        sum_returns = run_testing(sim_dict=sim_dict, env=env)
+        raise NotImplementedError
 
     return sum_returns
 

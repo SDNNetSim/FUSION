@@ -93,7 +93,7 @@ class LearnRateEntCallback(BaseCallback):
     """
 
     def __init__(self, verbose=1):
-        super(LearnRateEntCallback, self).__init__(verbose)
+        super(LearnRateEntCallback, self).__init__(verbose)  # pylint: disable=super-with-arguments
         self.sim_dict = None
         self.iter = 0
         self.trial = 1
@@ -114,9 +114,7 @@ class LearnRateEntCallback(BaseCallback):
 
             progress = min(self.iter / self.sim_dict['max_iters'], 1.0)
             self.current_lr = self.sim_dict['alpha_start'] + (
-                        self.sim_dict['alpha_end'] - self.sim_dict['alpha_start']) * progress
-            # for param_group in self.model.policy.optimizer.param_groups:
-            #     param_group["lr"] = self.current_lr
+                    self.sim_dict['alpha_end'] - self.sim_dict['alpha_start']) * progress
 
             if self.sim_dict['path_algorithm'] in ('ppo', 'a2c'):
                 self.current_ent = max(self.sim_dict['epsilon_end'], self.current_ent * self.sim_dict['decay_rate'])

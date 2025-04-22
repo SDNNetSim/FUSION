@@ -17,6 +17,9 @@ def _extract_traffic_label(sim_time_path):
 
 
 def load_memory_usage(simulation_times, base_logs_dir, base_dir, network, date):
+    """
+    Load each algorithm's memory usage.
+    """
     memory_usage_data = {}
     for algorithm, sim_time_lists in simulation_times.items():
         alg_snake = algorithm.lower().replace(" ", "_")
@@ -49,7 +52,7 @@ def _extract_traffic_label_from_filename(fname: str, fallback: str) -> str:
     return fallback
 
 
-def load_and_average_state_values(simulation_times, base_logs_dir, date, network, base_dir):
+def load_and_average_state_values(simulation_times, base_logs_dir, date, network):
     """
     Load state-value data from:
       - JSON files ("state_vals_e###.json") for most algorithms.
@@ -82,7 +85,7 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
                     continue
                 for link_str, path_vals in data.items():
                     try:
-                        link_tuple = eval(link_str)
+                        link_tuple = eval(link_str)  # pylint: disable=eval-used
                     except (SyntaxError, NameError):
                         continue
                     for p_idx, val in enumerate(path_vals):
@@ -257,7 +260,7 @@ def _process_sim_time(sim_time_path: str):
     return averaged_data
 
 
-def _process_single_sim_time(sim_time: str, base_dir: str):
+def _process_single_sim_time(sim_time: str, base_dir: str, baseline_time):
     """
     Process a single simulation time folder based on its type.
     """
@@ -265,12 +268,12 @@ def _process_single_sim_time(sim_time: str, base_dir: str):
     if not os.path.isdir(sim_time_path):
         print(f"Warning: Path does not exist: {sim_time_path}")
         return None
-    if sim_time == "17_47_10_532187":
+    if sim_time == baseline_time:
         return _process_baseline(sim_time_path)
     return _process_sim_time(sim_time_path)
 
 
-def load_blocking_data(simulation_times, base_dir):
+def load_blocking_data(simulation_times, base_dir, baseline_time):
     """
     Process simulation JSON files to compute blocking probabilities.
     """
@@ -279,15 +282,17 @@ def load_blocking_data(simulation_times, base_dir):
         alg_result = defaultdict(list)
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            data = _process_single_sim_time(sim_time, base_dir)
+            data = _process_single_sim_time(sim_time, base_dir, baseline_time=baseline_time)
             if data is None:
                 continue
 
-            if sim_time == "17_47_10_532187":
+            if sim_time == baseline_time:
                 if "s1" in data:
-                    final_result.setdefault("KSP Baseline", {}).update(data["s1"])
+                    final_result.setdefault("KSP (3)", {}).update(data["s1"])
                 if "s2" in data:
-                    final_result.setdefault("SPF Baseline", {}).update(data["s2"])
+                    final_result.setdefault("SPF", {}).update(data["s2"])
+                # if "s3" in data:
+                #     final_result.setdefault("KSP-inf", {}).update(data["s3"])
             else:
                 for tv_str, avg_block in data.items():
                     alg_result[tv_str].append(avg_block)

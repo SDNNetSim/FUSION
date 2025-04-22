@@ -18,8 +18,9 @@ from reinforcement_learning.plot.rewards import (
     plot_average_rewards,
 )
 
-DATE = '0312'
+DATE = '0419'
 NETWORK = 'NSFNet'
+BASELINE_TIME = '08_23_38_197012'
 
 
 def main():
@@ -34,16 +35,18 @@ def main():
         'not_filter_list': [
             # Example: [['config', 'exclude'], 'value_to_exclude']
             # ['penalty', -1]
-            # ['path_algorithm', 'ppo']
+            # ['path_algorithm', 'ppo'],
+            # ['path_algorithm', 'ucb_bandit'],
         ],
         'or_filter_list': [
             # Example: [['config', 'include'], 'desired_value']
-            ['path_algorithm', 'ppo'],
-            ['path_algorithm', 'epsilon_greedy_bandit']
+            # ['path_algorithm', 'epsilon_greedy_bandit'],
+            # ['path_algorithm', 'a2c']
         ],
         'and_filter_list': [
+            # ['erlang_start', 200.0],
             # Example: [['config', 'must_have'], 'expected_value']
-            # ['path_algorithm', 'ucb_bandit']
+            ['path_algorithm', 'ppo']
         ]
     }
     sims_info_dict = find_times(dates_dict=dates_dict, filter_dict=filter_dict)
@@ -60,16 +63,16 @@ def main():
     base_dir = os.path.join('..', '..', 'data', 'output', NETWORK, DATE)
     base_logs_dir = os.path.join('..', '..', 'logs')
 
-    final_result = load_blocking_data(simulation_times, base_dir)
-    rewards_data = load_rewards(simulation_times, base_logs_dir, base_dir, network=NETWORK, date=DATE)
+    # final_result = load_blocking_data(simulation_times, base_dir, baseline_time=BASELINE_TIME)
+    # rewards_data = load_rewards(simulation_times, base_logs_dir, base_dir, network=NETWORK, date=DATE)
     all_rewards_data = load_all_rewards_files(simulation_times, base_logs_dir, base_dir, date=DATE, network=NETWORK)
-    averaged_state_values_by_volume = load_and_average_state_values(simulation_times, base_logs_dir, base_dir=base_dir, date=DATE, network=NETWORK)
-    memory_usage_data = load_memory_usage(simulation_times, base_logs_dir, base_dir, network=NETWORK, date=DATE)
+    # averaged_state_values_by_volume = load_and_average_state_values(simulation_times, base_logs_dir, base_dir=base_dir, date=DATE, network=NETWORK)
+    # memory_usage_data = load_memory_usage(simulation_times, base_logs_dir, base_dir, network=NETWORK, date=DATE)
 
-    plot_blocking_probabilities(final_result)
+    # plot_blocking_probabilities(final_result)
     # plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
     # plot_rewards_per_seed(all_rewards_data)
-    # plot_rewards_averaged_with_variance(all_rewards_data)
+    plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
     # plot_sim_times(simulation_times, base_dir)
     # plot_memory_usage(memory_usage_data)

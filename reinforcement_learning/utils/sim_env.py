@@ -1,7 +1,13 @@
 import os
 
+import numpy as np
+
+from src.routing import Routing
+
+from helper_scripts.sim_helpers import find_path_cong
 
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
+from reinforcement_learning.args.observation_args import OBS_DICT
 
 
 class SimEnvUtils:
@@ -123,11 +129,174 @@ class SimEnvUtils:
         self.sim_env.rl_props.destination = int(curr_req['destination'])
         self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(curr_req=curr_req)
 
-        # frag = self.sim_env.frag_tracker.get_fragmentation(
-        #     chosen_path=self.sim_env.rl_props.chosen_path_list,
-        #     core_index=self.sim_env.rl_props.core_index)
-
         resp_dict = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth, holding_time=holding_time)
         return resp_dict
 
 
+class SimEnvObs:
+    """
+    Encapsulates high-level helper methods tailored for managing and enhancing the behavior of the `SimEnv` class during
+    reinforcement learning simulations.
+    """
+
+    def __init__(self, sim_env: object):
+        """
+        Initializes the helper methods class with shared context.
+
+        :param sim_env: The main simulation environment object.
+        """
+        self.sim_env = sim_env
+
+        self.lowest_holding = None
+        self.highest_holding = None
+
+    def update_helper_obj(self, action: int, bandwidth: str):
+        """
+        Updates the helper object with new actions and configurations.
+        """
+        if self.sim_env.engine_obj.engine_props['is_drl_agent']:
+            self.sim_env.rl_help_obj.path_index = action
+        else:
+            self.sim_env.rl_help_obj.path_index = self.sim_env.rl_props.path_index
+
+        self.sim_env.rl_help_obj.core_num = self.sim_env.rl_props.core_index
+
+        if self.sim_env.sim_dict['spectrum_algorithm'] in ('dqn', 'ppo', 'a2c'):
+            self.sim_env.rl_help_obj.rl_props.forced_index = action
+        else:
+            self.sim_env.rl_help_obj.rl_props.forced_index = None
+
+        self.sim_env.rl_help_obj.rl_props = self.sim_env.rl_props
+        self.sim_env.rl_help_obj.engine_obj = self.sim_env.engine_obj
+        self.sim_env.rl_help_obj.handle_releases()
+        self.sim_env.rl_help_obj.update_route_props(chosen_path=self.sim_env.rl_props.chosen_path_list,
+                                                    bandwidth=bandwidth)
+
+    def determine_core_penalty(self):
+        """
+        Determines penalty for the core algorithm based on path availability.
+        """
+        # Default to first fit if all paths fail
+        self.sim_env.rl_props.chosen_path = [self.sim_env.route_obj.route_props.paths_matrix[0]]
+        self.sim_env.rl_props.chosen_path_index = 0
+        for path_index, path_list in enumerate(self.sim_env.route_obj.route_props.paths_matrix):
+            mod_format_list = self.sim_env.route_obj.route_props.mod_formats_matrix[path_index]
+
+            was_allocated = self.sim_env.rl_help_obj.mock_handle_arrival(
+                engine_props=self.sim_env.engine_obj.engine_props,
+                sdn_props=self.sim_env.rl_props.mock_sdn_dict,
+                mod_format_list=mod_format_list,
+                path_list=path_list)
+
+            if was_allocated:
+                self.sim_env.rl_props.chosen_path_list = [path_list]
+                self.sim_env.rl_props.chosen_path_index = path_index
+                break
+
+    def handle_test_train_obs(self, curr_req: dict):  # pylint: disable=unused-argument
+        """
+        Handles path and core selection during training/testing phases based on the current request.
+
+        Returns:
+            Path modulation format, if available.
+        """
+        if self.sim_env.sim_dict['is_training']:
+            if self.sim_env.sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS:
+                self.sim_env.step_helper.handle_path_train_test()
+            else:
+                raise NotImplementedError
+        else:
+            self.sim_env.step_helpers.handle_path_train_test()
+
+    def _scale_req_holding(self, holding_time):
+        req_dict = self.sim_env.engine_obj.reqs_dict
+        if self.lowest_holding is None or self.highest_holding is None:
+            differences = [value['depart'] - arrival for arrival, value in req_dict.items()]
+
+            self.lowest_holding = min(differences)
+            self.highest_holding = max(differences)
+
+        if self.lowest_holding == self.highest_holding:
+            raise ValueError("x_max and x_min cannot be the same value.")
+
+        scaled_holding = (holding_time - self.lowest_holding) / (self.highest_holding - self.lowest_holding)
+        return scaled_holding
+
+    def _get_paths_slots(self, bandwidth):
+        # TODO: Can move this to the constructor...
+        routing_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
+                              sdn_props=self.sim_env.engine_obj.sdn_obj.sdn_props)
+
+        routing_obj.sdn_props.bandwidth = bandwidth
+        routing_obj.sdn_props.source = str(self.sim_env.rl_props.source)
+        routing_obj.sdn_props.destination = str(self.sim_env.rl_props.destination)
+        routing_obj.get_route()
+        route_props = routing_obj.route_props
+
+        slots_needed_list = list()
+        mod_bw_dict = self.sim_env.engine_obj.engine_props['mod_per_bw']
+        for mod_format in route_props.mod_formats_matrix:
+            if not mod_format[0]:
+                slots_needed = -1
+            else:
+                slots_needed = mod_bw_dict[bandwidth][mod_format[0]]['slots_needed']
+            slots_needed_list.append(slots_needed)
+
+        paths_cong = list()
+        available_slots = list()
+        for curr_path in route_props.paths_matrix:
+            curr_cong, curr_slots = find_path_cong(path_list=curr_path,
+                                                   net_spec_dict=self.sim_env.engine_obj.net_spec_dict)
+            paths_cong.append(curr_cong)
+            available_slots.append(curr_slots)
+
+        norm_list = route_props.weights_list
+        return slots_needed_list, norm_list, paths_cong, available_slots
+
+    # TODO: Split this into more functions/methods
+    def get_drl_obs(self, bandwidth, holding_time):
+        """
+        Creates observation data for Deep Reinforcement Learning (DRL) in a graph-based
+        environment.
+        """
+        resp_dict = dict()
+        obs_space_key = self.sim_env.engine_obj.engine_props['obs_space']
+
+        if 'source' in OBS_DICT[obs_space_key]:
+            source_obs = np.zeros(self.sim_env.rl_props.num_nodes)
+            source_obs[self.sim_env.rl_props.source] = 1.0
+            resp_dict['source'] = source_obs
+        if 'destination' in OBS_DICT[obs_space_key]:
+            dest_obs = np.zeros(self.sim_env.rl_props.num_nodes)
+            dest_obs[self.sim_env.rl_props.destination] = 1.0
+            resp_dict['destination'] = dest_obs
+
+        if not hasattr(self.sim_env, "bw_obs_list"):
+            des_dict = self.sim_env.sim_dict['request_distribution']
+            self.sim_env.bw_obs_list = sorted([k for k, v in des_dict.items() if v != 0], key=int)
+        if 'request_bandwidth' in OBS_DICT[obs_space_key]:
+            bw_index = self.sim_env.bw_obs_list.index(bandwidth)
+            req_band = np.zeros(len(self.sim_env.bw_obs_list))
+            req_band[bw_index] = 1.0
+            resp_dict['request_bandwidth'] = req_band
+
+        if 'holding_time' in OBS_DICT[obs_space_key]:
+            req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
+            resp_dict['holding_time'] = req_holding_scaled
+
+        # TODO: Add and initialize bandwidth in self
+        # TODO: Filter these later, but they may not always be in the observation space
+        slots_needed, path_lengths, paths_cong, available_slots = self._get_paths_slots(bandwidth=bandwidth)
+
+        if 'slots_needed' in OBS_DICT[obs_space_key]:
+            resp_dict['slots_needed'] = slots_needed
+        if 'path_lengths' in OBS_DICT[obs_space_key]:
+            resp_dict['path_lengths'] = path_lengths
+        if 'paths_cong' in OBS_DICT[obs_space_key]:
+            resp_dict['paths_cong'] = paths_cong
+        if 'available_slots' in OBS_DICT[obs_space_key]:
+            resp_dict['available_slots'] = available_slots
+        if 'is_feasible' in OBS_DICT[obs_space_key]:
+            raise NotImplementedError
+
+        return resp_dict
