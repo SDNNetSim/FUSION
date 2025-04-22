@@ -3,12 +3,14 @@ import numpy as np
 from gymnasium import spaces
 
 from reinforcement_learning.args.observation_args import OBS_DICT
+from reinforcement_learning.utils.topology import convert_networkx_topo
 
 
 def get_observation_space(rl_props: object, engine_obj: object):
     """
     Gets any given observation space for DRL algorithms.
     """
+    include_graph = False
     bw_set = {d["bandwidth"] for d in rl_props.arrival_list}
     num_set = {int(s) for s in bw_set}
     max_bw = str(max(num_set))
@@ -17,6 +19,10 @@ def get_observation_space(rl_props: object, engine_obj: object):
     max_paths = rl_props.k_paths
 
     obs_key = engine_obj.engine_props.get('obs_space', 'obs_1')
+    if 'graph' in obs_key:
+        include_graph = True
+        obs_key = obs_key.replace('_graph', '')
+
     obs_features = OBS_DICT.get(obs_key, OBS_DICT['obs_1'])
     print("Observation space: ", obs_features)
 
@@ -37,6 +43,17 @@ def get_observation_space(rl_props: object, engine_obj: object):
         for feature, space_fn in feature_space_map.items()
         if feature in obs_features
     }
+
+    ei, ea, xf = convert_networkx_topo(engine_obj.engine_props['topology'], as_directed=True)
+    num_nodes, num_edges = xf.shape[0], ei.shape[1]
+    if include_graph:
+        obs_space_dict.update({
+            "x": spaces.Box(-np.inf, np.inf, xf.shape, dtype=np.float32),
+            "edge_index": spaces.Box(0, num_nodes - 1, ei.shape, dtype=np.int64),
+            "edge_attr": spaces.Box(-np.inf, np.inf, ea.shape, dtype=np.float32),
+            "path_masks": spaces.Box(0, 1, (max_paths, num_edges), dtype=np.float32),
+        })
+        print(f"Updated the observation space with graph features: {obs_space_dict}")
 
     return obs_space_dict
 

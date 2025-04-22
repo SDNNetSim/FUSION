@@ -8,6 +8,7 @@ from helper_scripts.sim_helpers import find_path_cong
 
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 from reinforcement_learning.args.observation_args import OBS_DICT
+from reinforcement_learning.utils.topology import convert_networkx_topo
 
 
 class SimEnvUtils:
@@ -146,9 +147,13 @@ class SimEnvObs:
         :param sim_env: The main simulation environment object.
         """
         self.sim_env = sim_env
+        self.routing_obj = None
 
         self.lowest_holding = None
         self.highest_holding = None
+        self.edge_index = None
+        self.edge_attr = None
+        self.node_feats = None
 
     def update_helper_obj(self, action: int, bandwidth: str):
         """
@@ -224,14 +229,14 @@ class SimEnvObs:
 
     def _get_paths_slots(self, bandwidth):
         # TODO: Can move this to the constructor...
-        routing_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
+        self.routing_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
                               sdn_props=self.sim_env.engine_obj.sdn_obj.sdn_props)
 
-        routing_obj.sdn_props.bandwidth = bandwidth
-        routing_obj.sdn_props.source = str(self.sim_env.rl_props.source)
-        routing_obj.sdn_props.destination = str(self.sim_env.rl_props.destination)
-        routing_obj.get_route()
-        route_props = routing_obj.route_props
+        self.routing_obj.sdn_props.bandwidth = bandwidth
+        self.routing_obj.sdn_props.source = str(self.sim_env.rl_props.source)
+        self.routing_obj.sdn_props.destination = str(self.sim_env.rl_props.destination)
+        self.routing_obj.get_route()
+        route_props = self.routing_obj.route_props
 
         slots_needed_list = list()
         mod_bw_dict = self.sim_env.engine_obj.engine_props['mod_per_bw']
@@ -253,14 +258,20 @@ class SimEnvObs:
         norm_list = route_props.weights_list
         return slots_needed_list, norm_list, paths_cong, available_slots
 
-    # TODO: Split this into more functions/methods
     def get_drl_obs(self, bandwidth, holding_time):
         """
         Creates observation data for Deep Reinforcement Learning (DRL) in a graph-based
         environment.
         """
+        topo_graph = self.sim_env.engine_obj.engine_props['topology']
+        include_graph = False
         resp_dict = dict()
         obs_space_key = self.sim_env.engine_obj.engine_props['obs_space']
+        if 'graph' in obs_space_key:
+            if None in (self.node_feats, self.edge_attr, self.edge_index):
+                self.edge_index, self.edge_attr, self.node_feats = convert_networkx_topo(topo_graph, as_directed=True)
+            include_graph = True
+            obs_space_key = obs_space_key.replace('_graph', '')
 
         if 'source' in OBS_DICT[obs_space_key]:
             source_obs = np.zeros(self.sim_env.rl_props.num_nodes)
@@ -298,5 +309,35 @@ class SimEnvObs:
             resp_dict['available_slots'] = available_slots
         if 'is_feasible' in OBS_DICT[obs_space_key]:
             raise NotImplementedError
+
+        if include_graph:
+            resp_dict['x'] = self.node_feats.numpy()
+            resp_dict['edge_index'] = self.edge_index.numpy()
+            resp_dict['edge_attr'] = self.edge_attr.numpy()
+
+            # build edge map for index lookup
+            edge_pairs = list(zip(self.edge_index[0].tolist(), self.edge_index[1].tolist()))
+            edge_map = {pair: idx for idx, pair in enumerate(edge_pairs)}
+            edge_shape = self.edge_index.shape[1]
+
+            # mapping from graph node labels to convert_networkx_topo indices
+            nodes = sorted(topo_graph.nodes())
+            id2idx = {nid: i for i, nid in enumerate(nodes)}
+            # handle string labels in paths_matrix
+            str2idx = {str(n): idx for n, idx in id2idx.items()}
+
+            # retrieve precomputed paths
+            paths_matrix = self.routing_obj.route_props.paths_matrix
+            k_shape = self.sim_env.rl_props.k_paths
+            masks = np.zeros((k_shape, edge_shape), dtype=np.float32)
+
+            for i, path in enumerate(paths_matrix[:k_shape]):
+                # convert labels to indices
+                idx_path = [str2idx[label] for label in path]
+                # collect edge indices
+                e_idxs = [edge_map[(u, v)] for u, v in zip(idx_path, idx_path[1:])]
+                masks[i, e_idxs] = 1.0
+
+            resp_dict['path_masks'] = masks
 
         return resp_dict

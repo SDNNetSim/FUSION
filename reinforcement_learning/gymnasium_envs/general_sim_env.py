@@ -1,8 +1,8 @@
 import gymnasium as gym
 
-from reinforcement_learning.utils.sim_env import SimEnvUtils
+from reinforcement_learning.utils.sim_env import SimEnvUtils, SimEnvObs
 from reinforcement_learning.utils.setup import setup_rl_sim, SetupHelper
-from reinforcement_learning.utils.general_utils import CoreUtilHelpers, SimEnvHelpers
+from reinforcement_learning.utils.general_utils import CoreUtilHelpers
 from reinforcement_learning.agents.path_agent import PathAgent
 from reinforcement_learning.utils.deep_rl import get_obs_space, get_action_space
 
@@ -43,7 +43,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.modified_props = None
         self.sim_props = None
         self.setup_helper = SetupHelper(sim_env=self)
-        self.sim_env_helper = SimEnvHelpers(sim_env=self)
+        self.sim_env_helper = SimEnvObs(sim_env=self)
         self.step_helper = SimEnvUtils(sim_env=self)
 
         # Used to get config variables into the observation space
