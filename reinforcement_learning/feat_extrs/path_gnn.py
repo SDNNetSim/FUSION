@@ -2,6 +2,9 @@ import torch
 from torch_geometric.nn import GATv2Conv, SAGEConv, GraphConv
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
+
+# TODO: Add params to optuna
+
 class PathGNN(BaseFeaturesExtractor):
     def __init__(self, obs_space, emb_dim, gnn_type, layers):
         super().__init__(obs_space, features_dim=emb_dim * obs_space["path_masks"].shape[0])
