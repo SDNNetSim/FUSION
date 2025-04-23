@@ -65,6 +65,8 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
         network_fp = os.path.join(base_fp, 'nsf_network.txt')
     elif net_name == 'Pan-European':
         network_fp = os.path.join(base_fp, 'europe_network.txt')
+    elif net_name == 'Deutsche-Telekom':
+        network_fp = os.path.join(base_fp, 'dt_network.txt')
     elif net_name == 'USbackbode60':
         network_fp = os.path.join(base_fp, 'USB6014.txt')
         if not is_only_core_node:
