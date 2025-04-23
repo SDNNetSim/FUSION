@@ -44,7 +44,7 @@ def get_observation_space(rl_props: object, engine_obj: object):
         if feature in obs_features
     }
 
-    ei, ea, xf = convert_networkx_topo(engine_obj.engine_props['topology'], as_directed=True)
+    ei, ea, xf, _ = convert_networkx_topo(engine_obj.engine_props['topology'], as_directed=True)
     num_nodes, num_edges = xf.shape[0], ei.shape[1]
     if include_graph:
         obs_space_dict.update({

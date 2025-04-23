@@ -154,6 +154,8 @@ class SimEnvObs:
         self.edge_index = None
         self.edge_attr = None
         self.node_feats = None
+        self.str2idx = None
+        self.id2idx = None
 
     def update_helper_obj(self, action: int, bandwidth: str):
         """
@@ -230,7 +232,7 @@ class SimEnvObs:
     def _get_paths_slots(self, bandwidth):
         # TODO: Can move this to the constructor...
         self.routing_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
-                              sdn_props=self.sim_env.engine_obj.sdn_obj.sdn_props)
+                                   sdn_props=self.sim_env.engine_obj.sdn_obj.sdn_props)
 
         self.routing_obj.sdn_props.bandwidth = bandwidth
         self.routing_obj.sdn_props.source = str(self.sim_env.rl_props.source)
@@ -258,6 +260,26 @@ class SimEnvObs:
         norm_list = route_props.weights_list
         return slots_needed_list, norm_list, paths_cong, available_slots
 
+    def get_path_masks(self, resp_dict: dict):
+        resp_dict['x'] = self.node_feats.numpy()
+        resp_dict['edge_index'] = self.edge_index.numpy()
+        resp_dict['edge_attr'] = self.edge_attr.numpy()
+
+        edge_pairs = list(zip(self.edge_index[0].tolist(), self.edge_index[1].tolist()))
+        edge_map = {pair: idx for idx, pair in enumerate(edge_pairs)}
+        edge_shape = self.edge_index.shape[1]
+
+        paths_matrix = self.routing_obj.route_props.paths_matrix
+        k_shape = self.sim_env.rl_props.k_paths
+        masks = np.zeros((k_shape, edge_shape), dtype=np.float32)
+
+        for i, path in enumerate(paths_matrix[:k_shape]):
+            idx_path = [self.str2idx[label] for label in path]
+            e_idxs = [edge_map[(u, v)] for u, v in zip(idx_path, idx_path[1:])]
+            masks[i, e_idxs] = 1.0
+
+        resp_dict['path_masks'] = masks
+
     def get_drl_obs(self, bandwidth, holding_time):
         """
         Creates observation data for Deep Reinforcement Learning (DRL) in a graph-based
@@ -269,10 +291,12 @@ class SimEnvObs:
         obs_space_key = self.sim_env.engine_obj.engine_props['obs_space']
         if 'graph' in obs_space_key:
             if None in (self.node_feats, self.edge_attr, self.edge_index):
-                self.edge_index, self.edge_attr, self.node_feats = convert_networkx_topo(topo_graph, as_directed=True)
+                self.edge_index, self.edge_attr, self.node_feats, self.id2idx = convert_networkx_topo(
+                    topo_graph, as_directed=True
+                )
+                self.str2idx = {str(n): idx for n, idx in self.id2idx.items()}
             include_graph = True
             obs_space_key = obs_space_key.replace('_graph', '')
-
         if 'source' in OBS_DICT[obs_space_key]:
             source_obs = np.zeros(self.sim_env.rl_props.num_nodes)
             source_obs[self.sim_env.rl_props.source] = 1.0
@@ -311,33 +335,6 @@ class SimEnvObs:
             raise NotImplementedError
 
         if include_graph:
-            resp_dict['x'] = self.node_feats.numpy()
-            resp_dict['edge_index'] = self.edge_index.numpy()
-            resp_dict['edge_attr'] = self.edge_attr.numpy()
-
-            # build edge map for index lookup
-            edge_pairs = list(zip(self.edge_index[0].tolist(), self.edge_index[1].tolist()))
-            edge_map = {pair: idx for idx, pair in enumerate(edge_pairs)}
-            edge_shape = self.edge_index.shape[1]
-
-            # mapping from graph node labels to convert_networkx_topo indices
-            nodes = sorted(topo_graph.nodes())
-            id2idx = {nid: i for i, nid in enumerate(nodes)}
-            # handle string labels in paths_matrix
-            str2idx = {str(n): idx for n, idx in id2idx.items()}
-
-            # retrieve precomputed paths
-            paths_matrix = self.routing_obj.route_props.paths_matrix
-            k_shape = self.sim_env.rl_props.k_paths
-            masks = np.zeros((k_shape, edge_shape), dtype=np.float32)
-
-            for i, path in enumerate(paths_matrix[:k_shape]):
-                # convert labels to indices
-                idx_path = [str2idx[label] for label in path]
-                # collect edge indices
-                e_idxs = [edge_map[(u, v)] for u, v in zip(idx_path, idx_path[1:])]
-                masks[i, e_idxs] = 1.0
-
-            resp_dict['path_masks'] = masks
+            self.get_path_masks(resp_dict=resp_dict)
 
         return resp_dict
