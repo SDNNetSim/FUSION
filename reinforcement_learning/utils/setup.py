@@ -20,6 +20,9 @@ from reinforcement_learning.feat_extrs.graphormer import GraphTransformerExtract
 
 
 def setup_feature_extractor(env: object):
+    """
+    Sets up a custom feature extractor.
+    """
     engine_props = env.engine_obj.engine_props
     feat_extr = engine_props['feature_extractor']
     feat_kwargs = {
@@ -37,6 +40,22 @@ def setup_feature_extractor(env: object):
         raise NotImplementedError
 
     return extr_class, feat_kwargs
+
+
+def get_drl_dicts(env, yaml_path):
+    """
+    Gets dictionaries related to DRL algorithms.
+    """
+    yaml_dict = parse_yaml_file(yaml_path)
+    env_name = list(yaml_dict.keys())[0]
+    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+
+    if 'graph' in env.engine_obj.engine_props['obs_space']:
+        kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(
+            env=env)
+
+    return yaml_dict, kwargs_dict, env_name
+
 
 def setup_rl_sim():
     """
@@ -62,10 +81,7 @@ def setup_ppo(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
-    kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(env=env)
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = PPO(
         policy=yaml_dict[env_name]['policy'],
@@ -108,11 +124,7 @@ def setup_a2c(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'a2c.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
-    kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(env=env)
-
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = A2C(
         policy=yaml_dict[env_name]['policy'],
@@ -151,10 +163,7 @@ def setup_dqn(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'dqn.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
-    kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(env=env)
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = DQN(
         env=env,
@@ -194,10 +203,7 @@ def setup_qr_dqn(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'qr_dqn.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
-    kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(env=env)
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = QRDQN(
         env=env,
