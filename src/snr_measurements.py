@@ -898,7 +898,7 @@ class SnrMeasurements:
         gsnr = self._gsnr_calc_mb()
         GSNR_LP_dB = 10 * np.log10(gsnr)
         
-        resp = GSNR_LP_dB >= self.snr_props.req_snr[self.spectrum_props.modulation]
+        resp = GSNR_LP_dB >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.snr_props.snr_margin
 
         bw_resp = 0
         if resp:
