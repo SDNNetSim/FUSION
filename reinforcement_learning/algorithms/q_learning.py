@@ -71,7 +71,7 @@ class QLearning:
     @staticmethod
     def get_max_future_q(path_list, net_spec_dict, matrix, flag, core_index=None):
         """Retrieves the maximum future Q-value based on congestion levels."""
-        new_cong = find_core_cong(core_index, net_spec_dict, path_list) if flag == 'core' else find_path_cong(path_list,
+        new_cong, _ = find_core_cong(core_index, net_spec_dict, path_list) if flag == 'core' else find_path_cong(path_list,
                                                                                                               net_spec_dict)
         new_cong_index = classify_cong(new_cong)
 
