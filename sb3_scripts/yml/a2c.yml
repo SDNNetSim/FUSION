@@ -26,4 +26,5 @@ SimEnv:
                     activation_fn=nn.ReLU,
                     net_arch=dict(pi=[64, 128], vf=[128,64])
                   )"
+  device: cuda
   _init_setup_model: true

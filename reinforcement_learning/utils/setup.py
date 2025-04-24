@@ -107,7 +107,7 @@ def setup_ppo(env: object, device: str):
         tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
         policy_kwargs=kwargs_dict,
         verbose=yaml_dict[env_name].get('verbose'),
-        device=device,
+        device=yaml_dict[env_name].get('device', 'cpu'),
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model')
     )
 
@@ -146,7 +146,7 @@ def setup_a2c(env: object, device: str):
         tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
         verbose=yaml_dict[env_name]['verbose'],
         policy_kwargs=kwargs_dict,
-        device=device,
+        device=yaml_dict[env_name].get('device', 'cpu'),
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True)
     )
 
@@ -167,7 +167,6 @@ def setup_dqn(env: object, device: str):
 
     model = DQN(
         env=env,
-        device=device,
         policy=yaml_dict[env_name]['policy'],
         learning_rate=yaml_dict[env_name]['learning_rate'],
         buffer_size=yaml_dict[env_name]['buffer_size'],
@@ -187,6 +186,7 @@ def setup_dqn(env: object, device: str):
         optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
         policy_kwargs=kwargs_dict,
         verbose=yaml_dict[env_name].get('verbose', 1),
+        device=yaml_dict[env_name].get('device', 'cpu'),
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
     )
 
@@ -207,7 +207,7 @@ def setup_qr_dqn(env: object, device: str):
 
     model = QRDQN(
         env=env,
-        device=device,
+        device=yaml_dict[env_name].get('device', 'cpu'),
         policy=yaml_dict[env_name]['policy'],
         learning_rate=yaml_dict[env_name]['learning_rate'],
         buffer_size=yaml_dict[env_name]['buffer_size'],
