@@ -1,9 +1,7 @@
 import os
 import copy
 
-from stable_baselines3 import PPO
-from stable_baselines3 import A2C
-from stable_baselines3 import DQN
+from stable_baselines3 import PPO, A2C, DQN
 from sb3_contrib import QRDQN
 from torch import nn  # pylint: disable=unused-import
 
@@ -17,6 +15,46 @@ from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
+from reinforcement_learning.feat_extrs.path_gnn import PathGNN
+from reinforcement_learning.feat_extrs.graphormer import GraphTransformerExtractor
+
+
+def setup_feature_extractor(env: object):
+    """
+    Sets up a custom feature extractor.
+    """
+    engine_props = env.engine_obj.engine_props
+    feat_extr = engine_props['feature_extractor']
+    feat_kwargs = {
+        'emb_dim': engine_props['emb_dim'],
+        'layers': engine_props['layers'],
+    }
+
+    if feat_extr == 'path_gnn':
+        extr_class = PathGNN
+        feat_kwargs['gnn_type'] = engine_props['gnn_type']
+    elif feat_extr == 'graphormer':
+        extr_class = GraphTransformerExtractor
+        feat_kwargs['heads'] = engine_props['heads']
+    else:
+        raise NotImplementedError
+
+    return extr_class, feat_kwargs
+
+
+def get_drl_dicts(env, yaml_path):
+    """
+    Gets dictionaries related to DRL algorithms.
+    """
+    yaml_dict = parse_yaml_file(yaml_path)
+    env_name = list(yaml_dict.keys())[0]
+    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+
+    if 'graph' in env.engine_obj.engine_props['obs_space']:
+        kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(
+            env=env)
+
+    return yaml_dict, kwargs_dict, env_name
 
 
 def setup_rl_sim():
@@ -43,9 +81,7 @@ def setup_ppo(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = PPO(
         policy=yaml_dict[env_name]['policy'],
@@ -71,7 +107,7 @@ def setup_ppo(env: object, device: str):
         tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
         policy_kwargs=kwargs_dict,
         verbose=yaml_dict[env_name].get('verbose'),
-        device=device,
+        device=yaml_dict[env_name].get('device', 'cpu'),
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model')
     )
 
@@ -88,9 +124,7 @@ def setup_a2c(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'a2c.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = A2C(
         policy=yaml_dict[env_name]['policy'],
@@ -112,12 +146,11 @@ def setup_a2c(env: object, device: str):
         tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
         verbose=yaml_dict[env_name]['verbose'],
         policy_kwargs=kwargs_dict,
-        device=device,
+        device=yaml_dict[env_name].get('device', 'cpu'),
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True)
     )
 
     return model
-
 
 
 def setup_dqn(env: object, device: str):
@@ -130,13 +163,10 @@ def setup_dqn(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'dqn.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = DQN(
         env=env,
-        device=device,
         policy=yaml_dict[env_name]['policy'],
         learning_rate=yaml_dict[env_name]['learning_rate'],
         buffer_size=yaml_dict[env_name]['buffer_size'],
@@ -156,6 +186,7 @@ def setup_dqn(env: object, device: str):
         optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
         policy_kwargs=kwargs_dict,
         verbose=yaml_dict[env_name].get('verbose', 1),
+        device=yaml_dict[env_name].get('device', 'cpu'),
         _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
     )
 
@@ -172,13 +203,11 @@ def setup_qr_dqn(env: object, device: str):
     :rtype: object
     """
     yaml_path = os.path.join('sb3_scripts', 'yml', 'qr_dqn.yml')
-    yaml_dict = parse_yaml_file(yaml_path)
-    env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+    yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = QRDQN(
         env=env,
-        device=device,
+        device=yaml_dict[env_name].get('device', 'cpu'),
         policy=yaml_dict[env_name]['policy'],
         learning_rate=yaml_dict[env_name]['learning_rate'],
         buffer_size=yaml_dict[env_name]['buffer_size'],
@@ -274,19 +303,4 @@ class SetupHelper:
         """
         Loads pretrained models for RL agents and configures agent properties.
         """
-        # Model loading logic (from the original _load_models method)
-        self.sim_env.path_agent.engine_props = self.sim_env.engine_obj.engine_props
-        self.sim_env.path_agent.rl_props = self.sim_env.rl_props
-        self.sim_env.path_agent.load_model(
-            model_path=self.sim_env.sim_dict['path_model'],
-            erlang=self.sim_env.sim_dict['erlang'],
-            num_cores=self.sim_env.sim_dict['cores_per_link']
-        )
-
-        self.sim_env.core_agent.engine_props = self.sim_env.engine_obj.engine_props
-        self.sim_env.core_agent.rl_props = self.sim_env.rl_props
-        self.sim_env.core_agent.load_model(
-            model_path=self.sim_env.sim_dict['core_model'],
-            erlang=self.sim_env.sim_dict['erlang'],
-            num_cores=self.sim_env.sim_dict['cores_per_link']
-        )
+        raise NotImplementedError

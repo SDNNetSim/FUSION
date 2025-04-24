@@ -24,4 +24,5 @@ SimEnv:
   max_grad_norm: 10
   policy_kwargs: "dict(net_arch=[256, 128, 64])"
   verbose: 1
+  device: cuda
   _init_setup_model: true

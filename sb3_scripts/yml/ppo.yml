@@ -27,4 +27,5 @@ SimEnv:
                     net_arch=dict(pi=[64,256], vf=[256,128])
                  )"
   verbose: 0
+  device: cuda
   _init_setup_model: true

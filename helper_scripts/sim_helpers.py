@@ -132,6 +132,50 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     return average_path_cong, scaled_available_capacity
 
 
+def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> float:
+    """
+    Computes the average fragmentation ratio along a path.
+
+    :param path_list: Sequence of nodes in the path.
+    :param net_spec_dict: Spectrum allocation per link.
+    :param band: Spectral band to use (e.g., 'c').
+    :return: Average fragmentation score [0,1] (higher = worse fragmentation).
+    """
+    frag_ratios = []
+
+    for src, dest in zip(path_list, path_list[1:]):
+        src_dest = (src, dest)
+        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        cores = cores_matrix[band]
+
+        for core in cores:
+            free_blocks = 0
+            max_block = 0
+            current_block = 0
+            total_free = 0
+
+            for slot in core:
+                if slot == 0:
+                    current_block += 1
+                    total_free += 1
+                else:
+                    if current_block > 0:
+                        free_blocks += 1
+                        max_block = max(max_block, current_block)
+                        current_block = 0
+            if current_block > 0:  # Catch trailing free block
+                free_blocks += 1
+                max_block = max(max_block, current_block)
+
+            if total_free == 0:
+                frag_ratio = 1.0  # fully occupied, max fragmentation
+            else:
+                frag_ratio = 1 - (max_block / total_free)
+
+            frag_ratios.append(frag_ratio)
+
+    return float(np.mean(frag_ratios)) if frag_ratios else 1.0
+
 
 def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
     """

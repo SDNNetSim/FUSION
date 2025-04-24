@@ -1,9 +1,8 @@
 import gymnasium as gym
-import numpy as np
 
-from reinforcement_learning.utils.sim_env import SimEnvUtils
+from reinforcement_learning.utils.sim_env import SimEnvUtils, SimEnvObs
 from reinforcement_learning.utils.setup import setup_rl_sim, SetupHelper
-from reinforcement_learning.utils.general_utils import CoreUtilHelpers, SimEnvHelpers, FragmentationTracker
+from reinforcement_learning.utils.general_utils import CoreUtilHelpers
 from reinforcement_learning.agents.path_agent import PathAgent
 from reinforcement_learning.utils.deep_rl import get_obs_space, get_action_space
 
@@ -44,7 +43,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.modified_props = None
         self.sim_props = None
         self.setup_helper = SetupHelper(sim_env=self)
-        self.sim_env_helper = SimEnvHelpers(sim_env=self)
+        self.sim_env_helper = SimEnvObs(sim_env=self)
         self.step_helper = SimEnvUtils(sim_env=self)
 
         # Used to get config variables into the observation space
@@ -75,10 +74,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             print_flag = True
 
         self._init_props_envs(seed=seed, print_flag=print_flag)
-
-        # self.frag_tracker = FragmentationTracker(num_nodes=self.rl_props.num_nodes,
-        #                                          core_count=self.rl_props.cores_per_link,
-        #                                          spectral_slots=self.rl_props.spectral_slots)
 
         if not self.sim_dict['is_training'] and self.iteration == 0:
             self._load_models()
@@ -135,20 +130,6 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         reqs_status_dict = self.engine_obj.reqs_status_dict
 
         was_allocated = req_id in reqs_status_dict
-
-        if was_allocated:
-            path = self.rl_props.chosen_path_list
-            if len(path) >= 2 and self.rl_props.core_index is not None and self.rl_props.slot_indices is not None:
-                pass
-                # last_src, last_dst = path[-2], path[-1]
-                # self.frag_tracker.update(
-                #     src=last_src,
-                #     dst=last_dst,
-                #     core_index=self.rl_props.core_index,
-                #     start_slot=self.rl_props.start_slot,
-                #     end_slot=self.rl_props.end_slot,
-                #     is_allocate=True
-                # )
         # TODO: What is this?
         path_length = self.route_obj.route_props.weights_list[0]
         self.step_helper.handle_test_train_step(was_allocated=was_allocated, path_length=path_length,
