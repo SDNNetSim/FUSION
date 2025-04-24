@@ -24,7 +24,7 @@ def main():
     """
     args = parse_cli()
     # TODO: Ensure this directory makes sense
-    exp_dir = pathlib.Path('experiments') / args.exp
+    exp_dir = args.exp
     manifest = exp_dir / 'manifest.csv'
     rows = sum(1 for _ in open(manifest, encoding='utf-8')) - 1  # pylint: disable=consider-using-with
     job_dir = exp_dir / 'jobs'
