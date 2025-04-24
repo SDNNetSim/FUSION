@@ -46,7 +46,7 @@ def main():
         'and_filter_list': [
             # ['erlang_start', 200.0],
             # Example: [['config', 'must_have'], 'expected_value']
-            ['path_algorithm', 'ppo']
+            ['path_algorithm', 'qr_dqn']
         ]
     }
     sims_info_dict = find_times(dates_dict=dates_dict, filter_dict=filter_dict)
@@ -71,8 +71,8 @@ def main():
 
     # plot_blocking_probabilities(final_result)
     # plot_best_path_matrix(averaged_state_values_by_volume)  # plot_blocking_probabilities(final_result)
-    # plot_rewards_per_seed(all_rewards_data)
-    plot_rewards_averaged_with_variance(all_rewards_data)
+    plot_rewards_per_seed(all_rewards_data)
+    # plot_rewards_averaged_with_variance(all_rewards_data)
     # plot_average_rewards(rewards_data)
     # plot_sim_times(simulation_times, base_dir)
     # plot_memory_usage(memory_usage_data)
