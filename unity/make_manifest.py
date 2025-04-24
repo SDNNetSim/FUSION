@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Generate manifest.csv for simulation campaigns.
+Generate manifest.csv for simulation campaigns,
+saving under experiments/<MMDD>/<NETWORK>/<TIMESTAMP>/...
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ except ModuleNotFoundError:
 
 
 def _timestamp() -> str:
-    return _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    return _dt.datetime.now().strftime("%H%M%S")
 
 
 def _bool_is_rl(algorithm: str) -> str:
@@ -65,7 +66,7 @@ def _load_spec(path: pathlib.Path) -> Dict[str, Any]:
     return json.loads(text)
 
 
-def _expand_grid(spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _expand_grid(spec):
     algs = spec["algorithm"]
     traf = spec["traffic"]
     kpts = spec["k_paths"]
@@ -104,7 +105,11 @@ def _explicit_jobs(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def main() -> None:
+    """
+    Controls the script.
+    """
     args = _parse_cli()
+    # --- figure out rows & network just like before ---
     if args.spec:
         spec_path = pathlib.Path(args.spec)
         if not spec_path.exists():
@@ -134,19 +139,26 @@ def main() -> None:
             "er_step": args.er_step,
         })
         network = args.network
-    slug = f"{_timestamp()}_{network.lower()}"
-    exp_dir = pathlib.Path("experiments") / slug
+
+    # --- NEW: build experiments/<MMDD>/<NETWORK>/<TIMESTAMP> directory ---
+    now = _dt.datetime.now()
+    date_dir = now.strftime("%m%d")  # e.g. "0424"
+    time_dir = now.strftime("%H%M%S")  # e.g. "20250424_153045"
+    exp_dir = pathlib.Path("experiments") / date_dir / network / time_dir
+
+    # write out CSV + metadata
     _write_csv(exp_dir / "manifest.csv", rows)
     meta = {
-        "generated": _dt.datetime.now().isoformat(timespec="seconds"),
+        "generated": now.isoformat(timespec="seconds"),
         "source": args.spec or "cli",
         "num_rows": len(rows),
     }
     (exp_dir / "manifest_meta.json").write_text(
         json.dumps(meta, indent=2), encoding="utf-8"
     )
+
     print(f"Manifest written to {exp_dir / 'manifest.csv'}")
-    print(f"Experiment slug:  {slug}")
+    print(f"Experiment directory:  {exp_dir}")
 
 
 if __name__ == "__main__":
