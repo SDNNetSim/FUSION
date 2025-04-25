@@ -22,6 +22,23 @@ from reinforcement_learning.utils.gym_envs import create_environment  # type: ig
 #       doesn't exist
 # TODO: (base_agent) Fix load_model function to prevent file_prefix error
 #       outside of training
+# TODO: Add this to a helper or utils script
+def json_friendly(d: dict) -> dict:
+    """
+    Recursively strip unserializable values from a dict.
+    Keeps only JSON-serializable keys and values.
+    """
+
+    def safe(v):
+        try:
+            json.dumps(v)
+            return v
+        except (TypeError, OverflowError):
+            return str(v)
+
+    return {k: safe(v) for k, v in d.items()}
+
+
 def _extract_bookkeeping_flags() -> tuple[argparse.Namespace, list[str]]:
     """
     Pull ``--run_id`` and ``--output_dir`` out of ``sys.argv`` without touching
@@ -53,7 +70,7 @@ def _write_bookkeeping_files(
     sim_dict["run_id"] = run_id
 
     with (output_dir / "meta.json").open("w", encoding="utf-8") as mfile:
-        json.dump(sim_dict, mfile, indent=2)
+        json.dump(json_friendly(sim_dict), mfile, indent=2)
 
     print(f"OUTPUT_DIR={output_dir}")
 
