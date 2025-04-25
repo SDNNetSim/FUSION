@@ -1,10 +1,11 @@
 #!/bin/bash
-#SBATCH -p cpu
-#SBATCH -c 1
-#SBATCH --mem=32000
-#SBATCH -t 0-00:30:00
-#SBATCH --array=0-__N_JOBS__
-#SBATCH -o __JOB_DIR__/slurm_%A_%a.out
+#SBATCH -J ${JOB_NAME}
+#SBATCH -p ${PARTITION}
+#SBATCH -c ${CPUS}
+#SBATCH --mem=${MEM}
+#SBATCH -t ${TIME}
+#SBATCH --array=0-${N_JOBS}
+#SBATCH -o ${JOB_DIR}/slurm_%A_%a.out
 
 module load python/3.11.7
 
