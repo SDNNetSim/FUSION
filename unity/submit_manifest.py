@@ -1,45 +1,63 @@
 import argparse
+import csv
+import os
 import pathlib
 import subprocess
 import sys
-import csv
-import os
 
-SBATCH = [
-    "--job-name=sim",
-    "--output=slurm_out/%x_%A_%a.out",
-    "--error=slurm_out/%x_%A_%a.err",
-    "--partition=compute",
-    "--cpus-per-task=1",
-    "--mem=4G",
-    "--time=1:00:00",
-]
+# Keep this list in-sync with _RESOURCE_KEYS in make_manifest.py
+RESOURCE_KEYS = {
+    "partition", "time", "mem", "cpus", "gpus", "nodes"
+}
 
 
-def parse_cli():
+def parse_cli() -> argparse.Namespace:
     """
-    Parse command line arguments.
+    Parse the command line arguments and return an argparse.Namespace object.
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("exp", help="experiment directory under ./experiments")
-    parser.add_argument("script", help="bash script to run (e.g., launch.sh)")
-    parser.add_argument("--rows", type=int, required=True, help="number of jobs")
-    return parser.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument("exp", help="experiment directory under ./experiments")
+    p.add_argument("script", help="bash script to run (e.g., run_rl_sim.sh)")
+    p.add_argument("--rows", type=int,
+                   help="number of jobs (defaults to line-count of manifest)")
+    return p.parse_args()
 
 
-def get_network_from_manifest(manifest_path: pathlib.Path) -> str:
+def read_first_row(manifest: pathlib.Path) -> tuple[dict, int]:
     """
-    Get network from manifest file.
+    Read the first row of a manifest file and return a tuple (manifest, row).
     """
-    with manifest_path.open("r", encoding="utf-8") as f:
+    with manifest.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        first_row = next(reader)
-        if "network" not in first_row:
-            sys.exit("Manifest file missing 'network' field.")
-        return first_row["network"]
+        rows = list(reader)
+        if not rows:
+            sys.exit("Manifest is empty.")
+        return rows[0], len(rows)
 
 
-def main():
+def build_env(first: dict, n_rows: int, job_dir: pathlib.Path, exp: str) -> dict:
+    """
+    Build a dictionary with environment variables.
+    """
+    # mandatory metadata
+    env = {
+        "MANIFEST": str(job_dir / "manifest.csv"),
+        "N_JOBS": str(n_rows - 1),  # Slurm arrays are 0-indexed
+        "JOB_DIR": str(job_dir),
+        "NETWORK": first.get("network", ""),
+        "DATE": exp.split("_")[0],
+        "JOB_NAME": f"{first['algorithm']}_{first['traffic_start']}_{exp.replace('/', '_')}",
+    }
+
+    # propagate resources ⇢ upper-case so bash can ${PARTITION}
+    for key in RESOURCE_KEYS:
+        if key in first and first[key]:
+            env[key.upper()] = str(first[key])
+
+    return env
+
+
+def main() -> None:
     """
     Controls the script.
     """
@@ -53,18 +71,13 @@ def main():
     if not manifest.exists():
         sys.exit(f"Missing manifest file: {manifest}")
 
-    network = get_network_from_manifest(manifest)
+    first_row, total_rows = read_first_row(manifest)
+    n_rows = args.rows if args.rows is not None else total_rows
 
-    env = {
-        "MANIFEST": str(manifest),
-        "N_JOBS": str(args.rows - 1),
-        "JOB_DIR": str(job_dir),
-        "NETWORK": network,
-        "DATE": args.exp.split("_")[0],
-    }
+    env = build_env(first_row, n_rows, job_dir, args.exp)
 
-    cmd = ["sbatch"] + SBATCH + [args.script]
-    result = subprocess.run(cmd, env={**env, **dict(**os.environ)}, check=False)
+    cmd = ["sbatch", args.script]
+    result = subprocess.run(cmd, env={**os.environ, **env}, check=False)
     if result.returncode != 0:
         sys.exit("Job submission failed.")
 
