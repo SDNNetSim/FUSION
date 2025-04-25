@@ -1,11 +1,6 @@
-network: NSFNet
-
 grid:
-  algorithm:
-    - ppo
-  traffic:
-    - 100
-  k_paths:
-    - 4
-  repeat: 1
-  er_step: 50
+  algorithm: [ppo, a2c]
+  traffic:   [100, 150]
+  common:
+    k_paths: [3]
+    network: NSFNet
