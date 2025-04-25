@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import argparse
 import json
 import sys
@@ -73,6 +72,7 @@ def _write_bookkeeping_files(
         json.dump(json_friendly(sim_dict), mfile, indent=2)
 
     print(f"OUTPUT_DIR={output_dir}")
+    sys.exit(0)
 
 
 def run_rl_sim() -> None:
