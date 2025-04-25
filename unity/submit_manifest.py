@@ -1,21 +1,42 @@
-"""
-Read manifest.csv, patch template, and submit a SLURM array.
-"""
 import argparse
 import pathlib
-import os
 import subprocess
-import tempfile
+import sys
+import csv
+import os
+
+SBATCH = [
+    "--job-name=sim",
+    "--output=slurm_out/%x_%A_%a.out",
+    "--error=slurm_out/%x_%A_%a.err",
+    "--partition=compute",
+    "--cpus-per-task=1",
+    "--mem=4G",
+    "--time=1:00:00",
+]
 
 
 def parse_cli():
     """
-    Parse CLI arguments.
+    Parse command line arguments.
     """
-    p = argparse.ArgumentParser()
-    p.add_argument('--exp', required=True, help='e.g. 20250424_nsfnet')
-    p.add_argument('--network', required=True)
-    return p.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("exp", help="experiment directory under ./experiments")
+    parser.add_argument("script", help="bash script to run (e.g., launch.sh)")
+    parser.add_argument("--rows", type=int, required=True, help="number of jobs")
+    return parser.parse_args()
+
+
+def get_network_from_manifest(manifest_path: pathlib.Path) -> str:
+    """
+    Get network from manifest file.
+    """
+    with manifest_path.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        first_row = next(reader)
+        if "network" not in first_row:
+            sys.exit("Manifest file missing 'network' field.")
+        return first_row["network"]
 
 
 def main():
@@ -23,38 +44,30 @@ def main():
     Controls the script.
     """
     args = parse_cli()
-    exp_dir = pathlib.Path(args.exp)
-    manifest = exp_dir / 'manifest.csv'
-    rows = sum(1 for _ in open(manifest, encoding='utf-8')) - 1  # pylint: disable=consider-using-with
-    job_dir = exp_dir / 'jobs'
-    job_dir.mkdir(exist_ok=True)
 
-    # TODO: This is not where this is located, why is it called sbatch and not .sh?
-    tpl_path = pathlib.Path('bash_scripts', 'run_rl_sim.sh')
-    tpl_txt = tpl_path.read_text(encoding='utf-8')
-    sbatch_txt = (tpl_txt
-                  .replace('__N_JOBS__', str(rows - 1))
-                  .replace('__JOB_DIR__', str(job_dir)))
+    job_dir = pathlib.Path("experiments") / args.exp
+    if not job_dir.exists():
+        sys.exit(f"Experiment directory not found: {job_dir}")
 
-    sbatch_file = tempfile.NamedTemporaryFile('w', delete=False,
-                                              suffix='.sh')  # pylint: disable=consider-using-with
-    sbatch_file.write(sbatch_txt)
-    sbatch_file.close()
+    manifest = job_dir / "manifest.csv"
+    if not manifest.exists():
+        sys.exit(f"Missing manifest file: {manifest}")
 
-    env = os.environ.copy()
-    env.update({
-        'MANIFEST': str(manifest),
-        'N_JOBS': str(rows - 1),
-        'JOB_DIR': str(job_dir),
-        'NETWORK': args.network,
-        'DATE': args.exp.split('_')[0],
-    })
+    network = get_network_from_manifest(manifest)
 
-    print('Submitting array…')
-    print(sbatch_file.name)
-    subprocess.run(['sbatch', sbatch_file.name], check=True, env=env)
-    print(f'Logs → {job_dir}')
+    env = {
+        "MANIFEST": str(manifest),
+        "N_JOBS": str(args.rows - 1),
+        "JOB_DIR": str(job_dir),
+        "NETWORK": network,
+        "DATE": args.exp.split("_")[0],
+    }
+
+    cmd = ["sbatch"] + SBATCH + [args.script]
+    result = subprocess.run(cmd, env={**env, **dict(**os.environ)}, check=False)
+    if result.returncode != 0:
+        sys.exit("Job submission failed.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
