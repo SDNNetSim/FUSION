@@ -1,30 +1,3 @@
-#!/usr/bin/env python3
-"""Generate **manifest.csv** from a YAML/JSON spec.
-
-Usage
------
-```
-python make_manifest.py <spec_name_or_path>
-```
-* If `<spec_name_or_path>` is a bare filename, the script first searches a
-  `specs/` folder next to this file (adding `.yml`, `.yaml`, or `.json` if
-  omitted).
-* **No CLI overrides** – every simulation parameter must appear in the spec
-  and match a name in `COMMAND_LINE_PARAMS`.
-* Deprecated keys **repeat** and **er_step** are rejected.
-* In a **grid** block you may put constants inside `grid.common`. Scalars
-  there (e.g. `k_paths: 3`) are treated as one-element lists so the Cartesian
-  sweep still works. Multi-item lists inside `grid.common` are not allowed.
-* One manifest row is produced for each
-  `algorithm × traffic × k_paths` combination, with
-  `traffic_stop = traffic + 50`.
-
-Output directory:
-```
-experiments/<MMDD>/<NETWORK>/<HHMMSS>/manifest.csv
-```
-"""
-
 from __future__ import annotations
 
 import ast
@@ -47,6 +20,10 @@ from arg_scripts.config_args import COMMAND_LINE_PARAMS  # pylint: disable=wrong
 _PARAM_TYPES: dict[str, type] = {name: typ for name, typ, _ in COMMAND_LINE_PARAMS}
 _BOOL_STRS = {"true", "yes", "1"}
 _BASE_KEYS = {"algorithm", "traffic", "k_paths", "traffic_stop"}
+
+_RESOURCE_KEYS = {
+    "partition", "time", "mem", "cpus", "gpus", "nodes"
+}
 
 
 def _str_to_bool(value: str) -> bool:
@@ -83,13 +60,25 @@ def _encode(val: Any) -> str:
 
 
 def _is_rl(alg: str) -> str:
-    rl_algs = {"ppo", "qr_dqn", "a2c", "dqn", "epsilon_greedy_bandit", "ucb_bandit", "q_learning"}
+    rl_algs = {"ppo", "qr_dqn", "a2c", "dqn", "epsilon_greedy_bandit",
+               "ucb_bandit", "q_learning"}
     return "yes" if alg in rl_algs else "no"
+
+
+# ------------------------------- new --------------------------------------- #
+def _validate_resource_keys(resources: Dict[str, Any]) -> None:
+    """Warn the user if they mistype a resource key."""
+    for key in resources:
+        if key not in _RESOURCE_KEYS:
+            sys.exit(
+                f"Unknown resource key '{key}'. Allowed keys: "
+                f"{', '.join(sorted(_RESOURCE_KEYS))}"
+            )
 
 
 def _validate_keys(mapping: Dict[str, Any], ctx: str) -> None:
     for key in mapping:
-        if key in _BASE_KEYS or key in _PARAM_TYPES:
+        if key in _BASE_KEYS or key in _PARAM_TYPES or key in _RESOURCE_KEYS:
             continue
         sys.exit(f"Unknown parameter '{key}' in {ctx}. Must exist in COMMAND_LINE_PARAMS.")
 
@@ -140,7 +129,8 @@ def _expand_grid(grid: Dict[str, Any]) -> List[Dict[str, Any]]:
             "traffic_stop": t0 + 50,
             "k_paths": kp,
             "is_rl": _is_rl(alg),
-            **{k: _cast(k, v) for k, v in common.items() if k not in {"algorithm", "traffic", "k_paths"}},
+            **{k: _cast(k, v) for k, v in common.items()
+               if k not in {"algorithm", "traffic", "k_paths"}},
         })
         rid += 1
     return rows
@@ -191,7 +181,7 @@ def _resolve_spec_path(arg: str) -> pathlib.Path:
     sys.exit(f"Spec file '{arg}' not found (searched cwd and specs/ directory)")
 
 
-def main() -> None:
+def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     """
     Controls the script.
     """
@@ -200,6 +190,9 @@ def main() -> None:
 
     spec_path = _resolve_spec_path(sys.argv[1])
     spec = _read_spec(spec_path)
+
+    resources: Dict[str, Any] = spec.get("resources", {})
+    _validate_resource_keys(resources)
 
     if "grid" in spec and "jobs" in spec:
         sys.exit("Spec must contain either 'grid' or 'jobs', not both")
@@ -211,6 +204,12 @@ def main() -> None:
     else:
         sys.exit("Spec must contain 'grid' or 'jobs'")
 
+    # Apply resources uniformly to every row
+    if resources:
+        for r in rows:
+            r.update(resources)
+
+    # network-name lookup (unchanged)
     network = spec.get("network")
     if not network and "grid" in spec:
         grid = spec["grid"]
@@ -228,10 +227,11 @@ def main() -> None:
         "generated": now.isoformat(timespec="seconds"),
         "source": str(spec_path),
         "num_rows": len(rows),
+        "resources": resources,  # handy for debugging
     }
     (exp_dir / "manifest_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
-    print(f"Manifest → {exp_dir / 'manifest.csv'}")
+    print(f"Manifest  → {exp_dir / 'manifest.csv'}")
     print(f"Experiment dir → {exp_dir}")
 
 
