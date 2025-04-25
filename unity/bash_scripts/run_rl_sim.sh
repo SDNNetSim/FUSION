@@ -84,5 +84,5 @@ echo "$PY_OUT"
 RESULT_PATH=$(echo "$PY_OUT" | awk -F= '/^OUTPUT_DIR=/{print $2}')
 echo "Mapped run_id=${SLURM_ARRAY_TASK_ID} → ${RESULT_PATH}"
 echo "{\"run_id\":\"${SLURM_ARRAY_TASK_ID}\",\"path\":\"${RESULT_PATH}\"}" \
-     >> "${JOB_DIR}/runs_index.json"
+     >> "unity/${JOB_DIR}/runs_index.json"
 

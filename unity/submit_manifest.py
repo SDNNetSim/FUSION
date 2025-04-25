@@ -41,12 +41,12 @@ def build_env(first: dict, n_rows: int, job_dir: pathlib.Path, exp: str) -> dict
     """
     # mandatory metadata
     env = {
-        "MANIFEST": str("unity" / job_dir / "manifest.csv"),
-        "N_JOBS": str(n_rows - 1),  # Slurm arrays are 0-indexed
-        "JOB_DIR": str(job_dir),
-        "NETWORK": first.get("network", ""),
-        "DATE": exp.split("_")[0],
-        "JOB_NAME": f"{first['path_algorithm']}_{first['erlang_start']}_{exp.replace('/', '_')}",
+            "MANIFEST": str(pathlib.Path("unity") / job_dir / "manifest.csv"),
+            "N_JOBS": str(n_rows - 1),  # Slurm arrays are 0-indexed
+            "JOB_DIR": str(job_dir),
+            "NETWORK": first.get("network", ""),
+            "DATE": exp.split("_")[0],
+            "JOB_NAME": f"{first['path_algorithm']}_{first['erlang_start']}_{exp.replace('/', '_')}",
     }
 
     # propagate resources ⇢ upper-case so bash can ${PARTITION}
