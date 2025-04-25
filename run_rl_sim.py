@@ -74,8 +74,8 @@ def run_rl_sim() -> None:
             run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
 
     finally:
-        out_path = os.path.join('output', sim_dict['network'], sim_dict['date'], sim_dict['sim_start'],
-                                sim_dict['thread_num'])
+        out_path = Path('output') / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
+            'thread_num']
         _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path)
 
 
