@@ -1,75 +1,69 @@
-from __future__ import annotations
+#!/usr/bin/env python3
+"""
+fetch_results.py  –  Copy result folders listed in runs_index.json
+                     to a destination using rsync.
 
+Example (run on your laptop):
+
+    ./fetch_results.py \
+        --experiment    experiments/0425/NSFNet/161152 \
+        --cluster-root  user@login.cluster.edu:/work/project \
+        --dest          ./cluster_results
+
+Arguments
+---------
+--experiment   Experiment directory that contains runs_index.json
+--cluster-root Prefix before the absolute paths stored in runs_index.json
+               (include user@host: for remote rsync).
+--dest         Local directory to copy into.
+--dry-run      Show rsync commands without executing them.
+"""
 import argparse
-import os
+import json
 import pathlib
 import subprocess
 import sys
 
 
-def _sync_rsync(remote: str, exp: str, local_path: pathlib.Path) -> None:
-    """Synchronise using rsync."""
-    # TODO: Ensure this file path is correct and copies to the correct place.
-    remote_path = f"{remote}:$HOME/experiments/{exp}/results/"
-    subprocess.run(
-        ["rsync", "-avzP", remote_path, str(local_path)],
-        check=True,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-    )
+def cli() -> argparse.Namespace:
+    p = argparse.ArgumentParser()
+    p.add_argument("--experiment", required=True)
+    p.add_argument("--cluster-root", required=True)
+    p.add_argument("--dest", required=True)
+    p.add_argument("--dry-run", action="store_true")
+    return p.parse_args()
 
 
-def _sync_globus(
-        src_ep: str,
-        dst_ep: str,
-        remote_path: str,
-        local_path: pathlib.Path,
-) -> None:
-    """Synchronise using Globus CLI."""
-    subprocess.run(
-        [
-            "globus",
-            "transfer",
-            src_ep + ":" + remote_path,
-            dst_ep + ":" + str(local_path),
-            "--recursive",
-        ],
-        check=True,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-    )
+def iter_paths(index_file: pathlib.Path):
+    with index_file.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            yield pathlib.PurePosixPath(json.loads(line)["path"])
 
 
-def _parse_args() -> argparse.Namespace:
-    """CLI parser."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--exp", required=True, help="20250424_nsfnet")
-    parser.add_argument("--method", choices=("rsync", "globus"), default="rsync")
-    parser.add_argument("--remote", default="unity", help="SSH alias for rsync mode")
-    parser.add_argument("--src-endpoint", help="Globus source endpoint UUID")
-    parser.add_argument("--dst-endpoint", help="Globus destination endpoint UUID")
-    return parser.parse_args()
+def rsync_one(src_prefix: str, abs_path: pathlib.PurePosixPath,
+              dest_root: pathlib.Path, dry: bool):
+    dest_root.mkdir(parents=True, exist_ok=True)
+    cmd = ["rsync", "-avP", "--compress",
+           f"{src_prefix}{abs_path}", str(dest_root / abs_path.name)]
+    if dry:
+        print("[dry-run]", " ".join(cmd))
+    else:
+        print("→", " ".join(cmd))
+        subprocess.run(cmd, check=True)
 
 
 def main() -> None:
-    """Entrypoint."""
-    args = _parse_args()
-    # TODO: Ensure that this path is correct
-    local_path = pathlib.Path("experiments") / args.exp / "results"
-    local_path.mkdir(parents=True, exist_ok=True)
+    args = cli()
+    index_file = pathlib.Path(args.experiment) / "runs_index.json"
+    if not index_file.exists():
+        sys.exit(f"runs_index.json not found: {index_file}")
 
-    if args.method == "rsync":
-        _sync_rsync(args.remote, args.exp, local_path)
-    else:
-        src_ep = args.src_endpoint or os.getenv("GLOBUS_SRC_EP")
-        dst_ep = args.dst_endpoint or os.getenv("GLOBUS_DST_EP")
-        if not src_ep or not dst_ep:
-            sys.exit(
-                "Globus mode requires --src-endpoint and --dst-endpoint "
-                "or env vars GLOBUS_SRC_EP / GLOBUS_DST_EP."
-            )
-        remote_rel = f"/~/experiments/{args.exp}/results/"
-        _sync_globus(src_ep, dst_ep, remote_rel, local_path)
+    for folder in iter_paths(index_file):
+        rsync_one(args.cluster_root, folder, pathlib.Path(args.dest),
+                  args.dry_run)
 
 
 if __name__ == "__main__":

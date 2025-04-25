@@ -1,21 +1,6 @@
-"""
-Unified entry-point for all (D)RL and baseline simulations.
-
-New features (compatible with existing calls):
-
-* ``--run_id``      - unique ID injected by the manifest/SLURM wrapper.
-* ``--output_dir``  - directory where results + bookkeeping files are written.
-
-When the simulation finishes successfully, the script writes:
-
-    <output_dir>/meta.json   – full ``sim_dict`` + the ``run_id`` value
-    <output_dir>/DONE        – zero-byte flag so the scheduler can skip reruns
-
-If these flags are omitted, behaviour is identical to the original version.
-"""
-
 from __future__ import annotations
 
+import os
 import argparse
 import json
 import sys
@@ -58,11 +43,9 @@ def _write_bookkeeping_files(
         output_dir: Path | None,
 ) -> None:
     """
-    Write ``meta.json`` and the ``DONE`` flag into *output_dir*.
-
-    Nothing happens (and nothing is created) if *output_dir* is ``None``.
+    Write ``meta.json`` into *output_dir* and print the path so the bash
+    wrapper can capture it.  If *output_dir* is ``None`` do nothing.
     """
-    # TODO: Is output dir correct?
     if output_dir is None:
         return
 
@@ -72,7 +55,7 @@ def _write_bookkeeping_files(
     with (output_dir / "meta.json").open("w", encoding="utf-8") as mfile:
         json.dump(sim_dict, mfile, indent=2)
 
-    (output_dir / "DONE").touch()
+    print(f"OUTPUT_DIR={output_dir}")
 
 
 def run_rl_sim() -> None:
@@ -91,8 +74,9 @@ def run_rl_sim() -> None:
             run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
 
     finally:
-        output_dir_path = Path(bk_args.output_dir) if bk_args.output_dir else None
-        _write_bookkeeping_files(sim_dict, bk_args.run_id, output_dir_path)
+        out_path = os.path.join('output', sim_dict['network'], sim_dict['date'], sim_dict['sim_start'],
+                                sim_dict['thread_num'])
+        _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path)
 
 
 if __name__ == "__main__":

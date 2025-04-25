@@ -77,7 +77,12 @@ for i in "${!COL_NAMES[@]}"; do
   fi
 done
 
-python run_rl_sim.py \
-    ${ARGS} \
-    --output_dir "$RES_DIR" \
- && touch "${RES_DIR}/DONE"
+ARGS="--run_id ${SLURM_ARRAY_TASK_ID} ${ARGS}"
+
+PY_OUT=$(python run_rl_sim.py ${ARGS})
+echo "$PY_OUT"
+RESULT_PATH=$(echo "$PY_OUT" | awk -F= '/^OUTPUT_DIR=/{print $2}')
+echo "Mapped run_id=${SLURM_ARRAY_TASK_ID} → ${RESULT_PATH}"
+echo "{\"run_id\":\"${SLURM_ARRAY_TASK_ID}\",\"path\":\"${RESULT_PATH}\"}" \
+     >> "${JOB_DIR}/runs_index.json"
+

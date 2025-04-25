@@ -137,6 +137,7 @@ OTHER_OPTIONS = {
         'test_size': float,
     },
     'file_settings': {
+        'run_id': str,
     },
 }
 
@@ -233,6 +234,7 @@ COMMAND_LINE_PARAMS = [
     ['spectrum_priority', str, ''],
     ['save_step', int, ''],
     ['save_start_end_slots', bool, ''],
+    ['run_id', str, ''],
 
     # StableBaselines3 arguments
     ['algo', str, ''],
