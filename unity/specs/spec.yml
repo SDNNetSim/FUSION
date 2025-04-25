@@ -3,13 +3,9 @@ network: NSFNet
 grid:
   algorithm:
     - ppo
-    - a2c
   traffic:
     - 100
-    - 150
-    - 200
   k_paths:
-    - 3
     - 4
   repeat: 1
   er_step: 50

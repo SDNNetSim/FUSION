@@ -6,7 +6,7 @@
 
 # Usage: make_venv.sh <target_directory> <python_version>
 # Example: ./make_venv.sh /path/to/target_directory python3.8
-
+pwd
 # Check if the correct number of arguments are provided
 if [ -z "$1" ] || [ -z "$2" ]; then
   echo "Usage: make_venv.sh <target_directory> <python_version>"
