@@ -2,11 +2,11 @@ grid:
   common:
     network: NSFNet
     k_paths: 3
-  algorithm: [ ppo, dqn ]
-  traffic: [ 150 ]
+  path_algorithm: [ ppo ]
+  erlang_start: [ 150 ]
 
 resources:
   partition: cpu
   cpus: 1
-  mem: 32G
-  time: "1-00:00:00"
+  mem: 32000
+  time: "0-00:30:00"

@@ -41,12 +41,12 @@ def build_env(first: dict, n_rows: int, job_dir: pathlib.Path, exp: str) -> dict
     """
     # mandatory metadata
     env = {
-        "MANIFEST": str(job_dir / "manifest.csv"),
+        "MANIFEST": str("unity" / job_dir / "manifest.csv"),
         "N_JOBS": str(n_rows - 1),  # Slurm arrays are 0-indexed
         "JOB_DIR": str(job_dir),
         "NETWORK": first.get("network", ""),
         "DATE": exp.split("_")[0],
-        "JOB_NAME": f"{first['algorithm']}_{first['traffic_start']}_{exp.replace('/', '_')}",
+        "JOB_NAME": f"{first['path_algorithm']}_{first['erlang_start']}_{exp.replace('/', '_')}",
     }
 
     # propagate resources ⇢ upper-case so bash can ${PARTITION}
@@ -62,7 +62,6 @@ def main() -> None:
     Controls the script.
     """
     args = parse_cli()
-
     job_dir = pathlib.Path(args.exp)
     if not job_dir.exists():
         sys.exit(f"Experiment directory not found: {job_dir}")
@@ -76,7 +75,27 @@ def main() -> None:
 
     env = build_env(first_row, n_rows, job_dir, args.exp)
 
-    cmd = ["sbatch", args.script]
+    jobs_dir = job_dir / "jobs"
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+
+    slurm_output = jobs_dir / "slurm_%A_%a.out"
+
+    script_path = pathlib.Path("bash_scripts") / args.script
+    if not script_path.exists():
+        sys.exit(f"Bash script not found: {script_path}")
+
+    cmd = [
+        "sbatch",
+        f"--partition={env['PARTITION']}",
+        f"--cpus-per-task={env['CPUS']}",
+        f"--mem={env['MEM']}",
+        f"--time={env['TIME']}",
+        f"--array=0-{env['N_JOBS']}",
+        f"--output={slurm_output}",
+        f"--job-name={env['JOB_NAME']}",
+        str(script_path),
+    ]
+
     result = subprocess.run(cmd, env={**os.environ, **env}, check=False)
     if result.returncode != 0:
         sys.exit("Job submission failed.")

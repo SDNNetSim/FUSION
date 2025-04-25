@@ -1,14 +1,9 @@
 #!/bin/bash
-#SBATCH -J ${JOB_NAME}
-#SBATCH -p ${PARTITION}
-#SBATCH -c ${CPUS}
-#SBATCH --mem=${MEM}
-#SBATCH -t ${TIME}
-#SBATCH --array=0-${N_JOBS}
-#SBATCH -o ${JOB_DIR}/slurm_%A_%a.out
+echo "Launching job ${SLURM_ARRAY_TASK_ID}"
+echo "Using manifest: ${MANIFEST}"
+echo "Output dir: ${JOB_DIR}"
 
 module load python/3.11.7
-
 
 DEFAULT_DIR="/work/pi_vinod_vokkarane_uml_edu/git/FUSION"
 PROJECT_DIR="${1:-$DEFAULT_DIR}"
@@ -35,22 +30,54 @@ if [[ ! -d "$VENV_DIR" ]]; then
   done
 else
   echo "Venv already exists; activating..."
-  source "$VENV_DIR/bin/activate"
+  source "$VENV_DIR/venv/bin/activate"
 fi
 
-# Pull row #SLURM_ARRAY_TASK_ID+2 because CSV has a header line ---------------
-ROW=$(sed -n "$((SLURM_ARRAY_TASK_ID+2))p" "$MANIFEST")
-IFS=',' read -r run_id algorithm t_start t_stop k_paths seed is_rl <<<"$ROW"
+mapfile -t LINES < "$MANIFEST"
+HEADER="${LINES[0]}"
+ROW="${LINES[$((SLURM_ARRAY_TASK_ID+1))]}"
 
-# Where your classic results go (unchanged) ----------------------------------
-now_ts=$(date +%H%M%S_%N)                         # keeps the picoseconds if you like
-RES_DIR="data/output/${NETWORK}/${DATE}/${now_ts}/${t_start}"
-mkdir -p "$RES_DIR"
+echo "CSV row ${SLURM_ARRAY_TASK_ID}: $ROW"
+echo "Raw header: $HEADER"
+
+IFS=',' read -ra COL_NAMES <<<"$HEADER"
+IFS=',' read -ra COL_VALUES <<<"$ROW"
+
+if [[ "${#COL_NAMES[@]}" -ne "${#COL_VALUES[@]}" ]]; then
+  echo "ERROR: Column mismatch!"
+  echo "Header columns: ${#COL_NAMES[@]}"
+  echo "Row columns: ${#COL_VALUES[@]}"
+  exit 1
+fi
+
+declare -A EXCLUDE_MAP=(
+  ["run_id"]=1
+  ["partition"]=1
+  ["cpus"]=1
+  ["mem"]=1
+  ["time"]=1
+  ["gpus"]=1
+  ["nodes"]=1
+  ["is_rl"]=1
+)
+
+ARGS=""
+for i in "${!COL_NAMES[@]}"; do
+  raw_key="${COL_NAMES[$i]}"
+  raw_val="${COL_VALUES[$i]}"
+  key="$(echo "$raw_key" | tr -d '\r\n' | xargs)"
+  val="$(echo "$raw_val" | tr -d '\r\n' | xargs)"
+
+  echo "Checking: key='$key', val='$val'"
+
+  if [[ -z "${EXCLUDE_MAP[$key]}" && -n "$key" ]]; then
+    ARGS+="--${key} ${val} "
+  else
+    echo "Skipping key: $key"
+  fi
+done
 
 python run_rl_sim.py \
-    --erlang_start "$t_start"  --erlang_stop "$t_stop" \
-    --network "$NETWORK"       --k_paths "$k_paths" \
-    --path_algorithm "$algorithm" \
-    --seed "$seed"             --run_id "$run_id" \
+    ${ARGS} \
     --output_dir "$RES_DIR" \
  && touch "${RES_DIR}/DONE"

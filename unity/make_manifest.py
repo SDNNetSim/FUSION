@@ -19,7 +19,6 @@ from arg_scripts.config_args import COMMAND_LINE_PARAMS  # pylint: disable=wrong
 
 _PARAM_TYPES: dict[str, type] = {name: typ for name, typ, _ in COMMAND_LINE_PARAMS}
 _BOOL_STRS = {"true", "yes", "1"}
-_BASE_KEYS = {"algorithm", "traffic", "k_paths", "traffic_stop"}
 
 _RESOURCE_KEYS = {
     "partition", "time", "mem", "cpus", "gpus", "nodes"
@@ -78,7 +77,7 @@ def _validate_resource_keys(resources: Dict[str, Any]) -> None:
 
 def _validate_keys(mapping: Dict[str, Any], ctx: str) -> None:
     for key in mapping:
-        if key in _BASE_KEYS or key in _PARAM_TYPES or key in _RESOURCE_KEYS:
+        if key in _PARAM_TYPES or key in _RESOURCE_KEYS:
             continue
         sys.exit(f"Unknown parameter '{key}' in {ctx}. Must exist in COMMAND_LINE_PARAMS.")
 
@@ -115,8 +114,9 @@ def _expand_grid(grid: Dict[str, Any]) -> List[Dict[str, Any]]:
     common = grid.get("common", {})
     _validate_keys(common, ctx="grid.common")
 
-    algs = _fetch(grid, common, "algorithm")
-    traf = _fetch(grid, common, "traffic")
+    # TODO: These should apply to all parameters
+    algs = _fetch(grid, common, "path_algorithm")
+    traf = _fetch(grid, common, "erlang_start")
     kps = _fetch(grid, common, "k_paths")
 
     rows: List[Dict[str, Any]] = []
@@ -124,13 +124,13 @@ def _expand_grid(grid: Dict[str, Any]) -> List[Dict[str, Any]]:
     for alg, t0, kp in itertools.product(algs, traf, kps):
         rows.append({
             "run_id": f"{rid:05}",
-            "algorithm": alg,
-            "traffic_start": t0,
-            "traffic_stop": t0 + 50,
+            "path_algorithm": alg,
+            "erlang_start": t0,
+            "erlang_stop": t0 + 50,
             "k_paths": kp,
             "is_rl": _is_rl(alg),
             **{k: _cast(k, v) for k, v in common.items()
-               if k not in {"algorithm", "traffic", "k_paths"}},
+               if k not in {"path_algorithm", "erlang_start", "k_paths"}},
         })
         rid += 1
     return rows
@@ -142,9 +142,9 @@ def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         _validate_keys(job, ctx=f"jobs[{idx}]")
         base = {
             "run_id": f"{idx:05}",
-            "algorithm": job["algorithm"],
-            "traffic_start": job["traffic"],
-            "traffic_stop": job.get("traffic_stop", job["traffic"] + 50),
+            "path_algorithm": job["algorithm"],
+            "erlang_start": job["traffic"],
+            "erlang_stop": job.get("erlang_stop", job["erlang_start"] + 50),
             "k_paths": job["k_paths"],
             "is_rl": _is_rl(job["algorithm"]),
         }
