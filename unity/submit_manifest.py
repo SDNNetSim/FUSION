@@ -63,7 +63,7 @@ def main() -> None:
     """
     args = parse_cli()
 
-    job_dir = pathlib.Path("experiments") / args.exp
+    job_dir = pathlib.Path(args.exp)
     if not job_dir.exists():
         sys.exit(f"Experiment directory not found: {job_dir}")
 
