@@ -84,6 +84,8 @@ def run_rl_sim() -> None:
     sys.argv = [sys.argv[0], *remaining_argv]
 
     env, sim_dict, callback_list = create_environment()
+    out_path = Path('output') / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
+        'thread_num']
     try:
         if not sim_dict["optimize"] and not sim_dict["optimize_hyperparameters"]:
             run(env=env, sim_dict=sim_dict, callback_list=callback_list)
@@ -91,8 +93,6 @@ def run_rl_sim() -> None:
             run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
 
     finally:
-        out_path = Path('output') / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
-            'thread_num']
         _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path)
 
 
