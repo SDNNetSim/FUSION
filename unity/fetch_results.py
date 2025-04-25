@@ -1,28 +1,24 @@
-#!/usr/bin/env python3
-"""
-fetch_results.py  –  Copy result folders listed in runs_index.json
-                     to a destination using rsync.
-
-Example (run on your laptop):
-
-    ./fetch_results.py \
-        --experiment    experiments/0425/NSFNet/161152 \
-        --cluster-root  user@login.cluster.edu:/work/project \
-        --dest          ./cluster_results
-
-Arguments
----------
---experiment   Experiment directory that contains runs_index.json
---cluster-root Prefix before the absolute paths stored in runs_index.json
-               (include user@host: for remote rsync).
---dest         Local directory to copy into.
---dry-run      Show rsync commands without executing them.
-"""
 import argparse
 import json
 import pathlib
 import subprocess
 import sys
+
+
+def twin_input_path(abs_path: pathlib.PurePosixPath) -> pathlib.PurePosixPath:
+    """
+    Convert an output path to the matching input path by:
+    - replacing 'output' with 'input'
+    - dropping the last component (like 's1')
+    """
+    parts = list(abs_path.parts)
+    try:
+        output_index = parts.index("output")
+        parts[output_index] = "input"
+    except ValueError:
+        raise RuntimeError(f"'output' not found in path: {abs_path}")
+
+    return pathlib.PurePosixPath(*parts[:-1])  # remove 's1' at the end
 
 
 def cli() -> argparse.Namespace:
@@ -44,15 +40,33 @@ def iter_paths(index_file: pathlib.Path):
 
 
 def rsync_one(src_prefix: str, abs_path: pathlib.PurePosixPath,
-              dest_root: pathlib.Path, dry: bool):
-    dest_root.mkdir(parents=True, exist_ok=True)
-    cmd = ["rsync", "-avP", "--compress",
-           f"{src_prefix}{abs_path}", str(dest_root / abs_path.name)]
+              dest_root: pathlib.Path, dry: bool, allow_missing: bool = False):
+    """
+    Copies everything inside abs_path to dest_root preserving folder structure.
+    If allow_missing=True, skip paths that don't exist on the remote.
+    """
+    relative_parts = abs_path.parts[-4:]
+    local_subdir = dest_root.joinpath(*relative_parts)
+
+    local_subdir.parent.mkdir(parents=True, exist_ok=True)
+
+    src_path = f"{src_prefix}{abs_path}/"
+    dest_path = str(local_subdir)
+
+    cmd = ["rsync", "-avP", "--compress", src_path, dest_path]
+
     if dry:
         print("[dry-run]", " ".join(cmd))
     else:
         print("→", " ".join(cmd))
-        subprocess.run(cmd, check=True)
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError as e:
+            if allow_missing and e.returncode == 23:
+                # Code 23 = some files not transferred (ok for missing folders)
+                print(f"⚠️  Skipping missing input folder: {src_path}")
+            else:
+                raise
 
 
 def main() -> None:
@@ -61,9 +75,16 @@ def main() -> None:
     if not index_file.exists():
         sys.exit(f"runs_index.json not found: {index_file}")
 
-    for folder in iter_paths(index_file):
-        rsync_one(args.cluster_root, folder, pathlib.Path(args.dest),
-                  args.dry_run)
+    for output_path in iter_paths(index_file):
+        # Copy output
+        rsync_one(args.cluster_root, output_path,
+                  pathlib.Path(args.dest) / "output", args.dry_run)
+
+        # Copy input (allow missing folders)
+        input_path = twin_input_path(output_path)
+        rsync_one(args.cluster_root, input_path,
+                  pathlib.Path(args.dest) / "input", args.dry_run,
+                  allow_missing=True)
 
 
 if __name__ == "__main__":
