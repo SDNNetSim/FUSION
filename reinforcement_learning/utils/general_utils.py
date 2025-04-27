@@ -85,7 +85,7 @@ class CoreUtilHelpers:
         paths_list = paths_list[:, 0]
         for path_index, curr_path in enumerate(paths_list):
             curr_cong, _ = find_path_cong(path_list=curr_path, net_spec_dict=self.engine_obj.net_spec_dict)
-            cong_index = classify_cong(curr_cong=curr_cong)
+            cong_index = classify_cong(curr_cong=curr_cong, cong_cutoff=self.engine_obj.engine_props['cong_cutoff'])
 
             info_list.append((path_index, curr_path, cong_index))
 

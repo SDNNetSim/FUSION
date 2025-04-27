@@ -127,6 +127,7 @@ OTHER_OPTIONS = {
         'core_beta': float,
         'decay_rate': float,
         'n_trials': int,
+        'cong_cutoff': float,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
@@ -189,6 +190,7 @@ COMMAND_LINE_PARAMS = [
     ['arrival_rate', dict, ''],
     ['save_snapshots', bool, ''],
     ['xt_type', str, ''],
+    ['cong_cutoff', float, ''],
     ['snapshot_step', int, ''],
     ['print_step', int, ''],
     ['file_type', str, ''],
