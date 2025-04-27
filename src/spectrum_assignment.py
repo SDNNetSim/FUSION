@@ -4,8 +4,8 @@ from operator import itemgetter
 import numpy as np
 
 from helper_scripts.sim_helpers import get_path_mod_fixedgrid_slicing
-from arg_scripts.spectrum_args import SpectrumProps
 from helper_scripts.spectrum_helpers import SpectrumHelpers
+from arg_scripts.spectrum_args import SpectrumProps
 from src.snr_measurements import SnrMeasurements
 
 
