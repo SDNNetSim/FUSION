@@ -332,6 +332,7 @@ def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
     if 'bandit' not in sim_dict['path_algorithm']:
         resp_dict['alpha_start'] = trial.suggest_float('alpha_start', low=0.01, high=0.5, log=False, step=0.01)
         resp_dict['alpha_end'] = trial.suggest_float('alpha_end', low=0.01, high=0.1, log=False, step=0.01)
+        resp_dict['cong_cutoff'] = trial.suggest_float('cong_cutoff', low=0.1, high=0.9, log=False, step=0.1)
     else:
         resp_dict['alpha_start'], resp_dict['alpha_end'] = None, None
 

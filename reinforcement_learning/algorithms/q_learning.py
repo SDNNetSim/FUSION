@@ -68,12 +68,11 @@ class QLearning:
                         for core in range(self.engine_props['cores_per_link']):
                             self.props.cores_matrix[src, dst, k, core, level] = (path, core, 0.0)
 
-    @staticmethod
-    def get_max_future_q(path_list, net_spec_dict, matrix, flag, core_index=None):
+    def get_max_future_q(self, path_list, net_spec_dict, matrix, flag, core_index=None):
         """Retrieves the maximum future Q-value based on congestion levels."""
-        new_cong, _ = find_core_cong(core_index, net_spec_dict, path_list) if flag == 'core' else find_path_cong(path_list,
-                                                                                                              net_spec_dict)
-        new_cong_index = classify_cong(new_cong)
+        new_cong, _ = find_core_cong(core_index, net_spec_dict, path_list) if flag == 'core' else find_path_cong(
+            path_list, net_spec_dict)
+        new_cong_index = classify_cong(new_cong, cong_cutoff=self.engine_props['cong_cutoff'])
 
         max_future_q = matrix[core_index if flag == 'core' else new_cong_index]['q_value']
         return max_future_q

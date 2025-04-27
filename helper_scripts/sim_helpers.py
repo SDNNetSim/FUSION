@@ -611,15 +611,17 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     return sc_index_mat, resp_frag_arr
 
 
-def classify_cong(curr_cong: float):
+def classify_cong(curr_cong: float, cong_cutoff: float):
     """
     Classifies congestion percentages to 'levels'.
 
     :param curr_cong: Current congestion percentage.
+    :param cong_cutoff: Conversion cutoff percentage.
     :return: The congestion indexes or level.
     :rtype: int
     """
-    if curr_cong <= 0.3:
+    # TODO: Hard coded, only support for 2 path levels
+    if curr_cong <= cong_cutoff:
         cong_index = 0
     else:
         cong_index = 1

@@ -92,6 +92,8 @@ pytest~=8.3.4
 # gpt
 openai
 
+globus-cli
+
 psutil~=7.0.0
 
 torch-scatter==2.1.2+pt22cpu
