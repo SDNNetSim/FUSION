@@ -74,7 +74,7 @@ def get_path_mod_fixedgrid_slicing(mods_dict: dict, bw_mapping_dict: dict, path_
         mod = next((key for key, value in bw_mapping_dict.items() if value == int(bw)), None)
         if sorted_dict[bw][mod]['max_length'] >= path_len:
             return (mod, int(bw))
-    
+
     return False, 0
 
 
