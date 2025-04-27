@@ -11,17 +11,19 @@ def convert_networkx_topo(graph: nx.Graph, as_directed: bool = True):
     id2idx = {nid: i for i, nid in enumerate(nodes)}
     num_nodes = len(nodes)
 
+    edge_betweenness = nx.edge_betweenness_centrality(graph)
     edge_list = []
     attr_list = []
     for u, v, data in graph.edges(data=True):
         ui, vi = id2idx[u], id2idx[v]
-        cap = float(data.get('capacity', 1.0))
-        length = float(data.get('length', 1.0))
+        betweenness = edge_betweenness.get((u, v), 0.0)
+
         edge_list.append([ui, vi])
-        attr_list.append([cap, length])
+        attr_list.append([betweenness])
+
         if as_directed:
             edge_list.append([vi, ui])
-            attr_list.append([cap, length])
+            attr_list.append([betweenness])
 
     edge_index = torch.tensor(edge_list, dtype=torch.long).t().contiguous()
     edge_attr = torch.tensor(attr_list, dtype=torch.float32)
