@@ -116,6 +116,7 @@ class TestRouting(unittest.TestCase):
             '50GHz': {'QPSK': {'max_length': 10}, '16-QAM': {'max_length': 20}, '64-QAM': {'max_length': 40}},
             '100GHz': {'QPSK': {'max_length': 20}}
         }
+        self.engine_props['fixed_grid'] = True
 
         self.instance.find_k_shortest()
         self.assertEqual(len(self.instance.route_props.paths_matrix), self.engine_props['k_paths'],
