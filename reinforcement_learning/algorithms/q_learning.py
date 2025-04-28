@@ -2,6 +2,7 @@ import os
 import json
 import networkx as nx
 import numpy as np
+from itertools import islice
 
 from reinforcement_learning.algorithms.algorithm_props import QProps
 from helper_scripts.sim_helpers import (
@@ -52,7 +53,7 @@ class QLearning:
         )
 
     def _populate_q_tables(self):
-        """Populates the Q-tables with initial values."""
+        ssp = nx.shortest_simple_paths
         topology = self.engine_props['topology']
 
         for src in range(self.rl_props.num_nodes):
@@ -60,13 +61,14 @@ class QLearning:
                 if src == dst:
                     continue
 
-                shortest_paths = list(
-                    nx.shortest_simple_paths(topology, source=str(src), target=str(dst), weight='length'))
-                for k, path in enumerate(shortest_paths[:self.rl_props.k_paths]):
+                for k, path in enumerate(islice(
+                        ssp(topology, source=str(src), target=str(dst), weight='length'),
+                        self.rl_props.k_paths)):
                     for level in range(self.path_levels):
                         self.props.routes_matrix[src, dst, k, level] = (path, 0.0)
                         for core in range(self.engine_props['cores_per_link']):
-                            self.props.cores_matrix[src, dst, k, core, level] = (path, core, 0.0)
+                            self.props.cores_matrix[src, dst, k, core, level] = (
+                                path, core, 0.0)
 
     def get_max_future_q(self, path_list, net_spec_dict, matrix, flag, core_index=None):
         """Retrieves the maximum future Q-value based on congestion levels."""
