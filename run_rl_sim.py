@@ -84,7 +84,7 @@ def run_rl_sim() -> None:
     sys.argv = [sys.argv[0], *remaining_argv]
 
     env, sim_dict, callback_list = create_environment()
-    out_path = Path('output') / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
+    out_path = Path('data') / 'output' / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
         'thread_num']
     try:
         if not sim_dict["optimize"] and not sim_dict["optimize_hyperparameters"]:
@@ -93,6 +93,7 @@ def run_rl_sim() -> None:
             run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
 
     finally:
+        # TODO: This is a duplicate of the input file minus the "is_drl_agent" flag
         _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path)
 
 
