@@ -79,6 +79,11 @@ done
 
 ARGS="--run_id ${SLURM_ARRAY_TASK_ID} ${ARGS}"
 
+# Randomized sleep between 1 and 2 seconds
+sleep_time=$(awk -v min=1 -v max=2 'BEGIN{srand(); print min+rand()*(max-min)}')
+echo "Sleeping for $sleep_time seconds to avoid timestamp collision..."
+sleep "$sleep_time"
+
 PY_OUT=$(python run_rl_sim.py ${ARGS})
 echo "$PY_OUT"
 RESULT_PATH=$(echo "$PY_OUT" | awk -F= '/^OUTPUT_DIR=/{print $2}')
