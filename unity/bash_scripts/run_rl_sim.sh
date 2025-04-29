@@ -70,10 +70,10 @@ for i in "${!COL_NAMES[@]}"; do
 
   echo "Checking: key='$key', val='$val'"
 
-  if [[ -z "${EXCLUDE_MAP[$key]}" && -n "$key" ]]; then
+  if [[ -z "${EXCLUDE_MAP[$key]}" && -n "$key" && -n "$val" ]]; then
     ARGS+="--${key} ${val} "
   else
-    echo "Skipping key: $key"
+    echo "Skipping key or empty value: $key"
   fi
 done
 

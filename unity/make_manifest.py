@@ -157,15 +157,19 @@ def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def _write_csv(path: pathlib.Path, rows: List[Dict[str, Any]]) -> None:
     cols: List[str] = []
+    seen = set()
     for row in rows:
         for k in row:
-            if k not in cols:
+            if k not in seen:
+                seen.add(k)
                 cols.append(k)
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=cols)
         writer.writeheader()
         for row in rows:
+            # For missing fields, insert blank automatically
             writer.writerow({c: _encode(row.get(c, "")) for c in cols})
 
 
