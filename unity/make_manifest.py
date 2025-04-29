@@ -194,45 +194,51 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     resources: Dict[str, Any] = spec.get("resources", {})
     _validate_resource_keys(resources)
 
-    if "grid" in spec and "jobs" in spec:
-        sys.exit("Spec must contain either 'grid' or 'jobs', not both")
+    if sum(k in spec for k in ("grid", "grids", "jobs")) > 1:
+        sys.exit("Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple.")
 
-    if "grid" in spec:
+    if "grids" in spec:
+        rows = []
+        for grid in spec["grids"]:
+            rows.extend(_expand_grid(grid))
+    elif "grid" in spec:
         rows = _expand_grid(spec["grid"])
     elif "jobs" in spec:
         rows = _explicit(spec["jobs"])
     else:
-        sys.exit("Spec must contain 'grid' or 'jobs'")
+        sys.exit("Spec must contain 'grid', 'grids', or 'jobs'")
 
     # Apply resources uniformly to every row
     if resources:
         for r in rows:
             r.update(resources)
 
-    # network-name lookup (unchanged)
-    network = spec.get("network")
-    if not network and "grid" in spec:
-        grid = spec["grid"]
-        network = grid.get("network") or grid.get("common", {}).get("network")
-    if not network and "jobs" in spec and spec["jobs"]:
-        network = spec["jobs"][0].get("network")
-    if not network:
-        sys.exit("Missing 'network' key. Include it top-level, in grid.common, or per job")
-
     now = dt.datetime.now()
-    exp_dir = pathlib.Path("experiments") / now.strftime("%m%d") / str(network) / now.strftime("%H%M%S")
-    _write_csv(exp_dir / "manifest.csv", rows)
+    base_dir = pathlib.Path("experiments") / now.strftime("%m%d") / now.strftime("%H%M%S")
 
-    meta = {
-        "generated": now.isoformat(timespec="seconds"),
-        "source": str(spec_path),
-        "num_rows": len(rows),
-        "resources": resources,  # handy for debugging
-    }
-    (exp_dir / "manifest_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    # Group rows by network
+    network_groups: Dict[str, List[Dict[str, Any]]] = {}
+    for row in rows:
+        net = row.get("network")
+        if not net:
+            sys.exit(f"Row {row['run_id']} is missing 'network' field!")
+        network_groups.setdefault(net, []).append(row)
 
-    print(f"Manifest  → {exp_dir / 'manifest.csv'}")
-    print(f"Experiment dir → {exp_dir}")
+    for net, group_rows in network_groups.items():
+        net_dir = base_dir / net
+        _write_csv(net_dir / "manifest.csv", group_rows)
+
+        meta = {
+            "generated": now.isoformat(timespec="seconds"),
+            "source": str(spec_path),
+            "network": net,
+            "num_rows": len(group_rows),
+            "resources": resources,
+        }
+        (net_dir / "manifest_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+    print(f"Wrote {len(network_groups)} manifests (one per network).")
+    print(f"Base experiments dir → {base_dir}")
 
 
 if __name__ == "__main__":
