@@ -107,7 +107,7 @@ def _fetch(grid: Dict[str, Any], common: Dict[str, Any], key: str) -> List[Any]:
     sys.exit(f"Grid spec missing required key '{key}' (searched grid and grid.common)")
 
 
-def _expand_grid(grid: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _expand_grid(grid: Dict[str, Any], starting_rid: int) -> tuple[List[Dict[str, Any]], int]:
     for bad in {"repeat", "er_step"} & grid.keys():
         sys.exit(f"Key '{bad}' is deprecated; remove it.")
 
@@ -119,8 +119,8 @@ def _expand_grid(grid: Dict[str, Any]) -> List[Dict[str, Any]]:
     traf = _fetch(grid, common, "erlang_start")
     kps = _fetch(grid, common, "k_paths")
 
+    rid = starting_rid
     rows: List[Dict[str, Any]] = []
-    rid = 0
     for alg, t0, kp in itertools.product(algs, traf, kps):
         rows.append({
             "run_id": f"{rid:05}",
@@ -133,7 +133,7 @@ def _expand_grid(grid: Dict[str, Any]) -> List[Dict[str, Any]]:
                if k not in {"path_algorithm", "erlang_start", "k_paths"}},
         })
         rid += 1
-    return rows
+    return rows, rid
 
 
 def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -201,12 +201,15 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     if sum(k in spec for k in ("grid", "grids", "jobs")) > 1:
         sys.exit("Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple.")
 
+    global_rid = 0
+    rows = []
     if "grids" in spec:
-        rows = []
         for grid in spec["grids"]:
-            rows.extend(_expand_grid(grid))
+            grid_rows, global_rid = _expand_grid(grid, global_rid)
+            rows.extend(grid_rows)
     elif "grid" in spec:
-        rows = _expand_grid(spec["grid"])
+        grid_rows, global_rid = _expand_grid(spec["grid"], global_rid)
+        rows.extend(grid_rows)
     elif "jobs" in spec:
         rows = _explicit(spec["jobs"])
     else:
