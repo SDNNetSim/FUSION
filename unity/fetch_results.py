@@ -1,157 +1,140 @@
 #!/usr/bin/env python3
 """
-fetch_results.py – copy simulation folders from cluster to local machine
-using either rsync (default) or Globus CLI.
+fetch_results.py – Copy simulation folders from cluster to local machine
+using rsync, based on a configuration YAML file.
 
-Examples
---------
-# 1. rsync (default)
-python fetch_results.py \
-   --experiment experiments/0425/NSFNet/182105 \
-   --cluster-root user@login.cluster.edu:/work/project/data/ \
-   --dest ./cluster_results
-
-# 2. Globus
-python fetch_results.py \
-   --experiment experiments/0425/NSFNet/182105 \
-   --mode globus \
-   --src-ep 01234567-89ab-cdef-0123-456789abcdef \
-   --dst-ep 89abcdef-0123-4567-89ab-cdef01234567 \
-   --dest ./cluster_results
+• Fetches `runs_index.json` and `manifest.csv` from a metadata root.
+• Pulls input/output folders from a data root.
+• Pulls logs from a logs root, stored as:
+      logs/<path_algorithm>/<topology>/<date>/<timestamp>/
 """
-import argparse
+
 import json
+import logging
 import pathlib
 import subprocess
-import sys
-import tempfile
+from typing import Iterator, Optional
+
+import yaml
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# path helpers
-# ──────────────────────────────────────────────────────────────────────────────
 def twin_input_path(abs_path: pathlib.PurePosixPath) -> pathlib.PurePosixPath:
-    """Turn /…/output/…/<run>/s1 → /…/input/…/<run> (drop trailing s1)."""
+    """Convert an output path to the corresponding input path (drop seed)."""
     parts = list(abs_path.parts)
-    try:
-        idx = parts.index("output")
-        parts[idx] = "input"
-    except ValueError:  # pragma: no cover
-        raise RuntimeError(f"'output' not found in path: {abs_path}") from None
-    return pathlib.PurePosixPath(*parts[:-1])  # drop 's1'
+    idx = parts.index("output")
+    parts[idx] = "input"
+    return pathlib.PurePosixPath(*parts[:-1])  # drop seed folder
 
 
 def last_n_parts(p: pathlib.PurePosixPath, n: int) -> pathlib.PurePosixPath:
+    """Return the last n parts of a path."""
     return pathlib.PurePosixPath(*p.parts[-n:])
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CLI + utils
-# ──────────────────────────────────────────────────────────────────────────────
-def cli() -> argparse.Namespace:
-    p = argparse.ArgumentParser()
-    p.add_argument("--experiment", required=True,
-                   help="experiment directory containing runs_index.json")
-    p.add_argument("--cluster-root", required=True,
-                   help="user@host: or user@host:/base/path/")
-    p.add_argument("--dest", required=True, help="local destination root")
-    p.add_argument("--mode", choices=["rsync", "globus"], default="rsync")
-    p.add_argument("--src-ep", help="Globus SOURCE endpoint UUID")
-    p.add_argument("--dst-ep", help="Globus DEST   endpoint UUID")
-    p.add_argument("--dry-run", action="store_true")
-    return p.parse_args()
+def topology_from_output(out_path: pathlib.PurePosixPath) -> str:
+    """Extract the topology name from an output path."""
+    parts = list(out_path.parts)
+    topo = parts[parts.index("output") + 1]
+    return topo
 
 
-def iter_paths(index_file: pathlib.Path):
+def _run(cmd: list[str], dry: bool) -> None:
+    """Execute a shell command, respecting dry-run mode."""
+    if dry:
+        logging.info("[dry‑run] %s", " ".join(cmd))
+    else:
+        subprocess.run(cmd, check=True)
+
+
+def rsync_dir(remote_root: str, abs_path: pathlib.PurePosixPath,
+              dest_root: pathlib.Path, dry: bool) -> None:
+    """Rsync a directory from remote to local."""
+    rel = last_n_parts(abs_path, 4)
+    local_dir = dest_root / rel
+    local_dir.parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["rsync", "-avP", "--compress",
+           f"{remote_root}{abs_path}/", str(local_dir)]
+    _run(cmd, dry)
+
+
+def rsync_file(remote_root: str, remote_path: pathlib.PurePosixPath,
+               local_path: pathlib.Path, dry: bool) -> None:
+    """Rsync a file from remote to local."""
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["rsync", "-avP", "--compress",
+           f"{remote_root}{remote_path}", str(local_path)]
+    _run(cmd, dry)
+
+
+def rsync_logs(remote_logs_root: str, path_alg: str, topology: str,
+               date_ts: pathlib.PurePosixPath, dest_root: pathlib.Path,
+               dry: bool) -> None:
+    """Attempt to pull logs if present, using rsync.
+
+    Ensures the *local* destination tree exists before invoking rsync
+    to avoid mkdir errors on the receiver.
+    """
+    remote = pathlib.PurePosixPath(path_alg) / topology / date_ts
+    local = dest_root / path_alg / topology / date_ts
+    local.mkdir(parents=True, exist_ok=True)
+
+    cmd = ["rsync", "-avP", "--compress",
+           f"{remote_logs_root}{remote}/", str(local)]
+    try:
+        _run(cmd, dry)
+    except subprocess.CalledProcessError as err:
+        logging.warning("Logs not found: %s (%s)", remote, err)
+
+
+def read_path_algorithm(input_dir: pathlib.Path) -> Optional[str]:
+    """Read the path_algorithm value from one of the sim_input JSON files."""
+    for f in input_dir.glob("sim_input_s*.json"):
+        try:
+            with f.open(encoding="utf-8") as fh:
+                return json.load(fh).get("path_algorithm")
+        except (json.JSONDecodeError, OSError):
+            continue
+    return None
+
+
+def iter_index(index_file: pathlib.Path) -> Iterator[pathlib.PurePosixPath]:
+    """Yield paths listed in the JSON index file."""
     with index_file.open(encoding="utf-8") as fh:
         for line in fh:
             if line := line.strip():
                 yield pathlib.PurePosixPath(json.loads(line)["path"])
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# rsync implementation
-# ──────────────────────────────────────────────────────────────────────────────
-def rsync_one(src_prefix: str, abs_path: pathlib.PurePosixPath,
-              dest_root: pathlib.Path, dry: bool):
-    """Copy folder contents with rsync, creating parents as needed."""
-    rel = last_n_parts(abs_path, 4)  # NSFNet/0425/<ts>/s1
-    local_dir = dest_root.joinpath(rel)
-    local_dir.parent.mkdir(parents=True, exist_ok=True)
-
-    src = f"{src_prefix}{abs_path}/"  # trailing '/' = contents
-    cmd = ["rsync", "-avP", "--compress", src, str(local_dir)]
-
-    if dry:
-        print("[dry-run]", " ".join(cmd))
-    else:
-        subprocess.run(cmd, check=True)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Globus implementation
-# ──────────────────────────────────────────────────────────────────────────────
-def globus_batch(src_ep: str, dst_ep: str, pairs: list[tuple[str, str]],
-                 dry: bool):
-    """Create batch file + launch single Globus transfer."""
-    with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
-        batch_path = pathlib.Path(tmp.name)
-        for remote, local in pairs:
-            tmp.write(f"{remote} {local}\n")
-
-    cmd = [
-        "globus", "transfer",
-        "--label", "sim_results_fetch",
-        "--batch", str(batch_path),
-        src_ep, dst_ep
-    ]
-    if dry:
-        print("[dry-run]", " ".join(cmd))
-        print(batch_path.read_text())  # show batch content
-    else:
-        subprocess.run(cmd, check=True)
-        batch_path.unlink()  # clean up
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# main orchestrator
-# ──────────────────────────────────────────────────────────────────────────────
 def main() -> None:
-    args = cli()
-    index_file = pathlib.Path(args.experiment) / "runs_index.json"
-    if not index_file.exists():
-        sys.exit(f"runs_index.json not found: {index_file}")
+    """Main entry point – orchestrates syncing of simulation results."""
+    cfg = yaml.safe_load(pathlib.Path("configs/config.yml").read_text(encoding="utf-8"))
+    meta_root, data_root, logs_root = cfg["metadata_root"], cfg["data_root"], cfg["logs_root"]
+    dest = pathlib.Path(cfg["dest"])
+    exp_rel = pathlib.PurePosixPath(cfg["experiment"])
+    dry = cfg.get("dry_run", False)
 
-    dest_root = pathlib.Path(args.dest)
-    mode = args.mode
+    tmp = pathlib.Path(".tmp_config")
+    tmp.mkdir(exist_ok=True)
+    rsync_file(meta_root, exp_rel / "runs_index.json", tmp / "runs_index.json", dry)
 
-    if mode == "rsync":
-        for out_path in iter_paths(index_file):
-            rsync_one(args.cluster_root, out_path,
-                      dest_root / "output", args.dry_run)
+    index = tmp / "runs_index.json"
+    for out_p in iter_index(index):
+        rsync_dir(data_root, out_p, dest / "output", dry)
+        in_p = twin_input_path(out_p)
+        rsync_dir(data_root, in_p, dest, dry)
 
-            in_path = twin_input_path(out_path)
-            rsync_one(args.cluster_root, in_path,
-                      dest_root / "input", args.dry_run)
+        rel_full, rel_trim = last_n_parts(in_p, 4), last_n_parts(in_p, 3)
+        local_in = dest / rel_full if (dest / rel_full).exists() else dest / rel_trim
+        path_alg = read_path_algorithm(local_in)
+        if not path_alg:
+            logging.warning("No path_algorithm in %s", local_in)
+            continue
 
-    else:  # mode == "globus"
-        if not (args.src_ep and args.dst_ep):
-            sys.exit("--src-ep and --dst-ep are required for --mode globus")
-
-        transfers: list[tuple[str, str]] = []
-        for out_path in iter_paths(index_file):
-            # output
-            rel_out = last_n_parts(out_path, 4)
-            local_out = dest_root / "output" / rel_out
-            transfers.append((str(out_path) + "/", str(local_out)))
-
-            # input
-            in_path = twin_input_path(out_path)
-            rel_in = last_n_parts(in_path, 3)  # NSFNet/0425/<ts>
-            local_in = dest_root / "input" / rel_in
-            transfers.append((str(in_path) + "/", str(local_in)))
-
-        globus_batch(args.src_ep, args.dst_ep, transfers, args.dry_run)
+        topo = topology_from_output(out_p)
+        date_ts = last_n_parts(in_p, 2)
+        rsync_logs(logs_root, path_alg, topo, date_ts, dest / "logs", dry)
 
 
 if __name__ == "__main__":
