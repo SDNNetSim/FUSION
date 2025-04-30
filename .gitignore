@@ -40,3 +40,5 @@ unity/cluster_results
 unity/specs
 unity/configs
 unity/.tmp_config
+
+reinforcement_learning/plotting/figures

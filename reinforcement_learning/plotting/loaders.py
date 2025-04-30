@@ -1,54 +1,92 @@
-"""
-Centralised helpers for retrieving *raw* JSON output from your
-simulation folder hierarchy.
-
-The processors take the raw dictionaries returned here and massage them
-into the format each plotting script expects.
-"""
+# ✅ loaders.py (now returns data + runid→algorithm mapping)
 from pathlib import Path
 import json
+import re
 from collections import defaultdict
-from typing import Iterable, Dict, Any
+from typing import Iterable, Dict, Any, Tuple
 
-# Root folders – adjust if your structure differs
-ROOT_OUTPUT = Path(__file__).resolve().parent / "../../data/output"
-ROOT_LOGS = Path(__file__).resolve().parent / "../../logs"
+ROOT_OUTPUT = Path("../../data/output")
 
 
 def _safe_load_json(fp: Path) -> Any | None:
-    """Read a JSON file and swallow errors gracefully."""
     try:
         with fp.open("r", encoding="utf-8") as f:
             return json.load(f)
-    except FileNotFoundError:
-        print(f"[loaders] File not found → {fp}")
-    except json.JSONDecodeError as exc:
-        print(f"[loaders] JSON error in {fp}: {exc}")
-    return None
+    except Exception as e:
+        print(f"[loaders] ❌ Could not load {fp}: {e}")
+        return None
+
+
+def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str, list[str]]:
+    algo_runs = defaultdict(list)
+
+    for date in dates:
+        for s_dir in (ROOT_OUTPUT / network / str(date)).rglob("s*"):
+            if not s_dir.is_dir():
+                continue
+            meta_fp = s_dir / "meta.json"
+
+            if drl and meta_fp.exists():
+                meta = _safe_load_json(meta_fp)
+                if isinstance(meta, dict) and "run_id" in meta:
+                    run_id = meta["run_id"]
+                    algo = meta.get("path_algorithm", "unknown")
+                    algo_runs[algo].append(run_id)
+                else:
+                    continue
+            elif not drl and not meta_fp.exists():
+                run_id = s_dir.parent.name
+                algo = run_id.split("_")[0] if "_" in run_id else "unknown"
+                algo_runs[algo].append(run_id)
+            else:
+                continue
+
+    print(f"[DEBUG] Discovered {'DRL' if drl else 'non-DRL'} runs: {dict(algo_runs)}")
+    return dict(algo_runs)
 
 
 def load_metric_for_runs(
         run_ids: Iterable[str],
         metric: str,
-        drl: bool = True,
-) -> Dict[str, Any]:
-    """
-    Aggregate raw JSON contents for *several* runs that belong to the same
-    algorithm / variant.
+        drl: bool,
+        network: str,
+        dates: list[str],
+) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, str]]:
+    out = {}
+    runid_to_algo = {}
 
-    Returns
-    -------
-    dict
-        {run_id: raw_json_content}
-        (the *processors* later decide how to merge these per-traffic etc.)
-    """
-    base = ROOT_LOGS if drl else ROOT_OUTPUT
-    out: Dict[str, Any] = {}
+    for date in dates:
+        for s_dir in (ROOT_OUTPUT / network / str(date)).rglob("s*"):
+            if not s_dir.is_dir():
+                continue
 
-    for rid in run_ids:
-        fp = base / rid / f"{metric}.json"
-        data = _safe_load_json(fp)
-        if data is not None:
-            out[rid] = data
+            meta_fp = s_dir / "meta.json"
+            if drl and meta_fp.exists():
+                meta = _safe_load_json(meta_fp)
+                if not meta or "run_id" not in meta:
+                    continue
+                run_id = meta["run_id"]
+                algo = meta.get("path_algorithm", "unknown")
+            elif not drl and not meta_fp.exists():
+                run_id = s_dir.parent.name
+                algo = run_id.split("_")[0] if "_" in run_id else "unknown"
+            else:
+                continue
 
-    return out
+            if run_id not in run_ids:
+                continue
+
+            result = {}
+            for file in s_dir.glob("*.json"):
+                if file.name == "meta.json":
+                    continue
+                match = re.match(r"(\d+\.?\d*)_erlang\.json", file.name)
+                if match:
+                    erlang_val = match.group(1)
+                    result[erlang_val] = _safe_load_json(file)
+
+            if result:
+                out[run_id] = result
+                runid_to_algo[run_id] = algo
+
+    return out, runid_to_algo
