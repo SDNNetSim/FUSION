@@ -145,10 +145,13 @@ class SimStats:
                     self.stats_props.mods_used_dict[modulation]['length']['overall'] = list()
                     self.stats_props.mods_used_dict[modulation]['hop'] = dict()
                     self.stats_props.mods_used_dict[modulation]['hop']['overall'] = list()
+                    self.stats_props.mods_used_dict[modulation]['snr'] = dict()
+                    self.stats_props.mods_used_dict[modulation]['snr']['overall'] = list()
                     for band in self.engine_props['band_list']:
                         self.stats_props.mods_used_dict[modulation][band] = 0
                         self.stats_props.mods_used_dict[modulation]['length'][band] = list()
                         self.stats_props.mods_used_dict[modulation]['hop'][band] = list()
+                        self.stats_props.mods_used_dict[modulation]['snr'][band] = list()
 
             self.stats_props.block_bw_dict[bandwidth] = 0
     def _init_frag_vlaue_dict(self):
@@ -247,6 +250,8 @@ class SimStats:
                     self.stats_props.mods_used_dict[data][band] += 1
                     self.stats_props.mods_used_dict[data]['length'][band].append(sdn_data.path_weight)
                     self.stats_props.mods_used_dict[data]['length']['overall'].append(sdn_data.path_weight)
+                    self.stats_props.mods_used_dict[data]['snr'][band].append(sdn_data.xt_list[i])
+                    self.stats_props.mods_used_dict[data]['snr']['overall'].append(sdn_data.xt_list[i])
                     self.stats_props.mods_used_dict[data]['hop'][band].append(len(sdn_data.path_list)-1)
                     self.stats_props.mods_used_dict[data]['hop']['overall'].append(len(sdn_data.path_list)-1)
                 elif stat_key == 'start_slot_list':
@@ -342,7 +347,7 @@ class SimStats:
                         deviation = stdev(data_list)
                     mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}
-                for rute_spec in ['length', 'hop']:
+                for rute_spec in ['length', 'hop', 'snr']:
                     for key, value in self.stats_props.mods_used_dict[modulation][rute_spec].items():
                         if not isinstance(value, list):
                             continue
