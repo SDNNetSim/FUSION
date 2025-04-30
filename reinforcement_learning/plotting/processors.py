@@ -1,7 +1,7 @@
 # ✅ processors.py (updated to include full algo labels like k_shortest_path_2 vs _inf)
 from collections import defaultdict
-import numpy as np
 from typing import Dict, Any
+import numpy as np
 
 
 def _mean_last(values: list[float | int], k: int = 10) -> float:
@@ -12,6 +12,9 @@ def _mean_last(values: list[float | int], k: int = 10) -> float:
 
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+    """
+    Processes blocking runs.
+    """
     merged = defaultdict(lambda: defaultdict(list))
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
@@ -25,21 +28,31 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
                     merged[algo][str(tv)].append(info_vector.get('blocking_mean', 0.0))
             elif isinstance(info_vector, (float, int)):
                 merged[algo][str(tv)].append(float(info_vector))
-    return {
-        algo: {tv: float(np.mean(vals)) for tv, vals in tv_dict.items()}
-        for algo, tv_dict in merged.items()
-    }
+
+    processed = {}
+
+    for algo, tv_dict in merged.items():
+        processed[algo] = {}
+        for tv, vals in tv_dict.items():
+            mean_val = float(np.mean(vals))
+            print(f"[SEED-DBG] {algo} Erlang={tv}  seeds={len(vals)}  vals={vals}  mean={mean_val:.4f}")
+            processed[algo][tv] = mean_val
+
+    return processed
 
 
 def process_memory_usage(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+    """
+    Process memory usage.
+    """
     merged = defaultdict(lambda: defaultdict(list))
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
-        for tv, mem_list in data.items():
-            if isinstance(mem_list, list):
-                merged[algo][str(tv)].extend(mem_list)
-            elif isinstance(mem_list, (float, int)):
-                merged[algo][str(tv)].append(float(mem_list))
+        for tv, info_vector in data.items():
+            if isinstance(info_vector, list):
+                merged[algo][str(tv)].extend(info_vector)
+            if isinstance(info_vector, (float, int)):
+                merged[algo][str(tv)].append(float(info_vector))
     return {
         algo: {tv: float(np.mean(vals)) for tv, vals in tv_dict.items()}
         for algo, tv_dict in merged.items()
@@ -47,6 +60,9 @@ def process_memory_usage(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]
 
 
 def process_sim_times(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+    """
+    Process simulation times.
+    """
     merged = defaultdict(lambda: defaultdict(list))
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
@@ -59,13 +75,16 @@ def process_sim_times(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -
 
 
 def process_rewards(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+    """
+    Process rewards.
+    """
     merged = defaultdict(lambda: defaultdict(dict))
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
         for tv, trial_dict in data.items():
             dst_trials = merged[algo][tv]
             next_trial_idx = max(dst_trials.keys(), default=-1) + 1
-            for trial_id, episode_dict in trial_dict.items():
+            for _, episode_dict in trial_dict.items():
                 dst_trials[next_trial_idx] = episode_dict
                 next_trial_idx += 1
     return merged

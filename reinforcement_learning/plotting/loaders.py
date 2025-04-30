@@ -1,58 +1,65 @@
-# ✅ Fully Working Version of loaders.py
 from pathlib import Path
 import json
 import re
 from collections import defaultdict
-from typing import Iterable, Dict, Any, Tuple
+from typing import Dict, Any, Iterable, Tuple
 
 ROOT_OUTPUT = Path("../../data/output")
 ROOT_INPUT = Path("../../data/input")
 
 
 def _safe_load_json(fp: Path) -> Any | None:
+    """Read *fp* safely, returning ``None`` on error."""
     try:
         with fp.open("r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
-        print(f"[loaders] ❌ Could not load {fp}: {e}")
+    except Exception as exc:
+        print(f"[loaders] ❌ Could not load {fp}: {exc}")
         return None
 
 
-def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str, list[str]]:
-    algo_runs = defaultdict(list)
+def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str, list[str]]:
+    """Return ``{algorithm: [run_id, …]}`` for every run under *dates*."""
+    algo_runs: Dict[str, list[str]] = defaultdict(list)
 
     for date in dates:
-        for s_dir in (ROOT_OUTPUT / network / str(date)).rglob("s*"):
+        for s_dir in (ROOT_OUTPUT / network / date).rglob("s*"):
             if not s_dir.is_dir():
                 continue
+
             meta_fp = s_dir / "meta.json"
 
             if drl and meta_fp.exists():
                 meta = _safe_load_json(meta_fp)
-                if isinstance(meta, dict) and "run_id" in meta:
-                    run_id = meta["run_id"]
-                    algo = meta.get("path_algorithm", "unknown")
-                    algo_runs[algo].append(run_id)
-            elif not drl and not meta_fp.exists():
-                parent_dir = s_dir.parent
-                date_str = parent_dir.parent.name
-                s_number = s_dir.name
-                run_id = f"{s_number}_{date_str}"
-                input_file = ROOT_INPUT / network / date_str / parent_dir.name / f"sim_input_{s_number}.json"
+                if not meta or "run_id" not in meta:
+                    continue
+                algo = meta.get("path_algorithm", "unknown")
+                algo_runs[algo].append(meta["run_id"])
 
+            elif not drl and not meta_fp.exists():
+                parent_dir = s_dir.parent  # …/RUN_ID/
+                date_str = parent_dir.parent.name
+                s_num = s_dir.name  # s1 …
+
+                run_id = f"{s_num}_{date_str}"
+                inp_fp = (ROOT_INPUT / network / date_str /
+                          parent_dir.name / f"sim_input_{s_num}.json")
                 algo = "unknown"
-                if input_file.exists():
-                    input_data = _safe_load_json(input_file)
-                    if isinstance(input_data, dict):
-                        method = input_data.get("route_method")
-                        k_paths = input_data.get("k_paths", 0)
-                        if method == "k_shortest_path":
-                            suffix = "inf" if k_paths > 4 else str(k_paths)
-                            algo = f"{method}_{suffix}"
-                        else:
-                            algo = method
+                if inp_fp.exists():
+                    inp = _safe_load_json(inp_fp) or {}
+                    method = inp.get("route_method")
+                    k = inp.get("k_paths", 0)
+                    if method == "k_shortest_path":
+                        algo = f"{method}_{'inf' if k > 4 else k}"
+                    else:
+                        algo = method
                 algo_runs[algo].append(run_id)
-    print(f"[DEBUG] Discovered {'DRL' if drl else 'non-DRL'} runs: {dict(algo_runs)}")
+
+    # deduplicate while preserving order
+    for alg in tuple(algo_runs):
+        algo_runs[alg] = list(dict.fromkeys(algo_runs[alg]))
+
+    print(f"[DEBUG] Discovered {'DRL' if drl else 'non‑DRL'} runs: {dict(algo_runs)}")
     return dict(algo_runs)
 
 
@@ -63,56 +70,78 @@ def load_metric_for_runs(
         network: str,
         dates: list[str],
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, str]]:
-    out = {}
-    runid_to_algo = {}
+    """Load *metric* JSONs for *run_ids*.
+
+    Returns
+    -------
+    raw_runs : dict
+        ``{unique_run_id_per_seed: {erlang: value, …}}``
+    runid_to_algo : dict
+        Map each *unique_run_id_per_seed* to the algorithm label.
+    """
+    raw_runs: Dict[str, Dict[str, Any]] = {}
+    runid_to_algo: Dict[str, str] = {}
+
+    pattern = re.compile(r"(\d+\.?\d*)_erlang\.json")
 
     for date in dates:
-        for s_dir in (ROOT_OUTPUT / network / str(date)).rglob("s*"):
+        for s_dir in (ROOT_OUTPUT / network / date).rglob("s*"):
             if not s_dir.is_dir():
                 continue
-            meta_fp = s_dir / "meta.json"
 
-            if drl and meta_fp.exists():
-                meta = _safe_load_json(meta_fp)
-                if not meta or "run_id" not in meta:
-                    continue
-                run_id = meta["run_id"]
-                algo = meta.get("path_algorithm", "unknown")
-            elif not drl and not meta_fp.exists():
+            if drl:
+                base_run_dir = s_dir.parent
+                seed = s_dir.name
+                meta_fp = next(base_run_dir.glob("s*/meta.json"), None)
+                meta_run_id: str | None = None
+                algo = "unknown"
+
+                if meta_fp and meta_fp.exists():
+                    meta = _safe_load_json(meta_fp) or {}
+                    meta_run_id = meta.get("run_id")
+                    algo = meta.get("path_algorithm", algo)
+
+                if meta_run_id is None:
+                    meta_run_id = base_run_dir.name
+
+                if meta_run_id not in run_ids:
+                    if base_run_dir.name in run_ids:
+                        meta_run_id = base_run_dir.name
+                    else:
+                        continue  # not requested → skip
+
+                unique_run_id = f"{meta_run_id}_{seed}"
+
+            else:
                 parent_dir = s_dir.parent
                 date_str = parent_dir.parent.name
-                s_number = s_dir.name
-                run_id = f"{s_number}_{date_str}"
-                input_file = ROOT_INPUT / network / date_str / parent_dir.name / f"sim_input_{s_number}.json"
-
-                algo = "unknown"
-                if input_file.exists():
-                    input_data = _safe_load_json(input_file)
-                    if isinstance(input_data, dict):
-                        method = input_data.get("route_method")
-                        k_paths = input_data.get("k_paths", 0)
-                        if method == "k_shortest_path":
-                            suffix = "inf" if k_paths > 4 else str(k_paths)
-                            algo = f"{method}_{suffix}"
-                        else:
-                            algo = method
-            else:
-                continue
-
-            if run_id not in run_ids:
-                continue
-
-            result = {}
-            for file in s_dir.glob("*.json"):
-                if file.name == "meta.json":
+                seed = s_dir.name  # s1 … (scenario)
+                unique_run_id = f"{seed}_{date_str}"
+                if unique_run_id not in run_ids:
                     continue
-                match = re.match(r"(\d+\.?\d*)_erlang\.json", file.name)
-                if match:
-                    erlang_val = match.group(1)
-                    result[erlang_val] = _safe_load_json(file)
 
-            if result:
-                out[run_id] = result
-                runid_to_algo[run_id] = algo
+                inp_fp = (ROOT_INPUT / network / date_str / parent_dir.name /
+                          f"sim_input_{seed}.json")
+                algo = "unknown"
+                if inp_fp.exists():
+                    inp = _safe_load_json(inp_fp) or {}
+                    method = inp.get("route_method")
+                    k = inp.get("k_paths", 0)
+                    if method == "k_shortest_path":
+                        algo = f"{method}_{'inf' if k > 4 else k}"
+                    else:
+                        algo = method
 
-    return out, runid_to_algo
+            metric_vals: Dict[str, Any] = {}
+            for fp in s_dir.glob("*.json"):
+                if fp.name == "meta.json":
+                    continue
+                m = pattern.match(fp.name)
+                if m:
+                    metric_vals[m.group(1)] = _safe_load_json(fp)
+
+            if metric_vals:
+                raw_runs[unique_run_id] = metric_vals
+                runid_to_algo[unique_run_id] = algo
+
+    return raw_runs, runid_to_algo
