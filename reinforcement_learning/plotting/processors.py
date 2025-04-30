@@ -1,4 +1,4 @@
-# ✅ processors.py (updated to use runid → algorithm mapping)
+# ✅ processors.py (updated to include full algo labels like k_shortest_path_2 vs _inf)
 from collections import defaultdict
 import numpy as np
 from typing import Dict, Any
@@ -16,18 +16,19 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
         for tv, info_vector in data.items():
-            if info_vector['blocking_mean'] is None:
-                last_key = next(reversed(info_vector['iter_stats']))
-                last_entry = info_vector['iter_stats'][last_key]
-                merged[algo][str(tv)].append(_mean_last(last_entry['sim_block_list']))
+            if isinstance(info_vector, dict):
+                if info_vector.get('blocking_mean') is None and 'iter_stats' in info_vector:
+                    last_key = next(reversed(info_vector['iter_stats']))
+                    last_entry = info_vector['iter_stats'][last_key]
+                    merged[algo][str(tv)].append(_mean_last(last_entry['sim_block_list']))
+                else:
+                    merged[algo][str(tv)].append(info_vector.get('blocking_mean', 0.0))
             elif isinstance(info_vector, (float, int)):
                 merged[algo][str(tv)].append(float(info_vector))
-
-    resp = {
+    return {
         algo: {tv: float(np.mean(vals)) for tv, vals in tv_dict.items()}
         for algo, tv_dict in merged.items()
     }
-    return resp
 
 
 def process_memory_usage(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:

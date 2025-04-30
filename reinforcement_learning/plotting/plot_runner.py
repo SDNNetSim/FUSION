@@ -10,7 +10,13 @@ from reinforcement_learning.plotting.registry import PLOTS
 def _collect_run_ids(cfg_algo: str, cfg_variants: list[dict], discovered: dict[str, list[str]]) -> list[str]:
     if cfg_variants:
         return [v["run_id"] for v in cfg_variants]
-    return discovered.get(cfg_algo, [])
+    # include partial match
+    return [
+        run_id
+        for key, run_ids in discovered.items()
+        if key.startswith(cfg_algo)
+        for run_id in run_ids
+    ]
 
 
 def main(cfg_path: str):
@@ -52,6 +58,7 @@ def main(cfg_path: str):
             for algo in algos:
                 variants = variants_block.get(algo, [])
                 run_ids = _collect_run_ids(algo, variants, discovered)
+                print(f"[DEBUG] Using run_ids for {algo} ({'DRL' if drl_flag else 'non-DRL'}): {run_ids}")
 
                 raw_metric, runid_to_algo = load_metric_for_runs(
                     run_ids=run_ids,

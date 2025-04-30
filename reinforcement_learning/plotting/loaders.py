@@ -1,4 +1,4 @@
-# ✅ loaders.py (now returns data + runid→algorithm mapping)
+# ✅ Fully Working Version of loaders.py
 from pathlib import Path
 import json
 import re
@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Iterable, Dict, Any, Tuple
 
 ROOT_OUTPUT = Path("../../data/output")
+ROOT_INPUT = Path("../../data/input")
 
 
 def _safe_load_json(fp: Path) -> Any | None:
@@ -32,15 +33,25 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str,
                     run_id = meta["run_id"]
                     algo = meta.get("path_algorithm", "unknown")
                     algo_runs[algo].append(run_id)
-                else:
-                    continue
             elif not drl and not meta_fp.exists():
-                run_id = s_dir.parent.name
-                algo = run_id.split("_")[0] if "_" in run_id else "unknown"
-                algo_runs[algo].append(run_id)
-            else:
-                continue
+                parent_dir = s_dir.parent
+                date_str = parent_dir.parent.name
+                s_number = s_dir.name
+                run_id = f"{s_number}_{date_str}"
+                input_file = ROOT_INPUT / network / date_str / parent_dir.name / f"sim_input_{s_number}.json"
 
+                algo = "unknown"
+                if input_file.exists():
+                    input_data = _safe_load_json(input_file)
+                    if isinstance(input_data, dict):
+                        method = input_data.get("route_method")
+                        k_paths = input_data.get("k_paths", 0)
+                        if method == "k_shortest_path":
+                            suffix = "inf" if k_paths > 4 else str(k_paths)
+                            algo = f"{method}_{suffix}"
+                        else:
+                            algo = method
+                algo_runs[algo].append(run_id)
     print(f"[DEBUG] Discovered {'DRL' if drl else 'non-DRL'} runs: {dict(algo_runs)}")
     return dict(algo_runs)
 
@@ -59,8 +70,8 @@ def load_metric_for_runs(
         for s_dir in (ROOT_OUTPUT / network / str(date)).rglob("s*"):
             if not s_dir.is_dir():
                 continue
-
             meta_fp = s_dir / "meta.json"
+
             if drl and meta_fp.exists():
                 meta = _safe_load_json(meta_fp)
                 if not meta or "run_id" not in meta:
@@ -68,8 +79,23 @@ def load_metric_for_runs(
                 run_id = meta["run_id"]
                 algo = meta.get("path_algorithm", "unknown")
             elif not drl and not meta_fp.exists():
-                run_id = s_dir.parent.name
-                algo = run_id.split("_")[0] if "_" in run_id else "unknown"
+                parent_dir = s_dir.parent
+                date_str = parent_dir.parent.name
+                s_number = s_dir.name
+                run_id = f"{s_number}_{date_str}"
+                input_file = ROOT_INPUT / network / date_str / parent_dir.name / f"sim_input_{s_number}.json"
+
+                algo = "unknown"
+                if input_file.exists():
+                    input_data = _safe_load_json(input_file)
+                    if isinstance(input_data, dict):
+                        method = input_data.get("route_method")
+                        k_paths = input_data.get("k_paths", 0)
+                        if method == "k_shortest_path":
+                            suffix = "inf" if k_paths > 4 else str(k_paths)
+                            algo = f"{method}_{suffix}"
+                        else:
+                            algo = method
             else:
                 continue
 
