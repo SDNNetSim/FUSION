@@ -116,6 +116,11 @@ def main() -> None:
     fetched = set()
 
     for out_p in iter_index(index):
+        # Failed job, no output directory
+        if out_p.name == '':
+            print(f'[DEBUG] Skipping {out_p} due to empty directory (failed job).')
+            continue
+
         parent_run_dir = out_p.parent
         if parent_run_dir in fetched:
             continue
