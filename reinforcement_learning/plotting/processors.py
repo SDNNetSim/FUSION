@@ -42,22 +42,36 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
     return processed
 
 
-def process_memory_usage(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+def _add(collector: dict, algo: str, tv: str, val: Any) -> None:
+    """Append one or many numeric values to collector[algo][tv]."""
+    if isinstance(val, (list, tuple, np.ndarray)):
+        collector[algo][tv].extend(map(float, val))
+    else:
+        collector[algo][tv].append(float(val))
+
+
+def process_memory_usage(
+        raw_runs: Dict[str, Any],
+        runid_to_algo: dict[str, str]
+) -> dict:
     """
-    Process memory usage.
+    Aggregate memory usage (MB).
+
+    * DRL runs → { 'overall': float }   from memory_usage.npy
+    * Legacy runs → float / list / ndarray keyed by traffic volume
+
+    Returns
+    -------
+    {algo: {traffic_volume_or_overall: mean_MB}}
     """
     merged = defaultdict(lambda: defaultdict(list))
+
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
-        for tv, info_vector in data.items():
-            if isinstance(info_vector, list):
-                merged[algo][str(tv)].extend(info_vector)
-            if isinstance(info_vector, (float, int)):
-                merged[algo][str(tv)].append(float(info_vector))
-    return {
-        algo: {tv: float(np.mean(vals)) for tv, vals in tv_dict.items()}
-        for algo, tv_dict in merged.items()
-    }
+        traffic_volume = next(iter(data))
+        merged[algo][traffic_volume] = {'overall': data.get('overall', -1.0)}
+
+    return merged
 
 
 def _stamp_to_dt(stamp: str) -> datetime:

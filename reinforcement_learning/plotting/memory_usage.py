@@ -2,71 +2,124 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_memory_usage(memory_usage_data, title='Memory Usage by Traffic Volume', save_path=None):
+def plot_memory_usage(
+        memory_usage_data: dict,
+        title: str = "Memory Usage by Traffic Volume",
+        save_path: str | None = None,
+        log_y: bool = False,
+):
     """
-    Creates a grouped bar chart of average memory usage:
-    - x-axis: traffic volumes (grouped)
-    - bars: one per algorithm, showing the mean memory usage
+    Grouped bar-chart of average peak memory (MB).
 
-    Parameters:
-        memory_usage_data (dict): Processed data {algorithm: {traffic_volume: avg_memory_usage}}
-        title (str): Title for the plot.
-        save_path (str, optional): If provided, saves the plot to this file path.
+    Parameters
+    ----------
+    memory_usage_data : dict
+        {algo: {traffic_volume: {'overall': mean_MB}}}
+    title : str
+        Plot title.
+    save_path : str | None
+        Path to save image, if given.
+    log_y : bool
+        True → log-scale y-axis.
     """
-    # Collect unique traffic volumes and sort them
-    traffic_labels = sorted({float(tv) for algo_data in memory_usage_data.values() for tv in algo_data.keys()})
-    all_algorithms = sorted(memory_usage_data.keys())
+    if not memory_usage_data:
+        print("[plot_memory_usage] ⚠️ No data provided.")
+        return None
 
-    means_matrix = []
-    for tvol in traffic_labels:
+    # ---------- Matplotlib style ----------
+    avail = plt.style.available
+    if "seaborn-whitegrid" in avail:
+        plt.style.use("seaborn-whitegrid")
+    elif "seaborn-white" in avail:
+        plt.style.use("seaborn-white")
+    else:
+        plt.style.use("default")
+
+    # ---------- Label discovery ----------
+    raw_labels = {
+        tv for algo_data in memory_usage_data.values() for tv in algo_data.keys()
+    }
+    only_overall = raw_labels == {"overall"}
+
+    if only_overall:
+        traffic_labels = ["overall"]
+    else:
+        traffic_labels = sorted(float(lbl) for lbl in raw_labels if lbl != "overall")
+
+    algos = sorted(memory_usage_data.keys())
+
+    # ---------- Build mean matrix ----------
+    means = []
+    for tv in traffic_labels:
         row = []
-        for algo in all_algorithms:
-            mem_usage = memory_usage_data[algo].get(str(tvol), 0.0)
-            row.append(mem_usage)
-        means_matrix.append(row)
+        for algo in algos:
+            val_dict = memory_usage_data[algo].get(str(tv), {})
+            row.append(float(val_dict.get("overall", 0.0)))
+        means.append(row)
+    means = np.array(means)  # shape: (#traffic, #algorithms)
 
-    means_matrix = np.array(means_matrix)
-
+    # ---------- Plot ----------
     x = np.arange(len(traffic_labels))
-    bar_width = 0.8 / len(all_algorithms)
+    bar_w = 0.8 / len(algos)
 
     plt.figure(figsize=(14, 6), dpi=300)
-    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    algo_colors = {algo: colors[i % len(colors)] for i, algo in enumerate(all_algorithms)}
+    palette = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    algo_colors = {a: palette[i % len(palette)] for i, a in enumerate(algos)}
 
-    for i, algo in enumerate(all_algorithms):
-        offset = i * bar_width
+    for i, algo in enumerate(algos):
+        hatch = "//" if "k_shortest_path" in algo else None
         plt.bar(
-            x + offset,
-            means_matrix[:, i],
-            bar_width,
+            x + i * bar_w,
+            means[:, i],
+            bar_w,
             label=algo,
             color=algo_colors[algo],
-            alpha=0.9
+            edgecolor="black",
+            linewidth=0.7,
+            alpha=0.9,
+            hatch=hatch,
         )
 
-    plt.xticks(
-        x + bar_width * (len(all_algorithms) / 2 - 0.5),
-        [str(tv) for tv in traffic_labels],
-        rotation=45, ha='right', fontsize=12
+    # ---------- Cosmetics ----------
+    tick_labels = (
+        ["overall"]
+        if only_overall
+        else [str(int(tv)) for tv in traffic_labels]
     )
-    plt.xlabel("Traffic Volume", fontsize=14, fontweight='bold')
-    plt.ylabel("Mean Memory Usage (MB)", fontsize=14, fontweight='bold')
-    plt.title(title, fontsize=16, fontweight='bold')
+    plt.xticks(
+        x + bar_w * (len(algos) / 2 - 0.5),
+        tick_labels,
+        rotation=45,
+        ha="right",
+        fontsize=12,
+    )
+    plt.xlabel(
+        "Traffic Volume (Erlang)" if not only_overall else "Scenario",
+        fontsize=14,
+        fontweight="bold",
+    )
+    plt.ylabel("Mean Peak Memory (MB)", fontsize=14, fontweight="bold")
+    plt.title(title, fontsize=16, fontweight="bold")
 
-    plt.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+    if log_y:
+        plt.yscale("log")
+
+    plt.grid(True, axis="y", linestyle="--", linewidth=0.5, alpha=0.7)
     plt.legend(
         title="Algorithm",
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
         fontsize=12,
         title_fontsize=12,
-        bbox_to_anchor=(1.05, 1),
-        loc="upper left"
     )
     plt.tight_layout(rect=[0, 0, 0.85, 1])
 
     if save_path:
-        plt.savefig(save_path, bbox_inches='tight')
-
-    plt.show()
+        plt.savefig(save_path, bbox_inches="tight")
+        print(f"[plot_memory_usage] ✅ Saved: {save_path}")
+        plt.close()
+    else:
+        plt.show()
+        plt.clf()
 
     return plt.gcf()

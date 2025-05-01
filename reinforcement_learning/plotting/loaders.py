@@ -6,6 +6,7 @@ from typing import Dict, Any, Iterable, Tuple
 
 ROOT_OUTPUT = Path("../../data/output")
 ROOT_INPUT = Path("../../data/input")
+ROOT_LOGS = Path("../../logs")
 
 
 def _safe_load_json(fp: Path) -> Any | None:
@@ -154,5 +155,18 @@ def load_metric_for_runs(
                     date_part = s_dir.parent.parent.name
                     time_part = s_dir.parent.name
                     start_stamps[unique_run_id] = f"{date_part}_{time_part}"
+
+                if metric == "memory" and drl:
+                    logs_fp = (ROOT_LOGS / algo / network / date /
+                               base_run_dir.name / "memory_usage.npy")
+                    if logs_fp.exists():
+                        import numpy as np
+                        try:
+                            arr = np.load(logs_fp)
+                            if not metric_vals:
+                                metric_vals = {}
+                            metric_vals["overall"] = float(arr.max() / (1024 ** 2))
+                        except Exception as exc:
+                            print(f"[loaders] ❌ could not load {logs_fp}: {exc}")
 
     return raw_runs, runid_to_algo, start_stamps
