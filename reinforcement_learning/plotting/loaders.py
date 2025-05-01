@@ -84,6 +84,8 @@ def load_metric_for_runs(
     runid_to_algo: Dict[str, str] = {}
     start_stamps: Dict[str, str] = {}
 
+    # TODO: Why doesn't this work top level?
+    import re
     pattern = re.compile(r"(\d+\.?\d*)_erlang\.json")
 
     for date in dates:
@@ -168,5 +170,32 @@ def load_metric_for_runs(
                             metric_vals["overall"] = float(arr.max() / (1024 ** 2))
                         except Exception as exc:
                             print(f"[loaders] ❌ could not load {logs_fp}: {exc}")
+
+                if metric == "rewards" and drl:
+                    # base_run_dir = …/DATE/<time>
+                    logs_dir = ROOT_LOGS / algo / network / date / base_run_dir.name
+                    if logs_dir.is_dir():
+                        import numpy as np, re, json
+                        trial_rx = re.compile(r"rewards_.*?_t(\d+)_iter_(\d+)\.npy")
+                        trials: dict[int, dict[int, list[float]]] = defaultdict(dict)
+
+                        for fp in logs_dir.glob("rewards_*_iter_*.npy"):
+                            m = trial_rx.match(fp.name)
+                            if not m:
+                                continue
+                            trial_idx = int(m.group(1))
+                            ep_idx = int(m.group(2))
+                            try:
+                                rewards = np.load(fp).astype(float).tolist()
+                                # store list-of-step rewards for that episode
+                                trials[trial_idx][ep_idx] = rewards
+                            except Exception as exc:
+                                print(f"[loaders] ❌ could not load {fp}: {exc}")
+
+                        if trials:
+                            for tv in metric_vals:
+                                # TODO: This is rewards per seed
+                                # TODO: We should make this consistent across all loaders
+                                metric_vals[tv]['rewards']  = trials
 
     return raw_runs, runid_to_algo, start_stamps

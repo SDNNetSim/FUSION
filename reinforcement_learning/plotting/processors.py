@@ -136,17 +136,40 @@ def process_sim_times(
     }
 
 
-def process_rewards(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+def process_rewards(raw_runs: Dict[str, Any],
+                    runid_to_algo: dict[str, str]) -> dict:
     """
-    Process rewards.
+    Aggregate rewards across seeds (trials).
+
+    Input  (per seed)  : {tv: {'rewards': {trial_idx: {episode_idx: [step_rewards]}}}}
+    Output (averaged)  : {algo: {tv: {"mean": [...], "std": [...]}}}
     """
-    merged = defaultdict(lambda: defaultdict(dict))
+    by_algo_tv = defaultdict(lambda: defaultdict(dict))
+
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
-        for tv, trial_dict in data.items():
-            dst_trials = merged[algo][tv]
-            next_trial_idx = max(dst_trials.keys(), default=-1) + 1
-            for _, episode_dict in trial_dict.items():
-                dst_trials[next_trial_idx] = episode_dict
-                next_trial_idx += 1
-    return merged
+
+        for tv, trials in data.items():
+            trial_means = []
+            trial_dict = trials.get("rewards", {})
+            for trial_idx, ep_dict in trial_dict.items():
+                ep_ids = sorted(ep_dict.keys())
+                ep_means = [float(np.mean(ep_dict[ep])) for ep in ep_ids]
+                trial_means.append(ep_means)
+
+            if not trial_means:
+                continue
+
+            max_len = max(map(len, trial_means))
+            padded = [tm + [np.nan] * (max_len - len(tm)) for tm in trial_means]
+            arr = np.array(padded, dtype=float)
+
+            mean = np.nanmean(arr, axis=0)
+            std = np.nanstd(arr, axis=0)
+
+            by_algo_tv[algo][str(tv)] = {
+                "mean": mean.tolist(),
+                "std": std.tolist()
+            }
+
+    return dict(by_algo_tv)
