@@ -118,7 +118,7 @@ echo "python run_rl_sim.py ${ARGS}"
 echo "==========================================="
 echo
 
-sleep 1
+sleep 10
 # --- Run Simulation ---
 PY_OUT=$(python run_rl_sim.py ${ARGS})
 echo "$PY_OUT"
