@@ -173,3 +173,47 @@ def process_rewards(raw_runs: Dict[str, Any],
             }
 
     return dict(by_algo_tv)
+
+
+def process_state_values(raw_runs: Dict[str, Any],
+                         runid_to_algo: dict[str, str]) -> dict:
+    """
+    Average state-value tensors across *all* seeds and trials.
+
+    Output
+    ------
+    {
+      algo: {
+        '50.0': { (src,dst): [avg_path_vals...] },
+        ...
+      }
+    }
+    """
+    merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    # merged[algo][erlang][(src,dst)] -> list[list_of_path_values]
+
+    for run_id, run_dict in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+        for erl, payload in run_dict.items():
+            trials = payload.get("state_vals", {})
+            for trial_dict in trials.values():  # each trial's (src,dst)->[vals]
+                for pair, vec in trial_dict.items():
+                    merged[algo][erl][pair].append(vec)
+
+    # element-wise average
+    averaged = defaultdict(dict)  # final structure
+
+    for algo, erl_dict in merged.items():
+        for erl, pair_dict in erl_dict.items():
+            averaged_pairs = {}
+            for pair, vecs in pair_dict.items():
+                max_len = max(map(len, vecs))
+                # pad shorter vectors with np.nan & average
+                padded = [
+                    vec + [np.nan] * (max_len - len(vec)) for vec in vecs
+                ]
+                mean_vec = np.nanmean(np.array(padded, dtype=float), axis=0)
+                averaged_pairs[pair] = mean_vec.tolist()
+            averaged[algo][erl] = averaged_pairs
+
+    return dict(averaged)

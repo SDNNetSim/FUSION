@@ -198,4 +198,40 @@ def load_metric_for_runs(
                                 # TODO: We should make this consistent across all loaders
                                 metric_vals[tv]['rewards']  = trials
 
+                if metric == "state_values" and drl:
+                    logs_dir = ROOT_LOGS / algo / network / date / base_run_dir.name
+                    if logs_dir.is_dir():
+                        import re, json
+                        sv_rx = re.compile(
+                            r"state_vals_e(?P<erl>\d+\.?\d*)_.*?_t(?P<trial>\d+)\.json"
+                        )
+                        state_vals: dict[str, dict[int, dict]] = defaultdict(dict)
+                        # {erlang: {trial_idx: {(src,dst): [vals]}}}
+
+                        for fp in logs_dir.glob("state_vals_*.json"):
+                            m = sv_rx.match(fp.name)
+                            if not m:
+                                continue
+                            erlang = m.group("erl")    # '50.0'
+                            trial  = int(m.group("trial"))
+
+                            try:
+                                with fp.open("r", encoding="utf-8") as f:
+                                    sv_data = json.load(f)
+                                    # convert "(0, 1)" → (0,1) tuple keys now to save later conversions
+                                    sv_data = {
+                                        eval(k): v for k, v in sv_data.items()
+                                    }
+                                    state_vals[erlang][trial] = sv_data
+                            except Exception as exc:
+                                print(f"[loaders] ❌ could not load {fp}: {exc}")
+
+                        # graft into metric_vals structure
+                        if state_vals:
+                            for erl, trials in state_vals.items():
+                                if erl not in metric_vals:
+                                    metric_vals[erl] = {}
+                                metric_vals[erl]["state_vals"] = trials
+
+    # TODO: Add start stamps to the raw runs data structure
     return raw_runs, runid_to_algo, start_stamps

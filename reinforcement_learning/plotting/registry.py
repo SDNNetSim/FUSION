@@ -16,6 +16,6 @@ PLOTS = {
     "memory": {"plot": plot_memory_usage, "process": "process_memory_usage"},
     "rewards": {"plot": plot_rewards_mean_var, "process": "process_rewards"},
     "sim_times": {"plot": plot_sim_times, "process": "process_sim_times"},
-    "state_vals": {"plot": plot_best_path_matrix, "process": "process_rewards"},
+    "state_values": {"plot": plot_best_path_matrix, "process": "process_state_values"},
     # state-values uses same raw format as rewards trials
 }
