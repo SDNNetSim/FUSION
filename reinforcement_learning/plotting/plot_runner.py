@@ -1,10 +1,22 @@
 # ✅ plot_runner.py (updated to pass runid→algorithm to processors)
+from inspect import signature
+from pathlib import Path
 import argparse
 import yaml
-from pathlib import Path
 from reinforcement_learning.plotting.loaders import load_metric_for_runs, discover_all_run_ids
 from reinforcement_learning.plotting import processors
 from reinforcement_learning.plotting.registry import PLOTS
+
+
+def call_processor(proc_fn, raw_runs, runid_to_algo, **context):
+    """
+    Call *proc_fn* with (raw_runs, runid_to_algo) and pass **context
+    only if the function signature accepts it.
+    """
+    params = signature(proc_fn).parameters
+    if len(params) >= 3:  # proc wants a 3rd arg
+        return proc_fn(raw_runs, runid_to_algo, context)
+    return proc_fn(raw_runs, runid_to_algo)  # legacy 2-arg processors
 
 
 def _collect_run_ids(cfg_algo: str, cfg_variants: list[dict], discovered: dict[str, list[str]]) -> list[str]:
@@ -47,6 +59,7 @@ def main(cfg_path: str):
 
         combined_raw = {}
         combined_runid_to_algo = {}
+        combined_start_stamps = {}
 
         for run_type in ("drl", "non_drl"):
             if not cfg["runs"].get(run_type, False):
@@ -60,7 +73,7 @@ def main(cfg_path: str):
                 run_ids = _collect_run_ids(algo, variants, discovered)
                 print(f"[DEBUG] Using run_ids for {algo} ({'DRL' if drl_flag else 'non-DRL'}): {run_ids}")
 
-                raw_metric, runid_to_algo = load_metric_for_runs(
+                raw_metric, runid_to_algo, start_stamps = load_metric_for_runs(
                     run_ids=run_ids,
                     metric=plot_name,
                     drl=drl_flag,
@@ -70,11 +83,21 @@ def main(cfg_path: str):
 
                 combined_raw.update(raw_metric)
                 combined_runid_to_algo.update(runid_to_algo)
+                combined_start_stamps.update(start_stamps)  # may be empty
 
         if not combined_raw:
             continue
 
-        processed = proc_fn(combined_raw, combined_runid_to_algo)
+        context = {}
+        if plot_name == "sim_times":
+            context["start_stamps"] = combined_start_stamps
+
+        processed = call_processor(
+            proc_fn,
+            combined_raw,
+            combined_runid_to_algo,
+            **context,
+        )
 
         save_dir = cfg.get("save_dir")
         title = f"{plot_name.capitalize()} – {network}"

@@ -69,7 +69,7 @@ def load_metric_for_runs(
         drl: bool,
         network: str,
         dates: list[str],
-) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, str]]:
+) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, str], Dict[str, str]]:
     """Load *metric* JSONs for *run_ids*.
 
     Returns
@@ -81,6 +81,7 @@ def load_metric_for_runs(
     """
     raw_runs: Dict[str, Dict[str, Any]] = {}
     runid_to_algo: Dict[str, str] = {}
+    start_stamps: Dict[str, str] = {}
 
     pattern = re.compile(r"(\d+\.?\d*)_erlang\.json")
 
@@ -92,6 +93,11 @@ def load_metric_for_runs(
             if drl:
                 base_run_dir = s_dir.parent
                 seed = s_dir.name
+                if metric == "sim_times":
+                    max_seed = max(int(p.name.lstrip("s")) for p in s_dir.parent.glob("s*"))
+                    if int(seed.lstrip("s")) != max_seed:
+                        continue
+
                 meta_fp = next(base_run_dir.glob("s*/meta.json"), None)
                 meta_run_id: str | None = None
                 algo = "unknown"
@@ -144,4 +150,9 @@ def load_metric_for_runs(
                 raw_runs[unique_run_id] = metric_vals
                 runid_to_algo[unique_run_id] = algo
 
-    return raw_runs, runid_to_algo
+                if metric == "sim_times":
+                    date_part = s_dir.parent.parent.name
+                    time_part = s_dir.parent.name
+                    start_stamps[unique_run_id] = f"{date_part}_{time_part}"
+
+    return raw_runs, runid_to_algo, start_stamps

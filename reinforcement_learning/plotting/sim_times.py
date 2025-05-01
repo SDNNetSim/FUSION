@@ -14,40 +14,40 @@ def plot_sim_times(
     Parameters
     ----------
     sim_times_data : dict
-        Processed mapping
-        {algorithm: {traffic_volume: mean_time_seconds}}
+        Processed mapping: {algorithm: {traffic_volume: mean_time_seconds}}
     title : str
         Figure title.
     save_path : str or None
         If given, the figure is saved to this path.
     log_y : bool
-        If True, use a log scale on the y-axis (helpful if times vary greatly).
+        If True, use a log scale on the y-axis.
 
     Returns
     -------
-    matplotlib.figure.Figure
-        The created figure.
+    matplotlib.figure.Figure or None
     """
     if not sim_times_data:
         print("No simulation-time data to plot.")
         return None
 
-    plt.style.use(
-        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
-    )
+    available_styles = plt.style.available
+    if "seaborn-whitegrid" in available_styles:
+        plt.style.use("seaborn-whitegrid")
+    elif "seaborn-white" in available_styles:
+        plt.style.use("seaborn-white")
+    else:
+        plt.style.use("default")
 
-    # ---------- Create the bar-chart matrix ----------
-    traffic_labels = sorted(
-        {float(tv) for algo_data in sim_times_data.values() for tv in algo_data.keys()}
-    )
+    traffic_labels = sorted({
+        float(tv) for algo_data in sim_times_data.values()
+        for tv in algo_data.keys()
+    })
     algos = sorted(sim_times_data.keys())
 
-    means = np.array(
-        [
-            [sim_times_data[algo].get(str(tv), 0.0) for algo in algos]
-            for tv in traffic_labels
-        ]
-    )  # shape: (#traffic, #algorithms)
+    means = np.array([
+        [sim_times_data[algo].get(str(tv), 0.0) for algo in algos]
+        for tv in traffic_labels
+    ])  # shape: (#traffic_volumes, #algorithms)
 
     x = np.arange(len(traffic_labels))
     bar_w = 0.8 / len(algos)
@@ -57,6 +57,7 @@ def plot_sim_times(
     algo_colors = {algo: colors[i % len(colors)] for i, algo in enumerate(algos)}
 
     for i, algo in enumerate(algos):
+        hatch_style = "//" if "k_shortest_path" in algo else None
         plt.bar(
             x + i * bar_w,
             means[:, i],
@@ -64,12 +65,14 @@ def plot_sim_times(
             label=algo,
             color=algo_colors[algo],
             alpha=0.9,
+            hatch=hatch_style,
+            edgecolor="black",
+            linewidth=0.7
         )
 
-    # ---------- Labels & cosmetics ----------
     plt.xticks(
         x + bar_w * (len(algos) / 2 - 0.5),
-        [str(tv) for tv in traffic_labels],
+        [str(int(tv)) for tv in traffic_labels],
         rotation=45,
         ha="right",
         fontsize=12,
@@ -93,6 +96,10 @@ def plot_sim_times(
 
     if save_path:
         plt.savefig(save_path, bbox_inches="tight")
+        print(f"[plot_sim_times] ✅ Saved: {save_path}")
+        plt.close()
+    else:
+        plt.show()
+        plt.clf()
 
-    plt.show()
     return fig

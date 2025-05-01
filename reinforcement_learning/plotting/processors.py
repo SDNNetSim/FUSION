@@ -1,10 +1,11 @@
 # ✅ processors.py (updated to include full algo labels like k_shortest_path_2 vs _inf)
 from collections import defaultdict
 from typing import Dict, Any
+from datetime import datetime, timedelta
 import numpy as np
 
 
-def _mean_last(values: list[float | int], k: int = 10) -> float:
+def _mean_last(values: list[float | int], k: int = 20) -> float:
     if not values:
         return 0.0
     subset = values[-k:] if len(values) >= k else values
@@ -59,15 +60,62 @@ def process_memory_usage(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]
     }
 
 
-def process_sim_times(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+def _stamp_to_dt(stamp: str) -> datetime:
     """
-    Process simulation times.
+    Convert '0429_21_14_39_491949' to a datetime object.
+    Assumes:
+        - MMDD_HH_MM_SS_MSUS
+        - MSUS is 3 digits milliseconds + 3 digits microseconds
     """
+    mmdd, hh, mm, ss, msus = stamp.split("_")
+    ms = int(msus[:3])  # first 3 digits = milliseconds
+    us = int(msus[3:])  # last 3 digits = microseconds
+    return datetime(
+        year=datetime.now().year,
+        month=int(mmdd[:2]),
+        day=int(mmdd[2:]),
+        hour=int(hh),
+        minute=int(mm),
+        second=int(ss),
+        microsecond=ms * 1000 + us
+    )
+
+
+def process_sim_times(
+        raw_runs: Dict[str, Any],
+        runid_to_algo: dict[str, str],
+        context: dict | None = None,
+) -> dict:
+    """
+    If *context* supplies 'start_stamps', compute **wall-clock duration**
+    (end-stamp − start-stamp). Otherwise fall back to treating the JSON
+    values as already-computed seconds (old behaviour).
+    """
+    start_stamps = context.get("start_stamps") if context else None
     merged = defaultdict(lambda: defaultdict(list))
+
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
-        for tv, secs in data.items():
-            merged[algo][str(tv)].append(float(secs))
+
+        if start_stamps and run_id in start_stamps:
+            t0 = _stamp_to_dt(start_stamps[run_id])
+
+            for tv, info in data.items():
+                if not isinstance(info, dict):
+                    continue
+                end_raw = info.get("sim_end_time")
+                if not end_raw:
+                    continue
+
+                t1 = _stamp_to_dt(end_raw)
+                if t1 < t0:  # crossed midnight
+                    t1 += timedelta(days=1)
+
+                merged[algo][str(tv)].append((t1 - t0).total_seconds())
+        else:
+            for tv, secs in data.items():
+                merged[algo][str(tv)].append(float(secs))
+
     return {
         algo: {tv: float(np.mean(vals)) for tv, vals in tv_dict.items()}
         for algo, tv_dict in merged.items()
