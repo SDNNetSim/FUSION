@@ -966,7 +966,10 @@ class SnrMeasurements:
         if self.engine_props['snr_type'] == "snr_e2e_external_resources":
             mod_format, bw, SNR_val = self.check_snr_ext_slicing(path_index)
         elif self.engine_props['snr_type'] == "gsnr":
-            mod_format, SNR_val, bw = self.check_gsnr()
+            if self.engine_props['band_list'] == ['c']:
+                mod_format, SNR_val, bw = self.check_gsnr()
+            elif self.engine_props['band_list'] == ['c', 'l']:
+                mod_format, SNR_val, bw  = self.check_gsnr_mb()
         else:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
