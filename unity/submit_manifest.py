@@ -87,6 +87,7 @@ def main() -> None:
     cmd = [
         "sbatch",
         f"--partition={env['PARTITION']}",
+        f"--gpus={env['GPUS']}",
         f"--cpus-per-task={env['CPUS']}",
         f"--mem={env['MEM']}",
         f"--time={env['TIME']}",
@@ -95,6 +96,8 @@ def main() -> None:
         f"--job-name={env['JOB_NAME']}",
         str(script_path),
     ]
+
+    print(f'[DEBUG] Command submitted: {cmd}')
 
     result = subprocess.run(cmd, env={**os.environ, **env}, check=False)
     if result.returncode != 0:
