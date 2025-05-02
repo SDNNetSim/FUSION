@@ -273,7 +273,7 @@ class SpectrumAssignment:
                     self.spectrum_props.xt_cost = snr_val
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
-                    return mod_format, bw
+                    return mod, bw
             self.spectrum_props.is_free = False
             return False, 0
 
