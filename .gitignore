@@ -42,3 +42,4 @@ unity/configs
 unity/.tmp_config
 
 reinforcement_learning/plotting/figures
+reinforcement_learning/experiments/
