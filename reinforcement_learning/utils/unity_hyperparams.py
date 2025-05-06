@@ -29,13 +29,10 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-# ───────────────────────── USER CONFIG ────────────────────────── #
 IN_ROOT = Path("../experiments/input/0502")  # top‑level experiments folder
 OUT_ROOT = Path("../experiments/output/0502/")  # where parsed CSV/JSON go
 GLOB_PATTERN = "**/*.out"  # override only if needed
-# ──────────────────────────────────────────────────────────────── #
 
-# ───────────────────────── REGEX DEFINITIONS ─────────────────── #
 CSV_ROW_RE = re.compile(r"CSV Row \d+:\s*(.*)")
 TRIAL_RE = re.compile(
     r"Trial\s+(?P<trial>\d+)\s+finished\s+with\s+value:\s+"
@@ -43,8 +40,6 @@ TRIAL_RE = re.compile(
 )
 DATE_DIR_RE = re.compile(r"experiments[\\/](\d{4})[\\/]", re.IGNORECASE)
 
-
-# ────────────────────────── HELPERS ──────────────────────────── #
 
 def _parse_csv_row(row_str: str, header_str: str) -> Dict[str, str]:
     """Return dict mapping header fields -> row values."""
@@ -117,9 +112,9 @@ def _destination(meta: Dict[str, str], out_root: Path, orig_path: Path) -> Tuple
 
 
 def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> None:
-    """Phase 1 – parse every .out file under `in_root` and write CSV/JSON."""
+    "Parse every .out file under `in_root` and write CSV/JSON."""
     files = sorted(in_root.glob(glob_pattern))
-    print(f"[Phase 1] Found {len(files)} log file(s) under {in_root}")
+    print(f"[collect] Found {len(files)} log file(s) under {in_root}")
 
     for fp in files:
         try:
@@ -134,8 +129,6 @@ def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> No
         print(f"   ✓ {fp.relative_to(in_root)} → {dest_dir.relative_to(out_root)}/{csv_name}")
 
 
-# ────────────────────  PHASE 2: robust parameter selection  ──────────────────── #
-
 def _hash_params(row: pd.Series, ignore=("trial", "objective_value", "erlang_start")) -> Tuple[str, Dict]:
     """Return (md5‑hash, params_dict) for a trial row, ignoring bookkeeping cols."""
     items = sorted((k, row[k]) for k in row.index if k not in ignore)
@@ -144,6 +137,7 @@ def _hash_params(row: pd.Series, ignore=("trial", "objective_value", "erlang_sta
 
 def _rank_aggregate(df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate trial rows into one row per unique param vector with rank stats."""
+    print(f"[rank_aggregate] Incoming rows: {len(df)}")  # NEW
     df = df.copy()
     # Rank (1 = best) within each Erlang traffic load
     df["rank"] = df.groupby("erlang_start")["objective_value"].rank(ascending=False, method="min")
@@ -156,6 +150,7 @@ def _rank_aggregate(df: pd.DataFrame) -> pd.DataFrame:
         entry["ranks"].append(row["rank"])
         entry["returns"].append(row["objective_value"])
 
+    print(f"[rank_aggregate] Unique param sets: {len(grouped)}")
     summary_rows = []
     for key, d in grouped.items():
         ranks = d["ranks"]
@@ -171,11 +166,18 @@ def _rank_aggregate(df: pd.DataFrame) -> pd.DataFrame:
 
     out = pd.DataFrame(summary_rows)
     # Lower mean_rank → better; then lower worst_rank; then higher mean_return
+    print("[rank_aggregate] Aggregation complete")
     return out.sort_values(["mean_rank", "worst_rank", "mean_return"], ascending=[True, True, False])
 
 
 def _gather_csvs(topo_dir: Path) -> List[Path]:
-    return list(topo_dir.glob("**/*_results.csv"))
+    csvs = list(topo_dir.glob("**/*_results.csv"))
+    if csvs:
+        rel = [c.relative_to(OUT_ROOT) for c in csvs]
+        print(f"[gather_csvs] Found {len(csvs)} CSVs under {topo_dir.relative_to(OUT_ROOT)}:")
+        for c in rel:
+            print(f"              • {c}")
+    return csvs
 
 
 def find_best_params_for_topology(topo_dir: Path) -> None:
@@ -184,7 +186,7 @@ def find_best_params_for_topology(topo_dir: Path) -> None:
     """
     csv_files = _gather_csvs(topo_dir)
     if not csv_files:
-        print(f"[Phase 2] No CSVs under {topo_dir.relative_to(OUT_ROOT)}; skipping.")
+        print(f"[Phase 2] No CSVs under {topo_dir.relative_to(OUT_ROOT)}; skipping.")
         return
 
     frames = []
@@ -193,9 +195,13 @@ def find_best_params_for_topology(topo_dir: Path) -> None:
         df = pd.read_csv(f)
         df["erlang_start"] = erlang
         frames.append(df)
+        print(f"[Phase 2] Loaded {f.name:<20} → rows={len(df):>4}, erlang={erlang}")
 
     df_all = pd.concat(frames, ignore_index=True)
+    print(f"[Phase 2] Total concatenated rows: {len(df_all)}")
     leaderboard = _rank_aggregate(df_all)
+    print("[Phase 2] Top‑5 leaderboard:")
+    print(leaderboard.head(5)[["mean_rank", "worst_rank", "mean_return", "samples"]])
     best = leaderboard.iloc[0]
 
     best_params_path = topo_dir / "best_params.json"
@@ -207,7 +213,7 @@ def find_best_params_for_topology(topo_dir: Path) -> None:
     best_params_path.write_text(json.dumps(best_dict, indent=2))
 
     print(
-        f"[Phase 2] 🏆  {topo_dir.relative_to(OUT_ROOT)} → best_params.json saved "
+        f"[Phase 2] 🏆  {topo_dir.relative_to(OUT_ROOT)} → best_params.json saved "
         f"(mean_rank={best['mean_rank']:.2f}, worst={best['worst_rank']:.0f})"
     )
     # Optional: print top‑3 summary
@@ -218,15 +224,17 @@ def sweep_all_topologies(out_root: Path) -> None:
     """
     Sweeps all topologies.
     """
+    print(f"[sweep_all_topologies] Scanning {out_root} ...")
     for alg_dir in out_root.iterdir():
         if not alg_dir.is_dir():
             continue
+        print(f"[sweep_all_topologies] ▶ Algorithm: {alg_dir.name}")
         for net_dir in alg_dir.iterdir():
             if net_dir.is_dir():
+                print(f"[sweep_all_topologies]   └─ Topology: {net_dir.name}")
                 find_best_params_for_topology(net_dir)
 
 
-# ─────────────────────────────  MAIN  ──────────────────────────── #
 if __name__ == "__main__":
-    collect(IN_ROOT, OUT_ROOT, GLOB_PATTERN)  # Phase 1
-    sweep_all_topologies(OUT_ROOT)  # Phase 2
+    # collect(IN_ROOT, OUT_ROOT, GLOB_PATTERN)
+    sweep_all_topologies(OUT_ROOT)
