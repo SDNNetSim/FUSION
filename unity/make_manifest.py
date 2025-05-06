@@ -55,6 +55,8 @@ def _encode(val: Any) -> str:
         return "true" if val else "false"
     if isinstance(val, (list, dict)):
         return json.dumps(val, separators=(",", ":"))
+    if isinstance(val, float):
+        return format(val, ".10f").rstrip("0").rstrip(".")  # e.g., 0.000057
     return str(val)
 
 
