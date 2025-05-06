@@ -27,6 +27,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
 import pandas as pd
 
 IN_ROOT = Path("../experiments/input/0502")  # top‑level experiments folder
@@ -129,45 +135,116 @@ def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> No
         print(f"   ✓ {fp.relative_to(in_root)} → {dest_dir.relative_to(out_root)}/{csv_name}")
 
 
-def _hash_params(row: pd.Series, ignore=("trial", "objective_value", "erlang_start")) -> Tuple[str, Dict]:
-    """Return (md5‑hash, params_dict) for a trial row, ignoring bookkeeping cols."""
-    items = sorted((k, row[k]) for k in row.index if k not in ignore)
-    return hashlib.md5(str(items).encode()).hexdigest(), dict(items)
+def _encode_param_matrix(df: pd.DataFrame,
+                         ignore=("trial", "objective_value", "erlang_start")):
+    """Return (X, enc, param_cols) where X is the encoded feature matrix."""
+    param_cols = [c for c in df.columns if c not in ignore]
+    num_cols = [c for c in param_cols if pd.api.types.is_numeric_dtype(df[c])]
+    cat_cols = [c for c in param_cols if c not in num_cols]
+
+    print(f"[encode] #numeric={len(num_cols)}  #categorical={len(cat_cols)}")
+
+    # Fill missing numerics (e.g. unused layers) with a sentinel
+    num_tf = Pipeline([
+        ("imputer", SimpleImputer(strategy="constant", fill_value=-1)),
+        ("scaler", StandardScaler())
+    ])
+
+    # Categorical → one-hot
+    cat_tf = Pipeline([
+        ("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
+    ])
+
+    enc = ColumnTransformer(
+        transformers=[
+            ("num", num_tf, num_cols),
+            ("cat", cat_tf, cat_cols),
+        ],
+        remainder="drop",
+        sparse_threshold=0.0,
+    )
+
+    X = enc.fit_transform(df[param_cols])
+
+    print(f"[encode] Encoded feature matrix shape: {X.shape}")
+    if np.isnan(X).any():
+        raise ValueError("[encode] ❌ NaNs remain after preprocessing! Investigate source.")
+    return X, enc, param_cols
 
 
-def _rank_aggregate(df: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate trial rows into one row per unique param vector with rank stats."""
-    print(f"[rank_aggregate] Incoming rows: {len(df)}")  # NEW
-    df = df.copy()
-    # Rank (1 = best) within each Erlang traffic load
-    df["rank"] = df.groupby("erlang_start")["objective_value"].rank(ascending=False, method="min")
+def _knn_predict_matrix(df: pd.DataFrame,
+                        X: np.ndarray,
+                        k: int = 5):
+    """
+    Build one k‑NN model per Erlang load and return a (n_samples, n_loads) matrix
+    where entry (i, j) is the *predicted* objective of config i at load j.
+    """
+    loads = sorted(df["erlang_start"].unique())
+    n, _ = X.shape
+    preds = np.empty((n, len(loads)), dtype=float)
 
-    grouped: Dict[str, Dict] = defaultdict(lambda: {"ranks": [], "returns": []})
-    for _, row in df.iterrows():
-        key, params = _hash_params(row)
-        entry = grouped[key]
-        entry.setdefault("params", params)
-        entry["ranks"].append(row["rank"])
-        entry["returns"].append(row["objective_value"])
+    for j, load in enumerate(loads):
+        mask_load = df["erlang_start"] == load
+        X_load = X[mask_load]
+        y_load = df.loc[mask_load, "objective_value"].to_numpy()
 
-    print(f"[rank_aggregate] Unique param sets: {len(grouped)}")
+        # Choose k adaptively per load
+        n_i = len(X_load)
+        local_k = max(3, min(7, n_i // 2))  # floor=3  ceiling=7
+        nbrs = NearestNeighbors(n_neighbors=local_k, metric="euclidean").fit(X_load)
+
+        # Query whole set
+        dists, idxs = nbrs.kneighbors(X, return_distance=True)
+        # Weight by inverse distance (add ε to avoid /0)
+        weights = 1.0 / (dists + 1e-9)
+        weights /= weights.sum(axis=1, keepdims=True)
+        pred_load = (weights * y_load[idxs]).sum(axis=1)
+        preds[:, j] = pred_load
+
+        print(f"[knn]  load={load:<4}   rows_in_load={len(X_load):>3}   k={k}")
+
+    return preds, loads
+
+
+def _knn_robust_aggregate(df: pd.DataFrame, k: int = 5) -> pd.DataFrame:
+    """
+    Return DataFrame with one row per hyper‑parameter vector and robustness stats
+    computed from k‑NN‑predicted returns across *all* Erlang loads.
+    """
+    print(f"[knn_agg] Incoming rows: {len(df)}   unique loads: {df['erlang_start'].nunique()}")
+    X, enc, param_cols = _encode_param_matrix(df)
+
+    pred_mat, loads = _knn_predict_matrix(df, X, k=k)
+    print(f"[knn_agg] Prediction matrix shape: {pred_mat.shape}")
+
+    # Attach config hash so we can group identical param vectors
+    keys, _ = zip(*df.apply(_hash_params, axis=1))
+    df["_key"] = keys
+
     summary_rows = []
-    for key, d in grouped.items():
-        ranks = d["ranks"]
-        returns = d["returns"]
+    for key, idxs in df.groupby("_key").groups.items():
+        pmat = pred_mat[list(idxs)]  # rows for this param vector (often 1 row)
+        obs = pmat.mean(axis=0)  # if duplicated, average predictions
         summary_rows.append({
-            **d["params"],
-            "mean_rank": sum(ranks) / len(ranks),
-            "worst_rank": max(ranks),
-            "mean_return": sum(returns) / len(returns),
-            "samples": len(ranks),
+            **df.loc[idxs[0], param_cols].to_dict(),
+            "worst_pred_return": obs.min(),
+            "mean_pred_return": obs.mean(),
+            "std_pred_return": obs.std(ddof=0),
+            "samples": len(idxs),
             "_key": key,
         })
 
     out = pd.DataFrame(summary_rows)
-    # Lower mean_rank → better; then lower worst_rank; then higher mean_return
-    print("[rank_aggregate] Aggregation complete")
-    return out.sort_values(["mean_rank", "worst_rank", "mean_return"], ascending=[True, True, False])
+    out = out.sort_values(["worst_pred_return", "mean_pred_return"],
+                          ascending=[False, False])  # higher is better
+    print("[knn_agg] Aggregation complete")
+    return out
+
+
+def _hash_params(row: pd.Series, ignore=("trial", "objective_value", "erlang_start")) -> Tuple[str, Dict]:
+    """Return (md5‑hash, params_dict) for a trial row, ignoring bookkeeping cols."""
+    items = sorted((k, row[k]) for k in row.index if k not in ignore)
+    return hashlib.md5(str(items).encode()).hexdigest(), dict(items)
 
 
 def _gather_csvs(topo_dir: Path) -> List[Path]:
@@ -199,9 +276,8 @@ def find_best_params_for_topology(topo_dir: Path) -> None:
 
     df_all = pd.concat(frames, ignore_index=True)
     print(f"[Phase 2] Total concatenated rows: {len(df_all)}")
-    leaderboard = _rank_aggregate(df_all)
-    print("[Phase 2] Top‑5 leaderboard:")
-    print(leaderboard.head(5)[["mean_rank", "worst_rank", "mean_return", "samples"]])
+    leaderboard = _knn_robust_aggregate(df_all, k=5)
+    print(leaderboard.head(5)[["worst_pred_return", "mean_pred_return", "std_pred_return", "samples"]])
     best = leaderboard.iloc[0]
 
     best_params_path = topo_dir / "best_params.json"
@@ -214,10 +290,10 @@ def find_best_params_for_topology(topo_dir: Path) -> None:
 
     print(
         f"[Phase 2] 🏆  {topo_dir.relative_to(OUT_ROOT)} → best_params.json saved "
-        f"(mean_rank={best['mean_rank']:.2f}, worst={best['worst_rank']:.0f})"
+        f"(worst={best['worst_pred_return']:.2f}, mean={best['mean_pred_return']:.2f})"
     )
     # Optional: print top‑3 summary
-    print(leaderboard.head(3)[["mean_rank", "worst_rank", "mean_return"]])
+    print(leaderboard.head(3)[["worst_pred_return", "mean_pred_return", "std_pred_return"]])
 
 
 def sweep_all_topologies(out_root: Path) -> None:
@@ -236,5 +312,5 @@ def sweep_all_topologies(out_root: Path) -> None:
 
 
 if __name__ == "__main__":
-    # collect(IN_ROOT, OUT_ROOT, GLOB_PATTERN)
+    collect(IN_ROOT, OUT_ROOT, GLOB_PATTERN)
     sweep_all_topologies(OUT_ROOT)
