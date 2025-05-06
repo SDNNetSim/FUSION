@@ -22,7 +22,6 @@ import ast
 import hashlib
 import json
 import re
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -164,44 +163,44 @@ def _encode_param_matrix(df: pd.DataFrame,
         sparse_threshold=0.0,
     )
 
-    X = enc.fit_transform(df[param_cols])
+    curr_x = enc.fit_transform(df[param_cols])
 
-    print(f"[encode] Encoded feature matrix shape: {X.shape}")
-    if np.isnan(X).any():
+    print(f"[encode] Encoded feature matrix shape: {curr_x.shape}")
+    if np.isnan(curr_x).any():
         raise ValueError("[encode] ❌ NaNs remain after preprocessing! Investigate source.")
-    return X, enc, param_cols
+    return curr_x, enc, param_cols
 
 
 def _knn_predict_matrix(df: pd.DataFrame,
-                        X: np.ndarray,
+                        curr_x: np.ndarray,
                         k: int = 5):
     """
     Build one k‑NN model per Erlang load and return a (n_samples, n_loads) matrix
     where entry (i, j) is the *predicted* objective of config i at load j.
     """
     loads = sorted(df["erlang_start"].unique())
-    n, _ = X.shape
+    n, _ = curr_x.shape
     preds = np.empty((n, len(loads)), dtype=float)
 
     for j, load in enumerate(loads):
         mask_load = df["erlang_start"] == load
-        X_load = X[mask_load]
+        x_load = curr_x[mask_load]
         y_load = df.loc[mask_load, "objective_value"].to_numpy()
 
         # Choose k adaptively per load
-        n_i = len(X_load)
+        n_i = len(x_load)
         local_k = max(3, min(7, n_i // 2))  # floor=3  ceiling=7
-        nbrs = NearestNeighbors(n_neighbors=local_k, metric="euclidean").fit(X_load)
+        nbrs = NearestNeighbors(n_neighbors=local_k, metric="euclidean").fit(x_load)
 
         # Query whole set
-        dists, idxs = nbrs.kneighbors(X, return_distance=True)
+        dists, idxs = nbrs.kneighbors(curr_x, return_distance=True)
         # Weight by inverse distance (add ε to avoid /0)
         weights = 1.0 / (dists + 1e-9)
         weights /= weights.sum(axis=1, keepdims=True)
         pred_load = (weights * y_load[idxs]).sum(axis=1)
         preds[:, j] = pred_load
 
-        print(f"[knn]  load={load:<4}   rows_in_load={len(X_load):>3}   k={k}")
+        print(f"[knn]  load={load:<4}   rows_in_load={len(x_load):>3}   k={k}")
 
     return preds, loads
 
@@ -212,19 +211,18 @@ def _knn_robust_aggregate(df: pd.DataFrame, k: int = 5) -> pd.DataFrame:
     computed from k‑NN‑predicted returns across *all* Erlang loads.
     """
     print(f"[knn_agg] Incoming rows: {len(df)}   unique loads: {df['erlang_start'].nunique()}")
-    X, enc, param_cols = _encode_param_matrix(df)
+    curr_x, _, param_cols = _encode_param_matrix(df)
 
-    pred_mat, loads = _knn_predict_matrix(df, X, k=k)
+    pred_mat, _ = _knn_predict_matrix(df, curr_x, k=k)
     print(f"[knn_agg] Prediction matrix shape: {pred_mat.shape}")
 
-    # Attach config hash so we can group identical param vectors
     keys, _ = zip(*df.apply(_hash_params, axis=1))
     df["_key"] = keys
 
     summary_rows = []
     for key, idxs in df.groupby("_key").groups.items():
-        pmat = pred_mat[list(idxs)]  # rows for this param vector (often 1 row)
-        obs = pmat.mean(axis=0)  # if duplicated, average predictions
+        pmat = pred_mat[list(idxs)]
+        obs = pmat.mean(axis=0)
         summary_rows.append({
             **df.loc[idxs[0], param_cols].to_dict(),
             "worst_pred_return": obs.min(),
