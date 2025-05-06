@@ -22,7 +22,8 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
         raise NotImplementedError(f"Algorithm '{algorithm}' is not supported.")
 
     if yaml_dict is None:
-        yaml_file = os.path.join('sb3_scripts', 'yml', f'{algorithm}.yml')
+        network = sim_dict.get('network')
+        yaml_file = os.path.join('sb3_scripts', 'yml', f'{algorithm}_{network}.yml')
         yaml_dict = parse_yaml_file(yaml_file=yaml_file)
         env_name = list(yaml_dict.keys())[0]
         param_dict = yaml_dict[env_name]
