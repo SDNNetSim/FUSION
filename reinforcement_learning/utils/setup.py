@@ -80,7 +80,8 @@ def setup_ppo(env: object, device: str):
     :return: A PPO model.
     :rtype: object
     """
-    yaml_path = os.path.join('sb3_scripts', 'yml', 'ppo.yml')
+    network = env.engine_obj.engine_props['network']
+    yaml_path = os.path.join('sb3_scripts', 'yml', f'ppo_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = PPO(
@@ -123,7 +124,8 @@ def setup_a2c(env: object, device: str):
     :return: An A2C model.
     :rtype: object
     """
-    yaml_path = os.path.join('sb3_scripts', 'yml', 'a2c.yml')
+    network = env.engine_obj.engine_props['network']
+    yaml_path = os.path.join('sb3_scripts', 'yml', f'a2c_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = A2C(
@@ -162,7 +164,8 @@ def setup_dqn(env: object, device: str):
     :return: A DQN model.
     :rtype: object
     """
-    yaml_path = os.path.join('sb3_scripts', 'yml', 'dqn.yml')
+    network = env.engine_obj.engine_props['network']
+    yaml_path = os.path.join('sb3_scripts', 'yml', f'dqn_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = DQN(
@@ -202,7 +205,8 @@ def setup_qr_dqn(env: object, device: str):
     :return: A QRDQN model.
     :rtype: object
     """
-    yaml_path = os.path.join('sb3_scripts', 'yml', 'qr_dqn.yml')
+    network = env.engine_obj.engine_props['network']
+    yaml_path = os.path.join('sb3_scripts', 'yml', f'qr_dqn_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = QRDQN(

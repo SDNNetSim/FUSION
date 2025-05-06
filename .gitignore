@@ -43,3 +43,4 @@ unity/.tmp_config
 
 reinforcement_learning/plotting/figures
 reinforcement_learning/experiments/
+sb3_scripts/yml
