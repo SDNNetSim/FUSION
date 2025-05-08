@@ -1,6 +1,7 @@
 import json
 import os
 import copy
+import time
 
 from data_scripts.structure_data import create_network
 from data_scripts.generate_data import create_bw_info, create_pt
@@ -24,8 +25,20 @@ def create_input(base_fp: str, engine_props: dict):
 
     save_path = os.path.join(base_fp, 'input', engine_props['network'], engine_props['date'],
                              engine_props['sim_start'], bw_file)
-    with open(save_path, 'r', encoding='utf-8') as file_object:
-        engine_props['mod_per_bw'] = json.load(file_object)
+
+    # Retry loop to ensure file is ready
+    max_attempts = 50  # up to 5 seconds (50 * 0.1s)
+    for attempt in range(max_attempts):
+        try:
+            if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
+                with open(save_path, 'r', encoding='utf-8') as file_object:
+                    engine_props['mod_per_bw'] = json.load(file_object)
+                break
+        except json.JSONDecodeError:
+            pass
+        time.sleep(0.1)
+    else:
+        raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
 
     network_dict, core_nodes_list = create_network(base_fp=base_fp, const_weight=engine_props['const_link_weight'],
                                                    net_name=engine_props['network'],
