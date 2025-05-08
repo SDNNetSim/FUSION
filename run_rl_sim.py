@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import traceback
 from pathlib import Path
 
 from reinforcement_learning.workflow_runner import (  # type: ignore
@@ -57,13 +58,15 @@ def _write_bookkeeping_files(
         sim_dict: dict,
         run_id: str | None,
         output_dir: Path | None,
+        had_error: bool = False,
 ) -> None:
     """
     Write ``meta.json`` into *output_dir* and print the path so the bash
     wrapper can capture it.  If *output_dir* is ``None`` do nothing.
+    Exit with 0 only if no error occurred.
     """
     if output_dir is None:
-        return
+        sys.exit(1 if had_error else 0)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     sim_dict["run_id"] = run_id
@@ -72,13 +75,12 @@ def _write_bookkeeping_files(
         json.dump(json_friendly(sim_dict), mfile, indent=2)
 
     print(f"OUTPUT_DIR={output_dir}")
-    sys.exit(0)
+    sys.exit(1 if had_error else 0)
 
 
 def run_rl_sim() -> None:
     """
-    Main function orchestrating a single simulation run.  Behaviour is identical
-    to the original script unless ``--run_id`` or ``--output_dir`` are passed.
+    Main function orchestrating a single simulation run.
     """
     bk_args, remaining_argv = _extract_bookkeeping_flags()
     sys.argv = [sys.argv[0], *remaining_argv]
@@ -86,15 +88,20 @@ def run_rl_sim() -> None:
     env, sim_dict, callback_list = create_environment()
     out_path = Path('data') / 'output' / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
         'thread_num']
+
+    had_error = False
+
     try:
         if not sim_dict["optimize"] and not sim_dict["optimize_hyperparameters"]:
             run(env=env, sim_dict=sim_dict, callback_list=callback_list)
         else:
             run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
-
+    except Exception:
+        traceback.print_exc()
+        had_error = True
     finally:
-        # TODO: This is a duplicate of the input file minus the "is_drl_agent" flag
-        _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path)
+        # Always try to write bookkeeping files
+        _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path, had_error)
 
 
 if __name__ == "__main__":

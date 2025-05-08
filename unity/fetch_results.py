@@ -2,6 +2,7 @@ import json
 import logging
 import pathlib
 import subprocess
+from time import sleep
 from typing import Iterator, Optional
 
 import yaml
@@ -32,6 +33,7 @@ def topology_from_output(out_path: pathlib.PurePosixPath) -> str:
 
 
 def _run(cmd: list[str], dry: bool) -> None:
+    sleep(0.5)
     if dry:
         logging.info("[dry‑run] %s", " ".join(cmd))
     else:
