@@ -27,7 +27,7 @@ def create_input(base_fp: str, engine_props: dict):
                              engine_props['sim_start'], bw_file)
 
     # Retry loop to ensure file is ready
-    max_attempts = 50  # up to 5 seconds (50 * 0.1s)
+    max_attempts = 50
     for attempt in range(max_attempts):
         try:
             if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
@@ -36,7 +36,7 @@ def create_input(base_fp: str, engine_props: dict):
                 break
         except json.JSONDecodeError:
             pass
-        time.sleep(0.1)
+        time.sleep(0.5)
     else:
         raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
 
