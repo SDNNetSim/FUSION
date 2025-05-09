@@ -20,8 +20,23 @@ def plot_rewards_mean_var(
         for idx, (tv, rewards) in enumerate(sorted_tvs):
             rewards_arr = np.array(rewards["mean"], dtype=float)
             std_arr = np.array(rewards["std"], dtype=float)
-            n_trials = rewards.get("n", 1)
-            ci_arr = 1.96 * (std_arr / np.sqrt(n_trials))
+            ci_arr = std_arr  # use raw std for shading
+
+            # ----- debug info once per traffic value -----
+            if idx == 0:
+                print(
+                    f"[DBG PLOT] tv={tv:<6} std_min={np.nanmin(std_arr):.4f} "
+                    f"std_max={np.nanmax(std_arr):.4f} "
+                    f"overall_ci={rewards.get('overall_ci', 0.0):.4f}"
+                )
+
+            # ----- episode labels for x‑axis -----
+            ep_labels = rewards.get("episodes")
+            if ep_labels:
+                episodes = list(range(len(ep_labels)))  # numeric ticks
+                plt.xticks(episodes, ep_labels, rotation=45, ha='right')
+            else:
+                episodes = range(len(rewards_arr))
 
             episodes = np.arange(len(rewards_arr))
             color = color_map(idx)
@@ -29,7 +44,7 @@ def plot_rewards_mean_var(
             vmin = min(vmin, np.min(rewards_arr - ci_arr))
             vmax = max(vmax, np.max(rewards_arr + ci_arr))
 
-            final_ci = ci_arr[-1]
+            final_ci = rewards.get("overall_ci", 0.0)
             label = f"{tv} ±{final_ci:.4f}"
 
             plt.plot(episodes, rewards_arr, color=color, linewidth=2, marker='o', label=label)
@@ -50,7 +65,7 @@ def plot_rewards_mean_var(
 
         plt.grid(True, linestyle='--', linewidth=0.5)
         plt.legend(
-            title="Traffic (±95% CI @ last ep)",
+            title="Traffic (±95% CI)",
             bbox_to_anchor=(1.05, 1),
             loc='upper left',
             fontsize=12,

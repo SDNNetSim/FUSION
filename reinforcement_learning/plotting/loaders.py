@@ -54,7 +54,9 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str,
                         algo = f"{method}_{'inf' if k > 4 else k}"
                     else:
                         algo = method
-                algo_runs[algo].append(run_id)
+                timestamp = s_dir.parent.name
+                unique_run_id = f"{meta['run_id']}@{timestamp}"
+                algo_runs[algo].append(unique_run_id)
 
     # deduplicate while preserving order
     for alg in tuple(algo_runs):
@@ -110,16 +112,16 @@ def load_metric_for_runs(
                     meta_run_id = meta.get("run_id")
                     algo = meta.get("path_algorithm", algo)
 
-                if meta_run_id is None:
-                    meta_run_id = base_run_dir.name
+                timestamp = base_run_dir.name
+                meta_run_id = meta_run_id or timestamp
+                composite_run_id = f"{meta_run_id}@{timestamp}"
 
-                if meta_run_id not in run_ids:
-                    if base_run_dir.name in run_ids:
-                        meta_run_id = base_run_dir.name
-                    else:
-                        continue  # not requested → skip
+                # Also allow fallback to plain run_id match
+                if not (composite_run_id in run_ids or meta_run_id in run_ids):
+                    continue
 
-                unique_run_id = f"{meta_run_id}_{seed}"
+                unique_run_id = f"{composite_run_id}_{seed}"
+
 
             else:
                 parent_dir = s_dir.parent
@@ -196,7 +198,7 @@ def load_metric_for_runs(
                             for tv in metric_vals:
                                 # TODO: This is rewards per seed
                                 # TODO: We should make this consistent across all loaders
-                                metric_vals[tv]['rewards']  = trials
+                                metric_vals[tv]['rewards'] = trials
 
                 if metric == "state_values" and drl:
                     logs_dir = ROOT_LOGS / algo / network / date / base_run_dir.name
@@ -212,8 +214,8 @@ def load_metric_for_runs(
                             m = sv_rx.match(fp.name)
                             if not m:
                                 continue
-                            erlang = m.group("erl")    # '50.0'
-                            trial  = int(m.group("trial"))
+                            erlang = m.group("erl")  # '50.0'
+                            trial = int(m.group("trial"))
 
                             try:
                                 with fp.open("r", encoding="utf-8") as f:

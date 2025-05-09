@@ -139,40 +139,89 @@ def process_sim_times(
 def process_rewards(raw_runs: Dict[str, Any],
                     runid_to_algo: dict[str, str]) -> dict:
     """
-    Aggregate rewards across seeds (trials).
+    Aggregate rewards across seeds and keep the **true episode indices**
+    (0, 10, 20, …) that are encoded in the log‑file names.
 
-    Input  (per seed)  : {tv: {'rewards': {trial_idx: {episode_idx: [step_rewards]}}}}
-    Output (averaged)  : {algo: {tv: {"mean": [...], "std": [...]}}}
+    For every (algo, traffic‑volume) pair return:
+      • 'mean'        : episode‑by‑episode mean across seeds
+      • 'std'         : episode‑by‑episode std  across seeds  (raw, NOT /√n)
+      • 'n'           : number of seeds
+      • 'overall_ci'  : 95 % CI of the run‑mean reward across seeds
+      • 'episodes'    : list of episode labels that go straight on the x‑axis
     """
-    by_algo_tv = defaultdict(lambda: defaultdict(dict))
+    # by_algo_tv[algo][tv] ──► list[dict{ep_idx : mean_reward}]  (one dict per seed)
+    by_algo_tv: dict[str, dict[str, list[dict[int, float]]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    seen_seed: dict[str, set[tuple[str, int]]] = defaultdict(set)
 
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
 
         for tv, trials in data.items():
-            trial_means = []
             trial_dict = trials.get("rewards", {})
-            for trial_idx, ep_dict in trial_dict.items():
-                ep_ids = sorted(ep_dict.keys())
-                ep_means = [float(np.mean(ep_dict[ep])) for ep in ep_ids]
-                trial_means.append(ep_means)
-
-            if not trial_means:
+            if not trial_dict:
                 continue
 
-            max_len = max(map(len, trial_means))
-            padded = [tm + [np.nan] * (max_len - len(tm)) for tm in trial_means]
-            arr = np.array(padded, dtype=float)
+            for trial_idx, ep_dict in trial_dict.items():
+                key = (tv, trial_idx)
+                if key in seen_seed[algo]:
+                    continue  # duplicate -> skip
+                seen_seed[algo].add(key)
 
-            mean = np.nanmean(arr, axis=0)
-            std = np.nanstd(arr, axis=0)
+                # ep_dict keys are episode numbers such as "0", "10", "20", …
+                ep_ids = sorted(ep_dict, key=float)
+                ep_means = {int(ep): float(np.mean(ep_dict[ep])) for ep in ep_ids}
+                by_algo_tv[algo][str(tv)].append(ep_means)
 
-            by_algo_tv[algo][str(tv)] = {
-                "mean": mean.tolist(),
-                "std": std.tolist()
+                # DEBUG: show the first few episode means for two seeds max
+                if len(by_algo_tv[algo][str(tv)]) <= 2:
+                    sample_vals = list(ep_means.values())[:5]
+                    print(f"[SEED DBG] algo={algo:<15} tv={tv:<6} "
+                          f"trial={trial_idx} sample={sample_vals}")
+
+    # -----------------------------------------------------------------------
+    # Aggregate across seeds (episode indices may be sparse: 0,10,20,…)
+    # -----------------------------------------------------------------------
+    processed: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+
+    for algo, tv_dict in by_algo_tv.items():
+        for tv, seed_dicts in tv_dict.items():
+            n_seeds = len(seed_dicts)
+
+            # Union of all episode indices recorded for this (algo,tv)
+            all_eps = sorted({ep for d in seed_dicts for ep in d})
+            ep_to_pos = {ep: i for i, ep in enumerate(all_eps)}
+
+            # Build a 2‑D array (seeds × episodes) filled with NaN
+            arr = np.full((n_seeds, len(all_eps)), np.nan, dtype=float)
+            for row, ep_means in enumerate(seed_dicts):
+                for ep, val in ep_means.items():
+                    arr[row, ep_to_pos[ep]] = val
+
+            mean_curve = np.nanmean(arr, axis=0)
+            std_curve = np.nanstd(arr, axis=0, ddof=1)
+
+            run_means = np.nanmean(arr, axis=1)  # one number per seed
+            run_std = float(np.std(run_means, ddof=1)) if n_seeds > 1 else 0.0
+            overall_ci = 1.96 * run_std / np.sqrt(n_seeds) if n_seeds > 1 else 0.0
+
+            print(
+                f"[DBG PROC] algo={algo:<15} tv={tv:<6} n_seeds={n_seeds} "
+                f"run_means={run_means.tolist()} run_std={run_std:.4f} "
+                f"overall_ci={overall_ci:.4f}"
+            )
+
+            processed[algo][tv] = {
+                "mean": mean_curve.tolist(),
+                "std": std_curve.tolist(),
+                "n": n_seeds,
+                "overall_ci": overall_ci,
+                # Use the *real* episode numbers as x‑axis labels
+                "episodes": [str(ep) for ep in all_eps],
             }
 
-    return dict(by_algo_tv)
+    return dict(processed)
 
 
 def process_state_values(raw_runs: Dict[str, Any],
