@@ -24,27 +24,49 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str,
     algo_runs: Dict[str, list[str]] = defaultdict(list)
 
     for date in dates:
-        for s_dir in (ROOT_OUTPUT / network / date).rglob("s*"):
+        run_root = ROOT_OUTPUT / network / date
+
+        # Recursively find all s* directories
+        for s_dir in run_root.rglob("s*"):
             if not s_dir.is_dir():
                 continue
 
-            meta_fp = s_dir / "meta.json"
+            # DRL mode
+            if drl:
+                run_base_dir = s_dir.parent
+                # Only process the parent run dir once
+                if s_dir.name != "s1":
+                    continue  # Avoid reprocessing for s2, s3, etc.
 
-            if drl and meta_fp.exists():
+                # Try to find a meta.json in *any* seed folder
+                meta_fp = next((p for p in run_base_dir.glob("s*/meta.json") if p.exists()), None)
+                if not meta_fp:
+                    continue
+
                 meta = _safe_load_json(meta_fp)
                 if not meta or "run_id" not in meta:
                     continue
-                algo = meta.get("path_algorithm", "unknown")
-                algo_runs[algo].append(meta["run_id"])
 
-            elif not drl and not meta_fp.exists():
+                algo = meta.get("path_algorithm", "unknown")
+                run_id = meta["run_id"]
+                timestamp = run_base_dir.name
+                composite_run_id = f"{run_id}@{timestamp}"
+
+                # Add all seed folders (s1, s2, …) for this run
+                for seed_dir in run_base_dir.glob("s*"):
+                    if seed_dir.is_dir():
+                        seed = seed_dir.name
+                        unique_run_id = f"{composite_run_id}_{seed}"
+                        algo_runs[algo].append(unique_run_id)
+
+            # non-DRL mode
+            elif not drl and not (s_dir / "meta.json").exists():
                 parent_dir = s_dir.parent  # …/RUN_ID/
                 date_str = parent_dir.parent.name
                 s_num = s_dir.name  # s1 …
 
                 run_id = f"{s_num}_{date_str}"
-                inp_fp = (ROOT_INPUT / network / date_str /
-                          parent_dir.name / f"sim_input_{s_num}.json")
+                inp_fp = ROOT_INPUT / network / date_str / parent_dir.name / f"sim_input_{s_num}.json"
                 algo = "unknown"
                 if inp_fp.exists():
                     inp = _safe_load_json(inp_fp) or {}
@@ -54,8 +76,9 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str,
                         algo = f"{method}_{'inf' if k > 4 else k}"
                     else:
                         algo = method
-                timestamp = s_dir.parent.name
-                unique_run_id = f"{meta['run_id']}@{timestamp}"
+
+                timestamp = parent_dir.name
+                unique_run_id = f"{run_id}@{timestamp}"
                 algo_runs[algo].append(unique_run_id)
 
     # deduplicate while preserving order
@@ -115,20 +138,20 @@ def load_metric_for_runs(
                 timestamp = base_run_dir.name
                 meta_run_id = meta_run_id or timestamp
                 composite_run_id = f"{meta_run_id}@{timestamp}"
-
-                # Also allow fallback to plain run_id match
-                if not (composite_run_id in run_ids or meta_run_id in run_ids):
-                    continue
-
                 unique_run_id = f"{composite_run_id}_{seed}"
 
-
+                # Accept full composite DRL ID, partial ID, or plain run ID
+                if run_ids and not any(
+                        rid in run_ids for rid in (unique_run_id, composite_run_id, meta_run_id)
+                ):
+                    continue
             else:
                 parent_dir = s_dir.parent
                 date_str = parent_dir.parent.name
-                seed = s_dir.name  # s1 … (scenario)
-                unique_run_id = f"{seed}_{date_str}"
-                if unique_run_id not in run_ids:
+                seed = s_dir.name  # s1 …
+                timestamp = parent_dir.name
+                unique_run_id = f"{seed}_{date_str}@{timestamp}"
+                if run_ids and unique_run_id not in run_ids:
                     continue
 
                 inp_fp = (ROOT_INPUT / network / date_str / parent_dir.name /
