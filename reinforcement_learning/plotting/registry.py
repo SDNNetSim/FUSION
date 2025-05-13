@@ -18,6 +18,8 @@ from reinforcement_learning.plotting.hops import plot_hops
 from reinforcement_learning.plotting.hops import plot_hops_minmax
 from reinforcement_learning.plotting.lengths import plot_lengths
 from reinforcement_learning.plotting.lengths import plot_lengths_minmax
+from reinforcement_learning.plotting.mod_usage import plot_modulation_usage
+from reinforcement_learning.plotting.bw_block  import plot_bw_blocked
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -31,5 +33,13 @@ PLOTS = {
     "transponders_minmax": {"plot": plot_transponders_minmax, "process": "process_transponders"},
     "hops_minmax": {"plot": plot_hops_minmax, "process": "process_hops"},
     "lengths_minmax": {"plot": plot_lengths_minmax, "process": "process_lengths"},
+    "mod_usage": {
+        "process": "process_modulation_usage",
+        "plot": plot_modulation_usage,
+    },
+    "bw_block": {
+        "process": "process_blocked_bandwidth",
+        "plot": plot_bw_blocked,
+    },
     # state-values uses same raw format as rewards trials
 }

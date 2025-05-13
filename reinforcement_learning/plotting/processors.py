@@ -324,3 +324,88 @@ def process_lengths(raw_runs, runid_to_algo):
         raw_runs, runid_to_algo,
         mean_key="lengths_mean", min_key="lengths_min", max_key="lengths_max"
     )
+
+
+# ---------------------------------------------------------------------
+# Classic processor – keeps traffic‑volume and bandwidth keys as STRINGS
+# ---------------------------------------------------------------------
+from collections import defaultdict
+import numpy as np
+
+def process_modulation_usage(raw_runs, runid_to_algo):
+    """
+    Extract *mods_used_dict* from the final iteration of every seed and
+    average counts across seeds.
+
+    Returns
+    -------
+    {algo: {tv (str): {bw (str): {mod: mean_count}}}}
+    """
+
+    merged = defaultdict(
+        lambda: defaultdict(
+            lambda: defaultdict(
+                lambda: defaultdict(list)
+            )
+        )
+    )
+
+    for run_id, data in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+
+        for tv, info in data.items():                     # tv remains *string*
+            if not isinstance(info, dict) or "iter_stats" not in info:
+                continue
+
+            last_iter = info["iter_stats"][next(reversed(info["iter_stats"]))]
+
+            for bw, mod_dict in last_iter.get("mods_used_dict", {}).items():
+                # skip entries that contain non‑integer counts
+                if not all(isinstance(cnt, int) for cnt in mod_dict.values()):
+                    continue
+
+                for mod, cnt in mod_dict.items():
+                    merged[algo][tv][bw][mod].append(float(cnt))
+
+    # average across seeds
+    processed = {}
+    for algo, tv_dict in merged.items():
+        processed[algo] = {}
+        for tv, bw_dict in tv_dict.items():
+            processed[algo][tv] = {}
+            for bw, mod_dict in bw_dict.items():
+                processed[algo][tv][bw] = {
+                    mod: float(np.mean(vals)) for mod, vals in mod_dict.items()
+                }
+
+    return processed
+
+
+
+# --- Blocked‑bandwidth  ----------------------------------------------
+def process_blocked_bandwidth(raw_runs, runid_to_algo):
+    """
+    Return {algo: {tv: {bw_gbps: mean_blocked_count}}}
+    from *block_bw_dict* in the last iteration.
+    """
+    from collections import defaultdict
+    import numpy as np
+
+    merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for run_id, data in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+        for tv_raw, info in data.items():  # new
+            tv = float(tv_raw)  # └─ store as float, not string
+            if not isinstance(info, dict) or "iter_stats" not in info:
+                continue
+            last_iter = info["iter_stats"][next(reversed(info["iter_stats"]))]
+            for bw, blocked in last_iter.get("block_bw_dict", {}).items():
+                bw = float(bw)
+                merged[algo][tv][bw].append(float(blocked))  # in bw‑block
+    return {
+        a: {tv: {bw: float(np.mean(vals))
+                 for bw, vals in bw_dict.items()}
+            for tv, bw_dict in tvs.items()}
+        for a, tvs in merged.items()
+    }
