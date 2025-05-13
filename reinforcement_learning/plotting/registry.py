@@ -10,6 +10,14 @@ from reinforcement_learning.plotting.memory_usage import plot_memory_usage
 from reinforcement_learning.plotting.rewards import plot_rewards_mean_var
 from reinforcement_learning.plotting.sim_times import plot_sim_times
 from reinforcement_learning.plotting.state_values import plot_best_path_matrix
+from reinforcement_learning.plotting.transponders import (
+    plot_transponders,
+    plot_transponders_minmax,
+)
+from reinforcement_learning.plotting.hops import plot_hops
+from reinforcement_learning.plotting.hops import plot_hops_minmax
+from reinforcement_learning.plotting.lengths import plot_lengths
+from reinforcement_learning.plotting.lengths import plot_lengths_minmax
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -17,5 +25,11 @@ PLOTS = {
     "rewards": {"plot": plot_rewards_mean_var, "process": "process_rewards"},
     "sim_times": {"plot": plot_sim_times, "process": "process_sim_times"},
     "state_values": {"plot": plot_best_path_matrix, "process": "process_state_values"},
+    "transponders": {"plot": plot_transponders, "process": "process_transponders"},
+    "hops": {"plot": plot_hops, "process": "process_hops"},
+    "lengths": {"plot": plot_lengths, "process": "process_lengths"},
+    "transponders_minmax": {"plot": plot_transponders_minmax, "process": "process_transponders"},
+    "hops_minmax": {"plot": plot_hops_minmax, "process": "process_hops"},
+    "lengths_minmax": {"plot": plot_lengths_minmax, "process": "process_lengths"},
     # state-values uses same raw format as rewards trials
 }

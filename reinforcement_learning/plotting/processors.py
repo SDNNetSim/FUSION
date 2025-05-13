@@ -266,3 +266,61 @@ def process_state_values(raw_runs: Dict[str, Any],
             averaged[algo][erl] = averaged_pairs
 
     return dict(averaged)
+
+
+# --- Transponders / Hops / Lengths -----------------------------------------
+def _process_iter_metric(raw_runs, runid_to_algo, mean_key, min_key, max_key):
+    """
+    Helper: aggregate <mean,min,max> from the **last iteration** of iter_stats.
+
+    Returns
+    -------
+    {algo: {tv: {"mean": μ, "min": μ_min, "max": μ_max}}}
+    """
+    from collections import defaultdict
+    import numpy as np
+
+    merged = defaultdict(lambda: defaultdict(lambda: {"mean": [], "min": [], "max": []}))
+
+    for run_id, data in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+        for tv, info in data.items():
+            if not isinstance(info, dict) or "iter_stats" not in info:
+                continue
+            last_iter = info["iter_stats"][next(reversed(info["iter_stats"]))]
+            merged[algo][str(tv)]["mean"].append(float(last_iter.get(mean_key, 0)))
+            merged[algo][str(tv)]["min"].append(float(last_iter.get(min_key, 0)))
+            merged[algo][str(tv)]["max"].append(float(last_iter.get(max_key, 0)))
+
+    # average across seeds
+    processed = {}
+    for algo, tv_dict in merged.items():
+        processed[algo] = {}
+        for tv, vecs in tv_dict.items():
+            processed[algo][tv] = {
+                "mean": float(np.mean(vecs["mean"])),
+                "min": float(np.mean(vecs["min"])),
+                "max": float(np.mean(vecs["max"])),
+            }
+    return processed
+
+
+def process_transponders(raw_runs, runid_to_algo):
+    return _process_iter_metric(
+        raw_runs, runid_to_algo,
+        mean_key="trans_mean", min_key="trans_min", max_key="trans_max"
+    )
+
+
+def process_hops(raw_runs, runid_to_algo):
+    return _process_iter_metric(
+        raw_runs, runid_to_algo,
+        mean_key="hops_mean", min_key="hops_min", max_key="hops_max"
+    )
+
+
+def process_lengths(raw_runs, runid_to_algo):
+    return _process_iter_metric(
+        raw_runs, runid_to_algo,
+        mean_key="lengths_mean", min_key="lengths_min", max_key="lengths_max"
+    )
