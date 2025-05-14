@@ -42,7 +42,7 @@ class Engine:
         :param curr_time: The current simulated time.
         """
         sdn_props = self.sdn_obj.sdn_props
-        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props)
+        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props, net_spec_dict=self.net_spec_dict)
         if sdn_props.was_routed:
             self.stats_obj.curr_trans = sdn_props.num_trans
 
@@ -130,8 +130,14 @@ class Engine:
                 band_slots = self.engine_props[f'{band}_band']
                 cores_matrix[band] = np.zeros((link_data['fiber']['num_cores'], band_slots))
 
-            self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
-            self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix, 'link_num': int(link_num)}
+            self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix,
+                                                  'link_num': int(link_num),
+                                                  'usage_count': 0
+                                                  }
+            self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix,
+                                                  'link_num': int(link_num),
+                                                  'usage_count': 0
+                                                  }
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
         self.engine_props['topology'] = self.topology

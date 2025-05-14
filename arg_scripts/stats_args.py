@@ -24,6 +24,7 @@ class StatsProps:
         self.end_slot_list = list() # # Tracks the end slot allocated in a simulation
         self.modulation_list = list() # Tracks the modulation
         self.bandwidth_list = list() # # Tracks the bandwidth
+        self.link_usage_dict = dict() # Tracks per link usage data
 
     def __repr__(self):
         return f"StatsProps({self.__dict__})"

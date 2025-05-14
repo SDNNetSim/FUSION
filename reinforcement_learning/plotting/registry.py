@@ -6,6 +6,7 @@ Maps a *plot nickname* to:
   • the default file-stem used when saving (optional convenience)
 """
 from reinforcement_learning.plotting.blocking import plot_blocking_probabilities
+from reinforcement_learning.plotting.link_data import plot_link_usage
 from reinforcement_learning.plotting.memory_usage import plot_memory_usage
 from reinforcement_learning.plotting.rewards import plot_rewards_mean_var
 from reinforcement_learning.plotting.sim_times import plot_sim_times
@@ -41,5 +42,12 @@ PLOTS = {
         "process": "process_blocked_bandwidth",
         "plot": plot_bw_blocked,
     },
+    "link_usage": {
+        "process": "process_link_usage",
+        "plot": plot_link_usage,
+        "topology": {
+            "NSFNet": "nsf_network.txt"
+        }
+    }
     # state-values uses same raw format as rewards trials
 }
