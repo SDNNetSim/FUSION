@@ -90,11 +90,11 @@ def plot_blocking_probabilities(
 def plot_blocking_stats_table(
         processed: dict,
         save_path: str | None = None,
-        title: str = "Statistical Comparison of Blocking Probabilities"
+        title: str = "Effect Size Comparison of Blocking Probabilities"
 ):
     rows = []
 
-    # Identify Erlang values
+    # Determine Erlang values
     all_erlangs = sorted({float(tv) for algo in processed.values() for tv in algo})
     if not all_erlangs:
         print("[plot_blocking_stats] ⚠ No data to plot.")
@@ -109,27 +109,47 @@ def plot_blocking_stats_table(
         for tv, stats in tv_dict.items():
             if tv not in selected_erlangs:
                 continue
+
             for compare_key in ["vs_k_shortest_path_4", "vs_cong_aware"]:
                 if compare_key not in stats:
                     continue
                 comp = stats[compare_key]
-                p = comp.get("p")
                 d = comp.get("d")
-                sig = comp.get("significant", False)
-                if p is None or d is None:
+                if d is None:
                     continue
 
                 baseline_label = "k = 4" if "k_shortest" in compare_key else "cong_aware"
+                mean_diff = comp.get("mean_diff", 0.0)
+                ci_width = 2 * stats.get("ci", 0.0)
+
+                # Interpret Cohen's d (direction-aware)
+                if d <= -0.8:
+                    interpretation = "Large Benefit"
+                elif d <= -0.5:
+                    interpretation = "Moderate Benefit"
+                elif d <= -0.2:
+                    interpretation = "Small Benefit"
+                elif d < 0.2:
+                    interpretation = "Negligible"
+                elif d < 0.5:
+                    interpretation = "Small Disadvantage"
+                elif d < 0.8:
+                    interpretation = "Moderate Disadvantage"
+                else:
+                    interpretation = "Large Disadvantage"
+
                 rows.append([
                     algo.replace("_", " ").title(),
                     baseline_label,
                     float(tv),
-                    f"{p:.4f}",
+                    f"{mean_diff:.4f}",
                     f"{d:.3f}",
-                    "Yes" if sig else "No"
+                    f"±{ci_width:.4f}",
+                    interpretation
                 ])
 
-    df = pd.DataFrame(rows, columns=["Algorithm", "Baseline", "Erlang", "p-value", "Cohen's d", "Significant?"])
+    df = pd.DataFrame(rows, columns=["Algorithm", "Baseline", "Erlang", "Δ Mean Blocking", "Cohen's d", "95% CI Width",
+                                     "Interpretation"])
     df.sort_values(by=["Erlang", "Baseline", "Algorithm"], inplace=True)
 
     if save_path:
@@ -137,12 +157,9 @@ def plot_blocking_stats_table(
         df.to_csv(csv_fp, index=False)
         print(f"[plot_blocking_stats] ✅ CSV saved to {csv_fp}")
 
-    # Plot table
     fig_height = 0.6 + 0.4 * len(df)
-    fig, ax = plt.subplots(figsize=(11, fig_height), dpi=300)
+    fig, ax = plt.subplots(figsize=(12, fig_height), dpi=300)
     ax.axis("off")
-
-    # Tight vertical title placement
     fig.suptitle(title, fontsize=14, fontweight="bold", y=0.96)
 
     table = ax.table(cellText=df.values, colLabels=df.columns, loc="center", cellLoc="center")
@@ -150,19 +167,27 @@ def plot_blocking_stats_table(
     table.set_fontsize(10)
     table.scale(1.2, 1.4)
 
-    # Bold header and align left column
     for (row, col), cell in table.get_celld().items():
         if row == 0:
             cell.set_text_props(weight='bold')
         if col == 0:
             cell._loc = 'left'
 
-        # Color significant flag column
-        if col == 5 and row > 0:
+        if col == 6 and row > 0:
             value = table[row, col].get_text().get_text()
-            if value == "Yes":
-                cell.set_facecolor(to_rgba("lightgreen", 0.6))
-            elif value == "No":
+            if value == "Large Benefit":
+                cell.set_facecolor(to_rgba("mediumseagreen", 0.6))
+            elif value == "Moderate Benefit":
+                cell.set_facecolor(to_rgba("palegreen", 0.6))
+            elif value == "Small Benefit":
+                cell.set_facecolor(to_rgba("honeydew", 0.8))
+            elif value == "Negligible":
+                cell.set_facecolor(to_rgba("lightyellow", 0.8))
+            elif value == "Small Disadvantage":
+                cell.set_facecolor(to_rgba("moccasin", 0.8))
+            elif value == "Moderate Disadvantage":
+                cell.set_facecolor(to_rgba("lightsalmon", 0.7))
+            elif value == "Large Disadvantage":
                 cell.set_facecolor(to_rgba("lightcoral", 0.5))
 
     if save_path:

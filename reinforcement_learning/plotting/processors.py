@@ -16,9 +16,6 @@ def _mean_last(values: list[float | int], k: int = 20) -> float:
 
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
-    """
-    Processes blocking runs.
-    """
     merged = defaultdict(lambda: defaultdict(list))
     baselines = ["k_shortest_path_4", "cong_aware"]
 
@@ -59,14 +56,16 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
 
             if algo not in baselines:
                 for base in baselines:
-                    base_vals = baseline_vals.get(base, {}).get(tv)
-                    if base_vals is not None and len(base_vals) > 1 and len(vals) > 1:
+                    base_vals = np.array(baseline_vals.get(base, {}).get(tv, []), dtype=float)
+                    if len(base_vals) > 1 and len(vals) > 1:
                         t_stat, p_val = ttest_ind(vals, base_vals, equal_var=False)
                         pooled_std = np.sqrt((np.var(vals, ddof=1) + np.var(base_vals, ddof=1)) / 2)
                         d = (np.mean(vals) - np.mean(base_vals)) / pooled_std if pooled_std else 0.0
+                        mean_diff = np.mean(vals) - np.mean(base_vals)
                         stats_block[f"vs_{base}"] = {
                             "p": float(p_val),
                             "d": float(d),
+                            "mean_diff": float(mean_diff),
                             "significant": p_val < 0.05
                         }
 
@@ -442,8 +441,8 @@ def extract_network_from_path(path: str) -> str:
             return part
     raise ValueError(f"Network name not found in path: {path}")
 
-def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
 
+def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
     """
     Aggregates link usage per traffic volume across seeds.
     Output structure: { algo: { erlang: { link_str: avg_usage_count } } }
@@ -478,4 +477,3 @@ def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
             }
 
     return result
-
