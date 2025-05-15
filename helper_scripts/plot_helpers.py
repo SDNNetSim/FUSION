@@ -8,6 +8,9 @@ from helper_scripts.sim_helpers import dict_to_list, list_to_title
 from arg_scripts.plot_args import PlotArgs, PlotProps
 
 
+# TODO: (version 5.5-6) RL no longer uses anything from here, although there is some overlap
+#   - The problem we need to address: How do we make large changes to the simulator without this module breaking?
+#   - A rough idea: decentralize plotting scripts unless absolutely needed, or have another unique decentralized way
 class PlotHelpers:  # pylint: disable=too-few-public-methods
     """
     A class to assist with various tasks related when plotting statistics.

@@ -43,7 +43,7 @@ def assign_core_nodes(core_nodes_fp: str):
     return response_list
 
 
-# TODO: Return type is no longer a dictionary
+# TODO: (version 5.5-6) Return type is no longer a dictionary
 def create_network(net_name: str, base_fp: str = None, const_weight: bool = False, is_only_core_node: bool = False):
     """
     The main structure data function.
@@ -61,6 +61,8 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
     else:
         base_fp = os.path.join(base_fp, 'raw')
 
+    # TODO: (version 5.5-6) This won't scale well, have a variables file that's imported
+    #   - Also, standardize names to snake case and have all of them end with "net"
     if net_name == 'USNet':
         network_fp = os.path.join(base_fp, 'us_network.txt')
     elif net_name == 'NSFNet':

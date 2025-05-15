@@ -9,6 +9,8 @@ from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 from data_scripts.structure_data import create_network
 
 
+# TODO: (version 5.5-6) We don't have to have modules end with the name "scripts"
+#   - Also, we don't need every file to end with "helpers"
 class NodeInfoDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
     """
     Displays individual node dialog.
