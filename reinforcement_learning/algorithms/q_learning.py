@@ -1,8 +1,9 @@
 import os
 import json
+from itertools import islice
+
 import networkx as nx
 import numpy as np
-from itertools import islice
 
 from reinforcement_learning.algorithms.algorithm_props import QProps
 from helper_scripts.sim_helpers import (

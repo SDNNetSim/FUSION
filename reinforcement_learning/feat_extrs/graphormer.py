@@ -6,6 +6,10 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 # TODO: Add params to optuna
 
 class GraphTransformerExtractor(BaseFeaturesExtractor):
+    """
+    Custom feature extractor for Graph Transformer with SB3.
+    """
+
     def __init__(self, obs_space, emb_dim, heads, layers):
         num_paths = obs_space["path_masks"].shape[0]
         in_dim = obs_space["x"].shape[1]
@@ -25,6 +29,9 @@ class GraphTransformerExtractor(BaseFeaturesExtractor):
         self.readout = torch.nn.Linear(conv_out_dim, emb_dim)
 
     def forward(self, obs):
+        """
+        Convert observation to feature vector.
+        """
         x = obs["x"]  # [B, N, F] or [N, F]
         ei = obs["edge_index"].long()  # [B, 2, E] or [2, E]
         masks = obs["path_masks"]  # [B, k, E] or [k, E]
@@ -47,10 +54,10 @@ class GraphTransformerExtractor(BaseFeaturesExtractor):
                     pv_b = self.readout(path_emb_b).flatten()
                     outputs.append(pv_b)
                 return torch.stack(outputs, dim=0)
-            else:
-                x = x.squeeze(0)
-                ei = ei.squeeze(0) if ei.dim() == 3 else ei
-                masks = masks.squeeze(0) if masks.dim() == 3 else masks
+
+            x = x.squeeze(0)
+            ei = ei.squeeze(0) if ei.dim() == 3 else ei
+            masks = masks.squeeze(0) if masks.dim() == 3 else masks
 
         # Single sample (no batch) or after squeezing batch=1
         y = x

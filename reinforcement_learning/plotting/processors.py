@@ -1,7 +1,7 @@
-# ✅ processors.py (updated to include full algo labels like k_shortest_path_2 vs _inf)
 from collections import defaultdict
 from typing import Dict, Any
 from datetime import datetime, timedelta
+
 import numpy as np
 
 
@@ -169,31 +169,24 @@ def process_rewards(raw_runs: Dict[str, Any],
                     continue  # duplicate -> skip
                 seen_seed[algo].add(key)
 
-                # ep_dict keys are episode numbers such as "0", "10", "20", …
                 ep_ids = sorted(ep_dict, key=float)
                 ep_means = {int(ep): float(np.mean(ep_dict[ep])) for ep in ep_ids}
                 by_algo_tv[algo][str(tv)].append(ep_means)
 
-                # DEBUG: show the first few episode means for two seeds max
                 if len(by_algo_tv[algo][str(tv)]) <= 2:
                     sample_vals = list(ep_means.values())[:5]
                     print(f"[SEED DBG] algo={algo:<15} tv={tv:<6} "
                           f"trial={trial_idx} sample={sample_vals}")
 
-    # -----------------------------------------------------------------------
-    # Aggregate across seeds (episode indices may be sparse: 0,10,20,…)
-    # -----------------------------------------------------------------------
     processed: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
 
     for algo, tv_dict in by_algo_tv.items():
         for tv, seed_dicts in tv_dict.items():
             n_seeds = len(seed_dicts)
 
-            # Union of all episode indices recorded for this (algo,tv)
             all_eps = sorted({ep for d in seed_dicts for ep in d})
             ep_to_pos = {ep: i for i, ep in enumerate(all_eps)}
 
-            # Build a 2‑D array (seeds × episodes) filled with NaN
             arr = np.full((n_seeds, len(all_eps)), np.nan, dtype=float)
             for row, ep_means in enumerate(seed_dicts):
                 for ep, val in ep_means.items():
@@ -239,7 +232,6 @@ def process_state_values(raw_runs: Dict[str, Any],
     }
     """
     merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    # merged[algo][erlang][(src,dst)] -> list[list_of_path_values]
 
     for run_id, run_dict in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
@@ -249,7 +241,6 @@ def process_state_values(raw_runs: Dict[str, Any],
                 for pair, vec in trial_dict.items():
                     merged[algo][erl][pair].append(vec)
 
-    # element-wise average
     averaged = defaultdict(dict)  # final structure
 
     for algo, erl_dict in merged.items():
@@ -257,7 +248,6 @@ def process_state_values(raw_runs: Dict[str, Any],
             averaged_pairs = {}
             for pair, vecs in pair_dict.items():
                 max_len = max(map(len, vecs))
-                # pad shorter vectors with np.nan & average
                 padded = [
                     vec + [np.nan] * (max_len - len(vec)) for vec in vecs
                 ]
@@ -268,7 +258,6 @@ def process_state_values(raw_runs: Dict[str, Any],
     return dict(averaged)
 
 
-# --- Transponders / Hops / Lengths -----------------------------------------
 def _process_iter_metric(raw_runs, runid_to_algo, mean_key, min_key, max_key):
     """
     Helper: aggregate <mean,min,max> from the **last iteration** of iter_stats.
@@ -277,9 +266,6 @@ def _process_iter_metric(raw_runs, runid_to_algo, mean_key, min_key, max_key):
     -------
     {algo: {tv: {"mean": μ, "min": μ_min, "max": μ_max}}}
     """
-    from collections import defaultdict
-    import numpy as np
-
     merged = defaultdict(lambda: defaultdict(lambda: {"mean": [], "min": [], "max": []}))
 
     for run_id, data in raw_runs.items():
@@ -306,6 +292,9 @@ def _process_iter_metric(raw_runs, runid_to_algo, mean_key, min_key, max_key):
 
 
 def process_transponders(raw_runs, runid_to_algo):
+    """
+    Transponder plot.
+    """
     return _process_iter_metric(
         raw_runs, runid_to_algo,
         mean_key="trans_mean", min_key="trans_min", max_key="trans_max"
@@ -313,6 +302,9 @@ def process_transponders(raw_runs, runid_to_algo):
 
 
 def process_hops(raw_runs, runid_to_algo):
+    """
+    Hops plot.
+    """
     return _process_iter_metric(
         raw_runs, runid_to_algo,
         mean_key="hops_mean", min_key="hops_min", max_key="hops_max"
@@ -320,17 +312,14 @@ def process_hops(raw_runs, runid_to_algo):
 
 
 def process_lengths(raw_runs, runid_to_algo):
+    """
+    Lengths plot.
+    """
     return _process_iter_metric(
         raw_runs, runid_to_algo,
         mean_key="lengths_mean", min_key="lengths_min", max_key="lengths_max"
     )
 
-
-# ---------------------------------------------------------------------
-# Classic processor – keeps traffic‑volume and bandwidth keys as STRINGS
-# ---------------------------------------------------------------------
-from collections import defaultdict
-import numpy as np
 
 def process_modulation_usage(raw_runs, runid_to_algo):
     """
@@ -353,7 +342,7 @@ def process_modulation_usage(raw_runs, runid_to_algo):
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
 
-        for tv, info in data.items():                     # tv remains *string*
+        for tv, info in data.items():  # tv remains *string*
             if not isinstance(info, dict) or "iter_stats" not in info:
                 continue
 
@@ -381,16 +370,11 @@ def process_modulation_usage(raw_runs, runid_to_algo):
     return processed
 
 
-
-# --- Blocked‑bandwidth  ----------------------------------------------
 def process_blocked_bandwidth(raw_runs, runid_to_algo):
     """
     Return {algo: {tv: {bw_gbps: mean_blocked_count}}}
     from *block_bw_dict* in the last iteration.
     """
-    from collections import defaultdict
-    import numpy as np
-
     merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for run_id, data in raw_runs.items():

@@ -1,4 +1,3 @@
-# ✅ plot_runner.py (updated to pass runid→algorithm to processors)
 from inspect import signature
 from pathlib import Path
 import argparse
@@ -32,6 +31,9 @@ def _collect_run_ids(cfg_algo: str, cfg_variants: list[dict], discovered: dict[s
 
 
 def main(cfg_path: str):
+    """
+    Controls the script.
+    """
     with open(cfg_path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 

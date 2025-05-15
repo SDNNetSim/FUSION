@@ -26,7 +26,6 @@ def plot_memory_usage(
         print("[plot_memory_usage] ⚠️ No data provided.")
         return None
 
-    # ---------- Matplotlib style ----------
     avail = plt.style.available
     if "seaborn-whitegrid" in avail:
         plt.style.use("seaborn-whitegrid")
@@ -35,7 +34,6 @@ def plot_memory_usage(
     else:
         plt.style.use("default")
 
-    # ---------- Label discovery ----------
     raw_labels = {
         tv for algo_data in memory_usage_data.values() for tv in algo_data.keys()
     }
@@ -48,7 +46,6 @@ def plot_memory_usage(
 
     algos = sorted(memory_usage_data.keys())
 
-    # ---------- Build mean matrix ----------
     means = []
     for tv in traffic_labels:
         row = []
@@ -58,7 +55,6 @@ def plot_memory_usage(
         means.append(row)
     means = np.array(means)  # shape: (#traffic, #algorithms)
 
-    # ---------- Plot ----------
     x = np.arange(len(traffic_labels))
     bar_w = 0.8 / len(algos)
 
@@ -80,7 +76,6 @@ def plot_memory_usage(
             hatch=hatch,
         )
 
-    # ---------- Cosmetics ----------
     tick_labels = (
         ["overall"]
         if only_overall

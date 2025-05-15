@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-# pick any colormap you like; tab10 gives up to 10 distinct hues
 ALG_COLORS = plt.cm.get_cmap("tab10")
 
 
@@ -28,19 +29,16 @@ def plot_bw_blocked(data, save_path=None, title="Blocked Bandwidth"):
         else 'default'
     )
 
-    # ── gather global sets ─────────────────────────────────────────────
     all_tvs = sorted({tv for algo in data.values() for tv in algo})
     all_algos = list(data.keys())
 
     for tv in all_tvs:
-        # union of bandwidths present for this traffic volume
         bws = sorted({bw for algo in all_algos for bw in data[algo].get(tv, {})})
         if not bws:
-            # skip empty figures (no algo reported this traffic volume)
             continue
 
-        width = 0.8 / max(len(all_algos), 1)  # group width
-        x_pos = np.arange(len(bws))  # base positions
+        width = 0.8 / max(len(all_algos), 1)
+        x_pos = np.arange(len(bws))
 
         plt.figure(figsize=(10, 6), dpi=300)
 
@@ -54,7 +52,6 @@ def plot_bw_blocked(data, save_path=None, title="Blocked Bandwidth"):
                 color=ALG_COLORS(i),
             )
 
-        # ── axes formatting ────────────────────────────────────────────
         plt.xticks(
             x_pos + width * (len(all_algos) - 1) / 2,
             [int(bw) for bw in bws],
@@ -65,10 +62,7 @@ def plot_bw_blocked(data, save_path=None, title="Blocked Bandwidth"):
         plt.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
         plt.tight_layout(rect=[0, 0, 0.83, 1])
 
-        # ── save or show ───────────────────────────────────────────────
         if save_path:
-            from pathlib import Path
-
             save_path = Path(save_path)
             fp = save_path.parent / f"{save_path.stem}_{tv}.png"
             plt.savefig(fp)

@@ -1,6 +1,6 @@
-# ✅ blocking.py (updated for k_shortest_path_X styling)
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 def plot_blocking_probabilities(final_result, save_path=None, title=None):
     """
@@ -51,7 +51,6 @@ def plot_blocking_probabilities(final_result, save_path=None, title=None):
             sorted_pairs = sorted(zip(erlang_values, blocking_probs), key=lambda x: x[0])
             sorted_erlangs, sorted_blocks = zip(*sorted_pairs)
 
-            # 🔁 Add visual distinction for k_shortest_path variants
             if "k_shortest_path" in algo_key:
                 linestyle = '--'
             else:
@@ -69,8 +68,8 @@ def plot_blocking_probabilities(final_result, save_path=None, title=None):
     plt.ylabel('Blocking Probability', fontsize=14, fontweight='bold')
     plt.title(title or 'Blocking Probability vs Erlang Values', fontsize=16, fontweight='bold')
     plt.yscale('log')
-    plt.ylim(10 ** -4, 10 ** -0.5)
-    plt.xlim(50, 700)
+    plt.ylim(10 ** -4, 10 ** -0.2)
+    plt.xlim(50, 900)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
     plt.grid(True, which="both", linestyle='--', linewidth=0.5)

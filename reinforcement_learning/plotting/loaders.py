@@ -4,6 +4,8 @@ import re
 from collections import defaultdict
 from typing import Dict, Any, Iterable, Tuple
 
+import numpy as np
+
 ROOT_OUTPUT = Path("../../data/output")
 ROOT_INPUT = Path("../../data/input")
 ROOT_LOGS = Path("../../logs")
@@ -26,19 +28,15 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str,
     for date in dates:
         run_root = ROOT_OUTPUT / network / date
 
-        # Recursively find all s* directories
         for s_dir in run_root.rglob("s*"):
             if not s_dir.is_dir():
                 continue
 
-            # DRL mode
             if drl:
                 run_base_dir = s_dir.parent
-                # Only process the parent run dir once
                 if s_dir.name != "s1":
-                    continue  # Avoid reprocessing for s2, s3, etc.
+                    continue
 
-                # Try to find a meta.json in *any* seed folder
                 meta_fp = next((p for p in run_base_dir.glob("s*/meta.json") if p.exists()), None)
                 if not meta_fp:
                     continue
@@ -52,14 +50,12 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str,
                 timestamp = run_base_dir.name
                 composite_run_id = f"{run_id}@{timestamp}"
 
-                # Add all seed folders (s1, s2, …) for this run
                 for seed_dir in run_base_dir.glob("s*"):
                     if seed_dir.is_dir():
                         seed = seed_dir.name
                         unique_run_id = f"{composite_run_id}_{seed}"
                         algo_runs[algo].append(unique_run_id)
 
-            # non-DRL mode
             elif not drl and not (s_dir / "meta.json").exists():
                 parent_dir = s_dir.parent  # …/RUN_ID/
                 date_str = parent_dir.parent.name
@@ -81,7 +77,6 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str,
                 unique_run_id = f"{run_id}@{timestamp}"
                 algo_runs[algo].append(unique_run_id)
 
-    # deduplicate while preserving order
     for alg in tuple(algo_runs):
         algo_runs[alg] = list(dict.fromkeys(algo_runs[alg]))
 
@@ -109,8 +104,6 @@ def load_metric_for_runs(
     runid_to_algo: Dict[str, str] = {}
     start_stamps: Dict[str, str] = {}
 
-    # TODO: Why doesn't this work top level?
-    import re
     pattern = re.compile(r"(\d+\.?\d*)_erlang\.json")
 
     for date in dates:
@@ -187,7 +180,6 @@ def load_metric_for_runs(
                     logs_fp = (ROOT_LOGS / algo / network / date /
                                base_run_dir.name / "memory_usage.npy")
                     if logs_fp.exists():
-                        import numpy as np
                         try:
                             arr = np.load(logs_fp)
                             if not metric_vals:
@@ -200,7 +192,6 @@ def load_metric_for_runs(
                     # base_run_dir = …/DATE/<time>
                     logs_dir = ROOT_LOGS / algo / network / date / base_run_dir.name
                     if logs_dir.is_dir():
-                        import numpy as np, re, json
                         trial_rx = re.compile(r"rewards_.*?_t(\d+)_iter_(\d+)\.npy")
                         trials: dict[int, dict[int, list[float]]] = defaultdict(dict)
 
@@ -226,7 +217,6 @@ def load_metric_for_runs(
                 if metric == "state_values" and drl:
                     logs_dir = ROOT_LOGS / algo / network / date / base_run_dir.name
                     if logs_dir.is_dir():
-                        import re, json
                         sv_rx = re.compile(
                             r"state_vals_e(?P<erl>\d+\.?\d*)_.*?_t(?P<trial>\d+)\.json"
                         )

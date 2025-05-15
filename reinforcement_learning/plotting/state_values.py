@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 
-# ─────────────────────────────────────────────────────────
-# INTERNAL HELPERS
-# ─────────────────────────────────────────────────────────
 def _plot_matrix(ax, color_matrix, n_nodes):
     """Heat-map helper."""
     ax.imshow(color_matrix, origin="upper")
@@ -83,14 +80,13 @@ def plot_best_path_matrix(
     negative_factor = 0.5
 
     for algo, vol_dict in averaged_state_values_by_volume.items():
-        # -------------- figure & grid layout -----------------
         t_labels = sorted(vol_dict.keys(), key=float)
         n_vol = len(t_labels)
-        ncols = min(3, n_vol)  # up to 3 heat-maps per row
+        ncols = min(3, n_vol)
         nrows = int(np.ceil(n_vol / ncols))
 
-        fig_width = 5.5 * ncols + 1  # wider  ➜ 5.5 in per column
-        fig_height = 5.0 * nrows + 1  # taller ➜ 5.0 in per row
+        fig_width = 5.5 * ncols + 1
+        fig_height = 5.0 * nrows + 1
         fig, axes = plt.subplots(
             nrows, ncols,
             figsize=(fig_width, fig_height),
@@ -99,13 +95,11 @@ def plot_best_path_matrix(
         )
         fig.suptitle(f"{title}: {algo}", fontsize=18, fontweight="bold")
 
-        # -------------- loop over traffic volumes ------------
         for idx, t_label in enumerate(t_labels):
             r, c = divmod(idx, ncols)
             ax = axes[r][c]
             pair_dict = vol_dict[t_label]
 
-            # Build colour matrix --------------------------------
             nodes = {n for (s, d) in pair_dict for n in (s, d)}
             n_nodes = max(nodes) + 1 if nodes else 1
             colour = np.ones((n_nodes, n_nodes, 3))
@@ -130,18 +124,14 @@ def plot_best_path_matrix(
                         scale *= negative_factor
                     colour[src, dst] = (1 - scale) + scale * np.array(base)
 
-            # Draw heat-map --------------------------------------
             _plot_matrix(ax, colour, n_nodes)
             ax.set_title(f"Traffic = {t_label}", fontsize=12, fontweight="bold")
 
-        # hide empty cells
         for j in range(idx + 1, nrows * ncols):
             r, c = divmod(j, ncols)
             axes[r][c].axis("off")
 
         fig.tight_layout(rect=[0, 0, 1, 0.94])
-        # -------- legend that maps colour → path index ----------------
-        # discover highest path index used across all volumes
         max_path_idx = 0
         for pair_dict in vol_dict.values():
             for vals in pair_dict.values():
@@ -168,7 +158,6 @@ def plot_best_path_matrix(
         )
         fig.tight_layout(rect=[0, 0, 1, 0.91])  # reserve room at top
 
-        # -------- save with <stem>_<algo>.png ------------------
         if save_path:
             p = Path(save_path)
             stem = p.stem

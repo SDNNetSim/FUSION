@@ -1,10 +1,3 @@
-"""
-Maps a *plot nickname* to:
-
-  • the plotting function         (from your updated plotter scripts)
-  • the corresponding processor   (function name inside processors.py)
-  • the default file-stem used when saving (optional convenience)
-"""
 from reinforcement_learning.plotting.blocking import plot_blocking_probabilities
 from reinforcement_learning.plotting.memory_usage import plot_memory_usage
 from reinforcement_learning.plotting.rewards import plot_rewards_mean_var
@@ -19,7 +12,7 @@ from reinforcement_learning.plotting.hops import plot_hops_minmax
 from reinforcement_learning.plotting.lengths import plot_lengths
 from reinforcement_learning.plotting.lengths import plot_lengths_minmax
 from reinforcement_learning.plotting.mod_usage import plot_modulation_usage
-from reinforcement_learning.plotting.bw_block  import plot_bw_blocked
+from reinforcement_learning.plotting.bw_block import plot_bw_blocked
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -41,5 +34,4 @@ PLOTS = {
         "process": "process_blocked_bandwidth",
         "plot": plot_bw_blocked,
     },
-    # state-values uses same raw format as rewards trials
 }

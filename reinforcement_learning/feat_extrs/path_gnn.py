@@ -6,18 +6,25 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 # TODO: Add params to optuna
 
 class PathGNN(BaseFeaturesExtractor):
+    """
+    Custom PathGNN feature extraction algorithm integrated with SB3.
+    """
+
     def __init__(self, obs_space, emb_dim, gnn_type, layers):
         super().__init__(obs_space, features_dim=emb_dim * obs_space["path_masks"].shape[0])
         conv_map = {"gat": GATv2Conv, "sage": SAGEConv, "graphconv": GraphConv}
-        Conv = conv_map.get(gnn_type, GATv2Conv)
+        selected_conv = conv_map.get(gnn_type, GATv2Conv)
         in_dim = obs_space["x"].shape[1]
         self.convs = torch.nn.ModuleList([
-            Conv(in_dim if i == 0 else emb_dim, emb_dim)
+            selected_conv(in_dim if i == 0 else emb_dim, emb_dim)
             for i in range(layers)
         ])
         self.readout = torch.nn.Linear(emb_dim, emb_dim)
 
     def forward(self, obs):
+        """
+        Convert observation into feature vector.
+        """
         x = obs["x"]
         ei = obs["edge_index"].long()
         masks = obs["path_masks"]

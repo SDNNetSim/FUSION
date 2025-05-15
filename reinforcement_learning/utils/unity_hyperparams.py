@@ -1,21 +1,3 @@
-#!/usr/bin/env python3
-"""
-Parse Optuna/SLURM log files, emit tidy CSV/JSON per run, **and** pick a single
-hyper‑parameter set that is robust across all traffic volumes for each topology.
-
-Usage (IDE / notebook):
-1. Set `IN_ROOT`  to the top‑level folder containing your experiment logs.
-2. Set `OUT_ROOT` to where you want the parsed results & best‑params saved.
-3. Hit Run.  The script will:
-   • discover every `*.out` file recursively
-   • parse and write `<OUT_ROOT>/<alg>/<net>/<date>/<run_id>/<erlang>_results.csv`
-   • aggregate those CSVs and write one `best_params.json` per topology
-
-The selection rule defaults to minimising *mean rank* across Erlang loads
-(with tie‑breakers on worst‑rank, then mean return).  Swap the logic in
-`_rank_aggregate` if you prefer a different robustness criterion.
-"""
-
 from __future__ import annotations
 
 import ast
@@ -34,9 +16,9 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import pandas as pd
 
-IN_ROOT = Path("../experiments/input/0502")  # top‑level experiments folder
-OUT_ROOT = Path("../experiments/output/0502/")  # where parsed CSV/JSON go
-GLOB_PATTERN = "**/*.out"  # override only if needed
+IN_ROOT = Path("../experiments/input/0502")
+OUT_ROOT = Path("../experiments/output/0502/")
+GLOB_PATTERN = "**/*.out"
 
 CSV_ROW_RE = re.compile(r"CSV Row \d+:\s*(.*)")
 TRIAL_RE = re.compile(
@@ -107,7 +89,6 @@ def _destination(meta: Dict[str, str], out_root: Path, orig_path: Path) -> Tuple
     run_id = meta["run_id"]
     erlang = meta["erlang_start"]
 
-    # Extract date chunk (e.g. 0502) from experiments path if possible
     match = DATE_DIR_RE.search(str(orig_path))
     date_chunk = match.group(1) if match else datetime.today().strftime("%m%d")
 

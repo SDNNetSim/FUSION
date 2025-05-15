@@ -7,6 +7,9 @@ def plot_rewards_mean_var(
         title: str = "Averaged Rewards",
         save_path: str | None = None
 ):
+    """
+    Plot mean and variance of rewards.
+    """
     plt.style.use('seaborn-whitegrid' if 'seaborn-whitegrid' in plt.style.available else 'default')
 
     for algo, tv_dict in rewards_data.items():
@@ -22,7 +25,6 @@ def plot_rewards_mean_var(
             std_arr = np.array(rewards["std"], dtype=float)
             ci_arr = std_arr  # use raw std for shading
 
-            # ----- debug info once per traffic value -----
             if idx == 0:
                 print(
                     f"[DBG PLOT] tv={tv:<6} std_min={np.nanmin(std_arr):.4f} "
@@ -30,7 +32,6 @@ def plot_rewards_mean_var(
                     f"overall_ci={rewards.get('overall_ci', 0.0):.4f}"
                 )
 
-            # ----- episode labels for x‑axis -----
             ep_labels = rewards.get("episodes")
             if ep_labels:
                 episodes = list(range(len(ep_labels)))  # numeric ticks
