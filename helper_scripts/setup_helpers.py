@@ -26,9 +26,9 @@ def create_input(base_fp: str, engine_props: dict):
     save_path = os.path.join(base_fp, 'input', engine_props['network'], engine_props['date'],
                              engine_props['sim_start'], bw_file)
 
-    # Retry loop to ensure file is ready
+    # Retry loop to ensure file is ready, used for Unity cluster runs
     max_attempts = 50
-    for attempt in range(max_attempts):
+    for _ in range(max_attempts):
         try:
             if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
                 with open(save_path, 'r', encoding='utf-8') as file_object:
