@@ -13,6 +13,7 @@ from reinforcement_learning.plotting.lengths import plot_lengths
 from reinforcement_learning.plotting.lengths import plot_lengths_minmax
 from reinforcement_learning.plotting.mod_usage import plot_modulation_usage
 from reinforcement_learning.plotting.bw_block import plot_bw_blocked
+from reinforcement_learning.plotting.blocking import plot_blocking_stats_table
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -33,5 +34,9 @@ PLOTS = {
     "bw_block": {
         "process": "process_blocked_bandwidth",
         "plot": plot_bw_blocked,
+    },
+    "blocking_stats": {
+        "plot": plot_blocking_stats_table,
+        "process": "process_blocking",  # reuse existing processor
     },
 }

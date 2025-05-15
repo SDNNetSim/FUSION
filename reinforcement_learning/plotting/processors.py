@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 import numpy as np
 import os
 
+from scipy.stats import ttest_ind
+
+
 def _mean_last(values: list[float | int], k: int = 20) -> float:
     if not values:
         return 0.0
@@ -13,10 +16,9 @@ def _mean_last(values: list[float | int], k: int = 20) -> float:
 
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
-    """
-    Processes blocking runs.
-    """
     merged = defaultdict(lambda: defaultdict(list))
+    baselines = ["k_shortest_path_4", "cong_aware"]
+
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
         for tv, info_vector in data.items():
@@ -31,13 +33,44 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
                 merged[algo][str(tv)].append(float(info_vector))
 
     processed = {}
+    baseline_vals = defaultdict(dict)
+
+    # Cache baseline values
+    for base in baselines:
+        for tv, vals in merged[base].items():
+            baseline_vals[base][tv] = np.array(vals, dtype=float)
 
     for algo, tv_dict in merged.items():
         processed[algo] = {}
         for tv, vals in tv_dict.items():
-            mean_val = float(np.mean(vals))
-            print(f"[SEED-DBG] {algo} Erlang={tv}  seeds={len(vals)}  vals={vals}  mean={mean_val:.4f}")
-            processed[algo][tv] = mean_val
+            vals = np.array(vals, dtype=float)
+            mean_val = np.mean(vals)
+            std_val = np.std(vals, ddof=1) if len(vals) > 1 else 0.0
+            ci_val = 1.96 * (std_val / np.sqrt(len(vals))) if len(vals) > 1 else 0.0
+
+            stats_block = {
+                "mean": float(mean_val),
+                "std": float(std_val),
+                "ci": float(ci_val),
+            }
+
+            if algo not in baselines:
+                for base in baselines:
+                    base_vals = baseline_vals.get(base, {}).get(tv)
+                    if base_vals is not None and len(base_vals) > 1 and len(vals) > 1:
+                        t_stat, p_val = ttest_ind(vals, base_vals, equal_var=False)
+                        pooled_std = np.sqrt((np.var(vals, ddof=1) + np.var(base_vals, ddof=1)) / 2)
+                        d = (np.mean(vals) - np.mean(base_vals)) / pooled_std if pooled_std else 0.0
+                        stats_block[f"vs_{base}"] = {
+                            "p": float(p_val),
+                            "d": float(d),
+                            "significant": p_val < 0.05
+                        }
+
+            processed[algo][tv] = stats_block
+
+            print(f"[SEED-DBG] {algo} Erlang={tv} seeds={len(vals)} "
+                  f"mean={mean_val:.4g} ±std={std_val:.4g} ±CI={ci_val:.4g}")
 
     return processed
 
@@ -406,6 +439,7 @@ def extract_network_from_path(path: str) -> str:
             return part
     raise ValueError(f"Network name not found in path: {path}")
 
+
 def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
     processed = {}
 
@@ -442,4 +476,3 @@ def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
         }
 
     return processed
-

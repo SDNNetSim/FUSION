@@ -1,85 +1,175 @@
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 import numpy as np
+from itertools import cycle
+
+import pandas as pd
 
 
-def plot_blocking_probabilities(final_result, save_path=None, title=None):
+def plot_blocking_probabilities(
+        blocking_data: dict,
+        title: str = "Blocking Probability",
+        save_path: str | None = None,
+        selected_algos: list[str] | None = None
+):
     """
-    Plot the blocking probability versus Erlang values using the final_result data
-    with a publication-quality style.
+    Plot blocking probability curves with shaded std and CI in legend.
 
     Parameters:
-        final_result (dict): Processed simulation data for blocking probabilities.
-        save_path (Path or str): Optional path to save the figure.
-        title (str): Optional title to display on the plot.
+        blocking_data (dict): {
+            algo: {
+                erlang: {
+                    "mean": float,
+                    "std": float,
+                    "ci": float
+                }
+            }
+        }
+        title (str): Plot title.
+        save_path (str|Path): If given, saves the plot to this location.
+        selected_algos (list): If given, filters to only these algorithms.
     """
-    available_styles = plt.style.available
-    if 'seaborn-whitegrid' in available_styles:
-        plt.style.use('seaborn-whitegrid')
-    elif 'seaborn-white' in available_styles:
-        plt.style.use('seaborn-white')
-    else:
-        plt.style.use('default')
+    plt.style.use("seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default")
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=300)
 
-    plt.figure(figsize=(10, 6), dpi=300)
-    plotted = False
+    if selected_algos:
+        blocking_data = {k: v for k, v in blocking_data.items() if k in selected_algos}
 
-    for algo_key, traffic_data in final_result.items():
-        erlang_values = []
-        blocking_probs = []
-        for tv_str, sim_block_vectors in traffic_data.items():
+    color_map = plt.cm.get_cmap("tab10")
+    markers = cycle(['o', 's', 'D', '^', 'v', '*', 'X', 'P', '<', '>'])
+    colors = cycle(color_map.colors)
+
+    for algo in sorted(blocking_data.keys()):
+        traffic_dict = blocking_data[algo]
+        erlangs, means, stds, cis = [], [], [], []
+
+        for tv_str, stats in traffic_dict.items():
             try:
                 tv = float(tv_str)
-            except ValueError:
+                erlangs.append(tv)
+                means.append(stats["mean"])
+                stds.append(stats.get("std", 0.0))
+                cis.append(stats.get("ci", 0.0))
+            except (ValueError, KeyError, TypeError):
                 continue
-            final_blocks = []
 
-            if isinstance(sim_block_vectors, (int, float)):
-                final_blocks.append(sim_block_vectors)
-            else:
-                for block_vector in sim_block_vectors:
-                    if isinstance(block_vector, list) and len(block_vector) > 0:
-                        final_blocks.extend(block_vector[-10:])
-                    elif isinstance(block_vector, (int, float)):
-                        final_blocks.append(block_vector)
+        if not erlangs:
+            continue
 
-            if final_blocks:
-                avg_block = np.mean(final_blocks)
-                erlang_values.append(tv)
-                blocking_probs.append(avg_block)
+        erlangs, means, stds, cis = map(np.array, zip(*sorted(zip(erlangs, means, stds, cis), key=lambda x: x[0])))
 
-        if erlang_values:
-            sorted_pairs = sorted(zip(erlang_values, blocking_probs), key=lambda x: x[0])
-            sorted_erlangs, sorted_blocks = zip(*sorted_pairs)
+        color = next(colors)
+        marker = next(markers)
+        overall_ci = np.mean(cis) if len(cis) > 1 else cis[0]
+        label = f"{algo} ±{overall_ci:.4f}"
 
-            if "k_shortest_path" in algo_key:
-                linestyle = '--'
-            else:
-                linestyle = '-'
+        ax.plot(erlangs, means, label=label, color=color, linewidth=2, marker=marker, markersize=5)
+        ax.fill_between(erlangs, means - stds, means + stds, color=color, alpha=0.2)
 
-            plt.plot(sorted_erlangs, sorted_blocks,
-                     marker='o', linewidth=2, linestyle=linestyle, markersize=6, label=algo_key)
-            plotted = True
+    ax.set_xlabel("Erlang Values", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Blocking Probability", fontsize=14, fontweight="bold")
+    ax.set_title(title, fontsize=16, fontweight="bold")
+    ax.set_yscale("log")
+    ax.set_ylim(10 ** -4, 10 ** -0.5)
+    ax.set_xlim(50, 700)
+    ax.tick_params(labelsize=12)
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
-    if not plotted:
-        print(f"[plot_blocking] ⚠️ Skipping empty plot: {title}")
-        return
-
-    plt.xlabel('Erlang Values', fontsize=14, fontweight='bold')
-    plt.ylabel('Blocking Probability', fontsize=14, fontweight='bold')
-    plt.title(title or 'Blocking Probability vs Erlang Values', fontsize=16, fontweight='bold')
-    plt.yscale('log')
-    plt.ylim(10 ** -4, 10 ** -0.2)
-    plt.xlim(50, 900)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid(True, which="both", linestyle='--', linewidth=0.5)
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=12)
+    ax.legend(title="Algorithm (±CI)", loc="upper left", bbox_to_anchor=(1.05, 1), fontsize=11, title_fontsize=12)
     plt.tight_layout(rect=[0, 0, 0.85, 1])
 
     if save_path:
-        plt.savefig(save_path)
-        print(f"[plot_blocking] ✅ Saved: {save_path}")
+        plt.savefig(save_path, bbox_inches="tight")
+        print(f"[plot_blocking] ✅ Saved {save_path}")
         plt.close()
     else:
         plt.show()
         plt.clf()
+
+
+def plot_blocking_stats_table(
+        processed: dict,
+        save_path: str | None = None,
+        title: str = "Statistical Comparison of Blocking Probabilities"
+):
+    rows = []
+
+    # Identify Erlang values
+    all_erlangs = sorted({float(tv) for algo in processed.values() for tv in algo})
+    if not all_erlangs:
+        print("[plot_blocking_stats] ⚠ No data to plot.")
+        return
+
+    min_erl = all_erlangs[0]
+    mid_erl = all_erlangs[len(all_erlangs) // 2]
+    max_erl = all_erlangs[-1]
+    selected_erlangs = {str(min_erl), str(mid_erl), str(max_erl)}
+
+    for algo, tv_dict in processed.items():
+        for tv, stats in tv_dict.items():
+            if tv not in selected_erlangs:
+                continue
+            for compare_key in ["vs_k_shortest_path_4", "vs_cong_aware"]:
+                if compare_key not in stats:
+                    continue
+                comp = stats[compare_key]
+                p = comp.get("p")
+                d = comp.get("d")
+                sig = comp.get("significant", False)
+                if p is None or d is None:
+                    continue
+
+                baseline_label = "k = 4" if "k_shortest" in compare_key else "cong_aware"
+                rows.append([
+                    algo.replace("_", " ").title(),
+                    baseline_label,
+                    float(tv),
+                    f"{p:.4f}",
+                    f"{d:.3f}",
+                    "Yes" if sig else "No"
+                ])
+
+    df = pd.DataFrame(rows, columns=["Algorithm", "Baseline", "Erlang", "p-value", "Cohen's d", "Significant?"])
+    df.sort_values(by=["Erlang", "Baseline", "Algorithm"], inplace=True)
+
+    if save_path:
+        csv_fp = save_path.with_suffix(".csv")
+        df.to_csv(csv_fp, index=False)
+        print(f"[plot_blocking_stats] ✅ CSV saved to {csv_fp}")
+
+    # Plot table
+    fig_height = 0.6 + 0.4 * len(df)
+    fig, ax = plt.subplots(figsize=(11, fig_height), dpi=300)
+    ax.axis("off")
+
+    # Tight vertical title placement
+    fig.suptitle(title, fontsize=14, fontweight="bold", y=0.96)
+
+    table = ax.table(cellText=df.values, colLabels=df.columns, loc="center", cellLoc="center")
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1.2, 1.4)
+
+    # Bold header and align left column
+    for (row, col), cell in table.get_celld().items():
+        if row == 0:
+            cell.set_text_props(weight='bold')
+        if col == 0:
+            cell._loc = 'left'
+
+        # Color significant flag column
+        if col == 5 and row > 0:
+            value = table[row, col].get_text().get_text()
+            if value == "Yes":
+                cell.set_facecolor(to_rgba("lightgreen", 0.6))
+            elif value == "No":
+                cell.set_facecolor(to_rgba("lightcoral", 0.5))
+
+    if save_path:
+        fig_fp = save_path.with_suffix(".png")
+        plt.savefig(fig_fp, bbox_inches="tight")
+        print(f"[plot_blocking_stats] ✅ Table saved to {fig_fp}")
+        plt.close()
+    else:
+        plt.tight_layout()
+        plt.show()
