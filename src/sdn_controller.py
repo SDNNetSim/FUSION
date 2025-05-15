@@ -67,6 +67,8 @@ class SDNController:
             link_dict = self.sdn_props.net_spec_dict[(link_tuple[0], link_tuple[1])]
             rev_link_dict = self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]
 
+
+
             tmp_set = set(link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
 
@@ -75,6 +77,9 @@ class SDNController:
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
+
+            self.sdn_props.net_spec_dict[link_tuple]['usage_count'] += 1
+            self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]['usage_count'] += 1
 
             core_matrix = link_dict['cores_matrix']
             rev_core_matrix = rev_link_dict['cores_matrix']

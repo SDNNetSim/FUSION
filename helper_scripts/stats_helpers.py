@@ -78,6 +78,19 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
+    #TODO add support for throughput
+    @staticmethod
+    def _get_link_usage_summary(net_spec_dict):
+        usage_summary = {}
+        for (src, dst), link_data in net_spec_dict.items():
+            if str(src) < str(dst):  # Avoid double-counting reverse direction
+                usage_summary[f"{src}-{dst}"] = {
+                    "usage_count": link_data.get('usage_count', 0),
+                    #"throughput": link_data.get('throughput', 0),
+                    "link_num": link_data.get('link_num'),
+                }
+        return usage_summary
+
     def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
         """
         Updates the training data list with the current request information.
@@ -114,6 +127,7 @@ class SimStats:
         """
         occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(net_spec_dict=net_spec_dict,
                                                                            path_list=path_list)
+        link_usage = self._get_link_usage_summary(net_spec_dict=net_spec_dict)
         blocking_prob = self.blocked_reqs / req_num
         bit_rate_block_prob = self.bit_rate_blocked / self.bit_rate_request
 
@@ -123,6 +137,7 @@ class SimStats:
         self.stats_props.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
         self.stats_props.snapshots_dict[req_num]['num_segments'].append(self.curr_trans)
         self.stats_props.snapshots_dict[req_num]["bit_rate_blocking_prob"].append(bit_rate_block_prob)
+        self.stats_props.snapshots_dict[req_num]['link_usage'] = link_usage
 
     def _init_snapshots(self):
         for req_num in range(0, self.engine_props['num_requests'] + 1, self.engine_props['snapshot_step']):
@@ -161,6 +176,8 @@ class SimStats:
                 self.stats_props.cores_dict = {core: 0 for core in range(self.engine_props['cores_per_link'])}
             elif stat_key == 'block_reasons_dict':
                 self.stats_props.block_reasons_dict = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
+            elif stat_key == 'link_usage_dict':
+                self.stats_props.link_usage_dict = dict()
             elif stat_key != 'iter_stats':
                 raise ValueError('Dictionary statistic was not reset in props.')
 
@@ -229,7 +246,7 @@ class SimStats:
                 elif stat_key == 'bandwidth_list':
                     self.stats_props.bandwidth_list.append(int(data))
 
-    def iter_update(self, req_data: dict, sdn_data: object):
+    def iter_update(self, req_data: dict, sdn_data: object, net_spec_dict: dict):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 
@@ -259,6 +276,7 @@ class SimStats:
 
             self.bit_rate_request += int(sdn_data.bandwidth)
             self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight), 2))
+            self.stats_props.link_usage_dict = self._get_link_usage_summary(net_spec_dict)
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
@@ -375,6 +393,8 @@ class SimStats:
         """
         if self.engine_props['file_type'] not in ('json', 'csv'):
             raise NotImplementedError(f"Invalid file type: {self.engine_props['file_type']}, expected csv or json.")
+
+        self.save_dict['link_usage'] = self.stats_props.link_usage_dict
 
         self.save_dict['blocking_mean'] = self.block_mean
         self.save_dict['blocking_variance'] = self.block_variance

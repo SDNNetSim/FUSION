@@ -3,7 +3,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 
 import numpy as np
-
+import os
 
 def _mean_last(values: list[float | int], k: int = 20) -> float:
     if not values:
@@ -393,3 +393,53 @@ def process_blocked_bandwidth(raw_runs, runid_to_algo):
             for tv, bw_dict in tvs.items()}
         for a, tvs in merged.items()
     }
+
+
+def extract_network_from_path(path: str) -> str:
+    """
+    Extracts network name from the directory structure of the file path.
+    E.g., path like '.../NSFNet/50.0_erlang.json' returns 'NSFNet'.
+    """
+    parts = os.path.normpath(path).split(os.sep)
+    for part in parts:
+        if "net" in part.lower():
+            return part
+    raise ValueError(f"Network name not found in path: {path}")
+
+def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
+    processed = {}
+
+    for run_id, run_data in raw_runs.items():
+        algo = runid_to_algo[run_id]
+        file_path = run_data.get("__file_path__", "<unknown>")
+
+        # Extract network name from file path
+        network_name = extract_network_from_path(file_path)
+        topology_file = f"data/raw/{network_name.lower()}_network.txt"
+
+        # Load the topology edges
+        topology = []
+        with open(topology_file, "r") as f:
+            for line in f:
+                src, dst, *_ = line.strip().split()
+                topology.append((src, dst))
+
+        # Get last numeric key from the top-level dict
+        numeric_keys = [k for k in run_data.keys() if k.isdigit()]
+        if not numeric_keys:
+            print(f"[WARN] No episode keys found in: {file_path}")
+            continue
+
+        last_key = str(max(map(int, numeric_keys)))
+        link_usage_dict = run_data[last_key]["link_usage_dict"]
+
+        if algo not in processed:
+            processed[algo] = {}
+
+        processed[algo]["50.0"] = {  # default traffic volume label
+            "link_usage_dict": link_usage_dict,
+            "topology": topology
+        }
+
+    return processed
+
