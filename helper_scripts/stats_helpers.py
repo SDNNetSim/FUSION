@@ -340,7 +340,7 @@ class SimStats:
             self.block_ci_percent = block_ci_percent
             # bit rate blcoking
             bit_rate_block_ci = 1.96 * (
-                        math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
+                    math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
             self.bit_rate_block_ci = bit_rate_block_ci
             bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
             self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
@@ -426,6 +426,7 @@ class SimStats:
         if self.engine_props['output_train_data']:
             self.save_train_data(base_fp=base_fp)
 
+    # TODO: (version 5.5-6) Shouldn't there be a logging module instead?
     def print_iter_stats(self, max_iters: int, print_flag: bool):
         """
         Prints iteration stats, mostly used to ensure simulations are running fine.
