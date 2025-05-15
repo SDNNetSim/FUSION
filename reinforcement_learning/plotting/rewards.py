@@ -66,7 +66,7 @@ def plot_rewards_mean_var(
 
         plt.grid(True, linestyle='--', linewidth=0.5)
         plt.legend(
-            title="Traffic (±95% CI)",
+            title="Traffic (CI)",
             bbox_to_anchor=(1.05, 1),
             loc='upper left',
             fontsize=12,
