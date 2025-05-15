@@ -170,7 +170,8 @@ class SDNController:
         """
         remaining_bw = int(self.sdn_props.bandwidth)
         # TODO: Ignored?
-        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])  # pylint: disable=unused-variable
+        path_len = find_path_len(path_list=path_list, # pylint: disable=unused-variable
+                                 topology=self.engine_props['topology'])
         bw_mod_dict = sort_dict_keys(self.engine_props['mod_per_bw'])  # pylint: disable=unused-variable
 
         self.spectrum_obj.spectrum_props.path_list = path_list
