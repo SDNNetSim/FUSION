@@ -16,6 +16,9 @@ def _mean_last(values: list[float | int], k: int = 20) -> float:
 
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+    """
+    Processes blocking runs.
+    """
     merged = defaultdict(lambda: defaultdict(list))
     baselines = ["k_shortest_path_4", "cong_aware"]
 
@@ -439,40 +442,40 @@ def extract_network_from_path(path: str) -> str:
             return part
     raise ValueError(f"Network name not found in path: {path}")
 
-
 def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
-    processed = {}
 
-    for run_id, run_data in raw_runs.items():
-        algo = runid_to_algo[run_id]
-        file_path = run_data.get("__file_path__", "<unknown>")
+    """
+    Aggregates link usage per traffic volume across seeds.
+    Output structure: { algo: { erlang: { link_str: avg_usage_count } } }
+    """
+    from collections import defaultdict
 
-        # Extract network name from file path
-        network_name = extract_network_from_path(file_path)
-        topology_file = f"data/raw/{network_name.lower()}_network.txt"
+    merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
-        # Load the topology edges
-        topology = []
-        with open(topology_file, "r") as f:
-            for line in f:
-                src, dst, *_ = line.strip().split()
-                topology.append((src, dst))
+    for run_id, data in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
 
-        # Get last numeric key from the top-level dict
-        numeric_keys = [k for k in run_data.keys() if k.isdigit()]
-        if not numeric_keys:
-            print(f"[WARN] No episode keys found in: {file_path}")
-            continue
+        for tv, info in data.items():
+            if "iter_stats" in info:
+                # Get final iteration key
+                last_iter_key = next(reversed(info["iter_stats"]))
+                final_data = info["iter_stats"][last_iter_key]
 
-        last_key = str(max(map(int, numeric_keys)))
-        link_usage_dict = run_data[last_key]["link_usage_dict"]
+                link_usage = final_data.get("link_usage_dict", {})
+                for link_str, stats in link_usage.items():
+                    usage_count = stats.get("usage_count", 0)
+                    merged[algo][str(tv)][link_str].append(usage_count)
 
-        if algo not in processed:
-            processed[algo] = {}
+    # Average usage per link
+    result = {}
+    for algo, tv_dict in merged.items():
+        result[algo] = {}
+        for tv, link_dict in tv_dict.items():
+            print(f"[DEBUG] Processing {run_id=} {tv=}, last_iter={last_iter_key}, total_links={len(link_usage)}")
+            result[algo][tv] = {
+                link: float(np.mean(usages))
+                for link, usages in link_dict.items()
+            }
 
-        processed[algo]["50.0"] = {  # default traffic volume label
-            "link_usage_dict": link_usage_dict,
-            "topology": topology
-        }
+    return result
 
-    return processed
