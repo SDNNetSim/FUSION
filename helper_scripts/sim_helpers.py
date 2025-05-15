@@ -104,7 +104,6 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     """
     links_cong_list = []
     total_slots_available = 0.0
-    # total_slots_capacity = 0.0
 
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
@@ -124,7 +123,6 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
 
         links_cong_list.append(slots_taken / total_slots)
         total_slots_available += slots_available
-        # total_slots_capacity += total_slots
 
     average_path_cong = np.mean(links_cong_list)
     scaled_available_capacity = total_slots_available
