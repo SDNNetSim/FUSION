@@ -20,10 +20,10 @@ class StatsProps:
         self.route_times_list = list()  # Average route times per simulation
         self.xt_list = list()  # Average cross-talk per simulation
         self.bands_list = list()  # Tracks the band allocated in a simulation
-        self.start_slot_list = list() # Tracks the end slot allocated in a simulation
-        self.end_slot_list = list() # # Tracks the end slot allocated in a simulation
-        self.modulation_list = list() # Tracks the modulation
-        self.bandwidth_list = list() # # Tracks the bandwidth
+        self.start_slot_list = list()  # Tracks the end slot allocated in a simulation
+        self.end_slot_list = list()  # # Tracks the end slot allocated in a simulation
+        self.modulation_list = list()  # Tracks the modulation
+        self.bandwidth_list = list()  # # Tracks the bandwidth
 
     def __repr__(self):
         return f"StatsProps({self.__dict__})"

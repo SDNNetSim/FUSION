@@ -238,6 +238,7 @@ COMMAND_LINE_PARAMS = [
     ['save_start_end_slots', bool, ''],
     ['run_id', str, ''],
 
+    # TODO: (version 5.5-6) RLZoo3 will most likely be removed
     # StableBaselines3 arguments
     ['algo', str, ''],
     ['env-id', str, ''],
