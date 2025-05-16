@@ -78,7 +78,7 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    #TODO add support for throughput
+
     @staticmethod
     def _get_link_usage_summary(net_spec_dict):
         usage_summary = {}
@@ -86,7 +86,7 @@ class SimStats:
             if str(src) < str(dst):  # Avoid double-counting reverse direction
                 usage_summary[f"{src}-{dst}"] = {
                     "usage_count": link_data.get('usage_count', 0),
-                    #"throughput": link_data.get('throughput', 0),
+                    "throughput": link_data.get('throughput', 0),
                     "link_num": link_data.get('link_num'),
                 }
         return usage_summary

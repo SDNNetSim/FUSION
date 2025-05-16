@@ -132,11 +132,13 @@ class Engine:
 
             self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix,
                                                   'link_num': int(link_num),
-                                                  'usage_count': 0
+                                                  'usage_count': 0,
+                                                  'throughput': 0
                                                   }
             self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix,
                                                   'link_num': int(link_num),
-                                                  'usage_count': 0
+                                                  'usage_count': 0,
+                                                  'throughput': 0
                                                   }
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
