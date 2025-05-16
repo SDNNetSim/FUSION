@@ -226,6 +226,11 @@ class Engine:
 
         self.stats_obj.iteration = iteration
         self.stats_obj.init_iter_stats()
+
+        for link_key in self.net_spec_dict:
+            self.net_spec_dict[link_key]['usage_count'] = 0
+            self.net_spec_dict[link_key]['throughput'] = 0
+
         # To prevent incomplete saves
         try:
             signal.signal(signal.SIGINT, self.stats_obj.save_stats)
