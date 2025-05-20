@@ -78,7 +78,7 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    #TODO add support for throughput
+
     @staticmethod
     def _get_link_usage_summary(net_spec_dict):
         usage_summary = {}
@@ -86,7 +86,7 @@ class SimStats:
             if str(src) < str(dst):  # Avoid double-counting reverse direction
                 usage_summary[f"{src}-{dst}"] = {
                     "usage_count": link_data.get('usage_count', 0),
-                    #"throughput": link_data.get('throughput', 0),
+                    "throughput": link_data.get('throughput', 0),
                     "link_num": link_data.get('link_num'),
                 }
         return usage_summary
@@ -188,6 +188,8 @@ class SimStats:
                 # Only reset sim_block_list when we encounter a new traffic volume
                 if self.iteration != 0 and stat_key in ['sim_block_list', 'sim_br_block_list']:
                     continue
+                if stat_key == 'path_index_list':
+                    continue
                 setattr(self.stats_props, stat_key, list())
 
     def init_iter_stats(self):
@@ -203,6 +205,9 @@ class SimStats:
         self.bit_rate_blocked = 0
         self.bit_rate_request = 0
         self.total_trans = 0
+
+        k_paths = self.engine_props.get('k_paths', 3)
+        self.stats_props.path_index_list = [0] * k_paths
 
     def get_blocking(self):
         """
@@ -273,6 +278,7 @@ class SimStats:
             self.total_trans += sdn_data.num_trans
             bandwidth = sdn_data.bandwidth
             mod_format = sdn_data.modulation_list[0]
+            self.stats_props.path_index_list[sdn_data.path_index] += 1
 
             self.bit_rate_request += int(sdn_data.bandwidth)
             self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight), 2))
