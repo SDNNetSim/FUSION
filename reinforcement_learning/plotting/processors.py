@@ -8,7 +8,7 @@ import os
 from scipy.stats import ttest_ind
 
 
-def _mean_last(values: list[float | int], k: int = 20) -> float:
+def _mean_last(values: list[float | int], k: int = 5) -> float:
     if not values:
         return 0.0
     subset = values[-k:] if len(values) >= k else values
@@ -17,18 +17,21 @@ def _mean_last(values: list[float | int], k: int = 20) -> float:
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
     merged = defaultdict(lambda: defaultdict(list))
-    baselines = ["k_shortest_path_4", "cong_aware"]
+    baselines = ["k_shortest_path_1", "k_shortest_path_4", "cong_aware"]
 
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
         for tv, info_vector in data.items():
             if isinstance(info_vector, dict):
-                if info_vector.get('blocking_mean') is None and 'iter_stats' in info_vector:
-                    last_key = next(reversed(info_vector['iter_stats']))
-                    last_entry = info_vector['iter_stats'][last_key]
+                last_key = next(reversed(info_vector['iter_stats']))
+                last_entry = info_vector['iter_stats'][last_key]
+                if algo in baselines:
+                    blocking_list = last_entry['sim_block_list']
+                    merged[algo][str(tv)] = blocking_list
+                elif info_vector.get('blocking_mean') is None and 'iter_stats' in info_vector:
                     merged[algo][str(tv)].append(_mean_last(last_entry['sim_block_list']))
                 else:
-                    merged[algo][str(tv)].append(info_vector.get('blocking_mean', 0.0))
+                    raise NotImplementedError
             elif isinstance(info_vector, (float, int)):
                 merged[algo][str(tv)].append(float(info_vector))
 
@@ -354,6 +357,18 @@ def process_lengths(raw_runs, runid_to_algo):
         raw_runs, runid_to_algo,
         mean_key="lengths_mean", min_key="lengths_min", max_key="lengths_max"
     )
+
+
+def process_resource_metrics(raw_runs, runid_to_algo):
+    """
+    Bundle the three per-seed resource processors into one payload
+    that the plotting wrapper will unpack.
+    """
+    return {
+        "lengths": process_lengths(raw_runs, runid_to_algo),
+        "hops": process_hops(raw_runs, runid_to_algo),
+        "trp": process_transponders(raw_runs, runid_to_algo),
+    }
 
 
 def process_modulation_usage(raw_runs, runid_to_algo):

@@ -128,13 +128,14 @@ def plot_modulation_usage(data, save_path=None,
             handles=mod_handles,
             title="Modulation",
             loc="upper right",
-            bbox_to_anchor=(1.02, 1),
+            bbox_to_anchor=(0.88, 1),
             frameon=True,
             edgecolor="0.5",
         )
+
         leg.get_frame().set_linewidth(0.8)
 
-        fig.tight_layout(rect=[0, 0, 0.92, 0.94])
+        fig.tight_layout(rect=[0, 0.05, 1, 0.94])
 
         if save_path:
             save_path = Path(save_path)

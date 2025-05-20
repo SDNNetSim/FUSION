@@ -21,66 +21,58 @@ def _safe_load_json(fp: Path) -> Any | None:
         return None
 
 
-def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> Dict[str, list[str]]:
-    """Return ``{algorithm: [run_id, …]}`` for every run under *dates*."""
-    algo_runs: Dict[str, list[str]] = defaultdict(list)
+def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str, list[str]]:
+    algo_runs: dict[str, list[str]] = defaultdict(list)
 
     for date in dates:
         run_root = ROOT_OUTPUT / network / date
 
-        for s_dir in run_root.rglob("s*"):
-            if not s_dir.is_dir():
+        # each TIMESTAMP (or RUN_ID) directory is a *run*, not a seed
+        for run_dir in run_root.iterdir():
+            if not run_dir.is_dir():
                 continue
 
-            if drl:
-                run_base_dir = s_dir.parent
-                if s_dir.name != "s1":
-                    continue
+            s1_meta = run_dir / "s1" / "meta.json"
+            is_drl = s1_meta.exists()
 
-                meta_fp = next((p for p in run_base_dir.glob("s*/meta.json") if p.exists()), None)
-                if not meta_fp:
-                    continue
+            # skip runs that don’t match the caller’s request
+            if drl != is_drl:
+                continue
 
-                meta = _safe_load_json(meta_fp)
-                if not meta or "run_id" not in meta:
-                    continue
-
+            if is_drl:  # ---------- DRL ----------
+                meta = _safe_load_json(s1_meta) or {}
                 algo = meta.get("path_algorithm", "unknown")
                 run_id = meta["run_id"]
-                timestamp = run_base_dir.name
-                composite_run_id = f"{run_id}@{timestamp}"
+                timestamp = run_dir.name
 
-                for seed_dir in run_base_dir.glob("s*"):
-                    if seed_dir.is_dir():
-                        seed = seed_dir.name
-                        unique_run_id = f"{composite_run_id}_{seed}"
-                        algo_runs[algo].append(unique_run_id)
+                for seed_dir in run_dir.glob("s*"):
+                    unique = f"{run_id}@{timestamp}_{seed_dir.name}"
+                    algo_runs[algo].append(unique)
+            else:  # -------- non-DRL --------
+                timestamp = run_dir.name
+                for seed_dir in run_dir.glob("s*"):
+                    s_num = seed_dir.name  # s1, s2, …
+                    run_id = f"{s_num}_{date}"
+                    inp_fp = (ROOT_INPUT / network / date /
+                              timestamp / f"sim_input_{s_num}.json")
 
-            elif not drl and not (s_dir / "meta.json").exists():
-                parent_dir = s_dir.parent  # …/RUN_ID/
-                date_str = parent_dir.parent.name
-                s_num = s_dir.name  # s1 …
+                    algo = "unknown"
+                    if inp_fp.exists():
+                        inp = _safe_load_json(inp_fp) or {}
+                        method = inp.get("route_method")
+                        k = inp.get("k_paths", 0)
+                        algo = f"{method}_{'inf' if k > 4 else k}" if method == "k_shortest_path" else method
 
-                run_id = f"{s_num}_{date_str}"
-                inp_fp = ROOT_INPUT / network / date_str / parent_dir.name / f"sim_input_{s_num}.json"
-                algo = "unknown"
-                if inp_fp.exists():
-                    inp = _safe_load_json(inp_fp) or {}
-                    method = inp.get("route_method")
-                    k = inp.get("k_paths", 0)
-                    if method == "k_shortest_path":
-                        algo = f"{method}_{'inf' if k > 4 else k}"
-                    else:
-                        algo = method
+                    unique = f"{run_id}@{timestamp}"
+                    algo_runs[algo].append(unique)
 
-                timestamp = parent_dir.name
-                unique_run_id = f"{run_id}@{timestamp}"
-                algo_runs[algo].append(unique_run_id)
-
+    # de-duplicate and sanity-check
     for alg in tuple(algo_runs):
+        if alg == "unknown":
+            raise ValueError("Algorithm not found.")
         algo_runs[alg] = list(dict.fromkeys(algo_runs[alg]))
 
-    print(f"[DEBUG] Discovered {'DRL' if drl else 'non‑DRL'} runs: {dict(algo_runs)}")
+    print(f"[DEBUG] Discovered {'DRL' if drl else 'non-DRL'} runs: {dict(algo_runs)}")
     return dict(algo_runs)
 
 

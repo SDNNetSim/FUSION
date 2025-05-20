@@ -64,18 +64,18 @@ def plot_blocking_probabilities(
         label = f"{algo} ±{overall_ci:.4f}"
 
         ax.plot(erlangs, means, label=label, color=color, linewidth=2, marker=marker, markersize=5)
-        ax.fill_between(erlangs, means - stds, means + stds, color=color, alpha=0.2)
+        # ax.fill_between(erlangs, means - stds, means + stds, color=color, alpha=0.2)
 
     ax.set_xlabel("Erlang Values", fontsize=14, fontweight="bold")
     ax.set_ylabel("Blocking Probability", fontsize=14, fontweight="bold")
     ax.set_title(title, fontsize=16, fontweight="bold")
     ax.set_yscale("log")
-    ax.set_ylim(10 ** -4, 10 ** -0.5)
-    ax.set_xlim(50, 700)
+    ax.set_ylim(10 ** -4, 10 ** -0.3)
+    ax.set_xlim(50, 900)
     ax.tick_params(labelsize=12)
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
-    ax.legend(title="Algorithm (±CI)", loc="upper left", bbox_to_anchor=(1.05, 1), fontsize=11, title_fontsize=12)
+    ax.legend(title="Algorithm (95% ± CI)", loc="upper left", bbox_to_anchor=(1.05, 1), fontsize=11, title_fontsize=12)
     plt.tight_layout(rect=[0, 0, 0.85, 1])
 
     if save_path:
@@ -90,110 +90,128 @@ def plot_blocking_probabilities(
 def plot_blocking_stats_table(
         processed: dict,
         save_path: str | None = None,
-        title: str = "Effect Size Comparison of Blocking Probabilities"
+        title: str = "Effect Size Comparison of Blocking Probabilities",
+        group_col: str = "Erlang"
 ):
+    # ────────────────────────────────────────────────────────
+    # 1) Build a flattened DataFrame
+    # ────────────────────────────────────────────────────────
     rows = []
-
-    # Determine Erlang values
-    all_erlangs = sorted({float(tv) for algo in processed.values() for tv in algo})
+    all_erlangs = sorted({float(tv) for a in processed.values() for tv in a})
     if not all_erlangs:
         print("[plot_blocking_stats] ⚠ No data to plot.")
         return
 
-    min_erl = all_erlangs[0]
-    mid_erl = all_erlangs[len(all_erlangs) // 2]
-    max_erl = all_erlangs[-1]
-    selected_erlangs = {str(min_erl), str(mid_erl), str(max_erl)}
+    keep_erl = {
+        str(all_erlangs[0]),  # min
+        str(all_erlangs[len(all_erlangs) // 2]),  # mid
+        str(all_erlangs[-1])  # max
+    }
 
     for algo, tv_dict in processed.items():
         for tv, stats in tv_dict.items():
-            if tv not in selected_erlangs:
+            if tv not in keep_erl:
                 continue
-
-            for compare_key in ["vs_k_shortest_path_4", "vs_cong_aware"]:
-                if compare_key not in stats:
+            for ck in ("vs_k_shortest_path_4", "vs_cong_aware"):
+                if ck not in stats or stats[ck].get("d") is None:
                     continue
-                comp = stats[compare_key]
-                d = comp.get("d")
-                if d is None:
-                    continue
-
-                baseline_label = "k = 4" if "k_shortest" in compare_key else "cong_aware"
-                mean_diff = comp.get("mean_diff", 0.0)
+                d = stats[ck]["d"]
+                mean_diff = stats[ck].get("mean_diff", 0.0)
                 ci_width = 2 * stats.get("ci", 0.0)
+                baseline = "k = 4" if "k_shortest" in ck else "cong_aware"
 
-                # Interpret Cohen's d (direction-aware)
+                # Cohen’s d interpretation
                 if d <= -0.8:
-                    interpretation = "Large Benefit"
+                    inter = "Large Benefit"
                 elif d <= -0.5:
-                    interpretation = "Moderate Benefit"
+                    inter = "Moderate Benefit"
                 elif d <= -0.2:
-                    interpretation = "Small Benefit"
+                    inter = "Small Benefit"
                 elif d < 0.2:
-                    interpretation = "Negligible"
+                    inter = "Negligible"
                 elif d < 0.5:
-                    interpretation = "Small Disadvantage"
+                    inter = "Small Disadvantage"
                 elif d < 0.8:
-                    interpretation = "Moderate Disadvantage"
+                    inter = "Moderate Disadvantage"
                 else:
-                    interpretation = "Large Disadvantage"
+                    inter = "Large Disadvantage"
 
                 rows.append([
-                    algo.replace("_", " ").title(),
-                    baseline_label,
-                    float(tv),
-                    f"{mean_diff:.4f}",
-                    f"{d:.3f}",
-                    f"±{ci_width:.4f}",
-                    interpretation
+                    algo.replace("_", " ").title(), baseline, float(tv),
+                    f"{mean_diff:.4f}", f"{d:.3f}", f"±{ci_width:.4f}", inter
                 ])
 
-    df = pd.DataFrame(rows, columns=["Algorithm", "Baseline", "Erlang", "Δ Mean Blocking", "Cohen's d", "95% CI Width",
-                                     "Interpretation"])
-    df.sort_values(by=["Erlang", "Baseline", "Algorithm"], inplace=True)
+    df = (pd.DataFrame(rows, columns=[
+        "Algorithm", "Baseline", "Erlang",
+        "Δ Mean Blocking", "Cohen's d",
+        "(95% ± CI)", "Interpretation"
+    ])
+          .sort_values([group_col, "Baseline", "Algorithm"])
+          .reset_index(drop=True)
+          )
 
     if save_path:
-        csv_fp = save_path.with_suffix(".csv")
-        df.to_csv(csv_fp, index=False)
-        print(f"[plot_blocking_stats] ✅ CSV saved to {csv_fp}")
+        df.to_csv(save_path.with_suffix(".csv"), index=False)
 
-    fig_height = 0.6 + 0.4 * len(df)
-    fig, ax = plt.subplots(figsize=(12, fig_height), dpi=300)
+    # Mask that is True on the last row of each Erlang block
+    boundary_mask = df[group_col].ne(df[group_col].shift(-1))
+
+    # ────────────────────────────────────────────────────────
+    # 2) Draw the table
+    # ────────────────────────────────────────────────────────
+    fig_h = 0.6 + 0.4 * len(df)  # dynamic height
+    fig_w = 13
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=300)
     ax.axis("off")
     fig.suptitle(title, fontsize=14, fontweight="bold", y=0.96)
 
-    table = ax.table(cellText=df.values, colLabels=df.columns, loc="center", cellLoc="center")
+    col_w = [0.16, 0.12, 0.09, 0.13, 0.11, 0.11, 0.28]
+    table = ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        colWidths=col_w,
+        loc="center",
+        cellLoc="center"
+    )
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     table.scale(1.2, 1.4)
 
+    # Colours for interpretation column
+    palette = {
+        "Large Benefit": to_rgba("mediumseagreen", 0.6),
+        "Moderate Benefit": to_rgba("palegreen", 0.6),
+        "Small Benefit": to_rgba("honeydew", 0.8),
+        "Negligible": to_rgba("lightyellow", 0.8),
+        "Small Disadvantage": to_rgba("moccasin", 0.8),
+        "Moderate Disadvantage": to_rgba("lightsalmon", 0.7),
+        "Large Disadvantage": to_rgba("lightcoral", 0.5),
+    }
+
+    n_cols = len(df.columns)
+
     for (row, col), cell in table.get_celld().items():
-        if row == 0:
-            cell.set_text_props(weight='bold')
-        if col == 0:
-            cell._loc = 'left'
+        if row == 0:  # header styling
+            cell.set_text_props(weight="bold")
+        if col == 0:  # left-align algorithm names
+            cell._loc = "left"
 
+        # Apply heat-map colour to Interpretation column
         if col == 6 and row > 0:
-            value = table[row, col].get_text().get_text()
-            if value == "Large Benefit":
-                cell.set_facecolor(to_rgba("mediumseagreen", 0.6))
-            elif value == "Moderate Benefit":
-                cell.set_facecolor(to_rgba("palegreen", 0.6))
-            elif value == "Small Benefit":
-                cell.set_facecolor(to_rgba("honeydew", 0.8))
-            elif value == "Negligible":
-                cell.set_facecolor(to_rgba("lightyellow", 0.8))
-            elif value == "Small Disadvantage":
-                cell.set_facecolor(to_rgba("moccasin", 0.8))
-            elif value == "Moderate Disadvantage":
-                cell.set_facecolor(to_rgba("lightsalmon", 0.7))
-            elif value == "Large Disadvantage":
-                cell.set_facecolor(to_rgba("lightcoral", 0.5))
+            cell.set_facecolor(
+                palette[table[row, col].get_text().get_text()]
+            )
 
+        # Shade boundary rows (but NOT the Interpretation column)
+        if row > 0 and boundary_mask.iloc[row - 1] and col != 6:
+            cell.set_facecolor("#e6e6e6")  # light grey
+            cell.set_text_props(weight="bold")
+
+    # ────────────────────────────────────────────────────────
+    # 3) Save or display
+    # ────────────────────────────────────────────────────────
     if save_path:
-        fig_fp = save_path.with_suffix(".png")
-        plt.savefig(fig_fp, bbox_inches="tight")
-        print(f"[plot_blocking_stats] ✅ Table saved to {fig_fp}")
+        plt.savefig(save_path.with_suffix(".png"), bbox_inches="tight")
         plt.close()
     else:
         plt.tight_layout()
