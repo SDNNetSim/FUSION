@@ -24,33 +24,40 @@ def plot_link_usage(final_result, save_path=None, title=None):
             edge_widths = [1 + 4 * (usage / max_usage) for usage in usage_values]
 
             pos = nx.spring_layout(G, seed=42)
-            plt.figure(figsize=(10, 7))
+            fig, ax = plt.subplots(figsize=(10, 7))
+
             nx.draw(
-                G, pos,
+                G, pos, ax = ax,
                 with_labels=True,
                 node_color='lightblue',
                 edge_color=edge_colors,
                 width=edge_widths
             )
             nx.draw_networkx_edge_labels(
-                G, pos,
+                G, pos, ax = ax,
                 edge_labels={(u, v): G[u][v].get('usage', 0) for u, v in G.edges()},
                 font_color='gray'
             )
 
             final_title = f"{title or 'Link Usage'} – {algo} – {tv} Erlang"
-            plt.title(final_title)
-            plt.axis('off')
+            print(final_title)
+
+            ax.set_title(final_title, fontsize=16, fontweight='bold')
+            ax.axis('off')
+
+            plt.subplots_adjust(top=0.88)  # Leave space for title
+
+            #plt.tight_layout(rect=[0, 0, 1, 0.95])
 
             if save_path:
-                filename = f"{save_path.rstrip('.png')}_{algo}_{tv}.png"
-                plt.savefig(filename)
-                print(f"[plot_link_usage] ✅ Saved: {filename}")
-                plt.close()
+                path = Path(save_path)
+                filename = f"{path.stem}_{algo}_{tv}{path.suffix}"
+                output_path = path.with_name(filename)
+                plt.savefig(output_path, bbox_inches='tight')
+                print(f"[plot_link_usage] ✅ Saved: {output_path}")
+                plt.close(fig)
             else:
-                plt.title(final_title)
                 print(f"[plot_link_usage] (no save path) – Showing: {algo}, Erlang {tv}")
-                plt.show(block=False)  # don't freeze interaction
-                plt.pause(0.5)
-                plt.close()
+                plt.show()
+                plt.close(fig)
 
