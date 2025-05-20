@@ -75,6 +75,10 @@ def main(cfg_path: str):
                 run_ids = _collect_run_ids(algo, variants, discovered)
                 print(f"[DEBUG] Using run_ids for {algo} ({'DRL' if drl_flag else 'non-DRL'}): {run_ids}")
 
+                run_ids = set(run_ids)
+                if not run_ids:
+                    continue
+
                 raw_metric, runid_to_algo, start_stamps = load_metric_for_runs(
                     run_ids=run_ids,
                     metric=plot_name,
