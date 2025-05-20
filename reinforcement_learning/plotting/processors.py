@@ -359,6 +359,18 @@ def process_lengths(raw_runs, runid_to_algo):
     )
 
 
+def process_resource_metrics(raw_runs, runid_to_algo):
+    """
+    Bundle the three per-seed resource processors into one payload
+    that the plotting wrapper will unpack.
+    """
+    return {
+        "lengths": process_lengths(raw_runs, runid_to_algo),
+        "hops": process_hops(raw_runs, runid_to_algo),
+        "trp": process_transponders(raw_runs, runid_to_algo),
+    }
+
+
 def process_modulation_usage(raw_runs, runid_to_algo):
     """
     Extract *mods_used_dict* from the final iteration of every seed and
