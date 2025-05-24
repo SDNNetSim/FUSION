@@ -457,38 +457,56 @@ def extract_network_from_path(path: str) -> str:
     raise ValueError(f"Network name not found in path: {path}")
 
 
-def process_link_usage(raw_runs: dict, runid_to_algo: dict) -> dict:
+def process_link_data(raw_runs: dict, runid_to_algo: dict) -> dict:
     """
-    Aggregates link usage per traffic volume across seeds.
-    Output structure: { algo: { erlang: { link_str: avg_usage_count } } }
+    Aggregates link usage and throughput per traffic volume across seeds.
+    Returns:
+    {
+        "usage": { algo: { erlang: { link_str: avg_usage_count } } },
+        "throughput": { algo: { erlang: { link_str: avg_throughput } } }
+    }
     """
-    from collections import defaultdict
 
-    merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    from collections import defaultdict
+    import numpy as np
+
+    merged_usage = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    merged_throughput = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
 
         for tv, info in data.items():
             if "iter_stats" in info:
-                # Get final iteration key
                 last_iter_key = next(reversed(info["iter_stats"]))
                 final_data = info["iter_stats"][last_iter_key]
 
                 link_usage = final_data.get("link_usage_dict", {})
                 for link_str, stats in link_usage.items():
-                    usage_count = stats.get("usage_count", 0)
-                    merged[algo][str(tv)][link_str].append(usage_count)
+                    usage = stats.get("usage_count", 0)
+                    throughput = stats.get("throughput", 0)
 
-    # Average usage per link
-    result = {}
-    for algo, tv_dict in merged.items():
-        result[algo] = {}
-        for tv, link_dict in tv_dict.items():
-            print(f"[DEBUG] Processing {run_id=} {tv=}, last_iter={last_iter_key}, total_links={len(link_usage)}")
-            result[algo][tv] = {
+                    merged_usage[algo][str(tv)][link_str].append(usage)
+                    merged_throughput[algo][str(tv)][link_str].append(throughput)
+
+    result_usage = {}
+    result_throughput = {}
+
+    for algo in merged_usage:
+        result_usage[algo] = {}
+        result_throughput[algo] = {}
+
+        for tv in merged_usage[algo]:
+            result_usage[algo][tv] = {
                 link: float(np.mean(usages))
-                for link, usages in link_dict.items()
+                for link, usages in merged_usage[algo][tv].items()
+            }
+            result_throughput[algo][tv] = {
+                link: float(np.mean(throughputs))
+                for link, throughputs in merged_throughput[algo][tv].items()
             }
 
-    return result
+    return {
+        "usage": result_usage,
+        "throughput": result_throughput
+    }

@@ -6,6 +6,7 @@ from reinforcement_learning.plotting.state_values import plot_best_path_matrix
 from reinforcement_learning.plotting.mod_usage import plot_modulation_usage
 from reinforcement_learning.plotting.bw_block import plot_bw_blocked
 from reinforcement_learning.plotting.blocking import plot_blocking_stats_table
+from reinforcement_learning.plotting.link_data import plot_link_usage, plot_link_throughput
 from reinforcement_learning.plotting.resource_stats import plot_resource_stats_table_entry
 
 PLOTS = {
@@ -31,4 +32,12 @@ PLOTS = {
         "plot": plot_resource_stats_table_entry,
     },
 
+    "link_usage": {
+        "plot": plot_link_usage,
+        "process": "process_link_data",
+    },
+    "link_throughput": {
+        "plot": plot_link_throughput,
+        "process": "process_link_data"
+    }
 }
