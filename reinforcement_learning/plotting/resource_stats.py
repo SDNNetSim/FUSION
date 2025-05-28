@@ -110,7 +110,7 @@ def plot_resource_percent_delta_heatmaps(
             plt.tight_layout()
             if save_path:
                 fname = f"{metric_name.lower().replace(' ', '_')}_vs_{bl_key}.png"
-                out_path = save_path / fname if isinstance(save_path, Path) else Path(save_path) / fname
+                out_path = save_path.parent / fname if isinstance(save_path, Path) else Path(save_path) / fname
                 plt.savefig(out_path, bbox_inches="tight")
                 print(f"[plot_resource] ✅ Saved {out_path}")
                 plt.close()
