@@ -510,3 +510,45 @@ def process_link_data(raw_runs: dict, runid_to_algo: dict) -> dict:
         "usage": result_usage,
         "throughput": result_throughput
     }
+
+
+
+
+
+
+def process_path_index(raw_runs: dict, runid_to_algo: dict) -> dict:
+    """
+    Collects per-seed path index histograms and averages them.
+    Returns: { algo: { erlang: { path_index: avg_count } } }
+    """
+
+    from collections import defaultdict
+
+    raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for run_id, data in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+
+        for tv, info in data.items():
+            iter_stats = info.get("iter_stats", {})
+            if not iter_stats:
+                continue
+
+            last_iter_key = max(iter_stats.keys(), key=lambda k: int(k))
+            final_data = iter_stats[last_iter_key]
+            path_index_list = final_data.get("path_index_list", [])
+
+            for idx, count in enumerate(path_index_list):
+                raw[algo][str(tv)][idx].append(count)
+
+    # Convert lists to averages
+    result = defaultdict(lambda: defaultdict(dict))
+    for algo in raw:
+        for tv in raw[algo]:
+            for idx in raw[algo][tv]:
+                result[algo][tv][idx] = float(np.mean(raw[algo][tv][idx]))
+
+    return result
+
+
+
