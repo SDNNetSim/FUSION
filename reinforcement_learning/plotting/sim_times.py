@@ -41,6 +41,7 @@ def plot_sim_times(
     traffic_labels = sorted({
         float(tv) for algo_data in sim_times_data.values()
         for tv in algo_data.keys()
+        if int(float(tv)) % 100 == 0
     })
     algos = sorted(sim_times_data.keys())
 
@@ -79,6 +80,7 @@ def plot_sim_times(
     )
     plt.xlabel("Traffic Volume (Erlang)", fontsize=14, fontweight="bold")
     plt.ylabel("Mean Simulation Time (s)", fontsize=14, fontweight="bold")
+    plt.yscale("log", base=10)
     plt.title(title, fontsize=16, fontweight="bold")
 
     if log_y:

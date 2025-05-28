@@ -1,9 +1,13 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
+from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 from itertools import cycle
 
 import pandas as pd
+import seaborn as sns
 
 
 def plot_blocking_probabilities(
@@ -70,8 +74,8 @@ def plot_blocking_probabilities(
     ax.set_ylabel("Blocking Probability", fontsize=14, fontweight="bold")
     ax.set_title(title, fontsize=16, fontweight="bold")
     ax.set_yscale("log")
-    ax.set_ylim(10 ** -4, 10 ** -0.3)
-    ax.set_xlim(50, 900)
+    ax.set_ylim(10 ** -2.3, 10 ** -0.7)
+    ax.set_xlim(200, 1300)
     ax.tick_params(labelsize=12)
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
@@ -87,132 +91,99 @@ def plot_blocking_probabilities(
         plt.clf()
 
 
-def plot_blocking_stats_table(
-        processed: dict,
-        save_path: str | None = None,
-        title: str = "Effect Size Comparison of Blocking Probabilities",
-        group_col: str = "Erlang"
+def plot_effect_heatmaps(
+    processed: dict,
+    title: str | None = None,
+    save_path: str | Path | None = None
 ):
-    # ────────────────────────────────────────────────────────
-    # 1) Build a flattened DataFrame
-    # ────────────────────────────────────────────────────────
-    rows = []
-    all_erlangs = sorted({float(tv) for a in processed.values() for tv in a})
-    if not all_erlangs:
-        print("[plot_blocking_stats] ⚠ No data to plot.")
-        return
+    save_path = Path(save_path) if save_path else None
 
-    keep_erl = {
-        str(all_erlangs[0]),  # min
-        str(all_erlangs[len(all_erlangs) // 2]),  # mid
-        str(all_erlangs[-1])  # max
+    excluded = {"k_shortest_path_1", "k_shortest_path_4", "k_shortest_path_inf", "cong_aware"}
+    rl_algorithms = sorted([algo for algo in processed if algo not in excluded])
+    traffic_volumes = sorted({tv for algo in processed.values() for tv in algo}, key=lambda x: float(x))
+
+    baselines = ["vs_cong_aware", "vs_k_shortest_path_4"]
+    baseline_titles = {
+        "vs_cong_aware": "Cohen's d vs Congestion-Aware Heuristic",
+        "vs_k_shortest_path_4": "Cohen's d vs K-Shortest Path (k=4)"
     }
 
-    for algo, tv_dict in processed.items():
-        for tv, stats in tv_dict.items():
-            if tv not in keep_erl:
-                continue
-            for ck in ("vs_k_shortest_path_4", "vs_cong_aware"):
-                if ck not in stats or stats[ck].get("d") is None:
-                    continue
-                d = stats[ck]["d"]
-                mean_diff = stats[ck].get("mean_diff", 0.0)
-                ci_width = 2 * stats.get("ci", 0.0)
-                baseline = "k = 4" if "k_shortest" in ck else "cong_aware"
+    d_maps = {b: pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=float) for b in baselines}
+    d_annots = {b: pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=str) for b in baselines}
+    ci_map = pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=float)
+    ci_annot = pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=str)
 
-                # Cohen’s d interpretation
-                if d <= -0.8:
-                    inter = "Large Benefit"
-                elif d <= -0.5:
-                    inter = "Moderate Benefit"
-                elif d <= -0.2:
-                    inter = "Small Benefit"
-                elif d < 0.2:
-                    inter = "Negligible"
-                elif d < 0.5:
-                    inter = "Small Disadvantage"
-                elif d < 0.8:
-                    inter = "Moderate Disadvantage"
-                else:
-                    inter = "Large Disadvantage"
+    for algo in rl_algorithms:
+        for tv in traffic_volumes:
+            stats = processed.get(algo, {}).get(tv, {})
+            for b in baselines:
+                if b in stats and stats[b].get("d") is not None:
+                    d = stats[b]["d"]
+                    d_maps[b].loc[algo, tv] = d
+                    d_annots[b].loc[algo, tv] = f"{d:.2f}"
+            if "ci" in stats and stats["ci"] is not None:
+                ci_width = 2 * stats["ci"]
+                ci_map.loc[algo, tv] = ci_width
+                ci_annot.loc[algo, tv] = f"±{ci_width:.2f}"
 
-                rows.append([
-                    algo.replace("_", " ").title(), baseline, float(tv),
-                    f"{mean_diff:.4f}", f"{d:.3f}", f"±{ci_width:.4f}", inter
-                ])
+    plt.style.use("seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default")
 
-    df = (pd.DataFrame(rows, columns=[
-        "Algorithm", "Baseline", "Erlang",
-        "Δ Mean Blocking", "Cohen's d",
-        "(95% ± CI)", "Interpretation"
-    ])
-          .sort_values([group_col, "Baseline", "Algorithm"])
-          .reset_index(drop=True)
-          )
+    for baseline in baselines:
+        fig, ax = plt.subplots(figsize=(18, 6), dpi=300)
+        sns.heatmap(
+            d_maps[baseline],
+            ax=ax,
+            annot=d_annots[baseline],
+            fmt="",
+            cmap=sns.diverging_palette(145, 15, s=90, l=60, as_cmap=True),
+            center=0,
+            cbar=True,
+            linewidths=0.5,
+            linecolor="gray",
+            annot_kws={"fontsize": 9, "weight": "bold"},
+            square=False
+        )
+        full_title = f"{title + ': ' if title else ''}{baseline_titles[baseline]}"
+        ax.set_title(full_title, fontsize=13, weight="bold", pad=10)
+        ax.set_xlabel("Traffic Volume (Erlang)", fontsize=11, weight="bold")
+        ax.set_ylabel("RL Algorithm", fontsize=11, weight="bold")
+        ax.tick_params(axis='x', labelsize=8, rotation=40)
+        ax.tick_params(axis='y', labelsize=9)
+        plt.tight_layout()
 
-    if save_path:
-        df.to_csv(save_path.with_suffix(".csv"), index=False)
+        if save_path:
+            full_path = save_path.with_stem(save_path.stem + f"_{baseline}")
+            plt.savefig(full_path, bbox_inches="tight")
+            print(f"[heatmap] ✅ Saved {full_path}")
+            plt.close()
+        else:
+            plt.show()
 
-    # Mask that is True on the last row of each Erlang block
-    boundary_mask = df[group_col].ne(df[group_col].shift(-1))
-
-    # ────────────────────────────────────────────────────────
-    # 2) Draw the table
-    # ────────────────────────────────────────────────────────
-    fig_h = 0.6 + 0.4 * len(df)  # dynamic height
-    fig_w = 13
-    fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=300)
-    ax.axis("off")
-    fig.suptitle(title, fontsize=14, fontweight="bold", y=0.96)
-
-    col_w = [0.16, 0.12, 0.09, 0.13, 0.11, 0.11, 0.28]
-    table = ax.table(
-        cellText=df.values,
-        colLabels=df.columns,
-        colWidths=col_w,
-        loc="center",
-        cellLoc="center"
+    fig, ax = plt.subplots(figsize=(22, 6), dpi=300)
+    sns.heatmap(
+        ci_map,
+        ax=ax,
+        annot=ci_annot,
+        fmt="",
+        cmap=sns.color_palette("YlGnBu", as_cmap=True),
+        cbar=True,
+        linewidths=0.5,
+        linecolor="gray",
+        annot_kws={"fontsize": 9, "weight": "bold"},
+        square=False
     )
-    table.auto_set_font_size(False)
-    table.set_fontsize(10)
-    table.scale(1.2, 1.4)
+    full_title = f"{title + ': ' if title else ''}Blocking Probability CI Width (±95%)"
+    ax.set_title(full_title, fontsize=13, weight="bold", pad=10)
+    ax.set_xlabel("Traffic Volume (Erlang)", fontsize=11, weight="bold")
+    ax.set_ylabel("RL Algorithm", fontsize=11, weight="bold")
+    ax.tick_params(axis='x', labelsize=8, rotation=40)
+    ax.tick_params(axis='y', labelsize=9)
+    plt.tight_layout()
 
-    # Colours for interpretation column
-    palette = {
-        "Large Benefit": to_rgba("mediumseagreen", 0.6),
-        "Moderate Benefit": to_rgba("palegreen", 0.6),
-        "Small Benefit": to_rgba("honeydew", 0.8),
-        "Negligible": to_rgba("lightyellow", 0.8),
-        "Small Disadvantage": to_rgba("moccasin", 0.8),
-        "Moderate Disadvantage": to_rgba("lightsalmon", 0.7),
-        "Large Disadvantage": to_rgba("lightcoral", 0.5),
-    }
-
-    n_cols = len(df.columns)
-
-    for (row, col), cell in table.get_celld().items():
-        if row == 0:  # header styling
-            cell.set_text_props(weight="bold")
-        if col == 0:  # left-align algorithm names
-            cell._loc = "left"
-
-        # Apply heat-map colour to Interpretation column
-        if col == 6 and row > 0:
-            cell.set_facecolor(
-                palette[table[row, col].get_text().get_text()]
-            )
-
-        # Shade boundary rows (but NOT the Interpretation column)
-        if row > 0 and boundary_mask.iloc[row - 1] and col != 6:
-            cell.set_facecolor("#e6e6e6")  # light grey
-            cell.set_text_props(weight="bold")
-
-    # ────────────────────────────────────────────────────────
-    # 3) Save or display
-    # ────────────────────────────────────────────────────────
     if save_path:
-        plt.savefig(save_path.with_suffix(".png"), bbox_inches="tight")
+        full_path = save_path.with_stem(save_path.stem + "_blocking_ci")
+        plt.savefig(full_path, bbox_inches="tight")
+        print(f"[heatmap] ✅ Saved {full_path}")
         plt.close()
     else:
-        plt.tight_layout()
         plt.show()

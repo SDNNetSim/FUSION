@@ -33,7 +33,7 @@ def topology_from_output(out_path: pathlib.PurePosixPath) -> str:
 
 
 def _run(cmd: list[str], dry: bool) -> None:
-    sleep(2.0)
+    sleep(3.0)
     if dry:
         logging.info("[dry‑run] %s", " ".join(cmd))
     else:

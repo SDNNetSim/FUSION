@@ -1,37 +1,64 @@
 import os
 
-from helper_scripts.sim_helpers import parse_yaml_file
+import torch
 
 from reinforcement_learning.utils.general_utils import determine_model_type
 from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
 
+from reinforcement_learning.feat_extrs.constants import CACHE_DIR
+from reinforcement_learning.feat_extrs.path_gnn_cached import CachedPathGNN
+from helper_scripts.sim_helpers import parse_yaml_file
+
+import torch.nn as nn
+
+
+def _parse_policy_kwargs(s: str) -> dict:
+    """
+    Turn strings like
+        "dict( ortho_init=True, activation_fn=nn.ReLU, net_arch=dict(pi=[64]) )"
+    into an actual Python dict.  Only `dict` and `nn` are allowed names.
+    """
+    safe_globals = {"__builtins__": None, "dict": dict, "nn": nn}
+    try:
+        return eval(s, safe_globals, {})  # pylint: disable=eval-used
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"Bad policy_kwargs string: {s!r}") from exc
+
 
 def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
     """
-    Creates or retrieves a new reinforcement learning model based on the specified algorithm.
-
-    :param sim_dict: Has all simulation parameters.
-    :param device: The device on which the model will run (e.g., 'cpu' or 'cuda').
-    :param env: The reinforcement learning environment.
-    :return: A tuple containing the RL model and a configuration dictionary for the environment.
+    Build/return the SB3 model.
+    Adds CachedPathGNN automatically if a cache file exists.
     """
-    model_type = determine_model_type(sim_dict=sim_dict)
-    algorithm = sim_dict.get(model_type)
-
-    if algorithm not in ALGORITHM_REGISTRY:
-        raise NotImplementedError(f"Algorithm '{algorithm}' is not supported.")
+    model_type = determine_model_type(sim_dict)
+    algorithm = sim_dict[model_type]
 
     if yaml_dict is None:
-        network = sim_dict.get('network')
-        yaml_file = os.path.join('sb3_scripts', 'yml', f'{algorithm}_{network}.yml')
-        yaml_dict = parse_yaml_file(yaml_file=yaml_file)
-        env_name = list(yaml_dict.keys())[0]
-        param_dict = yaml_dict[env_name]
+        yml = os.path.join("sb3_scripts", "yml",
+                           f"{algorithm}_{sim_dict['network']}.yml")
+        yaml_dict = parse_yaml_file(yml)
+        env_name = next(iter(yaml_dict))
+        param = yaml_dict[env_name]
     else:
-        param_dict = yaml_dict
+        param = yaml_dict
+    cache_fp = CACHE_DIR / f"{sim_dict['network']}.pt"
+    if os.path.exists(cache_fp):
+        cached = torch.load(cache_fp)
+        pk_raw = param.get("policy_kwargs", {})
+        if isinstance(pk_raw, str):
+            pk = _parse_policy_kwargs(pk_raw)
+        else:
+            pk = pk_raw
+        param["policy_kwargs"] = pk
+        pk.update(
+            features_extractor_class=CachedPathGNN,
+            features_extractor_kwargs=dict(cached_embedding=cached)
+        )
+        param["policy_kwargs"] = pk
+        print("✅ Using CachedPathGNN from", cache_fp)
 
-    model = ALGORITHM_REGISTRY[algorithm]['setup'](env=env, device=device)
-    return model, param_dict
+    model = ALGORITHM_REGISTRY[algorithm]["setup"](env=env, device=device)
+    return model, param
 
 
 def get_trained_model(env: object, sim_dict: dict):

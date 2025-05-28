@@ -5,9 +5,9 @@ from reinforcement_learning.plotting.sim_times import plot_sim_times
 from reinforcement_learning.plotting.state_values import plot_best_path_matrix
 from reinforcement_learning.plotting.mod_usage import plot_modulation_usage
 from reinforcement_learning.plotting.bw_block import plot_bw_blocked
-from reinforcement_learning.plotting.blocking import plot_blocking_stats_table
+from reinforcement_learning.plotting.blocking import plot_effect_heatmaps
 from reinforcement_learning.plotting.link_data import plot_link_usage, plot_link_throughput
-from reinforcement_learning.plotting.resource_stats import plot_resource_stats_table_entry
+from reinforcement_learning.plotting.resource_stats import plot_resource_percent_delta_heatmaps
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -24,12 +24,12 @@ PLOTS = {
         "plot": plot_bw_blocked,
     },
     "blocking_stats": {
-        "plot": plot_blocking_stats_table,
+        "plot": plot_effect_heatmaps,
         "process": "process_blocking",  # reuse existing processor
     },
     "resource_stats": {
         "process": "process_resource_metrics",
-        "plot": plot_resource_stats_table_entry,
+        "plot": plot_resource_percent_delta_heatmaps,
     },
 
     "link_usage": {

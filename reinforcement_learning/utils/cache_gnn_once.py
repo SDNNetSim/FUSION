@@ -35,7 +35,7 @@ def main():
             return arr.to(device)
         return torch.as_tensor(arr, dtype=dtype, device=device)
 
-    x = to_tensor(obs["x"])  # float32
+    x = to_tensor(obs["x"])
     edge_index = to_tensor(obs["edge_index"], dtype=torch.long)
     path_masks = to_tensor(obs["path_masks"])
 

@@ -17,7 +17,7 @@ def _mean_last(values: list[float | int], k: int = 5) -> float:
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
     merged = defaultdict(lambda: defaultdict(list))
-    baselines = ["k_shortest_path_1", "k_shortest_path_4", "cong_aware"]
+    baselines = ["k_shortest_path_1", "k_shortest_path_4", "cong_aware", "k_shortest_path_inf"]
 
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
