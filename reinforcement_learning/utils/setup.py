@@ -3,6 +3,7 @@ import copy
 
 from stable_baselines3 import PPO, A2C, DQN
 from sb3_contrib import QRDQN
+import torch
 from torch import nn  # pylint: disable=unused-import
 
 from src.engine import Engine
@@ -15,8 +16,9 @@ from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
-from reinforcement_learning.feat_extrs.path_gnn import PathGNN
 from reinforcement_learning.feat_extrs.graphormer import GraphTransformerExtractor
+
+from reinforcement_learning.feat_extrs.constants import CACHE_DIR
 
 
 def setup_feature_extractor(env: object):
@@ -31,8 +33,39 @@ def setup_feature_extractor(env: object):
     }
 
     if feat_extr == 'path_gnn':
-        extr_class = PathGNN
-        feat_kwargs['gnn_type'] = engine_props['gnn_type']
+        from reinforcement_learning.feat_extrs.path_gnn_cached import (
+            CachedPathGNN, PathGNNEncoder
+        )
+        # where the cache will live
+        network = env.engine_obj.engine_props['network']
+        cache_fp = CACHE_DIR / f"{engine_props['network']}.pt"
+
+        if os.path.exists(cache_fp):          # ✔ cache already there
+            cached = torch.load(cache_fp)
+            extr_class = CachedPathGNN
+            feat_kwargs = {"cached_embedding": cached}
+            print(f"✅  Using cached GNN embedding from {cache_fp}")
+        else:                                 # ✘ no cache → make one now
+            print(f"⏳  Caching GNN embedding for {network} …")
+            obs = env.reset()[0]
+            enc = PathGNNEncoder(env.observation_space,
+                                 emb_dim=env.engine_obj.engine_props['emb_dim'],
+                                 gnn_type=env.engine_obj.engine_props['gnn_type'],
+                                 layers=env.engine_obj.engine_props['layers']
+                                 ).to(env.engine_obj.engine_props['device'])
+            enc.eval()
+            with torch.no_grad():
+                emb = enc(
+                    obs['x'].to(enc.device),
+                    obs['edge_index'].long().to(enc.device),
+                    obs['path_masks'].to(enc.device)
+                ).cpu()
+            os.makedirs('gnn_cached', exist_ok=True)
+            torch.save(emb, cache_fp)
+            print(f"✅  Saved cache to {cache_fp}")
+
+            extr_class = CachedPathGNN
+            feat_kwargs = {"cached_embedding": emb}
     elif feat_extr == 'graphormer':
         extr_class = GraphTransformerExtractor
         feat_kwargs['heads'] = engine_props['heads']
@@ -57,7 +90,7 @@ def get_drl_dicts(env, yaml_path):
     return yaml_dict, kwargs_dict, env_name
 
 
-def setup_rl_sim():
+def setup_rl_sim(config_path: str = None):
     """
     Set up a reinforcement learning simulation.
 
@@ -65,7 +98,8 @@ def setup_rl_sim():
     :rtype: dict
     """
     args_dict = parse_args()
-    config_path = os.path.join('ini', 'run_ini', 'config.ini')
+    if config_path is None:
+        config_path = os.path.join('ini', 'run_ini', 'config.ini')
     sim_dict = read_config(args_dict=args_dict, config_path=config_path)
 
     return sim_dict

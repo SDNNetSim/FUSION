@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import argparse
 import json
 import sys
@@ -11,6 +12,8 @@ from reinforcement_learning.workflow_runner import (  # type: ignore
     run,
 )
 from reinforcement_learning.utils.gym_envs import create_environment  # type: ignore
+
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 
 # TODO: (drl_path_agents) Put 'utils' file ending (imports) in the standards
