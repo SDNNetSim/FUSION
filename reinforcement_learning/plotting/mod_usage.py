@@ -38,9 +38,14 @@ def _apply_axes_style(ax):
 def plot_modulation_usage(data, save_path=None,
                           title="Modulations per Bandwidth"):
     """
-    data ::
+    Normalized stacked bar chart: each bandwidth group sums to 1.0.
+
+    Parameters
+    ----------
+    data : dict
         {algo: {tv (str): {bw (str): {mod: mean_cnt}}}}
-    Generates one figure per traffic volume – grid of algorithm panels.
+    save_path : str or Path, optional
+        If set, saves each figure per traffic volume.
     """
     plt.rcParams.update({
         "font.size": BASE_FONT_SIZE,
@@ -61,18 +66,15 @@ def plot_modulation_usage(data, save_path=None,
 
     for tv in all_tvs:
         tv_str = str(tv)
-        bws = sorted(
-            {
-                float(bw)
-                for algo in all_algos
-                for bw in data[algo].get(tv_str, {})
-            }
-        )
+        bws = sorted({
+            float(bw)
+            for algo in all_algos
+            for bw in data[algo].get(tv_str, {})
+        })
         if not bws:
             continue
 
         bar_w = _auto_bar_width(bws)
-
         n_algos = len(all_algos)
         n_cols = 3
         n_rows = math.ceil(n_algos / n_cols)
@@ -92,9 +94,14 @@ def plot_modulation_usage(data, save_path=None,
             bw_vals = data[algo].get(tv_str, {})
 
             for mod in MOD_ORDER:
-                heights = [
-                    bw_vals.get(str(int(bw)), {}).get(mod, 0) for bw in bws
-                ]
+                heights = []
+                for bw in bws:
+                    bw_str = str(int(bw))
+                    mod_cnt = bw_vals.get(bw_str, {}).get(mod, 0)
+                    total_cnt = sum(bw_vals.get(bw_str, {}).values())
+                    height = (mod_cnt / total_cnt) if total_cnt > 0 else 0
+                    heights.append(height)
+
                 ax.bar(
                     bws,
                     heights,
@@ -111,10 +118,14 @@ def plot_modulation_usage(data, save_path=None,
                 bws, [int(b) for b in bws], rotation=45, fontsize=TICK_FONT_SIZE
             )
             if idx % n_cols == 0:
-                ax.set_ylabel("# requests", fontweight="bold")
+                ax.set_ylabel("Proportion of Requests", fontweight="bold")
             _apply_axes_style(ax)
 
-        # delete empty axes if algos % n_cols != 0
+        for ax in axes[:n_algos]:
+            ax.set_ylim(0, 1.0)
+            ax.set_yticks(np.linspace(0, 1.0, 6))
+            ax.grid(axis="y", linestyle="--", linewidth=0.7, alpha=0.6)
+
         for ax in axes[n_algos:]:
             fig.delaxes(ax)
 
@@ -132,7 +143,6 @@ def plot_modulation_usage(data, save_path=None,
             frameon=True,
             edgecolor="0.5",
         )
-
         leg.get_frame().set_linewidth(0.8)
 
         fig.tight_layout(rect=[0, 0.05, 1, 0.94])
@@ -145,4 +155,3 @@ def plot_modulation_usage(data, save_path=None,
             plt.close(fig)
         else:
             plt.show()
-            plt.clf()
