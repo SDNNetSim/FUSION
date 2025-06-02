@@ -11,6 +11,15 @@ ROOT_INPUT = Path("../../data/input")
 ROOT_LOGS = Path("../../logs")
 
 
+def _compose_algo_label(path_algo: str, obs: str | None) -> str:
+    """
+    Return something like
+        'dqn_obs_3'   or   'ppo_obs_4_graph'
+    so every (algo, observation-space) pair is unique.
+    """
+    return f"{path_algo}_{obs}" if obs else path_algo
+
+
 def _safe_load_json(fp: Path) -> Any | None:
     """Read *fp* safely, returning ``None`` on error."""
     try:
@@ -41,7 +50,10 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str,
 
             if is_drl:  # ---------- DRL ----------
                 meta = _safe_load_json(s1_meta) or {}
-                algo = meta.get("path_algorithm", "unknown")
+                algo_base = meta.get("path_algorithm", "unknown")
+                obs = meta.get('obs_space')
+                algo = _compose_algo_label(algo_base, obs)
+
                 run_id = meta["run_id"]
                 timestamp = run_dir.name
 
@@ -117,8 +129,11 @@ def load_metric_for_runs(
 
                 if meta_fp and meta_fp.exists():
                     meta = _safe_load_json(meta_fp) or {}
+                    algo_base = meta.get("path_algorithm", "unknown")
+                    obs = meta.get('obs_space')
+                    algo = _compose_algo_label(algo_base, obs)  # <-- final label
+
                     meta_run_id = meta.get("run_id")
-                    algo = meta.get("path_algorithm", algo)
 
                 timestamp = base_run_dir.name
                 meta_run_id = meta_run_id or timestamp
