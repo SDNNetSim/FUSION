@@ -61,7 +61,7 @@ def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
                 mod_formats_obj = json.load(mod_assumptions_fp)
         else:
             print(f"Warning: {mod_assumptions_path} not found. Using default empty assumptions.")
-            mod_assumptions = {}
+            mod_formats_obj = {}
         if mod_assumption in mod_formats_obj.keys():
             return mod_formats_obj[mod_assumption]
     except json.JSONDecodeError as json_decode_error:
