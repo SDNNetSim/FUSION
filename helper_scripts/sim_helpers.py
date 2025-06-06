@@ -64,9 +64,10 @@ def get_path_mod_fixedgrid_slicing(mods_dict: dict, bw_mapping_dict: dict, path_
     Choose a modulation format that will allocate a network request.
 
     :param mods_dict: Information for maximum reach for each modulation format.
+    :param bw_mapping_dict: Information for mapping modulation formats to bit rate.
     :param path_len: The length of the path to be taken.
-    :return: The chosen modulation format.
-    :rtype: str
+    :return: The chosen modulation format and bandwidth.
+    :rtype: str, int
     """
     # Pycharm auto-formats it like this for comparisons...I'd rather this look weird than look at PyCharm warnings
     sorted_dict = {k: mods_dict[k] for k in sorted(mods_dict.keys(), reverse=True)}
