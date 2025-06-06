@@ -2,7 +2,7 @@ import copy
 import os
 import json
 import pickle
-from time import time
+import time
 from datetime import datetime
 
 import networkx as nx
