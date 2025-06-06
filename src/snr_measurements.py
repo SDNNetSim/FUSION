@@ -713,8 +713,8 @@ class SnrMeasurements:
                         Tk = (alpha_k + alpha_bar_k - P_total * c_ri * (f_k-f_c))**2
                         Ak = alpha_k + alpha_bar_k
                         n_tilde =  0 if self.snr_props.num_span == 1 else self.snr_props.num_span
-                        # phi_i_k = (-4 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k - 2 * f_c))
-                        phi_i_k = (-2 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k ))
+                        phi_i_k = (-4 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k - 2 * f_c))
+                        # phi_i_k = (-2 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k ))
                         phi = (-4 * pi**2 * (beta_2 + pi * beta_3 * (f_i + f_k )) ) * L
                         xpm += (32 / 27) * (((gamma ** 2) * (P_k ** 2)) / B_k) * (
                             ((self.snr_props.num_span + (5 / 6) * ( -1 * self.engine_props['phi'][ch_k_mod])) / (phi_i_k * alpha_bar_k * (2 * alpha_k + alpha_bar_k))) * (
@@ -765,7 +765,7 @@ class SnrMeasurements:
                     f_k = self.snr_props.link_dict['frequency_start_' + band] + ((slot_index * self.engine_props['bw_per_slot']) + (B_k / 2)) * 10 ** 9
                     B_k *= 10 ** 9
                     P_profile += (2/B_k) * np.exp(-P_total * c_ri * L_eff * f_k) * np.sinh(P_total * c_ri * L_eff * (B_k/2))
-
+                    self.channels_list.append(req_id)
 
 
         P_profile = (P_total**2 * c_ri * L_eff * np.exp((-alpha * self.snr_props.length * 10 ** 3) - (P_total * c_ri * L_eff * f_i))) / P_profile
@@ -823,14 +823,14 @@ class SnrMeasurements:
         """ 
         if self.sdn_props.req_id == 161:
             gsnr_data ={'gsnr':{},'ase':{},'nli':{}, 'ase_profile':{}}
-            for band2 in ['c', 'l']:
+            for band2 in self.engine_props['band_list']:
                 gsnr_data['gsnr'][band2] = {}
                 gsnr_data['ase'][band2] = {}
                 gsnr_data['nli'][band2] = {}
                 gsnr_data['ase_profile'][band2] = {}
-                for slot in range(80):
+                for slot in range(0, 480, 10):
                     self.spectrum_props.start_slot = slot
-                    self.spectrum_props.end_slot = slot
+                    self.spectrum_props.end_slot = slot+9
                     self.spectrum_props.curr_band = band2
                     snr_nli_inv = 0.0
                     snr_ase_inv = 0.0
@@ -863,11 +863,11 @@ class SnrMeasurements:
 
 
                     gsnr_data['gsnr'][band2][slot] = {f_i: 10*np.log10(gsnr)}
-                    gsnr_data['ase'][band2][slot] = {f_i: 10*np.log10(snr_ase_inv * 0.001)}
-                    gsnr_data['nli'][band2][slot] = {f_i: 10*np.log10(snr_nli_inv * 0.001)}
-                    gsnr_data['ase_profile'][band2][slot] = {f_i: 10*np.log10(P_profile * 1000)}
+                    gsnr_data['ase'][band2][slot] = {f_i: 10*np.log10(snr_ase_inv * self.engine_props['input_power'])}
+                    gsnr_data['nli'][band2][slot] = {f_i: 10*np.log10(snr_nli_inv * self.engine_props['input_power'])}
+                    gsnr_data['ase_profile'][band2][slot] = {f_i: 10*np.log10(P_profile*1000)}
             import json
-            with open("gsnr_data_70_2span.json", "w") as json_file:
+            with open("gsnr_data_70_cl_fixed_2span_64.json", "w") as json_file:
                 json.dump(gsnr_data, json_file, indent=4)
         
         
