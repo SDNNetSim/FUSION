@@ -2,6 +2,7 @@ import copy
 import os
 import json
 import pickle
+from time import time
 from datetime import datetime
 
 import networkx as nx
@@ -504,6 +505,7 @@ def get_start_time(sim_dict: dict):
     Gets the start time of a simulation.
     :param sim_dict: Holds the simulation parameters.
     """
+    time.sleep(2)
     sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
     sim_dict['s1']['date'] = sim_start.split('_')[0]
     tmp_list = sim_start.split('_')
