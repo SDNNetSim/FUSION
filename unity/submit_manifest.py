@@ -94,8 +94,12 @@ def main() -> None:
         f"--array=0-{env['N_JOBS']}",
         f"--output={slurm_output}",
         f"--job-name={env['JOB_NAME']}",
-        str(script_path),
     ]
+
+    if env['PARTITION'] == "gpu" or env['PARTITION'] == "cpu":
+        cmd.append("--qos=long")
+
+    cmd.append(str(script_path))
 
     print(f'[DEBUG] Command submitted: {cmd}')
 
