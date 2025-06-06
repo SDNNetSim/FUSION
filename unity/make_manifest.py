@@ -120,16 +120,18 @@ def _expand_grid(grid: Dict[str, Any], starting_rid: int) -> tuple[List[Dict[str
     algs = _fetch(grid, common, "path_algorithm")
     traf = _fetch(grid, common, "erlang_start")
     kps = _fetch(grid, common, "k_paths")
+    obs = _fetch(grid, common, "obs_space")
 
     rid = starting_rid
     rows: List[Dict[str, Any]] = []
-    for alg, t0, kp in itertools.product(algs, traf, kps):
+    for alg, t0, kp, curr_obs in itertools.product(algs, traf, kps, obs):
         rows.append({
             "run_id": f"{rid:05}",
             "path_algorithm": alg,
             "erlang_start": t0,
             "erlang_stop": t0 + 50,
             "k_paths": kp,
+            "obs_space": curr_obs,
             "is_rl": _is_rl(alg),
             **{k: _cast(k, v) for k, v in common.items()
                if k not in {"path_algorithm", "erlang_start", "k_paths"}},
