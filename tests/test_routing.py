@@ -116,6 +116,7 @@ class TestRouting(unittest.TestCase):
             '50GHz': {'QPSK': {'max_length': 10}, '16-QAM': {'max_length': 20}, '64-QAM': {'max_length': 40}},
             '100GHz': {'QPSK': {'max_length': 20}}
         }
+        # TODO: Fixed grid should be tested for true or false
         self.engine_props['fixed_grid'] = True
 
         self.instance.find_k_shortest()
