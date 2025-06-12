@@ -5,7 +5,7 @@ from reinforcement_learning.utils.observation_space import get_observation_space
 
 class QrDQN:
     """
-    Facilitates DQN for reinforcement learning.
+    Facilitates QR-DQN for reinforcement learning.
     """
 
     def __init__(self, rl_props: object, engine_obj: object):

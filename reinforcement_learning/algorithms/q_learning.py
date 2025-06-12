@@ -103,7 +103,6 @@ class QLearning:
         """Updates Q-values for either path or core selection."""
         matrix = self.props.cores_matrix if flag == 'core' else self.props.routes_matrix
         matrix = matrix[self.rl_props.source, self.rl_props.destination]
-        # matrix = matrix[self.rl_props.chosen_path_index] if flag == 'core' else matrix
         matrix = matrix[self.rl_props.chosen_path_index] if flag == 'path' else matrix
         current_q = matrix[core_index if flag == 'core' else level_index]['q_value']
 
