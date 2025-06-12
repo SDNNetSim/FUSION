@@ -8,7 +8,11 @@ echo "Job Directory: ${JOB_DIR}"
 echo "==========================================="
 echo
 
-module load python/3.11.7
+if [[ "$PARTITION" == "arm-gpu" ]]; then
+  module load python/3.11.7
+else
+  module load python/3.11.7
+fi
 
 # --- Project Setup ---
 DEFAULT_DIR="/work/pi_vinod_vokkarane_uml_edu/git/FUSION"
@@ -17,9 +21,16 @@ PROJECT_DIR="${1:-$DEFAULT_DIR}"
 cd || exit 1
 cd "$PROJECT_DIR" || { echo "❌ Project directory not found: $PROJECT_DIR"; exit 1; }
 echo "📂 Current working directory: $(pwd)"
-echo
+echo "Available python modules on this partition:"
+echo "$(module avail python)"
+echo "==========================================="
 
-VENV_DIR="venvs/unity_venv"
+if [[ "$PARTITION" == "arm-gpu" ]]; then
+  VENV_DIR="venvs/arm_gpu"
+else
+  VENV_DIR="venvs/general_cpu_gpu"
+fi
+
 SCRIPTS_DIR="unity/bash_scripts"
 RL_ALGS=(ppo a2c dqn qr_dqn)
 ENV_IDS=(SimEnv SimEnv SimEnv SimEnv)
@@ -27,7 +38,7 @@ ENV_IDS=(SimEnv SimEnv SimEnv SimEnv)
 if [[ ! -d "$VENV_DIR" ]]; then
   echo "🔧 Creating Unity venv..."
   mkdir -p "$VENV_DIR"
-  bash "$SCRIPTS_DIR/make_unity_venv.sh" "$VENV_DIR" python3.11
+  bash "$SCRIPTS_DIR/make_unity_venv.sh" "$VENV_DIR" python3
   echo "🔧 Installing requirements..."
   source "$VENV_DIR/venv/bin/activate"
   pip install -r requirements.txt
@@ -35,6 +46,7 @@ if [[ ! -d "$VENV_DIR" ]]; then
   for i in "${!RL_ALGS[@]}"; do
     bash "$SCRIPTS_DIR/register_rl_env.sh" "${RL_ALGS[$i]}" "${ENV_IDS[$i]}"
   done
+  source "$VENV_DIR/venv/bin/activate"
 else
   echo "✅ Venv already exists. Activating..."
   source "$VENV_DIR/venv/bin/activate"
