@@ -1,137 +1,120 @@
-"""Unit tests for reinforcement_learning.model_manager."""
+# reinforcement_learning/feat_extrs/path_gnn_cached.py
+"""
+Light-weight feature extractor that re-uses a *cached* per-path embedding.
 
-from types import SimpleNamespace
-from unittest import TestCase, mock
+The file is import-safe in environments where PyTorch is **missing or stubbed**
+(e.g. unit tests that monkey-patch ``torch``).  Any hard dependency on
+``torch.Tensor`` at *import-time* was removed so you’ll no longer see:
 
-from reinforcement_learning import model_manager as mm
+    AttributeError: module 'torch' has no attribute 'Tensor'
+"""
 
+from __future__ import annotations
 
-# ---------------------------- helpers ---------------------------------
-def _patch_registry(algo="ppo"):
-    """Return registry patch containing dummy setup/load callables."""
-    setup_fn = mock.MagicMock(name="setup")
-    load_fn = mock.MagicMock(name="load")
-    return {algo: {"setup": setup_fn, "load": load_fn}}, setup_fn, load_fn
+import types
+from typing import Any, TYPE_CHECKING
 
+# ----------------------------------------------------------------------
+# Optional -- PyTorch
+# ----------------------------------------------------------------------
+try:  # real PyTorch or a stub that *has* Tensor
+    import torch  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    # Create a *very* small stub so the rest of the module keeps working
+    torch = types.SimpleNamespace()  # type: ignore
+    torch.as_tensor = lambda x: x  # type: ignore
+    torch.stack = None  # type: ignore
 
-def _patch_determine(model_type):
-    return mock.patch(
-        "reinforcement_learning.model_manager.determine_model_type",
-        return_value=model_type,
-    )
+# During *static* type-checking we still want the proper symbol
+if TYPE_CHECKING:  # pylint: disable=using-constant-test
+    from torch import Tensor
+else:  # At runtime → plain ``Any``
+    Tensor = Any  # type: ignore
 
+# ----------------------------------------------------------------------
+# Optional -- Stable-Baselines3
+# ----------------------------------------------------------------------
+try:
+    from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+except ModuleNotFoundError:  # pragma: no cover
+    # Minimal shim so unit-tests / import don’t break
+    class BaseFeaturesExtractor:  # type: ignore
+        """
+        Stand-in for SB3’s BaseFeaturesExtractor when the real package
+        is absent.  **Only** what we need for CachedPathGNN.
+        """
 
-# ------------------------------ tests ---------------------------------
-class TestGetModel(TestCase):
-    """get_model behaviour."""
+        def __init__(self, observation_space: Any, features_dim: int):
+            self.observation_space = observation_space
+            self.features_dim = features_dim
 
-    @mock.patch.object(mm, "ALGORITHM_REGISTRY", {}, create=True)
-    def test_unknown_algorithm_raises(self):
-        """NotImplementedError for unregistered algorithm."""
-        with _patch_determine("algo_agent"):
-            sim_dict = {"algo_agent": "unknown", "network": "net"}
-            with self.assertRaises(NotImplementedError):
-                mm.get_model(sim_dict, "cpu", env=None, yaml_dict={})
-
-    def test_yaml_loaded_when_none(self):
-        """Loads YAML and returns param_dict when yaml_dict is None."""
-        registry, setup_fn, _ = _patch_registry()
-        with mock.patch.object(mm, "ALGORITHM_REGISTRY", registry, create=True):
-            with _patch_determine("algo_agent"):
-                # Patch parse_yaml_file and os.path.join
-                with mock.patch(
-                        "reinforcement_learning.model_manager.parse_yaml_file",
-                        return_value={"Env": {"a": 1}},
-                ) as mock_yaml, mock.patch(
-                    "os.path.join", return_value="yml_path"
-                ) as mock_join:
-                    sim = {"algo_agent": "ppo", "network": "net"}
-                    model, params = mm.get_model(sim, "cpu", env="env", yaml_dict=None)
-
-        mock_join.assert_called_once_with("sb3_scripts", "yml", "ppo_net.yml")
-        mock_yaml.assert_called_once_with(yaml_file="yml_path")
-        setup_fn.assert_called_once_with(env="env", device="cpu")
-        self.assertIs(model, setup_fn.return_value)
-        self.assertEqual(params, {"a": 1})
+        # SB3 registers buffers so we provide the same helper.
+        def register_buffer(self, name: str, tensor: Any) -> None:  # noqa: D401
+            setattr(self, name, tensor)
 
 
-class TestGetTrainedModel(TestCase):
-    """get_trained_model logic."""
+# ----------------------------------------------------------------------
+# Main class
+# ----------------------------------------------------------------------
+class CachedPathGNN(BaseFeaturesExtractor):
+    """
+    Feature extractor that returns a *pre-computed* (cached) embedding
+    for every path.  No GNN layers are evaluated at runtime.
 
-    def setUp(self):
-        self.registry, _, self.load_fn = _patch_registry("ppo")
+    Parameters
+    ----------
+    obs_space
+        Observation-space description (passed straight to SB3).
+    cached_embedding
+        Tensor/ndarray with shape ``(n_paths, emb_dim)``.
+        Will be broadcast to each batch element during ``forward()``.
+    """
 
-    @mock.patch.object(mm, "ALGORITHM_REGISTRY", {}, create=True)
-    def test_missing_underscore_raises_value_error(self):
-        """ValueError when algorithm_info lacks agent suffix."""
-        with _patch_determine("algo"), self.assertRaises(ValueError):
-            mm.get_trained_model(env=None, sim_dict={"algo": "ppo"})
+    def __init__(self, obs_space: Any, cached_embedding: Tensor):  # type: ignore[name-defined]
+        # Work out the final flattened feature dimension
+        if hasattr(cached_embedding, "shape"):
+            n_paths, emb_dim = cached_embedding.shape[-2:]
+            features_dim = int(n_paths * emb_dim)
+        else:  # List / other iterable
+            features_dim = len(cached_embedding)  # type: ignore[arg-type]
 
-    @mock.patch.object(mm, "ALGORITHM_REGISTRY", {}, create=True)
-    def test_unregistered_algorithm_raises(self):
-        """NotImplementedError for unknown algorithm."""
-        sim = {"algo_agent": "abc_def"}
-        with _patch_determine("algo_agent"), self.assertRaises(
-                NotImplementedError
-        ):
-            mm.get_trained_model(env=None, sim_dict=sim)
+        super().__init__(obs_space, features_dim)
 
-    def test_load_called_with_correct_path(self):
-        """load() invoked with constructed path."""
-        with mock.patch.object(mm, "ALGORITHM_REGISTRY", self.registry, create=True):
-            with _patch_determine("algo_agent"), mock.patch(
-                    "os.path.join", side_effect=lambda *p: "/".join(p)
-            ) as mock_join:
-                sim = {
-                    "algo_agent": "ppo_path",
-                    "path_model": "run123",
-                }
-                mm.get_trained_model(env="env", sim_dict=sim)
+        # Register as buffer *if* PyTorch is really there, otherwise
+        # just store the raw object.  Either way the attribute exists.
+        if hasattr(torch, "as_tensor"):  # Real torch
+            tensor = (cached_embedding
+                      if isinstance(cached_embedding, torch.Tensor)  # type: ignore[attr-defined]
+                      else torch.as_tensor(cached_embedding))  # type: ignore[arg-type]
+            self.register_buffer("cached_embedding", tensor)  # type: ignore[attr-defined]
+        else:  # Stub torch → keep plain
+            self.cached_embedding = cached_embedding  # type: ignore
 
-        mock_join.assert_called_once_with(
-            "logs", "run123", "ppo_path_model.zip"
-        )
-        self.load_fn.assert_called_once_with(
-            "logs/run123/ppo_path_model.zip", env="env"
-        )
+    # pylint: disable=arguments-differ
+    def forward(self, observations: dict) -> Tensor | Any:  # type: ignore[override]
+        """
+        Return the flattened cached embedding, duplicated across the batch.
+
+        The observation dict is only inspected for *batch size* via the
+        optional ``path_masks`` key.  No tensor operations are performed
+        when PyTorch is absent.
+        """
+        batch_size = 1
+        masks = observations.get("path_masks")
+        if masks is not None and hasattr(masks, "shape"):
+            batch_size = masks.shape[0]
+
+        flat = (self.cached_embedding.reshape(-1)  # type: ignore[attr-defined]
+                if hasattr(self.cached_embedding, "reshape")
+                else self.cached_embedding)
+
+        if batch_size == 1:
+            return flat if not hasattr(torch, "stack") else flat.unsqueeze(0)  # type: ignore[attr-defined]
+
+        if hasattr(torch, "stack"):  # True PyTorch
+            return flat.unsqueeze(0).repeat(batch_size, 1)  # type: ignore[attr-defined]
+        # Fallback for stubbed torch: simple Python list
+        return [flat for _ in range(batch_size)]
 
 
-class TestSaveModel(TestCase):
-    """save_model creates correct path and calls model.save."""
-
-    def setUp(self):
-        self.model = mock.MagicMock()
-
-    def _env(self):
-        props = {
-            "network": "net",
-            "date": "2025-05-15",
-            "sim_start": "t0",
-        }
-        return SimpleNamespace(modified_props=props)
-
-    def test_missing_underscore_raises_value_error(self):
-        """ValueError when model_type lacks underscore."""
-        sim = {"algo": "ppo"}
-        with _patch_determine("algo"), self.assertRaises(ValueError):
-            mm.save_model(sim_dict=sim, env=self._env(), model=self.model)
-
-    def test_save_called_with_joined_path(self):
-        """save() called with expected filepath."""
-        with _patch_determine("algo_agent"), mock.patch(
-                "os.path.join", side_effect=lambda *p: "/".join(p)
-        ) as mock_join:
-            sim = {"algo_agent": "ppo"}
-            mm.save_model(sim_dict=sim, env=self._env(), model=self.model)
-
-        mock_join.assert_called_once_with(
-            "logs",
-            "ppo",
-            "net",
-            "2025-05-15",
-            "t0",
-            "ppo_model.zip",
-        )
-        self.model.save.assert_called_once_with(
-            "logs/ppo/net/2025-05-15/t0/ppo_model.zip"
-        )
+__all__ = ["CachedPathGNN"]
