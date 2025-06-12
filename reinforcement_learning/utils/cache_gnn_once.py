@@ -4,12 +4,16 @@ import torch
 from reinforcement_learning.feat_extrs.constants import CACHE_DIR
 from reinforcement_learning.feat_extrs.path_gnn_cached import PathGNNEncoder
 
+# TODO: (version 5.5-6) Does not save in the correct path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 os.chdir(PROJECT_ROOT)
-from reinforcement_learning.utils.gym_envs import create_environment
+from reinforcement_learning.utils.gym_envs import create_environment  # pylint: disable=wrong-import-position
 
 
 def main():
+    """
+    Controls the function.
+    """
     config_path = 'ini/run_ini/config.ini'
     root = Path(__file__).resolve().parents[2]
     env, sim_dict, _ = create_environment(config_path=str(root / config_path))
