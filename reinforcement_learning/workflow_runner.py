@@ -18,6 +18,8 @@ from reinforcement_learning.utils.general_utils import save_arr
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
 
 
+# TODO: (version 5.5-6) Put support for picking up where you left off (testing)
+
 def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
     """
     Trains a deep reinforcement learning model with StableBaselines3.
