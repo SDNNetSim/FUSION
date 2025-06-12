@@ -1,35 +1,24 @@
-# ── plot_config.yml ───────────────────────────────────────────
-# Turn plots on/off just by listing the nicknames you see in registry.py
+network: "dt_network"
+dates:
+  - "0606"
+  - "0611"
 plots:
-  - blocking        # blocking probability curves
-  - memory          # memory-usage bars
-  - rewards         # per-seed reward curves
-  - sim_times       # simulation-time bars
-  - state_vals      # best-path matrices + histograms
+  - blocking
 
-# Which algorithms to plot (key) and which *run-IDs* belong to each.
-# You can list as many variants as you like; they will be merged.
+#save_dir: "./figures/spain/obs_7/blocking"
+
+algorithms:
+#  - epsilon_greedy_bandit
+#  - ucb_bandit
+#  - q_learning
+  - ppo
+#  - dqn
+#  - k_shortest_path
+#  - cong_aware
+
 runs:
-  drl: true         # include DRL experiments
-  non_drl: true     # include baseline experiments
-  variants:
-    q_learning:
-      - run_id: "q_learning_run1"
-        label: "QL-Default"          # (label is optional, purely cosmetic)
-      - run_id: "q_learning_run2"
-        label: "QL-Alt"
-    epsilon_greedy_bandit:
-      - run_id: "epsilon_run_A"
-    ppo:
-      - run_id: "ppo_tuned"
+  drl: true
+  non_drl: true
 
-# Optional: restrict the traffic volumes you care about.
-# Leave empty or omit to include *all* found in the JSON files.
-traffic_volumes:
-  - 25
-  - 50
-  - 100
-
-# Optional: where to save every figure the plotters return.
-# If you omit this, figures are still displayed but not written to disk.
-save_dir: "./figures/all_plots"
+observation_spaces:
+  - obs_7
