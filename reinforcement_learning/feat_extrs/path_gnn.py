@@ -3,7 +3,7 @@ from torch_geometric.nn import GATv2Conv, SAGEConv, GraphConv
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 
-# TODO: Add params to optuna
+# TODO: (version 5.5-6) Add params to optuna
 
 class PathGNN(BaseFeaturesExtractor):
     """
@@ -12,43 +12,43 @@ class PathGNN(BaseFeaturesExtractor):
 
     def __init__(self, obs_space, emb_dim, gnn_type, layers):
         super().__init__(obs_space, features_dim=emb_dim * obs_space["path_masks"].shape[0])
-        conv_map = {"gat": GATv2Conv, "sage": SAGEConv, "graphconv": GraphConv}
-        selected_conv = conv_map.get(gnn_type, GATv2Conv)
+        conv_map_dict = {"gat": GATv2Conv, "sage": SAGEConv, "graphconv": GraphConv}
+        selected_conv_obj = conv_map_dict.get(gnn_type, GATv2Conv)
         in_dim = obs_space["x"].shape[1]
-        self.convs = torch.nn.ModuleList([
-            selected_conv(in_dim if i == 0 else emb_dim, emb_dim)
+        self.convs_matrix = torch.nn.ModuleList([
+            selected_conv_obj(in_dim if i == 0 else emb_dim, emb_dim)
             for i in range(layers)
         ])
-        self.readout = torch.nn.Linear(emb_dim, emb_dim)
+        self.readout_obj = torch.nn.Linear(emb_dim, emb_dim)
 
-    def forward(self, obs):
+    def forward(self, obs_dict: dict):
         """
         Convert observation into feature vector.
         """
-        x = obs["x"]
-        ei = obs["edge_index"].long()
-        masks = obs["path_masks"]
+        x_list = obs_dict["x"]
+        edge_index = obs_dict["edge_index"].long()
+        masks_list = obs_dict["path_masks"]
 
-        if x.dim() == 2:
-            x = x.unsqueeze(0)
-            ei = ei.unsqueeze(0)
-            masks = masks.unsqueeze(0)
+        if x_list.dim() == 2:
+            x_list = x_list.unsqueeze(0)
+            edge_index = edge_index.unsqueeze(0)
+            masks_list = masks_list.unsqueeze(0)
 
-        batch_size = x.size(0)
-        outputs = []
+        batch_size = x_list.size(0)
+        outputs_matrix = []
         for b in range(batch_size):
-            xb = x[b]
-            eib = ei[b]
-            mb = masks[b]
+            xb = x_list[b]
+            eib = edge_index[b]
+            mb = masks_list[b]
 
             y = xb
-            for conv in self.convs:
-                y = conv(y, eib).relu()
+            for conv_obj in self.convs_matrix:
+                y = conv_obj(y, eib).relu()
 
             src_idx, dst_idx = eib
             edge_emb = (y[src_idx] + y[dst_idx]) * 0.5
             path_emb = mb @ edge_emb
-            pv = self.readout(path_emb).flatten()
-            outputs.append(pv)
+            pv_list = self.readout_obj(path_emb).flatten()
+            outputs_matrix.append(pv_list)
 
-        return torch.stack(outputs, dim=0)
+        return torch.stack(outputs_matrix, dim=0)
