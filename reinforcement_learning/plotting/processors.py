@@ -1,10 +1,8 @@
-from collections import defaultdict
-from typing import Dict, Any
 from datetime import datetime, timedelta
+from collections import defaultdict
+from typing import Dict, Any, Optional
 
 import numpy as np
-import os
-
 from scipy.stats import ttest_ind
 
 
@@ -16,6 +14,9 @@ def _mean_last(values: list[float | int], k: int = 5) -> float:
 
 
 def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+    """
+    Process blocking probability results into mean, std, CI and optionally effect sizes.
+    """
     merged = defaultdict(lambda: defaultdict(list))
     baselines = ["k_shortest_path_1", "k_shortest_path_4", "cong_aware", "k_shortest_path_inf"]
 
@@ -38,7 +39,6 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
     processed = {}
     baseline_vals = defaultdict(dict)
 
-    # Cache baseline values
     for base in baselines:
         for tv, vals in merged[base].items():
             baseline_vals[base][tv] = np.array(vals, dtype=float)
@@ -61,7 +61,7 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
                 for base in baselines:
                     base_vals = np.array(baseline_vals.get(base, {}).get(tv, []), dtype=float)
                     if len(base_vals) > 1 and len(vals) > 1:
-                        t_stat, p_val = ttest_ind(vals, base_vals, equal_var=False)
+                        _, p_val = ttest_ind(vals, base_vals, equal_var=False)
                         pooled_std = np.sqrt((np.var(vals, ddof=1) + np.var(base_vals, ddof=1)) / 2)
                         d = (np.mean(vals) - np.mean(base_vals)) / pooled_std if pooled_std else 0.0
                         mean_diff = np.mean(vals) - np.mean(base_vals)
@@ -97,10 +97,6 @@ def process_memory_usage(
 
     * DRL runs → { 'overall': float }   from memory_usage.npy
     * Legacy runs → float / list / ndarray keyed by traffic volume
-
-    Returns
-    -------
-    {algo: {traffic_volume_or_overall: mean_MB}}
     """
     merged = defaultdict(lambda: defaultdict(list))
 
@@ -115,13 +111,10 @@ def process_memory_usage(
 def _stamp_to_dt(stamp: str) -> datetime:
     """
     Convert '0429_21_14_39_491949' to a datetime object.
-    Assumes:
-        - MMDD_HH_MM_SS_MSUS
-        - MSUS is 3 digits milliseconds + 3 digits microseconds
     """
     mmdd, hh, mm, ss, msus = stamp.split("_")
-    ms = int(msus[:3])  # first 3 digits = milliseconds
-    us = int(msus[3:])  # last 3 digits = microseconds
+    ms = int(msus[:3])
+    us = int(msus[3:])
     return datetime(
         year=datetime.now().year,
         month=int(mmdd[:2]),
@@ -136,12 +129,10 @@ def _stamp_to_dt(stamp: str) -> datetime:
 def process_sim_times(
         raw_runs: Dict[str, Any],
         runid_to_algo: dict[str, str],
-        context: dict | None = None,
+        context: Optional[dict] = None,
 ) -> dict:
     """
-    If *context* supplies 'start_stamps', compute **wall-clock duration**
-    (end-stamp − start-stamp). Otherwise fall back to treating the JSON
-    values as already-computed seconds (old behaviour).
+    Compute wall-clock durations or fallback to reported simulation times.
     """
     start_stamps = context.get("start_stamps") if context else None
     merged = defaultdict(lambda: defaultdict(list))
@@ -149,7 +140,7 @@ def process_sim_times(
     for run_id, data in raw_runs.items():
         algo = runid_to_algo.get(run_id, "unknown")
 
-        if start_stamps and run_id in start_stamps:
+        if isinstance(start_stamps, dict) and run_id in start_stamps:  # pylint: disable=unsupported-membership-test
             t0 = _stamp_to_dt(start_stamps[run_id])
 
             for tv, info in data.items():
@@ -160,7 +151,7 @@ def process_sim_times(
                     continue
 
                 t1 = _stamp_to_dt(end_raw)
-                if t1 < t0:  # crossed midnight
+                if t1 < t0:
                     t1 += timedelta(days=1)
 
                 merged[algo][str(tv)].append((t1 - t0).total_seconds())
@@ -172,383 +163,3 @@ def process_sim_times(
         algo: {tv: float(np.mean(vals)) for tv, vals in tv_dict.items()}
         for algo, tv_dict in merged.items()
     }
-
-
-def process_rewards(raw_runs: Dict[str, Any],
-                    runid_to_algo: dict[str, str]) -> dict:
-    """
-    Aggregate rewards across seeds and keep the **true episode indices**
-    (0, 10, 20, …) that are encoded in the log‑file names.
-
-    For every (algo, traffic‑volume) pair return:
-      • 'mean'        : episode‑by‑episode mean across seeds
-      • 'std'         : episode‑by‑episode std  across seeds  (raw, NOT /√n)
-      • 'n'           : number of seeds
-      • 'overall_ci'  : 95 % CI of the run‑mean reward across seeds
-      • 'episodes'    : list of episode labels that go straight on the x‑axis
-    """
-    # by_algo_tv[algo][tv] ──► list[dict{ep_idx : mean_reward}]  (one dict per seed)
-    by_algo_tv: dict[str, dict[str, list[dict[int, float]]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-    seen_seed: dict[str, set[tuple[str, int]]] = defaultdict(set)
-
-    for run_id, data in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-
-        for tv, trials in data.items():
-            trial_dict = trials.get("rewards", {})
-            if not trial_dict:
-                continue
-
-            for trial_idx, ep_dict in trial_dict.items():
-                key = (tv, trial_idx)
-                if key in seen_seed[algo]:
-                    continue  # duplicate -> skip
-                seen_seed[algo].add(key)
-
-                ep_ids = sorted(ep_dict, key=float)
-                ep_means = {int(ep): float(np.mean(ep_dict[ep])) for ep in ep_ids}
-                by_algo_tv[algo][str(tv)].append(ep_means)
-
-                if len(by_algo_tv[algo][str(tv)]) <= 2:
-                    sample_vals = list(ep_means.values())[:5]
-                    print(f"[SEED DBG] algo={algo:<15} tv={tv:<6} "
-                          f"trial={trial_idx} sample={sample_vals}")
-
-    processed: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
-
-    for algo, tv_dict in by_algo_tv.items():
-        for tv, seed_dicts in tv_dict.items():
-            n_seeds = len(seed_dicts)
-
-            all_eps = sorted({ep for d in seed_dicts for ep in d})
-            ep_to_pos = {ep: i for i, ep in enumerate(all_eps)}
-
-            arr = np.full((n_seeds, len(all_eps)), np.nan, dtype=float)
-            for row, ep_means in enumerate(seed_dicts):
-                for ep, val in ep_means.items():
-                    arr[row, ep_to_pos[ep]] = val
-
-            mean_curve = np.nanmean(arr, axis=0)
-            std_curve = np.nanstd(arr, axis=0, ddof=1)
-
-            run_means = np.nanmean(arr, axis=1)  # one number per seed
-            run_std = float(np.std(run_means, ddof=1)) if n_seeds > 1 else 0.0
-            overall_ci = 1.96 * run_std / np.sqrt(n_seeds) if n_seeds > 1 else 0.0
-
-            print(
-                f"[DBG PROC] algo={algo:<15} tv={tv:<6} n_seeds={n_seeds} "
-                f"run_means={run_means.tolist()} run_std={run_std:.4f} "
-                f"overall_ci={overall_ci:.4f}"
-            )
-
-            processed[algo][tv] = {
-                "mean": mean_curve.tolist(),
-                "std": std_curve.tolist(),
-                "n": n_seeds,
-                "overall_ci": overall_ci,
-                # Use the *real* episode numbers as x‑axis labels
-                "episodes": [str(ep) for ep in all_eps],
-            }
-
-    return dict(processed)
-
-
-def process_state_values(raw_runs: Dict[str, Any],
-                         runid_to_algo: dict[str, str]) -> dict:
-    """
-    Average state-value tensors across *all* seeds and trials.
-
-    Output
-    ------
-    {
-      algo: {
-        '50.0': { (src,dst): [avg_path_vals...] },
-        ...
-      }
-    }
-    """
-    merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    for run_id, run_dict in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-        for erl, payload in run_dict.items():
-            trials = payload.get("state_vals", {})
-            for trial_dict in trials.values():  # each trial's (src,dst)->[vals]
-                for pair, vec in trial_dict.items():
-                    merged[algo][erl][pair].append(vec)
-
-    averaged = defaultdict(dict)  # final structure
-
-    for algo, erl_dict in merged.items():
-        for erl, pair_dict in erl_dict.items():
-            averaged_pairs = {}
-            for pair, vecs in pair_dict.items():
-                max_len = max(map(len, vecs))
-                padded = [
-                    vec + [np.nan] * (max_len - len(vec)) for vec in vecs
-                ]
-                mean_vec = np.nanmean(np.array(padded, dtype=float), axis=0)
-                averaged_pairs[pair] = mean_vec.tolist()
-            averaged[algo][erl] = averaged_pairs
-
-    return dict(averaged)
-
-
-def _process_iter_metric(raw_runs, runid_to_algo, mean_key, min_key, max_key):
-    """
-    Helper: aggregate <mean,min,max> from the **last iteration** of iter_stats.
-
-    Returns
-    -------
-    {algo: {tv: {"mean": μ, "min": μ_min, "max": μ_max}}}
-    """
-    merged = defaultdict(lambda: defaultdict(lambda: {"mean": [], "min": [], "max": []}))
-
-    for run_id, data in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-        for tv, info in data.items():
-            if not isinstance(info, dict) or "iter_stats" not in info:
-                continue
-            last_iter = info["iter_stats"][next(reversed(info["iter_stats"]))]
-            merged[algo][str(tv)]["mean"].append(float(last_iter.get(mean_key, 0)))
-            merged[algo][str(tv)]["min"].append(float(last_iter.get(min_key, 0)))
-            merged[algo][str(tv)]["max"].append(float(last_iter.get(max_key, 0)))
-
-    # average across seeds
-    processed = {}
-    for algo, tv_dict in merged.items():
-        processed[algo] = {}
-        for tv, vecs in tv_dict.items():
-            processed[algo][tv] = {
-                "mean": float(np.mean(vecs["mean"])),
-                "min": float(np.mean(vecs["min"])),
-                "max": float(np.mean(vecs["max"])),
-            }
-    return processed
-
-
-def process_transponders(raw_runs, runid_to_algo):
-    """
-    Transponder plot.
-    """
-    return _process_iter_metric(
-        raw_runs, runid_to_algo,
-        mean_key="trans_mean", min_key="trans_min", max_key="trans_max"
-    )
-
-
-def process_hops(raw_runs, runid_to_algo):
-    """
-    Hops plot.
-    """
-    return _process_iter_metric(
-        raw_runs, runid_to_algo,
-        mean_key="hops_mean", min_key="hops_min", max_key="hops_max"
-    )
-
-
-def process_lengths(raw_runs, runid_to_algo):
-    """
-    Lengths plot.
-    """
-    return _process_iter_metric(
-        raw_runs, runid_to_algo,
-        mean_key="lengths_mean", min_key="lengths_min", max_key="lengths_max"
-    )
-
-
-def process_resource_metrics(raw_runs, runid_to_algo):
-    """
-    Bundle the three per-seed resource processors into one payload
-    that the plotting wrapper will unpack.
-    """
-    return {
-        "lengths": process_lengths(raw_runs, runid_to_algo),
-        "hops": process_hops(raw_runs, runid_to_algo),
-        "trp": process_transponders(raw_runs, runid_to_algo),
-    }
-
-
-def process_modulation_usage(raw_runs, runid_to_algo):
-    """
-    Extract *mods_used_dict* from the final iteration of every seed and
-    average counts across seeds.
-
-    Returns
-    -------
-    {algo: {tv (str): {bw (str): {mod: mean_count}}}}
-    """
-
-    merged = defaultdict(
-        lambda: defaultdict(
-            lambda: defaultdict(
-                lambda: defaultdict(list)
-            )
-        )
-    )
-
-    for run_id, data in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-
-        for tv, info in data.items():  # tv remains *string*
-            if not isinstance(info, dict) or "iter_stats" not in info:
-                continue
-
-            last_iter = info["iter_stats"][next(reversed(info["iter_stats"]))]
-
-            for bw, mod_dict in last_iter.get("mods_used_dict", {}).items():
-                # skip entries that contain non‑integer counts
-                if not all(isinstance(cnt, int) for cnt in mod_dict.values()):
-                    continue
-
-                for mod, cnt in mod_dict.items():
-                    merged[algo][tv][bw][mod].append(float(cnt))
-
-    # average across seeds
-    processed = {}
-    for algo, tv_dict in merged.items():
-        processed[algo] = {}
-        for tv, bw_dict in tv_dict.items():
-            processed[algo][tv] = {}
-            for bw, mod_dict in bw_dict.items():
-                processed[algo][tv][bw] = {
-                    mod: float(np.mean(vals)) for mod, vals in mod_dict.items()
-                }
-
-    return processed
-
-
-def process_blocked_bandwidth(raw_runs, runid_to_algo):
-    """
-    Return {algo: {tv: {bw_gbps: mean_blocked_count}}}
-    from *block_bw_dict* in the last iteration.
-    """
-    merged = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    for run_id, data in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-        for tv_raw, info in data.items():  # new
-            tv = float(tv_raw)  # └─ store as float, not string
-            if not isinstance(info, dict) or "iter_stats" not in info:
-                continue
-            last_iter = info["iter_stats"][next(reversed(info["iter_stats"]))]
-            for bw, blocked in last_iter.get("block_bw_dict", {}).items():
-                bw = float(bw)
-                merged[algo][tv][bw].append(float(blocked))  # in bw‑block
-    return {
-        a: {tv: {bw: float(np.mean(vals))
-                 for bw, vals in bw_dict.items()}
-            for tv, bw_dict in tvs.items()}
-        for a, tvs in merged.items()
-    }
-
-
-def extract_network_from_path(path: str) -> str:
-    """
-    Extracts network name from the directory structure of the file path.
-    E.g., path like '.../NSFNet/50.0_erlang.json' returns 'NSFNet'.
-    """
-    parts = os.path.normpath(path).split(os.sep)
-    for part in parts:
-        if "net" in part.lower():
-            return part
-    raise ValueError(f"Network name not found in path: {path}")
-
-
-def process_link_data(raw_runs: dict, runid_to_algo: dict) -> dict:
-    """
-    Aggregates link usage and throughput per traffic volume across seeds.
-    Returns:
-    {
-        "usage": { algo: { erlang: { link_str: avg_usage_count } } },
-        "throughput": { algo: { erlang: { link_str: avg_throughput } } }
-    }
-    """
-
-    from collections import defaultdict
-    import numpy as np
-
-    merged_usage = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    merged_throughput = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    for run_id, data in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-
-        for tv, info in data.items():
-            if "iter_stats" in info:
-                last_iter_key = next(reversed(info["iter_stats"]))
-                final_data = info["iter_stats"][last_iter_key]
-
-                link_usage = final_data.get("link_usage_dict", {})
-                for link_str, stats in link_usage.items():
-                    usage = stats.get("usage_count", 0)
-                    throughput = stats.get("throughput", 0)
-
-                    merged_usage[algo][str(tv)][link_str].append(usage)
-                    merged_throughput[algo][str(tv)][link_str].append(throughput)
-
-    result_usage = {}
-    result_throughput = {}
-
-    for algo in merged_usage:
-        result_usage[algo] = {}
-        result_throughput[algo] = {}
-
-        for tv in merged_usage[algo]:
-            result_usage[algo][tv] = {
-                link: float(np.mean(usages))
-                for link, usages in merged_usage[algo][tv].items()
-            }
-            result_throughput[algo][tv] = {
-                link: float(np.mean(throughputs))
-                for link, throughputs in merged_throughput[algo][tv].items()
-            }
-
-    return {
-        "usage": result_usage,
-        "throughput": result_throughput
-    }
-
-
-
-
-
-
-def process_path_index(raw_runs: dict, runid_to_algo: dict) -> dict:
-    """
-    Collects per-seed path index histograms and averages them.
-    Returns: { algo: { erlang: { path_index: avg_count } } }
-    """
-
-    from collections import defaultdict
-
-    raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    for run_id, data in raw_runs.items():
-        algo = runid_to_algo.get(run_id, "unknown")
-
-        for tv, info in data.items():
-            iter_stats = info.get("iter_stats", {})
-            if not iter_stats:
-                continue
-
-            last_iter_key = max(iter_stats.keys(), key=lambda k: int(k))
-            final_data = iter_stats[last_iter_key]
-            path_index_list = final_data.get("path_index_list", [])
-
-            for idx, count in enumerate(path_index_list):
-                raw[algo][str(tv)][idx].append(count)
-
-    # Convert lists to averages
-    result = defaultdict(lambda: defaultdict(dict))
-    for algo in raw:
-        for tv in raw[algo]:
-            for idx in raw[algo][tv]:
-                result[algo][tv][idx] = float(np.mean(raw[algo][tv][idx]))
-
-    return result
-
-
-
