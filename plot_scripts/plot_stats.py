@@ -1,3 +1,5 @@
+# TODO: (version 5.5-6) No longer supported, to be broken into a module based design
+
 import os
 
 import matplotlib.pyplot as plt
