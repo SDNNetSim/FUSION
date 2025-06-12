@@ -1,3 +1,5 @@
+# TODO: (version 5.5-6) Ensure all network files are documented
+
 import ast
 
 
@@ -13,6 +15,7 @@ def str_to_bool(string: str):
 
 
 SIM_REQUIRED_OPTIONS = {
+    # TODO: (version 5.5-6) double check and add all relevant parameters to an example.ini config
     'general_settings': {
         'erlang_start': int,
         'erlang_stop': int,
@@ -204,7 +207,6 @@ COMMAND_LINE_PARAMS = [
     ['path_algorithm', str, ''],
     ['core_algorithm', str, ''],
     ['spectrum_algorithm', str, ''],
-    # ['optimize', str, ''],
     ['gnn_type', str, ''],
     ['layers', int, ''],
     ['emb_dim', int, ''],
@@ -238,7 +240,7 @@ COMMAND_LINE_PARAMS = [
     ['save_start_end_slots', bool, ''],
     ['run_id', str, ''],
 
-    # TODO: (version 5.5-6) RLZoo3 will most likely be removed
+    # TODO: (version 5.5-6) RLZoo3 will be removed
     # StableBaselines3 arguments
     ['algo', str, ''],
     ['env-id', str, ''],
