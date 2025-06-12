@@ -1,6 +1,7 @@
 import os
 
 import torch
+import torch.nn as nn  # pylint: disable=consider-using-from-import
 
 from reinforcement_learning.utils.general_utils import determine_model_type
 from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
@@ -9,10 +10,8 @@ from reinforcement_learning.feat_extrs.constants import CACHE_DIR
 from reinforcement_learning.feat_extrs.path_gnn_cached import CachedPathGNN
 from helper_scripts.sim_helpers import parse_yaml_file
 
-import torch.nn as nn
 
-
-def _parse_policy_kwargs(s: str) -> dict:
+def _parse_policy_kwargs(string: str) -> dict:
     """
     Turn strings like
         "dict( ortho_init=True, activation_fn=nn.ReLU, net_arch=dict(pi=[64]) )"
@@ -20,9 +19,9 @@ def _parse_policy_kwargs(s: str) -> dict:
     """
     safe_globals = {"__builtins__": None, "dict": dict, "nn": nn}
     try:
-        return eval(s, safe_globals, {})  # pylint: disable=eval-used
+        return eval(string, safe_globals, {})  # pylint: disable=eval-used
     except Exception as exc:  # noqa: BLE001
-        raise ValueError(f"Bad policy_kwargs string: {s!r}") from exc
+        raise ValueError(f"Bad policy_kwargs string: {string!r}") from exc
 
 
 def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
