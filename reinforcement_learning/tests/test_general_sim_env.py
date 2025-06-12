@@ -1,5 +1,7 @@
 """Unit tests for reinforcement_learning.gymnasium_envs.general_sim_env."""
 
+# pylint: disable=too-few-public-methods
+
 from types import ModuleType, SimpleNamespace
 from unittest import TestCase, mock
 import sys
@@ -19,9 +21,15 @@ class _StubGymEnv:  # pylint: disable=too-few-public-methods
     """Lightweight stand-in for gymnasium.Env."""
 
     def reset(self, *_, **__):
+        """
+        Mock Gym reset.
+        """
         return None, {}
 
     def step(self, *_, **__):
+        """
+        Mock Environment/Gym step.
+        """
         return None, None, False, False, {}
 
 
@@ -38,10 +46,13 @@ torch_mod = ModuleType("torch")
 torch_nn_mod = ModuleType("torch.nn")
 
 
-class _NNModule:  # pylint: disable=too-few-public-methods
+class _NNModule:
     """Lightweight torch.nn.Module replacement."""
 
     def forward(self, *_, **__):
+        """
+        Mock NN forward.
+        """
         return None
 
     __call__ = forward
@@ -117,13 +128,13 @@ for _name in ("ARS", "QRDQN"):
     setattr(sb3_contrib, _name, type(_name, (), {}))
 sys.modules["sb3_contrib"] = sb3_contrib
 
-from reinforcement_learning.gymnasium_envs import (  # noqa: E402
+from reinforcement_learning.gymnasium_envs import (  # pylint: disable=wrong-import-position
     general_sim_env as gen_env,
 )
 
 
 # ------------------------- lightweight stubs -------------------------
-class _DummyEngine:  # noqa: D401
+class _DummyEngine:  # pylint: disable=too-few-public-methods
     """Stub for engine_obj with minimal surface."""
 
     def __init__(self):
@@ -161,9 +172,15 @@ class _DummySimEnvUtils:  # noqa: D401
         """No-op."""
 
     def get_obs(self, *_, **__):
+        """
+        Mock get obs.
+        """
         return "obs"
 
     def check_terminated(self):
+        """
+        Mock check terminated.
+        """
         return True
 
     def handle_test_train_step(self, *_, **__):
@@ -187,6 +204,9 @@ class _DummyCoreUtilHelpers:
         self.rl_props = rl_props
 
     def reset_reqs_dict(self, *_, **__):
+        """
+        Mocking reset reqs dict.
+        """
         self.rl_props.arrival_list.append(
             {"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0}
         )
@@ -208,6 +228,9 @@ class _DummySetupHelper:
         """No-op."""
 
     def create_input(self):
+        """
+        Mock create input.
+        """
         self.sim_env.engine_obj = _DummyEngine()
         self.sim_env.route_obj = _DummyRoute()
 

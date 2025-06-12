@@ -261,6 +261,9 @@ class SimEnvObs:
         return slots_needed_list, norm_list, paths_cong, available_slots
 
     def get_path_masks(self, resp_dict: dict):
+        """
+        Encodes which paths are available via masks.
+        """
         resp_dict['x'] = self.node_feats.numpy()
         resp_dict['edge_index'] = self.edge_index.numpy()
         resp_dict['edge_attr'] = self.edge_attr.numpy()

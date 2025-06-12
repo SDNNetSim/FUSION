@@ -1,4 +1,9 @@
+# TODO: (version 5.5-6) Address all duplicate code if you can
+
 # reinforcement_learning/workflow_runner.py
+
+# pylint: disable=import-outside-toplevel, used-before-assignment, duplicate-code
+
 """
 Utility helpers that run / train our RL simulations.
 
@@ -25,10 +30,19 @@ except ModuleNotFoundError:  # pragma: no cover – stub out the bare minimum
 
 
     class _TrialStub:  # pylint: disable=too-few-public-methods
-        def report(self, *_a, **_kw):  # noqa: D401
+        """
+        Trial stub for optuna.Trial
+        """
+        def report(self, *_a, **_kw):
+            """
+            Mock report.
+            """
             return
 
-        def should_prune(self) -> bool:  # noqa: D401
+        def should_prune(self) -> bool:
+            """
+            Mock should prune.
+            """
             return False
 
 
@@ -50,6 +64,9 @@ except ModuleNotFoundError:  # pragma: no cover
 
     class _ProcessStub:  # pylint: disable=too-few-public-methods
         def memory_info(self):
+            """
+            Mock memory info.
+            """
             return types.SimpleNamespace(rss=0)
 
 
@@ -166,8 +183,6 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict | None = None
     Train a deep-RL model using Stable-Baselines3 – only executed in
     real training runs, never during light unit tests.
     """
-    from reinforcement_learning.model_manager import get_model, save_model
-
     model, yaml_dict = get_model(
         sim_dict=sim_dict, device=sim_dict["device"], env=env, yaml_dict=yaml_dict
     )

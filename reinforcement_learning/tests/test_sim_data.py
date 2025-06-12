@@ -1,5 +1,7 @@
 """Unit tests for reinforcement_learning.utils.sim_data."""
 
+# pylint: disable=protected-access
+
 from unittest import TestCase, mock
 
 import numpy as np
@@ -43,10 +45,16 @@ class TestFilenameTrafficLabel(TestCase):
     """_extract_traffic_label_from_filename regex."""
 
     def test_parses_numeric_part(self):
+        """
+        Test parsing numeric part from filename.
+        """
         self.assertEqual(sd._extract_traffic_label_from_filename(
             "state_vals_e123.5.json", "x"), "123.5")
 
     def test_fallback_when_no_match(self):
+        """
+        Test fallback when no match is found.
+        """
         self.assertEqual(sd._extract_traffic_label_from_filename(
             "state_vals.json", "fallback"), "fallback")
 

@@ -1,5 +1,9 @@
 """Unit tests for reinforcement_learning.utils.hyperparams."""
 
+# TODO: (version 5.5-6) All tests need to be double checked and looked at
+
+# pylint: disable=unused-argument
+
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
@@ -124,9 +128,12 @@ class TestGetActivation(TestCase):
     """_get_activation maps strings to nn modules."""
 
     def test_mapping_returns_correct_class(self):
+        """
+        Test mapping returns correct class.
+        """
         trial = _mock_trial()
         act = hp._get_activation(trial)  # pylint: disable=protected-access
-        from torch.nn import ReLU  # import locally to avoid heavy torch
+        from torch.nn import ReLU  # pylint: disable=import-outside-toplevel
         self.assertIs(act, ReLU)
 
 

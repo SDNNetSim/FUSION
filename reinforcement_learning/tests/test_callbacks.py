@@ -14,6 +14,9 @@ class _DummyPolicy:  # pylint: disable=too-few-public-methods
     """Lightweight policy exposing predict_values()."""
 
     def predict_values(self, obs):  # noqa: D401
+        """
+        Predict values.
+        """
         # return shape (1,1) tensor-like array
         return np.array([[obs.sum()]])
 

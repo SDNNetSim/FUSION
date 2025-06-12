@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
@@ -33,9 +34,8 @@ def get_resource_usage_colormap_and_norm():
 
 def plot_resource_percent_delta_heatmaps(
         processed_dict: dict,
-        save_path: Path | None = None,
+        save_path: Path | None = None,  # pylint: disable=unsupported-binary-operation
         title_prefix: str = "Resource Usage %Δ vs Baseline",
-        title: str = None,
 
 ):
     """
@@ -87,7 +87,7 @@ def plot_resource_percent_delta_heatmaps(
                     except KeyError:
                         data.at[algo, erlang] = np.nan
 
-            fig, ax = plt.subplots(figsize=(len(erlangs) * 0.9 + 3, len(algos) * 0.45 + 1.5), dpi=300)
+            _, ax = plt.subplots(figsize=(len(erlangs) * 0.9 + 3, len(algos) * 0.45 + 1.5), dpi=300)
             cmap, norm = get_resource_usage_colormap_and_norm()
             sns.heatmap(
                 data,

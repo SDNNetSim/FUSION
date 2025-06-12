@@ -101,4 +101,5 @@ class PPOProps:
     """
     Not implemented at this time.
     """
-    pass
+    # TODO: (version 5.5-6) Determine if this is needed
+    pass  # pylint: disable=unnecessary-pass

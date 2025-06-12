@@ -15,9 +15,15 @@ class _DummyAlgo:  # pylint: disable=too-few-public-methods
         self.engine_obj = engine_obj
 
     def get_obs_space(self):
+        """
+        Mocks an observation space.
+        """
         return "obs_space"
 
     def get_action_space(self):
+        """
+        Mocks an action space.
+        """
         return "act_space"
 
 

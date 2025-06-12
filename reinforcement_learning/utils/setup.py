@@ -1,3 +1,6 @@
+# TODO: (version 5.5-6) Decide what to do with 'device' argument in every function
+# pylint: disable=unused-argument
+
 import os
 import copy
 
@@ -17,6 +20,9 @@ from config_scripts.setup_config import read_config
 
 from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 from reinforcement_learning.feat_extrs.graphormer import GraphTransformerExtractor
+from reinforcement_learning.feat_extrs.path_gnn_cached import (
+    CachedPathGNN, PathGNNEncoder
+)
 
 from reinforcement_learning.feat_extrs.constants import CACHE_DIR
 
@@ -33,19 +39,16 @@ def setup_feature_extractor(env: object):
     }
 
     if feat_extr == 'path_gnn':
-        from reinforcement_learning.feat_extrs.path_gnn_cached import (
-            CachedPathGNN, PathGNNEncoder
-        )
         # where the cache will live
         network = env.engine_obj.engine_props['network']
         cache_fp = CACHE_DIR / f"{engine_props['network']}.pt"
 
-        if os.path.exists(cache_fp):          # ✔ cache already there
+        if os.path.exists(cache_fp):  # ✔ cache already there
             cached = torch.load(cache_fp)
             extr_class = CachedPathGNN
             feat_kwargs = {"cached_embedding": cached}
             print(f"✅  Using cached GNN embedding from {cache_fp}")
-        else:                                 # ✘ no cache → make one now
+        else:  # ✘ no cache → make one now
             print(f"⏳  Caching GNN embedding for {network} …")
             obs = env.reset()[0]
             enc = PathGNNEncoder(env.observation_space,
@@ -55,7 +58,7 @@ def setup_feature_extractor(env: object):
                                  ).to(env.engine_obj.engine_props['device'])
             enc.eval()
             with torch.no_grad():
-                emb = enc(
+                emb = enc(  # pylint: disable=not-callable
                     obs['x'].to(enc.device),
                     obs['edge_index'].long().to(enc.device),
                     obs['path_masks'].to(enc.device)

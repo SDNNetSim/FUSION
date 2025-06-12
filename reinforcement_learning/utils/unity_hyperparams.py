@@ -105,7 +105,8 @@ def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> No
     for fp in files:
         try:
             meta, df = _parse_one_out(fp)
-        except Exception as e:
+        # TODO: (version 5.5-6) We should address all broad exceptions and better warning/logging for errors
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"   [skip] {fp.name}: {e}")
             continue
 

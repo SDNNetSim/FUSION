@@ -5,7 +5,7 @@ import numpy as np
 from src.spectrum_assignment import SpectrumAssignment
 
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
-from helper_scripts.sim_helpers import find_path_cong, classify_cong, find_core_cong
+from helper_scripts.sim_helpers import find_path_cong, classify_cong
 
 from arg_scripts.sdn_args import SDNProps
 
@@ -99,17 +99,7 @@ class CoreUtilHelpers:
         :return: The core index, the core itself, and the congestion level of that core for every core.
         :rtype: list
         """
-        info_list = list()
-
-        for core_index, curr_core in enumerate(cores_list):
-            path_list = curr_core['path'][0]
-            curr_cong = find_core_cong(core_index=core_index, net_spec_dict=self.engine_obj.net_spec_dict,
-                                       path_list=path_list)
-            cong_index = classify_cong(curr_cong=curr_cong)
-
-            info_list.append((core_index, curr_core[cong_index], cong_index))
-
-        return info_list
+        raise NotImplementedError
 
     def update_route_props(self, bandwidth: str, chosen_path: list):
         """

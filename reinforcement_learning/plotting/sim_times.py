@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 def plot_sim_times(
         sim_times_data: dict,
         title: str = "Simulation Time by Traffic Volume",
-        save_path: str | None = None,  # pylint: disable=supported-binary-operation
+        save_path: str | None = None,  # pylint: disable=unsupported-binary-operation
         log_y: bool = False,
 ):
     """

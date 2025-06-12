@@ -19,7 +19,7 @@ N_PATHS = 2
 class _DummyConv(torch.nn.Module):
     """Lightweight stand-in for TransformerConv."""
 
-    def __init__(self, in_channels, out_channels, heads, concat=True):
+    def __init__(self, in_channels, out_channels, heads):
         super().__init__()
         self.heads = heads
         self.lin = torch.nn.Linear(in_channels,

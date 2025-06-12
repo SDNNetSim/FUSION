@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+# TODO: (version 5.5-6) Address all duplicate code if you can
+
 # pylint: disable=protected-access
 
 """Unit tests for reinforcement_learning.algorithms.bandits."""
@@ -53,7 +56,7 @@ class TestSaveModelLowLevel(TestCase):
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("os.getcwd", return_value="/cwd")
     def test_save_model_writes_json_for_path(
-            self, mock_cwd, mock_open_fn, mock_dump
+            self, mock_cwd, mock_open_fn, mock_dump  # pylint: disable=unused-argument
     ):
         """_save_model converts arrays and dumps JSON."""
         data = {("a",): np.array([1, 2])}

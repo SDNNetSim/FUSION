@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+# TODO: (version 5.5-6) Address all duplicate code if you can
+
 """Unit tests for reinforcement_learning.algorithms.dqn."""
 
 from types import SimpleNamespace

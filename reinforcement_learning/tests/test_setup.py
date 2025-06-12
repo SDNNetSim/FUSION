@@ -1,6 +1,6 @@
 """Unit tests for reinforcement_learning.utils.setup."""
 
-from types import SimpleNamespace
+from types import SimpleNamespace as SNS
 from unittest import TestCase, mock
 
 from reinforcement_learning.utils import setup as su
@@ -9,11 +9,11 @@ from reinforcement_learning.utils import setup as su
 # ------------------------------------------------------------------ #
 #  stubs & fixtures                                                   #
 # ------------------------------------------------------------------ #
-class _DummyEnv:
+class _DummyEnv:  # pylint: disable=too-few-public-methods
     """Minimal env exposing engine_props."""
 
     def __init__(self, obs_space="obs_1"):
-        self.engine_obj = SimpleNamespace(
+        self.engine_obj = SNS(
             engine_props=dict(
                 obs_space=obs_space,
                 feature_extractor="path_gnn",
@@ -23,7 +23,7 @@ class _DummyEnv:
                 heads=4,
             )
         )
-        self.rl_props = SimpleNamespace(mock_sdn_dict={})
+        self.rl_props = SNS(mock_sdn_dict={})
 
 
 def _yaml_dict():
@@ -53,7 +53,7 @@ class TestSetupFeatureExtractor(TestCase):
         """path_gnn returns PathGNN and gnn_type kwarg present."""
         env = _DummyEnv()
         cls, kw = su.setup_feature_extractor(env)
-        from reinforcement_learning.feat_extrs.path_gnn import PathGNN
+        from reinforcement_learning.feat_extrs.path_gnn import PathGNN  # pylint: disable=import-outside-toplevel
         self.assertIs(cls, PathGNN)
         self.assertEqual(kw["gnn_type"], "sage")
 
@@ -62,7 +62,7 @@ class TestSetupFeatureExtractor(TestCase):
         env = _DummyEnv()
         env.engine_obj.engine_props["feature_extractor"] = "graphormer"
         cls, kw = su.setup_feature_extractor(env)
-        from reinforcement_learning.feat_extrs.graphormer import (
+        from reinforcement_learning.feat_extrs.graphormer import (  # pylint: disable=import-outside-toplevel
             GraphTransformerExtractor,
         )
         self.assertIs(cls, GraphTransformerExtractor)
@@ -85,7 +85,7 @@ class TestGetDrlDicts(TestCase):
     def test_graph_obs_adds_extractor_kwargs(self, mock_yaml):
         """When obs_space contains 'graph' kwargs include extractor."""
         env = _DummyEnv(obs_space="obs_1_graph")
-        cls = su.PathGNN
+        cls = su.PathGNN  # pylint: disable=no-member
         yml, kw, env_name = su.get_drl_dicts(env, "yml_path")
 
         self.assertEqual(env_name, "env")
@@ -130,7 +130,7 @@ class TestSetupHelper(TestCase):
         self.engine_patcher = mock.patch.object(
             su,
             "Engine",
-            return_value=SimpleNamespace(engine_props={}),
+            return_value=SNS(engine_props={}),
         )
         self.routing_patcher = mock.patch.object(
             su,
@@ -160,10 +160,10 @@ class TestSetupHelper(TestCase):
             is_training=True,
             network="net",
         )
-        self.sim_env = SimpleNamespace(
+        self.sim_env = SNS(
             sim_dict=self.sim,
-            rl_props=SimpleNamespace(mock_sdn_dict={}),
-            path_agent=SimpleNamespace(setup_env=mock.MagicMock()),
+            rl_props=SNS(mock_sdn_dict={}),
+            path_agent=SNS(setup_env=mock.MagicMock()),
         )
 
     def test_create_input_sets_attributes_and_calls_helpers(self):
@@ -172,16 +172,15 @@ class TestSetupHelper(TestCase):
         helper.create_input()
 
         # Ensure engine_obj is the stub namespace
-        from types import SimpleNamespace as SNS
         self.assertIsInstance(self.sim_env.engine_obj, SNS)
         self.assertEqual(self.sim_env.engine_obj.engine_props, {})
         self.assertEqual(self.sim_env.route_obj, "routing")
         self.assertEqual(self.sim_env.sim_props, {"props": 1})
-        su.save_input.assert_called_once()
+        su.save_input.assert_called_once()  # pylint: disable=no-member
 
     def test_init_envs_invokes_path_agent_setup(self):
         """init_envs calls path_agent.setup_env when training."""
-        self.sim_env.engine_obj = SimpleNamespace(engine_props={})
+        self.sim_env.engine_obj = SNS(engine_props={})
         helper = su.SetupHelper(self.sim_env)
         helper.init_envs()
 

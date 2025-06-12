@@ -2,7 +2,6 @@
 
 from unittest import TestCase, mock
 
-import torch
 import networkx as nx
 from reinforcement_learning.utils import topology as topo
 

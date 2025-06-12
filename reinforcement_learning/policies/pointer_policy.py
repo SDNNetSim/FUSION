@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+
+# TODO: (version 5.5-6) Remove and address all duplicate code fragments
 # TODO: (version 5.5-6) No longer supported.
 
 import math

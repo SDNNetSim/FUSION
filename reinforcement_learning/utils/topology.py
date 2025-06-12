@@ -14,7 +14,7 @@ def convert_networkx_topo(graph: nx.Graph, as_directed: bool = True):
     edge_betweenness = nx.edge_betweenness_centrality(graph)
     edge_list = []
     attr_list = []
-    for u, v, data in graph.edges(data=True):
+    for u, v, _ in graph.edges(data=True):
         ui, vi = id2idx[u], id2idx[v]
         betweenness = edge_betweenness.get((u, v), 0.0)
 

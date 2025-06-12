@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code
+# TODO: (version 5.5-6) Address all duplicate code if you can
+
 import numpy as np
 import matplotlib.pyplot as plt
 

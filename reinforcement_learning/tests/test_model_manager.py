@@ -38,7 +38,7 @@ try:
     from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 except ModuleNotFoundError:  # pragma: no cover
     # Minimal shim so unit-tests / import don’t break
-    class BaseFeaturesExtractor:  # type: ignore
+    class BaseFeaturesExtractor:  # pylint: disable=too-few-public-methods
         """
         Stand-in for SB3’s BaseFeaturesExtractor when the real package
         is absent.  **Only** what we need for CachedPathGNN.
@@ -49,7 +49,10 @@ except ModuleNotFoundError:  # pragma: no cover
             self.features_dim = features_dim
 
         # SB3 registers buffers so we provide the same helper.
-        def register_buffer(self, name: str, tensor: Any) -> None:  # noqa: D401
+        def register_buffer(self, name: str, tensor: Any) -> None:
+            """
+            Mocking register buffer.
+            """
             setattr(self, name, tensor)
 
 
