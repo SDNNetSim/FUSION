@@ -3,6 +3,9 @@ import json
 from typing import Any, Dict, List
 
 
+# TODO: (version 5.5-6) These can probably be in the shared filter or plotting module
+
+
 def _not_filters(filter_dict: Dict[str, List[List[Any]]], file_dict: Dict[str, Any]) -> bool:
     """
     Apply "not" filters to the file dictionary.
