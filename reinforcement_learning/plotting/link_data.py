@@ -1,45 +1,46 @@
-import matplotlib.pyplot as plt
-import networkx as nx
 from pathlib import Path
 import math
 
-#TODO Add titles to each graph.
-#TODO Implement throughput plotting.
-#TODO Add method of combining different graphs into one heat map.
+import matplotlib.pyplot as plt
+import networkx as nx
+
+
+# TODO (version 5.5-6) Add titles to each graph.
+# TODO (version 5.5-6) Implement throughput plotting.
+# TODO (version 5.5-6) Add method of combining different graphs into one heat map.
 def plot_link_usage(final_result, save_path=None, title=None):
     """
     Creates a heat map of the averaged usage of links on the final iteration
     across multiple seeds of a simulation.
     """
-
     usage_data = final_result["usage"]
     for algo, traffic_dict in usage_data.items():
         for tv, usage_dict in traffic_dict.items():
-            G = nx.Graph()
+            graph = nx.Graph()
 
             # Build graph from usage_dict
             for link_str, usage in usage_dict.items():
                 u, v = link_str.split('-')
-                G.add_edge(u, v, usage=usage)
+                graph.add_edge(u, v, usage=usage)
 
-            usage_values = [G[u][v].get('usage', 0) for u, v in G.edges()]
+            usage_values = [graph[u][v].get('usage', 0) for u, v in graph.edges()]
             max_usage = max(usage_values) if usage_values else 1
             edge_colors = [(1.0, 0.5, 0.0, usage / max_usage) for usage in usage_values]
             edge_widths = [1 + 4 * (usage / max_usage) for usage in usage_values]
 
-            pos = nx.spring_layout(G, seed=42)
+            pos = nx.spring_layout(graph, seed=42)
             fig, ax = plt.subplots(figsize=(10, 7))
 
             nx.draw(
-                G, pos, ax = ax,
+                graph, pos, ax=ax,
                 with_labels=True,
                 node_color='lightblue',
                 edge_color=edge_colors,
                 width=edge_widths
             )
             nx.draw_networkx_edge_labels(
-                G, pos, ax = ax,
-                edge_labels={(u, v): G[u][v].get('usage', 0) for u, v in G.edges()},
+                graph, pos, ax=ax,
+                edge_labels={(u, v): graph[u][v].get('usage', 0) for u, v in graph.edges()},
                 font_color='gray'
             )
 
@@ -50,9 +51,6 @@ def plot_link_usage(final_result, save_path=None, title=None):
             ax.axis('off')
 
             plt.subplots_adjust(top=0.88)  # Leave space for title
-
-            #plt.tight_layout(rect=[0, 0, 1, 0.95])
-
             if save_path:
                 path = Path(save_path)
                 filename = f"{path.stem}_{algo}_{tv}{path.suffix}"
@@ -66,29 +64,31 @@ def plot_link_usage(final_result, save_path=None, title=None):
                 plt.close(fig)
 
 
-
 def plot_link_throughput(final_result, save_path=None, title=None):
+    """
+    Creates a heat map showing throughput on each link of the network.
+    """
     throughput_data = final_result["throughput"]
 
     for algo, traffic_dict in throughput_data.items():
         for tv, throughput_dict in traffic_dict.items():
-            G = nx.Graph()
+            graph = nx.Graph()
 
             for link_str, throughput in throughput_dict.items():
                 u, v = link_str.split('-')
-                G.add_edge(u, v, throughput=throughput)
+                graph.add_edge(u, v, throughput=throughput)
 
-            throughput_values = [G[u][v]["throughput"] for u, v in G.edges()]
+            throughput_values = [graph[u][v]["throughput"] for u, v in graph.edges()]
             max_throughput = max(throughput_values) if throughput_values else 1
             edge_colors = [(1.0, 0.5, 0.0, v / max_throughput) for v in throughput_values]
             edge_widths = [1 + 4 * (v / max_throughput) for v in throughput_values]
 
-            pos = nx.spring_layout(G, seed=42)
+            pos = nx.spring_layout(graph, seed=42)
 
             fig, ax = plt.subplots(figsize=(10, 7))
 
             nx.draw(
-                G, pos, ax=ax,
+                graph, pos, ax=ax,
                 with_labels=True,
                 node_color='lightblue',
                 edge_color=edge_colors,
@@ -96,7 +96,7 @@ def plot_link_throughput(final_result, save_path=None, title=None):
             )
 
             draw_rotated_edge_labels(
-                G, pos, ax,
+                graph, pos, ax,
                 attr="throughput",
                 offset=0.02,
                 fmt="{:.2f}",
@@ -122,14 +122,12 @@ def plot_link_throughput(final_result, save_path=None, title=None):
                 plt.close(fig)
 
 
-
-
-def draw_rotated_edge_labels(G, pos, ax, attr="throughput", offset=0.05, fmt="{:.2f}", **text_kwargs):
+def draw_rotated_edge_labels(graph, pos, ax, attr="throughput", offset=0.05, fmt="{:.2f}", **text_kwargs):
     """
     Draws edge labels rotated to follow the edge direction and offset perpendicularly from the edge center.
 
     Parameters:
-        G: networkx.Graph
+        graph: networkx.Graph
         pos: dict of node positions {node: (x, y)}
         ax: matplotlib Axes
         attr: edge attribute to label (default 'throughput')
@@ -137,8 +135,8 @@ def draw_rotated_edge_labels(G, pos, ax, attr="throughput", offset=0.05, fmt="{:
         fmt: format string or callable for label value
         text_kwargs: forwarded to ax.text (e.g., fontsize, color)
     """
-    for (u, v) in G.edges():
-        if attr not in G[u][v]:
+    for (u, v) in graph.edges():
+        if attr not in graph[u][v]:
             continue
 
         x1, y1 = pos[u]
@@ -161,7 +159,7 @@ def draw_rotated_edge_labels(G, pos, ax, attr="throughput", offset=0.05, fmt="{:
         # Angle of edge (in degrees)
         angle = math.degrees(math.atan2(dy, dx))
 
-        value = G[u][v][attr]
+        value = graph[u][v][attr]
         label = fmt.format(value) if isinstance(fmt, str) else fmt(value)
 
         ax.text(
@@ -172,7 +170,3 @@ def draw_rotated_edge_labels(G, pos, ax, attr="throughput", offset=0.05, fmt="{:
             verticalalignment='center',
             **text_kwargs
         )
-
-
-
-
