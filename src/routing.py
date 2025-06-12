@@ -257,6 +257,7 @@ class Routing:
                 break
             path_cnt += 1
 
+    # TODO: (version 5.5-6) Break up for organizational purposes
     def find_cong_aware(self):
         """
         Congestion‑aware k‑shortest routing.
