@@ -1,3 +1,5 @@
+# TODO: (version 5.5-6) Consider having a function like this in a shared plotting module
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -5,7 +7,7 @@ import matplotlib.pyplot as plt
 def plot_sim_times(
         sim_times_data: dict,
         title: str = "Simulation Time by Traffic Volume",
-        save_path: str | None = None,
+        save_path: str | None = None,  # pylint: disable=supported-binary-operation
         log_y: bool = False,
 ):
     """
