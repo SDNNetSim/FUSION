@@ -1,8 +1,13 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 def plot_path_index(path_index_data, title="Path Index Usage", save_path=None):
+    """
+    Plots the path index histogram.
+    """
     if not path_index_data:
         print("[plot_path_index_by_erlang] No data to plot.")
         return
@@ -29,7 +34,7 @@ def plot_path_index(path_index_data, title="Path Index Usage", save_path=None):
         x = np.arange(len(all_path_indices))  # Path index positions
         bar_w = 0.8 / len(algos)
 
-        fig, ax = plt.subplots(figsize=(10, 6), dpi=300)
+        _, ax = plt.subplots(figsize=(10, 6), dpi=300)
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
         for i, algo in enumerate(algos):
@@ -46,8 +51,6 @@ def plot_path_index(path_index_data, title="Path Index Usage", save_path=None):
                 edgecolor='black',
                 linewidth=0.6
             )
-        #print(f"[DEBUG]algo_counts: {algo_counts}")
-
         # Final formatting
         ax.set_xticks(x + bar_w * (len(algos) / 2 - 0.5))
         ax.set_xticklabels([str(idx) for idx in all_path_indices], fontsize=11)
