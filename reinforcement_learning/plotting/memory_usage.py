@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def plot_memory_usage(
         memory_usage_data: dict,
         title: str = "Memory Usage by Traffic Volume",
-        save_path: str | None = None,
+        save_path: str | None = None,  # pylint: disable=unsupported-binary-operation
         log_y: bool = False,
 ):
     """
@@ -46,14 +46,14 @@ def plot_memory_usage(
 
     algos = sorted(memory_usage_data.keys())
 
-    means = []
+    means_list = []
     for tv in traffic_labels:
-        row = []
+        row_list = []
         for algo in algos:
             val_dict = memory_usage_data[algo].get(str(tv), {})
-            row.append(float(val_dict.get("overall", 0.0)))
-        means.append(row)
-    means = np.array(means)  # shape: (#traffic, #algorithms)
+            row_list.append(float(val_dict.get("overall", 0.0)))
+        means_list.append(row_list)
+    means_arr = np.array(means_list)  # shape: (#traffic, #algorithms)
 
     x = np.arange(len(traffic_labels))
     bar_w = 0.8 / len(algos)
@@ -66,7 +66,7 @@ def plot_memory_usage(
         hatch = "//" if "k_shortest_path" in algo else None
         plt.bar(
             x + i * bar_w,
-            means[:, i],
+            means_arr[:, i],
             bar_w,
             label=algo,
             color=algo_colors[algo],
