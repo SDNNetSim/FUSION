@@ -2,6 +2,8 @@ import copy
 import os
 import json
 import pickle
+import time
+from pathlib import Path
 from datetime import datetime
 
 import networkx as nx
@@ -501,14 +503,25 @@ def combine_and_one_hot(arr1: np.array, arr2: np.array):
 
 def get_start_time(sim_dict: dict):
     """
-    Gets the start time of a simulation.
+    Gets a unique start time for a simulation, ensuring it does not already exist.
     :param sim_dict: Holds the simulation parameters.
     """
-    sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-    sim_dict['s1']['date'] = sim_start.split('_')[0]
-    tmp_list = sim_start.split('_')
+    base_path = Path(f"data/input/{sim_dict['s1']['network']}/")
+    while True:
+        time.sleep(0.1)
 
-    time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        tmp_list = sim_start.split('_')
+        date = tmp_list[0]
+        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+
+        full_path = base_path / date / time_string
+        if not full_path.exists():
+            break
+
+        print('\n\n [WARNING] Duplicate start times, picking a new start!\n\n')
+
+    sim_dict['s1']['date'] = date
     sim_dict['s1']['sim_start'] = time_string
 
     return sim_dict
