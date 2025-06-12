@@ -99,7 +99,8 @@ def run_rl_sim() -> None:
             run(env=env, sim_dict=sim_dict, callback_list=callback_list)
         else:
             run_optuna_study(sim_dict=sim_dict, callback_list=callback_list)
-    except Exception:
+    # TODO: (version 5.5-6) Address this
+    except Exception:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
         had_error = True
     finally:
