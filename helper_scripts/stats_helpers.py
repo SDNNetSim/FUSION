@@ -78,18 +78,17 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-
     @staticmethod
     def _get_link_usage_summary(net_spec_dict):
-        usage_summary = {}
+        usage_summary_dict = {}
         for (src, dst), link_data in net_spec_dict.items():
             if str(src) < str(dst):  # Avoid double-counting reverse direction
-                usage_summary[f"{src}-{dst}"] = {
+                usage_summary_dict[f"{src}-{dst}"] = {
                     "usage_count": link_data.get('usage_count', 0),
                     "throughput": link_data.get('throughput', 0),
                     "link_num": link_data.get('link_num'),
                 }
-        return usage_summary
+        return usage_summary_dict
 
     def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
         """
@@ -206,7 +205,7 @@ class SimStats:
         self.bit_rate_request = 0
         self.total_trans = 0
 
-        k_paths = self.engine_props.get('k_paths', 3)
+        k_paths = self.engine_props.get('k_paths')
         self.stats_props.path_index_list = [0] * k_paths
 
     def get_blocking(self):
