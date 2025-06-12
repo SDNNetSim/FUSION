@@ -93,7 +93,7 @@ def find_path_len(path_list: list, topology: nx.Graph):
     return path_len
 
 
-# TODO: Defaulting to 'c' band
+# TODO: (version 5.5-6) Defaulting to 'c' band
 def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     """
     Computes average path congestion and scaled available capacity, accounting for multiple cores per link.
@@ -110,14 +110,14 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores = cores_matrix[band]
+        band_cores_matrix = cores_matrix[band]
 
-        num_cores = len(cores)
-        num_slots_per_core = len(cores[0])
+        num_cores = len(band_cores_matrix)
+        num_slots_per_core = len(band_cores_matrix[0])
 
         slots_taken = 0.0
-        for core in cores:
-            core_slots_taken = float(np.count_nonzero(core))
+        for core_arr in band_cores_matrix:
+            core_slots_taken = float(np.count_nonzero(core_arr))
             slots_taken += core_slots_taken
 
         total_slots = num_cores * num_slots_per_core
@@ -132,6 +132,7 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     return average_path_cong, scaled_available_capacity
 
 
+# TODO: (version 5.5-6) Defaults to 'c' band
 def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> float:
     """
     Computes the average fragmentation ratio along a path.
@@ -141,7 +142,7 @@ def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> flo
     :param band: Spectral band to use (e.g., 'c').
     :return: Average fragmentation score [0,1] (higher = worse fragmentation).
     """
-    frag_ratios = []
+    frag_ratios_list = []
 
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
@@ -172,9 +173,9 @@ def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> flo
             else:
                 frag_ratio = 1 - (max_block / total_free)
 
-            frag_ratios.append(frag_ratio)
+            frag_ratios_list.append(frag_ratio)
 
-    return float(np.mean(frag_ratios)) if frag_ratios else 1.0
+    return float(np.mean(frag_ratios_list)) if frag_ratios_list else 1.0
 
 
 def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
@@ -570,7 +571,7 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     return np.array(potential_super_channels)
 
 
-# TODO: (drl_path_agents) Add reference
+# TODO: (version 5.5-6) Add reference
 # Please refer to this paper for the formulation:
 def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     big_n = len(sc_index_mat) * -1.0
@@ -596,7 +597,7 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     """
     path_alloc_arr = np.zeros(spectral_slots)
     resp_frag_arr = np.ones(spectral_slots)
-    # TODO: (drl_path_agents) First fit for core, only use in testing
+    # TODO: (version 5.5-6) First fit for core, only use in testing
     if core_num is None:
         core_num = 0
 
@@ -631,7 +632,7 @@ def classify_cong(curr_cong: float, cong_cutoff: float):
     :return: The congestion indexes or level.
     :rtype: int
     """
-    # TODO: Hard coded, only support for 2 path levels
+    # TODO: (version 5.5-6) Hard coded, only support for 2 path levels
     if curr_cong <= cong_cutoff:
         cong_index = 0
     else:
@@ -722,7 +723,7 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
         file_path.write(f"\nBest Simulation Start Time: {best_sim_start}\n")
 
 
-# TODO: Only support for one process
+# TODO: (version 5.5-6) Only support for one process
 def modify_multiple_json_values(trial_num: int, file_path: str, update_list: list):
     """
     Opens a JSON file, modifies multiple key-value pairs in a dictionary, and saves it back to the file.
