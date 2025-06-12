@@ -42,6 +42,8 @@ def main(cfg_path: str):
     if not network or not dates:
         raise ValueError("YAML must contain 'network' and 'dates' fields.")
 
+    obs_spaces = cfg.get("observation_spaces", None)
+
     for plot_name in cfg["plots"]:
         plot_meta = PLOTS[plot_name]
         plot_fn = plot_meta["plot"]
@@ -55,8 +57,8 @@ def main(cfg_path: str):
         elif explicit_algos:
             algos = explicit_algos
         else:
-            all_drl = discover_all_run_ids(network, dates, drl=True)
-            all_non_drl = discover_all_run_ids(network, dates, drl=False)
+            all_drl = discover_all_run_ids(network, dates, drl=True, obs_filter=obs_spaces)
+            all_non_drl = discover_all_run_ids(network, dates, drl=False, obs_filter=None)
             algos = sorted(set(all_drl.keys()) | set(all_non_drl.keys()))
 
         combined_raw = {}
@@ -68,7 +70,7 @@ def main(cfg_path: str):
                 continue
 
             drl_flag = run_type == "drl"
-            discovered = discover_all_run_ids(network, dates, drl=drl_flag)
+            discovered = discover_all_run_ids(network, dates, drl=drl_flag, obs_filter=obs_spaces)
 
             for algo in algos:
                 variants = variants_block.get(algo, [])

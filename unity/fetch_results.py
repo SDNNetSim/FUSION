@@ -46,7 +46,11 @@ def rsync_dir(remote_root: str, abs_path: pathlib.PurePosixPath,
     rel = last_n_parts(abs_path, 4)  # keep last 4 segments
     local_dir = dest_root / rel
     local_dir.parent.mkdir(parents=True, exist_ok=True)
-    _run(["rsync", "-avP", "--compress", f"{remote_root}{abs_path}/", str(local_dir)], dry)
+
+    try:
+        _run(["rsync", "-avP", "--compress", f"{remote_root}{abs_path}/", str(local_dir)], dry)
+    except subprocess.CalledProcessError as e:
+        logging.error(e)
 
 
 def rsync_file(remote_root: str, remote_path: pathlib.PurePosixPath,

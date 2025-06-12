@@ -30,7 +30,8 @@ def _safe_load_json(fp: Path) -> Any | None:
         return None
 
 
-def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str, list[str]]:
+def discover_all_run_ids(network: str, dates: list[str], drl: bool, obs_filter: list[str] | None) -> dict[
+    str, list[str]]:
     algo_runs: dict[str, list[str]] = defaultdict(list)
 
     for date in dates:
@@ -52,6 +53,10 @@ def discover_all_run_ids(network: str, dates: list[str], drl: bool) -> dict[str,
                 meta = _safe_load_json(s1_meta) or {}
                 algo_base = meta.get("path_algorithm", "unknown")
                 obs = meta.get('obs_space')
+
+                if (obs_filter and obs not in obs_filter) and (algo_base in ('dqn', 'ppo')):
+                    continue
+
                 algo = _compose_algo_label(algo_base, obs)
 
                 run_id = meta["run_id"]
