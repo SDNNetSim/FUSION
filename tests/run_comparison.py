@@ -1,6 +1,7 @@
 # TODO: (version 6) This is probably not scalable, find a more creative way or combine them somehow for a comprehensive
 #   test
 # TODO: (version 5.5) Ensure the starting directory is consistent
+# TODO: (version 5.5) Ensure the text fixtures have README files
 from __future__ import annotations
 
 import argparse
@@ -9,10 +10,12 @@ import json
 import logging
 import os
 import sys
-import time
 from pathlib import Path
 from typing import Dict, List
+import multiprocessing
 
+
+from helper_scripts.sim_helpers import get_start_time
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from run_sim import run as run_simulation
@@ -53,7 +56,20 @@ def _build_cli() -> argparse.Namespace:
 
 def _discover_cases(fixtures_root: Path) -> List[Path]:
     """Return all case directories under *fixtures_root*, sorted by name."""
-    cases = sorted([p for p in fixtures_root.iterdir() if p.is_dir()])
+
+    looks_like_case = (
+            list(fixtures_root.glob("*_config.ini"))
+            and (fixtures_root / "mod_formats.json").exists()
+    )
+
+    if looks_like_case:
+        return [fixtures_root]  # ← always a list✅
+
+    cases= sorted([p for p in fixtures_root.iterdir() if p.is_dir()])
+
+    cases = [cases[1]]
+
+
     if not cases:
         LOGGER.error("No cases found under %s", fixtures_root)
         sys.exit(2)
@@ -144,17 +160,19 @@ def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
     config_path = _locate_single("*_config.ini", case_dir)
     mod_assumption_path = _locate_single("mod_formats.json", case_dir)
 
-    start_ts = time.time()  # timestamp before simulation
+
 
     # Build args for this case and inject the custom mod_formats path
     args_for_case = _override_ini(base_args, config_path)
     sim_dict = read_config(args_dict=args_for_case, config_path=str(config_path))
-
+    sim_dict = get_start_time(sim_dict)
+    sim_start = sim_dict['s1']['sim_start']
     for thread_params in sim_dict.values():
         thread_params["mod_assumption_path"] = str(mod_assumption_path)
+        thread_params['sim_start'] = sim_start
 
     # Kick off the simulation (inherits cwd set to repo root)
-    run_simulation(sims_dict=sim_dict)
+    run_simulation(sims_dict=sim_dict, stop_flag= multiprocessing.Event() )
     LOGGER.debug("simulation completed for %s", case_dir.name)
 
     # TODO: (version 5.5) Move to its own function
@@ -166,13 +184,17 @@ def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
         if not topo_dir.is_dir():
             continue
         for date_dir in topo_dir.iterdir():
+            if topo_dir.name != sim_dict['s1']['network'] or date_dir.name != sim_dict['s1']['date']:
+                continue
             if not date_dir.is_dir():
                 continue
+
+
             for time_dir in date_dir.iterdir():
                 if not time_dir.is_dir():
                     continue
                 s1_path = time_dir / "s1"
-                if s1_path.exists() and s1_path.is_dir() and time_dir.name == start_ts:
+                if s1_path.exists() and s1_path.is_dir() and time_dir.name == sim_start:
                     output_dir = s1_path
 
     if output_dir is None:
