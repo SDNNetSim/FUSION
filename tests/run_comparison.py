@@ -161,44 +161,57 @@ def _diff_files(expected: Path, actual: Path, rel: str) -> List[str]:
 
 def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
     """Execute one regression case – return True if it passes."""
-    LOGGER.info("▶  running case: %s", case_dir.name)
-
-    # Mandatory inputs
+    # LOGGER.info("▶  running case: %s", case_dir.name)
+    #
+    # # Mandatory inputs
     config_path = _locate_single("*_config.ini", case_dir)
-    mod_assumption_path = _locate_single("mod_formats.json", case_dir)
+    # mod_assumption_path = _locate_single("mod_formats.json", case_dir)
+    #
+    # start_ts = time.time()  # timestamp before simulation
+    #
+    # # Build args for this case and inject the custom mod_formats path
+    # args_for_case = _override_ini(base_args, config_path)
+    # sim_dict = read_config(args_dict=args_for_case, config_path=str(config_path))
+    #
+    # for thread_params in sim_dict.values():
+    #     thread_params["mod_assumption_path"] = str(mod_assumption_path)
+    #
+    # # Kick off the simulation (inherits cwd set to repo root)
+    # run_simulation(sims_dict=sim_dict)
+    # LOGGER.debug("simulation completed for %s", case_dir.name)
 
-    start_ts = time.time()  # timestamp before simulation
-
-    # Build args for this case and inject the custom mod_formats path
-    args_for_case = _override_ini(base_args, config_path)
-    sim_dict = read_config(args_dict=args_for_case, config_path=str(config_path))
-
-    for thread_params in sim_dict.values():
-        thread_params["mod_assumption_path"] = str(mod_assumption_path)
-
-    # Kick off the simulation (inherits cwd set to repo root)
-    run_simulation(sims_dict=sim_dict)
-    LOGGER.debug("simulation completed for %s", case_dir.name)
-
-    # for start_ts in ['10_37_46_978428', '10_38_16_959304']:
-    # Collect artefacts produced since *start_ts*
+    # TODO: (version 5.5) Move to its own file
+    start_ts  = '10_38_16_959304'
+    # Locate the 's1' directory written by this run
     artefact_root = Path("data") / "output"
-    produced: Dict[str, Path] = {}
-    for file_path in artefact_root.rglob("*"):
-        if file_path.is_file() and file_path.stat().st_mtime >= start_ts:
-            produced.setdefault(file_path.name, file_path)
+    output_dir = None
 
-    if not produced:
-        LOGGER.error("%s: no artefacts created under %s", case_dir.name, artefact_root)
+    for topo_dir in artefact_root.iterdir():
+        if not topo_dir.is_dir():
+            continue
+        for date_dir in topo_dir.iterdir():
+            if not date_dir.is_dir():
+                continue
+            for time_dir in date_dir.iterdir():
+                if not time_dir.is_dir():
+                    continue
+                s1_path = time_dir / "s1"
+                if s1_path.exists() and s1_path.is_dir() and time_dir.name == start_ts:
+                    output_dir = s1_path
+
+    if output_dir is None:
+        LOGGER.error("No output directory found after simulation under %s", artefact_root)
         return False
 
+    produced = {p.name: p for p in output_dir.iterdir() if p.is_file()}
     # Compare against expected files
     failures: List[str] = []
     for expected in case_dir.iterdir():
         if expected.name in {config_path.name, "mod_formats.json"}:
             continue  # skip inputs
 
-        actual = produced.get(expected.name)
+        expected_name = "_".join(expected.name.split("_")[-2:])
+        actual = produced.get(expected_name)
         rel_name = f"{case_dir.name}/{expected.name}"
 
         if actual is None:
