@@ -1,5 +1,8 @@
 # run_sim.py
-#TODO fix multiprocessing import statement
+# TODO (version 5.5) fix multiprocessing import statement
+# fixme: (version 5.5) Multi-threaded erlangs broke, fix this
+# TODO: (immediate) Other testing configs need to be updated (erlang start, stop, step)
+# TODO: (version 5.5-6) Improve logging output, especially for print statements needed for the GUI, how should we do this?
 import multiprocessing
 import copy
 from datetime import datetime
@@ -86,8 +89,8 @@ class NetworkSimulator:
         If this single process runs multiple Erlangs sequentially, we do them all here
         without resetting the progress. We'll unify iteration-based progress across them.
         """
-        erlang_dict = self.properties['erlangs']
-        start, stop, step = erlang_dict['start'], erlang_dict['stop'], erlang_dict['step']
+        start, stop = self.properties['erlang_start'], self.properties['erlang_stop']
+        step = self.properties['erlang_step']
         erlang_list = [float(x) for x in range(start, stop, step)]
         print("Launching simulations for erlangs:", erlang_list)
 
