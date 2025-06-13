@@ -156,7 +156,12 @@ def run(sims_dict: dict, stop_flag: multiprocessing):
             print(message)
 
     processes = []
-    sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+
+    # For system testing purposes
+    if 'sim_start' not in sims_dict['s1']:
+        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+    else:
+        sim_start = f"{sims_dict['s1']['date']}_{sims_dict['s1']['sim_start']}"
 
     for thread_num, thread_params in sims_dict.items():
         # Insert the parent's queues if not already set
