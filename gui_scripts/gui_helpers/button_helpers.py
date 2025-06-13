@@ -9,6 +9,8 @@ from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 # We import the simulation runner's run() function.
 from run_sim import run
 
+#TODO Implement Pause Resume logic for pause_simulation function
+
 class ButtonHelpers:
     """
     Contains methods related to setting up the buttons and their potential options.
@@ -88,8 +90,6 @@ class ButtonHelpers:
         Pauses the simulation.
         """
         if self.simulation_process and self.simulation_process.is_alive():
-            # Pause/resume logic would need to be implemented;
-            # in a multiprocessing.Process, pausing isn't trivial.
             self.start_button.setText("Resume")
 
     def stop_simulation(self):

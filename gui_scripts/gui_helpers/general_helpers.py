@@ -1,5 +1,7 @@
 # pylint: disable=c-extension-no-member
-
+# pylint: disable=invalid-name
+# pylint: disable=no-member
+# pylint: disable=super-with-arguments
 import os
 import signal
 import subprocess
@@ -8,6 +10,7 @@ import sys
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from gui_scripts.gui_args.config_args import SETTINGS_CONFIG_DICT
+
 
 
 class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
@@ -131,7 +134,7 @@ class SimulationThread(QtCore.QThread):
     output_hints_signal = QtCore.pyqtSignal(str)
 
     def __init__(self):
-        super(SimulationThread, self).__init__()  # pylint: disable=super-with-arguments
+        super(SimulationThread, self).__init__()
 
         self.simulation_process = None
         self.paused = False
@@ -148,7 +151,7 @@ class SimulationThread(QtCore.QThread):
                 try:
                     progress_val = int(output_line.split(":", 1)[1].strip())
                     # Debug print to confirm progress was parsed:
-                    print("SimulationThread parsed progress:", progress_val)
+                    #print("SimulationThread parsed progress:", progress_val)
                     self.progress_changed.emit(progress_val)
                 except ValueError as e:
                     print("Error parsing progress:", e)
@@ -173,7 +176,7 @@ class SimulationThread(QtCore.QThread):
         """
         command = os.path.join(os.getcwd(), "run_sim.py")
 
-        self.simulation_process = subprocess.Popen(  # pylint: disable=consider-using-with
+        self.simulation_process = subprocess.Popen(
             args=[sys.executable, command],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -182,7 +185,7 @@ class SimulationThread(QtCore.QThread):
 
         self._run()
 
-    def handle_process_state(self, process_state: QtCore.QProcess.ProcessState):  # pylint: disable=consider-using-with
+    def handle_process_state(self, process_state: QtCore.QProcess.ProcessState):
         """
         Starts or runs a specific process.
 
@@ -199,7 +202,7 @@ class SimulationThread(QtCore.QThread):
         Pauses a single simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGSTOP) # pylint: disable=no-member
+            os.kill(self.simulation_process.pid, signal.SIGSTOP)
             self.paused = True
             self.output_hints_signal.emit('Pausing simulation from thread')
 
@@ -208,7 +211,7 @@ class SimulationThread(QtCore.QThread):
         Resumes a simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGCONT) # pylint: disable=no-member
+            os.kill(self.simulation_process.pid, signal.SIGCONT)
             self.paused = False
             self.output_hints_signal.emit('Resuming simulation from thread')
         self.pause_condition.wakeOne()
@@ -218,7 +221,7 @@ class SimulationThread(QtCore.QThread):
         Stops a simulation thread.
         """
         with QtCore.QMutexLocker(self.mutex):
-            os.kill(self.simulation_process.pid, signal.SIGKILL) # pylint: disable=no-member
+            os.kill(self.simulation_process.pid, signal.SIGKILL)
             self.stopped = True
             self.paused = False
             self.output_hints_signal.emit('Stopping simulation from thread')
@@ -406,7 +409,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         """
         self.setRootIndex(self.model.index(self.model.rootPath()))
 
-    def mousePressEvent(self, event: QtGui.QMouseEvent):  # pylint: disable=invalid-name
+    def mousePressEvent(self, event: QtGui.QMouseEvent):
         """
         Overrides mousePressEvent in QTreeView for single click
 
@@ -418,7 +421,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
             self.setCurrentIndex(index)
         super().mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):  # pylint: disable=invalid-name
+    def mouseDoubleClickEvent(self, event):
         """
         Overrides mouseDoubleClickEvent in QTreeView for double-click
 

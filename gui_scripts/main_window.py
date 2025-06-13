@@ -253,8 +253,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         global_progress = int(fraction * 1000)
 
-        print(f"poll_progress => progress_values: {dict(self.progress_values)}")
-        print(f"poll_progress => total_done={total_done}, fraction={fraction:.3f}, global_progress={global_progress}")
+        #print(f"poll_progress => progress_values: {dict(self.progress_values)}")
+        #print(f"poll_progress => total_done={total_done}, fraction={fraction:.3f}, global_progress={global_progress}")
 
         # Animate the progress bar to the new global_progress
         self.button_help_obj.update_progress(global_progress)
