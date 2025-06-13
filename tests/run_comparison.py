@@ -1,22 +1,6 @@
 # TODO: (version 6) This is probably not scalable, find a more creative way or combine them somehow for a comprehensive
 #   test
 # TODO: (version 5.5) Ensure the starting directory is consistent
-
-# !/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Standalone regression harness for the optical-network simulator.
-
-  • Discovers every case under tests/fixtures/expected_results/<CASE_NAME>/
-  • Overrides the simulator's ini, sets mod_assumption_path, runs the sim
-  • Harvests artefacts produced *after* the run and diffs them against the
-    fixtures (exact match, no tolerance)
-  • Prints pylint-style diagnostics and exits non-zero on failure
-  • Deletes artefacts for passing cases unless --no-cleanup is supplied
-
-This script is **not** collected by pytest; run it directly:
-    python -m tests.run_comparison
-"""
 from __future__ import annotations
 
 import argparse
@@ -34,9 +18,7 @@ from config_scripts.setup_config import read_config
 from run_sim import run as run_simulation
 
 LOGGER = logging.getLogger(__name__)
-
-
-# ───────────────────────────── CLI / ENTRY-POINT ────────────────────────────
+IGNORE_KEYS = {'route_times_max', 'route_times_mean', 'route_times_min'}
 
 
 def _build_cli() -> argparse.Namespace:
@@ -57,7 +39,7 @@ def _build_cli() -> argparse.Namespace:
         "--cleanup",
         dest="cleanup",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help="Delete generated artefacts when the case passes (default: true).",
     )
     parser.add_argument(
@@ -67,9 +49,6 @@ def _build_cli() -> argparse.Namespace:
         help="Verbosity level.",
     )
     return parser.parse_args()
-
-
-# ─────────────────────── Discovery / Validation Helpers ─────────────────────
 
 
 def _discover_cases(fixtures_root: Path) -> List[Path]:
@@ -99,9 +78,6 @@ def _override_ini(base_args: Dict, new_config: Path) -> Dict:
     return result
 
 
-# ───────────────────────── File-level Diff Functions ────────────────────────
-
-
 def _compare_json(expected: Path, actual: Path, rel: str) -> List[str]:
     with expected.open(encoding="utf-8") as f_exp, actual.open(encoding="utf-8") as f_act:
         exp_data = json.load(f_exp)
@@ -112,6 +88,8 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> List[str]:
     def _walk(old: Dict, new: Dict, path: str = "") -> None:
         for key in old:
             cur = f"{path}.{key}" if path else key
+            if key in IGNORE_KEYS or cur in IGNORE_KEYS:
+                continue
             if key not in new:
                 failures.append(f"{rel}:{cur} missing in actual")
             elif isinstance(old[key], dict) and isinstance(new[key], dict):
@@ -119,8 +97,10 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> List[str]:
             elif old[key] != new[key]:
                 failures.append(f"{rel}:{cur} expected {old[key]!r} got {new[key]!r}")
         for key in new:
+            cur = f"{path}.{key}" if path else key
+            if key in IGNORE_KEYS or cur in IGNORE_KEYS:
+                continue
             if key not in old:
-                cur = f"{path}.{key}" if path else key
                 failures.append(f"{rel}:{cur} extra in actual")
 
     _walk(exp_data, act_data)
@@ -156,32 +136,28 @@ def _diff_files(expected: Path, actual: Path, rel: str) -> List[str]:
     return _compare_binary(expected, actual, rel)
 
 
-# ──────────────────────────── Per-case Execution ────────────────────────────
-
-
 def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
     """Execute one regression case – return True if it passes."""
-    # LOGGER.info("▶  running case: %s", case_dir.name)
-    #
-    # # Mandatory inputs
-    config_path = _locate_single("*_config.ini", case_dir)
-    # mod_assumption_path = _locate_single("mod_formats.json", case_dir)
-    #
-    # start_ts = time.time()  # timestamp before simulation
-    #
-    # # Build args for this case and inject the custom mod_formats path
-    # args_for_case = _override_ini(base_args, config_path)
-    # sim_dict = read_config(args_dict=args_for_case, config_path=str(config_path))
-    #
-    # for thread_params in sim_dict.values():
-    #     thread_params["mod_assumption_path"] = str(mod_assumption_path)
-    #
-    # # Kick off the simulation (inherits cwd set to repo root)
-    # run_simulation(sims_dict=sim_dict)
-    # LOGGER.debug("simulation completed for %s", case_dir.name)
+    LOGGER.info("▶  running case: %s", case_dir.name)
 
-    # TODO: (version 5.5) Move to its own file
-    start_ts  = '10_38_16_959304'
+    # Mandatory inputs
+    config_path = _locate_single("*_config.ini", case_dir)
+    mod_assumption_path = _locate_single("mod_formats.json", case_dir)
+
+    start_ts = time.time()  # timestamp before simulation
+
+    # Build args for this case and inject the custom mod_formats path
+    args_for_case = _override_ini(base_args, config_path)
+    sim_dict = read_config(args_dict=args_for_case, config_path=str(config_path))
+
+    for thread_params in sim_dict.values():
+        thread_params["mod_assumption_path"] = str(mod_assumption_path)
+
+    # Kick off the simulation (inherits cwd set to repo root)
+    run_simulation(sims_dict=sim_dict)
+    LOGGER.debug("simulation completed for %s", case_dir.name)
+
+    # TODO: (version 5.5) Move to its own function
     # Locate the 's1' directory written by this run
     artefact_root = Path("data") / "output"
     output_dir = None
@@ -236,10 +212,7 @@ def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
     return True
 
 
-# ────────────────────────────────── MAIN ────────────────────────────────────
-
-
-def main() -> None:  # noqa: D401
+def main() -> None:
     """Entry-point."""
     cli = _build_cli()
 
