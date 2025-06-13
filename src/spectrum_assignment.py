@@ -3,9 +3,8 @@ from operator import itemgetter
 
 import numpy as np
 
-from helper_scripts.sim_helpers import get_path_mod_fixedgrid_slicing
-from helper_scripts.spectrum_helpers import SpectrumHelpers
 from arg_scripts.spectrum_args import SpectrumProps
+from helper_scripts.spectrum_helpers import SpectrumHelpers
 from src.snr_measurements import SnrMeasurements
 
 
@@ -154,7 +153,8 @@ class SpectrumAssignment:
                 self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
-                    if self.engine_props['snr_type'] == 'snr_e2e_external_resources':
+                    if (self.engine_props['cores_per_link'] in [13, 19] and
+                            self.engine_props['snr_type'] == 'snr_e2e_external_resources'):
                         if self._handle_snr_external(flag, open_slots_matrix):
                             return
 
@@ -180,7 +180,8 @@ class SpectrumAssignment:
                 self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
-                    if self.engine_props['snr_type'] == 'snr_e2e_external_resources':
+                    if (self.engine_props['cores_per_link'] in [13, 19] and
+                            self.engine_props['snr_type'] == 'snr_e2e_external_resources'):
                         if self._handle_snr_external(flag, open_slots_matrix):
                             return
 
@@ -297,7 +298,7 @@ class SpectrumAssignment:
             self.spectrum_props.block_reason = 'congestion'
             continue
 
-    def get_spectrum_dynamic_slicing(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None, path_len: int = None):  # pylint: disable=unused-argument
+    def get_spectrum_dynamic_slicing(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None):  # pylint: disable=unused-argument
         """
         Controls the class, attempts to find an available spectrum.
 
@@ -310,11 +311,7 @@ class SpectrumAssignment:
             self.spectrum_props.slots_needed = 1
             self._get_spectrum()
             if self.spectrum_props.is_free:
-                if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
-                else:
-                    mod_format, bandwidth = get_path_mod_fixedgrid_slicing(mods_dict = self.engine_props['mod_per_bw'], bw_mapping_dict = self.snr_obj.snr_props.bw_mapping_dict, path_len = path_len)
-                    snr_val = None
+                mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
                 if bandwidth == 0:
                     self.spectrum_props.is_free = False
                     self.sdn_props.block_reason = "xt_threshold"
@@ -324,7 +321,7 @@ class SpectrumAssignment:
                     self.spectrum_props.xt_cost = snr_val
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
-                    return mod_format, bandwidth
+                return mod_format, bandwidth
 
             mod_format, bandwidth = (False, False)
             return mod_format, bandwidth
