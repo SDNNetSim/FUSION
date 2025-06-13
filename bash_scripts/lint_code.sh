@@ -19,11 +19,26 @@ fi
 # Identify Python files, excluding specific files or directories
 echo "Identifying Python files..."
 
+IGNORE_DIRS=(
+  "./bash"
+  "./.venv"
+  "./docs"
+)
+
 # Add paths to ignore using -path and -prune (ONLY ONCE).
-PYTHON_FILES=$(find . \( \
-  -path ./bash\* -o \
-  -path ./.venv \
-\) -prune -o -name "*.py" -print)
+# Build find command with dynamic pruning
+FIND_CMD=(find .)
+
+# Start group for pruning
+FIND_CMD+=('(')
+for dir in "${IGNORE_DIRS[@]}"; do
+  FIND_CMD+=(-path "$dir" -o)
+done
+unset 'FIND_CMD[-1]'  # Remove the trailing -o
+FIND_CMD+=(')' -prune -o -name "*.py" -print)
+
+# Run find and capture results
+PYTHON_FILES=$("${FIND_CMD[@]}")
 
 # Debugging: Log all found Python files
 echo "Found Python files:"
