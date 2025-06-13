@@ -176,14 +176,14 @@ class SimulationThread(QtCore.QThread):
         """
         command = os.path.join(os.getcwd(), "run_sim.py")
 
-        self.simulation_process = subprocess.Popen(
-            args=[sys.executable, command],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-
-        self._run()
+        with subprocess.Popen(
+                args=[sys.executable, command],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+        ) as process:
+            self.simulation_process = process
+            self._run()
 
     def handle_process_state(self, process_state: QtCore.QProcess.ProcessState):
         """
