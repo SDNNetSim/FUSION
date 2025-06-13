@@ -81,7 +81,7 @@
                     },
                     "16-QAM": {
                         "mean": 0.04857142857142857,
-                        "std": 0.04452928410447605,
+                        "std": 0.04452928410447604,
                         "min": 0.0,
                         "max": 0.16
                     },
@@ -192,9 +192,9 @@
             "lengths_mean": 1288.43,
             "lengths_min": 100.0,
             "lengths_max": 5200.0,
-            "route_times_mean": 0.2,
-            "route_times_min": 0.17,
-            "route_times_max": 0.23,
+            "route_times_mean": 0.16,
+            "route_times_min": 0.12,
+            "route_times_max": 0.39,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -291,7 +291,7 @@
                     },
                     "64-QAM": {
                         "mean": 0.034,
-                        "std": 0.028809720581775868,
+                        "std": 0.02880972058177587,
                         "min": 0.0,
                         "max": 0.07
                     }
@@ -398,9 +398,9 @@
             "lengths_mean": 1292.41,
             "lengths_min": 100.0,
             "lengths_max": 4600.0,
-            "route_times_mean": 0.2,
-            "route_times_min": 0.17,
-            "route_times_max": 0.23,
+            "route_times_mean": 0.15,
+            "route_times_min": 0.12,
+            "route_times_max": 0.35,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
