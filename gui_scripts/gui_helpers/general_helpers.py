@@ -1,5 +1,7 @@
 # pylint: disable=c-extension-no-member
-
+# pylint: disable=invalid-name
+# pylint: disable=no-member
+# pylint: disable=super-with-arguments
 import os
 import signal
 import subprocess
@@ -8,6 +10,7 @@ import sys
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from gui_scripts.gui_args.config_args import SETTINGS_CONFIG_DICT
+
 
 
 class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
@@ -131,7 +134,7 @@ class SimulationThread(QtCore.QThread):
     output_hints_signal = QtCore.pyqtSignal(str)
 
     def __init__(self):
-        super(SimulationThread, self).__init__()  # pylint: disable=super-with-arguments
+        super(SimulationThread, self).__init__()
 
         self.simulation_process = None
         self.paused = False
@@ -141,23 +144,31 @@ class SimulationThread(QtCore.QThread):
 
     def _run(self):
         for output_line in self.simulation_process.stdout:
+            # Debug: print every output line
+            # print("SimulationThread received:", output_line.strip())
+
+            if output_line.startswith("PROGRESS:"):
+                try:
+                    progress_val = int(output_line.split(":", 1)[1].strip())
+                    # Debug print to confirm progress was parsed:
+                    #print("SimulationThread parsed progress:", progress_val)
+                    self.progress_changed.emit(progress_val)
+                except ValueError as e:
+                    print("Error parsing progress:", e)
+                continue  # Skip further processing of this line
+
             with QtCore.QMutexLocker(self.mutex):
                 if self.stopped:
                     break
-
                 while self.paused:
-                    self.pause_condition.wait(
-                        self.mutex
-                    )
-
+                    self.pause_condition.wait(self.mutex)
             self.output_hints_signal.emit(output_line)
 
         self.simulation_process.stdout.close()
         self.simulation_process.wait()
 
         self.finished_signal.emit('Simulation done')
-        self.output_hints_signal.emit(
-            'Done...cleaning up simulation from thread')
+        self.output_hints_signal.emit('Done...cleaning up simulation from thread')
 
     def run(self):
         """
@@ -165,16 +176,16 @@ class SimulationThread(QtCore.QThread):
         """
         command = os.path.join(os.getcwd(), "run_sim.py")
 
-        self.simulation_process = subprocess.Popen(  # pylint: disable=consider-using-with
-            args=[sys.executable, command],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
+        with subprocess.Popen(
+                args=[sys.executable, command],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+        ) as process:
+            self.simulation_process = process
+            self._run()
 
-        self._run()
-
-    def handle_process_state(self, process_state: QtCore.QProcess.ProcessState):  # pylint: disable=consider-using-with
+    def handle_process_state(self, process_state: QtCore.QProcess.ProcessState):
         """
         Starts or runs a specific process.
 
@@ -398,7 +409,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         """
         self.setRootIndex(self.model.index(self.model.rootPath()))
 
-    def mousePressEvent(self, event: QtGui.QMouseEvent):  # pylint: disable=invalid-name
+    def mousePressEvent(self, event: QtGui.QMouseEvent):
         """
         Overrides mousePressEvent in QTreeView for single click
 
@@ -410,7 +421,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
             self.setCurrentIndex(index)
         super().mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):  # pylint: disable=invalid-name
+    def mouseDoubleClickEvent(self, event):
         """
         Overrides mouseDoubleClickEvent in QTreeView for double-click
 
