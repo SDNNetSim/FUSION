@@ -6,6 +6,9 @@ from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from gui_scripts.main_window import MainWindow
 
+# TODO: (version 5.5-6) Buttons are small on high resolutions?
+# TODO: (version 5.5-6) Multi-threading for Erlangs is no longer functional
+
 if __name__ == '__main__':
     # Parse command-line arguments and configuration.
     args_dict = parse_args()
