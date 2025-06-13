@@ -1,3 +1,5 @@
+# TODO: (version 5.5-6) No longer supported, to be broken into a module based design
+
 import os
 
 import matplotlib.pyplot as plt
@@ -74,7 +76,7 @@ class PlotStats:
 
         plt.axhline(y=0.055, color='r', linestyle='--', linewidth=1.5, label='y=0.055')
 
-        plt.legend(['Epsilon Greedy', 'Thompson Sampling', 'Q-Learning', 'UCB', 'KSP-FF'])
+        plt.legend(['Here'])
         plt.xlim([-5, 199])
         self._save_plot(file_name=file_name)
         plt.show()
@@ -182,13 +184,14 @@ def main():
     """
     filter_dict = {
         'and_filter_list': [
+            # ['path_algorithm', 'ppo']
         ],
         'or_filter_list': [
-            ['sim_start', '17_07_02_823817'],
-            ['sim_start', '17_25_05_247014'],
-            ['sim_start', '17_53_02_873894'],
-            ['sim_start', '20_26_35_936142'],
-            ['sim_start', '11_19_35_314638'],
+            # ['sim_start', '17_07_02_823817'],
+            # ['sim_start', '17_25_05_247014'],
+            # ['sim_start', '17_53_02_873894'],
+            # ['sim_start', '20_26_35_936142'],
+            # ['sim_start', '11_19_35_314638'],
         ],
         'not_filter_list': [
             # ['max_segments', 4],
@@ -196,10 +199,11 @@ def main():
         ]
     }
 
-    sims_info_dict = find_times(dates_dict={'0624': 'NSFNet', '0625': 'NSFNet'}, filter_dict=filter_dict)
+    sims_info_dict = find_times(dates_dict={'0411': 'NSFNet'}, filter_dict=filter_dict)
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
-    plot_obj.plot_blocking(art_int=True)
+    # plot_obj.plot_blocking(art_int=True)
+    plot_obj.plot_path_length()
 
 
 if __name__ == '__main__':

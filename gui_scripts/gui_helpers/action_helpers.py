@@ -12,6 +12,8 @@ from gui_scripts.gui_helpers.general_helpers import SettingsDialog
 from data_scripts.structure_data import create_network
 
 
+# TODO: (version 5.5-6) We don't have to have modules end with the name "scripts"
+#   - Also, we don't need every file to end with "helpers"
 class NodeInfoDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
     """
     Displays individual node dialog.
@@ -226,12 +228,11 @@ class ActionHelpers:
             print(settings_dialog.get_settings())
 
     def _display_topology(self, net_name: str):
-        """
-        Displays a network topology.
-        """
+        # The new create network structure returns a tuple, we just care about the dictionary
         topology_information_dict, core_nodes_list = create_network(net_name=net_name) # pylint: disable=unused-variable
 
-        edge_list = [(src, des, {'weight': link_len}) for (src, des), link_len in topology_information_dict.items()] # pylint: disable=no-member
+        edge_list = [(src, des, {'weight': link_len}) for (src, des), link_len in
+                     topology_information_dict.items()]  # pylint: disable=no-member
         network_topo = nx.Graph(edge_list)
 
         pos = nx.spring_layout(network_topo, seed=5, scale=2.0)  # Adjust the scale as needed
@@ -251,7 +252,7 @@ class ActionHelpers:
 
     def display_topology(self):
         """
-        Selection for network topology.
+        Displays a network topology.
         """
         network_selection_dialog = QtWidgets.QDialog()
         network_selection_dialog.setSizeGripEnabled(True)

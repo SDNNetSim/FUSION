@@ -41,6 +41,17 @@ class SDNController:
                         self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
                         self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
 
+        try:
+            duration = self.sdn_props.depart - self.sdn_props.arrive  # seconds
+            bandwidth = int(self.sdn_props.bandwidth)  # Gbps
+            data_transferred = bandwidth * duration  # Gbps·s
+
+            for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
+                self.sdn_props.net_spec_dict[(source, dest)]['throughput'] += data_transferred
+                self.sdn_props.net_spec_dict[(dest, source)]['throughput'] += data_transferred
+        except (TypeError, ValueError) as e:
+            print(f"[WARNING] Throughput update skipped due to missing or invalid timing/bandwidth: {e}")
+
     def _allocate_gb(self, band: str, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int):
         if core_matrix[band][core_num][end_slot] != 0.0 or rev_core_matrix[band][core_num][end_slot] != 0.0:
             raise BufferError("Attempted to allocate a taken spectrum.")
@@ -67,6 +78,8 @@ class SDNController:
             link_dict = self.sdn_props.net_spec_dict[(link_tuple[0], link_tuple[1])]
             rev_link_dict = self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]
 
+
+
             tmp_set = set(link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
 
@@ -75,6 +88,9 @@ class SDNController:
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
+
+            self.sdn_props.net_spec_dict[link_tuple]['usage_count'] += 1
+            self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]['usage_count'] += 1
 
             core_matrix = link_dict['cores_matrix']
             rev_core_matrix = rev_link_dict['cores_matrix']
@@ -170,7 +186,8 @@ class SDNController:
         """
         remaining_bw = int(self.sdn_props.bandwidth)
         # TODO: Ignored?
-        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])  # pylint: disable=unused-variable
+        path_len = find_path_len(path_list=path_list, # pylint: disable=unused-variable
+                                 topology=self.engine_props['topology'])
         bw_mod_dict = sort_dict_keys(self.engine_props['mod_per_bw'])  # pylint: disable=unused-variable
 
         self.spectrum_obj.spectrum_props.path_list = path_list

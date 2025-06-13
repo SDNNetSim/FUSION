@@ -1,4 +1,4 @@
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, no-value-for-parameter, no-name-in-module
 
 import unittest
 import os
@@ -9,6 +9,8 @@ from unittest.mock import patch, mock_open, MagicMock
 import networkx as nx
 import numpy as np
 
+
+# TODO: (version 5.5-6) Fix all tests
 from helper_scripts.sim_helpers import (
     get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
     find_path_len, find_path_cong, find_free_slots,

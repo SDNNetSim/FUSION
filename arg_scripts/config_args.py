@@ -1,3 +1,5 @@
+# TODO: (version 5.5-6) Ensure all network files are documented
+
 import ast
 
 
@@ -13,11 +15,14 @@ def str_to_bool(string: str):
 
 
 SIM_REQUIRED_OPTIONS = {
+    # TODO: (version 5.5-6) double check and add all relevant parameters to an example.ini config
     'general_settings': {
+        'erlang_start': int,
+        'erlang_stop': int,
+        'erlang_step': int,
         'mod_assumption': str,
         'mod_assumption_path': str,
         'holding_time': float,
-        'erlangs': ast.literal_eval,
         'thread_erlangs': str_to_bool,
         'guard_slots': int,
         'num_requests': int,
@@ -93,10 +98,17 @@ OTHER_OPTIONS = {
     },
     'rl_settings': {
         'device': str,
+        'gnn_type': str,
+        'feature_extractor': str,
+        'layers': int,
+        'emb_dim': int,
+        'heads': int,
         'optimize': str_to_bool,
+        'optuna_trials': int,
         'optimize_hyperparameters': str_to_bool,
         'is_training': str_to_bool,
         'path_algorithm': str,
+        'obs_space': str,
         'path_model': str,
         'core_algorithm': str,
         'core_model': str,
@@ -106,7 +118,8 @@ OTHER_OPTIONS = {
         'alpha_update': str,
         'alpha_start': float,
         'alpha_end': float,
-        'discount_factor': float,
+        'gamma': float,
+        'conf_param': float,
         'epsilon_update': str,
         'epsilon_start': float,
         'epsilon_end': float,
@@ -117,6 +130,7 @@ OTHER_OPTIONS = {
         'core_beta': float,
         'decay_rate': float,
         'n_trials': int,
+        'cong_cutoff': float,
     },
     'ml_settings': {
         'output_train_data': str_to_bool,
@@ -127,17 +141,23 @@ OTHER_OPTIONS = {
         'test_size': float,
     },
     'file_settings': {
+        'run_id': str,
     },
 }
 
 COMMAND_LINE_PARAMS = [
+    ['erlang_start', float, ''],
+    ['erlang_stop', float, ''],
+    ['erlang_step', float, ''],
     ['mod_assumption', str, ''],
     ['n_trials', str, ''],
+    ['optuna_trials', int, ''],
     ['mod_assumption_path', str, ''],
     ['epsilon_start', float, ''],
     ['epsilon_end', float, ''],
     ['learn_rate', float, ''],
-    ['discount_factor', float, ''],
+    ['gamma', float, ''],
+    ['obs_space', str, ''],
     ['is_training', bool, ''],
     ['seeds', list, ''],
     ['beta', float, ''],
@@ -149,10 +169,10 @@ COMMAND_LINE_PARAMS = [
     ['bi_directional', bool, ''],
     ['xt_noise', bool, ''],
     ['requested_xt', dict, ''],
+    ['conf_param', float, ''],
     ['k_paths', int, ''],
     ['network', str, ''],
     ['holding_time', float, ''],
-    ['erlangs', dict, ''],
     ['thread_erlangs', bool, ''],
     ['num_requests', int, ''],
     ['max_iters', int, ''],
@@ -173,6 +193,7 @@ COMMAND_LINE_PARAMS = [
     ['arrival_rate', dict, ''],
     ['save_snapshots', bool, ''],
     ['xt_type', str, ''],
+    ['cong_cutoff', float, ''],
     ['snapshot_step', int, ''],
     ['print_step', int, ''],
     ['file_type', str, ''],
@@ -186,7 +207,11 @@ COMMAND_LINE_PARAMS = [
     ['path_algorithm', str, ''],
     ['core_algorithm', str, ''],
     ['spectrum_algorithm', str, ''],
-    ['optimize', str, ''],
+    ['gnn_type', str, ''],
+    ['layers', int, ''],
+    ['emb_dim', int, ''],
+    ['heads', int, ''],
+    ['feature_extractor', str, ''],
     ['optimize_hyperparameters', str, ''],
     ['reward', float, ''],
     ['penalty', float, ''],
@@ -198,7 +223,6 @@ COMMAND_LINE_PARAMS = [
     ['deploy_model', bool, ''],
     ['path_levels', int, ''],
     ['core_beta', float, ''],
-    ['gamma', float, ''],
     ['decay_factor', float, ''],
     ['dynamic_reward', bool, ''],
     ['config_path', str, ''],
@@ -214,7 +238,9 @@ COMMAND_LINE_PARAMS = [
     ['spectrum_priority', str, ''],
     ['save_step', int, ''],
     ['save_start_end_slots', bool, ''],
+    ['run_id', str, ''],
 
+    # TODO: (version 5.5-6) RLZoo3 will be removed
     # StableBaselines3 arguments
     ['algo', str, ''],
     ['env-id', str, ''],
