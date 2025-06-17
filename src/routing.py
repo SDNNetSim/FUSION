@@ -274,7 +274,7 @@ class Routing:
 
         # -------- 0 | gather k shortest‑length paths -------------------------
         # α can be set per‑experiment in your YAML / JSON config
-        alpha = float(self.engine_props.get("ca_alpha", 0.3))  # default 0.25
+        alpha = float(self.engine_props.get("ca_alpha", 0.2))  # default 0.25
         k = int(self.engine_props.get("k_paths"))  # unchanged
         paths_iter = nx.shortest_simple_paths(
             G=self.engine_props["topology"],

@@ -58,8 +58,8 @@ def plot_blocking_probabilities(
     ax.set_ylabel("Blocking Probability", fontsize=14, fontweight="bold")
     ax.set_title(title, fontsize=16, fontweight="bold")
     ax.set_yscale("log")
-    ax.set_ylim(10 ** -3.5, 10 ** -0.7)
-    ax.set_xlim(550, 1100)
+    ax.set_ylim(10 ** -4.5, 10 ** -0.9)
+    ax.set_xlim(50, 1000)
     ax.tick_params(labelsize=12)
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
