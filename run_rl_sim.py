@@ -85,14 +85,14 @@ def _write_bookkeeping_files(
         sys.exit(1 if had_error else 0)
 
 
-def run_rl_sim(input_dict: dict = None, is_testing: bool = False) -> None:
+def run_rl_sim(input_dict: dict = None, is_testing: bool = False, config_path: Path = None) -> None:
     """
     Main function orchestrating a single simulation run.
     """
     bk_args, remaining_argv = _extract_bookkeeping_flags()
     sys.argv = [sys.argv[0], *remaining_argv]
 
-    env, sim_dict, callback_list = create_environment()
+    env, sim_dict, callback_list = create_environment(config_path=config_path)
 
     # TODO: (version 6.0) Three or four different logged times!? Please fix!
     if input_dict is not None:

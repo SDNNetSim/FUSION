@@ -68,7 +68,6 @@ def _discover_cases(fixtures_root: Path) -> List[Path]:
         return [fixtures_root]  # ← always a list✅
 
     cases = sorted([p for p in fixtures_root.iterdir() if p.is_dir()])
-    cases = [cases[4]]
     if not cases:
         LOGGER.error("No cases found under %s", fixtures_root)
         sys.exit(2)
@@ -171,7 +170,7 @@ def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
     # Kick off the simulation (inherits cwd set to repo root)
     if case_dir.name in ('epsilon_greedy_bandit', 'ucb_bandit', 'ppo'):
         LOGGER.info("▶ Running a REINFORCEMENT LEARNING simulation.")
-        run_rl_simulation(input_dict=sim_dict, is_testing=True)
+        run_rl_simulation(input_dict=sim_dict, is_testing=True, config_path=config_path)
     else:
         LOGGER.info("▶ Running a VANILLA simulation.")
         run_simulation(sims_dict=sim_dict, stop_flag=multiprocessing.Event())
