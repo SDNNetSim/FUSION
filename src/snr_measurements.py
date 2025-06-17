@@ -460,9 +460,10 @@ class SnrMeasurements:
             L_eff = (1 - np.exp(-2 * self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3)) / (2 * self.snr_props.link_dict['attenuation'])
             L_eff_a = 1 / (2 * self.snr_props.link_dict['attenuation'])
 
-            self.channels_list = []
-            sum_phi = 0
+
             for _ in range(self.snr_props.num_span):
+                self.channels_list = []
+                sum_phi = 0
                 for slot_index in range(self.engine_props['c_band']):
                     curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix']['c']
                     req_id = curr_link[self.spectrum_props.core_num][slot_index]
@@ -536,101 +537,7 @@ class SnrMeasurements:
     
 
 
-    # def _compute_nli_mb(self, source, dest, P_total):
-    #     """
-    #         Computes the nonlinear interference GSNR (SNR_NLI) of single link using Eq. (3) in https://doi.org/10.1049/cp.2019.0892 .
 
-    #         :param source: Determines link start node.
-    #         :type source: str
-    #         :param dest: Determines link end node.
-    #         :type dest: str
-    #         :param P_total: Link's power profile.
-    #         :type P_total: float
-
-
-    #         :return: Inverse nonlinear SNR value of given link.
-    #         :rtype: float
-
-    #     """
-    #     f_c = (self.snr_props.link_dict['frequency_end_c'] + self.snr_props.link_dict['frequency_start_l'])/2 # (self.snr_props.link_dict['frequency_start_c'] + self.snr_props.link_dict['frequency_start_l'])/2
-    #     gamma = self.snr_props.link_dict['non_linearity']
-    #     alpha_i = self.snr_props.link_dict['attenuation']
-    #     alpha_bar_i = self.snr_props.link_dict['attenuation']
-    #     c_ri = self.snr_props.link_dict['raman_gain_slope']
-    #     beta_2 = self.snr_props.link_dict['gvd']
-    #     beta_3 = self.snr_props.link_dict['gvd_slope']
-    #     P_i = self.engine_props['input_power']
-    #     pi = np.pi
-    #     Bi = ((self.num_slots * self.engine_props['bw_per_slot'])) * 10 ** 9
-    #     f_i = self.snr_props.link_dict['frequency_start_' + self.spectrum_props.curr_band] + self.spectrum_props.start_slot * self.engine_props['bw_per_slot'] * 10 ** 9
-    #     f_i += (Bi / 2)
-    #     Ti = (alpha_i + alpha_bar_i - P_total * c_ri * (f_i-f_c))**2
-    #     Ai = alpha_i + alpha_bar_i
-    #     # phi_i = (1.5* pi ** 2) * (beta_2 + 2 * pi * beta_3 * (f_i-f_c)) 
-    #     phi_i = (1.5* pi ** 2) * (beta_2 + 2 * beta_3 * (f_i-f_c)) 
-    #     self.channels_list = []
-    #     spm = 0
-    #     xpm = 0
-    #     epsilon = 0.0001
-        
-    #     # for span_cnt in range(self.snr_props.num_span):
-
-    #     for band in self.engine_props['band_list']:
-    #         for slot_index in range(self.engine_props[band + '_band']):
-    #             curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band]
-    #             req_id = curr_link[self.spectrum_props.core_num][slot_index]
-
-    #             self.link_id = self.sdn_props.net_spec_dict[(source, dest)]['link_num']
-    #             self.snr_props.length = self.engine_props['topology_info']['links'][self.link_id]['span_length']
-    #             L = self.snr_props.length 
-    #             if (req_id > 0 and req_id not in self.channels_list) or (slot_index == self.spectrum_props.start_slot and band == self.spectrum_props.curr_band ):
-    #                 ch_k_mod = None
-    #                 if req_id > 0:
-    #                     for key, value in self.sdn_props.lightpath_status_dict.items():
-    #                         if req_id in value:
-    #                             ch_k_mod = value[req_id]['mod_format']
-
-    #                     B_k = len(np.where(req_id == curr_link[self.spectrum_props.core_num])[0])
-    #                     P_k = self.engine_props['input_power']
-    #                     self.channels_list.append(req_id)
-    #                 else:
-    #                     B_k = self.num_slots
-    #                 if  ch_k_mod is None and req_id >0:
-    #                     if req_id in self.sdn_props.lightpath_id_list:
-    #                         idx = self.sdn_props.lightpath_id_list.index(req_id)
-    #                         ch_k_mod = self.sdn_props.modulation_list[idx]
-    #                     else:
-    #                         raise NotImplementedError(f"Unexpected lightpath id: {req_id}")
-    #                 alpha_k = self.snr_props.link_dict['attenuation']
-    #                 alpha_bar_k = self.snr_props.link_dict['attenuation']
-    #                 B_k *= self.engine_props['bw_per_slot']
-    #                 f_k = self.snr_props.link_dict['frequency_start_' + band] + ((slot_index * self.engine_props['bw_per_slot']) + (B_k / 2)) * 10 ** 9
-    #                 B_k *= 10 ** 9
-                    
-    #                 if f_i == f_k:
-    #                     spm += (4 / 9) * ((pi * (gamma ** 2) * (self.snr_props.num_span ** (1+epsilon)) * (P_i ** 2)) / ((Bi ** 2) * phi_i * alpha_bar_i * (2 * alpha_i + alpha_bar_i) ) ) * (
-    #                         ((Ti - (alpha_i ** 2)) / alpha_i) * np.arcsinh((phi_i * (Bi ** 2)) / (pi * alpha_i)) +
-    #                         ((Ai ** 2 - Ti) / Ai) * np.arcsinh((phi_i * (Bi ** 2)) / (pi * Ai))
-    #                     )
-    #                 else:
-    #                     fk_fi = abs(f_k - f_i)
-    #                     Tk = (alpha_k + alpha_bar_k - P_total * c_ri * (f_k-f_c))**2
-    #                     Ak = alpha_k + alpha_bar_k
-    #                     n_tilde =  0 if self.snr_props.num_span == 1 else self.snr_props.num_span
-    #                     # phi_i_k = (-4 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k - 2 * f_c))
-    #                     phi_i_k = (-2 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k - 2 * f_c))
-    #                     phi = (-4 * pi**2 * (beta_2 + pi * beta_3 * (f_i + f_k - 2 * f_c)) ) * L
-    #                     xpm += (32 / 27) * (((gamma ** 2) * (P_k ** 2)) / B_k) * (
-    #                         ((self.snr_props.num_span + (5 / 6) * ( -1 * self.engine_props['phi'][ch_k_mod])) / (phi_i_k * alpha_bar_k * (2 * alpha_k + alpha_bar_k))) * (
-    #                             ((Tk - (alpha_k ** 2)) / alpha_k) * np.arctan((phi_i_k * Bi) / alpha_k) +
-    #                             (((Ak ** 2) - Tk) / Ak) * np.arctan((phi_i_k * Bi) / Ak)
-    #                         ) +
-    #                         (5 / 3) * ((-1 * self.engine_props['phi'][ch_k_mod] * pi * n_tilde * Tk) / (abs(phi) * (B_k ** 2) * (alpha_k ** 2) * (Ak ** 2))) * (
-    #                             (2 * fk_fi - B_k) * math.log((2 * fk_fi - B_k) / (2 * fk_fi + B_k)) + 2 * B_k
-    #                         )
-    #                     )
-    #     snr_nli_inv = spm + xpm
-    #     return snr_nli_inv
     
     def _compute_nli_mb(self, source, dest, P_total):
         """
@@ -662,14 +569,13 @@ class SnrMeasurements:
         f_i += (Bi / 2)
         Ti = (alpha_i + alpha_bar_i - P_total * c_ri * (f_i-f_c))**2
         Ai = alpha_i + alpha_bar_i
-        # phi_i = (1.5* pi ** 2) * (beta_2 + 2 * pi * beta_3 * (f_i-f_c)) 
         phi_i = (1.5* pi ** 2) * (beta_2 + 2 * beta_3 * (f_i-f_c)) 
         self.channels_list = []
         spm = 0
         xpm = 0
         epsilon = 0.0001
         
-        # for span_cnt in range(self.snr_props.num_span):
+        
 
         for band in self.engine_props['band_list']:
             for slot_index in range(self.engine_props[band + '_band']):
@@ -714,7 +620,6 @@ class SnrMeasurements:
                         Ak = alpha_k + alpha_bar_k
                         n_tilde =  0 if self.snr_props.num_span == 1 else self.snr_props.num_span
                         phi_i_k = (-4 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k - 2 * f_c))
-                        # phi_i_k = (-2 * pi**2 * (f_k - f_i)) * (beta_2 + pi * beta_3 *(f_i + f_k ))
                         phi = (-4 * pi**2 * (beta_2 + pi * beta_3 * (f_i + f_k )) ) * L
                         xpm += (32 / 27) * (((gamma ** 2) * (P_k ** 2)) / B_k) * (
                             ((self.snr_props.num_span + (5 / 6) * ( -1 * self.engine_props['phi'][ch_k_mod])) / (phi_i_k * alpha_bar_k * (2 * alpha_k + alpha_bar_k))) * (
@@ -818,61 +723,6 @@ class SnrMeasurements:
         snr_lp_inv += (snr_nli_inv + snr_ase_inv)
 
         gsnr = 1 / snr_lp_inv 
-
-
-        """ 
-        if self.sdn_props.req_id == 161:
-            gsnr_data ={'gsnr':{},'ase':{},'nli':{}, 'ase_profile':{}}
-            for band2 in self.engine_props['band_list']:
-                gsnr_data['gsnr'][band2] = {}
-                gsnr_data['ase'][band2] = {}
-                gsnr_data['nli'][band2] = {}
-                gsnr_data['ase_profile'][band2] = {}
-                for slot in range(0, 480, 10):
-                    self.spectrum_props.start_slot = slot
-                    self.spectrum_props.end_slot = slot+9
-                    self.spectrum_props.curr_band = band2
-                    snr_nli_inv = 0.0
-                    snr_ase_inv = 0.0
-                    snr_lp_inv = 0.0
-                    for link_num in range(0, len(self.spectrum_props.path_list) - 1):
-                        source = self.spectrum_props.path_list[link_num]
-                        dest = self.spectrum_props.path_list[link_num + 1] 
-                        self.link_id = self.sdn_props.net_spec_dict[(source, dest)]['link_num']
-                        self.snr_props.link_dict = self.engine_props['topology_info']['links'][self.link_id]['fiber']
-                        self.snr_props.length = self.engine_props['topology_info']['links'][self.link_id]['span_length']
-                        self.snr_props.num_span = 2 # math.ceil(self.engine_props['topology_info']['links'][self.link_id]['length'] / self.snr_props.length)
-                        # TODO: double-check: started from 1 (including arriving request)
-                        P_total = 1
-                        number_lp = set()
-                        for band in self.engine_props['band_list']:
-                            for slot_index in range(self.engine_props[band + '_band']):
-                                curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band]
-                                number_lp.update(np.unique(curr_link[curr_link > 0]))
-                        
-                        # TODO: double-check P_total calcualtion
-                        P_total += len(number_lp) 
-                        P_total *= self.engine_props['input_power']
-                        snr_nli_inv_l = self._compute_nli_mb(source, dest, P_total)
-                        snr_ase_inv_l, f_i, P_profile  = self._compute_ase_mb(source, dest, P_total)
-                        snr_nli_inv += snr_nli_inv_l
-                        snr_ase_inv += snr_ase_inv_l
-                    snr_lp_inv += (snr_nli_inv + snr_ase_inv)
-
-                    gsnr = 1 / snr_lp_inv 
-
-
-                    gsnr_data['gsnr'][band2][slot] = {f_i: 10*np.log10(gsnr)}
-                    gsnr_data['ase'][band2][slot] = {f_i: 10*np.log10(snr_ase_inv * self.engine_props['input_power'])}
-                    gsnr_data['nli'][band2][slot] = {f_i: 10*np.log10(snr_nli_inv * self.engine_props['input_power'])}
-                    gsnr_data['ase_profile'][band2][slot] = {f_i: 10*np.log10(P_profile*1000)}
-            import json
-            with open("gsnr_data_70_cl_fixed_2span_64.json", "w") as json_file:
-                json.dump(gsnr_data, json_file, indent=4)
-        
-        
-        """
-
 
 
         return gsnr
