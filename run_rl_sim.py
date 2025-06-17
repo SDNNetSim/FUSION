@@ -26,6 +26,7 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 # TODO: (base_agent) Fix load_model function to prevent file_prefix error
 #       outside of training
 # TODO: Add this to a helper or utils script
+# TODO: Run multiple erlangs support
 def json_friendly(d: dict) -> dict:
     """
     Recursively strip unserializable values from a dict.

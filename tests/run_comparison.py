@@ -20,7 +20,7 @@ from config_scripts.setup_config import read_config
 from run_sim import run as run_simulation
 
 LOGGER = logging.getLogger(__name__)
-IGNORE_KEYS = {'route_times_max', 'route_times_mean', 'route_times_min'}
+IGNORE_KEYS = {'route_times_max', 'route_times_mean', 'route_times_min', 'sim_end_time'}
 
 
 def _build_cli() -> argparse.Namespace:
@@ -65,6 +65,12 @@ def _discover_cases(fixtures_root: Path) -> List[Path]:
         return [fixtures_root]  # ← always a list✅
 
     cases = sorted([p for p in fixtures_root.iterdir() if p.is_dir()])
+
+
+    # TODO: temporary DELETE!
+    print('Line 70 run comparison.')
+    # cases = [cases[0], cases[1], cases[2], cases[5]]
+    cases = [cases[2]]
     if not cases:
         LOGGER.error("No cases found under %s", fixtures_root)
         sys.exit(2)

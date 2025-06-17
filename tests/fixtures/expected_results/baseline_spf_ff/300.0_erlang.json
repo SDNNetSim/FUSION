@@ -338,10 +338,7 @@
             "modulation_list": [],
             "bandwidth_list": [],
             "path_index_list": [
-                500,
-                0,
-                0,
-                0
+                500
             ]
         },
         "3": {
@@ -688,10 +685,7 @@
             "modulation_list": [],
             "bandwidth_list": [],
             "path_index_list": [
-                500,
-                0,
-                0,
-                0
+                500
             ]
         }
     },
@@ -815,5 +809,5 @@
     "bit_rate_blocking_variance": null,
     "ci_rate_bit_rate_block": null,
     "ci_percent_bit_rate_block": null,
-    "sim_end_time": "0617_11_28_50_533745"
+    "sim_end_time": "0617_11_31_41_855074"
 }

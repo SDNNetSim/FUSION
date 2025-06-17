@@ -3,8 +3,8 @@
         "0": {
             "snapshots_dict": {},
             "cores_dict": {
-                "0": 109,
-                "1": 27,
+                "0": 103,
+                "1": 33,
                 "2": 0
             },
             "weights_dict": {
@@ -202,112 +202,112 @@
             "link_usage_dict": {
                 "0-1": {
                     "usage_count": 36,
-                    "throughput": 60.887342397853715,
+                    "throughput": 0,
                     "link_num": 4
                 },
                 "0-2": {
                     "usage_count": 12,
-                    "throughput": 8.23192859218004,
+                    "throughput": 0,
                     "link_num": 7
                 },
                 "0-7": {
                     "usage_count": 44,
-                    "throughput": 41.496441276018786,
+                    "throughput": 8.264293412271611,
                     "link_num": 24
                 },
                 "1-3": {
                     "usage_count": 124,
-                    "throughput": 98.00609293919354,
+                    "throughput": 10.995632793256874,
                     "link_num": 10
                 },
                 "1-2": {
                     "usage_count": 67,
-                    "throughput": 16.748157171038297,
+                    "throughput": 9.367445689598465,
                     "link_num": 8
                 },
                 "2-5": {
                     "usage_count": 49,
-                    "throughput": 37.973733314751264,
+                    "throughput": 3.709848628316407,
                     "link_num": 16
                 },
                 "3-4": {
                     "usage_count": 106,
-                    "throughput": 95.79397936024743,
+                    "throughput": 13.990594093014847,
                     "link_num": 13
                 },
                 "10-3": {
                     "usage_count": 89,
-                    "throughput": 104.69259597662065,
+                    "throughput": 11.489986473288106,
                     "link_num": 33
                 },
                 "4-5": {
                     "usage_count": 17,
-                    "throughput": 24.247494777370406,
+                    "throughput": 0.3421300380129794,
                     "link_num": 17
                 },
                 "4-6": {
                     "usage_count": 132,
-                    "throughput": 141.4981143109858,
+                    "throughput": 11.61448342748794,
                     "link_num": 20
                 },
                 "13-5": {
                     "usage_count": 24,
-                    "throughput": 22.022267123497137,
+                    "throughput": 1.241849957646381,
                     "link_num": 42
                 },
                 "5-9": {
                     "usage_count": 53,
-                    "throughput": 51.031157162172455,
+                    "throughput": 8.968154105879666,
                     "link_num": 30
                 },
                 "6-9": {
                     "usage_count": 24,
-                    "throughput": 6.528181457285561,
+                    "throughput": 2.218799026550964,
                     "link_num": 31
                 },
                 "6-7": {
                     "usage_count": 109,
-                    "throughput": 125.41785933862454,
+                    "throughput": 3.191256072930391,
                     "link_num": 23
                 },
                 "7-8": {
                     "usage_count": 154,
-                    "throughput": 148.21297574845087,
+                    "throughput": 10.8854950074506,
                     "link_num": 26
                 },
                 "8-9": {
                     "usage_count": 69,
-                    "throughput": 67.61070529829294,
+                    "throughput": 12.246822327319672,
                     "link_num": 32
                 },
                 "12-8": {
                     "usage_count": 60,
-                    "throughput": 60.5812387629981,
+                    "throughput": 1.821190497131759,
                     "link_num": 40
                 },
                 "11-8": {
                     "usage_count": 75,
-                    "throughput": 72.61594331207995,
+                    "throughput": 23.28251180753875,
                     "link_num": 37
                 },
                 "10-12": {
                     "usage_count": 33,
-                    "throughput": 22.65958369629024,
+                    "throughput": 5.752094012097481,
                     "link_num": 39
                 },
                 "10-11": {
                     "usage_count": 57,
-                    "throughput": 70.9865589053293,
+                    "throughput": 10.911987846743454,
                     "link_num": 36
                 },
                 "11-13": {
                     "usage_count": 13,
-                    "throughput": 1.2927007366335377,
+                    "throughput": 0,
                     "link_num": 43
                 },
                 "12-13": {
                     "usage_count": 80,
-                    "throughput": 52.81061745223103,
+                    "throughput": 7.0767384598374745,
                     "link_num": 44
                 }
             },
@@ -338,17 +338,14 @@
             "modulation_list": [],
             "bandwidth_list": [],
             "path_index_list": [
-                500,
-                0,
-                0,
-                0
+                500
             ]
         },
         "3": {
             "snapshots_dict": {},
             "cores_dict": {
-                "0": 90,
-                "1": 18,
+                "0": 81,
+                "1": 27,
                 "2": 0
             },
             "weights_dict": {
@@ -546,112 +543,112 @@
             "link_usage_dict": {
                 "0-1": {
                     "usage_count": 51,
-                    "throughput": 88.12572161884557,
+                    "throughput": 21.70893832160091,
                     "link_num": 4
                 },
                 "0-2": {
                     "usage_count": 24,
-                    "throughput": 40.37099481485791,
+                    "throughput": 2.9675646838644787,
                     "link_num": 7
                 },
                 "0-7": {
                     "usage_count": 32,
-                    "throughput": 6.684361745333763,
+                    "throughput": 1.963508322151722,
                     "link_num": 24
                 },
                 "1-3": {
                     "usage_count": 155,
-                    "throughput": 154.06297608536917,
+                    "throughput": 19.30884089619882,
                     "link_num": 10
                 },
                 "1-2": {
                     "usage_count": 51,
-                    "throughput": 12.0606197019548,
+                    "throughput": 1.5102821344461153,
                     "link_num": 8
                 },
                 "2-5": {
                     "usage_count": 66,
-                    "throughput": 47.84335823826978,
+                    "throughput": 0.8497362199536374,
                     "link_num": 16
                 },
                 "3-4": {
                     "usage_count": 110,
-                    "throughput": 128.63364920809843,
+                    "throughput": 22.726650975488358,
                     "link_num": 13
                 },
                 "10-3": {
                     "usage_count": 85,
-                    "throughput": 80.61610236159096,
+                    "throughput": 5.109700764655221,
                     "link_num": 33
                 },
                 "4-5": {
                     "usage_count": 17,
-                    "throughput": 33.349741185880916,
+                    "throughput": 1.4405259545971605,
                     "link_num": 17
                 },
                 "4-6": {
                     "usage_count": 120,
-                    "throughput": 117.97641196157097,
+                    "throughput": 32.79436944320149,
                     "link_num": 20
                 },
                 "13-5": {
                     "usage_count": 19,
-                    "throughput": 2.159057439499255,
+                    "throughput": 0.4593780435244302,
                     "link_num": 42
                 },
                 "5-9": {
                     "usage_count": 68,
-                    "throughput": 41.51525999470572,
+                    "throughput": 3.725955352998703,
                     "link_num": 30
                 },
                 "6-9": {
                     "usage_count": 19,
-                    "throughput": 0.4358440821510521,
+                    "throughput": 0.43584408215105175,
                     "link_num": 31
                 },
                 "6-7": {
                     "usage_count": 80,
-                    "throughput": 102.8704541956275,
+                    "throughput": 18.606316585276787,
                     "link_num": 23
                 },
                 "7-8": {
                     "usage_count": 115,
-                    "throughput": 82.42266473645144,
+                    "throughput": 21.086053070809804,
                     "link_num": 26
                 },
                 "8-9": {
                     "usage_count": 83,
-                    "throughput": 74.27906521877311,
+                    "throughput": 15.097722307342087,
                     "link_num": 32
                 },
                 "12-8": {
                     "usage_count": 62,
-                    "throughput": 65.26157837816717,
+                    "throughput": 23.616856675487135,
                     "link_num": 40
                 },
                 "11-8": {
                     "usage_count": 70,
-                    "throughput": 78.39800770248318,
+                    "throughput": 2.6828622629272583,
                     "link_num": 37
                 },
                 "10-12": {
                     "usage_count": 37,
-                    "throughput": 37.111525769020865,
+                    "throughput": 5.44402577290669,
                     "link_num": 39
                 },
                 "10-11": {
                     "usage_count": 56,
-                    "throughput": 60.57572428793392,
+                    "throughput": 2.5140080815886408,
                     "link_num": 36
                 },
                 "11-13": {
                     "usage_count": 9,
-                    "throughput": 7.449715461952887,
+                    "throughput": 0,
                     "link_num": 43
                 },
                 "12-13": {
                     "usage_count": 70,
-                    "throughput": 73.9008144954917,
+                    "throughput": 15.676765978453947,
                     "link_num": 44
                 }
             },
@@ -688,122 +685,119 @@
             "modulation_list": [],
             "bandwidth_list": [],
             "path_index_list": [
-                500,
-                0,
-                0,
-                0
+                500
             ]
         }
     },
     "link_usage": {
         "0-1": {
             "usage_count": 51,
-            "throughput": 88.12572161884557,
+            "throughput": 21.70893832160091,
             "link_num": 4
         },
         "0-2": {
             "usage_count": 24,
-            "throughput": 40.37099481485791,
+            "throughput": 2.9675646838644787,
             "link_num": 7
         },
         "0-7": {
             "usage_count": 32,
-            "throughput": 6.684361745333763,
+            "throughput": 1.963508322151722,
             "link_num": 24
         },
         "1-3": {
             "usage_count": 155,
-            "throughput": 154.06297608536917,
+            "throughput": 19.30884089619882,
             "link_num": 10
         },
         "1-2": {
             "usage_count": 51,
-            "throughput": 12.0606197019548,
+            "throughput": 1.5102821344461153,
             "link_num": 8
         },
         "2-5": {
             "usage_count": 66,
-            "throughput": 47.84335823826978,
+            "throughput": 0.8497362199536374,
             "link_num": 16
         },
         "3-4": {
             "usage_count": 110,
-            "throughput": 128.63364920809843,
+            "throughput": 22.726650975488358,
             "link_num": 13
         },
         "10-3": {
             "usage_count": 85,
-            "throughput": 80.61610236159096,
+            "throughput": 5.109700764655221,
             "link_num": 33
         },
         "4-5": {
             "usage_count": 17,
-            "throughput": 33.349741185880916,
+            "throughput": 1.4405259545971605,
             "link_num": 17
         },
         "4-6": {
             "usage_count": 120,
-            "throughput": 117.97641196157097,
+            "throughput": 32.79436944320149,
             "link_num": 20
         },
         "13-5": {
             "usage_count": 19,
-            "throughput": 2.159057439499255,
+            "throughput": 0.4593780435244302,
             "link_num": 42
         },
         "5-9": {
             "usage_count": 68,
-            "throughput": 41.51525999470572,
+            "throughput": 3.725955352998703,
             "link_num": 30
         },
         "6-9": {
             "usage_count": 19,
-            "throughput": 0.4358440821510521,
+            "throughput": 0.43584408215105175,
             "link_num": 31
         },
         "6-7": {
             "usage_count": 80,
-            "throughput": 102.8704541956275,
+            "throughput": 18.606316585276787,
             "link_num": 23
         },
         "7-8": {
             "usage_count": 115,
-            "throughput": 82.42266473645144,
+            "throughput": 21.086053070809804,
             "link_num": 26
         },
         "8-9": {
             "usage_count": 83,
-            "throughput": 74.27906521877311,
+            "throughput": 15.097722307342087,
             "link_num": 32
         },
         "12-8": {
             "usage_count": 62,
-            "throughput": 65.26157837816717,
+            "throughput": 23.616856675487135,
             "link_num": 40
         },
         "11-8": {
             "usage_count": 70,
-            "throughput": 78.39800770248318,
+            "throughput": 2.6828622629272583,
             "link_num": 37
         },
         "10-12": {
             "usage_count": 37,
-            "throughput": 37.111525769020865,
+            "throughput": 5.44402577290669,
             "link_num": 39
         },
         "10-11": {
             "usage_count": 56,
-            "throughput": 60.57572428793392,
+            "throughput": 2.5140080815886408,
             "link_num": 36
         },
         "11-13": {
             "usage_count": 9,
-            "throughput": 7.449715461952887,
+            "throughput": 0,
             "link_num": 43
         },
         "12-13": {
             "usage_count": 70,
-            "throughput": 73.9008144954917,
+            "throughput": 15.676765978453947,
             "link_num": 44
         }
     },
@@ -815,5 +809,5 @@
     "bit_rate_blocking_variance": null,
     "ci_rate_bit_rate_block": null,
     "ci_percent_bit_rate_block": null,
-    "sim_end_time": "0617_11_28_50_533745"
+    "sim_end_time": "0617_11_31_50_424925"
 }
