@@ -68,12 +68,7 @@ def _discover_cases(fixtures_root: Path) -> List[Path]:
         return [fixtures_root]  # ← always a list✅
 
     cases = sorted([p for p in fixtures_root.iterdir() if p.is_dir()])
-
-
-    # TODO: temporary DELETE!
-    print('Line 70 run comparison.')
-    # cases = [cases[0], cases[1], cases[2], cases[5]]
-    cases = [cases[5]]
+    cases = [cases[2]]
     if not cases:
         LOGGER.error("No cases found under %s", fixtures_root)
         sys.exit(2)
