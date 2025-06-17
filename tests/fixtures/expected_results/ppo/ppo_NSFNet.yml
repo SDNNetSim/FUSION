@@ -11,11 +11,11 @@ SimEnv:
   clip_range: 0.12
   clip_range_vf: 0.19
   normalize_advantage: true
-  ent_coef: 0.03
+  ent_coef: 0.0                # Updated: Remove entropy-based exploration
   vf_coef: 0.96
   max_grad_norm: 0.64
   use_sde: false
-  sde_sample_freq: 2
+  sde_sample_freq: 0           # Updated: Disable SDE resampling
   rollout_buffer_class: null
   rollout_buffer_kwargs: null
   target_kl: null
@@ -29,3 +29,5 @@ SimEnv:
   verbose: 0
   device: cuda
   _init_setup_model: true
+  seed: 0                      # Added: Fixed seed for reproducibility
+  torch_deterministic: true   # Added: Force deterministic PyTorch ops
