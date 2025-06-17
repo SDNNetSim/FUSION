@@ -1,0 +1,831 @@
+{
+    "iter_stats": {
+        "0": {
+            "snapshots_dict": {},
+            "cores_dict": {
+                "0": 139,
+                "1": 113,
+                "2": 52
+            },
+            "weights_dict": {
+                "25": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "50": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "100": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "200": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "400": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                }
+            },
+            "mods_used_dict": {
+                "25": {
+                    "QPSK": 0,
+                    "16-QAM": 6,
+                    "64-QAM": 94
+                },
+                "QPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        },
+                        "c": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        }
+                    },
+                    "c": 544
+                },
+                "16-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        },
+                        "c": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        }
+                    },
+                    "c": 316
+                },
+                "64-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        },
+                        "c": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        }
+                    },
+                    "c": 256
+                },
+                "50": {
+                    "QPSK": 1,
+                    "16-QAM": 85,
+                    "64-QAM": 56
+                },
+                "100": {
+                    "QPSK": 328,
+                    "16-QAM": 183,
+                    "64-QAM": 86
+                },
+                "200": {
+                    "QPSK": 187,
+                    "16-QAM": 36,
+                    "64-QAM": 18
+                },
+                "400": {
+                    "QPSK": 28,
+                    "16-QAM": 6,
+                    "64-QAM": 2
+                }
+            },
+            "block_bw_dict": {
+                "25": 0,
+                "50": 0,
+                "100": 56,
+                "200": 0,
+                "400": 0
+            },
+            "block_reasons_dict": {
+                "distance": 1.0,
+                "congestion": 0.0,
+                "xt_threshold": 0.0
+            },
+            "link_usage_dict": {
+                "0-1": {
+                    "usage_count": 69,
+                    "throughput": 170.3050443421302,
+                    "link_num": 4
+                },
+                "0-2": {
+                    "usage_count": 34,
+                    "throughput": 53.98843784524426,
+                    "link_num": 7
+                },
+                "0-7": {
+                    "usage_count": 86,
+                    "throughput": 219.39000340326797,
+                    "link_num": 24
+                },
+                "1-3": {
+                    "usage_count": 269,
+                    "throughput": 582.0020907065337,
+                    "link_num": 10
+                },
+                "1-2": {
+                    "usage_count": 84,
+                    "throughput": 147.6496569110506,
+                    "link_num": 8
+                },
+                "2-5": {
+                    "usage_count": 115,
+                    "throughput": 68.1811078871928,
+                    "link_num": 16
+                },
+                "3-4": {
+                    "usage_count": 221,
+                    "throughput": 816.0946187049196,
+                    "link_num": 13
+                },
+                "10-3": {
+                    "usage_count": 166,
+                    "throughput": 211.7577686343519,
+                    "link_num": 33
+                },
+                "4-5": {
+                    "usage_count": 43,
+                    "throughput": 52.08348465371639,
+                    "link_num": 17
+                },
+                "4-6": {
+                    "usage_count": 244,
+                    "throughput": 1306.3405144900896,
+                    "link_num": 20
+                },
+                "13-5": {
+                    "usage_count": 46,
+                    "throughput": 57.167522292383474,
+                    "link_num": 42
+                },
+                "5-9": {
+                    "usage_count": 110,
+                    "throughput": 105.5991593536332,
+                    "link_num": 30
+                },
+                "6-9": {
+                    "usage_count": 62,
+                    "throughput": 109.58867613850511,
+                    "link_num": 31
+                },
+                "6-7": {
+                    "usage_count": 209,
+                    "throughput": 1688.944298862806,
+                    "link_num": 23
+                },
+                "7-8": {
+                    "usage_count": 278,
+                    "throughput": 1988.2524336373965,
+                    "link_num": 26
+                },
+                "8-9": {
+                    "usage_count": 169,
+                    "throughput": 360.5313256973522,
+                    "link_num": 32
+                },
+                "12-8": {
+                    "usage_count": 169,
+                    "throughput": 803.1830935711523,
+                    "link_num": 40
+                },
+                "11-8": {
+                    "usage_count": 174,
+                    "throughput": 585.508172657876,
+                    "link_num": 37
+                },
+                "10-12": {
+                    "usage_count": 76,
+                    "throughput": 106.0574036869799,
+                    "link_num": 39
+                },
+                "10-11": {
+                    "usage_count": 119,
+                    "throughput": 525.1336479882603,
+                    "link_num": 36
+                },
+                "11-13": {
+                    "usage_count": 46,
+                    "throughput": 234.04469535074327,
+                    "link_num": 43
+                },
+                "12-13": {
+                    "usage_count": 155,
+                    "throughput": 486.80947480511867,
+                    "link_num": 44
+                }
+            },
+            "sim_block_list": [
+                0.056
+            ],
+            "sim_br_block_list": [
+                0.04072727272727273
+            ],
+            "trans_mean": 1.18,
+            "trans_min": 1.18,
+            "trans_max": 1.18,
+            "hops_mean": 2.46,
+            "hops_min": 1.0,
+            "hops_max": 7.0,
+            "lengths_mean": 1976.27,
+            "lengths_min": 100.0,
+            "lengths_max": 5300.0,
+            "route_times_mean": 0.0,
+            "route_times_min": 0.0,
+            "route_times_max": 0.0,
+            "xt_mean": null,
+            "xt_min": null,
+            "xt_max": null,
+            "bands_list": [],
+            "start_slot_list": [],
+            "end_slot_list": [],
+            "modulation_list": [],
+            "bandwidth_list": [],
+            "path_index_list": [
+                944,
+                0,
+                0,
+                0
+            ]
+        },
+        "9": {
+            "snapshots_dict": {},
+            "cores_dict": {
+                "0": 143,
+                "1": 94,
+                "2": 43
+            },
+            "weights_dict": {
+                "25": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "50": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "100": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "200": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                },
+                "400": {
+                    "QPSK": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "16-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    },
+                    "64-QAM": {
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "max": 0.0
+                    }
+                }
+            },
+            "mods_used_dict": {
+                "25": {
+                    "QPSK": 0,
+                    "16-QAM": 4,
+                    "64-QAM": 96
+                },
+                "QPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        },
+                        "c": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        }
+                    },
+                    "c": 560
+                },
+                "16-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        },
+                        "c": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        }
+                    },
+                    "c": 339
+                },
+                "64-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        },
+                        "c": {
+                            "mean": 0.0,
+                            "std": 0.0,
+                            "min": 0.0,
+                            "max": 0.0
+                        }
+                    },
+                    "c": 251
+                },
+                "50": {
+                    "QPSK": 0,
+                    "16-QAM": 77,
+                    "64-QAM": 49
+                },
+                "100": {
+                    "QPSK": 348,
+                    "16-QAM": 213,
+                    "64-QAM": 86
+                },
+                "200": {
+                    "QPSK": 184,
+                    "16-QAM": 38,
+                    "64-QAM": 18
+                },
+                "400": {
+                    "QPSK": 28,
+                    "16-QAM": 7,
+                    "64-QAM": 2
+                }
+            },
+            "block_bw_dict": {
+                "25": 0,
+                "50": 0,
+                "100": 12,
+                "200": 0,
+                "400": 0
+            },
+            "block_reasons_dict": {
+                "distance": 1.0,
+                "congestion": 0.0,
+                "xt_threshold": 0.0
+            },
+            "link_usage_dict": {
+                "0-1": {
+                    "usage_count": 79,
+                    "throughput": 96.85156385537812,
+                    "link_num": 4
+                },
+                "0-2": {
+                    "usage_count": 33,
+                    "throughput": 7.15530510610477,
+                    "link_num": 7
+                },
+                "0-7": {
+                    "usage_count": 83,
+                    "throughput": 50.33772069348957,
+                    "link_num": 24
+                },
+                "1-3": {
+                    "usage_count": 283,
+                    "throughput": 287.47439438129345,
+                    "link_num": 10
+                },
+                "1-2": {
+                    "usage_count": 89,
+                    "throughput": 99.87875612660719,
+                    "link_num": 8
+                },
+                "2-5": {
+                    "usage_count": 116,
+                    "throughput": 68.1811078871928,
+                    "link_num": 16
+                },
+                "3-4": {
+                    "usage_count": 220,
+                    "throughput": 507.32201913276907,
+                    "link_num": 13
+                },
+                "10-3": {
+                    "usage_count": 192,
+                    "throughput": 312.19960274278617,
+                    "link_num": 33
+                },
+                "4-5": {
+                    "usage_count": 45,
+                    "throughput": 52.08348465371639,
+                    "link_num": 17
+                },
+                "4-6": {
+                    "usage_count": 242,
+                    "throughput": 550.217216490632,
+                    "link_num": 20
+                },
+                "13-5": {
+                    "usage_count": 43,
+                    "throughput": 34.279609660181805,
+                    "link_num": 42
+                },
+                "5-9": {
+                    "usage_count": 108,
+                    "throughput": 82.05602586277067,
+                    "link_num": 30
+                },
+                "6-9": {
+                    "usage_count": 68,
+                    "throughput": 81.37513238066725,
+                    "link_num": 31
+                },
+                "6-7": {
+                    "usage_count": 191,
+                    "throughput": 505.2892481168891,
+                    "link_num": 23
+                },
+                "7-8": {
+                    "usage_count": 255,
+                    "throughput": 444.6555364805457,
+                    "link_num": 26
+                },
+                "8-9": {
+                    "usage_count": 171,
+                    "throughput": 152.68604218247546,
+                    "link_num": 32
+                },
+                "12-8": {
+                    "usage_count": 164,
+                    "throughput": 147.39440437667923,
+                    "link_num": 40
+                },
+                "11-8": {
+                    "usage_count": 193,
+                    "throughput": 274.85072939479727,
+                    "link_num": 37
+                },
+                "10-12": {
+                    "usage_count": 75,
+                    "throughput": 82.13080311075448,
+                    "link_num": 39
+                },
+                "10-11": {
+                    "usage_count": 139,
+                    "throughput": 199.70227706001043,
+                    "link_num": 36
+                },
+                "11-13": {
+                    "usage_count": 45,
+                    "throughput": 66.34461469632322,
+                    "link_num": 43
+                },
+                "12-13": {
+                    "usage_count": 162,
+                    "throughput": 177.05866200681842,
+                    "link_num": 44
+                }
+            },
+            "sim_block_list": [
+                0.056,
+                0.02,
+                0.016,
+                0.015,
+                0.012,
+                0.012,
+                0.012,
+                0.012,
+                0.012,
+                0.012
+            ],
+            "sim_br_block_list": [
+                0.04072727272727273,
+                0.016727272727272726,
+                0.011636363636363636,
+                0.01090909090909091,
+                0.008727272727272728,
+                0.008727272727272728,
+                0.008727272727272728,
+                0.008727272727272728,
+                0.008727272727272728,
+                0.008727272727272728
+            ],
+            "trans_mean": 1.16,
+            "trans_min": 1.16,
+            "trans_max": 1.16,
+            "hops_mean": 2.43,
+            "hops_min": 1.0,
+            "hops_max": 7.0,
+            "lengths_mean": 1950.3,
+            "lengths_min": 100.0,
+            "lengths_max": 4600.0,
+            "route_times_mean": 0.0,
+            "route_times_min": 0.0,
+            "route_times_max": 0.0,
+            "xt_mean": null,
+            "xt_min": null,
+            "xt_max": null,
+            "bands_list": [],
+            "start_slot_list": [],
+            "end_slot_list": [],
+            "modulation_list": [],
+            "bandwidth_list": [],
+            "path_index_list": [
+                988,
+                0,
+                0,
+                0
+            ]
+        }
+    },
+    "link_usage": {
+        "0-1": {
+            "usage_count": 79,
+            "throughput": 96.85156385537812,
+            "link_num": 4
+        },
+        "0-2": {
+            "usage_count": 33,
+            "throughput": 7.15530510610477,
+            "link_num": 7
+        },
+        "0-7": {
+            "usage_count": 83,
+            "throughput": 50.33772069348957,
+            "link_num": 24
+        },
+        "1-3": {
+            "usage_count": 283,
+            "throughput": 287.47439438129345,
+            "link_num": 10
+        },
+        "1-2": {
+            "usage_count": 89,
+            "throughput": 99.87875612660719,
+            "link_num": 8
+        },
+        "2-5": {
+            "usage_count": 116,
+            "throughput": 68.1811078871928,
+            "link_num": 16
+        },
+        "3-4": {
+            "usage_count": 220,
+            "throughput": 507.32201913276907,
+            "link_num": 13
+        },
+        "10-3": {
+            "usage_count": 192,
+            "throughput": 312.19960274278617,
+            "link_num": 33
+        },
+        "4-5": {
+            "usage_count": 45,
+            "throughput": 52.08348465371639,
+            "link_num": 17
+        },
+        "4-6": {
+            "usage_count": 242,
+            "throughput": 550.217216490632,
+            "link_num": 20
+        },
+        "13-5": {
+            "usage_count": 43,
+            "throughput": 34.279609660181805,
+            "link_num": 42
+        },
+        "5-9": {
+            "usage_count": 108,
+            "throughput": 82.05602586277067,
+            "link_num": 30
+        },
+        "6-9": {
+            "usage_count": 68,
+            "throughput": 81.37513238066725,
+            "link_num": 31
+        },
+        "6-7": {
+            "usage_count": 191,
+            "throughput": 505.2892481168891,
+            "link_num": 23
+        },
+        "7-8": {
+            "usage_count": 255,
+            "throughput": 444.6555364805457,
+            "link_num": 26
+        },
+        "8-9": {
+            "usage_count": 171,
+            "throughput": 152.68604218247546,
+            "link_num": 32
+        },
+        "12-8": {
+            "usage_count": 164,
+            "throughput": 147.39440437667923,
+            "link_num": 40
+        },
+        "11-8": {
+            "usage_count": 193,
+            "throughput": 274.85072939479727,
+            "link_num": 37
+        },
+        "10-12": {
+            "usage_count": 75,
+            "throughput": 82.13080311075448,
+            "link_num": 39
+        },
+        "10-11": {
+            "usage_count": 139,
+            "throughput": 199.70227706001043,
+            "link_num": 36
+        },
+        "11-13": {
+            "usage_count": 45,
+            "throughput": 66.34461469632322,
+            "link_num": 43
+        },
+        "12-13": {
+            "usage_count": 162,
+            "throughput": 177.05866200681842,
+            "link_num": 44
+        }
+    },
+    "blocking_mean": null,
+    "blocking_variance": null,
+    "ci_rate_block": null,
+    "ci_percent_block": null,
+    "bit_rate_blocking_mean": null,
+    "bit_rate_blocking_variance": null,
+    "ci_rate_bit_rate_block": null,
+    "ci_percent_bit_rate_block": null,
+    "sim_end_time": "0602_17_49_31_251270"
+}
