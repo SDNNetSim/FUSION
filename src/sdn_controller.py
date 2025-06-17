@@ -301,6 +301,15 @@ class SDNController:
                     self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
                     self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
+                    # TODO: temporary, DELETE!
+                    with open("tmp_log.txt", "a") as f:
+                        start_slot = self.spectrum_obj.spectrum_props.start_slot
+                        end_slot = self.spectrum_obj.spectrum_props.end_slot
+                        core_num = self.spectrum_obj.spectrum_props.core_num
+                        band = self.spectrum_obj.spectrum_props.curr_band
+                        mod_format = self.route_obj.route_props.mod_formats_matrix[path_index]
+                        print(f"Req ID={self.sdn_props.req_id}\tBand={band}\tCore={core_num}\tMod format={mod_format}\tStart slot={start_slot}\tEnd slot={end_slot}\n", file=f)
+
                     if not segment_slicing and not force_slicing:
                         self.sdn_props.is_sliced = False
                         self.allocate()
