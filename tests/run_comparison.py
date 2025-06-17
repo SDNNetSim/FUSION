@@ -18,6 +18,7 @@ from helper_scripts.sim_helpers import get_start_time
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from run_sim import run as run_simulation
+from run_rl_sim import run_rl_sim as run_rl_simulation
 
 LOGGER = logging.getLogger(__name__)
 IGNORE_KEYS = {'route_times_max', 'route_times_mean', 'route_times_min', 'sim_end_time'}
@@ -171,7 +172,12 @@ def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
         thread_params['sim_start'] = sim_start
 
     # Kick off the simulation (inherits cwd set to repo root)
-    run_simulation(sims_dict=sim_dict, stop_flag=multiprocessing.Event())
+    if case_dir.name in ('epsilon_greedy_bandit', 'ucb_bandit', 'ppo'):
+        LOGGER.info("▶ Running a REINFORCEMENT LEARNING simulation.")
+        run_rl_simulation(input_dict=sim_dict, is_testing=True)
+    else:
+        LOGGER.info("▶ Running a VANILLA simulation.")
+        run_simulation(sims_dict=sim_dict, stop_flag=multiprocessing.Event())
     LOGGER.debug("simulation completed for %s", case_dir.name)
 
     # TODO: (version 5.5) Move to its own function

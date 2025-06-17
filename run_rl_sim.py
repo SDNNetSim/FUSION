@@ -63,6 +63,7 @@ def _write_bookkeeping_files(
         run_id: str | None,
         output_dir: Path | None,
         had_error: bool = False,
+        is_testing: bool = False,
 ) -> None:
     """
     Write ``meta.json`` into *output_dir* and print the path so the bash
@@ -79,10 +80,12 @@ def _write_bookkeeping_files(
         json.dump(json_friendly(sim_dict), mfile, indent=2)
 
     print(f"OUTPUT_DIR={output_dir}")
-    sys.exit(1 if had_error else 0)
+
+    if not is_testing:
+        sys.exit(1 if had_error else 0)
 
 
-def run_rl_sim() -> None:
+def run_rl_sim(input_dict: dict = None, is_testing: bool = False) -> None:
     """
     Main function orchestrating a single simulation run.
     """
@@ -90,6 +93,17 @@ def run_rl_sim() -> None:
     sys.argv = [sys.argv[0], *remaining_argv]
 
     env, sim_dict, callback_list = create_environment()
+
+    # TODO: (version 6.0) Three or four different logged times!? Please fix!
+    if input_dict is not None:
+        env.sim_dict.update(input_dict['s1'])
+        parts = env.engine_obj.sim_info.rsplit("/", 1)
+        parts[-1] = input_dict['s1']['sim_start']
+
+        env.engine_obj.sim_info = "/".join(parts)
+        env.engine_obj.stats_obj.sim_info = "/".join(parts)
+        sim_dict.update(input_dict['s1'])
+
     out_path = Path('data') / 'output' / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
         'thread_num']
 
@@ -106,7 +120,7 @@ def run_rl_sim() -> None:
         had_error = True
     finally:
         # Always try to write bookkeeping files
-        _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path, had_error)
+        _write_bookkeeping_files(sim_dict, bk_args.run_id, out_path, had_error, is_testing=is_testing)
 
 
 if __name__ == "__main__":
