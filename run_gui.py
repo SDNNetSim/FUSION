@@ -16,11 +16,20 @@ if __name__ == '__main__':
     print("all_sims_dict loaded:", all_sims_dict)  # Debug: Verify it's not None
 
     # Determine total number of erlang simulations from configuration.
-    # (Assumes configuration like {'erlangs': {'start': 50, 'stop': 100, 'step': 50}})
     first_key = list(all_sims_dict.keys())[0]
-    erlang_conf = all_sims_dict[first_key]['erlangs']
-    total_erlangs = len(range(erlang_conf['start'], erlang_conf['stop'], erlang_conf['step']))
+    sim_conf = all_sims_dict[first_key]
 
+    if 'erlangs' in sim_conf:
+        erlang_conf = sim_conf['erlangs']
+        erlang_start = erlang_conf['start']
+        erlang_stop = erlang_conf['stop']
+        erlang_step = erlang_conf['step']
+    else:
+        erlang_start = sim_conf['erlang_start']
+        erlang_stop = sim_conf['erlang_stop']
+        erlang_step = sim_conf['erlang_step']
+
+    total_erlangs = len(range(erlang_start, erlang_stop, erlang_step))
     # Create a single Manager and shared progress dictionary.
     manager = multiprocessing.Manager()
     shared_progress_dict = manager.dict()

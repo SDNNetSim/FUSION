@@ -281,11 +281,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # Each process might run multiple Erlang volumes, each with a certain number of iterations.
         total_work_units = 0
         for key, conf in self.simulation_config.items(): # pylint: disable=unused-variable
-            erlangs = conf['erlangs']
+            # Unified access to Erlang start/stop/step
+            if 'erlangs' in conf:
+                erlangs = conf['erlangs']
+            else:
+                erlangs = {
+                    'start': conf['erlang_start'],
+                    'stop': conf['erlang_stop'],
+                    'step': conf['erlang_step']
+                }
+
             start, stop, step = erlangs['start'], erlangs['stop'], erlangs['step']
             count_erlangs = len(range(start, stop, step))
             max_iters = conf['max_iters']
-            # That process will do count_erlangs * max_iters iteration units
             total_work_units += (count_erlangs * max_iters)
 
         # Store that globally in the GUI, used by poll_progress()
