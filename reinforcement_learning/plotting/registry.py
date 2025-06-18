@@ -9,6 +9,7 @@ from reinforcement_learning.plotting.blocking import plot_effect_heatmaps
 from reinforcement_learning.plotting.link_data import plot_link_usage, plot_link_throughput
 from reinforcement_learning.plotting.path_index import plot_path_index
 from reinforcement_learning.plotting.resource_stats import plot_resource_percent_delta_heatmaps
+from reinforcement_learning.plotting.path_len import plot_path_lengths  # <- new file
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -44,5 +45,6 @@ PLOTS = {
     "path_index": {
         "plot": plot_path_index,
         "process": "process_path_index"
-    }
+    },
+    "path_length": {"plot": plot_path_lengths, "process": "process_path_lengths"}
 }

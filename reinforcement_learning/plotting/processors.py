@@ -359,3 +359,66 @@ def process_modulation_usage(raw_runs, runid_to_algo):
                 }
 
     return processed
+
+
+def process_path_index(raw_runs: dict, runid_to_algo: dict) -> dict:
+    """
+    Collects per-seed path index histograms and averages them.
+    Returns: { algo: { erlang: { path_index: avg_count } } }
+    """
+
+    from collections import defaultdict
+
+    raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for run_id, data in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+
+        for tv, info in data.items():
+            iter_stats = info.get("iter_stats", {})
+            if not iter_stats:
+                continue
+
+            last_iter_key = max(iter_stats.keys(), key=lambda k: int(k))
+            final_data = iter_stats[last_iter_key]
+            path_index_list = final_data.get("path_index_list", [])
+
+            for idx, count in enumerate(path_index_list):
+                raw[algo][str(tv)][idx].append(count)
+
+    # Convert lists to averages
+    result = defaultdict(lambda: defaultdict(dict))
+    for algo in raw:
+        for tv in raw[algo]:
+            for idx in raw[algo][tv]:
+                result[algo][tv][idx] = float(np.mean(raw[algo][tv][idx]))
+
+    return result
+
+
+def process_path_lengths(raw_runs: dict, runid_to_algo: dict) -> dict:
+    """
+    Return
+        {algo: {erlang: [length_mean over all seeds]}}
+    """
+    agg = defaultdict(lambda: defaultdict(list))
+
+    for run_id, run in raw_runs.items():
+        algo = runid_to_algo.get(run_id, "unknown")
+
+        for er, info in run.items():
+            iters = info.get("iter_stats", {})
+            if not iters:
+                continue
+
+            last_iter = iters[max(iters, key=int)]
+            length_val = last_iter.get("lengths_mean")   # already a float
+            if length_val is None:
+                continue
+
+            agg[algo][str(er)].append(float(length_val))
+
+    # convert lists → numpy arrays for easy stats later
+    return {a: {er: np.asarray(vals, dtype=float)
+                for er, vals in tvs.items()}
+            for a, tvs in agg.items()}

@@ -5,9 +5,9 @@ dates:
   - "0612"
   - "0616"
 plots:
-  - bw_block
+  - path_length
 
-#save_dir: "./figures/nsf_net/obs_3/mod_usage"
+#save_dir: "./figures/nsf_net/obs_3/bandwidths"
 
 algorithms:
   - epsilon_greedy_bandit
