@@ -1,26 +1,30 @@
 # TODO: (version 5.5-6) Create an official example for usage
 
-network: "Pan-European"
+network: "NSFNet"
 dates:
   - "0612"
   - "0616"
 plots:
-  - blocking
+  - rewards
 
-#save_dir: "./figures/spain/obs_7/blocking"
+save_dir: "./figures/nsf_net/obs_3/rewards"
 
 algorithms:
-  - epsilon_greedy_bandit
-  - ucb_bandit
-  - q_learning
-  - ppo
+#  - epsilon_greedy_bandit
+#  - ucb_bandit
+#  - q_learning
+#  - ppo
   - dqn
-  - k_shortest_path
-  - cong_aware
+#  - k_shortest_path
+#  - cong_aware
 
 runs:
   drl: true
-  non_drl: true
+  non_drl: false
 
 observation_spaces:
   - obs_3
+
+traffic_volume_range:
+  min: 50
+  max: 400
