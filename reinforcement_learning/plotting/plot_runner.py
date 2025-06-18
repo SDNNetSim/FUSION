@@ -9,6 +9,23 @@ from reinforcement_learning.plotting import processors
 from reinforcement_learning.plotting.registry import PLOTS
 
 
+def _filter_traffic_volumes(raw_runs: dict[str, dict],
+                            tv_min: float,
+                            tv_max: float) -> dict[str, dict]:
+    """
+    Strip every traffic-volume entry outside [tv_min, tv_max] *in-place*.
+
+    We leave out runs that end up completely empty after the cut.
+    """
+    filtered: dict[str, dict] = {}
+    for run_id, tv_dict in raw_runs.items():
+        subset = {tv: v for tv, v in tv_dict.items()
+                  if tv_min <= float(tv) <= tv_max}
+        if subset:
+            filtered[run_id] = subset
+    return filtered
+
+
 def call_processor(proc_fn, raw_runs, runid_to_algo, **context):
     """
     Call *proc_fn* with (raw_runs, runid_to_algo) and pass **context
@@ -90,6 +107,19 @@ def _process_plot(cfg: dict, plot_name: str, network: str, dates: list[str], alg
 
     if not combined_raw:
         return
+
+    rng = cfg.get("traffic_volume_range")
+    if rng and (
+        "min" not in rng or "max" not in rng or rng["min"] > rng["max"]
+    ):
+        raise ValueError("traffic_volume_range must contain numeric 'min' ≤ 'max'")
+    if cfg.get("traffic_volume_range"):
+        tv_rng = cfg["traffic_volume_range"]
+        combined_raw = _filter_traffic_volumes(
+            combined_raw,
+            tv_rng["min"],
+            tv_rng["max"]
+        )
 
     context = {"start_stamps": combined_start_stamps} if plot_name == "sim_times" else {}
 
