@@ -5,22 +5,22 @@ dates:
   - "0612"
   - "0616"
 plots:
-  - rewards
+  - bw_block
 
-save_dir: "./figures/nsf_net/obs_3/rewards"
+#save_dir: "./figures/nsf_net/obs_3/mod_usage"
 
 algorithms:
-#  - epsilon_greedy_bandit
-#  - ucb_bandit
-#  - q_learning
-#  - ppo
+  - epsilon_greedy_bandit
+  - ucb_bandit
+  - q_learning
+  - ppo
   - dqn
-#  - k_shortest_path
-#  - cong_aware
+  - k_shortest_path
+  - cong_aware
 
 runs:
   drl: true
-  non_drl: false
+  non_drl: true
 
 observation_spaces:
   - obs_3

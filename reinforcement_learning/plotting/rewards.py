@@ -36,10 +36,15 @@ def plot_rewards_mean_var(
 
             ep_labels = rewards.get("episodes")
             if ep_labels:
-                episodes = list(range(len(ep_labels)))  # numeric ticks
-                plt.xticks(episodes, ep_labels, rotation=45, ha='right')
+                episodes = np.arange(len(ep_labels))
+                max_ticks = 10  # or however many ticks you want
+                step = max(1, len(episodes) // max_ticks)
+                tick_locs = episodes[::step]
+                tick_labels = [ep_labels[i] for i in tick_locs]
+
+                plt.xticks(tick_locs, tick_labels, rotation=45, ha='right')
             else:
-                episodes = range(len(rewards_arr))
+                episodes = np.arange(len(rewards_arr))
 
             episodes = np.arange(len(rewards_arr))
             color = color_map(idx)

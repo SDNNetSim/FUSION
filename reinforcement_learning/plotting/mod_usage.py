@@ -1,8 +1,6 @@
-import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 
 BASE_FONT_SIZE = 11
@@ -35,123 +33,80 @@ def _apply_axes_style(ax):
     ax.tick_params(axis="both", labelsize=TICK_FONT_SIZE, width=0.8, length=3)
 
 
-def plot_modulation_usage(data, save_path=None,
-                          title="Modulations per Bandwidth"):
-    """
-    Normalized stacked bar chart: each bandwidth group sums to 1.0.
+def plot_modulation_usage(data, save_path=None, title="Modulation Trends vs. Traffic Volume"):
+    all_algos = sorted(data.keys())
+    all_tvs = sorted({float(tv) for algo in data.values() for tv in algo})
+    all_tvs_str = [str(tv) for tv in all_tvs]
 
-    Parameters
-    ----------
-    data : dict
-        {algo: {tv (str): {bw (str): {mod: mean_cnt}}}}
-    save_path : str or Path, optional
-        If set, saves each figure per traffic volume.
-    """
-    plt.rcParams.update({
-        "font.size": BASE_FONT_SIZE,
-        "axes.labelweight": "bold",
-        "axes.titlesize": SUBPLOT_TITLE_SZ,
-        "axes.titleweight": "regular",
-        "legend.fontsize": BASE_FONT_SIZE - 1,
-    })
-
-    plt.style.use(
-        "seaborn-whitegrid"
-        if "seaborn-whitegrid" in plt.style.available
-        else "default"
+    fig, axes = plt.subplots(
+        1, len(MOD_ORDER),
+        figsize=(17.5, 5),  # increased width
+        dpi=300,
+        sharex=True, sharey=True,
+        gridspec_kw={'width_ratios': [1] * len(MOD_ORDER)}
     )
 
-    all_tvs = sorted({float(tv) for algo in data.values() for tv in algo})
-    all_algos = sorted(data.keys())
+    if len(MOD_ORDER) == 1:
+        axes = [axes]
 
-    for tv in all_tvs:
-        tv_str = str(tv)
-        bws = sorted({
-            float(bw)
-            for algo in all_algos
-            for bw in data[algo].get(tv_str, {})
-        })
-        if not bws:
-            continue
+    algo_lines = {}
 
-        bar_w = _auto_bar_width(bws)
-        n_algos = len(all_algos)
-        n_cols = 3
-        n_rows = math.ceil(n_algos / n_cols)
-        fig_w = 3.2 * n_cols
-        fig_h = 3.0 * n_rows
+    for mod_idx, mod in enumerate(MOD_ORDER):
+        ax = axes[mod_idx]
 
-        fig, axes = plt.subplots(
-            n_rows, n_cols,
-            figsize=(fig_w, fig_h),
-            sharey=True, dpi=300,
-        )
-        axes = axes.flatten()
-
-        for idx, algo in enumerate(all_algos):
-            ax = axes[idx]
-            bottoms = np.zeros(len(bws))
-            bw_vals = data[algo].get(tv_str, {})
-
-            for mod in MOD_ORDER:
-                heights = []
-                for bw in bws:
-                    bw_str = str(int(bw))
-                    mod_cnt = bw_vals.get(bw_str, {}).get(mod, 0)
-                    total_cnt = sum(bw_vals.get(bw_str, {}).values())
-                    height = (mod_cnt / total_cnt) if total_cnt > 0 else 0
-                    heights.append(height)
-
-                ax.bar(
-                    bws,
-                    heights,
-                    width=bar_w,
-                    bottom=bottoms,
-                    color=MOD_COLORS[mod],
-                    edgecolor="black",
-                    linewidth=0.3,
+        for algo in all_algos:
+            mod_props = []
+            for tv_str in all_tvs_str:
+                bw_vals = data[algo].get(tv_str, {})
+                all_counts = sum(
+                    sum(bw_dict.values()) for bw_dict in bw_vals.values()
                 )
-                bottoms += np.array(heights)
+                mod_counts = sum(
+                    bw_dict.get(mod, 0) for bw_dict in bw_vals.values()
+                )
+                prop = (mod_counts / all_counts) if all_counts > 0 else 0
+                mod_props.append(prop)
 
-            ax.set_title(algo, fontsize=SUBPLOT_TITLE_SZ, pad=4)
-            ax.set_xticks(
-                bws, [int(b) for b in bws], rotation=45, fontsize=TICK_FONT_SIZE
+            line, = ax.plot(
+                all_tvs,
+                mod_props,
+                linewidth=2,
+                marker='o',
+                label=algo if mod_idx == 0 else None
             )
-            if idx % n_cols == 0:
-                ax.set_ylabel("Proportion of Requests", fontweight="bold")
-            _apply_axes_style(ax)
 
-        for ax in axes[:n_algos]:
-            ax.set_ylim(0, 1.0)
-            ax.set_yticks(np.linspace(0, 1.0, 6))
-            ax.grid(axis="y", linestyle="--", linewidth=0.7, alpha=0.6)
+            if mod_idx == 0:
+                algo_lines[algo] = line
 
-        for ax in axes[n_algos:]:
-            fig.delaxes(ax)
+        ax.set_title(f"{mod}", fontsize=12, fontweight="bold")
+        ax.set_ylim(0, 1.0)
+        ax.set_yticks(np.linspace(0, 1.0, 6))
+        _apply_axes_style(ax)
 
-        fig.suptitle(f"{title} – {tv} Er",
-                     fontsize=TITLE_FONT_SIZE, fontweight="bold", y=0.98)
+        if mod_idx == 0:
+            ax.set_ylabel("Proportion of Requests", fontweight="bold")
+        ax.set_xlabel("Traffic Volume (Er)", fontweight="bold")
 
-        mod_handles = [
-            mpatches.Patch(color=MOD_COLORS[m], label=m) for m in MOD_ORDER
-        ]
-        leg = fig.legend(
-            handles=mod_handles,
-            title="Modulation",
-            loc="upper right",
-            bbox_to_anchor=(0.88, 1),
-            frameon=True,
-            edgecolor="0.5",
-        )
-        leg.get_frame().set_linewidth(0.8)
+    # Clean spacing between plots
+    fig.subplots_adjust(left=0.06, right=0.87, top=0.93, bottom=0.12)
 
-        fig.tight_layout(rect=[0, 0.05, 1, 0.94])
+    # Add external legend (right side, fully outside plot)
+    legend_ax = fig.add_axes([0.89, 0.2, 0.10, 0.6])  # more right
+    legend_ax.axis('off')
+    legend_ax.legend(
+        handles=[algo_lines[a] for a in all_algos],
+        labels=all_algos,
+        loc='center',
+        frameon=False,
+        fontsize=9,
+        title="Algorithm",
+        title_fontsize=10
+    )
 
-        if save_path:
-            save_path = Path(save_path)
-            fp = save_path.parent / f"{save_path.stem}_{tv}.png"
-            fig.savefig(fp, dpi=300)
-            print(f"[plot_mod_usage] ✅ Saved {fp}")
-            plt.close(fig)
-        else:
-            plt.show()
+    if save_path:
+        save_path = Path(save_path)
+        fig.savefig(save_path, dpi=300, bbox_inches=None)
+        print(f"[plot_modulation_trends_all_algos] ✅ Saved {save_path}")
+        plt.close(fig)
+    else:
+        plt.show()

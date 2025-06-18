@@ -1,6 +1,7 @@
 # pylint: disable=unsupported-binary-operation
 
 import math
+import re
 
 from pathlib import Path
 
@@ -253,6 +254,12 @@ def _plot_algo_heatmaps(algo, vol_dict, title, path_colors, negative_factor, sav
 
 
 def _plot_diff_matrices(best_path_data, path_colors, save_path):
+    # Create a mapping from normalized algorithm names to original keys
+    normalized_map = {
+        re.sub(r'_obs_\d+$', '', k): k
+        for k in best_path_data
+    }
+
     created_figs = []
     desired_pairs = [
         ("epsilon_greedy_bandit", "ucb_bandit"),
@@ -260,11 +267,14 @@ def _plot_diff_matrices(best_path_data, path_colors, save_path):
         ("q_learning", "ucb_bandit"),
     ]
     for algo_a, algo_b in desired_pairs:
-        if algo_a not in best_path_data or algo_b not in best_path_data:
+        if algo_a not in normalized_map or algo_b not in normalized_map:
             print(f"❌ Skipping missing pair: {algo_a} vs {algo_b}")
             continue
 
-        traffic_levels = sorted(set(best_path_data[algo_a]) & set(best_path_data[algo_b]), key=float)
+        real_key_a = normalized_map[algo_a]
+        real_key_b = normalized_map[algo_b]
+
+        traffic_levels = sorted(set(best_path_data[real_key_a]) & set(best_path_data[real_key_b]), key=float)
         if not traffic_levels:
             print(f"⚠️ No shared traffic levels between {algo_a} and {algo_b}")
             continue
@@ -279,8 +289,8 @@ def _plot_diff_matrices(best_path_data, path_colors, save_path):
         for idx, traffic in enumerate(traffic_levels):
             r, c = divmod(idx, ncols)
             ax = axes[r][c]
-            a_map = best_path_data[algo_a][traffic]
-            b_map = best_path_data[algo_b][traffic]
+            a_map = best_path_data[real_key_a][traffic]
+            b_map = best_path_data[real_key_b][traffic]
             nodes = {n for (s, d) in a_map for n in (s, d)}
             n_nodes = max(nodes) + 1 if nodes else 1
             colour = np.ones((n_nodes, n_nodes, 3))
