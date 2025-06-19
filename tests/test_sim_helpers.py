@@ -1,3 +1,5 @@
+"""Unit tests for helper functions in sim_helpers.py used in the FUSION simulator."""
+
 # pylint: disable=too-many-public-methods, no-value-for-parameter, no-name-in-module
 
 import unittest
@@ -10,17 +12,16 @@ import networkx as nx
 import numpy as np
 
 
-# TODO: (version 5.5-6) Fix all tests
 from helper_scripts.sim_helpers import (
     get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
     find_path_len, find_path_cong, find_free_slots,
     find_free_channels, find_taken_channels, snake_to_title, int_to_string,
     dict_to_list, list_to_title, calc_matrix_stats, combine_and_one_hot,
     get_start_time, find_core_cong, find_core_frag_cong, min_max_scale,
-    get_super_channels, get_hfrag, classify_cong, parse_yaml_file, get_arrival_rates,
-    run_simulation_for_arrival_rates, save_study_results, modify_multiple_json_values
+    get_super_channels, get_hfrag, classify_cong, parse_yaml_file,
+    save_study_results, modify_multiple_json_values
 )
-
+#NOTE: These functions are no longer supported. get_arrival_rates,run_simulation_for_arrival_rates,
 
 class TestSimHelpers(unittest.TestCase):
     """Unit tests for sim_helpers functions."""
@@ -109,8 +110,10 @@ class TestSimHelpers(unittest.TestCase):
         }
         path_list = [1, 2, 3]
         expected_avg_cong = ((4 / 6) + (2 / 6)) / 2
-        calculated_avg_cong = find_path_cong(path_list, net_spec_dict)
+        expected_scaled_cap = (6 - 4) + (6 - 2)
+        calculated_avg_cong, scaled_cap = find_path_cong(path_list, net_spec_dict)
         self.assertAlmostEqual(calculated_avg_cong, expected_avg_cong, places=5)
+        self.assertEqual(scaled_cap, expected_scaled_cap)
 
     def test_find_core_cong(self):
         """Test finding congestion on a specific core along a path."""
@@ -182,6 +185,9 @@ class TestSimHelpers(unittest.TestCase):
         result = dict_to_list(data_dict, nested_key)
         self.assertTrue(np.array_equal(result, [10, 20, 30]))
 
+        result_mean = dict_to_list(data_dict, nested_key, find_mean=True)
+        self.assertEqual(result_mean, 20.0)
+
     def test_list_to_title(self):
         """Test converting a list to a title case string."""
         input_list = [["Alice"], ["Bob"], ["Charlie"]]
@@ -218,7 +224,7 @@ class TestSimHelpers(unittest.TestCase):
 
     def test_get_start_time(self):
         """Test getting the start time of a simulation."""
-        sim_dict = {'s1': {'date': None, 'sim_start': None}}
+        sim_dict = {'s1': {'network': 'dummyNet', 'date': None, 'sim_start': None}}
         expected_date = datetime.now().strftime("%m%d")
         expected_sim_start = datetime.now().strftime("%H_%M_%S")
 
@@ -262,7 +268,8 @@ class TestSimHelpers(unittest.TestCase):
 
         # Adjusted expected values to match the actual function's logic
         expected_sc_index_mat = np.array([[0, 3], [1, 4], [2, 5], [3, 6], [4, 7]])
-        expected_resp_frag_arr = np.array([1.386, -np.inf, -np.inf, -np.inf, 1.386, np.inf, np.inf, np.inf])
+        expected_resp_frag_arr = np.array([1.386, -np.inf, -np.inf, -np.inf, 1.386,
+                                           np.inf, np.inf, np.inf])
 
         # Call the function
         sc_index_mat, resp_frag_arr = get_hfrag(
@@ -276,13 +283,14 @@ class TestSimHelpers(unittest.TestCase):
     def test_classify_cong(self):
         """Test classifying congestion percentage into levels."""
         curr_cong = 0.2
+        cong_cutoff = 0.3
         expected_cong_index = 0
-        cong_index = classify_cong(curr_cong)
+        cong_index = classify_cong(curr_cong, cong_cutoff)
         self.assertEqual(cong_index, expected_cong_index)
 
         curr_cong = 0.5
         expected_cong_index = 1
-        cong_index = classify_cong(curr_cong)
+        cong_index = classify_cong(curr_cong, cong_cutoff)
         self.assertEqual(cong_index, expected_cong_index)
 
     @patch('builtins.open', new_callable=mock_open, read_data="key: value")
@@ -297,34 +305,6 @@ class TestSimHelpers(unittest.TestCase):
 
         mock_open_file.assert_called_once_with(yaml_file, "r", encoding='utf-8')
         mock_yaml_load.assert_called_once()
-
-    def test_get_arrival_rates(self):
-        """Test generating a list of arrival rates from a configuration dictionary."""
-        arrival_dict = {'start': 10, 'stop': 50, 'step': 10}
-        expected_arrival_rates = [10, 20, 30, 40, 50]
-        result = get_arrival_rates(arrival_dict)
-        self.assertEqual(result, expected_arrival_rates)
-
-    @patch('helper_scripts.sim_helpers.run_simulation_for_arrival_rates')
-    def test_run_simulation_for_arrival_rates(self, mock_run_func):
-        """Test running the simulation for each arrival rate."""
-
-        class MockEnv:  # pylint: disable=too-few-public-methods
-            """ Mock and environment. """
-
-            def __init__(self):
-                self.engine_obj = MagicMock()
-                self.engine_obj.engine_props = {}
-                self.sim_dict = {'holding_time': 2, 'cores_per_link': 4}
-                self.path_agent = MagicMock()
-                self.path_agent.reward_penalty_list = [10, -5, 15]
-
-        env = MockEnv()
-        arrival_list = [10, 20, 30]
-        expected_mean_reward = np.mean([np.sum(env.path_agent.reward_penalty_list)] * len(arrival_list))
-
-        result = run_simulation_for_arrival_rates(env, arrival_list, mock_run_func)
-        self.assertAlmostEqual(result, expected_mean_reward, places=5)
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.makedirs')
@@ -353,11 +333,13 @@ class TestSimHelpers(unittest.TestCase):
 
         save_study_results(study, env, study_name, best_params, best_reward, start_time)
         mock_makedirs.assert_called_once_with(
-            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01', '12:00:00'), exist_ok=True
+            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01', '12:00:00'),
+            exist_ok=True
         )
         mock_pickle_dump.assert_called_once()
         mock_open_file.assert_any_call(
-            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01', '12:00:00', 'best_hyperparams.txt'),
+            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01',
+                         '12:00:00', 'best_hyperparams.txt'),
             'w',
             encoding='utf-8'
         )
@@ -365,15 +347,25 @@ class TestSimHelpers(unittest.TestCase):
     @patch('json.load', return_value={'key1': 'value1', 'key2': 'value2'})
     @patch('json.dump')
     @patch('builtins.open', new_callable=mock_open)
-    def test_modify_multiple_json_values(self, mock_open_file, mock_json_dump, mock_json_load): # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def test_modify_multiple_json_values(self, mock_open_file, mock_json_dump, mock_json_load):
         """Test modifying multiple JSON values."""
-        file_path = 'test.json'
+        file_path = 'test_dir'
         update_list = [('key1', 'new_value1'), ('key2', 'new_value2')]
 
-        modify_multiple_json_values(file_path, update_list)
-        mock_open_file.assert_called_with(file_path, 'w', encoding='utf-8')
+        mock_file_handle = mock_open_file.return_value.__enter__.return_value
+
+        modify_multiple_json_values(1, file_path, update_list)
+
+        # Ensure the file was read correctly
+        mock_open_file.assert_any_call(os.path.join(file_path, 'sim_input_s1.json'), 'r',
+                                       encoding='utf-8')
+        # Ensure the file was written correctly to s2.json
+        mock_open_file.assert_any_call(os.path.join(file_path, 'sim_input_s2.json'), 'w',
+                                       encoding='utf-8')
+        # Ensure data was written with correct structure
         mock_json_dump.assert_called_once_with(
-            {'key1': 'new_value1', 'key2': 'new_value2'}, mock_open_file(), indent=4
+            {'key1': 'new_value1', 'key2': 'new_value2'}, mock_file_handle, indent=4
         )
 
 
