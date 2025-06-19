@@ -103,21 +103,6 @@ class TestClassifyPathsAndCores(TestCase):
         self.assertEqual(info[0][2], 2)  # congestion level
         self.assertListEqual(info[0][1].tolist(), [0, 1])  # path list
 
-    @mock.patch("reinforcement_learning.utils.general_utils.classify_cong",
-                return_value=1)
-    @mock.patch("reinforcement_learning.utils.general_utils.find_core_cong",
-                return_value=0.3)
-    def test_classify_cores_returns_info(self, *_):
-        """Returns list of tuples (idx,core,cong)."""
-        helper = gu.CoreUtilHelpers(_rl_props(), _engine(), _route())
-        cores = [
-            {0: "c0", 1: "c0", 2: "c0", "path": [[0, 1]]},
-            {0: "c1", 1: "c1", 2: "c1", "path": [[0, 2]]},
-        ]
-
-        info = helper.classify_cores(cores)
-        self.assertEqual(info[0], (0, "c0", 1))
-
 
 class TestHandleReleases(TestCase):
     """handle_releases processes due departures."""

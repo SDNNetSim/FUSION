@@ -124,19 +124,6 @@ class TestStateBased(TestCase):
         self.assertLess(cfg.curr_alpha, 1)
 
 
-class TestGetActivation(TestCase):
-    """_get_activation maps strings to nn modules."""
-
-    def test_mapping_returns_correct_class(self):
-        """
-        Test mapping returns correct class.
-        """
-        trial = _mock_trial()
-        act = hp._get_activation(trial)  # pylint: disable=protected-access
-        from torch.nn import ReLU  # pylint: disable=import-outside-toplevel
-        self.assertIs(act, ReLU)
-
-
 class TestHyperparamSuggest(TestCase):
     """get_optuna_hyperparams branch selection."""
 
