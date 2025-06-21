@@ -3,6 +3,7 @@ import os
 from unittest.mock import patch
 from config_scripts.setup_config import read_config
 from config_scripts.parse_args import parse_args
+from arg_scripts.config_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 
 class TestReadConfig(unittest.TestCase):
@@ -11,8 +12,9 @@ class TestReadConfig(unittest.TestCase):
     """
 
     def setUp(self):
-        self.valid_conf = os.path.join('tests', 'fixtures', 'valid_config.ini')
-        self.invalid_conf = os.path.join('tests', 'fixtures', 'invalid_config.ini')
+        base = os.path.dirname(__file__)
+        self.valid_conf = os.path.join(base, 'fixtures', 'valid_config.ini')
+        self.invalid_conf = os.path.join(base, 'fixtures', 'invalid_config.ini')
         self.mock_args = ['program_name']
 
         os.makedirs('tests/ini', exist_ok=True)
@@ -36,14 +38,18 @@ class TestReadConfig(unittest.TestCase):
 
     @patch('sys.argv', ['program_name'])
     def test_successful_config_read(self):
-        """
-        Test successful configuration file.
-        """
-        args_obj = parse_args()
-        config_dict = read_config(args_obj, self.valid_conf)
-        self.assertIsNotNone(config_dict)
-        self.assertIn('s1', config_dict)
-        self.assertIsInstance(config_dict['s1'], dict)
+        """Test successful configuration parsing from valid_config.ini."""
+        args_dict = {}
+        for option_group in [SIM_REQUIRED_OPTIONS, OTHER_OPTIONS]:
+            for _, options in option_group.items():
+                args_dict.update({key: None for key in options})
+
+        config_result = read_config(args_dict, self.valid_conf)
+
+        assert 's1' in config_result
+        assert isinstance(config_result['s1'], dict)
+        self.assertEqual(config_result['s1']['erlang_start'], 300)
+        self.assertEqual(config_result['s1']['holding_time'], 0.2)
 
     @patch('sys.argv', ['program_name'])
     def test_missing_config_file(self):
@@ -62,7 +68,8 @@ class TestReadConfig(unittest.TestCase):
         args_obj = parse_args()
         with self.assertRaises(ValueError) as context:
             read_config(args_obj, self.invalid_conf)
-        self.assertIn("Missing 'mod_assumption_path' in the general_settings section", str(context.exception))
+        self.assertIn("Missing 'erlang_start' in the general_settings section", str(context.exception))
+
 
     @patch('sys.argv', ['program_name'])
     def test_command_line_input(self):
