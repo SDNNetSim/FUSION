@@ -86,8 +86,7 @@ class SDNController:
         lightpath_id = self.spectrum_obj.spectrum_props.lightpath_id
 
         if self.engine_props['guard_slots'] != 0:
-            if self.spectrum_obj.spectrum_props.slots_needed != 1:
-                end_slot = end_slot - 1
+            end_slot = end_slot - 1
         else:
             end_slot += 1
 
@@ -185,6 +184,19 @@ class SDNController:
                 return
 
             self.sdn_props.is_sliced = False
+    
+    def _handle_congestion(self, remaining_bw):
+        """
+        Handles the case where allocation fails due to congestion.
+        """
+        self.sdn_props.was_routed = False
+        self.sdn_props.block_reason = 'congestion'
+        self.sdn_props.num_trans = 1
+
+        if remaining_bw != int(self.sdn_props.bandwidth):
+            self.release()
+
+        self.sdn_props.is_sliced = False
 
     def _handle_dynamic_slicing(self, path_list: list, path_index: int, forced_segments: int ):
         remaining_bw = self.sdn_props.remaining_bw if self.sdn_props.was_partially_groomed else int(self.sdn_props.bandwidth)
@@ -369,10 +381,12 @@ class SDNController:
         route_time = time.time() - start_time
 
         segment_slicing = False
-        while True:
+        # TODO: Improve SDN controller's structure
+        while True:  # pylint: disable=too-many-nested-blocks
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     self.sdn_props.path_list = path_list
+                    self.sdn_props.path_index = path_index
                     mod_format_list = self.route_obj.route_props.mod_formats_matrix[path_index]
 
                     if ml_model is not None:
@@ -387,7 +401,8 @@ class SDNController:
                         force_slicing = True
                         self.spectrum_obj.spectrum_props.slicing_flag = True
                         if self.engine_props['dynamic_lps']:
-                            self._handle_dynamic_slicing(path_list= path_list, path_index= path_index, forced_segments= force_slicing )
+                            self._handle_dynamic_slicing(path_list=path_list, path_index=path_index,
+                                                         forced_segments=force_slicing)
                             if not self.sdn_props.was_routed:
                                 if self.engine_props['can_partially_serve']:
                                     if not self.sdn_props.was_partially_groomed and not self.sdn_props.was_partially_routed:

@@ -7,6 +7,7 @@ class SDNProps:
 
     def __init__(self):
         self.path_list = None  # List of nodes for the current request
+        self.path_index = None  # Index of selected path in the computed path set
         self.was_routed = None  # Flag to determine successful route
         self.was_groomed = None # Flag to determine successful fully groomed without new lightpath
         self.was_partially_groomed = False # Flag to determine a portion of service successfully groomed 
@@ -30,8 +31,8 @@ class SDNProps:
         self.lightpath_bandwidth_list = []  # List of lightpath bandwidth
         self.lightpath_id_list = []  # List of lightpath id
         self.xt_list = []  # List of crosstalk calculations for a single request
-        self.start_slot_list = [] # List of allocated start slot  index for slicing approach
-        self.end_slot_list = [] # List of allocated end slot  index for slicing approach
+        self.start_slot_list = []  # List of allocated start slot  index for slicing approach
+        self.end_slot_list = []  # List of allocated end slot  index for slicing approach
         self.num_trans = None  # Number of transponders a single request has used
         self.arrive = None  # Arrival time for a single request
         self.depart = None  # Departure time for a single request

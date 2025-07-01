@@ -1,11 +1,12 @@
 #!/bin/bash
 
-#SBATCH -p cpu-preempt
-#SBATCH -c 1
+#SBATCH -p arm-preempt
+#SBATCH -c 20
 #SBATCH -G 0
-#SBATCH --mem=16000
-#SBATCH -t 0-04:00:00
-#SBATCH -o slurm-%j.out
+#SBATCH --mem=40000
+#SBATCH -t 14-00:00:00
+#SBATCH -o slurm-%A_%a.out  # Output file for each task
+#SBATCH --array=0-3  # Define array size based on total combinations
 
 # This script is designed to run a reinforcement learning simulation on the Unity cluster at UMass Amherst.
 # It sets up the necessary environment, installs dependencies, registers custom environments, and runs
@@ -18,10 +19,21 @@ set -e
 # shellcheck disable=SC2164
 cd
 # shellcheck disable=SC2164
-cd /work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/
+# Default directory
+DEFAULT_DIR="/work/pi_vinod_vokkarane_uml_edu/git/sdn_simulator/"
 
-# Load the required Python module
-module load python/3.11.0
+# Check for user input
+if [ -z "$1" ]; then
+  echo "No directory provided. Using default directory: $DEFAULT_DIR"
+  cd "$DEFAULT_DIR"
+else
+  echo "Changing to user-specified directory: $1"
+  cd "$1"
+fi
+
+echo "Current directory: $(pwd)"
+
+module load python/3.11.7
 
 # Activate the virtual environment
 # Create the virtual environment if it doesn't exist

@@ -15,7 +15,7 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
     with open(network_fp, 'r', encoding='utf-8') as file_obj:
         for line in file_obj:
             src, dest, link_len_str = line.strip().split('\t')
-            link_len = float(link_len_str) if not constant_weight else 1
+            link_len = float(link_len_str) if not constant_weight else 1.0
 
             if node_pairs_dict != {}:
                 src_dest_tuple = (node_pairs_dict[src], node_pairs_dict[dest])
@@ -26,6 +26,7 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
                 response_dict[src_dest_tuple] = link_len
 
     return response_dict
+
 
 def assign_core_nodes(core_nodes_fp: str):
     """
@@ -42,7 +43,7 @@ def assign_core_nodes(core_nodes_fp: str):
     return response_list
 
 
-def create_network(net_name: str, base_fp: str = None, const_weight: bool = False, is_only_core_node: bool = True):
+def create_network(net_name: str, base_fp: str = None, const_weight: bool = False, is_only_core_node: bool = False):
     """
     The main structure data function.
 
@@ -53,7 +54,7 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
     :return: The network spectrum database.
     :rtype: dict
     """
-    core_nodes= []
+    core_nodes_list = []
     if base_fp is None:
         base_fp = 'data/raw'
     else:
@@ -67,17 +68,19 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
         network_fp = os.path.join(base_fp, 'europe_network.txt')
     elif net_name == 'Deutsche-Telekom':
         network_fp = os.path.join(base_fp, 'dt_network.txt')
-    elif net_name == 'USbackbode60':
+    elif net_name == 'USbackbone60':
         network_fp = os.path.join(base_fp, 'USB6014.txt')
         if not is_only_core_node:
             core_nodes_fp = os.path.join(base_fp, 'USB6014_core_nodes.txt')
-            core_nodes = assign_core_nodes(core_nodes_fp=core_nodes_fp)  
+            core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
     elif net_name == 'Spainbackbone30':
         network_fp = os.path.join(base_fp, 'SPNB3014.txt')
         if not is_only_core_node:
             core_nodes_fp = os.path.join(base_fp, 'SPNB3014_core_nodes.txt')
-            core_nodes = assign_core_nodes(core_nodes_fp=core_nodes_fp)
+            core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
     else:
         raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 
-    return assign_link_lengths(constant_weight=const_weight, network_fp=network_fp, node_pairs_dict={}), core_nodes
+    resp = assign_link_lengths(constant_weight=const_weight, network_fp=network_fp, node_pairs_dict={}), core_nodes_list
+
+    return resp

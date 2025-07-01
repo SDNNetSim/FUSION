@@ -44,7 +44,7 @@ class TestPlotStats(unittest.TestCase):
         self.plot_stats._setup_plot(title, y_lim, y_label, x_label)
 
         # Verify that the plot was set up correctly
-        mock_plt.figure.assert_called_once_with(figsize=(7, 5), dpi=300)
+        mock_plt.figure.assert_called_once_with(figsize=(6.4, 4.8), dpi=100, layout='constrained')
         mock_plt.title.assert_called_once_with(f"{self.plot_stats.props.title_names} {title}")
         mock_plt.ylabel.assert_called_once_with(y_label)
         mock_plt.xlabel.assert_called_once_with(x_label)
@@ -60,7 +60,7 @@ class TestPlotStats(unittest.TestCase):
         # Reset mocks and call without grid
         mock_plt.reset_mock()
         self.plot_stats._setup_plot(title, y_lim, y_label, x_label, grid=False)
-        mock_plt.figure.assert_called_once_with(figsize=(7, 5), dpi=300)
+        mock_plt.figure.assert_called_once_with(figsize=(6.4, 4.8), dpi=100, layout='constrained')
         mock_plt.grid.assert_not_called()
 
     @patch('plot_scripts.plot_stats.plt')
@@ -94,7 +94,7 @@ class TestPlotStats(unittest.TestCase):
             self.plot_stats._plot_helper_one(x_vals, y_vals_list, legend_val_list, legend_str, file_name)
 
             # Ensure plotting calls were made
-            self.assertEqual(mock_plt.plot.call_count, len(y_vals_list))
+            self.assertEqual(mock_plt.plot.call_count, len(y_vals_list) * len(legend_val_list))
             self.assertEqual(mock_plt.legend.call_count, 1)
             mock_save_plot.assert_called_once_with(file_name=file_name)
 

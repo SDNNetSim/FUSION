@@ -1,6 +1,6 @@
-SDON Simulator Documentation
+FUSION Documentation
 =============================
-A Software Defined Optical Networking (SDON) simulator created for the purposes of aiding in the research of elastic-optical
+A Flexible Unified System for Intelligent Optical Networking (FUSION) created for the purposes of aiding in the research of elastic-optical
 networking.
 
 :Authors: Arash Rezae, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and Kimberly Tice.

@@ -39,19 +39,19 @@ class TestNetworkFunctions(unittest.TestCase):
         response = create_network(net_name=net_name, const_weight=False)
         mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data/raw/us_network.txt',
                                                     node_pairs_dict={})
-        self.assertEqual(response, {'link_lengths': 'mocked'})
+        self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
         net_name = 'NSFNet'
         response = create_network(net_name=net_name, const_weight=False)
         mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data/raw/nsf_network.txt',
                                                     node_pairs_dict={})
-        self.assertEqual(response, {'link_lengths': 'mocked'})
+        self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
         net_name = 'Pan-European'
         response = create_network(net_name=net_name, const_weight=False)
         mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data/raw/europe_network.txt',
                                                     node_pairs_dict={})
-        self.assertEqual(response, {'link_lengths': 'mocked'})
+        self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
         with self.assertRaises(NotImplementedError):
             create_network(net_name="UnknownNet")
@@ -68,7 +68,7 @@ class TestNetworkFunctions(unittest.TestCase):
             response = create_network(net_name=net_name, base_fp=base_fp, const_weight=False)
             mock_assign_link_lengths.assert_called_with(constant_weight=False,
                                                         network_fp='custom/path/raw/us_network.txt', node_pairs_dict={})
-            self.assertEqual(response, {'link_lengths': 'mocked'})
+            self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
 
 if __name__ == '__main__':

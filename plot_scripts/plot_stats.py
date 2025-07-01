@@ -32,7 +32,7 @@ class PlotStats:
 
     def _setup_plot(self, title: str, y_lim: list, y_label: str, x_label: str, grid: bool = True, y_ticks: bool = True,
                     x_ticks: bool = True):
-        plt.figure(figsize=(7, 5), dpi=300)
+        plt.figure(figsize=(6.4, 4.8), dpi=100, layout='constrained')
         plt.title(f"{self.props.title_names} {title}")
         plt.ylabel(y_label)
         plt.xlabel(x_label)
@@ -58,8 +58,8 @@ class PlotStats:
         """
         color_count = 0
         style_count = 0
-        for _, sims_dict in self.props.plot_dict.items():
-            for _, info_dict in sims_dict.items():
+        for sims_dict in self.props.plot_dict.values():
+            for info_dict in sims_dict.values():
                 style = self.props.style_list[style_count]
 
                 for y_val in y_vals_list:
@@ -84,23 +84,24 @@ class PlotStats:
         legend_list = list()
         color_count = 0
         style_count = 0
-        for _, sims_dict in self.props.plot_dict.items():
-            for _, info_dict in sims_dict.items():
+        for sims_dict in self.props.plot_dict.values():
+            for info_dict in sims_dict.values():
                 style = self.props.style_list[style_count]
+                for y_val in y_vals_list:
+                    for legend_val in legend_val_list:
+                        color = self.props.color_list[color_count]
 
-                for y_val, legend_val in zip(y_vals_list, legend_val_list):
-                    color = self.props.color_list[color_count]
-                    plt.plot(info_dict[x_vals], info_dict[y_val], linestyle=style, markersize=2.3, color=color)
+                        # Plot with each combination of y_val and legend_val
+                        plt.plot(info_dict[x_vals], info_dict[y_val], linestyle=style, markersize=2.3, color=color)
 
-                    if not force_legend:
-                        legend_val = info_dict[legend_val]
-                        legend_list.append(legend_val)
-                    else:
-                        legend_list = legend_val_list
-                    color_count += 1
+                        if force_legend:
+                            legend_list.append(legend_val)
+                        else:
+                            legend_list.append(info_dict[legend_val])
+                        color_count += 1
 
-            color_count = 0
-            style_count = 0
+                    color_count = 0
+                    style_count = 0
 
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
@@ -165,15 +166,14 @@ class PlotStats:
         :param art_int: Artificial intelligence flag for plotting.
         """
         self._setup_plot("Average Blocking Prob. vs. Erlang", y_label='Average Blocking Probability',
-                         x_label='Time Steps', y_ticks=False, x_ticks=False, y_lim=[0, 0.15])
+                         x_label='Erlang', y_ticks=False, x_ticks=False, y_lim=[0, 0.15])
 
-        if not art_int:
+        if art_int:
+            self._plot_helper_two(y_vals_list=['block_per_iter'], erlang=250, file_name='bp_e250')
+        else:
             self._plot_helper_one(x_vals='erlang_list', y_vals_list=['blocking_list'],
                                   legend_val_list=['Trained US', 'Trained Euro', 'Baseline', 'Combined Model'],
                                   force_legend=True, file_name='average_bp')
-        else:
-            # TODO: Make block per iter a matrix, for each Erlang
-            self._plot_helper_two(y_vals_list=['block_per_iter'], erlang=750, file_name='bp_e750')
 
 
 def main():
@@ -200,11 +200,6 @@ def main():
     plot_obj = PlotStats(sims_info_dict=sims_info_dict)
 
     plot_obj.plot_blocking(art_int=True)
-    # plot_obj.plot_path_length()
-    # plot_obj.plot_hops()
-    # plot_obj.plot_block_reasons()
-    # plot_obj.plot_rewards(erlang_list=[700])
-    # plot_obj.plot_errors(erlang_list=[700])
 
 
 if __name__ == '__main__':

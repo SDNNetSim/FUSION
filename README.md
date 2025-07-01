@@ -1,9 +1,9 @@
 
-# Software Defined Optical Network (SDON) Simulator
+# Flexible Unified System for Intelligent Optical Networking (FUSION)
 
 ## About This Project
 
-Welcome to the SDON Simulator, an open-source venture into the future of networking! Our core focus is on simulating Software Defined Elastic Optical Networks (SD-EONs), a cutting-edge approach that promises to revolutionize how data is transmitted over optical fibers. But that's just the beginning. We envision the SDN Simulator as a versatile simulation framework that can evolve to simulate a wide array of networking paradigms, now including the integration of artificial intelligence to enhance network optimization, performance, and decision-making processes.
+Welcome to the FUSION, an open-source venture into the future of networking! Our core focus is on simulating Software Defined Elastic Optical Networks (SD-EONs), a cutting-edge approach that promises to revolutionize how data is transmitted over optical fibers. But that's just the beginning. We envision the SDN Simulator as a versatile simulation framework that can evolve to simulate a wide array of networking paradigms, now including the integration of artificial intelligence to enhance network optimization, performance, and decision-making processes.
 
 We need your insight and creativity! The true strength of open-source lies in community collaboration. Join us in pioneering the networks of tomorrow by contributing your unique simulations and features. Your expertise in AI and networking can help shape the future of this field.
 
@@ -21,7 +21,7 @@ We need your insight and creativity! The true strength of open-source lies in co
 
 ### Installation
 
-To get started with the SDN Simulator, follow these steps to set up your environment:
+To get started with the FUSION, follow these steps to set up your environment:
 
 1. Navigate to the desired directory you'd like to clone the repo to:
    ```
@@ -29,11 +29,11 @@ To get started with the SDN Simulator, follow these steps to set up your environ
    ```
 2. Clone the repository:
    ```
-   git clone git@github.com:SDNNetSim/SDON_simulator.git
+   git clone git@github.com:SDNNetSim/FUSION.git
    ```
 3. Change into the project directory:
    ```
-   cd SDON_simulator
+   cd FUSION
    ```
 4. Install the required dependencies:
    ```
@@ -65,5 +65,26 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 
 ## Contributors
 
-This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, Suvhasis Mukhopadhyay, Kojo Bempah, and 
+This project is brought to you by the efforts of Arash Rezaee, Ryan McCann, Kojo Bempah, and 
 Kimberly Tice. We welcome contributions from the community to help make this project even better!
+
+## 📖 How to Cite This Work
+
+If you use **FUSION** in your research, please cite the following paper:
+
+> **R. McCann, A. Rezaee, and V. M. Vokkarane**,  
+> *"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"*  
+> 2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS), Guwahati, India, 2024, pp. 1-6.  
+> DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
+
+### 📄 BibTeX
+
+```bibtex
+@INPROCEEDINGS{10898199,
+  author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  year={2024},
+  pages={1-6},
+  doi={10.1109/ANTS63515.2024.10898199}
+}

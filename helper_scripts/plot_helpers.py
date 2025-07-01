@@ -5,7 +5,7 @@ from statistics import mean
 import numpy as np
 
 from helper_scripts.sim_helpers import dict_to_list, list_to_title
-from arg_scripts.plot_args import PlotArgs
+from arg_scripts.plot_args import PlotArgs, PlotProps
 
 
 class PlotHelpers:  # pylint: disable=too-few-public-methods
@@ -13,7 +13,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     A class to assist with various tasks related when plotting statistics.
     """
 
-    def __init__(self, plot_props: object, net_names_list: list):
+    def __init__(self, plot_props: PlotProps, net_names_list: list):
         self.plot_props = plot_props
 
         self.plot_props.title_names = list_to_title(input_list=net_names_list)
@@ -24,9 +24,10 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.sim_num = None
         self.data_dict = None
 
-    # TODO: Skipping function for new plot args, since this needs to be updated and only works for q_learning
+    # TODO: (drl_path_agents) This function is only partially functional for q-learning
     def _find_ai_stats(self, cores_per_link: int):
-        # TODO: Generalize, also make sure to save date of simulation!
+        # TODO: Generalize
+        # TODO: Save the date of a simulation
         ai_fp = os.path.join('..', 'logs', 'ql', self.data_dict['network'], self.data_dict['date'], self.time)
         ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
 
@@ -47,11 +48,11 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         cong_list = dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict'])
         dist_list = dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict'])
 
-        average_length = np.nanmean(lengths_list) if lengths_list.size > 0 else 0
-        average_hop = np.nanmean(hops_list) if hops_list.size > 0 else 0
-        average_time = np.nanmean(times_list) if times_list.size > 0 else 0
-        average_cong = np.nanmean(cong_list) if cong_list.size > 0 else 0
-        average_dist = np.nanmean(dist_list) if dist_list.size > 0 else 0
+        average_length = np.nanmean(lengths_list) if len(lengths_list) > 0 else 0
+        average_hop = np.nanmean(hops_list) if len(hops_list) > 0 else 0
+        average_time = np.nanmean(times_list) if len(times_list) > 0 else 0
+        average_cong = np.nanmean(cong_list) if len(cong_list) > 0 else 0
+        average_dist = np.nanmean(dist_list) if len(dist_list) > 0 else 0
 
         self.plot_props.plot_dict[self.time][self.sim_num].lengths_list.append(average_length)
         self.plot_props.plot_dict[self.time][self.sim_num].hops_list.append(average_hop)
@@ -100,7 +101,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
 
     def _find_sim_info(self, input_dict: dict):
-        info_item_list = ['holding_time', 'cores_per_link', 'spectral_slots', 'network', 'num_requests',
+        # TODO: (drl_path_agents) Does not support all bands/slots
+        info_item_list = ['holding_time', 'cores_per_link', 'c_band', 'network', 'num_requests',
                           'cores_per_link', 'max_segments']
         self.plot_props = self.plot_props.plot_dict[self.time][self.sim_num].update_info_dict(
             plot_props=self.plot_props,
@@ -120,7 +122,11 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     @staticmethod
     def _read_json_file(file_path: str):
         with open(file_path, 'r', encoding='utf-8') as file_obj:
-            return json.load(file_obj)
+            try:
+                return json.load(file_obj)
+            except json.JSONDecodeError:
+                print('JSON file did not finishing writing, skipping!')
+                return None
 
     def _read_input_output(self):
         base_fp = os.path.join(self.data_dict['network'], self.data_dict['date'], self.time)
@@ -144,6 +150,10 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 for erlang in erlang_list:
                     self.erlang = erlang
                     input_dict, self.erlang_dict = self._read_input_output()
+
+                    if input_dict is None or self.erlang_dict is None:
+                        continue
+
                     self.plot_props.plot_dict[time][sim_num].erlang_list.append(float(erlang))
 
                     self.plot_props.erlang_dict = self.erlang_dict
@@ -160,10 +170,6 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                     self._find_mod_info()
                     self._find_snapshot_usage()
                     self._find_misc_stats()
-                    # TODO: Commented out
-                    if input_dict['path_algorithm'] is not None and input_dict['path_algorithm'] != 'None':
-                        pass
-                        # self._find_ai_stats(cores_per_link=input_dict['cores_per_link'])
 
     def get_file_info(self, sims_info_dict: dict):
         """
@@ -256,6 +262,11 @@ def _and_filters(filter_dict: dict, file_dict: dict):
         file_value = None
         for curr_key in keys_list:
             file_value = file_dict.get(curr_key)
+
+            if isinstance(file_value, dict):
+                file_dict = file_value
+            else:
+                break
 
         if file_value != check_value:
             keep_config = False

@@ -62,7 +62,7 @@ class TestReadConfig(unittest.TestCase):
         args_obj = parse_args()
         with self.assertRaises(ValueError) as context:
             read_config(args_obj, self.invalid_conf)
-        self.assertIn("Missing 'network' in the topology_settings section", str(context.exception))
+        self.assertIn("Missing 'mod_assumption_path' in the general_settings section", str(context.exception))
 
     @patch('sys.argv', ['program_name'])
     def test_command_line_input(self):

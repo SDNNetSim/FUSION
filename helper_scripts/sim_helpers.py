@@ -1,4 +1,7 @@
 import copy
+import os
+import json
+import pickle
 from datetime import datetime
 
 import networkx as nx
@@ -530,7 +533,35 @@ def find_available_blocks(input_dict):
 
 
 
-# TODO: Add reference
+def find_available_blocks(input_dict):
+    results = {}
+
+    for key, arr in input_dict.items():
+        arr = np.array(arr)
+        is_zero = arr == 0
+
+        # Pad to detect zero blocks at the edges without special checks
+        padded = np.pad(is_zero, ((0, 0), (1, 1)), constant_values=False)
+        diff = np.diff(padded.astype(int), axis=1)
+
+        # Start indices where diff == 1, End indices where diff == -1
+        start_indices = np.argwhere(diff == 1)
+        end_indices = np.argwhere(diff == -1)
+
+        key_results = [[] for _ in range(arr.shape[0])]
+
+        # Explicitly convert NumPy integers to native Python integers
+        for (row_start, col_start), (row_end, col_end) in zip(start_indices, end_indices):
+            key_results[int(row_start)].append((int(col_start), int(col_end - 1)))
+
+        results[key] = key_results
+
+    return results
+
+
+
+
+# TODO: (drl_path_agents) Add reference
 # Please refer to this paper for the formulation:
 def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     big_n = len(sc_index_mat) * -1.0
@@ -556,7 +587,7 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     """
     path_alloc_arr = np.zeros(spectral_slots)
     resp_frag_arr = np.ones(spectral_slots)
-    # TODO: First fit for core, only use in testing
+    # TODO: (drl_path_agents) First fit for core, only use in testing
     if core_num is None:
         core_num = 0
 
@@ -729,3 +760,90 @@ def parse_yaml_file(yaml_file: str):
             return yaml_data
         except yaml.YAMLError as exc:
             return exc
+
+
+def get_arrival_rates(arrival_dict: dict):
+    """
+    Generate a list of arrival rates based on the configuration dictionary.
+
+    :param arrival_dict: The configuration dictionary containing values for generating the arrival rates.
+    :return: A list of arrival rates generated from the configuration.
+    :rtype: list
+    """
+    start = int(arrival_dict['start'])
+    stop = int(arrival_dict['stop'])
+    step = int(arrival_dict['step'])
+
+    return list(range(start, stop + 1, step))
+
+
+def run_simulation_for_arrival_rates(env, arrival_list: list, run_func):
+    """
+    Run the simulation for each arrival rate in the given list.
+
+    :param env: The simulation environment instance.
+    :param arrival_list: A list of arrival rates to simulate.
+    :param run_func: The function to run a simulation.
+    :return: The mean of total rewards from all simulations.
+    :rtype: float
+    """
+    total_rewards = []
+    for arrival_rate in arrival_list:
+        env.engine_obj.engine_props['erlang'] = arrival_rate / env.sim_dict['holding_time']
+        env.engine_obj.engine_props['arrival_rate'] = arrival_rate * env.sim_dict['cores_per_link']
+        run_func(env=env, sim_dict=env.sim_dict)
+        sum_returns = np.sum(env.path_agent.reward_penalty_list)
+        total_rewards.append(sum_returns)
+
+    return np.mean(total_rewards)
+
+
+def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float, start_time: str):
+    """
+    Save the results of the study, including the best hyperparameters and the best reward value.
+
+    :param study: The Optuna study object containing the results.
+    :param env: The simulation environment instance.
+    :param study_name: The name of the study file to save.
+    :param best_params: The best hyperparameters found by Optuna.
+    :param best_reward: The best reward value from the study.
+    :param start_time: Start time of simulation run.
+    """
+    date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
+                             env.engine_obj.engine_props['sim_start'])
+    save_dir = os.path.join('logs', env.engine_obj.engine_props['path_algorithm'], date_time)
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_fp = os.path.join(save_dir, study_name)
+    with open(save_fp, 'wb') as file_path:
+        pickle.dump(study, file_path)
+
+    save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
+    with open(save_fp, 'w', encoding='utf-8') as file_path:
+        file_path.write("Best Hyperparameters:\n")
+        for key, value in best_params.items():
+            file_path.write(f"{key}: {value}\n")
+        file_path.write(f"\nBest Trial Reward: {best_reward}\n")
+        file_path.write(f"\nBest Trial Start Time: {start_time}\n")
+
+
+# TODO: Only support for one process
+def modify_multiple_json_values(file_path: str, update_list: list):
+    """
+    Opens a JSON file, modifies multiple key-value pairs in a dictionary, and saves it back to the file.
+
+    :param file_path: The path to the JSON file.
+    :param update_list: A list of tuples containing keys and their new values to be updated.
+                        Example: [('key1', 'new_value1'), ('key2', 'new_value2')]
+    """
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        data = json.load(json_file)
+
+    for key, new_value in update_list:
+        if key in data:
+            data[key] = new_value
+        else:
+            raise KeyError(f"Key '{key}' not found in the JSON file.")
+
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(data, json_file, indent=4)

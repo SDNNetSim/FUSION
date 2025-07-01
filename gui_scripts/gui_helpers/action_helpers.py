@@ -132,9 +132,7 @@ class ActionHelpers:
     def _display_topology(self, net_name: str):
         topology_information_dict = create_network(net_name=net_name)
 
-        edge_list = [(src, des, {'weight': link_len})
-                     for (src, des), link_len in
-                     topology_information_dict.items()]
+        edge_list = [(src, des, {'weight': link_len}) for (src, des), link_len in topology_information_dict.items()] # pylint: disable=no-member
         network_topo = nx.Graph(edge_list)
 
         pos = nx.spring_layout(network_topo, seed=5, scale=2.0)  # Adjust the scale as needed
@@ -164,17 +162,18 @@ class ActionHelpers:
         network_selection_dialog.move(dialog_pos)
 
         network_selection_input = QtWidgets.QInputDialog()
-        # TODO: Hard coded, should read potential files we have?
+        # TODO: Hard coded, should read the raw data directory or have a constants file
         items = ['USNet', 'NSFNet', 'Pan-European']
-        net_name, valid_net_name = network_selection_input.getItem(
+        net_name, valid = network_selection_input.getItem(
             network_selection_dialog, "Choose a network type:",
             "Select Network Type", items, 0, False
         )
 
-        if valid_net_name and net_name:
+        # we should really only be checking if valid is true
+        # if true then user must have provided a valid name since
+        # we give users only three choices anyway. Otherwise, do nothing
+        if valid:
             self._display_topology(net_name=net_name)
-        else:
-            raise NotImplementedError(f"{net_name} is not a valid network name.")
 
     def create_topology_action(self):
         """

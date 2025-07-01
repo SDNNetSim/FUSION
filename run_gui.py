@@ -3,7 +3,7 @@
 
 import sys
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileSystemModel, QTreeView, QTabWidget, QPlainTextEdit
+from PyQt5.QtWidgets import QFileSystemModel, QTreeView, QTabWidget, QPlainTextEdit  # pylint: disable=unused-import
 
 # Assuming these imports are available from your project
 from gui_scripts.gui_helpers.menu_helpers import MenuHelpers

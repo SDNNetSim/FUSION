@@ -26,7 +26,6 @@ class MenuHelpers:
         if file_name:
             print(f"Selected file: {file_name}")
 
-    # TODO: Add to standards and guidelines, must be called "create", if action must end in "action"
     def create_file_menu(self):
         """
         Creates the basis of the file menu along with adding an open action.

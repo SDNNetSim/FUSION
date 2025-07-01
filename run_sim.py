@@ -25,45 +25,7 @@ class NetworkSimulator:
         # Contains all the desired network simulator parameters for every simulation
         self.properties = None
 
-    def _run_yue(self, arr_rate_mean: int, start: int):
-        arr_rate_mean = float(arr_rate_mean)
-        engine_props = copy.deepcopy(self.properties)
-        engine_props['erlang'] = arr_rate_mean / engine_props['holding_time']
-        arr_rate_mean *= float(engine_props['cores_per_link'])
-        engine_props['arrival_rate'] = arr_rate_mean
-        engine_props['band_list'] = list()
-        create_input(engine_props=engine_props, base_fp='data')
-
-        if arr_rate_mean == (start * engine_props['cores_per_link']):
-            file_name = f"sim_input_{self.properties['thread_num']}.json"
-            save_input(base_fp='data', properties=engine_props, file_name=file_name, data_dict=engine_props)
-
-        engine = Engine(engine_props=engine_props)
-        engine.run()
-
-    def run_yue(self):
-        """
-        Runs a simulation using the Yue's simulation assumptions. Reference: Wang, Yue. Dynamic Traffic Scheduling
-        Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
-        """
-        arr_rate_dict = self.properties['arrival_rate']
-        start, stop, step = arr_rate_dict['start'], arr_rate_dict['stop'], arr_rate_dict['step']
-
-        if self.properties['thread_erlangs']:
-            with concurrent.futures.ProcessPoolExecutor() as executor:
-                futures_list = []
-                for arr_rate_mean in range(start, stop, step):
-                    time.sleep(1.0)
-                    future = executor.submit(self._run_yue, arr_rate_mean=arr_rate_mean, start=start)
-                    futures_list.append(future)
-
-                for future in concurrent.futures.as_completed(futures_list):
-                    future.result()
-        else:
-            for arr_rate_mean in range(start, stop, step):
-                self._run_yue(arr_rate_mean=arr_rate_mean, start=start)
-
-    def _run_arash(self, erlang: float, first_erlang: float):
+    def _run_generic_sim(self, erlang: float, first_erlang: bool):
         engine_props = copy.deepcopy(self.properties)
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
         engine_props['erlang'] = erlang
@@ -77,10 +39,12 @@ class NetworkSimulator:
         engine = Engine(engine_props=engine_props)
         engine.run()
 
-    def run_arash(self):
+    def run_generic_sim(self):
         """
-        Runs a simulation using the Arash's simulation assumptions.
+        Runs a generic simulation. Using Arash's assumptions c.
         Reference: https://doi.org/10.1016/j.comnet.2020.107755.
+        Other assumptions include Yue's. Reference: Wang, Yue. Dynamic Traffic Scheduling
+        Frameworks with Spectral and Spatial Flexibility in Sdm-Eons. Diss. University of Massachusetts Lowell, 2022.
         """
         erlang_dict = self.properties['erlangs']
         start, stop, step = erlang_dict['start'], erlang_dict['stop'], erlang_dict['step']
@@ -92,7 +56,7 @@ class NetworkSimulator:
                 for erlang in erlang_list:
                     first_erlang = erlang == erlang_list[0]
                     time.sleep(1.0)
-                    future = executor.submit(self._run_arash, erlang=erlang, first_erlang=first_erlang)
+                    future = executor.submit(self._run_generic_sim, erlang=erlang, first_erlang=first_erlang)
                     futures_list.append(future)
 
                 for future in concurrent.futures.as_completed(futures_list):
@@ -100,7 +64,7 @@ class NetworkSimulator:
         else:
             for erlang in erlang_list:
                 first_erlang = erlang == erlang_list[0]
-                self._run_arash(erlang=erlang, first_erlang=first_erlang)
+                self._run_generic_sim(erlang=erlang, first_erlang=first_erlang)
 
     def run_sim(self, **kwargs):
         """
@@ -117,10 +81,7 @@ class NetworkSimulator:
         # To keep track of each thread run and save results
         self.properties['thread_num'] = kwargs['thread_num']
 
-        if self.properties['sim_type'] == 'yue':
-            self.run_yue()
-        else:
-            self.run_arash()
+        self.run_generic_sim()
 
 
 def run(sims_dict: dict):
@@ -148,7 +109,7 @@ def run(sims_dict: dict):
 
 
 if __name__ == '__main__':
-    args_obj = parse_args()
-    # TODO: Update config path in other AI scripts
-    all_sims_dict = read_config(args_obj=args_obj, config_path=args_obj['config_path'])
+    args_dict = parse_args()
+    # TODO: Update config path in other AI scripts (drl_path_agents)
+    all_sims_dict = read_config(args_dict=args_dict, config_path=args_dict['config_path'])
     run(sims_dict=all_sims_dict)

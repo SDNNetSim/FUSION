@@ -13,7 +13,7 @@ from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_entrop
 from helper_scripts.os_helpers import create_dir
 
 
-# TODO: Note that many of these dictionaries were converted to objects, this will affect saving/calculating
+# TODO: (drl_path_agents) Note that many of these dictionaries were converted to objects, this will affect saving/calculating
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -49,7 +49,6 @@ class SimStats:
         self.topology = None
         self.iteration = None
 
-        # TODO: Make sure this isn't reset after multiple iterations
         self.train_data_list = list()
 
     @staticmethod
@@ -116,12 +115,14 @@ class SimStats:
         occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(net_spec_dict=net_spec_dict,
                                                                            path_list=path_list)
         blocking_prob = self.blocked_reqs / req_num
+        bit_rate_block_prob = self.bit_rate_blocked / self.bit_rate_request
 
         self.stats_props.snapshots_dict[req_num]['occupied_slots'].append(occupied_slots)
         self.stats_props.snapshots_dict[req_num]['guard_slots'].append(guard_slots)
         self.stats_props.snapshots_dict[req_num]['active_requests'].append(active_reqs)
         self.stats_props.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
         self.stats_props.snapshots_dict[req_num]['num_segments'].append(self.curr_trans)
+        self.stats_props.snapshots_dict[req_num]["bit_rate_blocking_prob"].append(bit_rate_block_prob)
 
     def _init_snapshots(self):
         for req_num in range(0, self.engine_props['num_requests'] + 1, self.engine_props['snapshot_step']):
@@ -210,6 +211,8 @@ class SimStats:
         self._init_stat_lists()
 
         self.blocked_reqs = 0
+        self.bit_rate_blocked = 0
+        self.bit_rate_request = 0
         self.total_trans = 0
 
     def get_blocking(self):
@@ -220,19 +223,22 @@ class SimStats:
         """
         if self.engine_props['num_requests'] == 0:
             blocking_prob = 0
-            br_blocking_prob = 0
+            bit_rate_blocking_prob = 0
         else:
             blocking_prob = self.blocked_reqs / self.engine_props['num_requests']
-            br_blocking_prob = self.bit_rate_blocked / self.bit_rate_request
+            bit_rate_blocking_prob = self.bit_rate_blocked / self.bit_rate_request
 
         self.stats_props.sim_block_list.append(blocking_prob)
-        self.stats_props.sim_br_block_list.append(br_blocking_prob)
+        self.stats_props.sim_br_block_list.append(bit_rate_blocking_prob)
 
     def _handle_iter_lists(self, sdn_data: object, new_lp_index: list):
         for stat_key in sdn_data.stat_key_list:
-            # TODO: Eventually change this name (sdn_data)
+            # TODO: (drl_path_agents) This name should be changed to 'sdn_data'
             curr_sdn_data = sdn_data.get_data(key=stat_key)
             if stat_key == 'xt_list':
+                # (drl_path_agents) fixme
+                if curr_sdn_data == [None]:
+                    break
                 snr_list = list()
                 for cnt in range(0,len(curr_sdn_data)):
                     if cnt in new_lp_index:
@@ -311,7 +317,7 @@ class SimStats:
             self.stats_props.hops_list.append(num_hops)
 
             path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
-            self.stats_props.lengths_list.append(round(float(path_len),2))
+            self.stats_props.lengths_list.append(round(float(path_len), 2))
 
             if self.engine_props["can_partially_serve"]:
                 self.stats_props.demand_realization_ratio[sdn_data.bandwidth].append(( int(sdn_data.bandwidth) - int(sdn_data.remaining_bw)) / int(sdn_data.bandwidth))
@@ -340,7 +346,6 @@ class SimStats:
                 if len(data_list) == 0:
                     mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
                 else:
-                    # TODO: Is this ever equal to one?
                     if len(data_list) == 1:
                         deviation = 0.0
                     else:
@@ -448,9 +453,10 @@ class SimStats:
         """
         self.block_mean = mean(self.stats_props.sim_block_list)
         self.bit_rate_block_mean = mean(self.stats_props.sim_br_block_list)
+        self.bit_rate_block_mean = mean(self.stats_props.sim_br_block_list)
         if len(self.stats_props.sim_block_list) <= 1:
             return False
-        
+
         self.block_variance = variance(self.stats_props.sim_block_list)
         self.bit_rate_block_variance = variance(self.stats_props.sim_br_block_list)
 
@@ -556,9 +562,9 @@ class SimStats:
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = None
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = None
                 else:
-                    self.save_dict['iter_stats'][self.iteration][f'{save_key}mean'] = round(float(mean(stat_array)),2)
-                    self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = round(float(min(stat_array)),2)
-                    self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = round(float(max(stat_array)),2)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}mean'] = round(float(mean(stat_array)), 2)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = round(float(min(stat_array)), 2)
+                    self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = round(float(max(stat_array)), 2)
             else:
                 if stat_key == 'total_transponder_usage_list':
                     if self.engine_props["transponder_usage_per_node"]:

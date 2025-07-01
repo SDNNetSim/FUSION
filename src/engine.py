@@ -56,8 +56,9 @@ class Engine:
                 "was_groomed": sdn_props.was_groomed,
                 "was_new_lp_established": sdn_props.was_new_lp_established,
                 "core_list": sdn_props.core_list,
-                "start_slot_list":sdn_props.start_slot_list,
-                "end_slot_list":sdn_props.end_slot_list,
+                "band": sdn_props.band_list,
+                "start_slot_list": sdn_props.start_slot_list,
+                "end_slot_list": sdn_props.end_slot_list,
                 "bandwidth_list": sdn_props.bandwidth_list,
                 "lightpath_id_list": sdn_props.lightpath_id_list,
                 "lightpath_bandwidth_list": sdn_props.lightpath_bandwidth_list,
@@ -137,7 +138,7 @@ class Engine:
         :param force_core: Force a certain core for allocation.
         """
         for req_key, req_value in self.reqs_dict[curr_time].items():
-            # TODO: This should be changed in reqs_dict eventually
+            # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
                 req_key = 'mod_formats_dict'
             if req_key in ['lightpath_id_list']:
@@ -180,7 +181,8 @@ class Engine:
         self.net_spec_dict = {}
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
 
-        # TODO: Improve this
+        # TODO: (drl_path_agents) This list should be stored somewhere else, like an arguments script
+        self.engine_props['band_list'] = list()
         for band in ['c', 'l', 's', 'o', 'e']:
             try:
                 if self.engine_props[f'{band}_band']:
@@ -194,7 +196,7 @@ class Engine:
 
             cores_matrix = dict()
             for band in self.engine_props['band_list']:
-                # TODO: We might want to name it the same thing
+                # TODO: This variable name for bands changes and is not consistent
                 band_slots = self.engine_props[f'{band}_band']
                 cores_matrix[band] = np.zeros((link_data['fiber']['num_cores'], band_slots))
 
@@ -215,8 +217,7 @@ class Engine:
 
         :param seed: The seed to use for the random generation.
         """
-        # TODO: Needs to be a flag for artificial intelligence (especially RL) simulations
-        # seed = 0
+        # TODO: (drl_path_agent) Add a flag for AI simulations which want to have a constant seed
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items(), key=lambda x: x[0][1]))
 
@@ -301,10 +302,10 @@ class Engine:
         if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0:
             self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
 
-        if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == self.engine_props['max_iters']:
+        if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == \
+                self.engine_props['max_iters']:
             self.stats_obj.save_stats(base_fp=base_fp)
 
-        
         return resp
     def reset(self):
         "reset Parameters for intiating new iteration"
