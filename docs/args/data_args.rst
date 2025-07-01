@@ -8,9 +8,6 @@ reach (the maximum value in kilometers a request can be allocated to). The table
 
 References to these assumptions can be found ``here``.
 
-.. automodule:: arg_scripts.data_args
-    :members:
-    :undoc-members:
 
 .. list-table:: Yue's Assumptions
    :widths: 25 25 25

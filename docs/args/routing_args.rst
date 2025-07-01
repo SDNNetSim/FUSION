@@ -1,35 +1,69 @@
-Routing Arguments
-==================
 
-Effective network routing is crucial for ensuring data reaches its intended destination efficiently. This reference
-guide provides a comprehensive overview of the various arguments used to configure routing protocols and network
-traffic. The table below details each argument, its purpose, and its impact on how your network routes data packets.
+Routing Arguments
+=================
+
+The `RoutingProps` class stores all parameters used during path computation and routing logic.
+These fields are assigned dynamically and support routing algorithms such as K-shortest path,
+XT-aware routing, and precomputed path selection.
 
 .. automodule:: arg_scripts.routing_args
     :members:
     :undoc-members:
 
-.. list-table:: empty_props
-   :widths: 25 25
+RoutingProps Attributes
+------------------------
+
+.. list-table::
    :header-rows: 1
 
-   * - Argument Name
+   * - Attribute
+     - Type
      - Description
-   * - paths_list
-     - Potential paths to route a request (returned from routing)
-   * - mod_formats_list
-     - Modulation formats associated with each potential path
+
+   * - paths_matrix
+     - list
+     - Matrix of potential paths for a single request
+
+   * - mod_formats_matrix
+     - list
+     - Modulation formats corresponding to each path in ``paths_matrix``
+
    * - weights_list
-     - Weights associated with each potential path, could be length, cross-talk cost, hops, etc.
+     - list
+     - List of path weights (e.g., length, XT, or other criteria)
+
+   * - path_index_list
+     - list
+     - Index tracking for each path when using precomputed routing
+
    * - input_power
-     - ``Arash``
+     - float
+     - Input power in Watts
+
    * - freq_spacing
-     - ``Arash``
+     - float
+     - Frequency spacing in Hz
+
    * - mci_worst
-     - ``Arash``
+     - float
+     - Worst-case mutual coupling interference value
+
    * - max_link_length
-     - Maximum link length in the topology
+     - float or None
+     - Maximum link length in km
+
    * - span_len
-     - Length of a single span
+     - float
+     - Length of a single span in km
+
    * - max_span
-     - Maximum number of spans for a path in the current topology
+     - int or None
+     - Maximum number of spans considered in the network
+
+   * - connection_index
+     - int or None
+     - Source-destination index for precalculated routing
+
+   * - path_index
+     - int or None
+     - Index of selected path during spectrum assignment

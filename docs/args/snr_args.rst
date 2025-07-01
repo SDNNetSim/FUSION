@@ -10,37 +10,76 @@ you'll gain valuable insights for designing and maintaining high-fidelity optica
     :members:
     :undoc-members:
 
-.. list-table:: empty_props
-   :widths: 25 25
+SNRProps Attributes
+-------------------
+
+.. list-table::
    :header-rows: 1
 
-   * - Argument Name
+   * - Attribute
+     - Type
      - Description
+
    * - light_frequency
-     - ``Arash``
+     - float
+     - Central optical carrier frequency (Hz)
+
    * - plank
-     - Plank's constant
+     - float
+     - Planck's constant (Joule·seconds)
+
    * - req_bit_rate
-     - ``Arash``
+     - float
+     - Target request bit rate (Gbps)
+
    * - req_snr
-     - ``Arash``
+     - float
+     - Required signal-to-noise ratio (dB)
+
    * - nsp
-     - ``Arash``
+     - float
+     - Noise spectral density
+
    * - center_freq
-     - ``Arash``
+     - float
+     - Center frequency of the current request
+
    * - bandwidth
-     - ``Arash``
+     - float
+     - Bandwidth for the current request
+
    * - center_psd
-     - ``Arash``
+     - float
+     - Centered power spectral density
+
    * - mu_param
-     - ``Arash``
+     - float
+     - Mu parameter used in PSD calculations
+
    * - sci_psd
-     - ``Arash``
+     - float
+     - Self-channel interference PSD
+
    * - xci_psd
-     - ``Arash``
+     - float
+     - Cross-channel interference PSD
+
    * - length
-     - ``Arash``
+     - float
+     - Span length
+
    * - num_span
-     - ``Arash``
+     - int
+     - Number of spans in path
+
    * - link_dict
-     - ``Arash``
+     - dict
+     - Dictionary of link lengths and related metrics
+
+   * - mod_format_mapping_dict
+     - dict
+     - Mapping from numeric format index to modulation name
+
+   * - bw_mapping_dict
+     - dict
+     - Bandwidth (Gbps) associated with each modulation format

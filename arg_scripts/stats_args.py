@@ -25,7 +25,7 @@ class StatsProps:
         self.end_slot_list = list() # # Tracks the end slot allocated in a simulation
         self.modulation_list = list() # Tracks the modulation
         self.bandwidth_list = list() # # Tracks the bandwidth
-        self.path_index_list = list()
+        self.path_index_list = list() #Tracks the number of times a path was selected
 
 
     def __repr__(self):
