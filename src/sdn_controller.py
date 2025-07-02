@@ -209,7 +209,7 @@ class SDNController:
         self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
         self.sdn_props.was_new_lp_established = list()
 
-    def _handle_dynamic_slicing(self, path_list: list, path_index: int, forced_segments: int ):
+    def _handle_dynamic_slicing(self, path_list: list, forced_segments: int ):
         remaining_bw = self.sdn_props.remaining_bw if self.sdn_props.was_partially_groomed else int(self.sdn_props.bandwidth)
         path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
         bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
@@ -251,7 +251,7 @@ class SDNController:
                         if remaining_bw < int(bandwidth):
                             break 
                         self.sdn_props.was_routed = True
-                        mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_dict = mods_dict, path_index = path_index)
+                        mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_dict = mods_dict)
                         # in flexigrid slicing, bandwidth in pre-calculated
                         bw = int(bandwidth)
                         if self.spectrum_obj.spectrum_props.is_free:
@@ -280,7 +280,7 @@ class SDNController:
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = 'congestion'
                     if self.engine_props['can_partially_serve'] and remaining_bw != int(self.sdn_props.bandwidth):
-                        if self.sdn_props.was_partially_groomed or path_index == self.engine_props['k_paths'] - 1:
+                        if self.sdn_props.was_partially_groomed or self.sdn_props.path_index == self.engine_props['k_paths'] - 1:
                             self.sdn_props.is_sliced = True
                             self.sdn_props.was_partially_routed = True
                             return
@@ -390,7 +390,7 @@ class SDNController:
                         self.spectrum_obj.spectrum_props.path_list = path_list
                         self.spectrum_obj.spectrum_props.forced_band = forced_band
                         self.spectrum_obj.spectrum_props.slicing_flag = False
-                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, path_index = path_index)
+                        self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
                         # Request was blocked for this path
                         if self.spectrum_obj.spectrum_props.is_free is not True:
                             self.sdn_props.block_reason = 'congestion'
