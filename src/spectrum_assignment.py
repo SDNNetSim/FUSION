@@ -287,7 +287,7 @@ class SpectrumAssignment:
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    snr_check, xt_cost, lp_bw = self.snr_obj.handle_snr(path_index)
+                    snr_check, xt_cost, lp_bw = self.snr_obj.handle_snr(self.sdn_props.path_index)
                     self.spectrum_props.xt_cost = xt_cost
                     if not snr_check:
                         self.spectrum_props.is_free = False
@@ -303,7 +303,7 @@ class SpectrumAssignment:
             continue
 
 
-    def get_spectrum_dynamic_slicing(self, mod_format_dict: dict, slice_bandwidth: str = None, path_index: int = None):
+    def get_spectrum_dynamic_slicing(self, mod_format_dict: dict, slice_bandwidth: str = None):
         """
         Controls the class, attempts to find an available spectrum.
 
@@ -317,7 +317,7 @@ class SpectrumAssignment:
             self.spectrum_props.slicing_flag = True
             self._get_spectrum()
             if self.spectrum_props.is_free:
-                mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
+                mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
                 self.spectrum_props.modulation = mod_format
                 self.spectrum_props.xt_cost = snr_val
                 self.spectrum_props.is_free = True
@@ -335,7 +335,7 @@ class SpectrumAssignment:
                 self.spectrum_props.slicing_flag = True
                 self._get_spectrum()
                 if self.spectrum_props.is_free:
-                    resp, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
+                    resp, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
                     if not resp:
                         continue
                     self.spectrum_props.xt_cost = snr_val
