@@ -189,14 +189,25 @@ class SDNController:
         """
         Handles the case where allocation fails due to congestion.
         """
-        self.sdn_props.was_routed = False
-        self.sdn_props.block_reason = 'congestion'
-        self.sdn_props.num_trans = 1
-
         if remaining_bw != int(self.sdn_props.bandwidth):
-            self.release()
-
+            for lpid in list(self.sdn_props.was_new_lp_established):
+                self.release(lightpath_id = lpid, slicing_flag = True)
+                self.sdn_props.was_new_lp_established.remove(lpid)
+                lp_idx = self.sdn_props.lightpath_id_list.index(lpid)
+                self.sdn_props.lightpath_id_list.pop(lp_idx)
+                self.sdn_props.lightpath_bandwidth_list.pop(lp_idx)
+                self.sdn_props.start_slot_list.pop(lp_idx)
+                self.sdn_props.band_list.pop(lp_idx)
+                self.sdn_props.core_list.pop(lp_idx)
+                self.sdn_props.end_slot_list.pop(lp_idx)
+                self.sdn_props.xt_list.pop(lp_idx)
+                self.sdn_props.bandwidth_list.pop(lp_idx)
+                self.sdn_props.modulation_list.pop(lp_idx)
+        self.sdn_props.num_trans = 1
         self.sdn_props.is_sliced = False
+        self.sdn_props.was_partially_routed = False
+        self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+        self.sdn_props.was_new_lp_established = list()
 
     def _handle_dynamic_slicing(self, path_list: list, path_index: int, forced_segments: int ):
         remaining_bw = self.sdn_props.remaining_bw if self.sdn_props.was_partially_groomed else int(self.sdn_props.bandwidth)
@@ -207,49 +218,28 @@ class SDNController:
         while remaining_bw > 0:
             if self.engine_props['fixed_grid']:
                 self.sdn_props.was_routed = True
-                mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_dict = {}, path_index = path_index)
+                mod_format, bw = self.spectrum_obj.get_spectrum_dynamic_slicing(mod_format_dict = {})
                 if self.spectrum_obj.spectrum_props.is_free:
                     lp_id = self.sdn_props.get_lightpath_id()
                     self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                     self.spectrum_obj.spectrum_props.lightpath_bandwidth = bw
-                    # self.spectrum_obj
                     self.allocate()
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     self._update_req_stats(bandwidth=str(dedicated_bw), remaining= str(remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else 0))
                     remaining_bw -= bw
                     self.sdn_props.num_trans += 1
                     self.sdn_props.is_sliced = True
-                    # self.sdn_props.was_new_lp_established = True
                     self.sdn_props.was_new_lp_established.append(lp_id)
                     self.sdn_props.was_partially_routed = False
                 else:
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = 'congestion'
                     if self.engine_props['can_partially_serve'] and remaining_bw != int(self.sdn_props.bandwidth):
-                        if self.sdn_props.was_partially_groomed or path_index == self.engine_props['k_paths'] - 1:
+                        if self.sdn_props.was_partially_groomed or self.sdn_props.path_index == self.engine_props['k_paths'] - 1:
                             self.sdn_props.is_sliced = True
                             self.sdn_props.was_partially_routed = True
                             return
-                    if remaining_bw != int(self.sdn_props.bandwidth):
-                        for lpid in list(self.sdn_props.was_new_lp_established):
-                            self.release(lightpath_id = lpid, slicing_flag = True)
-                            self.sdn_props.was_new_lp_established.remove(lpid)
-                            lp_idx = self.sdn_props.lightpath_id_list.index(lpid)
-                            self.sdn_props.lightpath_id_list.pop(lp_idx)
-                            self.sdn_props.lightpath_bandwidth_list.pop(lp_idx)
-                            self.sdn_props.start_slot_list.pop(lp_idx)
-                            self.sdn_props.band_list.pop(lp_idx)
-                            self.sdn_props.core_list.pop(lp_idx)
-                            self.sdn_props.end_slot_list.pop(lp_idx)
-                            self.sdn_props.xt_list.pop(lp_idx)
-                            self.sdn_props.bandwidth_list.pop(lp_idx)
-                            self.sdn_props.modulation_list.pop(lp_idx)
-                    self.sdn_props.num_trans = 1
-                    self.sdn_props.is_sliced = False
-                    self.sdn_props.was_partially_routed = False
-                    self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
-                    self.sdn_props.was_new_lp_established = list()
-
+                    self._handle_congestion(remaining_bw)
                     break
             else:
                 for bandwidth, mods_dict in bw_mod_dict.items():
@@ -279,7 +269,6 @@ class SDNController:
                         else:
                             break
 
-
                     if remaining_bw <= 0:
                         break
 
@@ -295,25 +284,7 @@ class SDNController:
                             self.sdn_props.is_sliced = True
                             self.sdn_props.was_partially_routed = True
                             return
-                    if remaining_bw != int(self.sdn_props.bandwidth):
-                        for lpid in list(self.sdn_props.was_new_lp_established):
-                            self.release(lightpath_id = lpid, slicing_flag = True)
-                            self.sdn_props.was_new_lp_established.remove(lpid)
-                            lp_idx = self.sdn_props.lightpath_id_list.index(lpid)
-                            self.sdn_props.lightpath_id_list.pop(lp_idx)
-                            self.sdn_props.lightpath_bandwidth_list.pop(lp_idx)
-                            self.sdn_props.start_slot_list.pop(lp_idx)
-                            self.sdn_props.band_list.pop(lp_idx)
-                            self.sdn_props.core_list.pop(lp_idx)
-                            self.sdn_props.end_slot_list.pop(lp_idx)
-                            self.sdn_props.xt_list.pop(lp_idx)
-                            self.sdn_props.bandwidth_list.pop(lp_idx)
-                            self.sdn_props.modulation_list.pop(lp_idx)
-                    self.sdn_props.num_trans = 1
-                    self.sdn_props.is_sliced = False
-                    self.sdn_props.was_partially_routed = False
-                    self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
-                    self.sdn_props.was_new_lp_established = list()
+                    self._handle_congestion(remaining_bw)
                     break
                 
 
@@ -401,8 +372,7 @@ class SDNController:
                         force_slicing = True
                         self.spectrum_obj.spectrum_props.slicing_flag = True
                         if self.engine_props['dynamic_lps']:
-                            self._handle_dynamic_slicing(path_list=path_list, path_index=path_index,
-                                                         forced_segments=force_slicing)
+                            self._handle_dynamic_slicing(path_list=path_list, forced_segments=force_slicing)
                             if not self.sdn_props.was_routed:
                                 if self.engine_props['can_partially_serve']:
                                     if not self.sdn_props.was_partially_groomed and not self.sdn_props.was_partially_routed:
