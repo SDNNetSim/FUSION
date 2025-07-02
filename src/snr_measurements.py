@@ -841,10 +841,9 @@ class SnrMeasurements:
             mod_format, bandwidth, snr_val = self.check_snr_ext_slicing(path_index)
         elif self.engine_props['snr_type'] == "gsnr":
             if self.engine_props['band_list'] == ['c']:
-                mod_format, snr_val, bw = self.check_gsnr()
+                mod_format, snr_val, bandwidth = self.check_gsnr()
             elif self.engine_props['band_list'] == ['c', 'l']:
-                mod_format, snr_val, bw  = self.check_gsnr_mb()
-            mod_format, bandwidth, snr_val = self.check_snr_ext_slicing(path_index)
+                mod_format, snr_val, bandwidth  = self.check_gsnr_mb()
         else:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
