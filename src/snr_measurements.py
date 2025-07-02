@@ -528,8 +528,8 @@ class SnrMeasurements:
                 GSNR_link_AseNLI += (self.engine_props['input_power'] / (p_ase_span + P_NLI_span))**-1
             GSNR_link_AseNLI_dB.append(10 * np.log10(GSNR_link_AseNLI**-1))
             GSNR_Path_AseNLI += GSNR_link_AseNLI
-        GSNR_LP_dB = 10 * np.log10(1 / GSNR_Path_AseNLI)
-        resp = GSNR_LP_dB >= self.snr_props.req_snr[self.spectrum_props.modulation]
+        gsnr_db = 10 * np.log10(1 / GSNR_Path_AseNLI)
+        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation]
         bw_resp = 0
         if resp:
             if self.engine_props['fixed_grid']:
@@ -552,11 +552,11 @@ class SnrMeasurements:
                                             nested_key='max_length')
             force_mod_format = list(mod_formats_dict.keys())
             for mod in force_mod_format:
-                if GSNR_LP_dB >= self.snr_props.req_snr[mod]:
+                if gsnr_db >= self.snr_props.req_snr[mod]:
                     resp = mod
                     bw_resp = BW_mapping[mod]
                     break
-        return resp, GSNR_LP_dB, bw_resp
+        return resp, gsnr_db, bw_resp
 
     
 
@@ -770,9 +770,9 @@ class SnrMeasurements:
         }
 
         gsnr = self._gsnr_calc_mb()
-        GSNR_LP_dB = 10 * np.log10(gsnr)
+        gsnr_db = 10 * np.log10(gsnr)
         
-        resp = GSNR_LP_dB >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.snr_props.snr_margin
+        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.snr_props.snr_margin
 
         bw_resp = 0
         if resp:
@@ -796,11 +796,11 @@ class SnrMeasurements:
                                             nested_key='max_length')
             force_mod_format = list(mod_formats_dict.keys())
             for mod in force_mod_format:
-                if GSNR_LP_dB >= self.snr_props.req_snr[mod]:
+                if gsnr_db >= self.snr_props.req_snr[mod]:
                     resp = mod
                     bw_resp = BW_mapping[mod]
                     break
-        return resp, GSNR_LP_dB, bw_resp
+        return resp, gsnr_db, bw_resp
 
     
 
