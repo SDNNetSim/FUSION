@@ -1,0 +1,26 @@
+# TODO: (version 5.5-6) Create an official example for usage
+
+network: "dt_network"
+dates:
+  - "0606"
+  - "0611"
+plots:
+  - blocking
+
+#save_dir: "./figures/spain/obs_7/blocking"
+
+algorithms:
+#  - epsilon_greedy_bandit
+#  - ucb_bandit
+#  - q_learning
+  - ppo
+#  - dqn
+#  - k_shortest_path
+#  - cong_aware
+
+runs:
+  drl: true
+  non_drl: true
+
+observation_spaces:
+  - obs_7

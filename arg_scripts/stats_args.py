@@ -15,6 +15,7 @@ class StatsProps:
         self.frag_dict = dict() # Track of different fragmentation metrics
         self.lp_bw_utilization_dict = dict() # Average lightpath bandwidth utilization
         self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}  # Block reasons
+        self.link_usage_dict = dict()  # Tracks per link usage data
         self.sim_block_list = list()  # List of blocking probabilities per simulation
         self.sim_br_block_list = list()  # List of bit rate blocking probabilities per simulation
         self.trans_list = list()  # List of transponders used per simulation
@@ -27,6 +28,7 @@ class StatsProps:
         self.end_slot_list = list() # # Tracks the end slot allocated in a simulation
         self.modulation_list = list() # Tracks the modulation
         self.bandwidth_list = list() # # Tracks the bandwidth
+        self.path_index_list = list()
         self.total_transponder_usage_list = list() # Tracks of total transponder
         self.sim_lp_utilization_list = list() # Track of lightpath utilization
 

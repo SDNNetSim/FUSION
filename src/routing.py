@@ -5,7 +5,8 @@ import numpy as np
 
 from arg_scripts.routing_args import RoutingProps
 from helper_scripts.routing_helpers import RoutingHelpers
-from helper_scripts.sim_helpers import find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals
+from helper_scripts.sim_helpers import (find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals,
+                                        find_path_cong, find_path_frag)
 
 
 class Routing:
@@ -81,8 +82,8 @@ class Routing:
                                              target=self.sdn_props.destination, weight=weight)
 
         for path_list in paths_obj:
-            # If cross-talk, our path weight is the summation across the path
-            if weight == 'xt_cost':
+            # If cross-talk or congestion, our path weight is the summation across the path
+            if weight in ('xt_cost', 'cong_cost', 'frag_cost'):
                 resp_weight = sum(self.sdn_props.topology[path_list[i]][path_list[i + 1]][weight]
                                   for i in range(len(path_list) - 1))
 
@@ -105,6 +106,24 @@ class Routing:
             self.route_props.weights_list.append(resp_weight)
             self.route_props.paths_matrix.append(path_list)
             break
+
+    def find_least_frag(self):
+        """
+        Finds and selects the path with the least average fragmentation ratio.
+        """
+        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+            source, destination = link_tuple
+            path_list = [source, destination]
+
+            # Compute average fragmentation on this direct link
+            frag_score = find_path_frag(path_list=path_list,
+                                        net_spec_dict=self.sdn_props.net_spec_dict)
+
+            # Store frag score for both directions if bidirectional
+            self.sdn_props.topology[source][destination]['frag_cost'] = frag_score
+            self.sdn_props.topology[destination][source]['frag_cost'] = frag_score  # if symmetric
+
+        self.find_least_weight(weight='frag_cost')
 
     def find_k_shortest(self):
         """
@@ -237,6 +256,88 @@ class Routing:
                 break
             path_cnt += 1
 
+    # TODO: (version 5.5-6) Break up for organizational purposes
+    def find_cong_aware(self):
+        """
+        Congestion‑aware k‑shortest routing.
+
+        For the first k shortest‑length candidate paths we compute
+
+            score = alpha * mean_path_congestion
+                  + (1 - alpha) * (path_len / max_len_in_set)
+
+        All k paths are stored in route_props.*, **sorted by score** so the
+        downstream allocator will try the most promising path first, then
+        the second, etc.—identical control flow to find_k_shortest().
+        """
+
+        # -------- 0 | gather k shortest‑length paths -------------------------
+        # α can be set per‑experiment in your YAML / JSON config
+        alpha = float(self.engine_props.get("ca_alpha", 0.3))  # default 0.25
+        k = int(self.engine_props.get("k_paths"))  # unchanged
+        paths_iter = nx.shortest_simple_paths(
+            G=self.engine_props["topology"],
+            source=self.sdn_props.source,
+            target=self.sdn_props.destination,
+            weight="length",
+        )
+
+        cand_paths, path_lens, path_congs = [], [], []
+        for idx, path in enumerate(paths_iter):
+            if idx >= k:
+                break
+            cand_paths.append(path)
+
+            # length (same helper you already use elsewhere)
+            plen = find_path_len(path_list=path, topology=self.engine_props["topology"])
+            path_lens.append(plen)
+
+            # mean congestion feature — exactly what the RL agent sees
+            mean_cong, _ = find_path_cong(path_list=path,
+                                          net_spec_dict=self.sdn_props.net_spec_dict)
+            path_congs.append(mean_cong)
+
+        if not cand_paths:  # safety guard
+            self.route_props.blocked = True  # consistent with other funcs
+            return
+
+        # -------- 1 | compute scores & sort paths ----------------------------
+        path_lens = np.asarray(path_lens, dtype=float)
+        path_congs = np.asarray(path_congs, dtype=float)
+
+        max_len = path_lens.max() if path_lens.max() > 0 else 1.0
+        hop_norm = path_lens / max_len
+        scores = alpha * path_congs + (1.0 - alpha) * hop_norm
+
+        # sort indices by score ascending
+        order = scores.argsort()
+
+        # -------- 2 | populate route_props in that order ---------------------
+        chosen_bw = self.sdn_props.bandwidth
+        for idx in order:
+            p = cand_paths[idx]
+            plen = path_lens[idx]
+            sc = float(scores[idx])
+
+            # modulation list (mirrors logic in find_k_shortest)
+            if not self.engine_props["pre_calc_mod_selection"]:
+                mod_list = [
+                    get_path_mod(
+                        mods_dict=self.engine_props["mod_per_bw"][chosen_bw],
+                        path_len=plen,
+                    )
+                ]
+            else:
+                mods_sorted = sort_nested_dict_vals(
+                    original_dict=self.sdn_props.mod_formats_dict,
+                    nested_key="max_length",
+                )
+                mod_list = list(mods_sorted.keys())
+
+            self.route_props.paths_matrix.append(p)
+            self.route_props.mod_formats_matrix.append(mod_list)
+            self.route_props.weights_list.append(sc)
+
     def get_route(self):
         """
         Controls the class by finding the appropriate routing function.
@@ -257,5 +358,10 @@ class Routing:
             self.find_k_shortest()
         elif self.engine_props['route_method'] == 'external_ksp':
             self.load_k_shortest()
+        # TODO: Need to change 'least congested' name above, as it doesn't find the mean least congested path
+        elif self.engine_props['route_method'] == 'cong_aware':
+            self.find_cong_aware()
+        elif self.engine_props['route_method'] == 'frag_aware':
+            self.find_least_frag()
         else:
             raise NotImplementedError(f"Routing method not recognized, got: {self.engine_props['route_method']}.")

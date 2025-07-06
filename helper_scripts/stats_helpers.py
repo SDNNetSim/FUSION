@@ -3,6 +3,7 @@ import os
 import math
 import copy
 from statistics import mean, variance, stdev
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,6 @@ from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_entrop
 from helper_scripts.os_helpers import create_dir
 
 
-# TODO: (drl_path_agents) Note that many of these dictionaries were converted to objects, this will affect saving/calculating
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -78,6 +78,18 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
+    @staticmethod
+    def _get_link_usage_summary(net_spec_dict):
+        usage_summary_dict = {}
+        for (src, dst), link_data in net_spec_dict.items():
+            if str(src) < str(dst):  # Avoid double-counting reverse direction
+                usage_summary_dict[f"{src}-{dst}"] = {
+                    "usage_count": link_data.get('usage_count', 0),
+                    "throughput": link_data.get('throughput', 0),
+                    "link_num": link_data.get('link_num'),
+                }
+        return usage_summary_dict
+
     def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):
         """
         Updates the training data list with the current request information.
@@ -114,6 +126,7 @@ class SimStats:
         """
         occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(net_spec_dict=net_spec_dict,
                                                                            path_list=path_list)
+        link_usage = self._get_link_usage_summary(net_spec_dict=net_spec_dict)
         blocking_prob = self.blocked_reqs / req_num
         bit_rate_block_prob = self.bit_rate_blocked / self.bit_rate_request
 
@@ -123,6 +136,7 @@ class SimStats:
         self.stats_props.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
         self.stats_props.snapshots_dict[req_num]['num_segments'].append(self.curr_trans)
         self.stats_props.snapshots_dict[req_num]["bit_rate_blocking_prob"].append(bit_rate_block_prob)
+        self.stats_props.snapshots_dict[req_num]['link_usage'] = link_usage
 
     def _init_snapshots(self):
         for req_num in range(0, self.engine_props['num_requests'] + 1, self.engine_props['snapshot_step']):
@@ -189,6 +203,8 @@ class SimStats:
                 self.stats_props.cores_dict = {core: 0 for core in range(self.engine_props['cores_per_link'])}
             elif stat_key == 'block_reasons_dict':
                 self.stats_props.block_reasons_dict = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
+            elif stat_key == 'link_usage_dict':
+                self.stats_props.link_usage_dict = dict()
             elif stat_key != 'iter_stats':
                 raise ValueError('Dictionary statistic was not reset in props.')
 
@@ -198,6 +214,8 @@ class SimStats:
             if isinstance(data_type, list):
                 # Only reset sim_block_list when we encounter a new traffic volume
                 if self.iteration != 0 and stat_key in ['sim_block_list', 'total_transponder_usage_list', 'sim_br_block_list']:
+                    continue
+                if stat_key == 'path_index_list':
                     continue
                 setattr(self.stats_props, stat_key, list())
 
@@ -214,6 +232,9 @@ class SimStats:
         self.bit_rate_blocked = 0
         self.bit_rate_request = 0
         self.total_trans = 0
+
+        k_paths = self.engine_props.get('k_paths')
+        self.stats_props.path_index_list = [0] * k_paths
 
     def get_blocking(self):
         """
@@ -233,7 +254,6 @@ class SimStats:
 
     def _handle_iter_lists(self, sdn_data: object, new_lp_index: list):
         for stat_key in sdn_data.stat_key_list:
-            # TODO: (drl_path_agents) This name should be changed to 'sdn_data'
             curr_sdn_data = sdn_data.get_data(key=stat_key)
             if stat_key == 'xt_list':
                 # (drl_path_agents) fixme
@@ -325,12 +345,17 @@ class SimStats:
             self._handle_iter_lists(sdn_data=sdn_data, new_lp_index = new_lp_index)
             self.stats_props.route_times_list.append(sdn_data.route_time)
             self.total_trans += sdn_data.num_trans
+            self.stats_props.path_index_list[sdn_data.path_index] += 1
+            self.stats_props.link_usage_dict = self._get_link_usage_summary(net_spec_dict)
+
             for i in range(0,len(sdn_data.lightpath_bandwidth_list)):
                 if i in new_lp_index:
                     bandwidth = str(sdn_data.lightpath_bandwidth_list[i])
+
                     mod_format = sdn_data.modulation_list[i]
 
                     self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight),2))
+            
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
@@ -536,6 +561,8 @@ class SimStats:
         if self.engine_props['file_type'] not in ('json', 'csv'):
             raise NotImplementedError(f"Invalid file type: {self.engine_props['file_type']}, expected csv or json.")
 
+        self.save_dict['link_usage'] = self.stats_props.link_usage_dict
+
         self.save_dict['blocking_mean'] = self.block_mean
         self.save_dict['blocking_variance'] = self.block_variance
         self.save_dict['ci_rate_block'] = self.block_ci
@@ -581,6 +608,8 @@ class SimStats:
             base_fp = 'data'
         save_fp = os.path.join(base_fp, 'output', self.sim_info, self.engine_props['thread_num'])
         create_dir(save_fp)
+        sim_end_time = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        self.save_dict['sim_end_time'] = sim_end_time
         if self.engine_props['file_type'] == 'json':
             with open(f"{save_fp}/{self.engine_props['erlang']}_erlang.json", 'w', encoding='utf-8') as file_path:
                 json.dump(self.save_dict, file_path, indent=4)
@@ -590,6 +619,7 @@ class SimStats:
         if self.engine_props['output_train_data']:
             self.save_train_data(base_fp=base_fp)
 
+    # TODO: (version 5.5-6) Shouldn't there be a logging module instead?
     def print_iter_stats(self, max_iters: int, print_flag: bool):
         """
         Prints iteration stats, mostly used to ensure simulations are running fine.
@@ -598,7 +628,15 @@ class SimStats:
         :param print_flag: Determine if we want to print or not.
         :return: None
         """
+        log_queue = self.engine_props.get('log_queue')
+
+        def log(message):
+            if log_queue:
+                log_queue.put(message)
+            else:
+                print(message)
+
         if print_flag:
-            print(f"Iteration {self.iteration + 1} out of {max_iters} completed for "
-                  f"Erlang: {self.engine_props['erlang']}")
-            print(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}")
+            log(f"Iteration {self.iteration + 1} out of {max_iters} completed for "
+                  f"Erlang: {self.engine_props['erlang']}\n")
+            log(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}\n")

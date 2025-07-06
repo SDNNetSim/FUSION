@@ -44,6 +44,17 @@ class SDNController:
                         self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
                         self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
 
+        try:
+            duration = self.sdn_props.depart - self.sdn_props.arrive  # seconds
+            bandwidth = int(self.sdn_props.bandwidth)  # Gbps
+            data_transferred = bandwidth * duration  # Gbps·s
+
+            for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
+                self.sdn_props.net_spec_dict[(source, dest)]['throughput'] += data_transferred
+                self.sdn_props.net_spec_dict[(dest, source)]['throughput'] += data_transferred
+        except (TypeError, ValueError) as e:
+            print(f"[WARNING] Throughput update skipped due to missing or invalid timing/bandwidth: {e}")
+
         # Remove lightpath from lightpath_status_dict
         if not  slicing_flag:
 
@@ -95,6 +106,8 @@ class SDNController:
             link_dict = self.sdn_props.net_spec_dict[(link_tuple[0], link_tuple[1])]
             rev_link_dict = self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]
 
+
+
             tmp_set = set(link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
             rev_tmp_set = set(rev_link_dict['cores_matrix'][band][core_num][start_slot:end_slot])
 
@@ -103,6 +116,9 @@ class SDNController:
 
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
+
+            self.sdn_props.net_spec_dict[link_tuple]['usage_count'] += 1
+            self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]['usage_count'] += 1
 
             core_matrix = link_dict['cores_matrix']
             rev_core_matrix = rev_link_dict['cores_matrix']
@@ -211,8 +227,8 @@ class SDNController:
 
     def _handle_dynamic_slicing(self, path_list: list, forced_segments: int ):
         remaining_bw = self.sdn_props.remaining_bw if self.sdn_props.was_partially_groomed else int(self.sdn_props.bandwidth)
-        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
-        bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+        path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology']) # pylint: disable=unused-variable
+        bw_mod_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw']) # pylint: disable=unused-variable
         self.spectrum_obj.spectrum_props.path_list = path_list
         self.sdn_props.num_trans = 0
         while remaining_bw > 0:

@@ -43,6 +43,7 @@ def assign_core_nodes(core_nodes_fp: str):
     return response_list
 
 
+# TODO: (version 5.5-6) Return type is no longer a dictionary
 def create_network(net_name: str, base_fp: str = None, const_weight: bool = False, is_only_core_node: bool = False):
     """
     The main structure data function.
@@ -60,6 +61,8 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
     else:
         base_fp = os.path.join(base_fp, 'raw')
 
+    # TODO: (version 5.5-6) This won't scale well, have a variables file that's imported
+    #   - Also, standardize names to snake case and have all of them end with "net"
     if net_name == 'USNet':
         network_fp = os.path.join(base_fp, 'us_network.txt')
     elif net_name == 'NSFNet':
@@ -75,9 +78,17 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
             core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
     elif net_name == 'Spainbackbone30':
         network_fp = os.path.join(base_fp, 'SPNB3014.txt')
-        if not is_only_core_node:
-            core_nodes_fp = os.path.join(base_fp, 'SPNB3014_core_nodes.txt')
-            core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
+        # if not is_only_core_node:
+        #     core_nodes_fp = os.path.join(base_fp, 'SPNB3014_core_nodes.txt')
+        #     core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
+    elif net_name == 'geant':
+        network_fp = os.path.join(base_fp, 'geant.txt')
+    elif net_name == 'toy_network':
+        network_fp = os.path.join(base_fp, 'toy_network.txt')
+    elif net_name == 'metro_net':
+        network_fp = os.path.join(base_fp, 'metro_net.txt')
+    elif net_name == 'dt_network':
+        network_fp = os.path.join(base_fp, 'dt_network.txt')
     else:
         raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
 
