@@ -318,13 +318,20 @@ class SpectrumAssignment:
             self._get_spectrum()
             if self.spectrum_props.is_free:
                 mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
-                self.spectrum_props.modulation = mod_format
-                self.spectrum_props.xt_cost = snr_val
-                self.spectrum_props.is_free = True
-                self.sdn_props.block_reason = None
-                return mod_format, bandwidth
+                if mod_format:
+                    self.spectrum_props.modulation = mod_format
+                    self.spectrum_props.xt_cost = snr_val
+                    self.spectrum_props.is_free = True
+                    self.sdn_props.block_reason = None
+                    return mod_format, bandwidth
+                else:
+                    self.spectrum_props.modulation = mod_format
+                    self.spectrum_props.xt_cost = snr_val
+                    self.spectrum_props.is_free = False
+                    self.sdn_props.block_reason = "xt_threshold"
+                    return False, 0
             else:
-                return 0, 0
+                return False, 0
         else:
             mod_format = sort_nested_dict_vals(original_dict=mod_format_dict,
                                                         nested_key='max_length')
