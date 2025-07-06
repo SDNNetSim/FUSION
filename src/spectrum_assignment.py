@@ -323,8 +323,6 @@ class SpectrumAssignment:
                     self.sdn_props.block_reason = None
                     return mod_format, bandwidth
                 else:
-                    self.spectrum_props.modulation = mod_format
-                    self.spectrum_props.xt_cost = snr_val
                     self.spectrum_props.is_free = False
                     self.sdn_props.block_reason = "xt_threshold"
                     return False, 0
