@@ -154,8 +154,7 @@ class SpectrumAssignment:
                 self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
-                    if (self.engine_props['cores_per_link'] in [13, 19] and
-                            self.engine_props['snr_type'] == 'snr_e2e_external_resources'):
+                    if self.engine_props['snr_type'] == 'snr_e2e_external_resources':
                         if self._handle_snr_external(flag, open_slots_matrix):
                             return
 
@@ -181,8 +180,7 @@ class SpectrumAssignment:
                 self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
-                    if (self.engine_props['cores_per_link'] in [13, 19] and
-                            self.engine_props['snr_type'] == 'snr_e2e_external_resources'):
+                    if self.engine_props['snr_type'] == 'snr_e2e_external_resources':
                         if self._handle_snr_external(flag, open_slots_matrix):
                             return
 
