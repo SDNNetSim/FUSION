@@ -7,3 +7,4 @@ Deep Q-Network (DQN) reinforcement learning.
 .. automodule:: reinforcement_learning.algorithms.dqn
     :members:
     :undoc-members:
+    :private-members:

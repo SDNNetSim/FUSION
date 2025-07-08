@@ -8,3 +8,4 @@ This is especially useful for fixed network topologies where recomputing embeddi
 .. automodule:: reinforcement_learning.feat_extrs.path_gnn_cached
     :members:
     :undoc-members:
+    :private-members:

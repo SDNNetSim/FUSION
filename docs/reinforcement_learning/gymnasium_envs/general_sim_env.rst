@@ -10,4 +10,5 @@ spectrum assignment and topology-aware step logic.
 .. automodule:: reinforcement_learning.gymnasium_envs.general_sim_env
     :members:
     :undoc-members:
+    :private-members:
 

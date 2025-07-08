@@ -6,3 +6,4 @@ This module loads simulation output, metadata, and metrics for DRL and heuristic
 .. automodule:: reinforcement_learning.plotting.loaders
     :members:
     :undoc-members:
+    :private-members:

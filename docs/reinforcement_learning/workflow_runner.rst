@@ -10,3 +10,4 @@ and reward logging.
 .. automodule:: reinforcement_learning.workflow_runner
     :members:
     :undoc-members:
+    :private-members:

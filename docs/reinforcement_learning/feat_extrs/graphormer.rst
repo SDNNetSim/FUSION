@@ -8,3 +8,4 @@ multi-head attention over topology-aware input features.
 .. automodule:: reinforcement_learning.feat_extrs.graphormer
     :members:
     :undoc-members:
+    :private-members:

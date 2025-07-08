@@ -7,3 +7,4 @@ The ``qr_dqn.py`` module defines the observation and action space configuration 
 .. automodule:: reinforcement_learning.algorithms.qr_dqn
     :members:
     :undoc-members:
+    :private-members:

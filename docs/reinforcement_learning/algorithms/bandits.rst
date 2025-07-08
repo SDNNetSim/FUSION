@@ -7,3 +7,4 @@ It includes helper functions for model saving, value updates, and Q-table constr
 .. automodule:: reinforcement_learning.algorithms.bandits
     :members:
     :undoc-members:
+    :private-members:

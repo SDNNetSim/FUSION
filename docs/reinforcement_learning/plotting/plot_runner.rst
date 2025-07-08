@@ -7,4 +7,4 @@ data merging, algorithm detection, and conditional logic for DRL/non-DRL output.
 .. automodule:: reinforcement_learning.plotting.plot_runner
     :members:
     :undoc-members:
-
+    :private-members:

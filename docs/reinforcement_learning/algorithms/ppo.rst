@@ -7,3 +7,4 @@ Proximal Policy Optimization (PPO) reinforcement learning.
 .. automodule:: reinforcement_learning.algorithms.ppo
     :members:
     :undoc-members:
+    :private-members:

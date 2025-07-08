@@ -7,3 +7,4 @@ for use in reinforcement learning environments that involve path selection.
 .. automodule:: reinforcement_learning.feat_extrs.path_gnn
     :members:
     :undoc-members:
+    :private-members:

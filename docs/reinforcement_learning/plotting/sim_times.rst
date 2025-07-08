@@ -7,3 +7,4 @@ per traffic volume and algorithm. Output can be saved or displayed inline.
 .. automodule:: reinforcement_learning.plotting.sim_times
     :members:
     :undoc-members:
+    :private-members:
