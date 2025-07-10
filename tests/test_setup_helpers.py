@@ -3,7 +3,7 @@ from unittest.mock import patch, mock_open
 import os
 import json
 from helper_scripts.setup_helpers import create_input, save_input
-
+#TODO: Verify test_create_input maintains proper functionality. New patches force retry loop conditional to pass in create_input
 
 class TestSetupHelpers(unittest.TestCase):
     """
@@ -11,13 +11,13 @@ class TestSetupHelpers(unittest.TestCase):
     """
 
     def setUp(self):
-        self.base_fp = '/fake/base/path'
+        self.base_fp = '\\fake\\base\\path'
         self.engine_props = {
             'sim_type': 'test_sim',
             'thread_num': 1,
             'network': 'test_network',
             'date': '2024-08-19',
-            'sim_start': '00:00',
+            'sim_start': '00_00',
             'const_link_weight': 10,
             'cores_per_link': 7,
             'is_only_core_node': True,
@@ -29,13 +29,15 @@ class TestSetupHelpers(unittest.TestCase):
         self.network_dict = {'nodes': [], 'links': []}
         self.pt_info = {'cores': 7, 'specifications': {}}
 
+    @patch('os.path.getsize', return_value=100)
+    @patch('os.path.exists', return_value=True)
     @patch('helper_scripts.setup_helpers.create_bw_info')
     @patch('helper_scripts.setup_helpers.create_network')
     @patch('helper_scripts.setup_helpers.create_pt')
     @patch('helper_scripts.setup_helpers.save_input')
     @patch('builtins.open', new_callable=mock_open, read_data=json.dumps({'bandwidth': 100}))
     def test_create_input(self, mock_open_file, mock_save_input, mock_create_pt, mock_create_network,
-                          mock_create_bw_info):
+                          mock_create_bw_info, mock_exists, mock_getsize): # pylint: disable=unused-argument
         """ Tests create input. """
         # Setup mock return values
         mock_create_bw_info.return_value = self.bw_info_dict

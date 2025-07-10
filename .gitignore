@@ -34,3 +34,13 @@ venvs/unity_venv/venv
 __pycache__/
 
 data/json_input/run_mods/*
+
+unity/experiments
+unity/cluster_results
+unity/specs
+unity/configs
+unity/.tmp_config
+
+reinforcement_learning/plotting/figures
+reinforcement_learning/experiments/
+sb3_scripts/yml

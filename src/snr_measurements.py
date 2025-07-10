@@ -351,6 +351,7 @@ class SnrMeasurements:
             num_adjacent, self.engine_props['cores_per_link'],
             self.snr_props.file_mapping_dict,
             network=self.engine_props['network'],
+            band_list=self.engine_props['band_list'],
         )
 
         # Compute slot index
@@ -382,7 +383,8 @@ class SnrMeasurements:
         loaded_data, loaded_data_gsnr = get_loaded_files(
             num_adjacent, self.engine_props['cores_per_link'],
             self.snr_props.file_mapping_dict,
-            network=self.engine_props['network']
+            network=self.engine_props['network'],
+            band_list=self.engine_props['band_list']
         )
 
         # Compute slot index
@@ -419,7 +421,8 @@ class SnrMeasurements:
         loaded_data, _ = get_loaded_files(
             num_adjacent, self.engine_props['cores_per_link'],
             self.snr_props.file_mapping_dict,
-            self.engine_props['network']
+            self.engine_props['network'],
+            band_list=self.engine_props['band_list'],
         )
 
         # Retrieve modulation format and supported bandwidth

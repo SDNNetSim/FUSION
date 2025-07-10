@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 
-def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str):
+def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str, band_list: list):
     """
     Fetch the appropriate modulation format and GSNR files based on core_num and cores_per_link.
 
@@ -11,6 +11,7 @@ def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict
     :param cores_per_link: The total number of cores per link.
     :param file_mapping_dict: A dictionary mapping (core_num, cores_per_link) to file paths.
     :param network: The current network.
+    :param and_list: List of bands in fiber.
     :return: The loaded modulation format and GSNR data.
     :rtype: tuple
     """
@@ -23,12 +24,14 @@ def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict
     file_mapping = file_mapping_dict[network]
 
     if key in file_mapping:
-        mf_path = os.path.join(base_path, 'modulations', file_mapping[key]['mf'])
-        gsnr_path = os.path.join(base_path, 'snr', file_mapping[key]['gsnr'])
-        return (
-            np.load(mf_path, allow_pickle=True),
-            np.load(gsnr_path, allow_pickle=True),
-        )
+        if tuple(band_list) in file_mapping[key]:
+            mf_path = os.path.join(base_path, 'modulations', file_mapping[key][tuple(band_list)]['mf'])
+            gsnr_path = os.path.join(base_path, 'snr', file_mapping[key][tuple(band_list)]['gsnr'])
+            return (
+                np.load(mf_path, allow_pickle=True),
+                np.load(gsnr_path, allow_pickle=True),
+            )
+        raise ValueError(f"No matching file found for band_list={band_list}")
     raise ValueError(f"No matching file found for core_num={core_num}, cores_per_link={cores_per_link}")
 
 
@@ -42,11 +45,26 @@ def get_slot_index(curr_band, start_slot, engine_props):
     :return: The computed slot index.
     :rtype: int
     """
-    band_offset = {
-        'l': 0,
-        'c': engine_props['l_band'],
-        's': engine_props['l_band'] + engine_props['c_band'],
-    }
+    if engine_props['band_list'] == ['c','l','s']:
+        band_offset = {
+            'l': 0,
+            'c': engine_props['l_band'],
+            's': engine_props['l_band'] + engine_props['c_band'],
+        }
+    elif engine_props['band_list'] == ['c','l']:
+        band_offset = {
+            'l': 0,
+            'c': engine_props['l_band'],
+        }
+    elif engine_props['band_list'] == ['c']:
+        band_offset = {
+            'c': 0,
+        }
+    elif engine_props['band_list'] == ['c','s']:
+        band_offset = {
+            'c': 0,
+            's': engine_props['c_band'],
+        }
     if curr_band not in band_offset:
         raise ValueError(f"Unexpected band: {curr_band}")
     return band_offset[curr_band] + start_slot
@@ -63,10 +81,14 @@ def compute_response(mod_format, snr_props, spectrum_props, sdn_props):
     :return: Whether the SNR threshold is met.
     :rtype: bool
     """
+    if mod_format == 0:
+        return False
+    if mod_format not in snr_props.mod_format_mapping_dict:
+        raise KeyError(f"mod_format {mod_format} not found in mod_format_mapping_dict")
     is_valid_modulation = (
             snr_props.mod_format_mapping_dict[mod_format] == spectrum_props.modulation
     )
     meets_bw_requirements = (
             snr_props.bw_mapping_dict[spectrum_props.modulation] >= int(sdn_props.bandwidth)
     )
-    return mod_format != 0 and is_valid_modulation and meets_bw_requirements
+    return is_valid_modulation and meets_bw_requirements

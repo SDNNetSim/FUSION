@@ -17,12 +17,14 @@ networking.
    data/data_modules.rst
    helper/helper_modules.rst
    plot/plot_modules.rst
+   reinforcement_learning/reinforcement_learning_modules.rst
    sim/sim_modules.rst
    stablebaselines/stablebaselines_modules.rst
    run_sim.rst
    run_rl_sim.rst
    run_ml_sim.rst
    tests/tests_modules.rst
+   gui/gui_modules.rst
    helpful_links/helpful_links.rst
 
 Indices and tables

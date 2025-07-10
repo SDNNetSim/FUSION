@@ -8,6 +8,9 @@ from helper_scripts.sim_helpers import dict_to_list, list_to_title
 from arg_scripts.plot_args import PlotArgs, PlotProps
 
 
+# TODO: (version 5.5-6) RL no longer uses anything from here, although there is some overlap
+#   - The problem we need to address: How do we make large changes to the simulator without this module breaking?
+#   - A rough idea: decentralize plotting scripts unless absolutely needed, or have another unique decentralized way
 class PlotHelpers:  # pylint: disable=too-few-public-methods
     """
     A class to assist with various tasks related when plotting statistics.
@@ -90,6 +93,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
     def _find_mod_info(self):
         mods_used_dict = self.erlang_dict['iter_stats']['0']['mods_used_dict']
+        mods_used_dict = {k: v for k, v in mods_used_dict.items() if k.isdigit()}
+        # fixme: Modulation stats got into mods used dict?
         for bandwidth, mod_dict in mods_used_dict.items():
             for modulation in mod_dict:
                 filters_list = ['mods_used_dict', bandwidth]
@@ -98,6 +103,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
                 modulations_dict = self.plot_props.plot_dict[self.time][self.sim_num].modulations_dict
                 modulations_dict.setdefault(bandwidth, {})
+
                 modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
 
     def _find_sim_info(self, input_dict: dict):

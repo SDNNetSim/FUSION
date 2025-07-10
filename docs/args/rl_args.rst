@@ -6,10 +6,6 @@ the agent's behavior and training process. These arguments govern aspects like t
 space, and tracking important statistics.
 
 
-.. automodule:: arg_scripts.rl_args
-    :members:
-    :undoc-members:
-
 .. list-table:: empty_ai_props
    :widths: 25 25
    :header-rows: 1
