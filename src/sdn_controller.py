@@ -200,7 +200,7 @@ class SDNController:
             # TODO: Mod format list ignored?
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
-                mod_format_list=[], path_index=path_index, path_len=path_len
+                mod_format_list=[], path_index=path_index
             )
 
             if self.spectrum_obj.spectrum_props.is_free:
