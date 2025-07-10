@@ -479,7 +479,7 @@ class SnrMeasurements:
             GSNR_link_AseNLI = 0
 
             self.snr_props.num_span =  math.ceil(self.engine_props['topology_info']['links'][self.link_id]['length'] / self.snr_props.length)
-            p_ase_span = self.snr_props.bandwidth * self.snr_props.plank * center_freq * self.snr_props.nsp[self.spectrum_props.curr_band]
+            p_ase_span = self.snr_props.bandwidth * self.snr_props.plank * center_freq * 2 * self.snr_props.nsp[self.spectrum_props.curr_band]
             p_ase_span *= (math.exp(self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3) - 1)
             L_eff = (1 - np.exp(-2 * self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3)) / (2 * self.snr_props.link_dict['attenuation'])
             L_eff_a = 1 / (2 * self.snr_props.link_dict['attenuation'])
