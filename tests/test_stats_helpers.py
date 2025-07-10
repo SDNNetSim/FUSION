@@ -28,6 +28,7 @@ class TestSimStats(unittest.TestCase):
             'output_train_data': True,
             'band_list': ['C'],
             'save_start_end_slots': False,
+            'k_paths': 3,
         }
         self.sim_info = "Simulation Info"
 
@@ -211,27 +212,6 @@ class TestSimStats(unittest.TestCase):
         self.assertIn(expected_blocking_prob, self.sim_stats.stats_props.sim_block_list)
         self.assertIn(expected_bit_rate_blocking_prob, self.sim_stats.stats_props.sim_br_block_list)
 
-    # def test_handle_iter_lists(self):
-    #     """
-    #     Test handle iter lists.
-    #     """
-    #     sdn_data = MagicMock()
-    #     sdn_data.stat_key_list = ['core_list', 'modulation_list', 'xt_list']
-    #     sdn_data.core_list = [1, 2]
-    #     sdn_data.modulation_list = ['QPSK', '16QAM']
-    #     sdn_data.bandwidth_list = ['50GHz', '75GHz']
-    #     sdn_data.xt_list = [0.1, 0.2]
-    #
-    #     self.sim_stats.stats_props.cores_dict = {1: 0, 2: 0}
-    #     self.sim_stats.stats_props.mods_used_dict = {'50GHz': {'QPSK': 0}, '75GHz': {'16QAM': 0}}
-    #     self.sim_stats.stats_props.xt_list = []
-    #
-    #     self.sim_stats._handle_iter_lists(sdn_data=sdn_data)
-    #     self.assertEqual(self.sim_stats.stats_props.cores_dict[1], 0)
-    #     self.assertEqual(self.sim_stats.stats_props.cores_dict[2], 0)
-    #     self.assertEqual(self.sim_stats.stats_props.mods_used_dict['50GHz']['QPSK'], 0)
-    #     self.assertEqual(self.sim_stats.stats_props.mods_used_dict['75GHz']['16QAM'], 0)
-    #     self.assertEqual(self.sim_stats.stats_props.xt_list, [])
 
     def test_handle_iter_lists(self):
         """
@@ -272,21 +252,29 @@ class TestSimStats(unittest.TestCase):
         self.assertEqual(self.sim_stats.stats_props.xt_list, [])
 
     def test_iter_update(self):
-        """Test iter update."""
+        """Test iter update for blocked and routed requests."""
+
+        # BLOCKED CASE
         req_data_blocked = {'bandwidth': '50'}
         sdn_data_blocked = MagicMock()
         sdn_data_blocked.was_routed = False
         sdn_data_blocked.block_reason = 'congestion'
         sdn_data_blocked.bandwidth = '50'
+
         self.sim_stats.stats_props.block_bw_dict = {'50': 0}
-        self.sim_stats.bit_rate_request = 1
-        self.sim_stats.stats_props.weights_dict = {'50': {'QPSK': list()}}
-        self.sim_stats.iter_update(req_data=req_data_blocked, sdn_data=sdn_data_blocked)
+        self.sim_stats.stats_props.block_reasons_dict = {'congestion': 0, 'distance': 0, 'xt_threshold': 0}
+        self.sim_stats.bit_rate_request = 0
+        self.sim_stats.stats_props.weights_dict = {'50': {'QPSK': []}}
+
+        self.sim_stats.iter_update(req_data=req_data_blocked, sdn_data=sdn_data_blocked, net_spec_dict={})
 
         self.assertEqual(self.sim_stats.blocked_reqs, 1)
         self.assertEqual(self.sim_stats.stats_props.block_reasons_dict['congestion'], 1)
         self.assertEqual(self.sim_stats.stats_props.block_bw_dict['50'], 1)
+        self.assertEqual(self.sim_stats.bit_rate_blocked, 50)
+        self.assertEqual(self.sim_stats.bit_rate_request, 50)
 
+        # ROUTED CASE
         req_data_routed = {'bandwidth': '50'}
         sdn_data_routed = MagicMock()
         sdn_data_routed.was_routed = True
@@ -296,15 +284,33 @@ class TestSimStats(unittest.TestCase):
         sdn_data_routed.path_weight = 5
         sdn_data_routed.modulation_list = ['QPSK']
         sdn_data_routed.bandwidth = '50'
-        sdn_data_routed.stat_key_list = []
+        sdn_data_routed.bandwidth_list = ['50', '50']
+        sdn_data_routed.band_list = ['C', 'C']
+        sdn_data_routed.path_index = 0
+        sdn_data_routed.stat_key_list = ['modulation_list']
 
-        self.sim_stats.iter_update(req_data=req_data_routed, sdn_data=sdn_data_routed)
+        self.sim_stats.topology = self.topology
+        self.sim_stats.stats_props.path_index_list = [0]
+        self.sim_stats.stats_props.weights_dict = {'50': {'QPSK': []}}
+        self.sim_stats.stats_props.mods_used_dict = {
+            '50': {'QPSK': 0},
+            'QPSK': {'C': 0, 'length': {'C': [], 'overall': []}}
+        }
+        self.sim_stats.stats_props.hops_list = []
+        self.sim_stats.stats_props.lengths_list = []
+        self.sim_stats.stats_props.route_times_list = []
+        self.sim_stats.stats_props.link_usage_dict = {}
 
-        self.assertEqual(self.sim_stats.stats_props.hops_list[0], 2)
-        self.assertEqual(self.sim_stats.stats_props.lengths_list[0], 25)  # Length from A->B->C
-        self.assertEqual(self.sim_stats.stats_props.route_times_list[0], 10)
+        dummy_net_spec = {}
+
+        self.sim_stats.iter_update(req_data=req_data_routed, sdn_data=sdn_data_routed, net_spec_dict=dummy_net_spec)
+
+        self.assertEqual(self.sim_stats.stats_props.hops_list, [2])
+        self.assertEqual(self.sim_stats.stats_props.lengths_list, [25])
+        self.assertEqual(self.sim_stats.stats_props.route_times_list, [10])
         self.assertEqual(self.sim_stats.total_trans, 2)
-        self.assertEqual(self.sim_stats.stats_props.weights_dict['50']['QPSK'][0], 5)
+        self.assertEqual(self.sim_stats.stats_props.weights_dict['50']['QPSK'], [5])
+        self.assertEqual(self.sim_stats.stats_props.path_index_list[0], 1)
 
     def test_get_iter_means(self):
         """

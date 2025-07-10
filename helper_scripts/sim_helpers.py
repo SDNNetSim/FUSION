@@ -2,6 +2,8 @@ import copy
 import os
 import json
 import pickle
+import time
+from pathlib import Path
 from datetime import datetime
 
 import networkx as nx
@@ -91,36 +93,89 @@ def find_path_len(path_list: list, topology: nx.Graph):
     return path_len
 
 
-# TODO: Defaulting to 'c' band
+# TODO: (version 5.5-6) Defaulting to 'c' band
 def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
     """
-    Finds the average percentage of congestion for a given path.
+    Computes average path congestion and scaled available capacity, accounting for multiple cores per link.
 
-    :param path_list: The path to be analyzed.
-    :param net_spec_dict: The current up-to-date network spectrum database.
-    :param band: Band to find congestion on.
-    :return: The average congestion as a decimal.
-    :rtype: float
+    :param path_list: Sequence of nodes in the path.
+    :param net_spec_dict: Current spectrum allocation info.
+    :param band: Spectral band to evaluate.
+    :return: (average congestion [0,1], scaled available capacity [0,1])
+    :rtype: tuple[float, float]
     """
-    # Divide by the total length of that array
-    links_cong_list = list()
+    links_cong_list = []
+    total_slots_available = 0.0
+
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
         cores_matrix = net_spec_dict[src_dest]['cores_matrix']
-        cores_per_link = float(len(cores_matrix[band]))
+        band_cores_matrix = cores_matrix[band]
 
-        for curr_band in net_spec_dict[src_dest]['cores_matrix']:
-            # Every core will have the same number of spectral slots
-            total_slots = len(cores_matrix[curr_band][0])
-            slots_taken = 0
-            for curr_core in cores_matrix[curr_band]:
-                core_slots_taken = float(len(np.where(curr_core != 0.0)[0]))
-                slots_taken += core_slots_taken
+        num_cores = len(band_cores_matrix)
+        num_slots_per_core = len(band_cores_matrix[0])
 
-            links_cong_list.append(slots_taken / (total_slots * cores_per_link))
+        slots_taken = 0.0
+        for core_arr in band_cores_matrix:
+            core_slots_taken = float(np.count_nonzero(core_arr))
+            slots_taken += core_slots_taken
+
+        total_slots = num_cores * num_slots_per_core
+        slots_available = total_slots - slots_taken
+
+        links_cong_list.append(slots_taken / total_slots)
+        total_slots_available += slots_available
 
     average_path_cong = np.mean(links_cong_list)
-    return average_path_cong
+    scaled_available_capacity = total_slots_available
+
+    return average_path_cong, scaled_available_capacity
+
+
+# TODO: (version 5.5-6) Defaults to 'c' band
+def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> float:
+    """
+    Computes the average fragmentation ratio along a path.
+
+    :param path_list: Sequence of nodes in the path.
+    :param net_spec_dict: Spectrum allocation per link.
+    :param band: Spectral band to use (e.g., 'c').
+    :return: Average fragmentation score [0,1] (higher = worse fragmentation).
+    """
+    frag_ratios_list = []
+
+    for src, dest in zip(path_list, path_list[1:]):
+        src_dest = (src, dest)
+        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        cores = cores_matrix[band]
+
+        for core in cores:
+            free_blocks = 0
+            max_block = 0
+            current_block = 0
+            total_free = 0
+
+            for slot in core:
+                if slot == 0:
+                    current_block += 1
+                    total_free += 1
+                else:
+                    if current_block > 0:
+                        free_blocks += 1
+                        max_block = max(max_block, current_block)
+                        current_block = 0
+            if current_block > 0:  # Catch trailing free block
+                free_blocks += 1
+                max_block = max(max_block, current_block)
+
+            if total_free == 0:
+                frag_ratio = 1.0  # fully occupied, max fragmentation
+            else:
+                frag_ratio = 1 - (max_block / total_free)
+
+            frag_ratios_list.append(frag_ratio)
+
+    return float(np.mean(frag_ratios_list)) if frag_ratios_list else 1.0
 
 
 def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
@@ -449,14 +504,25 @@ def combine_and_one_hot(arr1: np.array, arr2: np.array):
 
 def get_start_time(sim_dict: dict):
     """
-    Gets the start time of a simulation.
+    Gets a unique start time for a simulation, ensuring it does not already exist.
     :param sim_dict: Holds the simulation parameters.
     """
-    sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-    sim_dict['s1']['date'] = sim_start.split('_')[0]
-    tmp_list = sim_start.split('_')
+    base_path = Path(f"data/input/{sim_dict['s1']['network']}/")
+    while True:
+        time.sleep(0.1)
 
-    time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        tmp_list = sim_start.split('_')
+        date = tmp_list[0]
+        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+
+        full_path = base_path / date / time_string
+        if not full_path.exists():
+            break
+
+        print('\n\n [WARNING] Duplicate start times, picking a new start!\n\n')
+
+    sim_dict['s1']['date'] = date
     sim_dict['s1']['sim_start'] = time_string
 
     return sim_dict
@@ -505,7 +571,7 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     return np.array(potential_super_channels)
 
 
-# TODO: (drl_path_agents) Add reference
+# TODO: (version 5.5-6) Add reference
 # Please refer to this paper for the formulation:
 def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     big_n = len(sc_index_mat) * -1.0
@@ -531,7 +597,7 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     """
     path_alloc_arr = np.zeros(spectral_slots)
     resp_frag_arr = np.ones(spectral_slots)
-    # TODO: (drl_path_agents) First fit for core, only use in testing
+    # TODO: (version 5.5-6) First fit for core, only use in testing
     if core_num is None:
         core_num = 0
 
@@ -557,15 +623,17 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     return sc_index_mat, resp_frag_arr
 
 
-def classify_cong(curr_cong: float):
+def classify_cong(curr_cong: float, cong_cutoff: float):
     """
     Classifies congestion percentages to 'levels'.
 
     :param curr_cong: Current congestion percentage.
+    :param cong_cutoff: Conversion cutoff percentage.
     :return: The congestion indexes or level.
     :rtype: int
     """
-    if curr_cong <= 0.3:
+    # TODO: (version 5.5-6) Hard coded, only support for 2 path levels
+    if curr_cong <= cong_cutoff:
         cong_index = 0
     else:
         cong_index = 1
@@ -589,43 +657,44 @@ def parse_yaml_file(yaml_file: str):
             return exc
 
 
-def get_arrival_rates(arrival_dict: dict):
+def get_erlang_vals(sim_dict: dict):
     """
     Generate a list of arrival rates based on the configuration dictionary.
 
-    :param arrival_dict: The configuration dictionary containing values for generating the arrival rates.
+    :param sim_dict: The simulation param dictionary.
     :return: A list of arrival rates generated from the configuration.
     :rtype: list
     """
-    start = int(arrival_dict['start'])
-    stop = int(arrival_dict['stop'])
-    step = int(arrival_dict['step'])
+    start = int(sim_dict['erlang_start'])
+    stop = int(sim_dict['erlang_stop'])
+    step = int(sim_dict['erlang_step'])
 
-    return list(range(start, stop + 1, step))
+    return list(range(start, stop, step))
 
 
-def run_simulation_for_arrival_rates(env, arrival_list: list, run_func):
+def run_simulation_for_erlangs(env, erlang_list: list, sim_dict: dict, run_func, callback_list: object, trial):
     """
     Run the simulation for each arrival rate in the given list.
 
     :param env: The simulation environment instance.
-    :param arrival_list: A list of arrival rates to simulate.
+    :param erlang_list: A list of traffic volumes (erlangs) to simulate.
+    :param sim_dict: The simulation properties dictionary.
     :param run_func: The function to run a simulation.
     :return: The mean of total rewards from all simulations.
     :rtype: float
     """
     total_rewards = []
-    for arrival_rate in arrival_list:
-        env.engine_obj.engine_props['erlang'] = arrival_rate / env.sim_dict['holding_time']
-        env.engine_obj.engine_props['arrival_rate'] = arrival_rate * env.sim_dict['cores_per_link']
-        run_func(env=env, sim_dict=env.sim_dict)
-        sum_returns = np.sum(env.path_agent.reward_penalty_list)
+    for erlang in erlang_list:
+        env.engine_obj.engine_props['erlang'] = erlang
+        env.engine_obj.engine_props['arrival_rate'] = sim_dict['cores_per_link'] * erlang
+        env.engine_obj.engine_props['arrival_rate'] /= sim_dict['holding_time']
+        sum_returns = run_func(env=env, sim_dict=env.sim_dict, callback_list=callback_list, trial=trial)
         total_rewards.append(sum_returns)
 
     return np.mean(total_rewards)
 
 
-def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float, start_time: str):
+def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float, best_sim_start: int):
     """
     Save the results of the study, including the best hyperparameters and the best reward value.
 
@@ -634,7 +703,7 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
     :param study_name: The name of the study file to save.
     :param best_params: The best hyperparameters found by Optuna.
     :param best_reward: The best reward value from the study.
-    :param start_time: Start time of simulation run.
+    :param best_sim_start: The start time of the best simulation.
     """
     date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
                              env.engine_obj.engine_props['sim_start'])
@@ -651,19 +720,21 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
         for key, value in best_params.items():
             file_path.write(f"{key}: {value}\n")
         file_path.write(f"\nBest Trial Reward: {best_reward}\n")
-        file_path.write(f"\nBest Trial Start Time: {start_time}\n")
+        file_path.write(f"\nBest Simulation Start Time: {best_sim_start}\n")
 
 
-# TODO: Only support for one process
-def modify_multiple_json_values(file_path: str, update_list: list):
+# TODO: (version 5.5-6) Only support for one process
+def modify_multiple_json_values(trial_num: int, file_path: str, update_list: list):
     """
     Opens a JSON file, modifies multiple key-value pairs in a dictionary, and saves it back to the file.
 
+    :param trial_num: The trial number.
     :param file_path: The path to the JSON file.
     :param update_list: A list of tuples containing keys and their new values to be updated.
                         Example: [('key1', 'new_value1'), ('key2', 'new_value2')]
     """
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    open_fp = os.path.join(file_path, 'sim_input_s1.json')
+    with open(open_fp, 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
 
     for key, new_value in update_list:
@@ -672,5 +743,19 @@ def modify_multiple_json_values(file_path: str, update_list: list):
         else:
             raise KeyError(f"Key '{key}' not found in the JSON file.")
 
-    with open(file_path, 'w', encoding='utf-8') as json_file:
+    save_fp = os.path.join(file_path, f'sim_input_s{trial_num + 1}.json')
+    with open(save_fp, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, indent=4)
+
+
+def update_dict_from_list(input_dict: dict, updates_list: list):
+    """
+    Updates the input dictionary with values from the updates list. The keys are derived from the tuples in the list.
+
+    :param input_dict: Dictionary to be updated.
+    :param updates_list: List of tuples, each containing (key, value).
+    """
+    for key, value in updates_list:
+        input_dict[key] = value
+
+    return input_dict

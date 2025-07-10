@@ -28,10 +28,26 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.path_list = ['A', 'B', 'C']
         self.controller.sdn_props.req_id = 1
         self.controller.sdn_props.net_spec_dict = {
-            ('A', 'B'): {'cores_matrix': {'c': np.zeros((7, 10))}},
-            ('B', 'A'): {'cores_matrix': {'c': np.zeros((7, 10))}},
-            ('B', 'C'): {'cores_matrix': {'c': np.zeros((7, 10))}},
-            ('C', 'B'): {'cores_matrix': {'c': np.zeros((7, 10))}}
+            ('A', 'B'): {
+                'cores_matrix': {'c': np.zeros((7, 10))},
+                'usage_count': 0,
+                'throughput': 0
+            },
+            ('B', 'A'): {
+                'cores_matrix': {'c': np.zeros((7, 10))},
+                'usage_count': 0,
+                'throughput': 0
+            },
+            ('B', 'C'): {
+                'cores_matrix': {'c': np.zeros((7, 10))},
+                'usage_count': 0,
+                'throughput': 0
+            },
+            ('C', 'B'): {
+                'cores_matrix': {'c': np.zeros((7, 10))},
+                'usage_count': 0,
+                'throughput': 0
+            }
         }
 
     def test_release(self):
@@ -228,6 +244,57 @@ class TestSDNController(unittest.TestCase):
                 self.assertFalse(self.controller.sdn_props.was_routed)
                 self.assertEqual(self.controller.sdn_props.block_reason, 'congestion')
                 self.assertFalse(self.controller.sdn_props.is_sliced)
+
+    def test_usage_count_increment(self):
+        """Test that usage_count increments after allocation."""
+        self.controller.spectrum_obj.spectrum_props.start_slot = 0
+        self.controller.spectrum_obj.spectrum_props.end_slot = 3
+        self.controller.spectrum_obj.spectrum_props.core_num = 0
+        self.controller.spectrum_obj.spectrum_props.curr_band = 'c'
+        self.controller.engine_props['guard_slots'] = 1
+
+        for key in self.controller.sdn_props.net_spec_dict:
+            self.controller.sdn_props.net_spec_dict[key]['usage_count'] = 0
+
+        self.controller.allocate()
+
+        for link in zip(self.controller.sdn_props.path_list, self.controller.sdn_props.path_list[1:]):
+            self.assertEqual(self.controller.sdn_props.net_spec_dict[link]['usage_count'], 1)
+            reverse_link = (link[1], link[0])
+            self.assertEqual(self.controller.sdn_props.net_spec_dict[reverse_link]['usage_count'], 1)
+
+    def test_release_throughput_tracking(self):
+        """Test that throughput is correctly tracked on release."""
+        for key in self.controller.sdn_props.net_spec_dict:
+            self.controller.sdn_props.net_spec_dict[key]['throughput'] = 0
+
+        self.controller.sdn_props.arrive = 0
+        self.controller.sdn_props.depart = 5  # 5 seconds duration
+        self.controller.sdn_props.bandwidth = '100'  # Gbps
+
+        self.controller.release()
+
+        expected_throughput = 500  # 100 Gbps * 5 seconds
+        for link in zip(self.controller.sdn_props.path_list, self.controller.sdn_props.path_list[1:]):
+            self.assertEqual(self.controller.sdn_props.net_spec_dict[link]['throughput'], expected_throughput)
+            reverse_link = (link[1], link[0])
+            self.assertEqual(self.controller.sdn_props.net_spec_dict[reverse_link]['throughput'],
+                             expected_throughput)
+
+    def test_release_missing_timing_fields(self):
+        """Test that release handles missing timing fields gracefully."""
+        for key in self.controller.sdn_props.net_spec_dict:
+            self.controller.sdn_props.net_spec_dict[key]['throughput'] = 0
+
+        self.controller.sdn_props.arrive = None
+        self.controller.sdn_props.depart = None
+        self.controller.sdn_props.bandwidth = None
+
+        # Should not raise exception
+        self.controller.release()
+
+        for key in self.controller.sdn_props.net_spec_dict:
+            self.assertEqual(self.controller.sdn_props.net_spec_dict[key]['throughput'], 0)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,6 @@ Argument Scripts
 .. toctree::
 
     config_args
-    data_args
     plot_args
     rl_args
     routing_args

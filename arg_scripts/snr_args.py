@@ -1,5 +1,4 @@
 # pylint: disable=too-few-public-methods
-
 class SNRProps:
     """
     Main properties used for the snr_measurements.py script.

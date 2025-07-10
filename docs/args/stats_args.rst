@@ -1,5 +1,6 @@
+
 Statistics Arguments
-=======================
+====================
 
 This documentation page focuses on the various statistics arguments employed in EON simulations.
 These arguments track crucial network parameters, such as blocking probability, providing valuable insights
@@ -10,33 +11,71 @@ performance limitations and optimize its configuration for optimal results.
     :members:
     :undoc-members:
 
-.. list-table:: empty_props
-   :widths: 25 25
+StatsProps Attributes
+---------------------
+
+.. list-table::
    :header-rows: 1
 
-   * - Argument Name
+   * - Attribute
      - Description
+
    * - snapshots_dict
-     - Relevant statistics at certain snapshots in the simulation
+     - Statistics snapshot dictionary (collected at various points)
+
    * - cores_dict
-     - Tracks how often each core was allocated on
+     - Tracks cores used throughout simulations
+
    * - weights_dict
-     - Tracks weights of each allocated request, a weight may be length, cross-talk, hops, etc.
+     - Path weight metrics across requests
+
    * - mods_used_dict
-     - Tracks modulation formats used
+     - Records modulation formats used
+
    * - block_bw_dict
-     - Tracks how often each bandwidth was blocked
+     - Blocking statistics by bandwidth
+
    * - block_reasons_dict
-     - Tracks the reasons for blocking any request
+     - Dictionary logging blocking reasons: distance, congestion, or XT violations
+
+   * - link_usage_dict
+     - Per-link usage and throughput tracking
+
    * - sim_block_list
-     - Blocking probabilities for each iteration
+     - Overall blocking probabilities per simulation
+
+   * - sim_br_block_list
+     - Blocking probabilities broken down by reason
+
    * - trans_list
-     - Total number of transponders used
+     - Number of transponders used
+
    * - hops_list
-     - Number of hops each request made
+     - Average number of hops used
+
    * - lengths_list
-     - Length of each path taken in the simulation
+     - Average path lengths
+
    * - route_times_list
-     - Tracks time taken to route each request
+     - Average routing time per request
+
    * - xt_list
-     - Tracks intra or inter core cross-talk for allocated requests
+     - Average XT values
+
+   * - bands_list
+     - Bands allocated in each request
+
+   * - start_slot_list
+     - Slot index allocations (start)
+
+   * - end_slot_list
+     - Slot index allocations (end)
+
+   * - modulation_list
+     - List of modulations selected
+
+   * - bandwidth_list
+     - Bandwidth values chosen
+
+   * - path_index_list
+     - Index of path used for each request
