@@ -43,6 +43,7 @@ class TestEngine(unittest.TestCase):
             'mod_per_bw': {  # Adding mod_per_bw to engine_props
                 '50GHz': {'QPSK': {}, '16QAM': {}}
             },
+            "transponder_usage_per_node": {"A": 0, "B":0},
         }
         self.engine = Engine(engine_props=engine_props)
         self.engine.reqs_dict = {1.0: {'req_id': 10, 'request_type': 'arrival'}}
@@ -142,6 +143,7 @@ class TestEngine(unittest.TestCase):
         self.engine.engine_props['seeds'] = [42]
         self.engine.engine_props['topology_info']['nodes'] = {'A': {}, 'B': {}}  # Ensure nodes are a dictionary
         self.engine.engine_props['is_only_core_node'] = True  # Define nodes permitted to send requests
+        self.engine.engine_props["transponder_usage_per_node"] = {"A": 1, "B":2} 
 
         with patch('src.engine.load_model', autospec=True) as mock_load_model:
             self.engine.init_iter(iteration=iteration)
