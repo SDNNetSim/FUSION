@@ -11,7 +11,8 @@ from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 from helper_scripts.ml_helpers import process_data, plot_confusion
 from helper_scripts.ml_helpers import save_model
-
+#TODO: Raise Not Implemented Error
+#TODO: This node is still in active development
 
 def _train_test_knn(df_processed: pd.DataFrame, sim_dict: dict, erlang: str):
     predictor_df = df_processed['num_segments']

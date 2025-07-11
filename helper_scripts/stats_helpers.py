@@ -82,12 +82,11 @@ class SimStats:
     def _get_link_usage_summary(net_spec_dict):
         usage_summary_dict = {}
         for (src, dst), link_data in net_spec_dict.items():
-            if str(src) < str(dst):  # Avoid double-counting reverse direction
-                usage_summary_dict[f"{src}-{dst}"] = {
-                    "usage_count": link_data.get('usage_count', 0),
-                    "throughput": link_data.get('throughput', 0),
-                    "link_num": link_data.get('link_num'),
-                }
+            usage_summary_dict[f"{src}-{dst}"] = {
+                "usage_count": link_data.get('usage_count', 0),
+                "throughput": link_data.get('throughput', 0),
+                "link_num": link_data.get('link_num'),
+            }
         return usage_summary_dict
 
     def update_train_data(self, old_req_info_dict: dict, req_info_dict: dict, net_spec_dict: dict):

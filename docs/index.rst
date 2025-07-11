@@ -17,6 +17,7 @@ networking.
    data/data_modules.rst
    helper/helper_modules.rst
    plot/plot_modules.rst
+   reinforcement_learning/reinforcement_learning_modules.rst
    sim/sim_modules.rst
    stablebaselines/stablebaselines_modules.rst
    run_sim.rst

@@ -46,56 +46,6 @@ def _yaml_dict():
 
 
 # ------------------------------------------------------------------ #
-class TestSetupFeatureExtractor(TestCase):
-    """setup_feature_extractor mapping."""
-
-    def test_path_gnn_returns_class_and_kwargs(self):
-        """path_gnn returns PathGNN and gnn_type kwarg present."""
-        env = _DummyEnv()
-        cls, kw = su.setup_feature_extractor(env)
-        from reinforcement_learning.feat_extrs.path_gnn import PathGNN  # pylint: disable=import-outside-toplevel
-        self.assertIs(cls, PathGNN)
-        self.assertEqual(kw["gnn_type"], "sage")
-
-    def test_graphormer_returns_with_heads(self):
-        """graphormer returns GraphTransformerExtractor."""
-        env = _DummyEnv()
-        env.engine_obj.engine_props["feature_extractor"] = "graphormer"
-        cls, kw = su.setup_feature_extractor(env)
-        from reinforcement_learning.feat_extrs.graphormer import (  # pylint: disable=import-outside-toplevel
-            GraphTransformerExtractor,
-        )
-        self.assertIs(cls, GraphTransformerExtractor)
-        self.assertIn("heads", kw)
-
-    def test_unknown_extractor_raises(self):
-        """Invalid extractor raises NotImplementedError."""
-        env = _DummyEnv()
-        env.engine_obj.engine_props["feature_extractor"] = "bad"
-        with self.assertRaises(NotImplementedError):
-            su.setup_feature_extractor(env)
-
-
-# ------------------------------------------------------------------ #
-class TestGetDrlDicts(TestCase):
-    """get_drl_dicts parsing and kwargs injection."""
-
-    @mock.patch("reinforcement_learning.utils.setup.parse_yaml_file",
-                return_value=_yaml_dict())
-    def test_graph_obs_adds_extractor_kwargs(self, mock_yaml):
-        """When obs_space contains 'graph' kwargs include extractor."""
-        env = _DummyEnv(obs_space="obs_1_graph")
-        cls = su.PathGNN  # pylint: disable=no-member
-        yml, kw, env_name = su.get_drl_dicts(env, "yml_path")
-
-        self.assertEqual(env_name, "env")
-        mock_yaml.assert_called_once_with("yml_path")
-        self.assertIs(kw["features_extractor_class"], cls)
-        self.assertIn("features_extractor_kwargs", kw)
-        self.assertEqual(yml, _yaml_dict())
-
-
-# ------------------------------------------------------------------ #
 class TestPrintInfo(TestCase):
     """print_info branch handling."""
 

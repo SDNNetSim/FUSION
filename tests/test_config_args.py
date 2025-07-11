@@ -16,7 +16,10 @@ class TestConfigArgs(unittest.TestCase):
                 config_keys.update(options.keys())
 
         cli_params = {param[0] for param in COMMAND_LINE_PARAMS}
-        missing_in_cli = config_keys - cli_params
+
+        # Ignore known special-case CLI args not handled via COMMAND_LINE_PARAMS
+        ignored_keys = {'optimize'}
+        missing_in_cli = config_keys - cli_params - ignored_keys
         self.assertFalse(missing_in_cli, f"These config options are missing in "
                                          f"command line parameters: {missing_in_cli}")
 

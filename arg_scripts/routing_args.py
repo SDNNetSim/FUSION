@@ -18,7 +18,7 @@ class RoutingProps:
         self.span_len = 100.0  # Length of a span in km
         self.max_span = None  # Maximum number of spans in the network
         self.connection_index = None  # Keeping track of source destination index in precalculated routing
-        self.path_index = None # Keeping track of index of selected path for spectrum assignment
+        self.path_index = None # Keeps track of selected path indexes during spectrum assignment
 
     def __repr__(self):
         return f"RoutingProps({self.__dict__})"

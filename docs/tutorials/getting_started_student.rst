@@ -21,7 +21,7 @@ The diagram below illustrates the location:
 
     <br>
 
-There are two examples of default parameters used by PhD students. The files are named after their creators. Select
+There are three provided example files pre-established for use by new users. . The files are named after their creators. Select
 either example, and copy it to the ``run_ini`` directory. Rename the copied file to ``config.ini``. This file contains
 the assumptions used in simulation runs.
 

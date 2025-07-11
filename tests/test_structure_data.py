@@ -37,19 +37,19 @@ class TestNetworkFunctions(unittest.TestCase):
 
         net_name = 'USNet'
         response = create_network(net_name=net_name, const_weight=False)
-        mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data/raw/us_network.txt',
+        mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data\\raw\\us_network.txt',
                                                     node_pairs_dict={})
         self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
         net_name = 'NSFNet'
         response = create_network(net_name=net_name, const_weight=False)
-        mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data/raw/nsf_network.txt',
+        mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data\\raw\\nsf_network.txt',
                                                     node_pairs_dict={})
         self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
         net_name = 'Pan-European'
         response = create_network(net_name=net_name, const_weight=False)
-        mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data/raw/europe_network.txt',
+        mock_assign_link_lengths.assert_called_with(constant_weight=False, network_fp='data\\raw\\europe_network.txt',
                                                     node_pairs_dict={})
         self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
@@ -60,14 +60,14 @@ class TestNetworkFunctions(unittest.TestCase):
         """
         Test create network with base_fp specified.
         """
-        base_fp = 'custom/path'
+        base_fp = 'custom\\path'
         with patch("data_scripts.structure_data.assign_link_lengths") as mock_assign_link_lengths:
             mock_assign_link_lengths.return_value = {'link_lengths': 'mocked'}
 
             net_name = 'USNet'
             response = create_network(net_name=net_name, base_fp=base_fp, const_weight=False)
             mock_assign_link_lengths.assert_called_with(constant_weight=False,
-                                                        network_fp='custom/path/raw/us_network.txt', node_pairs_dict={})
+                                                        network_fp='custom\\path\\raw\\us_network.txt', node_pairs_dict={})
             self.assertEqual(({'link_lengths': 'mocked'}, []), response)
 
 

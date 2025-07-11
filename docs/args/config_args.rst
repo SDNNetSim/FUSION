@@ -1,129 +1,288 @@
-Configuration Arguments
-=======================
+
+Configuration Parameters
+========================
+
+This section provides a reference for all configuration file parameters.
+Parameters are grouped by section as defined in `example_config.ini`. This file
+can be passed using the `--config_path` argument when running the simulator.
 
 .. automodule:: arg_scripts.config_args
     :members:
     :undoc-members:
 
+General Settings
+----------------
+
 .. list-table::
-   :widths: 50 50 50
    :header-rows: 1
 
-   * - Argument Name
+   * - Parameter
+     - Type
      - Description
-     - Valid Input
-   * - sim_type
-     - Simulation assumptions for calculating the Erlang and optical reach
-     - ``arash`` | ``yue``
    * - holding_time
-     - Mean holding time for request generation
-     - Any floating point value
-   * - arrival_rate
-     - Inter-arrival time for request generation
-     - Any floating point value
-   * - thread_erlangs
-     - Run the traffic volumes in parallel or not
-     - ``True`` | ``False``
-   * - guard_slots
-     - Frequency channels dedicated to the guard band
-     - Any integer value
-   * - num_requests
-     - Requests to generate for a single iteration
-     - Any integer value
-   * - request_distribution
-     - Bandwidth distribution of requests
-     - Any floating point values that add up to 1.0
+     - float
+     - Mean connection holding time (in seconds)
+   * - mod_assumption
+     - str
+     - Modulation assumption strategy (e.g., DEFAULT, dynamic)
+   * - mod_assumption_path
+     - str
+     - Path to modulation format definition JSON
+   * - erlang_start
+     - int
+     - Starting Erlang value (offered load)
+   * - erlang_stop
+     - int
+     - Final Erlang value
+   * - erlang_step
+     - int
+     - Step size between Erlang values
    * - max_iters
-     - Maximum iterations to run
-     - Any integer value
+     - int
+     - Number of iterations per Erlang
+   * - guard_slots
+     - int
+     - Number of guard slots
    * - max_segments
-     - Maximum segments for a single request
-     - Any integer value
+     - int
+     - Maximum number of segments per path
+   * - thread_erlangs
+     - bool
+     - Run Erlangs in parallel threads
    * - dynamic_lps
-     - Use dynamic light path/segment slicing or not
-     - ``True`` | ``False``
+     - bool
+     - Enable dynamic lightpath selection
+   * - fixed_grid
+     - bool
+     - Use a fixed ITU grid for spectrum
+   * - pre_calc_mod_selection
+     - bool
+     - Pre-compute modulation selection per path
+   * - spectrum_priority
+     - str
+     - Spectrum prioritization policy
+   * - num_requests
+     - int
+     - Number of requests per simulation iteration
+   * - request_distribution
+     - dict
+     - Distribution of request bandwidths
    * - allocation_method
-     - Method for assigning a request to a spectrum
-     - ``best_fit`` | ``first_fit`` | ``last_fit`` | ``priority_first`` | ``priority_last`` | ``xt_aware``
+     - str
+     - Spectrum allocation method (e.g., first_fit)
+   * - k_paths
+     - int
+     - Number of candidate paths per source-destination pair
    * - route_method
-     - Method for routing a request
-     - ``nli_aware`` | ``xt_aware`` | ``least_congested`` | ``shortest_path`` | ``k_shortest_path``
+     - str
+     - Routing method used
    * - save_snapshots
-     - To save information at certain request intervals
-     - ``True`` | ``False``
+     - bool
+     - Save internal state snapshots
    * - snapshot_step
-     - Interval for saving snapshot results
-     - Any integer value that is a multiple of the number of requests
+     - int
+     - Interval between snapshots
    * - print_step
-     - Interval for printing simulator information
-     - Any integer value that is a multiple of the number of requests
+     - int
+     - Console log print frequency
+   * - save_step
+     - int
+     - Statistics file save interval
+   * - save_start_end_slots
+     - bool
+     - Save slot indices for allocations
+
+Topology Settings
+-----------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Type
+     - Description
    * - network
-     - Network topology
-     - ``USNet`` | ``NSFNet`` | ``Pan-European``
-   * - spectral_slots
-     - Spectral slots per core on a given link
-     - Any integer value
+     - str
+     - Name of the network topology
    * - bw_per_slot
-     - The bandwidth (GHz) for each frequency slot
-     - Any floating point value
+     - float
+     - Bandwidth per slot (GHz)
    * - cores_per_link
-     - Number of cores for every link in the topology
-     - Any integer value
+     - int
+     - Number of spatial cores per fiber
    * - const_link_weight
-     - Sets all link weights to 1
-     - ``True`` | ``False``
-   * - file_type
-     - File structure to save to
-     - ``json``
-   * - erlangs
-     - Used from ``arash`` type simulations to determine erlang distribution
-     - Any range of integer values
-   * - requested_xt
-     - ``Arash``
-     - ``Arash``
-   * - xt_noise
-     - ``Arash``
-     - ``Arash``
-   * - theta
-     - ``Arash``
-     - ``Arash``
-   * - egn_model
-     - ``Arash``
-     - ``Arash``
-   * - phi
-     - ``Arash``
-     - ``Arash``
+     - bool
+     - Use constant link weights
+   * - is_only_core_node
+     - bool
+     - Allow multiple cores only on core nodes
+   * - multi_fiber
+     - bool
+     - Enable multi-fiber links
+   * - bi_directional
+     - bool
+     - Treat links as bidirectional
+
+Spectrum Settings
+-----------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Type
+     - Description
+   * - c_band
+     - int
+     - Number of slots in the C-band
+   * - o_band, e_band, s_band, l_band
+     - int
+     - Optional bands and their slot counts
+
+SNR Settings
+------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Type
+     - Description
    * - snr_type
-     - ``Arash``
-     - ``Arash``
+     - str
+     - SNR estimation method (e.g., BER-based)
    * - xt_type
-     - ``Arash``
-     - ``Arash``
-   * - beta
-     - ``Arash``
-     - ``Arash``
-   * - input power
-     - ``Arash``
-     - ``Arash``
-   * - ai_algorithm
-     - Use QL or a specified DRL algorithm
-     - ``q_learning`` | ``ppo`` | ``a2c`` | ``dqn``
-   * - learn_rate
-     - Learning rate for q-learning algorithm
-     - Any floating point value
-   * - discount_factor
-     - Discount factor for q-learning algorithm
-     - Any floating point value
-   * - epsilon_start
-     - Where epsilon starts for q-learning algorithm
-     - Any floating point value
-   * - epsilon_end
-     - Where epsilon will end for q-learning algorithm
-     - Any floating point value
+     - str
+     - Cross-talk model type
+   * - beta, theta
+     - float
+     - Cross-talk model coefficients
+   * - input_power
+     - float
+     - Input power in Watts
+   * - egn_model
+     - bool
+     - Use Enhanced GN model
+   * - phi
+     - dict
+     - Nonlinear coefficients for each modulation format
+   * - xt_noise
+     - bool
+     - Enable XT-aware noise
+   * - requested_xt
+     - dict
+     - Required XT thresholds per modulation
 
-StableBaselines3 and RL Baselines3 Zoo
----------------------------------------
+RL Settings
+-----------
 
-Parameters within these libraries should work when running the simulator via command line. For more information on which
-parameters exist and their descriptions, please see: `StableBaselines3 <https://stable-baselines3.readthedocs.io/en/master/>`_ and
-`RL Baselines3 Zoo <https://www.example.com/>`_ docs.
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Type
+     - Description
+   * - obs_space
+     - str
+     - Observation space type
+   * - n_trials
+     - int
+     - Number of training trials
+   * - device
+     - str
+     - Computation device (cpu/cuda)
+   * - optimize_hyperparameters
+     - bool
+     - Enable Optuna-based optimization
+   * - optuna_trials
+     - int
+     - Number of optimization trials
+   * - is_training
+     - bool
+     - Enable training mode
+   * - path_algorithm, core_algorithm, spectrum_algorithm
+     - str
+     - Algorithm type for each decision point
+   * - path_model, core_model, spectrum_model
+     - str
+     - File paths to pretrained models
+   * - super_channel_space
+     - int
+     - Superchannel slot count
+   * - alpha_start, alpha_end, alpha_update
+     - float, str
+     - Alpha values and update method
+   * - gamma
+     - float
+     - Discount factor
+   * - epsilon_start, epsilon_end, epsilon_update
+     - float, str
+     - Epsilon values and decay policy
+   * - path_levels
+     - int
+     - Path grouping levels
+   * - decay_rate
+     - float
+     - Decay constant for scheduling
+   * - feature_extractor, gnn_type
+     - str
+     - GNN architecture and input extraction
+   * - layers, emb_dim, heads
+     - int
+     - GNN model depth and complexity
+   * - conf_param
+     - float
+     - Confidence bound parameter
+   * - cong_cutoff
+     - float
+     - Congestion threshold
+   * - reward, penalty
+     - float
+     - RL reward shaping
+   * - dynamic_reward
+     - bool
+     - Enable adaptive reward
+   * - core_beta
+     - float
+     - Congestion penalty on core usage
+
+ML Settings
+-----------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Type
+     - Description
+   * - deploy_model
+     - bool
+     - Deploy pre-trained model
+   * - output_train_data
+     - bool
+     - Save simulation data for training
+   * - ml_training
+     - bool
+     - Enable machine learning model training
+   * - ml_model
+     - str
+     - Model type (e.g., SVM, RF)
+   * - train_file_path
+     - str
+     - Path to dataset
+   * - test_size
+     - float
+     - Proportion of dataset used for testing
+
+File Settings
+-------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Type
+     - Description
+   * - file_type
+     - str
+     - Output format (e.g., csv, json)
