@@ -69,12 +69,16 @@ class SDNController:
 
             light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
             # TODO: save it in stats 
-            average_bw_usage = average_bandwidth_usage(bw_dict = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['time_bw_usage'], departure_time = self.sdn_props.depart)
+            try:
+                average_bw_usage = average_bandwidth_usage(bw_dict = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['time_bw_usage'], departure_time = self.sdn_props.depart)
             
-            self.sdn_props.lp_bw_utilization_dict.update({lightpath_id:{"band":  self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['band'], 
-                                                                        "core": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]["core"], 
-                                                                        "bit_rate": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['lightpath_bandwidth'], 
-                                                                        "utilization": average_bw_usage}})
+                self.sdn_props.lp_bw_utilization_dict.update({lightpath_id:{"band":  self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['band'], 
+                                                                            "core": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]["core"], 
+                                                                            "bit_rate": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['lightpath_bandwidth'], 
+                                                                            "utilization": average_bw_usage}})
+            except (TypeError, ValueError) as e:
+                print(f"[WARNING] Average BW update skipped due to missing or invalid timing/spectrum: {e}")
+                
             if self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['requests_dict'] and self.engine_props['is_grooming_enabled']:
                 raise ValueError('The releasing lightpath are currently using')
             self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
