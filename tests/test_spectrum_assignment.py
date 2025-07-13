@@ -133,6 +133,18 @@ class TestSpectrumAssignment(unittest.TestCase):
                 patch.object(self.spec_assign.snr_obj, 'handle_snr', return_value=(True, 0.5)) as _:
             # Ensure is_free starts as False
             self.spec_assign.spectrum_props.is_free = False
+            self.spec_assign.engine_props['mod_per_bw'] = {"100": {"QPSK": {
+                                                                            "max_length": 22160,
+                                                                            "slots_needed": 1
+                                                                        },
+                                                                    "16-QAM": {
+                                                                            "max_length": 9500,
+                                                                            "slots_needed": 1
+                                                                        },
+                                                                    "64-QAM": {
+                                                                            "max_length": 3664,
+                                                                            "slots_needed": 1
+                                                                        }}}
             mod_format_list = ['QPSK', '16QAM']
 
             # Simulate getting the spectrum successfully
