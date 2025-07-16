@@ -57,7 +57,7 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
     """
     core_nodes_list = []
     if base_fp is None:
-        base_fp = 'data\\raw'
+        base_fp = os.path.join('data', 'raw')
     else:
         base_fp = os.path.join(base_fp, 'raw')
 

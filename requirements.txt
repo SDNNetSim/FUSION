@@ -1,103 +1,101 @@
 --find-links https://data.pyg.org/whl/torch-2.2.2+cpu.html
 --only-binary=:all:
 
+# Core & Data Libraries
 networkx==3.2.1
 numpy==1.26.3
-pylint==3.0.3
-sphinx==7.2.6
-sphinx_rtd_theme==2.0.0
-pyarrow~=19.0.0
 pandas==2.2.0
-openpyxl==3.1.2
-matplotlib==3.8.2
-seaborn==0.13.2
+pyarrow~=19.0.0
+scikit-learn==1.4.0
+scipy~=1.13.0
+sympy~=1.12
+
+# Reinforcement Learning
 stable-baselines3==2.2.1
 gymnasium==0.29.1
-scikit-learn==1.4.0
 rl_zoo3==2.2.1
-torch==2.2.2
-pip~=23.2.1
-wheel~=0.38.4
-pillow~=10.3.0
-docutils~=0.20.1
-Jinja2~=3.1.3
-setuptools~=65.5.1
-packaging~=24.0
-pyparsing~=3.1.2
-joblib~=1.3.2
-PyYAML~=6.0.1
-
-# GUI
-docutils~=0.20.1
-pillow~=10.3.0
-wheel~=0.38.4
-Jinja2~=3.1.3
-dill~=0.3.8
-Mako~=1.3.2
-Babel~=2.14.0
-pygments~=2.17.2
-MarkupSafe~=2.1.5
-pytz~=2024.1
-rich~=13.7.1
-PyYAML~=6.0.1
-isort~=5.13.2
-mdurl~=0.1.2
-scipy~=1.13.0
-threadpoolctl~=3.4.0
-mpmath~=1.3.0
-sympy~=1.12
-platformdirs~=4.2.0
-tqdm~=4.66.2
-triton~=2.2.0; sys_platform=='linux'
-packaging~=24.0
-urllib3~=2.2.1
-fsspec~=2024.3.1
-joblib~=1.3.2
-cloudpickle~=3.0.0
 optuna~=3.6.1
-SQLAlchemy~=2.0.29
+
+# PyTorch & PyTorch Geometric (PyG)
+torch==2.2.2
+triton~=2.2.0; sys_platform=='linux'
+# The following PyG packages are intentionally left without version numbers
+# to allow pip to select the correct build for your OS.
+torch-scatter
+torch-sparse
+torch-cluster
+torch-spline-conv
+torch-geometric==2.6.1
+
+# Visualization & GUI
+matplotlib==3.8.2
+openpyxl==3.1.2
+PyQt5~=5.15.10
+seaborn==0.13.2
+
+# Utilities & General Purpose
 alembic~=1.13.1
-colorlog~=6.8.2
-python-dateutil~=2.9.0.post0
 astroid~=3.0.3
-tomlkit~=0.12.4
-mccabe~=0.7.0
-imagesize~=1.4.1
-snowballstemmer~=2.2.0
-mbstrdecoder~=1.1.3
-typepy~=1.3.2
-wasabi~=1.1.2
+Babel~=2.14.0
 certifi>=2024.07.04
-requests>=2.32.0
 chardet~=5.2.0
-pytablewriter~=1.2.0
+cloudpickle~=3.0.0
+colorlog~=6.8.2
+contourpy~=1.2.1
 cycler~=0.12.1
-six~=1.16.0
+DataProperty~=1.0.1
+dill~=0.3.8
+docutils~=0.20.1
+filelock~=3.13.3
+fonttools~=4.50.0
+fsspec~=2024.3.1
+globus-cli
 greenlet~=3.0.3
 idna~=3.6
-contourpy~=1.2.1
-fonttools~=4.50.0
-pyparsing~=3.1.2
-DataProperty~=1.0.1
+imagesize~=1.4.1
+isort~=5.13.2
+Jinja2~=3.1.3
+joblib~=1.3.2
 kiwisolver~=1.4.5
-tcolorpy~=0.1.4
-pathvalidate~=3.2.0
-tabledata~=1.3.3
-filelock~=3.13.3
-PyQt5~=5.15.10
-
-# testing
-pytest~=8.3.4
-
-# gpt
+Mako~=1.3.2
+MarkupSafe~=2.1.5
+mbstrdecoder~=1.1.3
+mccabe~=0.7.0
+mdurl~=0.1.2
+mpmath~=1.3.0
 openai
-
-globus-cli
-
+packaging~=24.0
+pathvalidate~=3.2.0
+pillow~=10.3.0
+pip~=23.2.1
+platformdirs~=4.2.0
 psutil~=7.0.0
+pygments~=2.17.2
+pylint==3.0.3
+pyparsing~=3.1.2
+python-dateutil~=2.9.0.post0
+pytablewriter~=1.2.0
+pytz~=2024.1
+PyYAML~=6.0.1
+requests>=2.32.0
+rich~=13.7.1
+setuptools~=65.5.1
+six~=1.16.0
+snowballstemmer~=2.2.0
+SQLAlchemy~=2.0.29
+tabledata~=1.3.3
+tcolorpy~=0.1.4
+threadpoolctl~=3.4.0
+tomlkit~=0.12.4
+tqdm~=4.66.2
+typepy~=1.3.2
+urllib3~=2.2.1
+wasabi~=1.1.2
+wheel~=0.38.4
 
-torch-scatter==2.1.2+pt22cpu
-torch-sparse==0.6.18+pt22cpu
-torch-cluster==1.6.3+pt22cpu
-torch-spline-conv==1.2.2+pt22cpu
-torch-geometric==2.6.1
+# Documentation
+sphinx==7.2.6
+sphinx_rtd_theme==2.0.0
+
+# Testing
+pytest~=8.3.4

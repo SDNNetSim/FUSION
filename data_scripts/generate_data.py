@@ -56,13 +56,9 @@ def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
 
     try:
         mod_assumptions_path = os.path.join(mod_assumptions_path)
-        if os.path.exists(mod_assumptions_path):
-            with open(mod_assumptions_path, 'r', encoding='utf-8') as mod_assumptions_fp:
-                mod_formats_obj = json.load(mod_assumptions_fp)
-        # TODO: (version 5.5-6) Remove this
-        else:
-            print(f"Warning: {mod_assumptions_path} not found. Using default empty assumptions.")
-            mod_formats_obj = {}
+        with open(mod_assumptions_path, 'r', encoding='utf-8') as mod_assumptions_fp:
+            mod_formats_obj = json.load(mod_assumptions_fp)
+
         if mod_assumption in mod_formats_obj.keys():
             return mod_formats_obj[mod_assumption]
     except json.JSONDecodeError as json_decode_error:
