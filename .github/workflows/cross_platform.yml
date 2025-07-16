@@ -28,26 +28,24 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          python -m pip install --upgrade pip
+          # Step 1: Upgrade pip and install core build tools
+          python -m pip install --upgrade pip setuptools wheel
           
-          # Step 1: Install torch first
+          # Step 2: Install torch first
           pip install torch==2.2.2
           
-          # Step 2: Install PyG packages (problematic ones)
-          PYG_COMMAND="pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html"
-          
+          # Step 3: Install PyG packages with platform-specific logic
           if [[ "${{ runner.os }}" == "macOS" ]]; then
-            # Add macOS-specific flags
+            # For macOS, compile from source with specific flags
             echo "Applying macOS build flags..."
-            MACOSX_DEPLOYMENT_TARGET=10.15 $PYG_COMMAND
+            MACOSX_DEPLOYMENT_TARGET=10.15 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
           else
-            # Run for Linux and Windows
-            $PYG_COMMAND
+            # For Linux/Windows, install from pre-built wheels
+            pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
           fi
           
-          # Step 3: Install the rest of the requirements
-          # Using a filter to avoid reinstalling packages we just handled
-          grep -vE "torch|triton" requirements.txt > other_requirements.txt
+          # Step 4: Install the rest of the requirements
+          grep -vE "torch-scatter|torch-sparse|torch-cluster|torch-spline-conv|torch|triton" requirements.txt > other_requirements.txt
           pip install -r other_requirements.txt
 
       - name: Run Python script
