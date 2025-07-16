@@ -37,6 +37,4 @@ for MODULE in "${MODULES[@]}"; do
     fi
 done
 
-git add "${OUTPUT_DIR}/*"
-
 exit 0

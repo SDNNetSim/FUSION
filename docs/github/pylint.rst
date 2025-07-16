@@ -33,5 +33,5 @@ Graphviz is required for the script to function. Pyreverse alone cannot output f
 
 `Pyreverse usage guide <https://pylint.readthedocs.io/en/latest/additional_tools/pyreverse/configuration.html>`_.
 
-After installing Graphviz, the script `auto-diagram` can be run to generate UML diagrams for the modules set in `$MODULE`.
+After installing Graphviz, the script `generate_diagram.sh` must be run with git bash to generate UML diagrams for the modules set in `$MODULE`.
 
