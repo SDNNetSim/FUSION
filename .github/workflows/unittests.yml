@@ -26,16 +26,27 @@ jobs:
         python-version: [ "3.11" ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          # Step 1: Upgrade pip and install core build and testing tools
+          python -m pip install --upgrade pip setuptools wheel
           pip install flake8 pytest
-          if [ -f requirements.txt ]; then sed -e '/rl_zoo3/d' -e '/stable-baselines3/d' requirements.txt > filtered_requirements.txt; pip install -r filtered_requirements.txt; fi
+          
+          # Step 2: Install torch first
+          pip install torch==2.2.2
+          
+          # Step 3: Install PyG packages for Linux
+          pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+          
+          # Step 4: Install the rest of the requirements from the original file
+          # This ensures stable-baselines3 and all other packages are installed
+          pip install -r requirements.txt
 
       - name: Print Current Working Directory
         run: pwd

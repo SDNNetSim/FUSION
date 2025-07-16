@@ -8,4 +8,4 @@ hyperparameter configurations.
 .. automodule:: reinforcement_learning.model_manager
     :members:
     :undoc-members:
-
+    :private-members:

@@ -7,4 +7,4 @@ relative to baseline algorithms.
 .. automodule:: reinforcement_learning.plotting.resource_stats
     :members:
     :undoc-members:
-
+    :private-members:

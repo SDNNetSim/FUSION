@@ -6,4 +6,4 @@ This module provides visualizations of link usage and throughput in optical netw
 .. automodule:: reinforcement_learning.plotting.link_data
     :members:
     :undoc-members:
-
+    :private-members:

@@ -8,4 +8,5 @@ and statistical heatmaps of routing algorith
 .. automodule:: reinforcement_learning.plotting.blocking
     :members:
     :undoc-members:
+    :private-members:
 

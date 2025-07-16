@@ -7,3 +7,4 @@ It handles matrix initialization, reward updates, temporal difference error trac
 .. automodule:: reinforcement_learning.algorithms.q_learning
     :members:
     :undoc-members:
+    :private-members:

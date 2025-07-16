@@ -6,4 +6,4 @@ This module contains logic for rendering modulation usage breakdowns per bandwid
 .. automodule:: reinforcement_learning.plotting.mod_usage
     :members:
     :undoc-members:
-
+    :private-members:

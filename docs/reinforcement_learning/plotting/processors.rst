@@ -7,4 +7,4 @@ aggregating blocking probability, memory usage, simulation time, and statistical
 .. automodule:: reinforcement_learning.plotting.processors
     :members:
     :undoc-members:
-
+    :private-members:

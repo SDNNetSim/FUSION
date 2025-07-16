@@ -6,4 +6,4 @@ This module visualizes how often each path index was selected by different algor
 .. automodule:: reinforcement_learning.plotting.path_index
     :members:
     :undoc-members:
-
+    :private-members:

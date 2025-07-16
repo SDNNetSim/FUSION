@@ -7,3 +7,4 @@ The ``algorithm_props.py`` module defines core property containers for Q-learnin
 .. automodule:: reinforcement_learning.algorithms.algorithm_props
     :members:
     :undoc-members:
+    :private-members:

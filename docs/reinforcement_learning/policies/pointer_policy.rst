@@ -8,3 +8,4 @@ that integrates with Stable Baselines3.
 .. automodule:: reinforcement_learning.policies.pointer_policy
     :members:
     :undoc-members:
+    :private-members:

@@ -6,4 +6,4 @@ This module plots per-episode mean reward and standard deviation with CI shading
 .. automodule:: reinforcement_learning.plotting.rewards
     :members:
     :undoc-members:
-
+    :private-members:
