@@ -45,7 +45,8 @@ jobs:
           fi
           
           # Step 4: Install the rest of the requirements
-          grep -vE "torch-scatter|torch-sparse|torch-cluster|torch-spline-conv|torch|triton" requirements.txt > other_requirements.txt
+          # Filter out all packages installed in previous steps, INCLUDING pip
+          grep -vE "torch-scatter|torch-sparse|torch-cluster|torch-spline-conv|torch|triton|pip" requirements.txt > other_requirements.txt
           pip install -r other_requirements.txt
 
       - name: Run Python script
