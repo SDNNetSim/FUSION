@@ -713,7 +713,6 @@ class SnrMeasurements:
             p_total = 1
             number_lp = set()
             for band in self.engine_props['band_list']:
-                # for slot_index in range(self.engine_props[band + '_band']):
                 curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][self.spectrum_props.core_num]
                 number_lp.update(np.unique(curr_link[curr_link > 0]))
             p_total += len(number_lp)
