@@ -10,6 +10,37 @@ class Grooming:
         self.engine_props = engine_props
         self.sdn_props = sdn_props
 
+    def _find_path_max_bw(self, light_id: tuple):
+        """
+        Function to find the path group with the maximum total remaining bandwidth.
+
+        :param light_id: Tuple of (source, destination) representing the path ID.
+        :type light_id: tuple
+
+        :return: Dictionary of the path group with the maximum remaining bandwidth or None if no group exists.
+        :rtype: dict | None
+        """
+        path_groups = {}
+        for lp_id, lp_info in self.sdn_props.lightpath_status_dict[light_id].items():
+            if lp_info["remaining_bandwidth"] > 0:
+                path_key = tuple(lp_info["path"])
+                reverse_path_key = tuple(reversed(lp_info["path"]))
+
+                # Normalize the path key to treat paths and their reverses as the same group
+                normalized_path_key = min(path_key, reverse_path_key)
+                if normalized_path_key not in path_groups:
+                    path_groups[normalized_path_key] = {
+                        "total_remaining_bandwidth": 0,
+                        "lightpaths": [],
+                        "lp_id_list": []
+                    }
+                path_groups[normalized_path_key]["total_remaining_bandwidth"] += lp_info["remaining_bandwidth"]
+                path_groups[normalized_path_key]["lightpaths"].append((lp_id, lp_info))
+                path_groups[normalized_path_key]["lp_id_list"].append(lp_id)
+
+        # Find the path group with the maximum total remaining bandwidth
+        return max(path_groups.values(), key=lambda group: group["total_remaining_bandwidth"], default=None)
+
     def _end_to_end_grooming(self):
         """
         Function to groom the arrival requests to already established lightpaths.
@@ -17,30 +48,10 @@ class Grooming:
         :return: If the requested is groomed to established lightpath.
         :rtype: bool
         """
-                
         light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
 
         if light_id in self.sdn_props.lightpath_status_dict:
-            path_groups = {}
-            for lp_id, lp_info in self.sdn_props.lightpath_status_dict[light_id].items():
-                if lp_info["remaining_bandwidth"] > 0:
-                    path_key = tuple(lp_info["path"])
-                    reverse_path_key = tuple(reversed(lp_info["path"]))
-
-                    # Normalize the path key to treat paths and their reverses as the same group
-                    normalized_path_key = min(path_key, reverse_path_key)
-                    if normalized_path_key not in path_groups:
-                        path_groups[normalized_path_key] = {
-                            "total_remaining_bandwidth": 0,
-                            "lightpaths": [],
-                            "lp_id_list": []
-                        }
-                    path_groups[normalized_path_key]["total_remaining_bandwidth"] += lp_info["remaining_bandwidth"]
-                    path_groups[normalized_path_key]["lightpaths"].append((lp_id, lp_info))
-                    path_groups[normalized_path_key]["lp_id_list"].append(lp_id)
-
-            # Find the path group with the maximum total remaining bandwidth
-            max_path_group = max(path_groups.values(), key=lambda group: group["total_remaining_bandwidth"], default=None)
+            max_path_group = self._find_path_max_bw(light_id)
             if max_path_group and max_path_group["total_remaining_bandwidth"] != 0:
                 remaining_bw = int(self.sdn_props.bandwidth)
                 for lp_id in max_path_group['lp_id_list']:
@@ -55,7 +66,7 @@ class Grooming:
                         self.sdn_props.is_sliced = True
                     self.sdn_props.lightpath_status_dict[light_id][lp_id]["requests_dict"].update({self.sdn_props.req_id:tmp_remaining_bw})
                     self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"] -= tmp_remaining_bw
-                    lp_usage = (1-(self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"]/self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth']))
+                    lp_usage = 1-(self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"]/self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth'])
                     self.sdn_props.lightpath_status_dict[light_id][lp_id]["time_bw_usage"].update({self.sdn_props.arrive: lp_usage * 100})
                     self.sdn_props.bandwidth_list.append(str(tmp_remaining_bw))
                     self.sdn_props.core_list.append(self.sdn_props.lightpath_status_dict[light_id][lp_id]["core"])
@@ -80,6 +91,7 @@ class Grooming:
                 self.sdn_props.was_groomed = False
                 self.sdn_props.remaining_bw = remaining_bw
         return False
+
     def _release_service(self):
         """
         Removes a previously allocated request from the lightpaths.
@@ -91,7 +103,7 @@ class Grooming:
         release_lp = []
         light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
 
-        for lp_id in self.sdn_props.lightpath_id_list[:]: 
+        for lp_id in self.sdn_props.lightpath_id_list[:]:
             index = self.sdn_props.lightpath_id_list.index(lp_id)
             req_bw = self.sdn_props.lightpath_status_dict[light_id][lp_id]['requests_dict'][self.sdn_props.req_id]
             self.sdn_props.lightpath_status_dict[light_id][lp_id]['requests_dict'].pop(self.sdn_props.req_id)
@@ -102,7 +114,7 @@ class Grooming:
             if self.sdn_props.lightpath_status_dict[light_id][lp_id]['remaining_bandwidth'] == self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth'] :
                 release_lp.append(lp_id)
             else:
-                lp_usage = (1-(self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"]/self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth']))
+                lp_usage = 1-(self.sdn_props.lightpath_status_dict[light_id][lp_id]["remaining_bandwidth"]/self.sdn_props.lightpath_status_dict[light_id][lp_id]['lightpath_bandwidth'])
                 self.sdn_props.lightpath_status_dict[light_id][lp_id]["time_bw_usage"].update({self.sdn_props.depart: lp_usage * 100})
         return release_lp
 
@@ -113,5 +125,4 @@ class Grooming:
 
         if request_type == "release":
             return self._release_service()
-        else:
-            return self._end_to_end_grooming()
+        return self._end_to_end_grooming()
