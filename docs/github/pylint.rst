@@ -29,9 +29,9 @@ The following Pyreverse command is ran in bash script. `$OUTPUT_DIR` is set to a
 
 Graphviz is required for the script to function. Pyreverse alone cannot output formats other than .puml, .dot, .mmd. 
 
-`Graphviz installation <https://graphviz.org/download/>`_.
+`Graphviz installation <https://graphviz.org/download/>`_
 
-`Pyreverse usage guide <https://pylint.readthedocs.io/en/latest/additional_tools/pyreverse/configuration.html>`_.
+`Pyreverse usage guide <https://pylint.readthedocs.io/en/latest/additional_tools/pyreverse/configuration.html>`_
 
 After installing Graphviz, the script `generate_diagram.sh` must be run with git bash to generate UML diagrams for the modules set in `$MODULE`.
 
