@@ -32,7 +32,10 @@ class TestSnrMeasurements(unittest.TestCase):
             'xt_noise': False,
             'phi': {'QPSK': 0.5},
             'snr_type': 'snr_calc_nli',
-            'requested_xt': {'QPSK': -20}
+            'requested_xt': {'QPSK': -20},
+            'fixed_grid': False,
+            'band_list': ['c'],
+            'phi':{"BPSK": 1, "QPSK": 1, "8-QAM": 0.66667, "16-QAM":0.68, "32-QAM": 0.69, "64-QAM": 0.6190476190476191}
         }
 
         self.sdn_props = MagicMock()
@@ -113,6 +116,198 @@ class TestSnrMeasurements(unittest.TestCase):
 
         self.assertTrue(resp)
         self.assertAlmostEqual(cross_talk, expected_cross_talk, places=10)
+
+    def test_check_gsnr(self):
+        """Test check_gsnr returns True with realistic values."""
+        self.snr_measurements.snr_props.req_snr = {'BPSK': 3.71,'QPSK': 6.72, '8-QAM': 10.84, '16-QAM': 13.24, '32-QAM': 16.16, '64-QAM': 19.01}
+        self.spectrum_props.modulation = 'QPSK'
+        self.engine_props['topology_info']['links'][0] = {'fiber': {
+                    'attenuation': 0.2 / 4.343 * 1e-3,
+                    'non_linearity': 1.3e-3,
+                    'dispersion': -21.3e-27,
+                    'fiber_type': 0,
+                    'bending_radius': 0.05,
+                    'mode_coupling_co': 4.0e-4,
+                    'propagation_const': 4e6,
+                    'core_pitch': 4e-5,
+                    'frequency_start_c': 3e8 / 1565e-9,
+                    'frequency_end_c':  ((3e8 / 1565e-9)+ 6.0e12),
+                    'frequency_start_l': 3e8 / 1620e-9,
+                    'frequency_end_l':  ((3e8 / 1620e-9)+ 6.0e12),
+                    'c_band_bw': 6.0e12,
+                    'raman_gain_slope': 0.028 / (1e3)/ (1e12),
+                    'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),
+                    'gvd_slope': (0.14) * ((1e-12) * (1e-12) * (1e-12)) / ( 1e3),
+            },
+            'length': 200,
+            'source': 'A',
+            'destination': 'B',
+            'span_length': 100,}
+
+        self.snr_measurements.spectrum_props.start_slot = 10
+        self.snr_measurements.spectrum_props.end_slot = 15
+        self.snr_measurements.spectrum_props.core_num = 0
+        self.snr_measurements.spectrum_props.curr_band = 'c'
+        self.snr_measurements.spectrum_props.path_list = ['A','B']
+
+        self.snr_measurements.snr_props.nsp = {'c':1.77, 'l': 1.99 }
+        self.snr_measurements.snr_props.plank = 6.62607004e-34
+        self.snr_measurements.sdn_props.bandwidth = '300'
+        self.snr_measurements.spectrum_props.slicing_flag = False
+        self.snr_measurements.sdn_props.net_spec_dict[('A','B')]['cores_matrix']['c'][0][0:3] = 1
+        self.snr_measurements.sdn_props.lightpath_status_dict = {('A','B'):{1:{'mod_format': 'QPSK'}}}
+        self.snr_measurements.num_slots = (
+                self.snr_measurements.spectrum_props.end_slot - self.snr_measurements.spectrum_props.start_slot + 1
+        )
+
+        resp, gsnr_db, bw_resp = self.snr_measurements.check_gsnr()
+        self.assertEqual(bw_resp, 300)
+        self.assertEqual(gsnr_db, 21.69889484393792)
+        self.assertTrue(resp)
+
+    def test_check_gsnr_mb(self):
+        """Test check_gsnr_mb returns True when SNR is sufficient."""
+        self.snr_measurements.snr_props.req_snr = {'BPSK': 3.71,'QPSK': 6.72, '8-QAM': 10.84, '16-QAM': 13.24, '32-QAM': 16.16, '64-QAM': 19.01}
+        self.spectrum_props.modulation = 'QPSK'
+        self.engine_props['topology_info']['links'][0] = {'fiber': {
+                    'attenuation': 0.2 / 4.343 * 1e-3,
+                    'non_linearity': 1.3e-3,
+                    'dispersion': -21.3e-27,
+                    'fiber_type': 0,
+                    'bending_radius': 0.05,
+                    'mode_coupling_co': 4.0e-4,
+                    'propagation_const': 4e6,
+                    'core_pitch': 4e-5,
+                    'frequency_start_c': 3e8 / 1565e-9,
+                    'frequency_end_c':  ((3e8 / 1565e-9)+ 6.0e12),
+                    'frequency_start_l': 3e8 / 1620e-9,
+                    'frequency_end_l':  ((3e8 / 1620e-9)+ 6.0e12),
+                    'c_band_bw': 6.0e12,
+                    'raman_gain_slope': 0.028 / (1e3)/ (1e12),
+                    'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),
+                    'gvd_slope': (0.14) * ((1e-12) * (1e-12) * (1e-12)) / ( 1e3),
+            },
+            'length': 200,
+            'source': 'A',
+            'destination': 'B',
+            'span_length': 100,}
+
+        self.snr_measurements.spectrum_props.start_slot = 10
+        self.snr_measurements.spectrum_props.end_slot = 15
+        self.snr_measurements.spectrum_props.core_num = 0
+        self.snr_measurements.spectrum_props.curr_band = 'c'
+        self.snr_measurements.spectrum_props.path_list = ['A','B']
+
+        self.snr_measurements.snr_props.nsp = {'c':1.77, 'l': 1.99 }
+        self.snr_measurements.snr_props.plank = 6.62607004e-34
+        self.snr_measurements.sdn_props.bandwidth = '300'
+        self.snr_measurements.spectrum_props.slicing_flag = False
+        self.snr_measurements.sdn_props.net_spec_dict[('A','B')]['cores_matrix']['c'][0][0:3] = 1
+        self.snr_measurements.sdn_props.lightpath_status_dict = {('A','B'):{1:{'mod_format': 'QPSK'}}}
+        self.snr_measurements.num_slots = (
+                self.snr_measurements.spectrum_props.end_slot - self.snr_measurements.spectrum_props.start_slot + 1
+        )
+
+        resp, gsnr_db, bw_resp = self.snr_measurements.check_gsnr_mb()
+        self.assertEqual(bw_resp, 300)
+        self.assertEqual(gsnr_db, 21.627390247120072)
+        self.assertTrue(resp)
+
+    def test__compute_nli_mb(self):
+        """Test _compute_nli_mb returns correct NLI for multi-band."""
+        self.snr_measurements.snr_props.link_dict = {
+                'attenuation': 0.2 / 4.343 * 1e-3,
+                'non_linearity': 1.3e-3,
+                'dispersion': -21.3e-27,
+                'fiber_type': 0,
+                'bending_radius': 0.05,
+                'mode_coupling_co': 4.0e-4,
+                'propagation_const': 4e6,
+                'core_pitch': 4e-5,
+                'frequency_start_c': 3e8 / 1565e-9,
+                'frequency_end_c':  ((3e8 / 1565e-9)+ 6.0e12),
+                'frequency_start_l': 3e8 / 1620e-9,
+                'frequency_end_l':  ((3e8 / 1620e-9)+ 6.0e12),
+                'c_band_bw': 6.0e12,
+                'raman_gain_slope': 0.028 / (1e3)/ (1e12),
+                'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),
+                'gvd_slope': (0.14) * ((1e-12) * (1e-12) * (1e-12)) / ( 1e3),
+        }
+
+        self.snr_measurements.spectrum_props.start_slot = 10
+        self.snr_measurements.spectrum_props.end_slot = 15
+        self.snr_measurements.spectrum_props.core_num = 0
+        self.snr_measurements.spectrum_props.curr_band = 'c'
+
+        self.snr_measurements.snr_props.nsp = {'c':1.77, 'l': 1.99 }
+        self.snr_measurements.snr_props.plank = 6.62607004e-34
+        self.snr_measurements.snr_props.length = 100
+        self.snr_measurements.snr_props.num_span = 1
+        self.snr_measurements.sdn_props.net_spec_dict[('A','B')]['cores_matrix']['c'][0][0:3] = 1
+        self.snr_measurements.sdn_props.lightpath_status_dict = {('A','B'):{1:{'mod_format': 'QPSK'}}}
+        self.snr_measurements.num_slots = (
+                self.snr_measurements.spectrum_props.end_slot - self.snr_measurements.spectrum_props.start_slot + 1
+        )
+
+        nli = self.snr_measurements._compute_nli_mb(source = 'A', dest = 'B', p_total = 0.002)
+
+        self.assertEqual(nli, 9.14394298264424e-05)
+        self.assertIsInstance(nli, float)
+
+    def test__compute_ase_mb(self):
+        """Test _compute_ase_mb returns non-negative ASE noise."""
+        self.snr_measurements.snr_props.link_dict = {
+                'attenuation': 0.2 / 4.343 * 1e-3,
+                'non_linearity': 1.3e-3,
+                'dispersion': -21.3e-27,
+                'fiber_type': 0,
+                'bending_radius': 0.05,
+                'mode_coupling_co': 4.0e-4,
+                'propagation_const': 4e6,
+                'core_pitch': 4e-5,
+                'frequency_start_c': 3e8 / 1565e-9,
+                'frequency_end_c':  ((3e8 / 1565e-9)+ 6.0e12),
+                'frequency_start_l': 3e8 / 1620e-9,
+                'frequency_end_l':  ((3e8 / 1620e-9)+ 6.0e12),
+                'c_band_bw': 6.0e12,
+                'raman_gain_slope': 0.028 / (1e3)/ (1e12),
+                'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),
+                'gvd_slope': (0.14) * ((1e-12) * (1e-12) * (1e-12)) / ( 1e3),
+        }
+
+        self.snr_measurements.spectrum_props.start_slot = 10
+        self.snr_measurements.spectrum_props.end_slot = 15
+        self.snr_measurements.spectrum_props.core_num = 0
+        self.snr_measurements.spectrum_props.curr_band = 'c'
+
+        self.snr_measurements.snr_props.nsp = {'c':1.77, 'l': 1.99 }
+        self.snr_measurements.snr_props.plank = 6.62607004e-34
+        self.snr_measurements.snr_props.length = 100
+        self.snr_measurements.snr_props.num_span = 1
+        self.snr_measurements.sdn_props.net_spec_dict[('A','B')]['cores_matrix']['c'][0][0:3] = 1
+
+        # Set num_slots to the correct value before calling check_xt
+        self.snr_measurements.num_slots = (
+                self.snr_measurements.spectrum_props.end_slot - self.snr_measurements.spectrum_props.start_slot + 1
+        )
+
+        ase = self.snr_measurements._compute_ase_mb(
+            source = 'A', dest = 'B', p_total = 0.002
+        )
+
+        self.assertEqual(ase, 0.00334151139400405)
+        self.assertIsInstance(ase, float)
+
+    # def test__gsnr_calc_mb(self):
+    #     """Test _gsnr_calc_mb returns positive SNR value."""
+    #     ase = 1e-9
+    #     nli = 1e-10
+    #     signal_power = 1e-3
+
+    #     snr = self.snr_measurements._gsnr_calc_mb(ase=ase, nli=nli, signal_power=signal_power)
+
+    #     self.assertGreater(snr, 0)
+    #     self.assertIsInstance(snr, float)
 
 
 if __name__ == '__main__':

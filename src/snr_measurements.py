@@ -489,7 +489,7 @@ class SnrMeasurements:
                 self.channels_list = []
                 sum_phi = 0
                 for slot_index in range(self.engine_props['c_band']):
-                    curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix']['c'][self.spectrum_props.core_num]
+                    curr_link = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][self.spectrum_props.curr_band]
                     req_id = curr_link[self.spectrum_props.core_num][slot_index]
 
                     # Spectrum is occupied
