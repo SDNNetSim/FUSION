@@ -571,6 +571,118 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
     return np.array(potential_super_channels)
 
 
+def find_available_blocks(input_dict):
+    results = {}
+
+    for key, arr in input_dict.items():
+        arr = np.array(arr)
+        is_zero = arr == 0
+
+        # Pad to detect zero blocks at the edges without special checks
+        padded = np.pad(is_zero, ((0, 0), (1, 1)), constant_values=False)
+        diff = np.diff(padded.astype(int), axis=1)
+
+        # Start indices where diff == 1, End indices where diff == -1
+        start_indices = np.argwhere(diff == 1)
+        end_indices = np.argwhere(diff == -1)
+
+        key_results = [[] for _ in range(arr.shape[0])]
+
+        # Explicitly convert NumPy integers to native Python integers
+        for (row_start, col_start), (row_end, col_end) in zip(start_indices, end_indices):
+            key_results[int(row_start)].append((int(col_start), int(col_end - 1)))
+
+        results[key] = key_results
+
+    return results
+
+
+
+
+def find_available_blocks(input_dict):
+    results = {}
+
+    for key, arr in input_dict.items():
+        arr = np.array(arr)
+        is_zero = arr == 0
+
+        # Pad to detect zero blocks at the edges without special checks
+        padded = np.pad(is_zero, ((0, 0), (1, 1)), constant_values=False)
+        diff = np.diff(padded.astype(int), axis=1)
+
+        # Start indices where diff == 1, End indices where diff == -1
+        start_indices = np.argwhere(diff == 1)
+        end_indices = np.argwhere(diff == -1)
+
+        key_results = [[] for _ in range(arr.shape[0])]
+
+        # Explicitly convert NumPy integers to native Python integers
+        for (row_start, col_start), (row_end, col_end) in zip(start_indices, end_indices):
+            key_results[int(row_start)].append((int(col_start), int(col_end - 1)))
+
+        results[key] = key_results
+
+    return results
+
+
+
+
+def find_available_blocks(input_dict):
+    results = {}
+
+    for key, arr in input_dict.items():
+        arr = np.array(arr)
+        is_zero = arr == 0
+
+        # Pad to detect zero blocks at the edges without special checks
+        padded = np.pad(is_zero, ((0, 0), (1, 1)), constant_values=False)
+        diff = np.diff(padded.astype(int), axis=1)
+
+        # Start indices where diff == 1, End indices where diff == -1
+        start_indices = np.argwhere(diff == 1)
+        end_indices = np.argwhere(diff == -1)
+
+        key_results = [[] for _ in range(arr.shape[0])]
+
+        # Explicitly convert NumPy integers to native Python integers
+        for (row_start, col_start), (row_end, col_end) in zip(start_indices, end_indices):
+            key_results[int(row_start)].append((int(col_start), int(col_end - 1)))
+
+        results[key] = key_results
+
+    return results
+
+
+
+
+def find_available_blocks(input_dict):
+    results = {}
+
+    for key, arr in input_dict.items():
+        arr = np.array(arr)
+        is_zero = arr == 0
+
+        # Pad to detect zero blocks at the edges without special checks
+        padded = np.pad(is_zero, ((0, 0), (1, 1)), constant_values=False)
+        diff = np.diff(padded.astype(int), axis=1)
+
+        # Start indices where diff == 1, End indices where diff == -1
+        start_indices = np.argwhere(diff == 1)
+        end_indices = np.argwhere(diff == -1)
+
+        key_results = [[] for _ in range(arr.shape[0])]
+
+        # Explicitly convert NumPy integers to native Python integers
+        for (row_start, col_start), (row_end, col_end) in zip(start_indices, end_indices):
+            key_results[int(row_start)].append((int(col_start), int(col_end - 1)))
+
+        results[key] = key_results
+
+    return results
+
+
+
+
 # TODO: (version 5.5-6) Add reference
 # Please refer to this paper for the formulation:
 def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
@@ -621,6 +733,240 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     resp_frag_arr = np.where(resp_frag_arr == 1, np.inf, resp_frag_arr)
 
     return sc_index_mat, resp_frag_arr
+
+
+def calculate_h2(link_open_blcoks, spectral_slots: dict):
+    h2_results = {}
+    for band, rows in link_open_blcoks.items():
+        h2_results[band] = []
+        for row in rows:
+            if row:  # Avoid division by zero
+                terms = [((block[1] - block[0] +1) / spectral_slots[band]) * np.log((block[1] - block[0] +1) / spectral_slots[band])  for block in row]
+                h2 = -sum(terms)
+            else:
+                h2 = np.inf  # No contiguous blocks
+            h2_results[band].append(h2)
+    return h2_results
+
+def get_entropy_frag(spectral_slots: dict, net_spec_dict: dict):
+    
+
+    frag_results = {}
+    for src_dest, spec_matrix in net_spec_dict.items():
+        link_open_blcoks = find_available_blocks(input_dict = spec_matrix['cores_matrix'])
+        frag_results[str(src_dest)] = calculate_h2(link_open_blcoks=link_open_blcoks, spectral_slots=spectral_slots)
+
+
+    return frag_results
+
+
+
+def get_network_slot_occupancy(band: str, slot_index:int, num_core: int, net_spec_dict: dict):
+    slot_status = [[] for _ in range(num_core)]
+    visited_pairs = set()
+    
+    for src_dest, spec_matrix in net_spec_dict.items():
+        canonical_pair = tuple(sorted(src_dest))
+
+        if canonical_pair in visited_pairs:
+            continue
+        visited_pairs.add(canonical_pair)
+
+        for key, arr in spec_matrix['cores_matrix'].items():
+            for core_num, row in enumerate(arr):
+                slot_status[core_num].append(int(row[slot_index] != 0.0))
+
+    return slot_status
+
+def calculate_rss(num_core: int, slot_status: dict, spectral_slots: dict,):
+    rss_metric = {}
+    rss_overal = 0.0
+    for band, band_matrix in slot_status.items():
+        rss_metric.update({band:{}})
+        rss_band = 0.0
+        for slot_num, core_matrix in band_matrix.items():
+            rss_metric[band].update({slot_num:[[] for _ in range(num_core)]})
+            for core_num, arr in enumerate(core_matrix):
+
+                free_blocks = []
+                current_block_size = 0
+
+                for slot in arr:
+                    if slot == 0:
+                        current_block_size += 1
+                    else:
+                        if current_block_size > 0:
+                            free_blocks.append(current_block_size)
+                            current_block_size = 0
+
+                if current_block_size > 0:
+                    free_blocks.append(current_block_size)
+
+                if not free_blocks:
+                    rss_metric[band][slot_num][core_num] = 1.0  
+                else:
+                    numerator = np.sqrt(sum(b**2 for b in free_blocks))
+                    denominator = sum(free_blocks)
+                    rss_metric[band][slot_num][core_num] = numerator / denominator
+                rss_band += rss_metric[band][slot_num][core_num]
+        rss_metric[band]["overall"] = (rss_band / spectral_slots[band])
+        rss_overal += rss_band 
+    rss_metric["overall"] = rss_overal / sum(list(spectral_slots.values()))
+    return rss_metric
+
+def get_rss_frag(spectral_slots: dict, net_spec_dict: dict, num_core: int):
+    slot_status = {}
+
+    for band, slot_band in spectral_slots.items():
+        slot_status.update({band:{}})
+        for slot_index in range(slot_band):
+            slot_status[band].update({slot_index:get_network_slot_occupancy(band = band, slot_index = slot_index, num_core = num_core, net_spec_dict = net_spec_dict)})
+    
+    return calculate_rss(num_core, slot_status, spectral_slots)
+
+
+
+def average_bandwidth_usage(bw_dict, departure_time):
+        
+        sorted_times = sorted(bw_dict.keys())
+
+        total_bw_time = 0  
+        total_time = 0      
+
+        for i in range(len(sorted_times)):
+            start_time = sorted_times[i]
+            bw = bw_dict[start_time]
+
+
+            if i < len(sorted_times) - 1:
+                end_time = sorted_times[i + 1]
+            else:
+                end_time = departure_time  
+
+            duration = end_time - start_time  
+            total_bw_time += bw * duration
+            total_time += duration
+
+        resp = round(total_bw_time / total_time, 2) if total_time > 0 else 0
+        return resp
+    
+
+
+def calculate_h2(link_open_blcoks, spectral_slots: dict):
+    h2_results = {}
+    for band, rows in link_open_blcoks.items():
+        h2_results[band] = []
+        for row in rows:
+            if row:  # Avoid division by zero
+                terms = [((block[1] - block[0] +1) / spectral_slots[band]) * np.log((block[1] - block[0] +1) / spectral_slots[band])  for block in row]
+                h2 = -sum(terms)
+            else:
+                h2 = np.inf  # No contiguous blocks
+            h2_results[band].append(h2)
+    return h2_results
+
+def get_entropy_frag(spectral_slots: dict, net_spec_dict: dict):
+    
+
+    frag_results = {}
+    for src_dest, spec_matrix in net_spec_dict.items():
+        link_open_blcoks = find_available_blocks(input_dict = spec_matrix['cores_matrix'])
+        frag_results[str(src_dest)] = calculate_h2(link_open_blcoks=link_open_blcoks, spectral_slots=spectral_slots)
+
+
+    return frag_results
+
+
+
+def get_network_slot_occupancy(band: str, slot_index:int, num_core: int, net_spec_dict: dict):
+    slot_status = [[] for _ in range(num_core)]
+    visited_pairs = set()
+    
+    for src_dest, spec_matrix in net_spec_dict.items():
+        canonical_pair = tuple(sorted(src_dest))
+
+        if canonical_pair in visited_pairs:
+            continue
+        visited_pairs.add(canonical_pair)
+
+        for key, arr in spec_matrix['cores_matrix'].items():
+            for core_num, row in enumerate(arr):
+                slot_status[core_num].append(int(row[slot_index] != 0.0))
+
+    return slot_status
+
+def calculate_rss(num_core: int, slot_status: dict, spectral_slots: dict,):
+    rss_metric = {}
+    rss_overal = 0.0
+    for band, band_matrix in slot_status.items():
+        rss_metric.update({band:{}})
+        rss_band = 0.0
+        for slot_num, core_matrix in band_matrix.items():
+            rss_metric[band].update({slot_num:[[] for _ in range(num_core)]})
+            for core_num, arr in enumerate(core_matrix):
+
+                free_blocks = []
+                current_block_size = 0
+
+                for slot in arr:
+                    if slot == 0:
+                        current_block_size += 1
+                    else:
+                        if current_block_size > 0:
+                            free_blocks.append(current_block_size)
+                            current_block_size = 0
+
+                if current_block_size > 0:
+                    free_blocks.append(current_block_size)
+
+                if not free_blocks:
+                    rss_metric[band][slot_num][core_num] = 1.0  
+                else:
+                    numerator = np.sqrt(sum(b**2 for b in free_blocks))
+                    denominator = sum(free_blocks)
+                    rss_metric[band][slot_num][core_num] = numerator / denominator
+                rss_band += rss_metric[band][slot_num][core_num]
+        rss_metric[band]["overall"] = (rss_band / spectral_slots[band])
+        rss_overal += rss_band 
+    rss_metric["overall"] = rss_overal / sum(list(spectral_slots.values()))
+    return rss_metric
+
+def get_rss_frag(spectral_slots: dict, net_spec_dict: dict, num_core: int):
+    slot_status = {}
+
+    for band, slot_band in spectral_slots.items():
+        slot_status.update({band:{}})
+        for slot_index in range(slot_band):
+            slot_status[band].update({slot_index:get_network_slot_occupancy(band = band, slot_index = slot_index, num_core = num_core, net_spec_dict = net_spec_dict)})
+    
+    return calculate_rss(num_core, slot_status, spectral_slots)
+
+
+
+def average_bandwidth_usage(bw_dict, departure_time):
+        
+        sorted_times = sorted(bw_dict.keys())
+
+        total_bw_time = 0  
+        total_time = 0      
+
+        for i in range(len(sorted_times)):
+            start_time = sorted_times[i]
+            bw = bw_dict[start_time]
+
+
+            if i < len(sorted_times) - 1:
+                end_time = sorted_times[i + 1]
+            else:
+                end_time = departure_time  
+
+            duration = end_time - start_time  
+            total_bw_time += bw * duration
+            total_time += duration
+
+        resp = round(total_bw_time / total_time, 2) if total_time > 0 else 0
+        return resp
+    
 
 
 def classify_cong(curr_cong: float, cong_cutoff: float):

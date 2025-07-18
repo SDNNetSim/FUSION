@@ -24,11 +24,17 @@ class TestSimStats(unittest.TestCase):
             'snapshot_step': 20,
             'cores_per_link': 4,
             'save_snapshots': True,
-            'mod_per_bw': {'50GHz': {'QPSK': {}, '16QAM': {}}},
+            'mod_per_bw': {'50': {'QPSK': {}, '16QAM': {}}},
             'output_train_data': True,
             'band_list': ['C'],
             'save_start_end_slots': False,
             'k_paths': 3,
+            'fragmentation_metrics': [],
+            'transponder_usage_per_node' : False,
+            'blocking_type_ci': 'request',
+            'can_partially_serve': False,
+
+
         }
         self.sim_info = "Simulation Info"
 
@@ -220,9 +226,10 @@ class TestSimStats(unittest.TestCase):
         # Mock sdn_data
         sdn_data = MagicMock()
         sdn_data.stat_key_list = ['core_list', 'modulation_list', 'xt_list']
-        sdn_data.bandwidth_list = ['50GHz', '75GHz']
+        # sdn_data.bandwidth_list = ['50', '75']
         sdn_data.band_list = ['C', 'L']
-        sdn_data.path_weight = 100.0
+        sdn_data.path_weight = 100.0,
+        sdn_data.lightpath_bandwidth_list = ['50', '75']
 
         # Mock get_data for specific keys
         sdn_data.get_data.side_effect = lambda key: {
@@ -234,22 +241,22 @@ class TestSimStats(unittest.TestCase):
         # Initialize stats properties
         self.sim_stats.stats_props.cores_dict = {1: 0, 2: 0}
         self.sim_stats.stats_props.mods_used_dict = {
-            '50GHz': {'QPSK': 0, 'length': {'C': [], 'overall': []}},
-            '75GHz': {'16QAM': 0, 'length': {'L': [], 'overall': []}},
-            'QPSK': {'C': 1, 'L': 1, 'length': {'C': [1], 'L': [1], 'overall': [2]}},
-            '16QAM': {'C': 1, 'L': 1, 'length': {'C': [1], 'L': [1], 'overall': [2]}}
+            '50': {'QPSK': 0, 'length': {'C': [], 'overall': []}, 'hop': {'C': [], 'overall': []}, 'snr': {'C': [], 'overall': []}},
+            '75': {'16QAM': 0, 'length': {'L': [], 'overall': []}, 'hop': {'C': [], 'overall': []}, 'snr': {'C': [], 'overall': []}},
+            'QPSK': {'C': 1, 'L': 1, 'length': {'C': [1], 'L': [1], 'overall': [2]}, 'hop': {'C': [], 'L': [1], 'overall': []}, 'snr': {'C': [], 'L': [1], 'overall': []}},
+            '16QAM': {'C': 1, 'L': 1, 'length': {'C': [1], 'L': [1], 'overall': [2]}, 'hop': {'C': [], 'L': [1], 'overall': []}, 'snr': {'C': [], 'L': [1], 'overall': []}}
         }
         self.sim_stats.stats_props.xt_list = []
 
         # Call the method under test
-        self.sim_stats._handle_iter_lists(sdn_data=sdn_data)
+        self.sim_stats._handle_iter_lists(sdn_data=sdn_data, new_lp_index= [0,1])
 
         # Assertions
         self.assertEqual(self.sim_stats.stats_props.cores_dict[1], 1)
         self.assertEqual(self.sim_stats.stats_props.cores_dict[2], 1)
-        self.assertEqual(self.sim_stats.stats_props.mods_used_dict['50GHz']['QPSK'], 1)
-        self.assertEqual(self.sim_stats.stats_props.mods_used_dict['75GHz']['16QAM'], 1)
-        self.assertEqual(self.sim_stats.stats_props.xt_list, [])
+        self.assertEqual(self.sim_stats.stats_props.mods_used_dict['50']['QPSK'], 1)
+        self.assertEqual(self.sim_stats.stats_props.mods_used_dict['75']['16QAM'], 1)
+        self.assertEqual(self.sim_stats.stats_props.xt_list, [0.15000000000000002])
 
     def test_iter_update(self):
         """Test iter update for blocked and routed requests."""
@@ -282,12 +289,17 @@ class TestSimStats(unittest.TestCase):
         sdn_data_routed.route_time = 10
         sdn_data_routed.num_trans = 2
         sdn_data_routed.path_weight = 5
-        sdn_data_routed.modulation_list = ['QPSK']
-        sdn_data_routed.bandwidth = '50'
+        sdn_data_routed.modulation_list = ['QPSK', 'QPSK']
+        sdn_data_routed.bandwidth = '100'
         sdn_data_routed.bandwidth_list = ['50', '50']
+        sdn_data_routed.lightpath_bandwidth_list = ['50', '50']
         sdn_data_routed.band_list = ['C', 'C']
         sdn_data_routed.path_index = 0
         sdn_data_routed.stat_key_list = ['modulation_list']
+        sdn_data_routed.remaining_bw = '0'
+        sdn_data_routed.lightpath_id_list = [10, 11]
+        sdn_data_routed.was_new_lp_established = [10, 11]
+        sdn_data_routed.was_groomed = False
 
         self.sim_stats.topology = self.topology
         self.sim_stats.stats_props.path_index_list = [0]
@@ -309,7 +321,7 @@ class TestSimStats(unittest.TestCase):
         self.assertEqual(self.sim_stats.stats_props.lengths_list, [25])
         self.assertEqual(self.sim_stats.stats_props.route_times_list, [10])
         self.assertEqual(self.sim_stats.total_trans, 2)
-        self.assertEqual(self.sim_stats.stats_props.weights_dict['50']['QPSK'], [5])
+        self.assertEqual(self.sim_stats.stats_props.weights_dict['50']['QPSK'], [5,5])
         self.assertEqual(self.sim_stats.stats_props.path_index_list[0], 1)
 
     def test_get_iter_means(self):
@@ -317,12 +329,16 @@ class TestSimStats(unittest.TestCase):
         Test get iter means.
         """
         self.sim_stats.stats_props.snapshots_dict = {1: {'occupied_slots': [10, 20, 30]}}
-        self.sim_stats.stats_props.weights_dict = {'50GHz': {'QPSK': [1, 2, 3, 4]}}
-        self.sim_stats.stats_props.mods_used_dict = {'QPSK': {'length': {'50': 50}}}
+        self.sim_stats.stats_props.weights_dict = {'50': {'QPSK': [1, 2, 3, 4]}}
+        self.sim_stats.stats_props.mods_used_dict = {'QPSK': {'length': {'50': 50}, 'hop':{'50': 3}, 'snr':{'50': 30}},
+                                                     'overall': {'length': {'50': 50}, 'hop':{'50': 3}, 'snr':{'50': 30}}}
+        self.sim_stats.stats_props.lp_bw_utilization_dict = {'QPSK': {'C': {'0': [100]}},
+                                                            'overall': [100]}
+        self.sim_stats.stats_props.total_transponder_usage_list = [8]
 
         self.sim_stats._get_iter_means()
         expected_mod_obj = {'mean': 2.5, 'std': 1.2909944487358056, 'min': 1, 'max': 4}
-        self.assertEqual(self.sim_stats.stats_props.weights_dict['50GHz']['QPSK'], expected_mod_obj)
+        self.assertEqual(self.sim_stats.stats_props.weights_dict['50']['QPSK'], expected_mod_obj)
         self.assertEqual(self.sim_stats.stats_props.snapshots_dict[1]['occupied_slots'], 20)
 
     def test_get_conf_inter(self):
@@ -350,19 +366,23 @@ class TestSimStats(unittest.TestCase):
             'output_train_data': True,
             'max_iters': 10,
             'save_start_end_slots': False,
+            'transponder_usage_per_node': True,
         }
         self.sim_stats.sim_info = 'sim_test'
         self.sim_stats.block_mean = 0.2
         self.sim_stats.block_variance = 0.02
         self.sim_stats.block_ci = 0.05
         self.sim_stats.block_ci_percent = 5
-        self.sim_stats.iteration = 1
+        self.sim_stats.iteration = 0
 
         # Properly initialize stats_props as an instance of StatsProps
         self.sim_stats.stats_props = StatsProps()
 
         # Set an example value to ensure there's something to save
         self.sim_stats.stats_props.trans_list = [3.5]
+        self.sim_stats.stats_props.total_transponder_usage_list = [3.5]
+        self.sim_stats.stats_props.sim_lp_utilization_list = [100]
+
 
         self.sim_stats.save_stats(base_fp=None)
         mock_file.assert_called_once_with('mocked/path/to/simulation_results/10_erlang.json', 'w', encoding='utf-8')

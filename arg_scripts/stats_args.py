@@ -10,11 +10,14 @@ class StatsProps:
         self.cores_dict = dict()  # Cores used in simulation(s)
         self.weights_dict = dict()  # Weights of paths
         self.mods_used_dict = dict()  # Modulations used in simulation(s)
+        self.demand_realization_ratio = dict()  # Realization ratio when services can serve partially
         self.block_bw_dict = dict()  # Block per bandwidth
+        self.frag_dict = dict() # Track of different fragmentation metrics
+        self.lp_bw_utilization_dict = dict() # Average lightpath bandwidth utilization
         self.block_reasons_dict = {'distance': None, 'congestion': None, 'xt_threshold': None}  # Block reasons
         self.link_usage_dict = dict()  # Tracks per link usage data
         self.sim_block_list = list()  # List of blocking probabilities per simulation
-        self.sim_br_block_list = list()  # List of blocking probabilities per simulation
+        self.sim_br_block_list = list()  # List of bit rate blocking probabilities per simulation
         self.trans_list = list()  # List of transponders used per simulation
         self.hops_list = list()  # Average hops per simulation
         self.lengths_list = list()  # Average lengths per simulation
@@ -26,7 +29,8 @@ class StatsProps:
         self.modulation_list = list() # Tracks the modulation
         self.bandwidth_list = list() # # Tracks the bandwidth
         self.path_index_list = list() #Tracks the number of times a path was selected
-
+        self.total_transponder_usage_list = list() # Tracks of total transponder
+        self.sim_lp_utilization_list = list() # Track of lightpath utilization
 
     def __repr__(self):
         return f"StatsProps({self.__dict__})"

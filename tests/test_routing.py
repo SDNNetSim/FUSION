@@ -23,7 +23,7 @@ class TestRouting(unittest.TestCase):
             'xt_type': 'with_length',
             'beta': 0.5,
             'route_method': 'k_shortest_path',
-            'pre_calc_mod_selection': False,
+            'pre_calc_mod_selection': True,
             'network': 'USbackbone60',
         }
         self.engine_props['topology'].add_edge('A', 'B', weight=1, xt_cost=10, length=1)

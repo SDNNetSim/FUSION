@@ -8,8 +8,9 @@ class SNRProps:
         self.light_frequency = 1.9341 * 10 ** 14  # Center light frequency
         self.plank = 6.62607004e-34  # Plank's constant
         self.req_bit_rate = 12.5  # Request bit rate
-        self.req_snr = 8.5  # Request signal to noise ratio value
-        self.nsp = 1.8  # Noise spectral density
+        self.req_snr = {'BPSK': 3.71,'QPSK': 6.72, '8-QAM': 10.84, '16-QAM': 13.24, '32-QAM': 16.16, '64-QAM': 19.01}  # Request signal to noise ratio value
+        self.nsp = {'c':1.77, 'l': 1.99 } # Noise spectral density
+        self.snr_margin = 0 # snr margin
 
         self.center_freq = None  # Center frequency for current request
         self.bandwidth = None  # Bandwidth for current request
@@ -50,6 +51,8 @@ class SNRProps:
                             (4, 19): {'mf': 'MF-SPNB3014-MCF19-C4.npy', 'gsnr': 'GSNR-SPNB3014-MCF19-C4.npy'},
                         }
                             }
+        self.mf_spectral_efficiency_dict = {"64-QAM":6, "32-QAM":5, "16-QAM":4, "8-QAM":3, "QPSK":2, "BPSK":1 }
+        
 
     def __repr__(self):
         return f"SNRProps({self.__dict__})"

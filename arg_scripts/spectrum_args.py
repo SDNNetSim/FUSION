@@ -20,6 +20,9 @@ class SpectrumProps:
         self.curr_band = None  # The chosen band to allocate
         self.start_slot = None  # Start slot assigned for current request
         self.end_slot = None  # End slot assigned for current request
+        self.lightpath_id = None # Unique ID for lightpath
+        self.lightpath_bandwidth = None # BW of lightpath
+        self.slicing_flag = False # Falg to detect is sliced or not
 
     def __repr__(self):
         return f"SpectrumProps({self.__dict__})"

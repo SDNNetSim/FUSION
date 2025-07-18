@@ -10,7 +10,7 @@ import pandas as pd
 
 from arg_scripts.stats_args import StatsProps
 from arg_scripts.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len, find_core_cong
+from helper_scripts.sim_helpers import find_path_len, find_core_cong, get_entropy_frag, get_rss_frag
 from helper_scripts.os_helpers import create_dir
 
 
@@ -40,7 +40,7 @@ class SimStats:
         self.block_variance = None
         self.block_ci = None
         self.block_ci_percent = None
-        self.bit_rate_request = None
+        self.bit_rate_request = 0
         self.bit_rate_blocked = 0
         self.bit_rate_block_mean = None
         self.bit_rate_block_variance = None
@@ -144,7 +144,9 @@ class SimStats:
                 self.stats_props.snapshots_dict[req_num][key] = list()
 
     def _init_mods_weights_bws(self):
+        self.stats_props.demand_realization_ratio["overall"] = list()
         for bandwidth, obj in self.engine_props['mod_per_bw'].items():
+            self.stats_props.demand_realization_ratio[bandwidth] = list()
             self.stats_props.mods_used_dict[bandwidth] = dict()
             self.stats_props.weights_dict[bandwidth] = dict()
             for modulation in obj.keys():
@@ -155,18 +157,44 @@ class SimStats:
                     self.stats_props.mods_used_dict[modulation] = dict()
                     self.stats_props.mods_used_dict[modulation]['length'] = dict()
                     self.stats_props.mods_used_dict[modulation]['length']['overall'] = list()
+                    self.stats_props.mods_used_dict[modulation]['hop'] = dict()
+                    self.stats_props.mods_used_dict[modulation]['hop']['overall'] = list()
+                    self.stats_props.mods_used_dict[modulation]['snr'] = dict()
+                    self.stats_props.mods_used_dict[modulation]['snr']['overall'] = list()
                     for band in self.engine_props['band_list']:
                         self.stats_props.mods_used_dict[modulation][band] = 0
                         self.stats_props.mods_used_dict[modulation]['length'][band] = list()
+                        self.stats_props.mods_used_dict[modulation]['hop'][band] = list()
+                        self.stats_props.mods_used_dict[modulation]['snr'][band] = list()
 
             self.stats_props.block_bw_dict[bandwidth] = 0
+    def _init_frag_vlaue_dict(self):
+        for method in self.engine_props['fragmentation_metrics']:
+            self.stats_props.frag_dict[method] = {}
+            for req_cnt in range(self.engine_props['frag_calc_step'], self.engine_props['num_requests'] + 1, self.engine_props['frag_calc_step']):
+                self.stats_props.frag_dict[method][req_cnt] = {"arrival": {}, "release": {}}
+
+
+    def _init_lp_bw_utilization_dict(self):
+        for bandwidth, obj in self.engine_props['mod_per_bw'].items():
+            self.stats_props.lp_bw_utilization_dict[bandwidth] = dict()
+            for band in self.engine_props['band_list']:
+                self.stats_props.lp_bw_utilization_dict[bandwidth][band] = {}
+                for core_num in range(self.engine_props['cores_per_link']):
+                    self.stats_props.lp_bw_utilization_dict[bandwidth][band][core_num] = []
+        self.stats_props.lp_bw_utilization_dict["overall"] = []
+
 
     def _init_stat_dicts(self):
         for stat_key, data_type in vars(self.stats_props).items():
             if not isinstance(data_type, dict):
                 continue
-            if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict'):
+            if stat_key in ('mods_used_dict', 'weights_dict', 'block_bw_dict', 'demand_realization_ratio'):
                 self._init_mods_weights_bws()
+            elif stat_key in ('frag_dict'):
+                self._init_frag_vlaue_dict()
+            elif stat_key == 'lp_bw_utilization_dict':
+                self._init_lp_bw_utilization_dict()
             elif stat_key == 'snapshots_dict':
                 if self.engine_props['save_snapshots']:
                     self._init_snapshots()
@@ -184,7 +212,7 @@ class SimStats:
             data_type = getattr(self.stats_props, stat_key)
             if isinstance(data_type, list):
                 # Only reset sim_block_list when we encounter a new traffic volume
-                if self.iteration != 0 and stat_key in ['sim_block_list', 'sim_br_block_list']:
+                if self.iteration != 0 and stat_key in ['sim_block_list', 'total_transponder_usage_list', 'sim_br_block_list']:
                     continue
                 if stat_key == 'path_index_list':
                     continue
@@ -223,23 +251,34 @@ class SimStats:
         self.stats_props.sim_block_list.append(blocking_prob)
         self.stats_props.sim_br_block_list.append(bit_rate_blocking_prob)
 
-    def _handle_iter_lists(self, sdn_data: object):
+    def _handle_iter_lists(self, sdn_data: object, new_lp_index: list):
         for stat_key in sdn_data.stat_key_list:
             curr_sdn_data = sdn_data.get_data(key=stat_key)
             if stat_key == 'xt_list':
                 # (drl_path_agents) fixme
                 if curr_sdn_data == [None]:
                     break
+                snr_list = list()
+                for cnt in range(0,len(curr_sdn_data)):
+                    if cnt in new_lp_index:
+                        snr_list.append(curr_sdn_data[cnt])
+                self.stats_props.xt_list.append(mean(snr_list)) # TODO: double-check
             for i, data in enumerate(curr_sdn_data):
+                if i not in new_lp_index:
+                    continue
                 if stat_key == 'core_list':
                     self.stats_props.cores_dict[data] += 1
                 elif stat_key == 'modulation_list':
-                    bandwidth = sdn_data.bandwidth_list[i]
+                    bandwidth = str(sdn_data.lightpath_bandwidth_list[i])
                     band = sdn_data.band_list[i]
                     self.stats_props.mods_used_dict[bandwidth][data] += 1
                     self.stats_props.mods_used_dict[data][band] += 1
                     self.stats_props.mods_used_dict[data]['length'][band].append(sdn_data.path_weight)
                     self.stats_props.mods_used_dict[data]['length']['overall'].append(sdn_data.path_weight)
+                    self.stats_props.mods_used_dict[data]['snr'][band].append(sdn_data.xt_list[i])
+                    self.stats_props.mods_used_dict[data]['snr']['overall'].append(sdn_data.xt_list[i])
+                    self.stats_props.mods_used_dict[data]['hop'][band].append(len(sdn_data.path_list)-1)
+                    self.stats_props.mods_used_dict[data]['hop']['overall'].append(len(sdn_data.path_list)-1)
                 elif stat_key == 'start_slot_list':
                     self.stats_props.start_slot_list.append(int(data))
                 elif stat_key == 'end_slot_list':
@@ -248,6 +287,23 @@ class SimStats:
                     self.stats_props.modulation_list.append(int(data))
                 elif stat_key == 'bandwidth_list':
                     self.stats_props.bandwidth_list.append(int(data))
+                
+
+    def update_frag_metric_iter(self, req_id: int, net_spec_dict: dict, req_type: str):
+        spectral_slots = {}
+        for band in self.engine_props['band_list']:
+            spectral_slots.update({band:self.engine_props[band+'_band']})
+        for method in self.engine_props['fragmentation_metrics']:
+            if method == 'entropy' and req_id in self.stats_props.frag_dict[method]:
+                self.stats_props.frag_dict[method][req_id][req_type] = get_entropy_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict)
+            elif method == 'rss' and req_id in self.stats_props.frag_dict[method]:
+                self.stats_props.frag_dict[method][req_id][req_type] = get_rss_frag(spectral_slots = spectral_slots, net_spec_dict = net_spec_dict, num_core = self.engine_props['cores_per_link'])
+
+    def update_utilization_dict(self, utilization_dict: dict):
+        for lp_id in utilization_dict:
+            self.stats_props.lp_bw_utilization_dict[str(utilization_dict[lp_id]["bit_rate"])][utilization_dict[lp_id]["band"]][utilization_dict[lp_id]["core"]].append(utilization_dict[lp_id]["utilization"])
+            self.stats_props.lp_bw_utilization_dict["overall"].append(utilization_dict[lp_id]["utilization"])
+
 
     def iter_update(self, req_data: dict, sdn_data: object, net_spec_dict: dict):
         """
@@ -265,22 +321,40 @@ class SimStats:
             self.stats_props.block_reasons_dict[sdn_data.block_reason] += 1
             self.stats_props.block_bw_dict[req_data['bandwidth']] += 1
         else:
+            self.bit_rate_request += int(sdn_data.bandwidth)
+            if sdn_data.was_groomed:
+                return
+            new_lp_index = list()
+            for lp_cnt in range(0,len(sdn_data.lightpath_id_list)):
+                if sdn_data.lightpath_id_list[lp_cnt] in sdn_data.was_new_lp_established:
+                    new_lp_index.append(lp_cnt)
+            if sdn_data.remaining_bw != '0':
+                self.bit_rate_blocked += int(sdn_data.remaining_bw)
+                if not new_lp_index:
+                    return
             num_hops = len(sdn_data.path_list) - 1
             self.stats_props.hops_list.append(num_hops)
 
             path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
             self.stats_props.lengths_list.append(round(float(path_len), 2))
 
-            self._handle_iter_lists(sdn_data=sdn_data)
+            if self.engine_props["can_partially_serve"]:
+                self.stats_props.demand_realization_ratio[sdn_data.bandwidth].append(( int(sdn_data.bandwidth) - int(sdn_data.remaining_bw)) / int(sdn_data.bandwidth))
+                self.stats_props.demand_realization_ratio["overall"].append(( int(sdn_data.bandwidth) - int(sdn_data.remaining_bw)) / int(sdn_data.bandwidth))
+            self._handle_iter_lists(sdn_data=sdn_data, new_lp_index = new_lp_index)
             self.stats_props.route_times_list.append(sdn_data.route_time)
             self.total_trans += sdn_data.num_trans
-            bandwidth = sdn_data.bandwidth
-            mod_format = sdn_data.modulation_list[0]
             self.stats_props.path_index_list[sdn_data.path_index] += 1
-
-            self.bit_rate_request += int(sdn_data.bandwidth)
-            self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight), 2))
             self.stats_props.link_usage_dict = self._get_link_usage_summary(net_spec_dict)
+
+            for i in range(0,len(sdn_data.lightpath_bandwidth_list)):
+                if i in new_lp_index:
+                    bandwidth = str(sdn_data.lightpath_bandwidth_list[i])
+
+                    mod_format = sdn_data.modulation_list[i]
+
+                    self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight),2))
+            
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
@@ -302,23 +376,79 @@ class SimStats:
                         deviation = stdev(data_list)
                     mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}
-                for key, value in self.stats_props.mods_used_dict[modulation]['length'].items():
-                    if not isinstance(value, list):
-                        continue
-                    if len(value) == 0:
-                        self.stats_props.mods_used_dict[modulation]['length'][key] = {'mean': None, 'std': None,
-                                                                                      'min': None, 'max': None}
-                    else:
-                        # TODO: Is this ever equal to one?
-                        if len(value) == 1:
-                            deviation = 0.0
+                for rute_spec in ['length', 'hop', 'snr']:
+                    for key, value in self.stats_props.mods_used_dict[modulation][rute_spec].items():
+                        if not isinstance(value, list):
+                            continue
+                        if len(value) == 0:
+                            self.stats_props.mods_used_dict[modulation][rute_spec][key] = {'mean': None, 'std': None,
+                                                                                        'min': None, 'max': None}
                         else:
-                            deviation = stdev(value)
-                        self.stats_props.mods_used_dict[modulation]['length'][key] = {
-                            'mean': round(float(mean(value)), 2), 'std': round(float(deviation), 2),
-                            'min': round(float(min(value)), 2), 'max': round(float(max(value)), 2)}
+                            # TODO: Is this ever equal to one?
+                            if len(value) == 1:
+                                deviation = 0.0
+                            else:
+                                deviation = stdev(value)
+                            self.stats_props.mods_used_dict[modulation][rute_spec][key] = {
+                                'mean': round(float(mean(value)), 2), 'std': round(float(deviation), 2),
+                                'min': round(float(min(value)), 2), 'max': round(float(max(value)), 2)}
+                    
+        for bw, bw_obj in self.stats_props.lp_bw_utilization_dict.items():
+            if bw == 'overall':
+                if len(bw_obj) == 0:
+                    self.stats_props.lp_bw_utilization_dict[bw] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                else:
+                    if len(bw_obj) == 1:
+                        deviation = 0.0
+                    else:
+                        deviation = stdev(bw_obj)
 
-    def end_iter_update(self):
+                    self.stats_props.lp_bw_utilization_dict[bw] = {
+                        'mean': round(mean(bw_obj), 2), 
+                        'std': round(deviation, 2),
+                        'min': min(bw_obj), 
+                        'max': max(bw_obj)
+                    }
+            else:
+                for band, band_obj in bw_obj.items():
+                    for core, data_list in band_obj.items():
+                        if len(data_list) == 0:
+                            band_obj[core] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                        else:
+                            if len(data_list) == 1:
+                                deviation = 0.0
+                            else:
+                                deviation = stdev(data_list)
+
+                            band_obj[core] = {
+                                'mean': round(mean(data_list), 2),
+                                'std': round(deviation, 2),
+                                'min': min(data_list),
+                                'max': max(data_list)
+                            }
+        self.stats_props.sim_lp_utilization_list.append(self.stats_props.lp_bw_utilization_dict["overall"]["mean"])
+        
+        if self.engine_props["can_partially_serve"]:
+            for bw, bw_obj in self.stats_props.demand_realization_ratio.items():
+                if len(bw_obj) == 1:
+                    deviation = 0.0
+                else:
+                    deviation = stdev(bw_obj)
+
+                self.stats_props.demand_realization_ratio[bw] = {
+                    'mean': round(mean(bw_obj), 2), 
+                    'std': round(deviation, 2),
+                    'min': min(bw_obj), 
+                    'max': max(bw_obj),
+                    'num_full_served': sum(1 for val in bw_obj if val == 1),
+                }
+                if bw == 'overall':
+                    self.stats_props.demand_realization_ratio[bw]['ratio_full_served'] = self.stats_props.demand_realization_ratio[bw]['num_full_served'] / self.engine_props['num_requests']
+                else:
+                    self.stats_props.demand_realization_ratio[bw]['ratio_full_served'] = self.stats_props.demand_realization_ratio[bw]['num_full_served'] / (self.engine_props['request_distribution'][bw] * self.engine_props['num_requests'])
+
+
+    def end_iter_update(self, total_transponders: int = None):
         """
         Updates relevant stats after an iteration has finished.
 
@@ -334,6 +464,8 @@ class SimStats:
             for block_type, num_times in self.stats_props.block_reasons_dict.items():
                 self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_reqs)
 
+        if self.engine_props['transponder_usage_per_node']:
+            self.stats_props.total_transponder_usage_list.append(total_transponders)
         self._get_iter_means()
 
     def get_conf_inter(self):
@@ -345,36 +477,66 @@ class SimStats:
         """
         self.block_mean = mean(self.stats_props.sim_block_list)
         self.bit_rate_block_mean = mean(self.stats_props.sim_br_block_list)
+        self.bit_rate_block_mean = mean(self.stats_props.sim_br_block_list)
         if len(self.stats_props.sim_block_list) <= 1:
             return False
 
         self.block_variance = variance(self.stats_props.sim_block_list)
         self.bit_rate_block_variance = variance(self.stats_props.sim_br_block_list)
 
-        if self.block_mean == 0.0:
-            return False
 
-        try:
-            # 1.645 for 90% confidence level and 1.96 for 95% confidence level
-            block_ci_rate = 1.96 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
-            self.block_ci = block_ci_rate
-            block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
-            self.block_ci_percent = block_ci_percent
-            # bit rate blcoking
-            bit_rate_block_ci = 1.96 * (
-                    math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
-            self.bit_rate_block_ci = bit_rate_block_ci
-            bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
-            self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
-        except ZeroDivisionError:
-            return False
+        if self.engine_props['blocking_type_ci'] == 'request': 
+            
+            try:
+                block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
+                self.block_ci = block_ci_rate
+                block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
+                self.block_ci_percent = block_ci_percent
+            except ZeroDivisionError:
+                return False
+            
+            try:
+                bit_rate_block_ci = 1.645 * (math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
+                self.bit_rate_block_ci = bit_rate_block_ci
+                bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
+                self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
+            except ZeroDivisionError:
+                self.bit_rate_block_ci = None
+                self.bit_rate_block_ci_percent = None
+        
+            # TODO: Add to configuration file (ci percent, same as above)
+            if block_ci_percent <= 5:
+                print(f"Confidence interval of {round(block_ci_percent, 2)}% reached. "
+                    f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
+                self.save_stats(base_fp='data')
+                return True
+        else:
 
-        # TODO: (drl_path_agents) Add CI percent to configuration file
-        if block_ci_percent <= 5:
-            print(f"Confidence interval of {round(block_ci_percent, 2)}% reached. "
-                  f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
-            self.save_stats(base_fp='data')
-            return True
+            try:
+                block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.sim_block_list)))
+                self.block_ci = block_ci_rate
+                block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
+                self.block_ci_percent = block_ci_percent
+            except ZeroDivisionError:
+                self.block_ci = None
+                self.block_ci_percent = None
+
+            try:
+                bit_rate_block_ci = 1.645 * (math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.sim_br_block_list)))
+                self.bit_rate_block_ci = bit_rate_block_ci
+                bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
+                self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
+            except ZeroDivisionError:
+                return False
+        
+            # TODO: Add to configuration file (ci percent, same as above)
+            if bit_rate_block_ci_percent <= 5:
+                print(f"Confidence interval of {round(bit_rate_block_ci_percent, 2)}% reached. "
+                    f"{self.iteration + 1}, ending and saving results for Erlang: {self.engine_props['erlang']}")
+                self.save_stats(base_fp='data')
+                return True
+            
+            
 
         return False
 
@@ -403,12 +565,13 @@ class SimStats:
         self.save_dict['blocking_mean'] = self.block_mean
         self.save_dict['blocking_variance'] = self.block_variance
         self.save_dict['ci_rate_block'] = self.block_ci
-        self.save_dict['ci_percent_block'] = self.block_ci_percent
-
+        self.save_dict['ci_percent_block'] = self.block_ci_percent    
         self.save_dict['bit_rate_blocking_mean'] = self.bit_rate_block_mean
         self.save_dict['bit_rate_blocking_variance'] = self.bit_rate_block_variance
         self.save_dict['ci_rate_bit_rate_block'] = self.bit_rate_block_ci
-        self.save_dict['ci_percent_bit_rate_block'] = self.bit_rate_block_ci_percent
+        self.save_dict['ci_percent_bit_rate_block'] = self.bit_rate_block_ci_percent   
+        self.save_dict['total_transponder_usage']  = round(float(mean(self.stats_props.total_transponder_usage_list)),2)
+        self.save_dict["lightpath_utilization"] = mean(self.stats_props.sim_lp_utilization_list)
 
         self.save_dict['iter_stats'][self.iteration] = dict()
         for stat_key in vars(self.stats_props).keys():
@@ -429,6 +592,11 @@ class SimStats:
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}min'] = round(float(min(stat_array)), 2)
                     self.save_dict['iter_stats'][self.iteration][f'{save_key}max'] = round(float(max(stat_array)), 2)
             else:
+                if stat_key == 'total_transponder_usage_list':
+                    if self.engine_props["transponder_usage_per_node"]:
+                        save_key = f"{stat_key.split('list')[0]}"
+                        self.save_dict['iter_stats'][self.iteration][save_key] = self.stats_props.total_transponder_usage_list[self.iteration]
+                    continue
                 if stat_key in ['start_slot_list', 'end_slot_list'] and not self.engine_props['save_start_end_slots']:
                     self.save_dict['iter_stats'][self.iteration][stat_key] = []
                     continue

@@ -3,6 +3,7 @@ from operator import itemgetter
 
 import numpy as np
 
+from helper_scripts.sim_helpers import sort_nested_dict_vals
 from arg_scripts.spectrum_args import SpectrumProps
 from helper_scripts.spectrum_helpers import SpectrumHelpers
 from src.snr_measurements import SnrMeasurements
@@ -153,8 +154,7 @@ class SpectrumAssignment:
                 self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
-                    if (self.engine_props['cores_per_link'] in [13, 19] and
-                            self.engine_props['snr_type'] == 'snr_e2e_external_resources'):
+                    if self.engine_props['snr_type'] == 'snr_e2e_external_resources':
                         if self._handle_snr_external(flag, open_slots_matrix):
                             return
 
@@ -180,8 +180,7 @@ class SpectrumAssignment:
                 self.spec_help_obj.curr_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
-                    if (self.engine_props['cores_per_link'] in [13, 19] and
-                            self.engine_props['snr_type'] == 'snr_e2e_external_resources'):
+                    if self.engine_props['snr_type'] == 'snr_e2e_external_resources':
                         if self._handle_snr_external(flag, open_slots_matrix):
                             return
 
@@ -273,6 +272,9 @@ class SpectrumAssignment:
                 if self.engine_props['fixed_grid']:
                     self.spectrum_props.slots_needed = 1
                 else:
+                    if self.sdn_props.was_partially_groomed:
+                        bw_tmp = min((int(k) for k in self.engine_props['mod_per_bw'] if int(k) > int(self.sdn_props.remaining_bw)), default=None)
+                        self.spectrum_props.slots_needed = self.engine_props['mod_per_bw'][str(bw_tmp)][modulation]['slots_needed']
                     self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
 
             if self.spectrum_props.slots_needed is None:
@@ -283,13 +285,13 @@ class SpectrumAssignment:
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    snr_check, xt_cost = self.snr_obj.handle_snr(self.sdn_props.path_index)
+                    snr_check, xt_cost, lp_bw = self.snr_obj.handle_snr(self.sdn_props.path_index)
                     self.spectrum_props.xt_cost = xt_cost
                     if not snr_check:
                         self.spectrum_props.is_free = False
                         self.sdn_props.block_reason = 'xt_threshold'
                         continue
-
+                    self.spectrum_props.lightpath_bandwidth = lp_bw
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
 
@@ -298,7 +300,8 @@ class SpectrumAssignment:
             self.spectrum_props.block_reason = 'congestion'
             continue
 
-    def get_spectrum_dynamic_slicing(self, mod_format_list: list, slice_bandwidth: str = None, path_index: int = None):  # pylint: disable=unused-argument
+
+    def get_spectrum_dynamic_slicing(self, mod_format_dict: dict, slice_bandwidth: str = None):
         """
         Controls the class, attempts to find an available spectrum.
 
@@ -309,23 +312,40 @@ class SpectrumAssignment:
 
         if self.engine_props['fixed_grid']:
             self.spectrum_props.slots_needed = 1
+            self.spectrum_props.slicing_flag = True
             self._get_spectrum()
             if self.spectrum_props.is_free:
-                mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(path_index)
-                if bandwidth == 0:
-                    self.spectrum_props.is_free = False
-                    self.sdn_props.block_reason = "xt_threshold"
-                else:
-
+                mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
+                if mod_format:
                     self.spectrum_props.modulation = mod_format
                     self.spectrum_props.xt_cost = snr_val
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
-                return mod_format, bandwidth
+                    return mod_format, bandwidth
+                else:
+                    self.spectrum_props.is_free = False
+                    self.sdn_props.block_reason = "xt_threshold"
+                    return False, 0
+            else:
+                return False, 0
+        else:
+            mod_format = sort_nested_dict_vals(original_dict=mod_format_dict,
+                                                        nested_key='max_length')
+            mod_format_list = list(mod_format.keys())
+            for mod in mod_format_list:
+                self.spectrum_props.slots_needed = mod_format_dict[mod]['slots_needed']
+                self.spectrum_props.modulation = mod
+                self.spectrum_props.slicing_flag = True
+                self._get_spectrum()
+                if self.spectrum_props.is_free:
+                    resp, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
+                    if not resp:
+                        continue
+                    self.spectrum_props.xt_cost = snr_val
+                    self.spectrum_props.is_free = True
+                    self.sdn_props.block_reason = None
+                    return mod, bandwidth
+            self.spectrum_props.is_free = False
+            return False, 0
 
-            mod_format, bandwidth = (False, False)
-            return mod_format, bandwidth
 
-        # TODO: Develop for flexigrid
-        mod_format, bandwidth = False, False
-        return mod_format, bandwidth

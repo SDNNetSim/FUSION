@@ -50,30 +50,27 @@ def get_requests(seed: int, engine_props: dict):
                 bw_counts_dict[chosen_bandwidth] -= 1
                 break
 
-        if current_time not in requests_dict and depart_time not in requests_dict:
-            requests_dict.update({current_time: {
-                "req_id": request_id,
-                "source": source,
-                "destination": dest,
-                "arrive": current_time,
-                "depart": depart_time,
-                "request_type": "arrival",
-                "bandwidth": chosen_bandwidth,
-                "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
-            }})
-            requests_dict.update({depart_time: {
-                "req_id": request_id,
-                "source": source,
-                "destination": dest,
-                "arrive": current_time,
-                "depart": depart_time,
-                "request_type": "release",
-                "bandwidth": chosen_bandwidth,
-                "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
-            }})
-            request_id += 1
-        # Bandwidth was not chosen due to either arrival or depart time already existing, add back to distribution
-        else:
-            bw_counts_dict[chosen_bandwidth] += 1
+        # if current_time not in requests_dict and depart_time not in requests_dict:
+        requests_dict.update({(request_id, current_time): {
+            "req_id": request_id,
+            "source": source,
+            "destination": dest,
+            "arrive": current_time,
+            "depart": depart_time,
+            "request_type": "arrival",
+            "bandwidth": chosen_bandwidth,
+            "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
+        }})
+        requests_dict.update({(request_id, depart_time): {
+            "req_id": request_id,
+            "source": source,
+            "destination": dest,
+            "arrive": current_time,
+            "depart": depart_time,
+            "request_type": "release",
+            "bandwidth": chosen_bandwidth,
+            "mod_formats": engine_props['mod_per_bw'][chosen_bandwidth],
+        }})
+        request_id += 1
 
     return requests_dict
