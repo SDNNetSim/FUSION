@@ -3,9 +3,9 @@ import os
 import copy
 import time
 
-from data_scripts.structure_data import create_network
-from data_scripts.generate_data import create_bw_info, create_pt
-from helper_scripts.os_helpers import create_dir
+from fusion.data_scripts.structure_data import create_network
+from fusion.data_scripts.generate_data import create_bw_info, create_pt
+from fusion.helper_scripts.os_helpers import create_dir
 
 
 def create_input(base_fp: str, engine_props: dict):

@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 
-from helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
+from fusion.helper_scripts.sim_helpers import find_free_channels, find_free_slots, get_channel_overlaps
 
 
 class SpectrumHelpers:

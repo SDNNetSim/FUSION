@@ -3,8 +3,8 @@ import math
 import numpy as np
 import networkx as nx
 
-from cli.args.snr_args import SNRProps
-from helper_scripts.snr_helpers import get_slot_index, get_loaded_files, compute_response
+from fusion.cli.args.snr_args import SNRProps
+from fusion.helper_scripts.snr_helpers import get_slot_index, get_loaded_files, compute_response
 
 
 # fixme: Only works for seven cores

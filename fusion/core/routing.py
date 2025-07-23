@@ -3,9 +3,9 @@ import os
 import networkx as nx
 import numpy as np
 
-from cli.args.routing_args import RoutingProps
-from helper_scripts.routing_helpers import RoutingHelpers
-from helper_scripts.sim_helpers import (find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals,
+from fusion.cli.args.routing_args import RoutingProps
+from fusion.helper_scripts.routing_helpers import RoutingHelpers
+from fusion.helper_scripts.sim_helpers import (find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals,
                                         find_path_cong, find_path_frag)
 
 

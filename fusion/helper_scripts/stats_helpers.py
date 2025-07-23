@@ -8,10 +8,10 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from cli.args.stats_args import StatsProps
-from cli.args.stats_args import SNAP_KEYS_LIST
-from helper_scripts.sim_helpers import find_path_len, find_core_cong
-from helper_scripts.os_helpers import create_dir
+from fusion.cli.args.stats_args import StatsProps
+from fusion.cli.args.stats_args import SNAP_KEYS_LIST
+from fusion.helper_scripts.sim_helpers import find_path_len, find_core_cong
+from fusion.helper_scripts.os_helpers import create_dir
 
 
 class SimStats:

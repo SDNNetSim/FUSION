@@ -3,9 +3,9 @@ from operator import itemgetter
 
 import numpy as np
 
-from cli.args.spectrum_args import SpectrumProps
-from helper_scripts.spectrum_helpers import SpectrumHelpers
-from src.snr_measurements import SnrMeasurements
+from fusion.cli.args.spectrum_args import SpectrumProps
+from fusion.helper_scripts.spectrum_helpers import SpectrumHelpers
+from fusion.core.snr_measurements import SnrMeasurements
 
 
 class SpectrumAssignment:

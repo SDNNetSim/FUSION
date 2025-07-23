@@ -9,10 +9,10 @@ import networkx as nx
 import numpy as np
 
 # Local application imports
-from src.request_generator import get_requests
-from src.sdn_controller import SDNController
-from helper_scripts.stats_helpers import SimStats
-from helper_scripts.ml_helpers import load_model
+from fusion.core.request_generator import get_requests
+from fusion.core.sdn_controller import SDNController
+from fusion.helper_scripts.stats_helpers import SimStats
+from fusion.helper_scripts.ml_helpers import load_model
 
 
 class Engine:
