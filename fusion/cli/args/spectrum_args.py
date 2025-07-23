@@ -23,3 +23,7 @@ class SpectrumProps:
 
     def __repr__(self):
         return f"SpectrumProps({self.__dict__})"
+
+def add_spectrum_args(parser):
+    parser.add_argument("--allocation_method", type=str, help="Spectrum allocation method.")
+

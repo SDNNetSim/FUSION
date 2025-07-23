@@ -1,5 +1,3 @@
-# fusion/cli/config_setup.py
-
 import os
 import re
 from configparser import ConfigParser
@@ -7,7 +5,6 @@ from pathlib import Path
 
 from fusion.helper_scripts.os_helpers import create_dir
 from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
-
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DEFAULT_CONFIG_PATH = os.path.join(PROJECT_ROOT, 'ini', 'run_ini', 'config.ini')
@@ -37,14 +34,8 @@ def setup_config_from_cli(args) -> dict:
         print(f"[ERROR] Failed to load config: {e}")
         return {}
 
-def load_config(config_path: str, args_dict: dict = None) -> dict:
-    """
-    Load and parse the .ini config file and return structured simulation parameters.
 
-    :param config_path: Path to the INI config file.
-    :param args_dict: Command-line overrides, if any.
-    :return: Dictionary with keys like "s1", "s2", each containing simulation config.
-    """
+def load_config(config_path: str, args_dict: dict = None) -> dict:
     if args_dict is None:
         args_dict = {}
 
@@ -98,7 +89,6 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
                         except ValueError:
                             continue
 
-        # Handle additional threads/simulations like [s2], [s3], etc.
         other_sections = config.sections()[1:]  # skip general_settings
         config_dict = _setup_threads(
             config=config,
@@ -111,7 +101,6 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
 
         return config_dict or {}
 
-    # TODO: Change to logging file instead of print
     except Exception as error:
         print(f"[ERROR] Failed to load config: {error}")
         return {}
@@ -154,6 +143,28 @@ def _find_category(category_dict: dict, target_key: str):
     return None
 
 
+# ✅ New: Object-Oriented Wrapper for CLI + Config use
+class ConfigManager:
+    def __init__(self, config_dict, args):
+        self._config = config_dict
+        self._args = args
+
+    @classmethod
+    def from_args(cls, args):
+        config_dict = load_config(args.config_path, vars(args))
+        return cls(config_dict, args)
+
+    def as_dict(self):
+        return self._config
+
+    def get(self, thread='s1'):
+        return self._config.get(thread, {})
+
+    def get_args(self):
+        return self._args
+
+
+# For manual debugging
 if __name__ == '__main__':
     dummy_args = {'run_id': 'debug_test'}
     print(load_config('ini/run_ini/config.ini', dummy_args))

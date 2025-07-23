@@ -289,3 +289,8 @@ def register_run_sim_args(subparsers):
         parser.add_argument(f"--{arg_name}", type=arg_type, help=help_text)
 
     parser.add_argument("-optimize", action="store_true", help="Enable optimization mode")
+
+def add_run_sim_args(parser):
+    parser.add_argument("--config_path", type=str, required=True, help="Path to INI config file.")
+    parser.add_argument("--run_id", type=str, required=True, help="Run identifier.")
+

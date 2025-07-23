@@ -22,3 +22,8 @@ class RoutingProps:
 
     def __repr__(self):
         return f"RoutingProps({self.__dict__})"
+
+
+def add_routing_args(parser):
+    parser.add_argument("--route_method", type=str, help="Routing method.")
+

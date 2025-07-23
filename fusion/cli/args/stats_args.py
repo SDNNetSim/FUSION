@@ -33,3 +33,8 @@ class StatsProps:
 
 
 SNAP_KEYS_LIST = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']
+
+def add_stats_args(parser):
+    parser.add_argument("--save_snapshots", action="store_true", help="Save simulation snapshots.")
+    parser.add_argument("--snapshot_step", type=int, default=10, help="Snapshot step size.")
+

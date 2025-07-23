@@ -53,3 +53,7 @@ class SNRProps:
 
     def __repr__(self):
         return f"SNRProps({self.__dict__})"
+
+def add_snr_args(parser):
+    parser.add_argument("--mod_assumption", type=str, help="Modulation assumption strategy.")
+    parser.add_argument("--mod_assumption_path", type=str, help="Path to modulation format file.")
