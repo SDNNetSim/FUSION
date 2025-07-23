@@ -281,3 +281,11 @@ COMMAND_LINE_PARAMS = [
     ['conf-file', str, ''],
     ['eval-episodes', int, ''],
 ]
+
+def register_run_sim_args(subparsers):
+    parser = subparsers.add_parser("run_sim", help="Run standard simulation with INI config or CLI overrides")
+
+    for arg_name, arg_type, help_text in COMMAND_LINE_PARAMS:
+        parser.add_argument(f"--{arg_name}", type=arg_type, help=help_text)
+
+    parser.add_argument("-optimize", action="store_true", help="Enable optimization mode")

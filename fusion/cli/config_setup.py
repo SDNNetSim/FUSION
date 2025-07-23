@@ -2,8 +2,16 @@ import os
 import configparser
 import re
 
-from helper_scripts.os_helpers import create_dir
-from arg_scripts.config_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
+from fusion.helper_scripts.os_helpers import create_dir
+from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
+
+
+def setup_config_from_cli(args):
+    """
+    TEMP STUB: Converts parsed args to a config dict.
+    Later this will validate + merge INI/YAML + CLI.
+    """
+    return vars(args)  # Just return CLI args as-is for now
 
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
