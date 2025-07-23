@@ -1,17 +1,29 @@
 import os
 import configparser
 import re
+import ast
 
 from fusion.helper_scripts.os_helpers import create_dir
 from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 
 def setup_config_from_cli(args):
-    """
-    TEMP STUB: Converts parsed args to a config dict.
-    Later this will validate + merge INI/YAML + CLI.
-    """
-    return vars(args)  # Just return CLI args as-is for now
+    config = vars(args)
+
+    config_path = config.get("config_path")
+    if config_path and os.path.exists(config_path):
+        parser = configparser.ConfigParser()
+        parser.read(config_path)
+
+        for section in parser.sections():
+            for key, value in parser.items(section):
+                if config.get(key) is None:
+                    try:
+                        config[key] = ast.literal_eval(value)
+                    except (ValueError, SyntaxError):
+                        config[key] = value
+
+    return config
 
 
 def _copy_dict_vals(dest_key: str, dictionary: dict):
