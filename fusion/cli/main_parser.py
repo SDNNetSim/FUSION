@@ -8,6 +8,7 @@ from fusion.cli.args.spectrum_args import add_spectrum_args
 from fusion.cli.args.snr_args import add_snr_args
 from fusion.cli.args.sdn_args import add_sdn_args
 from fusion.cli.args.stats_args import add_stats_args
+from fusion.cli.args.gui_args import add_gui_args
 
 
 def build_parser():
@@ -28,5 +29,10 @@ def get_train_args():
     add_sdn_args(parser)
     add_stats_args(parser)
     parser.add_argument("--agent_type", choices=["rl", "ml"], required=True, help="Type of agent to train")
+    return parser.parse_args()
+
+def get_gui_args():
+    parser = argparse.ArgumentParser(description="Launch GUI for FUSION")
+    add_gui_args(parser)
     return parser.parse_args()
 
