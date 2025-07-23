@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import math
 import json
 import os
@@ -41,7 +43,7 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
     return topology_dict
 
 
-def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
+def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None) -> dict:
     """
     Determines reach and slots needed for each bandwidth and modulation format.
 
@@ -50,20 +52,27 @@ def create_bw_info(mod_assumption: str, mod_assumptions_path: str = None):
     :return: The number of spectral slots needed for each bandwidth and modulation format pair.
     :rtype: dict
     """
-    if mod_assumptions_path is None or mod_assumptions_path == 'None':
-        base_fp = os.path.join('data', 'json_input', 'run_mods')
-        mod_assumptions_path = os.path.join(base_fp, 'mod_formats.json')
+    # Set default path if none provided
+    if not mod_assumptions_path or mod_assumptions_path == "None":
+        mod_assumptions_path = Path("data/json_input/run_mods/mod_formats.json")
+    else:
+        mod_assumptions_path = Path(mod_assumptions_path)
+
+    # Resolve to absolute path
+    if not mod_assumptions_path.is_absolute():
+        project_root = Path(__file__).resolve().parents[2]  # Adjust if needed
+        mod_assumptions_path = project_root / mod_assumptions_path
 
     try:
-        mod_assumptions_path = os.path.join(mod_assumptions_path)
-        with open(mod_assumptions_path, 'r', encoding='utf-8') as mod_assumptions_fp:
-            mod_formats_obj = json.load(mod_assumptions_fp)
+        with mod_assumptions_path.open("r", encoding="utf-8") as mod_fp:
+            mod_formats_obj = json.load(mod_fp)
 
-        if mod_assumption in mod_formats_obj.keys():
+        if mod_assumption in mod_formats_obj:
             return mod_formats_obj[mod_assumption]
-    except json.JSONDecodeError as json_decode_error:
-        raise FileExistsError(f"Could not parse: {json_decode_error.doc}")  # pylint: disable=raise-missing-from
-    except FileNotFoundError as file_not_found:
-        raise FileNotFoundError(f"Could not find: {file_not_found.strerror}: {file_not_found.filename}") # pylint: disable=raise-missing-from
 
-    raise NotImplementedError(f"Unknown modulation assumption '{mod_assumption}'")
+    except json.JSONDecodeError as json_err:
+        raise FileExistsError(f"[ERROR] Could not parse JSON: {json_err.doc}") from json_err
+    except FileNotFoundError as file_err:
+        raise FileNotFoundError(f"[ERROR] File not found: {mod_assumptions_path}") from file_err
+
+    raise NotImplementedError(f"[ERROR] Unknown modulation assumption '{mod_assumption}'")

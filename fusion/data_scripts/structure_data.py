@@ -1,26 +1,17 @@
-import os
+from pathlib import Path
 
 
-def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight: bool = False):
-    """
-    Assign a length to every link that exists in the topology.
-
-    :param node_pairs_dict: Maps node numbers to names.
-    :param constant_weight: Sets all link weights to one.
-    :param network_fp: File path that contains topology information.
-    :return: A mapping of nodes to links and links to weights.
-    :rtype: dict
-    """
+def assign_link_lengths(network_fp: Path, node_pairs_dict: dict, constant_weight: bool = False):
     response_dict = {}
-    with open(network_fp, 'r', encoding='utf-8') as file_obj:
+    with network_fp.open('r', encoding='utf-8') as file_obj:
         for line in file_obj:
             src, dest, link_len_str = line.strip().split('\t')
             link_len = float(link_len_str) if not constant_weight else 1.0
 
-            if node_pairs_dict != {}:
-                src_dest_tuple = (node_pairs_dict[src], node_pairs_dict[dest])
-            else:
-                src_dest_tuple = (src, dest)
+            src_dest_tuple = (
+                node_pairs_dict.get(src, src),
+                node_pairs_dict.get(dest, dest)
+            )
 
             if src_dest_tuple not in response_dict:
                 response_dict[src_dest_tuple] = link_len
@@ -28,68 +19,58 @@ def assign_link_lengths(network_fp: str, node_pairs_dict: dict, constant_weight:
     return response_dict
 
 
-def assign_core_nodes(core_nodes_fp: str):
-    """
-    List a core nodes of network topology. 
-
-    :param core_nodes_fp: File path that contains core nodes  information.
-    :return: A list of core nodes.
-    :rtype: list
-    """
+def assign_core_nodes(core_nodes_fp: Path):
     response_list = []
-    with open(core_nodes_fp, 'r', encoding='utf-8') as file_obj:
+    with core_nodes_fp.open('r', encoding='utf-8') as file_obj:
         for line in file_obj:
             response_list.append(line.strip().split('\t')[0])
     return response_list
 
 
-# TODO: (version 5.5-6) Return type is no longer a dictionary
 def create_network(net_name: str, base_fp: str = None, const_weight: bool = False, is_only_core_node: bool = False):
     """
-    The main structure data function.
-
-    :param net_name: The desired network name, used to read the data file.
-    :param const_weight: Set all links' weights to one if true.
-    :param base_fp: The base of the file path to read the network from.
-    :param is_only_core_node: Network includes only core nodes or not.
-    :return: The network spectrum database.
-    :rtype: dict
+    Builds a physical network structure from topology files.
+    Resolves all paths safely using project-root-relative logic.
     """
     core_nodes_list = []
+
+    # Resolve base_fp to absolute path
+    project_root = Path(__file__).resolve().parents[2]
     if base_fp is None:
-        base_fp = os.path.join('data', 'raw')
+        base_path = project_root / "data/raw"
     else:
-        base_fp = os.path.join(base_fp, 'raw')
+        base_path = Path(base_fp) / "raw"
+        if not base_path.is_absolute():
+            base_path = project_root / base_path
 
-    # TODO: (version 5.5-6) This won't scale well, have a variables file that's imported
-    #   - Also, standardize names to snake case and have all of them end with "net"
-    if net_name == 'USNet':
-        network_fp = os.path.join(base_fp, 'us_network.txt')
-    elif net_name == 'NSFNet':
-        network_fp = os.path.join(base_fp, 'nsf_network.txt')
-    elif net_name == 'Pan-European':
-        network_fp = os.path.join(base_fp, 'europe_network.txt')
-    elif net_name == 'USbackbone60':
-        network_fp = os.path.join(base_fp, 'USB6014.txt')
-        if not is_only_core_node:
-            core_nodes_fp = os.path.join(base_fp, 'USB6014_core_nodes.txt')
-            core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
-    elif net_name == 'Spainbackbone30':
-        network_fp = os.path.join(base_fp, 'SPNB3014.txt')
-        # if not is_only_core_node:
-        #     core_nodes_fp = os.path.join(base_fp, 'SPNB3014_core_nodes.txt')
-        #     core_nodes_list = assign_core_nodes(core_nodes_fp=core_nodes_fp)
-    elif net_name == 'geant':
-        network_fp = os.path.join(base_fp, 'geant.txt')
-    elif net_name == 'toy_network':
-        network_fp = os.path.join(base_fp, 'toy_network.txt')
-    elif net_name == 'metro_net':
-        network_fp = os.path.join(base_fp, 'metro_net.txt')
-    elif net_name == 'dt_network':
-        network_fp = os.path.join(base_fp, 'dt_network.txt')
-    else:
-        raise NotImplementedError(f"Unknown network name. Expected USNet, NSFNet, or Pan-European. Got: {net_name}")
+    # Map network names to file paths
+    network_files = {
+        'USNet': 'us_network.txt',
+        'NSFNet': 'nsf_network.txt',
+        'Pan-European': 'europe_network.txt',
+        'USbackbone60': 'USB6014.txt',
+        'Spainbackbone30': 'SPNB3014.txt',
+        'geant': 'geant.txt',
+        'toy_network': 'toy_network.txt',
+        'metro_net': 'metro_net.txt',
+        'dt_network': 'dt_network.txt',
+    }
 
-    resp = assign_link_lengths(constant_weight=const_weight, network_fp=network_fp, node_pairs_dict={}), core_nodes_list
+    if net_name not in network_files:
+        raise NotImplementedError(f"Unknown network name: '{net_name}'")
 
-    return resp
+    network_fp = base_path / network_files[net_name]
+
+    if net_name == 'USbackbone60' and not is_only_core_node:
+        core_nodes_fp = base_path / 'USB6014_core_nodes.txt'
+        core_nodes_list = assign_core_nodes(core_nodes_fp)
+
+    # Future: Add other core node files here if needed
+
+    network_dict = assign_link_lengths(
+        network_fp=network_fp,
+        node_pairs_dict={},
+        constant_weight=const_weight
+    )
+
+    return network_dict, core_nodes_list
