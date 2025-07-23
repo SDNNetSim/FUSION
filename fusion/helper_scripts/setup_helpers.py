@@ -7,6 +7,20 @@ from fusion.data_scripts.structure_data import create_network
 from fusion.data_scripts.generate_data import create_bw_info, create_pt
 from fusion.helper_scripts.os_helpers import create_dir
 
+# TODO: Duplicate code, should go to a file and import
+def find_project_root():
+    curr_dir = os.path.abspath(os.path.dirname(__file__))
+    while True:
+        if os.path.isdir(os.path.join(curr_dir, ".git")) or \
+           os.path.isfile(os.path.join(curr_dir, "run_sim.py")):
+            return curr_dir
+        parent = os.path.dirname(curr_dir)
+        if parent == curr_dir:
+            raise RuntimeError("Project root not found.")
+        curr_dir = parent
+
+PROJECT_ROOT = find_project_root()
+
 
 def create_input(base_fp: str, engine_props: dict):
     """
@@ -23,8 +37,8 @@ def create_input(base_fp: str, engine_props: dict):
     bw_file = f"bw_info_{engine_props['thread_num']}.json"
     save_input(base_fp=base_fp, properties=engine_props, file_name=bw_file, data_dict=bw_info_dict)
 
-    save_path = os.path.join(base_fp, 'input', engine_props['network'], engine_props['date'],
-                             engine_props['sim_start'], bw_file)
+    save_path = os.path.join(PROJECT_ROOT, base_fp, 'input', engine_props['network'],
+                             engine_props['date'], engine_props['sim_start'], bw_file)
 
     # Retry loop to ensure file is ready, used for Unity cluster runs
     max_attempts = 50
@@ -40,7 +54,8 @@ def create_input(base_fp: str, engine_props: dict):
     else:
         raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
 
-    network_dict, core_nodes_list = create_network(base_fp=base_fp, const_weight=engine_props['const_link_weight'],
+    network_dict, core_nodes_list = create_network(base_fp=os.path.join(PROJECT_ROOT, base_fp),
+                                                   const_weight=engine_props['const_link_weight'],
                                                    net_name=engine_props['network'],
                                                    is_only_core_node=engine_props['is_only_core_node'])
     engine_props['topology_info'] = create_pt(cores_per_link=engine_props['cores_per_link'],
@@ -59,20 +74,20 @@ def save_input(base_fp: str, properties: dict, file_name: str, data_dict: dict):
     :param file_name: The desired file name.
     :param data_dict: A dictionary containing the data to save.
     """
-    path = os.path.join(base_fp, 'input', properties['network'], properties['date'],
-                        properties['sim_start'])
+    base_dir = os.path.join(PROJECT_ROOT, base_fp)
+    path = os.path.join(base_dir, 'input', properties['network'], properties['date'], properties['sim_start'])
     create_dir(path)
-    create_dir(os.path.join('data', 'output'))
+    create_dir(os.path.join(PROJECT_ROOT, 'data', 'output'))
 
     save_path = os.path.join(path, file_name)
 
     save_dict = copy.deepcopy(data_dict)
-
-    if 'topology' in save_dict:
-        del save_dict['topology']
-
-    if 'callback' in save_dict:
-        del save_dict['callback']
+    save_dict.pop('topology', None)
+    save_dict.pop('callback', None)
 
     with open(save_path, 'w', encoding='utf-8') as file_path:
         json.dump(save_dict, file_path, indent=4)
+        file_path.flush()
+        os.fsync(file_path.fileno())
+
+    time.sleep(0.1)

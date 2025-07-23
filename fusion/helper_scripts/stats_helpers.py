@@ -13,6 +13,18 @@ from fusion.cli.args.stats_args import SNAP_KEYS_LIST
 from fusion.helper_scripts.sim_helpers import find_path_len, find_core_cong
 from fusion.helper_scripts.os_helpers import create_dir
 
+def find_project_root():
+    curr_dir = os.path.abspath(os.path.dirname(__file__))
+    while True:
+        if os.path.isdir(os.path.join(curr_dir, ".git")) or \
+           os.path.isfile(os.path.join(curr_dir, "run_sim.py")):
+            return curr_dir
+        parent = os.path.dirname(curr_dir)
+        if parent == curr_dir:
+            raise RuntimeError("Project root not found.")
+        curr_dir = parent
+
+PROJECT_ROOT = find_project_root()
 
 class SimStats:
     """
@@ -386,8 +398,9 @@ class SimStats:
         """
         if self.iteration == (self.engine_props['max_iters'] - 1):
             save_df = pd.DataFrame(self.train_data_list)
-            save_df.to_csv(f"{base_fp}/output/{self.sim_info}/{self.engine_props['erlang']}_train_data.csv",
-                           index=False)
+            train_data_fp = os.path.join(PROJECT_ROOT, base_fp, "output", self.sim_info,
+                                         f"{self.engine_props['erlang']}_train_data.csv")
+            save_df.to_csv(train_data_fp, index=False)
 
     def save_stats(self, base_fp: str):
         """
@@ -437,7 +450,9 @@ class SimStats:
 
         if base_fp is None:
             base_fp = 'data'
-        save_fp = os.path.join(base_fp, 'output', self.sim_info, self.engine_props['thread_num'])
+        save_fp = os.path.join(PROJECT_ROOT, base_fp, 'output', self.sim_info, self.engine_props['thread_num'])
+        # TODO: Have logging instead of a print
+        print(f"[INFO] Saving to: {save_fp}")
         create_dir(save_fp)
         sim_end_time = datetime.now().strftime("%m%d_%H_%M_%S_%f")
         self.save_dict['sim_end_time'] = sim_end_time
