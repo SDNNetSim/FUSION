@@ -5,7 +5,7 @@ from statistics import mean
 import numpy as np
 
 from helper_scripts.sim_helpers import dict_to_list, list_to_title
-from arg_scripts.plot_args import PlotArgs, PlotProps
+from cli.args.plot_args import PlotArgs, PlotProps
 
 
 # TODO: (version 5.5-6) RL no longer uses anything from here, although there is some overlap

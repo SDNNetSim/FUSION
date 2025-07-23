@@ -4,7 +4,7 @@ import numpy as np
 
 from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
 from helper_scripts.ml_helpers import get_ml_obs
-from arg_scripts.sdn_args import SDNProps
+from cli.args.sdn_args import SDNProps
 from src.routing import Routing
 from src.spectrum_assignment import SpectrumAssignment
 

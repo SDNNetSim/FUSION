@@ -3,7 +3,7 @@ import os
 import networkx as nx
 import numpy as np
 
-from arg_scripts.routing_args import RoutingProps
+from cli.args.routing_args import RoutingProps
 from helper_scripts.routing_helpers import RoutingHelpers
 from helper_scripts.sim_helpers import (find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals,
                                         find_path_cong, find_path_frag)

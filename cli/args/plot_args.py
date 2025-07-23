@@ -11,8 +11,8 @@ class PlotProps:
     def __init__(self):
         self.sims_info_dict = None  # Contains all necessary information for each simulation run to be plotted
         self.plot_dict = None  # Contains only information related to plotting for each simulation run
-        self.output_dir = os.path.join('..', 'data', 'output')  # The base output directory when saving graphs
-        self.input_dir = os.path.join('..', 'data', 'input')  # The base input directory when reading simulation input
+        self.output_dir = os.path.join('../..', 'data', 'output')  # The base output directory when saving graphs
+        self.input_dir = os.path.join('../..', 'data', 'input')  # The base input directory when reading simulation input
         self.erlang_dict = None  # Has the information for one simulation run for each every Erlang value under it
         self.num_requests = None  # The number of requests used for each iteration for the simulation run
         self.num_cores = None  # Number of cores used for each iteration for the simulation run

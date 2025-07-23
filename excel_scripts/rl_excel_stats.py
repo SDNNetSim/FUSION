@@ -10,7 +10,7 @@ import pandas as pd
 
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import find_times, PlotHelpers
-from arg_scripts.plot_args import PlotProps
+from cli.args.plot_args import PlotProps
 
 NETWORK_LIST = ['NSFNet', 'USNet']
 ARRIVAL_RATE_LIST = [10, 20, 30, 50, 70, 90, 110, 130, 150, 170, 190]

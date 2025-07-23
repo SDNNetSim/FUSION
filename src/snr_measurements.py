@@ -3,7 +3,7 @@ import math
 import numpy as np
 import networkx as nx
 
-from arg_scripts.snr_args import SNRProps
+from cli.args.snr_args import SNRProps
 from helper_scripts.snr_helpers import get_slot_index, get_loaded_files, compute_response
 
 

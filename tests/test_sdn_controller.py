@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 
 from src.sdn_controller import SDNController
-from arg_scripts.sdn_args import SDNProps  # Class import for sdn_props
+from cli.args.sdn_args import SDNProps  # Class import for sdn_props
 
 
 class TestSDNController(unittest.TestCase):

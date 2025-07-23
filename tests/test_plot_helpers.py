@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch, mock_open
 import numpy as np
 from helper_scripts.plot_helpers import PlotHelpers, find_times
-from arg_scripts.plot_args import PlotArgs, PlotProps
+from cli.args.plot_args import PlotArgs, PlotProps
 
 
 class TestPlotHelpers(unittest.TestCase):

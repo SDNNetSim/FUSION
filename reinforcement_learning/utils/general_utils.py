@@ -7,7 +7,7 @@ from src.spectrum_assignment import SpectrumAssignment
 from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
 from helper_scripts.sim_helpers import find_path_cong, classify_cong
 
-from arg_scripts.sdn_args import SDNProps
+from cli.args.sdn_args import SDNProps
 
 
 class CoreUtilHelpers:

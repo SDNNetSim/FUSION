@@ -4,7 +4,7 @@ import os
 
 import matplotlib.pyplot as plt
 
-from arg_scripts.plot_args import PlotProps
+from cli.args.plot_args import PlotProps
 from helper_scripts.os_helpers import create_dir
 from helper_scripts.plot_helpers import PlotHelpers, find_times
 

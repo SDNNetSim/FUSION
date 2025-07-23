@@ -3,7 +3,7 @@ from operator import itemgetter
 
 import numpy as np
 
-from arg_scripts.spectrum_args import SpectrumProps
+from cli.args.spectrum_args import SpectrumProps
 from helper_scripts.spectrum_helpers import SpectrumHelpers
 from src.snr_measurements import SnrMeasurements
 

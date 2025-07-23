@@ -8,8 +8,8 @@ import numpy as np
 import networkx as nx
 
 from helper_scripts.stats_helpers import SimStats
-from arg_scripts.stats_args import StatsProps
-from arg_scripts.stats_args import SNAP_KEYS_LIST
+from cli.args.stats_args import StatsProps
+from cli.args.stats_args import SNAP_KEYS_LIST
 
 
 class TestSimStats(unittest.TestCase):

@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 
 from src.routing import Routing
-from arg_scripts.routing_args import RoutingProps
+from cli.args.routing_args import RoutingProps
 
 
 class TestRouting(unittest.TestCase):
