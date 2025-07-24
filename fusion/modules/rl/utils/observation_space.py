@@ -2,8 +2,8 @@ import numpy as np
 
 from gymnasium import spaces
 
-from reinforcement_learning.args.observation_args import OBS_DICT
-from reinforcement_learning.utils.topology import convert_networkx_topo
+from fusion.modules.rl.args.observation_args import OBS_DICT
+from fusion.modules.rl.utils.topology import convert_networkx_topo
 
 
 def get_observation_space(rl_props: object, engine_obj: object):
