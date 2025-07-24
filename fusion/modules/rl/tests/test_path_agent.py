@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.agents import path_agent
+from fusion.modules.rl.agents import path_agent
 
 
 class TestPathAgent(TestCase):
