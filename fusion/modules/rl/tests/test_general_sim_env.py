@@ -45,6 +45,18 @@ sys.modules.update({
 torch_mod = ModuleType("torch")
 torch_nn_mod = ModuleType("torch.nn")
 
+class _Tensor:
+    """Minimal placeholder for torch.Tensor."""
+    def numel(self):
+        return 1
+
+    def unsqueeze(self, dim):
+        return self
+
+    def repeat(self, *args, **kwargs):
+        return self
+
+torch_mod.Tensor = _Tensor  # ✅ Fixes the AttributeError
 
 class _NNModule:
     """Lightweight torch.nn.Module replacement."""
@@ -128,7 +140,7 @@ for _name in ("ARS", "QRDQN"):
     setattr(sb3_contrib, _name, type(_name, (), {}))
 sys.modules["sb3_contrib"] = sb3_contrib
 
-from reinforcement_learning.gymnasium_envs import (  # pylint: disable=wrong-import-position
+from fusion.modules.rl.gymnasium_envs import (  # pylint: disable=wrong-import-position
     general_sim_env as gen_env,
 )
 

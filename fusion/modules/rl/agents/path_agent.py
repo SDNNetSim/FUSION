@@ -1,8 +1,8 @@
 import numpy as np
 
-from reinforcement_learning.args.general_args import VALID_DRL_ALGORITHMS
-from reinforcement_learning.args.general_args import EPISODIC_STRATEGIES
-from reinforcement_learning.agents.base_agent import BaseAgent
+from fusion.modules.rl.args.general_args import VALID_DRL_ALGORITHMS
+from fusion.modules.rl.args.general_args import EPISODIC_STRATEGIES
+from fusion.modules.rl.agents.base_agent import BaseAgent
 
 
 class PathAgent(BaseAgent):
