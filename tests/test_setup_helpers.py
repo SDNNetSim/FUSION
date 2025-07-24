@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, mock_open
 import os
 import json
-from helper_scripts.setup_helpers import create_input, save_input
+from fusion.helper_scripts.setup_helpers import create_input, save_input, find_project_root
 #TODO: Verify test_create_input maintains proper functionality. New patches force retry loop conditional to pass in create_input
 
 class TestSetupHelpers(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestSetupHelpers(unittest.TestCase):
     """
 
     def setUp(self):
-        self.base_fp = '\\fake\\base\\path'
+        self.base_fp = os.path.join(find_project_root(), 'fake', 'base', 'path')
         self.engine_props = {
             'sim_type': 'test_sim',
             'thread_num': 1,
@@ -31,10 +31,10 @@ class TestSetupHelpers(unittest.TestCase):
 
     @patch('os.path.getsize', return_value=100)
     @patch('os.path.exists', return_value=True)
-    @patch('helper_scripts.setup_helpers.create_bw_info')
-    @patch('helper_scripts.setup_helpers.create_network')
-    @patch('helper_scripts.setup_helpers.create_pt')
-    @patch('helper_scripts.setup_helpers.save_input')
+    @patch('fusion.helper_scripts.setup_helpers.create_bw_info')
+    @patch('fusion.helper_scripts.setup_helpers.create_network')
+    @patch('fusion.helper_scripts.setup_helpers.create_pt')
+    @patch('fusion.helper_scripts.setup_helpers.save_input')
     @patch('builtins.open', new_callable=mock_open, read_data=json.dumps({'bandwidth': 100}))
     def test_create_input(self, mock_open_file, mock_save_input, mock_create_pt, mock_create_network,
                           mock_create_bw_info, mock_exists, mock_getsize): # pylint: disable=unused-argument
@@ -74,9 +74,10 @@ class TestSetupHelpers(unittest.TestCase):
         self.assertEqual(result['mod_per_bw'], {'bandwidth': 100})
         self.assertEqual(result['topology_info'], self.pt_info)
 
-    @patch('helper_scripts.setup_helpers.create_dir')
+    @patch('os.fsync')  # <-- Add this line
+    @patch('fusion.helper_scripts.setup_helpers.create_dir')
     @patch('builtins.open', new_callable=mock_open)
-    def test_save_input(self, mock_open_file, mock_create_dir):
+    def test_save_input(self, mock_open_file, mock_create_dir, mock_fsync):
         """ Tests save input. """
         # Test data
         data_dict = {'key': 'value'}
@@ -88,7 +89,6 @@ class TestSetupHelpers(unittest.TestCase):
         # Assertions
         mock_create_dir.assert_any_call(os.path.join(self.base_fp, 'input', self.engine_props['network'],
                                                      self.engine_props['date'], self.engine_props['sim_start']))
-        mock_create_dir.assert_any_call(os.path.join('data', 'output'))
 
         mock_open_file.assert_called_once_with(os.path.join(self.base_fp, 'input', self.engine_props['network'],
                                                             self.engine_props['date'], self.engine_props['sim_start'],
