@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch, call
 import networkx as nx
 import numpy as np
-from helper_scripts.routing_helpers import RoutingHelpers
+from fusion.helper_scripts.routing_helpers import RoutingHelpers
 
 
 class RouteProps:
@@ -151,10 +151,10 @@ class TestRoutingHelpers(unittest.TestCase):
         num_span = 2
 
         # Mocking the functions to return appropriate test data
-        with patch('helper_scripts.sim_helpers.find_free_channels', return_value={
+        with patch('fusion.helper_scripts.sim_helpers.find_free_channels', return_value={
             'c': {0: [1, 2, 3]},  # For the 'c' band, Core 0
             'l': {1: [4, 5, 6]}  # For the 'l' band, Core 1
-        }), patch('helper_scripts.sim_helpers.find_taken_channels') as mock_find_taken_channels:
+        }), patch('fusion.helper_scripts.sim_helpers.find_taken_channels') as mock_find_taken_channels:
             # Mock find_taken_channels to return a structure that matches the expected output
             mock_find_taken_channels.return_value = {
                 'c': {0: [[1, 1]], 1: [[1, 1]], 2: [[1]]},  # 'c' band
@@ -253,8 +253,8 @@ class TestRoutingHelpers(unittest.TestCase):
         self.sdn_props.net_spec_dict = {('A', 'B'): {'cores_matrix': {'c': np.array(np.zeros((7, 10)))}}}
         self.sdn_props.slots_needed = 3
 
-        with patch('helper_scripts.sim_helpers.find_free_channels', return_value={0: [1, 2, 3]}), \
-                patch('helper_scripts.sim_helpers.find_taken_channels', return_value={0: [4, 5, 6]}), \
+        with patch('fusion.helper_scripts.sim_helpers.find_free_channels', return_value={0: [1, 2, 3]}), \
+                patch('fusion.helper_scripts.sim_helpers.find_taken_channels', return_value={0: [4, 5, 6]}), \
                 patch.object(self.helpers, '_find_link_cost', return_value=10.0):
             nli_cost = self.helpers.get_nli_cost(link_tuple=('A', 'B'), num_span=2)
 
