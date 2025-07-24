@@ -12,7 +12,7 @@ import networkx as nx
 import numpy as np
 
 
-from helper_scripts.sim_helpers import (
+from fusion.helper_scripts.sim_helpers import (
     get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
     find_path_len, find_path_cong, find_free_slots,
     find_free_channels, find_taken_channels, snake_to_title, int_to_string,
@@ -294,7 +294,7 @@ class TestSimHelpers(unittest.TestCase):
         self.assertEqual(cong_index, expected_cong_index)
 
     @patch('builtins.open', new_callable=mock_open, read_data="key: value")
-    @patch('helper_scripts.sim_helpers.yaml.safe_load')
+    @patch('fusion.helper_scripts.sim_helpers.yaml.safe_load')
     def test_parse_yaml_file(self, mock_yaml_load, mock_open_file):
         """Test parsing a YAML file."""
         mock_yaml_load.return_value = {"key": "value"}
