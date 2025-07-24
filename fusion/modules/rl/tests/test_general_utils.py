@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.utils import general_utils as gu
+from fusion.modules.rl.utils import general_utils as gu
 
 
 # ------------------------------------------------------------------ #
@@ -70,7 +70,7 @@ class TestUpdateSnapshots(TestCase):
 class TestGetSuperChannels(TestCase):
     """get_super_channels fragmentation & padding."""
 
-    @mock.patch("reinforcement_learning.utils.general_utils.get_hfrag")
+    @mock.patch("fusion.modules.rl.utils.general_utils.get_hfrag")
     def test_returns_padded_matrix_and_flag(self, mock_hfrag):
         """Matrix padded with 100.0 and no_penalty flag false."""
         sc_mat = np.array([[0, 0]])
@@ -89,9 +89,9 @@ class TestGetSuperChannels(TestCase):
 class TestClassifyPathsAndCores(TestCase):
     """classify_paths/cores delegate helpers."""
 
-    @mock.patch("reinforcement_learning.utils.general_utils.classify_cong",
+    @mock.patch("fusion.modules.rl.utils.general_utils.classify_cong",
                 return_value=2)
-    @mock.patch("reinforcement_learning.utils.general_utils.find_path_cong",
+    @mock.patch("fusion.modules.rl.utils.general_utils.find_path_cong",
                 return_value=(0.4, None))
     def test_classify_paths_returns_info(self, *_):
         """Returns list of tuples (idx,path,cong)."""
@@ -160,8 +160,8 @@ class TestDetermineModelType(TestCase):
 class TestSaveArr(TestCase):
     """save_arr constructs path and calls np.save."""
 
-    @mock.patch("reinforcement_learning.utils.general_utils.np.save")
-    @mock.patch("reinforcement_learning.utils.general_utils.os.path.join",
+    @mock.patch("fusion.modules.rl.utils.general_utils.np.save")
+    @mock.patch("fusion.modules.rl.utils.general_utils.os.path.join",
                 return_value="joined/path.npy")
     def test_save_arr_joins_path_and_saves(self, mock_join, mock_save):
         """np.save called with path from os.path.join."""
