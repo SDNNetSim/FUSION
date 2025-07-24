@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.utils import hyperparams as hp
+from fusion.modules.rl.utils import hyperparams as hp
 
 
 # ---------------------------- stubs ----------------------------------
@@ -54,7 +54,7 @@ def _mock_trial():
 class TestLinearDecay(TestCase):
     """Linear epsilon / alpha decay."""
 
-    @mock.patch("reinforcement_learning.utils.hyperparams.get_q_table",
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table",
                 return_value=(None, None))
     def test_linear_decay_updates_values(self, _):
         """_linear_eps / _linear_alpha compute expected value."""
@@ -70,7 +70,7 @@ class TestLinearDecay(TestCase):
 class TestExponentialDecay(TestCase):
     """Exponential epsilon / alpha decay."""
 
-    @mock.patch("reinforcement_learning.utils.hyperparams.get_q_table",
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table",
                 return_value=(None, None))
     def test_exp_decay(self, _):
         """exp decay = start * rate**iter."""
@@ -91,7 +91,7 @@ class TestExponentialDecay(TestCase):
 class TestRewardBased(TestCase):
     """Reward-based update reduces params when reward diff grows."""
 
-    @mock.patch("reinforcement_learning.utils.hyperparams.get_q_table",
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table",
                 return_value=(None, None))
     def test_reward_based_updates(self, _):
         """Greater diff → smaller epsilon/alpha."""
@@ -108,7 +108,7 @@ class TestRewardBased(TestCase):
 class TestStateBased(TestCase):
     """State visitation update depends on counts table."""
 
-    @mock.patch("reinforcement_learning.utils.hyperparams.get_q_table")
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table")
     def test_state_based_increments_counts(self, mock_q):
         """Counts increment and params change."""
         counts = {(0, 1): np.zeros(2)}
