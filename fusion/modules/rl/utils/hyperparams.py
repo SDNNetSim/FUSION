@@ -3,9 +3,9 @@ import optuna
 
 import torch.nn as nn  # pylint: disable=consider-using-from-import
 
-from reinforcement_learning.algorithms.bandits import get_q_table
+from fusion.modules.rl.algorithms.bandits import get_q_table
 
-from reinforcement_learning.args.general_args import EPISODIC_STRATEGIES
+from fusion.modules.rl.args.general_args import EPISODIC_STRATEGIES
 
 
 # TODO: (version 5.5-6) Clean up functions to work with shared hyper parameters and cut lines of code (DRL mostly)

@@ -5,11 +5,11 @@ from itertools import islice
 import networkx as nx
 import numpy as np
 
-from reinforcement_learning.algorithms.algorithm_props import QProps
-from helper_scripts.sim_helpers import (
+from fusion.modules.rl.algorithms.algorithm_props import QProps
+from fusion.helper_scripts.sim_helpers import (
     find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 )
-from helper_scripts.os_helpers import create_dir
+from fusion.helper_scripts.os_helpers import create_dir
 
 
 class QLearning:

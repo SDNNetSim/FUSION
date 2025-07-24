@@ -1,6 +1,6 @@
 from gymnasium import spaces
 
-from reinforcement_learning.utils.observation_space import get_observation_space
+from fusion.modules.rl.utils.observation_space import get_observation_space
 
 
 class QrDQN:

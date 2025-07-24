@@ -1,14 +1,14 @@
 import os
 import numpy as np
 
-from reinforcement_learning.utils.hyperparams import HyperparamConfig
+from fusion.modules.rl.utils.hyperparams import HyperparamConfig
 
-from reinforcement_learning.algorithms.q_learning import QLearning
-from reinforcement_learning.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
-from reinforcement_learning.algorithms.ppo import PPO
-from reinforcement_learning.algorithms.a2c import A2C
-from reinforcement_learning.algorithms.dqn import DQN
-from reinforcement_learning.algorithms.qr_dqn import QrDQN
+from fusion.modules.rl.algorithms.q_learning import QLearning
+from fusion.modules.rl.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
+from fusion.modules.rl.algorithms.ppo import PPO
+from fusion.modules.rl.algorithms.a2c import A2C
+from fusion.modules.rl.algorithms.dqn import DQN
+from fusion.modules.rl.algorithms.qr_dqn import QrDQN
 
 
 class BaseAgent:

@@ -3,7 +3,7 @@
 
 from unittest import TestCase, mock
 
-from reinforcement_learning.agents import base_agent
+from fusion.modules.rl.agents import base_agent
 
 
 class TestBaseAgent(TestCase):
@@ -13,7 +13,7 @@ class TestBaseAgent(TestCase):
     def setUp(self):
         """Patch HyperparamConfig for all tests."""
         patcher = mock.patch(
-            "reinforcement_learning.agents.base_agent.HyperparamConfig"
+            "fusion.modules.rl.agents.base_agent.HyperparamConfig"
         )
         self._mock_hpc = patcher.start()
         self.addCleanup(patcher.stop)
@@ -86,7 +86,7 @@ class TestBaseAgent(TestCase):
             dyn_pen.assert_called_once_with(5, 6)
 
     # ------- setup_env -------------------------------------------------
-    @mock.patch("reinforcement_learning.agents.base_agent.QLearning")
+    @mock.patch("fusion.modules.rl.agents.base_agent.QLearning")
     def test_setup_env_chooses_q_learning(self, mock_qlearn):
         """setup_env instantiates QLearning."""
         mock_qlearn.return_value = mock.MagicMock()
@@ -104,11 +104,11 @@ class TestBaseAgent(TestCase):
             agent.setup_env(is_path=False)
 
     # ------- load_model -----------------------------------------------
-    @mock.patch("reinforcement_learning.agents.base_agent.np.load",
+    @mock.patch("fusion.modules.rl.agents.base_agent.np.load",
                 return_value="dummy_matrix")
-    @mock.patch("reinforcement_learning.agents.base_agent.os.path.join",
+    @mock.patch("fusion.modules.rl.agents.base_agent.os.path.join",
                 return_value="joined/path.npy")
-    @mock.patch("reinforcement_learning.agents.base_agent.QLearning")
+    @mock.patch("fusion.modules.rl.agents.base_agent.QLearning")
     def test_load_model_sets_matrix(
             self, mock_qlearn, mock_join, mock_npload
     ):
