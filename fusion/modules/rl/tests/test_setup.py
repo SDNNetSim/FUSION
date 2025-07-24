@@ -3,7 +3,7 @@
 from types import SimpleNamespace as SNS
 from unittest import TestCase, mock
 
-from reinforcement_learning.utils import setup as su
+from fusion.modules.rl.utils import setup as su
 
 
 # ------------------------------------------------------------------ #
