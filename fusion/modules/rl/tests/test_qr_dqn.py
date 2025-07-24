@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
-from reinforcement_learning.algorithms import qr_dqn
+from fusion.modules.rl.algorithms import qr_dqn
 
 
 class TestQrDQN(TestCase):
@@ -23,10 +23,10 @@ class TestQrDQN(TestCase):
 
     # ---------------------- get_obs_space -----------------------------
     @mock.patch(
-        "reinforcement_learning.algorithms.qr_dqn.spaces.Dict"
+        "fusion.modules.rl.algorithms.qr_dqn.spaces.Dict"
     )
     @mock.patch(
-        "reinforcement_learning.algorithms.qr_dqn.get_observation_space",
+        "fusion.modules.rl.algorithms.qr_dqn.get_observation_space",
         return_value={"x": 1},
     )
     def test_get_obs_space_wraps_dict(
@@ -44,7 +44,7 @@ class TestQrDQN(TestCase):
 
     # ------------------- get_action_space -----------------------------
     @mock.patch(
-        "reinforcement_learning.algorithms.qr_dqn.spaces.Discrete"
+        "fusion.modules.rl.algorithms.qr_dqn.spaces.Discrete"
     )
     def test_get_action_space_uses_k_paths(self, mock_discrete):
         """get_action_space returns Discrete(k_paths)."""
