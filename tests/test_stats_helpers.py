@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch, mock_open
 import numpy as np
 import networkx as nx
 
-from helper_scripts.stats_helpers import SimStats
-from cli.args.stats_args import StatsProps
-from cli.args.stats_args import SNAP_KEYS_LIST
+from fusion.helper_scripts.stats_helpers import SimStats
+from fusion.cli.args.stats_args import StatsProps
+from fusion.cli.args.stats_args import SNAP_KEYS_LIST
 
 
 class TestSimStats(unittest.TestCase):
@@ -340,7 +340,7 @@ class TestSimStats(unittest.TestCase):
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.path.join", return_value='mocked/path/to/simulation_results')
-    @patch("helper_scripts.os_helpers.create_dir")
+    @patch("fusion.helper_scripts.os_helpers.create_dir")
     def test_save_stats_json(self, mock_create_dir, mock_path_join, mock_file):  # pylint: disable=unused-argument
         """Test save stats with a json file."""
         self.sim_stats.engine_props = {
