@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.algorithms import q_learning as ql
+from fusion.modules.rl.algorithms import q_learning as ql
 
 
 # -------------------------- helpers -----------------------------------
@@ -106,9 +106,9 @@ class TestGetMaxCurrQ(TestCase):
 class TestGetMaxFutureQ(TestCase):
     """Future-Q computation with congestion helpers."""
 
-    @mock.patch("reinforcement_learning.algorithms.q_learning.classify_cong",
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.classify_cong",
                 return_value=0)
-    @mock.patch("reinforcement_learning.algorithms.q_learning.find_path_cong",
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.find_path_cong",
                 return_value=(0.4, None))
     def test_max_future_q_path(self, _cong, _classify):
         """Path mode returns correct Q from matrix."""
@@ -141,10 +141,10 @@ class TestConvertQTables(TestCase):
 class TestSaveModel(TestCase):
     """save_model file outputs."""
 
-    @mock.patch("reinforcement_learning.algorithms.q_learning.json.dump")
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.json.dump")
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("reinforcement_learning.algorithms.q_learning.np.save")
-    @mock.patch("reinforcement_learning.algorithms.q_learning.create_dir")
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.np.save")
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.create_dir")
     def test_save_model_writes_files(
             self, mock_dir, mock_npsave, mock_open_fn, mock_dump
     ):
