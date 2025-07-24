@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import patch
 import numpy as np
 
-from src.sdn_controller import SDNController
-from cli.args.sdn_args import SDNProps  # Class import for sdn_props
+from fusion.core.sdn_controller import SDNController
+from fusion.cli.args.sdn_args import SDNProps  # Class import for sdn_props
 
 
 class TestSDNController(unittest.TestCase):
@@ -103,9 +103,9 @@ class TestSDNController(unittest.TestCase):
         self.assertIn(10, self.controller.sdn_props.xt_cost)  # Check if xt_cost was updated correctly
         self.assertIn(2, self.controller.sdn_props.core_num)  # Check if core_num was updated correctly
 
-    @patch('src.sdn_controller.SDNController.allocate')
-    @patch('src.sdn_controller.SDNController._update_req_stats')
-    @patch('src.spectrum_assignment.SpectrumAssignment.get_spectrum')
+    @patch('fusion.core.sdn_controller.SDNController.allocate')
+    @patch('fusion.core.sdn_controller.SDNController._update_req_stats')
+    @patch('fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum')
     def test_allocate_slicing(self, mock_get_spectrum, mock_update_req_stats, mock_allocate):
         """
         Tests the allocate slicing method.
@@ -121,10 +121,10 @@ class TestSDNController(unittest.TestCase):
         mock_allocate.assert_called()
         mock_update_req_stats.assert_called_with(bandwidth='50G')
 
-    @patch('src.sdn_controller.SDNController.allocate')
-    @patch('src.sdn_controller.SDNController._update_req_stats')
-    @patch('src.routing.Routing.get_route')
-    @patch('src.spectrum_assignment.SpectrumAssignment.get_spectrum')
+    @patch('fusion.core.sdn_controller.SDNController.allocate')
+    @patch('fusion.core.sdn_controller.SDNController._update_req_stats')
+    @patch('fusion.core.routing.Routing.get_route')
+    @patch('fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum')
     def test_handle_event_arrival(self, mock_allocate, mock_stats, mock_route, mock_spectrum):  # pylint: disable=unused-argument
         """
         Tests the handle event with an arrival request.
@@ -186,11 +186,11 @@ class TestSDNController(unittest.TestCase):
         # Set spectrum to free
         self.controller.spectrum_obj.spectrum_props.is_free = True
 
-        with patch('src.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
+        with patch('fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
                    return_value=('16QAM', 50)) as mock_get_spectrum, \
                 patch.object(self.controller, 'allocate') as mock_allocate, \
                 patch.object(self.controller, '_update_req_stats') as mock_update_stats, \
-                patch('src.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
+                patch('fusion.core.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
             self.controller._handle_dynamic_slicing(path_list=['A', 'B', 'C'], path_index=0, forced_segments=1)
 
             # Verify methods were called
@@ -221,10 +221,10 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.path_list = ['A', 'B', 'C']
         self.controller.sdn_props.num_trans = 0
 
-        with patch('src.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
+        with patch('fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
                    return_value=('16QAM', 50)) as mock_get_spectrum, \
                 patch.object(self.controller, 'allocate') as mock_allocate, \
-                patch('src.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
+                patch('fusion.core.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
             # Use the real _handle_congestion function
             with patch.object(self.controller, '_handle_congestion',
                               wraps=self.controller._handle_congestion) as mock_handle_congestion:
