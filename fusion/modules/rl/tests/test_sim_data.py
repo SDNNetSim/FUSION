@@ -5,19 +5,19 @@
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.utils import sim_data as sd
+from fusion.modules.rl.utils import sim_data as sd
 
 
 # ------------------------------------------------------------------ #
 # helpers                                                             #
 # ------------------------------------------------------------------ #
 def _patch_isdir(always=True):
-    return mock.patch("reinforcement_learning.utils.sim_data.os.path.isdir",
+    return mock.patch("fusion.modules.rl.utils.sim_data.os.path.isdir",
                       return_value=always)
 
 
 def _patch_exists(always=True):
-    return mock.patch("reinforcement_learning.utils.sim_data.os.path.exists",
+    return mock.patch("fusion.modules.rl.utils.sim_data.os.path.exists",
                       return_value=always)
 
 
@@ -27,7 +27,7 @@ class TestExtractTrafficLabel(TestCase):
 
     def test_returns_first_erlang_prefix(self):
         """Finds 'e400' part from nested file name."""
-        with mock.patch("reinforcement_learning.utils.sim_data.os.listdir",
+        with mock.patch("fusion.modules.rl.utils.sim_data.os.listdir",
                         side_effect=[["run1"], ["e400_erlang.json"]]), \
                 _patch_isdir():
             label = sd._extract_traffic_label("any/path")
@@ -35,7 +35,7 @@ class TestExtractTrafficLabel(TestCase):
 
     def test_returns_empty_when_none_found(self):
         """No matching file yields empty string."""
-        with mock.patch("reinforcement_learning.utils.sim_data.os.listdir",
+        with mock.patch("fusion.modules.rl.utils.sim_data.os.listdir",
                         return_value=["run1"]), _patch_isdir():
             label = sd._extract_traffic_label("path")
         self.assertEqual(label, "")
@@ -68,9 +68,9 @@ class TestLoadMemoryUsage(TestCase):
         self.base_dir = "/base"
         self.arr = np.array([1, 2])
 
-    @mock.patch("reinforcement_learning.utils.sim_data.np.load",
+    @mock.patch("fusion.modules.rl.utils.sim_data.np.load",
                 return_value=np.array([1, 2]))
-    @mock.patch("reinforcement_learning.utils.sim_data._extract_traffic_label",
+    @mock.patch("fusion.modules.rl.utils.sim_data._extract_traffic_label",
                 return_value="400")
     @_patch_exists(True)
     def test_file_found_loads_numpy(self, *_):
@@ -81,7 +81,7 @@ class TestLoadMemoryUsage(TestCase):
             np.array_equal(data["PPO"]["400"], self.arr)
         )
 
-    @mock.patch("reinforcement_learning.utils.sim_data.os.listdir",
+    @mock.patch("fusion.modules.rl.utils.sim_data.os.listdir",
                 return_value=[])  # ← NEW
     @_patch_exists(False)
     @mock.patch("builtins.print")
@@ -105,12 +105,12 @@ class TestLoadAllRewards(TestCase):
         self.base_dir = "/base"
         self.reward_arr = np.array([0.5])
 
-    @mock.patch("reinforcement_learning.utils.sim_data.np.load",
+    @mock.patch("fusion.modules.rl.utils.sim_data.np.load",
                 return_value=np.array([0.5]))
-    @mock.patch("reinforcement_learning.utils.sim_data.os.listdir",
+    @mock.patch("fusion.modules.rl.utils.sim_data.os.listdir",
                 return_value=["rewards_e400.0_routes_c2_t1_iter_3.npy"])
     @_patch_exists(True)
-    @mock.patch("reinforcement_learning.utils.sim_data._extract_traffic_label",
+    @mock.patch("fusion.modules.rl.utils.sim_data._extract_traffic_label",
                 return_value="400")
     def test_regex_parses_indices_and_stores(self, *_):
         """Nested dict contains trial and episode keys."""
