@@ -2,8 +2,13 @@
 
 from fusion.cli.main_parser import get_gui_args
 from fusion.cli.config_setup import ConfigManager
+from fusion.gui.runner import launch_gui
+
 
 def main():
+    """
+    Controls the run_gui script.
+    """
     args = get_gui_args()
     config = ConfigManager.from_args(args)
 
@@ -13,10 +18,10 @@ def main():
     print(config.get("s1"))
 
     try:
-        from fusion.gui.runner import launch_gui
         launch_gui(config)
     except ImportError:
         print("🚧 GUI logic not implemented or runner missing.")
+
 
 if __name__ == "__main__":
     main()

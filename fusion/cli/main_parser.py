@@ -12,6 +12,9 @@ from fusion.cli.args.gui_args import add_gui_args
 
 
 def build_parser():
+    """
+    Builds the argument parser.
+    """
     parser = argparse.ArgumentParser(description='FUSION Simulator CLI')
     subparsers = parser.add_subparsers(dest="mode", required=True)
 
@@ -20,7 +23,11 @@ def build_parser():
 
     return parser
 
+
 def get_train_args():
+    """
+    Builds the argument parser for machine learning simulations.
+    """
     parser = argparse.ArgumentParser(description="Train an agent (RL or ML)")
     add_run_sim_args(parser)
     add_routing_args(parser)
@@ -31,8 +38,11 @@ def get_train_args():
     parser.add_argument("--agent_type", choices=["rl", "ml"], required=True, help="Type of agent to train")
     return parser.parse_args()
 
+
 def get_gui_args():
+    """
+    Builds the argument parser for GUI simulations.
+    """
     parser = argparse.ArgumentParser(description="Launch GUI for FUSION")
     add_gui_args(parser)
     return parser.parse_args()
-
