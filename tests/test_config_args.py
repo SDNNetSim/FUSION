@@ -1,6 +1,6 @@
 import unittest
 
-from arg_scripts.config_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS, COMMAND_LINE_PARAMS
+from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS, COMMAND_LINE_PARAMS
 
 
 class TestConfigArgs(unittest.TestCase):
