@@ -1,6 +1,6 @@
-from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS
-from reinforcement_learning.utils.general_utils import determine_model_type
-from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
+from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS
+from fusion.modules.rl.utils.general_utils import determine_model_type
+from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
 
 
 # TODO: (drl_path_agents) Only works for 's1'

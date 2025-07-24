@@ -2,12 +2,12 @@ import os
 
 import numpy as np
 
-from src.spectrum_assignment import SpectrumAssignment
+from fusion.core.spectrum_assignment import SpectrumAssignment
 
-from helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
-from helper_scripts.sim_helpers import find_path_cong, classify_cong
+from fusion.helper_scripts.sim_helpers import find_path_len, get_path_mod, get_hfrag
+from fusion.helper_scripts.sim_helpers import find_path_cong, classify_cong
 
-from cli.args.sdn_args import SDNProps
+from fusion.cli.args.sdn_args import SDNProps
 
 
 class CoreUtilHelpers:

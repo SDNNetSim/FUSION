@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
-from reinforcement_learning.utils import deep_rl as drl
+from fusion.modules.rl.utils import deep_rl as drl
 
 
 # ---------------------------- helpers ---------------------------------

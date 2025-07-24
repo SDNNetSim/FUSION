@@ -9,22 +9,22 @@ from sb3_contrib import QRDQN
 import torch
 from torch import nn  # pylint: disable=unused-import
 
-from src.engine import Engine
-from src.routing import Routing
+from fusion.core.engine import Engine
+from fusion.core.routing import Routing
 
-from helper_scripts.setup_helpers import create_input, save_input
-from helper_scripts.sim_helpers import parse_yaml_file, get_start_time
+from fusion.helper_scripts.setup_helpers import create_input, save_input
+from fusion.helper_scripts.sim_helpers import parse_yaml_file, get_start_time
 
-from config_scripts.parse_args import parse_args
-from config_scripts.setup_config import read_config
+from fusion.cli.main_parser import get_train_args
+from fusion.cli.config_setup import ConfigManager
 
-from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
-from reinforcement_learning.feat_extrs.graphormer import GraphTransformerExtractor
-from reinforcement_learning.feat_extrs.path_gnn_cached import (
+from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
+from fusion.modules.rl.feat_extrs.graphormer import GraphTransformerExtractor
+from fusion.modules.rl.feat_extrs.path_gnn_cached import (
     CachedPathGNN, PathGNNEncoder
 )
 
-from reinforcement_learning.feat_extrs.constants import CACHE_DIR
+from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 
 
 def setup_feature_extractor(env: object):
@@ -95,17 +95,13 @@ def get_drl_dicts(env, yaml_path):
 
 def setup_rl_sim(config_path: str = None):
     """
-    Set up a reinforcement learning simulation.
-
-    :return: The simulation dictionary for the RL sim.
-    :rtype: dict
+    Loads config and args using the new CLI-based ConfigManager.
     """
-    args_dict = parse_args()
-    if config_path is None:
-        config_path = os.path.join('ini', 'run_ini', 'config.ini')
-    sim_dict = read_config(args_dict=args_dict, config_path=config_path)
-
-    return sim_dict
+    args = get_train_args()
+    if config_path:
+        args.config_path = config_path  # override if manually passed
+    config = ConfigManager.from_args(args)
+    return config.get()  # returns sim_dict['s1']
 
 
 def setup_ppo(env: object, device: str):
