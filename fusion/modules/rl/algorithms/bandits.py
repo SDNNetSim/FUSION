@@ -3,8 +3,8 @@ import json
 
 import numpy as np
 
-from helper_scripts.os_helpers import create_dir
-from reinforcement_learning.algorithms.algorithm_props import BanditProps
+from fusion.helper_scripts.os_helpers import create_dir
+from fusion.modules.rl.algorithms.algorithm_props import BanditProps
 
 
 def load_model(train_fp: str):

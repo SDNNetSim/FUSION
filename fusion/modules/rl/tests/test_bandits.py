@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.algorithms import bandits
+from fusion.modules.rl.algorithms import bandits
 
 
 # ----------------------------- helpers --------------------------------
@@ -52,7 +52,7 @@ class TestGetBaseFp(TestCase):
 class TestSaveModelLowLevel(TestCase):
     """_save_model JSON handling."""
 
-    @mock.patch("reinforcement_learning.algorithms.bandits.json.dump")
+    @mock.patch("fusion.modules.rl.algorithms.bandits.json.dump")
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("os.getcwd", return_value="/cwd")
     def test_save_model_writes_json_for_path(
@@ -99,7 +99,7 @@ class TestGetQTable(TestCase):
 class TestUpdateBandit(TestCase):
     """_update_bandit value updates."""
 
-    @mock.patch("reinforcement_learning.algorithms.bandits.save_model")
+    @mock.patch("fusion.modules.rl.algorithms.bandits.save_model")
     def test_update_bandit_first_step_sets_value(
             self, mock_save_model
     ):
@@ -133,7 +133,7 @@ class TestUpdateBandit(TestCase):
 class TestEpsilonGreedy(TestCase):
     """EpsilonGreedyBandit action selection."""
 
-    @mock.patch("reinforcement_learning.algorithms.bandits.np.random.rand",
+    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand",
                 return_value=0.9)
     def test_get_action_exploits_when_rand_gt_eps(self, _):
         """With rand>eps the greedy arm is chosen."""
@@ -146,9 +146,9 @@ class TestEpsilonGreedy(TestCase):
         arm = bandit.select_path_arm(*pair)
         self.assertEqual(arm, 0)
 
-    @mock.patch("reinforcement_learning.algorithms.bandits.np.random.randint",
+    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.randint",
                 return_value=2)
-    @mock.patch("reinforcement_learning.algorithms.bandits.np.random.rand",
+    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand",
                 return_value=0.0)
     def test_get_action_explores_when_rand_lt_eps(self, _, __):
         """With rand<eps a random arm is chosen."""
