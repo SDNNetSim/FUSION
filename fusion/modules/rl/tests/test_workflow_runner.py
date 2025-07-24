@@ -77,12 +77,12 @@ except ModuleNotFoundError:  # pragma: no cover
 # training code don’t drag the full RL stack into the interpreter.
 # ----------------------------------------------------------------------
 if TYPE_CHECKING:  # for static type-checkers only
-    from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
-    from reinforcement_learning.utils.setup import print_info, setup_rl_sim
-    from reinforcement_learning.model_manager import get_model, save_model
-    from reinforcement_learning.utils.hyperparams import get_optuna_hyperparams
-    from reinforcement_learning.utils.general_utils import save_arr
-    from reinforcement_learning.args.general_args import (
+    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+    from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
+    from fusion.modules.rl.model_manager import get_model, save_model
+    from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
+    from fusion.modules.rl.utils.general_utils import save_arr
+    from fusion.modules.rl.args.general_args import (
         VALID_PATH_ALGORITHMS,
         VALID_CORE_ALGORITHMS,
         VALID_DRL_ALGORITHMS,
@@ -236,7 +236,7 @@ def run_iters(
     """
     Execute the environment loop for *n_trials × max_iters* episodes.
     """
-    from reinforcement_learning.utils.general_utils import save_arr
+    from fusion.modules.rl.utils.general_utils import save_arr
 
     process = psutil.Process()
     memory_usage_list: list[float] = []
@@ -308,8 +308,8 @@ def run(
     """
     High-level wrapper that dispatches to either training or testing.
     """
-    from reinforcement_learning.utils.setup import print_info
-    from reinforcement_learning.args.general_args import (
+    from fusion.modules.rl.utils.setup import print_info
+    from fusion.modules.rl.args.general_args import (
         VALID_PATH_ALGORITHMS,
         VALID_CORE_ALGORITHMS,
         VALID_DRL_ALGORITHMS,
@@ -341,10 +341,10 @@ def run_optuna_study(sim_dict: dict, callback_list):
     """
     Launch an Optuna study for hyper-parameter optimisation.
     """
-    from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
-    from reinforcement_learning.utils.setup import setup_rl_sim
-    from reinforcement_learning.utils.hyperparams import get_optuna_hyperparams
-    from helper_scripts.sim_helpers import (
+    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+    from fusion.modules.rl.utils.setup import setup_rl_sim
+    from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
+    from fusion.helper_scripts.sim_helpers import (
         modify_multiple_json_values,
         update_dict_from_list,
         get_erlang_vals,
