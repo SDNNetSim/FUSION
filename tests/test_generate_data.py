@@ -3,7 +3,7 @@ import json
 import os
 from unittest.mock import mock_open, patch
 
-from data_scripts.generate_data import create_pt, create_bw_info
+from fusion.data_scripts.generate_data import create_pt, create_bw_info
 
 
 class TestGenerateData(unittest.TestCase):
