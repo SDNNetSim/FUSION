@@ -1,5 +1,5 @@
 import unittest
-from helper_scripts.random_helpers import set_seed, get_uniform_rv, get_exponential_rv
+from fusion.helper_scripts.random_helpers import set_seed, get_uniform_rv, get_exponential_rv
 
 
 class TestRandomGenerators(unittest.TestCase):
