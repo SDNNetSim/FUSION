@@ -6,7 +6,7 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
-from reinforcement_learning.algorithms import ppo
+from fusion.modules.rl.algorithms import ppo
 
 
 class TestPPO(TestCase):
@@ -26,10 +26,10 @@ class TestPPO(TestCase):
 
     # ---------------------- get_obs_space -----------------------------
     @mock.patch(
-        "reinforcement_learning.algorithms.ppo.spaces.Dict"
+        "fusion.modules.rl.algorithms.ppo.spaces.Dict"
     )
     @mock.patch(
-        "reinforcement_learning.algorithms.ppo.get_observation_space",
+        "fusion.modules.rl.algorithms.ppo.get_observation_space",
         return_value={"a": 1},
     )
     def test_get_obs_space_wraps_dict(
@@ -47,7 +47,7 @@ class TestPPO(TestCase):
 
     # ------------------- get_action_space -----------------------------
     @mock.patch(
-        "reinforcement_learning.algorithms.ppo.spaces.Discrete"
+        "fusion.modules.rl.algorithms.ppo.spaces.Discrete"
     )
     def test_get_action_space_uses_k_paths(self, mock_discrete):
         """get_action_space returns Discrete(k_paths)."""
