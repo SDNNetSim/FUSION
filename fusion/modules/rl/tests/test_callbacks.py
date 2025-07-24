@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.utils import callbacks as cb
+from fusion.modules.rl.utils import callbacks as cb
 
 
 # ------------------------------------------------------------------ #
@@ -77,8 +77,8 @@ class TestEpisodicRewardCallback(TestCase):
         self.cb.sim_dict = self.sim
         self.cb.max_iters = self.sim["max_iters"]
 
-    @mock.patch("reinforcement_learning.utils.callbacks.create_dir")
-    @mock.patch("reinforcement_learning.utils.callbacks.np.save")
+    @mock.patch("fusion.modules.rl.utils.callbacks.create_dir")
+    @mock.patch("fusion.modules.rl.utils.callbacks.np.save")
     def test_first_call_creates_matrix_and_accumulates(
             self, mock_save, mock_dir
     ):
