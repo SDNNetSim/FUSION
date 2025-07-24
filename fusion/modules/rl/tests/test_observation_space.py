@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
-from reinforcement_learning.utils import observation_space as obs_mod
+from fusion.modules.rl.utils import observation_space as obs_mod
 
 
 def _rl_props():
