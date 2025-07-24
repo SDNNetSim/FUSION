@@ -6,7 +6,7 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
-from reinforcement_learning.algorithms import dqn
+from fusion.modules.rl.algorithms import dqn
 
 
 class TestDQN(TestCase):
@@ -26,10 +26,10 @@ class TestDQN(TestCase):
 
     # ---------------------- get_obs_space -----------------------------
     @mock.patch(
-        "reinforcement_learning.algorithms.dqn.spaces.Dict"
+        "fusion.modules.rl.algorithms.dqn.spaces.Dict"
     )
     @mock.patch(
-        "reinforcement_learning.algorithms.dqn.get_observation_space",
+        "fusion.modules.rl.algorithms.dqn.get_observation_space",
         return_value={"a": 1},
     )
     def test_get_obs_space_wraps_dict(
@@ -47,7 +47,7 @@ class TestDQN(TestCase):
 
     # ------------------- get_action_space -----------------------------
     @mock.patch(
-        "reinforcement_learning.algorithms.dqn.spaces.Discrete"
+        "fusion.modules.rl.algorithms.dqn.spaces.Discrete"
     )
     def test_get_action_space_uses_k_paths(self, mock_discrete):
         """get_action_space returns Discrete(k_paths)."""
