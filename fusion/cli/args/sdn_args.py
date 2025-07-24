@@ -81,6 +81,9 @@ class SDNProps:
     def __repr__(self):
         return f"SDNProps({self.__dict__})"
 
-def add_sdn_args(parser):
-    parser.add_argument("--dynamic_lps", action="store_true", help="Enable SDN dynamic lightpath switching.")
 
+def add_sdn_args(parser):
+    """
+    Adds CLI arguments for SDN.
+    """
+    parser.add_argument("--dynamic_lps", action="store_true", help="Enable SDN dynamic lightpath switching.")

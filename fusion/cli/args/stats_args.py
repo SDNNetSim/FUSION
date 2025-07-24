@@ -21,12 +21,11 @@ class StatsProps:
         self.route_times_list = list()  # Average route times per simulation
         self.xt_list = list()  # Average cross-talk per simulation
         self.bands_list = list()  # Tracks the band allocated in a simulation
-        self.start_slot_list = list() # Tracks the end slot allocated in a simulation
-        self.end_slot_list = list() # # Tracks the end slot allocated in a simulation
-        self.modulation_list = list() # Tracks the modulation
-        self.bandwidth_list = list() # # Tracks the bandwidth
-        self.path_index_list = list() #Tracks the number of times a path was selected
-
+        self.start_slot_list = list()  # Tracks the end slot allocated in a simulation
+        self.end_slot_list = list()  # # Tracks the end slot allocated in a simulation
+        self.modulation_list = list()  # Tracks the modulation
+        self.bandwidth_list = list()  # # Tracks the bandwidth
+        self.path_index_list = list()  # Tracks the number of times a path was selected
 
     def __repr__(self):
         return f"StatsProps({self.__dict__})"
@@ -34,7 +33,10 @@ class StatsProps:
 
 SNAP_KEYS_LIST = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']
 
+
 def add_stats_args(parser):
+    """
+    Adds stats arguments to the argument parser.
+    """
     parser.add_argument("--save_snapshots", action="store_true", help="Save simulation snapshots.")
     parser.add_argument("--snapshot_step", type=int, default=10, help="Snapshot step size.")
-
