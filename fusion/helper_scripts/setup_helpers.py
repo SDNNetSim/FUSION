@@ -5,22 +5,7 @@ import time
 
 from fusion.data_scripts.structure_data import create_network
 from fusion.data_scripts.generate_data import create_bw_info, create_pt
-from fusion.helper_scripts.os_helpers import create_dir
-
-# TODO: Duplicate code, should go to a file and import
-def find_project_root():
-    """
-    Find the project root.
-    """
-    curr_dir = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        if os.path.isdir(os.path.join(curr_dir, ".git")) or \
-           os.path.isfile(os.path.join(curr_dir, "run_sim.py")):
-            return curr_dir
-        parent = os.path.dirname(curr_dir)
-        if parent == curr_dir:
-            raise RuntimeError("Project root not found.")
-        curr_dir = parent
+from fusion.helper_scripts.os_helpers import create_dir, find_project_root
 
 PROJECT_ROOT = find_project_root()
 

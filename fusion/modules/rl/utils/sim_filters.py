@@ -2,6 +2,8 @@ import os
 import json
 from typing import Any, Dict, List
 
+from fusion.helper_scripts.sim_helpers import update_matrices
+
 
 # TODO: (version 5.5-6) These can probably be in the shared filter or plotting module
 
@@ -110,12 +112,7 @@ def find_times(dates_dict: Dict[str, str], filter_dict: Dict[str, List[List[Any]
                         'not_filter_list', 'or_filter_list', and 'and_filter_list'.
     :return: A dictionary with lists for simulation times, simulation numbers, networks, and dates.
     """
-    resp = {
-        'times_matrix': [],
-        'sims_matrix': [],
-        'networks_matrix': [],
-        'dates_matrix': [],
-    }
+    resp = dict()
     info_dict = {}
 
     for date, network in dates_dict.items():
@@ -159,11 +156,6 @@ def find_times(dates_dict: Dict[str, str], filter_dict: Dict[str, List[List[Any]
                 info_dict[curr_time]['algorithm_list'].append(algo_name)
 
     resp['algorithms_matrix'] = []
-    for time, obj in info_dict.items():
-        resp['times_matrix'].append([time])
-        resp['sims_matrix'].append(obj['sim_list'])
-        resp['networks_matrix'].append(obj['network_list'])
-        resp['dates_matrix'].append(obj['dates_list'])
-        resp['algorithms_matrix'].append(obj['algorithm_list'])
+    resp = update_matrices(info_dict=info_dict)
 
     return resp

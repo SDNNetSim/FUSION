@@ -13,6 +13,7 @@ from fusion.core.request_generator import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.helper_scripts.stats_helpers import SimStats
 from fusion.helper_scripts.ml_helpers import load_model
+from fusion.helper_scripts.sim_helpers import log_message
 
 
 class Engine:
@@ -264,13 +265,6 @@ class Engine:
         """
         # Create a local logging helper that uses the shared log_queue if available.
         log_queue = self.engine_props.get('log_queue')
-
-        def log(message):
-            if log_queue:
-                log_queue.put(message)
-            else:
-                print(message)
-
         self.create_topology()
 
         max_iters = self.engine_props["max_iters"]
@@ -285,13 +279,13 @@ class Engine:
         # Start from done_offset
         done_units = done_offset
 
-        log(f"[Engine] thread={thread_num}, offset={done_offset}, "
-              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}\n")
+        log_message(message=f"[Engine] thread={thread_num}, offset={done_offset}, "
+              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}\n", log_queue=log_queue)
 
         for iteration in range(self.engine_props["max_iters"]):
             if self.stop_flag.is_set():  # Check if the stop flag is set
-                log(f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
-                      f"simulation number: {thread_num}.\n")
+                log_message(message=f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
+                      f"simulation number: {thread_num}.\n", log_queue=log_queue)
                 break
 
             self.init_iter(iteration=iteration, seed=seed)
@@ -308,16 +302,17 @@ class Engine:
             if progress_queue:
                 progress_queue.put((thread_num, done_units))
 
-            log(f"CHILD={thread_num} iteration={iteration}, done_units={done_units}\n")
+            log_message(message=f"CHILD={thread_num} iteration={iteration}, done_units={done_units}\n",
+                        log_queue=log_queue)
 
             time.sleep(0.2)
 
             if end_iter:
                 break
 
-        log(
-            f"Simulation finished for Erlang: {self.engine_props['erlang']} "
-            f"finished for simulation number: {thread_num}.\n"
+        log_message(
+            message=f"Simulation finished for Erlang: {self.engine_props['erlang']} "
+            f"finished for simulation number: {thread_num}.\n", log_queue=log_queue
         )
 
         return done_units

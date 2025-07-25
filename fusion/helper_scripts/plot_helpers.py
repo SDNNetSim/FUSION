@@ -4,7 +4,7 @@ from statistics import mean
 
 import numpy as np
 
-from fusion.helper_scripts.sim_helpers import dict_to_list, list_to_title
+from fusion.helper_scripts.sim_helpers import dict_to_list, list_to_title, update_matrices
 from fusion.cli.args.plot_args import PlotArgs, PlotProps
 
 
@@ -340,10 +340,6 @@ def find_times(dates_dict: dict, filter_dict: dict):
                     info_dict[curr_time]['dates_list'].append(date)
 
     # Convert info dict to lists
-    for time, obj in info_dict.items():
-        resp['times_matrix'].append([time])
-        resp['sims_matrix'].append(obj['sim_list'])
-        resp['networks_matrix'].append(obj['network_list'])
-        resp['dates_matrix'].append(obj['dates_list'])
+    resp = update_matrices(info_dict=info_dict)
 
     return resp

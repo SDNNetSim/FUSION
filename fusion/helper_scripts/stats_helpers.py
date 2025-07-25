@@ -10,22 +10,8 @@ import pandas as pd
 
 from fusion.cli.args.stats_args import StatsProps
 from fusion.cli.args.stats_args import SNAP_KEYS_LIST
-from fusion.helper_scripts.sim_helpers import find_path_len, find_core_cong
-from fusion.helper_scripts.os_helpers import create_dir
-
-def find_project_root():
-    """
-    Find the project root.
-    """
-    curr_dir = os.path.abspath(os.path.dirname(__file__))
-    while True:
-        if os.path.isdir(os.path.join(curr_dir, ".git")) or \
-           os.path.isfile(os.path.join(curr_dir, "run_sim.py")):
-            return curr_dir
-        parent = os.path.dirname(curr_dir)
-        if parent == curr_dir:
-            raise RuntimeError("Project root not found.")
-        curr_dir = parent
+from fusion.helper_scripts.sim_helpers import find_path_len, find_core_cong, log_message
+from fusion.helper_scripts.os_helpers import create_dir, find_project_root
 
 PROJECT_ROOT = find_project_root()
 
@@ -478,14 +464,7 @@ class SimStats:
         :return: None
         """
         log_queue = self.engine_props.get('log_queue')
-
-        def log(message):
-            if log_queue:
-                log_queue.put(message)
-            else:
-                print(message)
-
         if print_flag:
-            log(f"Iteration {self.iteration + 1} out of {max_iters} completed for "
-                  f"Erlang: {self.engine_props['erlang']}\n")
-            log(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}\n")
+            log_message(message=f"Iteration {self.iteration + 1} out of {max_iters} completed for "
+                  f"Erlang: {self.engine_props['erlang']}\n", log_queue=log_queue)
+            log_message(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}\n", log_queue=log_queue)
