@@ -2,7 +2,6 @@ from pathlib import Path
 
 import math
 import json
-import os
 
 
 def create_pt(cores_per_link: int, net_spec_dict: dict):

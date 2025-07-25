@@ -2,6 +2,9 @@ from pathlib import Path
 
 
 def assign_link_lengths(network_fp: Path, node_pairs_dict: dict, constant_weight: bool = False):
+    """
+    Assign length to each link in a given topology.
+    """
     response_dict = {}
     with network_fp.open('r', encoding='utf-8') as file_obj:
         for line in file_obj:
@@ -20,6 +23,9 @@ def assign_link_lengths(network_fp: Path, node_pairs_dict: dict, constant_weight
 
 
 def assign_core_nodes(core_nodes_fp: Path):
+    """
+    Determine which nodes are core nodes in the network.
+    """
     response_list = []
     with core_nodes_fp.open('r', encoding='utf-8') as file_obj:
         for line in file_obj:

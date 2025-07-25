@@ -1,6 +1,6 @@
 # pylint: disable=c-extension-no-member
 from PyQt5 import QtWidgets as qtw
-from gui_scripts.gui_args.config_args import AlertCode
+from fusion.gui.gui_args.config_args import AlertCode
 
 
 class Alert(qtw.QMessageBox): # pylint: disable=too-few-public-methods

@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     yaml = None  # pylint: disable=invalid-name
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from arg_scripts.config_args import COMMAND_LINE_PARAMS  # pylint: disable=wrong-import-position
+from fusion.cli.args.run_sim_args import COMMAND_LINE_PARAMS  # pylint: disable=wrong-import-position
 
 _PARAM_TYPES: dict[str, type] = {name: typ for name, typ, _ in COMMAND_LINE_PARAMS}
 _BOOL_STRS = {"true", "yes", "1"}

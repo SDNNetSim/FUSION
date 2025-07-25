@@ -6,16 +6,16 @@ import numpy as np
 
 import psutil
 
-from helper_scripts.sim_helpers import modify_multiple_json_values, update_dict_from_list
-from helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
-from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
-from reinforcement_learning.utils.setup import print_info, setup_rl_sim
-from reinforcement_learning.model_manager import get_model, save_model
+from fusion.helper_scripts.sim_helpers import modify_multiple_json_values, update_dict_from_list
+from fusion.helper_scripts.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
+from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
+from fusion.modules.rl.model_manager import get_model, save_model
 
-from reinforcement_learning.utils.hyperparams import get_optuna_hyperparams
-from reinforcement_learning.utils.general_utils import save_arr
+from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
+from fusion.modules.rl.utils.general_utils import save_arr
 
-from reinforcement_learning.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
+from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
 
 
 # TODO: (version 5.5-6) Put support for picking up where you left off (testing)

@@ -5,12 +5,12 @@ import sys
 import multiprocessing
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileSystemModel, QTabWidget, QPlainTextEdit
-from gui_scripts.gui_helpers.menu_helpers import MenuHelpers
-from gui_scripts.gui_helpers.action_helpers import ActionHelpers
-from gui_scripts.gui_helpers.button_helpers import ButtonHelpers
-from gui_scripts.gui_helpers.highlight_helpers import PythonHighlighter
-from gui_scripts.gui_helpers.general_helpers import DirectoryTreeView
-from gui_scripts.gui_args.style_args import STYLE_SHEET
+from fusion.gui.gui_helpers.menu_helpers import MenuHelpers
+from fusion.gui.gui_helpers.action_helpers import ActionHelpers
+from fusion.gui.gui_helpers.button_helpers import ButtonHelpers
+from fusion.gui.gui_helpers.highlight_helpers import PythonHighlighter
+from fusion.gui.gui_helpers.general_helpers import DirectoryTreeView
+from fusion.gui.gui_args.style_args import STYLE_SHEET
 
 
 class MainWindow(QtWidgets.QMainWindow):

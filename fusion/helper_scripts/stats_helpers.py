@@ -14,6 +14,9 @@ from fusion.helper_scripts.sim_helpers import find_path_len, find_core_cong
 from fusion.helper_scripts.os_helpers import create_dir
 
 def find_project_root():
+    """
+    Find the project root.
+    """
     curr_dir = os.path.abspath(os.path.dirname(__file__))
     while True:
         if os.path.isdir(os.path.join(curr_dir, ".git")) or \

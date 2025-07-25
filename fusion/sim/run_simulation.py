@@ -1,6 +1,6 @@
 # fusion/sim/run_simulation.py
 
-import multiprocessing
+# import multiprocessing
 from datetime import datetime
 from fusion.sim.network_simulator import NetworkSimulator  # we'll move class here
 
@@ -9,7 +9,8 @@ def run_simulation(config_dict):
     Entry point for CLI. Kicks off one-thread simulation with config_dict.
     If you want multi-threaded erlang later, extend this.
     """
-    stop_flag = multiprocessing.Event()
+    # TODO: Why isn't this used?
+    # stop_flag = multiprocessing.Event()
     sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
 
     # Wrap into the old sims_dict format

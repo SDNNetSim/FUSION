@@ -1,6 +1,6 @@
 """Unit tests for reinforcement_learning.gymnasium_envs.general_sim_env."""
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, unused-argument
 
 from types import ModuleType, SimpleNamespace
 from unittest import TestCase, mock
@@ -48,12 +48,15 @@ torch_nn_mod = ModuleType("torch.nn")
 class _Tensor:
     """Minimal placeholder for torch.Tensor."""
     def numel(self):
+        """Return number of elements in tensor."""
         return 1
 
     def unsqueeze(self, dim):
+        """Return tensor with dimension `dim`."""
         return self
 
     def repeat(self, *args, **kwargs):
+        """Return tensor with dimension `dim`."""
         return self
 
 torch_mod.Tensor = _Tensor  # ✅ Fixes the AttributeError

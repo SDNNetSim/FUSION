@@ -6,10 +6,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QDialog, QTabWidget, QWidget, QVBoxLayout # pylint: disable=no-name-in-module
-from gui_scripts.gui_args.config_args import GUI_DEFAULTS
+from fusion.gui.gui_args.config_args import GUI_DEFAULTS
 
-from gui_scripts.gui_helpers.general_helpers import SettingsDialog
-from data_scripts.structure_data import create_network
+from fusion.gui.gui_helpers.general_helpers import SettingsDialog
+from fusion.data_scripts.structure_data import create_network
 
 
 # TODO: (version 5.5-6) We don't have to have modules end with the name "scripts"

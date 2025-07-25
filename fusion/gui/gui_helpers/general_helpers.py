@@ -9,7 +9,7 @@ import sys
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from gui_scripts.gui_args.config_args import SETTINGS_CONFIG_DICT
+from fusion.gui.gui_args.config_args import SETTINGS_CONFIG_DICT
 
 
 

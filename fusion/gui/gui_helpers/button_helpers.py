@@ -4,7 +4,7 @@ import os
 import multiprocessing
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
 from PyQt5 import QtWidgets, QtGui
-from gui_scripts.gui_helpers.general_helpers import SettingsDialog
+from fusion.gui.gui_helpers.general_helpers import SettingsDialog
 
 # We import the simulation runner's run() function.
 from run_sim import run

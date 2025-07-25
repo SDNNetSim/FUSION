@@ -3,12 +3,12 @@ import os
 import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
 
-from reinforcement_learning.utils.general_utils import determine_model_type
-from reinforcement_learning.args.registry_args import ALGORITHM_REGISTRY
+from fusion.modules.rl.utils.general_utils import determine_model_type
+from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
 
-from reinforcement_learning.feat_extrs.constants import CACHE_DIR
-from reinforcement_learning.feat_extrs.path_gnn_cached import CachedPathGNN
-from helper_scripts.sim_helpers import parse_yaml_file
+from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
+from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN
+from fusion.helper_scripts.sim_helpers import parse_yaml_file
 
 
 def _parse_policy_kwargs(string: str) -> dict:

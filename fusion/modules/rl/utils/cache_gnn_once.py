@@ -1,13 +1,13 @@
 import os
 from pathlib import Path
 import torch
-from reinforcement_learning.feat_extrs.constants import CACHE_DIR
-from reinforcement_learning.feat_extrs.path_gnn_cached import PathGNNEncoder
+from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
+from fusion.modules.rl.feat_extrs.path_gnn_cached import PathGNNEncoder
 
 # TODO: (version 5.5-6) Does not save in the correct path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 os.chdir(PROJECT_ROOT)
-from reinforcement_learning.utils.gym_envs import create_environment  # pylint: disable=wrong-import-position
+from fusion.modules.rl.utils.gym_envs import create_environment  # pylint: disable=wrong-import-position
 
 
 def main():

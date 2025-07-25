@@ -1,9 +1,9 @@
 from stable_baselines3.common.callbacks import CallbackList
 
-from reinforcement_learning.gymnasium_envs.general_sim_env import SimEnv
+from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
-from reinforcement_learning.utils.setup import setup_rl_sim
-from reinforcement_learning.utils.callbacks import EpisodicRewardCallback, LearnRateEntCallback
+from fusion.modules.rl.utils.setup import setup_rl_sim
+from fusion.modules.rl.utils.callbacks import EpisodicRewardCallback, LearnRateEntCallback
 
 
 def create_environment(config_path: str = None):

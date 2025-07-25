@@ -4,9 +4,9 @@ from inspect import signature
 from pathlib import Path
 import argparse
 import yaml
-from reinforcement_learning.plotting.loaders import load_metric_for_runs, discover_all_run_ids
-from reinforcement_learning.plotting import processors
-from reinforcement_learning.plotting.registry import PLOTS
+from fusion.modules.rl.plotting.loaders import load_metric_for_runs, discover_all_run_ids
+from fusion.modules.rl.plotting import processors
+from fusion.modules.rl.plotting.registry import PLOTS
 
 
 def call_processor(proc_fn, raw_runs, runid_to_algo, **context):
