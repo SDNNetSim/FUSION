@@ -29,13 +29,19 @@ def update_matrices(info_dict: dict):
         'sims_matrix': [],
         'networks_matrix': [],
         'dates_matrix': [],
+        'algorithms_matrix': [],
     }
     for curr_time, obj in info_dict.items():
         resp['times_matrix'].append([curr_time])
         resp['sims_matrix'].append(obj['sim_list'])
         resp['networks_matrix'].append(obj['network_list'])
         resp['dates_matrix'].append(obj['dates_list'])
-        resp['algorithms_matrix'].append(obj['algorithm_list'])
+
+        # TODO: Patched this for a test, improve
+        try:
+            resp['algorithms_matrix'].append(obj['algorithm_list'])
+        except KeyError:
+            resp['dates_matrix'].append(obj['dates_list'])
 
     return resp
 

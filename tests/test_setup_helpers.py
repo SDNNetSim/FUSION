@@ -77,7 +77,7 @@ class TestSetupHelpers(unittest.TestCase):
     @patch('os.fsync')  # <-- Add this line
     @patch('fusion.helper_scripts.setup_helpers.create_dir')
     @patch('builtins.open', new_callable=mock_open)
-    def test_save_input(self, mock_open_file, mock_create_dir, mock_fsync):
+    def test_save_input(self, mock_open_file, mock_create_dir, mock_fsync):  # pylint: disable=unused-argument
         """ Tests save input. """
         # Test data
         data_dict = {'key': 'value'}

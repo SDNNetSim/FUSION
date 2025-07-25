@@ -9,6 +9,9 @@ class TestMainParser(unittest.TestCase):
     """
 
     def test_run_sim_basic(self):
+        """
+        Test basic run-sim command.
+        """
         test_args = [
             "run_sim",
             "--run_id", "test123"
@@ -19,6 +22,9 @@ class TestMainParser(unittest.TestCase):
         self.assertEqual(args.run_id, "test123")
 
     def test_run_sim_with_additional_args(self):
+        """
+        Test basic run-sim with additional args.
+        """
         test_args = [
             "run_sim",
             "--run_id", "test123",
@@ -33,6 +39,9 @@ class TestMainParser(unittest.TestCase):
         self.assertEqual(args.num_requests, 500)
 
     def test_get_train_args_minimal(self):
+        """
+        Test basic get-train command with minimal args.
+        """
         test_args = [
             "--config_path", "ini/run_ini/config.ini",
             "--run_id", "train123",
@@ -45,6 +54,9 @@ class TestMainParser(unittest.TestCase):
             self.assertEqual(args.agent_type, "rl")
 
     def test_get_gui_args_minimal(self):
+        """
+        Test basic get-gui command with minimal args.
+        """
         test_args = [
             "--config_path", "ini/run_ini/config.ini",
             "--run_id", "gui123"
