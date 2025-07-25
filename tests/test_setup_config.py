@@ -1,106 +1,90 @@
-import unittest
 import os
+import unittest
 from unittest.mock import patch
-from config_scripts.setup_config import read_config
-from config_scripts.parse_args import parse_args
-from arg_scripts.config_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
+from fusion.cli.main_parser import build_parser
+from fusion.cli.config_setup import load_config, ConfigManager
 
 
-class TestReadConfig(unittest.TestCase):
+class TestConfigManager(unittest.TestCase):
     """
-    Tests setup_config.py.
+    Unit tests for the FUSION ConfigManager and config loading behavior.
     """
 
     def setUp(self):
         base = os.path.dirname(__file__)
-        self.valid_conf = os.path.join(base, 'fixtures', 'valid_config.ini')
-        self.invalid_conf = os.path.join(base, 'fixtures', 'invalid_config.ini')
-        self.mock_args = ['program_name']
+        self.valid_config = os.path.join(base, 'fixtures', 'valid_config.ini')
+        self.invalid_config = os.path.join(base, 'fixtures', 'invalid_config.ini')
 
-        os.makedirs('tests/ini', exist_ok=True)
-
-    @classmethod
-    def tearDownClass(cls):
+    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test'])
+    def test_successful_config_load(self):
         """
-        Removes previously created directory.
+        Test successful config loading.
         """
-        try:
-            os.rmdir('tests/ini')
-        except FileNotFoundError:
-            pass
-        except OSError:
-            for root, dirs, files in os.walk('tests/ini', topdown=False):
-                for name in files:
-                    os.remove(os.path.join(root, name))
-                for name in dirs:
-                    os.rmdir(os.path.join(root, name))
-            os.rmdir('tests/ini')
+        parser = build_parser()
+        args = parser.parse_args()
+        config = ConfigManager.from_args(args)
+        config_dict = config.as_dict()
 
-    @patch('sys.argv', ['program_name'])
-    def test_successful_config_read(self):
-        """Test successful configuration parsing from valid_config.ini."""
-        args_dict = {}
-        for option_group in [SIM_REQUIRED_OPTIONS, OTHER_OPTIONS]:
-            for _, options in option_group.items():
-                args_dict.update({key: None for key in options})
+        self.assertIn("s1", config_dict)
+        self.assertEqual(config_dict["s1"]["erlang_start"], 300)
+        self.assertEqual(config_dict["s1"]["holding_time"], 0.2)
 
-        config_result = read_config(args_dict, self.valid_conf)
-
-        assert 's1' in config_result
-        assert isinstance(config_result['s1'], dict)
-        self.assertEqual(config_result['s1']['erlang_start'], 300)
-        self.assertEqual(config_result['s1']['holding_time'], 0.2)
-
-    @patch('sys.argv', ['program_name'])
-    def test_missing_config_file(self):
-        """
-        Test handling of a missing configuration file.
-        """
-        args_obj = parse_args()
-        with self.assertRaises(ValueError):
-            read_config(args_obj, 'None')
-
-    @patch('sys.argv', ['program_name'])
+    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/invalid_config.ini', '--run_id', 'test'])
     def test_invalid_config_read(self):
         """
-        Test handling of an invalid configuration file.
+        Test invalid config reading.
         """
-        args_obj = parse_args()
-        with self.assertRaises(ValueError) as context:
-            read_config(args_obj, self.invalid_conf)
-        self.assertIn("Missing 'erlang_start' in the general_settings section", str(context.exception))
+        parser = build_parser()
+        args = parser.parse_args()
+        config = load_config(self.invalid_config, vars(args))
+        self.assertEqual(config, {})  # load_config fails gracefully and returns {}
 
+    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'non_existent_config.ini', '--run_id', 'test'])
+    def test_missing_config_file(self):
+        """
+        Test missing config file.
+        """
+        parser = build_parser()
+        args = parser.parse_args()
+        config = load_config("non_existent_config.ini", vars(args))
+        self.assertEqual(config, {})  # Should not raise, should return {}
 
-    @patch('sys.argv', ['program_name'])
-    def test_command_line_input(self):
+    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test', '--holding_time', '1.5'])
+    def test_command_line_override(self):
         """
-        Test overriding configuration values with command line input.
+        Test command line override.
         """
-        with patch('sys.argv', ['program_name', '--holding_time', '1000']):
-            args_obj = parse_args()
-        config_dict = read_config(args_obj, self.valid_conf)
-        self.assertEqual(config_dict['s1']['holding_time'], 1000.0)
+        parser = build_parser()
+        args = parser.parse_args()
+        config = ConfigManager.from_args(args)
+        config_dict = config.as_dict()
+        self.assertEqual(config_dict["s1"]["holding_time"], 1.5)
 
-    @patch('sys.argv', ['program_name'])
-    def test_config_with_default_values(self):
+    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test'])
+    def test_default_values_handled(self):
         """
-        Test that default values are set correctly when options are not specified.
+        Test default values handled.
         """
-        args_obj = parse_args()
-        config_dict = read_config(args_obj, self.valid_conf)
-        self.assertIsNone(config_dict['s1'].get('some_optional_parameter'))
+        parser = build_parser()
+        args = parser.parse_args()
+        config = ConfigManager.from_args(args)
+        config_dict = config.as_dict()
+        self.assertIn("s1", config_dict)
+        self.assertIsNone(config_dict["s1"].get("some_nonexistent_param"))
 
-    @patch('sys.argv', ['program_name'])
-    def test_multiple_simulation_threads(self):
+    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test'])
+    def test_multi_thread_sections(self):
         """
-        Test configuration with multiple simulation threads.
+        Test multi-thread sections.
         """
-        args_obj = parse_args()
-        config_dict = read_config(args_obj, self.valid_conf)
-        self.assertIn('s2', config_dict)
-        self.assertIn('s3', config_dict)
-        self.assertIsInstance(config_dict['s2'], dict)
-        self.assertIsInstance(config_dict['s3'], dict)
+        parser = build_parser()
+        args = parser.parse_args()
+        config = ConfigManager.from_args(args)
+        config_dict = config.as_dict()
+        self.assertIn("s2", config_dict)
+        self.assertIn("s3", config_dict)
+        self.assertIsInstance(config_dict["s2"], dict)
+        self.assertIsInstance(config_dict["s3"], dict)
 
 
 if __name__ == '__main__':

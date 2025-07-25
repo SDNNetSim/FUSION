@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 import numpy as np
-from src.spectrum_assignment import SpectrumAssignment
+from fusion.core.spectrum_assignment import SpectrumAssignment
 
 
 # TODO: Add fixed grid tests

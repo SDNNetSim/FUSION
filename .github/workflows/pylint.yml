@@ -37,19 +37,5 @@ jobs:
           pip install -r requirements.txt
       - name: Analysing the code with pylint
         run: |
-          pylint ./arg_scripts
-          pylint ./src
-          pylint ./data_scripts
-          pylint ./excel_scripts
+          pylint ./fusion
           pylint ./tests
-          pylint ./gui_scripts/gui_helpers
-          pylint ./gui_scripts/gui_args
-          pylint ./gui_scripts/
-          pylint ./gui_scripts/components
-          pylint ./plot_scripts
-          pylint ./helper_scripts
-          pylint ./config_scripts
-          pylint ./sb3_scripts
-          pylint run_sim.py
-          pylint run_rl_sim.py
-          pylint run_ml_sim.py

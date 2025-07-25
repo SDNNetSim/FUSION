@@ -3,7 +3,7 @@
 import unittest
 import os
 from unittest.mock import patch, MagicMock
-from plot_scripts import plot_stats
+from fusion.visualization import plot_stats
 
 
 class TestPlotStats(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestPlotStats(unittest.TestCase):
         }
 
         # Mock PlotHelpers to avoid side effects
-        self.plot_helpers_patch = patch('plot_scripts.plot_stats.PlotHelpers', autospec=True)
+        self.plot_helpers_patch = patch('fusion.visualization.plot_stats.PlotHelpers', autospec=True)
         self.mock_plot_helpers = self.plot_helpers_patch.start()
         self.mock_plot_helpers_instance = self.mock_plot_helpers.return_value
         self.mock_plot_helpers_instance.get_file_info = MagicMock()
@@ -30,7 +30,7 @@ class TestPlotStats(unittest.TestCase):
     def tearDown(self):
         self.plot_helpers_patch.stop()
 
-    @patch('plot_scripts.plot_stats.plt')
+    @patch('fusion.visualization.plot_stats.plt')
     def test_setup_plot(self, mock_plt):
         """
         Tests setting up a plot.
@@ -63,7 +63,7 @@ class TestPlotStats(unittest.TestCase):
         mock_plt.figure.assert_called_once_with(figsize=(6.4, 4.8), dpi=100, layout='constrained')
         mock_plt.grid.assert_not_called()
 
-    @patch('plot_scripts.plot_stats.plt')
+    @patch('fusion.visualization.plot_stats.plt')
     def test_plot_helper_one(self, mock_plt):
         """
         Tests plot helper one.
@@ -98,7 +98,7 @@ class TestPlotStats(unittest.TestCase):
             self.assertEqual(mock_plt.legend.call_count, 1)
             mock_save_plot.assert_called_once_with(file_name=file_name)
 
-    @patch('plot_scripts.plot_stats.plt')
+    @patch('fusion.visualization.plot_stats.plt')
     def test_plot_helper_two(self, mock_plt):
         """
         Tests plot helper two.
@@ -127,14 +127,14 @@ class TestPlotStats(unittest.TestCase):
             self.assertEqual(mock_plt.axhline.call_count, 1)
             mock_save_plot.assert_called_once_with(file_name=file_name)
 
-    @patch('plot_scripts.plot_stats.plt')
+    @patch('fusion.visualization.plot_stats.plt')
     def test_save_plot(self, mock_plt):
         """
         Tests the save plot functionality.
         """
         file_name = 'test_save_plot.png'
 
-        with patch('plot_scripts.plot_stats.create_dir', autospec=True) as mock_create_dir:
+        with patch('fusion.visualization.plot_stats.create_dir', autospec=True) as mock_create_dir:
             self.plot_stats._save_plot(file_name)
 
             # Verify that directory creation was called

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import networkx as nx
 
-from src.engine import Engine
+from fusion.core.engine import Engine
 
 
 class TestEngine(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestEngine(unittest.TestCase):
         self.engine.reqs_status_dict = {}
         self.engine.ml_model = None
 
-    @patch('src.engine.nx.Graph')
+    @patch('fusion.core.engine.nx.Graph')
     def test_create_topology(self, mock_graph):
         """
         Tests the create topology method.
@@ -143,7 +143,7 @@ class TestEngine(unittest.TestCase):
         self.engine.engine_props['topology_info']['nodes'] = {'A': {}, 'B': {}}  # Ensure nodes are a dictionary
         self.engine.engine_props['is_only_core_node'] = True  # Define nodes permitted to send requests
 
-        with patch('src.engine.load_model', autospec=True) as mock_load_model:
+        with patch('fusion.core.engine.load_model', autospec=True) as mock_load_model:
             self.engine.init_iter(iteration=iteration)
             self.assertEqual(self.engine.iteration, iteration)
             self.engine.stats_obj.init_iter_stats.assert_called_once()

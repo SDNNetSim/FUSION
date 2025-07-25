@@ -1,3 +1,5 @@
+# pylint: disable=import-error
+
 # TODO: (version 6) This is probably not scalable, find a more creative way or combine them somehow for a comprehensive
 #   test
 # TODO: (version 5.5) Ensure the starting directory is consistent
@@ -14,9 +16,10 @@ from pathlib import Path
 from typing import Dict, List
 import multiprocessing
 
-from helper_scripts.sim_helpers import get_start_time
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
+
+from fusion.helper_scripts.sim_helpers import get_start_time
 from run_sim import run as run_simulation
 from run_rl_sim import run_rl_sim as run_rl_simulation
 
