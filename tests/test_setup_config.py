@@ -17,6 +17,9 @@ class TestConfigManager(unittest.TestCase):
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test'])
     def test_successful_config_load(self):
+        """
+        Test successful config loading.
+        """
         parser = build_parser()
         args = parser.parse_args()
         config = ConfigManager.from_args(args)
@@ -28,6 +31,9 @@ class TestConfigManager(unittest.TestCase):
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/invalid_config.ini', '--run_id', 'test'])
     def test_invalid_config_read(self):
+        """
+        Test invalid config reading.
+        """
         parser = build_parser()
         args = parser.parse_args()
         config = load_config(self.invalid_config, vars(args))
@@ -35,6 +41,9 @@ class TestConfigManager(unittest.TestCase):
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'non_existent_config.ini', '--run_id', 'test'])
     def test_missing_config_file(self):
+        """
+        Test missing config file.
+        """
         parser = build_parser()
         args = parser.parse_args()
         config = load_config("non_existent_config.ini", vars(args))
@@ -42,6 +51,9 @@ class TestConfigManager(unittest.TestCase):
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test', '--holding_time', '1.5'])
     def test_command_line_override(self):
+        """
+        Test command line override.
+        """
         parser = build_parser()
         args = parser.parse_args()
         config = ConfigManager.from_args(args)
@@ -50,6 +62,9 @@ class TestConfigManager(unittest.TestCase):
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test'])
     def test_default_values_handled(self):
+        """
+        Test default values handled.
+        """
         parser = build_parser()
         args = parser.parse_args()
         config = ConfigManager.from_args(args)
@@ -59,6 +74,9 @@ class TestConfigManager(unittest.TestCase):
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test'])
     def test_multi_thread_sections(self):
+        """
+        Test multi-thread sections.
+        """
         parser = build_parser()
         args = parser.parse_args()
         config = ConfigManager.from_args(args)
