@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, mock_open
 import os
 import json
-from fusion.cli.setup_helpers import create_input, save_input, find_project_root
+from fusion.sim.input_setup import create_input, save_input, find_project_root
 #TODO: Verify test_create_input maintains proper functionality. New patches force retry loop conditional to pass in create_input
 
 class TestSetupHelpers(unittest.TestCase):
@@ -31,10 +31,10 @@ class TestSetupHelpers(unittest.TestCase):
 
     @patch('os.path.getsize', return_value=100)
     @patch('os.path.exists', return_value=True)
-    @patch('fusion.helper_scripts.setup_helpers.create_bw_info')
-    @patch('fusion.helper_scripts.setup_helpers.create_network')
-    @patch('fusion.helper_scripts.setup_helpers.create_pt')
-    @patch('fusion.helper_scripts.setup_helpers.save_input')
+    @patch('fusion.sim.input_setup.create_bw_info')
+    @patch('fusion.sim.input_setup.create_network')
+    @patch('fusion.sim.input_setup.create_pt')
+    @patch('fusion.sim.input_setup.save_input')
     @patch('builtins.open', new_callable=mock_open, read_data=json.dumps({'bandwidth': 100}))
     def test_create_input(self, mock_open_file, mock_save_input, mock_create_pt, mock_create_network,
                           mock_create_bw_info, mock_exists, mock_getsize): # pylint: disable=unused-argument
@@ -75,7 +75,7 @@ class TestSetupHelpers(unittest.TestCase):
         self.assertEqual(result['topology_info'], self.pt_info)
 
     @patch('os.fsync')  # <-- Add this line
-    @patch('fusion.helper_scripts.setup_helpers.create_dir')
+    @patch('fusion.sim.input_setup.create_dir')
     @patch('builtins.open', new_callable=mock_open)
     def test_save_input(self, mock_open_file, mock_create_dir, mock_fsync):  # pylint: disable=unused-argument
         """ Tests save input. """

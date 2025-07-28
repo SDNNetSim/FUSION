@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import patch, mock_open
 import numpy as np
-from fusion.visualization.plot_helpers import PlotHelpers, find_times
+from fusion.visualization.utils import PlotHelpers, find_times
 from fusion.cli.args.plot_args import PlotArgs, PlotProps
 
 
@@ -65,7 +65,7 @@ class TestPlotHelpers(unittest.TestCase):
         # Assign the initialized dict to plot_helpers object
         self.plot_helpers.erlang_dict = self.example_sim_dict
 
-    @patch('fusion.helper_scripts.plot_helpers.PlotHelpers._read_json_file')
+    @patch('fusion.visualization.utils.PlotHelpers._read_json_file')
     def test_read_input_output(self, mock_read_json_file):
         """Test the _read_input_output method."""
         mock_read_json_file.side_effect = [self.example_sim_dict, self.example_sim_dict]
@@ -84,7 +84,7 @@ class TestPlotHelpers(unittest.TestCase):
         self.assertIsInstance(self.plot_helpers.plot_props.plot_dict[self.plot_helpers.time][self.plot_helpers.sim_num],
                               PlotArgs)
 
-    @patch('fusion.helper_scripts.plot_helpers.PlotHelpers._dict_to_np_array')
+    @patch('fusion.visualization.utils.PlotHelpers._dict_to_np_array')
     def test_find_snapshot_usage(self, mock_dict_to_np_array):
         """Test the _find_snapshot_usage method."""
         mock_dict_to_np_array.side_effect = [
@@ -134,7 +134,7 @@ class TestPlotHelpers(unittest.TestCase):
 
     @patch('os.listdir')
     @patch('os.path.isdir')
-    @patch('fusion.helper_scripts.plot_helpers._check_filters')
+    @patch('fusion.visualization.utils._check_filters')
     @patch('builtins.open', new_callable=mock_open, read_data='{}')
     def test_find_times(self, mock_open_func, mock_check_filters, mock_isdir, mock_listdir):  # pylint: disable=unused-argument
         """Test the find_times function."""
