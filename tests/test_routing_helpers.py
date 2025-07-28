@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch, call
 import networkx as nx
 import numpy as np
-from fusion.helper_scripts.routing_helpers import RoutingHelpers
+from fusion.modules.routing.routing_helpers import RoutingHelpers
 
 
 class RouteProps:

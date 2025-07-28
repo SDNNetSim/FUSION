@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch, mock_open
 import numpy as np
 import networkx as nx
 
-from fusion.helper_scripts.stats_helpers import SimStats
+from fusion.core.stats_helpers import SimStats
 from fusion.cli.args.stats_args import StatsProps
 from fusion.cli.args.stats_args import SNAP_KEYS_LIST
 

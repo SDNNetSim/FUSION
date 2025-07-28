@@ -12,7 +12,7 @@ import networkx as nx
 import numpy as np
 
 
-from fusion.helper_scripts.sim_helpers import (
+from fusion.sim.sim_helpers import (
     get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
     find_path_len, find_path_cong, find_free_slots,
     find_free_channels, find_taken_channels, snake_to_title, int_to_string,

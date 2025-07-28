@@ -7,13 +7,12 @@ import copy
 from stable_baselines3 import PPO, A2C, DQN
 from sb3_contrib import QRDQN
 import torch
-from torch import nn  # pylint: disable=unused-import
 
 from fusion.core.engine import Engine
 from fusion.core.routing import Routing
 
-from fusion.helper_scripts.setup_helpers import create_input, save_input
-from fusion.helper_scripts.sim_helpers import parse_yaml_file, get_start_time
+from fusion.cli.setup_helpers import create_input, save_input
+from fusion.sim.sim_helpers import parse_yaml_file, get_start_time
 
 from fusion.cli.main_parser import get_train_args
 from fusion.cli.config_setup import ConfigManager

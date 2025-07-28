@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, mock_open
 import os
 import json
-from fusion.helper_scripts.setup_helpers import create_input, save_input, find_project_root
+from fusion.cli.setup_helpers import create_input, save_input, find_project_root
 #TODO: Verify test_create_input maintains proper functionality. New patches force retry loop conditional to pass in create_input
 
 class TestSetupHelpers(unittest.TestCase):

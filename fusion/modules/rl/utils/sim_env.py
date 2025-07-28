@@ -4,7 +4,7 @@ import numpy as np
 
 from fusion.core.routing import Routing
 
-from fusion.helper_scripts.sim_helpers import find_path_cong
+from fusion.sim.sim_helpers import find_path_cong
 
 from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 from fusion.modules.rl.args.observation_args import OBS_DICT

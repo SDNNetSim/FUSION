@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import patch, mock_open
 import numpy as np
-from fusion.helper_scripts.plot_helpers import PlotHelpers, find_times
+from fusion.visualization.plot_helpers import PlotHelpers, find_times
 from fusion.cli.args.plot_args import PlotArgs, PlotProps
 
 

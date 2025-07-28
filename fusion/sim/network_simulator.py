@@ -5,7 +5,7 @@ import copy
 from datetime import datetime
 from multiprocessing import Manager, Process
 
-from fusion.helper_scripts.setup_helpers import create_input, save_input
+from fusion.cli.setup_helpers import create_input, save_input
 from fusion.core.engine import Engine
 
 

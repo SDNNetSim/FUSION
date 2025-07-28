@@ -2,7 +2,7 @@ import os
 import json
 from typing import Any, Dict, List
 
-from fusion.helper_scripts.sim_helpers import update_matrices
+from fusion.sim.sim_helpers import update_matrices
 
 
 # TODO: (version 5.5-6) These can probably be in the shared filter or plotting module

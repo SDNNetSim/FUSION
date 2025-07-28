@@ -5,8 +5,8 @@ import os
 import matplotlib.pyplot as plt
 
 from fusion.cli.args.plot_args import PlotProps
-from fusion.helper_scripts.os_helpers import create_dir
-from fusion.helper_scripts.plot_helpers import PlotHelpers, find_times
+from fusion.utils.os_helpers import create_dir
+from fusion.visualization.plot_helpers import PlotHelpers, find_times
 
 
 class PlotStats:

@@ -11,9 +11,9 @@ import numpy as np
 # Local application imports
 from fusion.core.request_generator import get_requests
 from fusion.core.sdn_controller import SDNController
-from fusion.helper_scripts.stats_helpers import SimStats
-from fusion.helper_scripts.ml_helpers import load_model
-from fusion.helper_scripts.sim_helpers import log_message
+from fusion.core.stats_helpers import SimStats
+from fusion.modules.ml.ml_helpers import load_model
+from fusion.sim.sim_helpers import log_message
 
 
 class Engine:
