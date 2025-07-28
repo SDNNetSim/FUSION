@@ -11,8 +11,8 @@ import torch
 from fusion.core.engine import Engine
 from fusion.core.routing import Routing
 
-from fusion.cli.setup_helpers import create_input, save_input
-from fusion.sim.sim_helpers import parse_yaml_file, get_start_time
+from fusion.sim.input_setup import create_input, save_input
+from fusion.sim.utils import parse_yaml_file, get_start_time
 
 from fusion.cli.main_parser import get_train_args
 from fusion.cli.config_setup import ConfigManager

@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from stable_baselines3.common.callbacks import BaseCallback
-from fusion.utils.os_helpers import create_dir
+from fusion.utils.os import create_dir
 
 
 class GetModelParams(BaseCallback):

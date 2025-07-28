@@ -4,7 +4,7 @@ import math
 import numpy as np
 import networkx as nx
 
-from fusion.sim.sim_helpers import find_free_channels, find_taken_channels
+from fusion.sim.utils import find_free_channels, find_taken_channels
 
 
 class RoutingHelpers:

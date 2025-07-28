@@ -8,8 +8,8 @@ import json
 import numpy as np
 import pandas as pd
 
-from fusion.utils.os_helpers import create_dir
-from fusion.visualization.plot_helpers import find_times, PlotHelpers
+from fusion.utils.os import create_dir
+from fusion.visualization.utils import find_times, PlotHelpers
 from fusion.cli.args.plot_args import PlotProps
 
 NETWORK_LIST = ['NSFNet', 'USNet']

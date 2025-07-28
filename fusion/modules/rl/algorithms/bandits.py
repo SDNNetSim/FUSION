@@ -3,7 +3,7 @@ import json
 
 import numpy as np
 
-from fusion.utils.os_helpers import create_dir
+from fusion.utils.os import create_dir
 from fusion.modules.rl.algorithms.algorithm_props import BanditProps
 
 

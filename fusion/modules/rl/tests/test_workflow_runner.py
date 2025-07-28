@@ -344,7 +344,7 @@ def run_optuna_study(sim_dict: dict, callback_list):
     from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
     from fusion.modules.rl.utils.setup import setup_rl_sim
     from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
-    from fusion.sim.sim_helpers import (
+    from fusion.sim.utils import (
         modify_multiple_json_values,
         update_dict_from_list,
         get_erlang_vals,

@@ -5,7 +5,7 @@ import re
 from configparser import ConfigParser
 from pathlib import Path
 
-from fusion.utils.os_helpers import create_dir
+from fusion.utils.os import create_dir
 from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))

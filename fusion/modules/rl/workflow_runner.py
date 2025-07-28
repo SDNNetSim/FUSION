@@ -6,8 +6,8 @@ import numpy as np
 
 import psutil
 
-from fusion.sim.sim_helpers import modify_multiple_json_values, update_dict_from_list
-from fusion.sim.sim_helpers import get_erlang_vals, run_simulation_for_erlangs, save_study_results
+from fusion.sim.utils import modify_multiple_json_values, update_dict_from_list
+from fusion.sim.utils import get_erlang_vals, run_simulation_for_erlangs, save_study_results
 from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
 from fusion.modules.rl.model_manager import get_model, save_model

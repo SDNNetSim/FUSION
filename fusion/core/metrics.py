@@ -10,8 +10,8 @@ import pandas as pd
 
 from fusion.cli.args.stats_args import StatsProps
 from fusion.cli.args.stats_args import SNAP_KEYS_LIST
-from fusion.sim.sim_helpers import find_path_len, find_core_cong, log_message
-from fusion.utils.os_helpers import create_dir, find_project_root
+from fusion.sim.utils import find_path_len, find_core_cong, log_message
+from fusion.utils.os import create_dir, find_project_root
 
 PROJECT_ROOT = find_project_root()
 

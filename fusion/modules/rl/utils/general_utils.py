@@ -4,8 +4,8 @@ import numpy as np
 
 from fusion.core.spectrum_assignment import SpectrumAssignment
 
-from fusion.sim.sim_helpers import find_path_len, get_path_mod, get_hfrag
-from fusion.sim.sim_helpers import find_path_cong, classify_cong
+from fusion.sim.utils import find_path_len, get_path_mod, get_hfrag
+from fusion.sim.utils import find_path_cong, classify_cong
 
 from fusion.cli.args.sdn_args import SDNProps
 

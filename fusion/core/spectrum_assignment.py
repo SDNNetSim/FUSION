@@ -4,7 +4,7 @@ from operator import itemgetter
 import numpy as np
 
 from fusion.cli.args.spectrum_args import SpectrumProps
-from fusion.modules.spectrum.spectrum_helpers import SpectrumHelpers
+from fusion.modules.spectrum.utils import SpectrumHelpers
 from fusion.core.snr_measurements import SnrMeasurements
 
 
