@@ -8,6 +8,7 @@ from arg_scripts.sdn_args import SDNProps
 from src.routing import Routing
 from src.spectrum_assignment import SpectrumAssignment
 from src.grooming import Grooming
+from src.snr_measurements import SnrMeasurements
 
 
 class SDNController:
@@ -435,6 +436,37 @@ class SDNController:
                             self.sdn_props.is_sliced = False
                         self.sdn_props.was_new_lp_established.append(lp_id)
                         self.allocate()
+
+
+                        new_lp_info = {
+                            "id": lp_id,
+                            "path": self.sdn_props.path_list,
+                            "spectrum": (
+                                self.spectrum_obj.spectrum_props.start_slot,
+                                self.spectrum_obj.spectrum_props.end_slot,
+                            ),
+                            "core": self.spectrum_obj.spectrum_props.core_num,
+                            "band": self.spectrum_obj.spectrum_props.curr_band,
+                            "mod_format": self.spectrum_obj.spectrum_props.modulation,
+                        }
+
+                        snr_rechecker = SnrMeasurements(
+                            self.engine_props,
+                            self.sdn_props,
+                            self.spectrum_obj.spectrum_props,
+                            self.route_obj.route_props,
+                        )
+
+                        results = snr_rechecker.reevaluate_after_new_lightpath(new_lp_info)
+
+                        for lp_check_id, snr in results:
+                            for _, lps in self.sdn_props.lightpath_status_dict.items():
+                                if lp_check_id in lps:
+                                    required_snr = snr_rechecker.snr_props.req_snr[lps[lp_check_id]["mod_format"]]
+                                    if isinstance(snr, float) and snr < required_snr:
+                                        lps[lp_check_id]["is_degraded"] = True
+                                        print(
+                                            f"⚠️ Lightpath {lp_check_id} degraded: SNR={snr:.2f} dB (< {required_snr} dB)")
                     return
 
             if self.engine_props['max_segments'] > 1 and self.sdn_props.bandwidth != '25' and not segment_slicing:

@@ -3,9 +3,12 @@
 import unittest
 from unittest.mock import patch
 import numpy as np
+import networkx as nx
 
 from src.sdn_controller import SDNController
 from arg_scripts.sdn_args import SDNProps  # Class import for sdn_props
+from src.snr_measurements import SnrMeasurements
+
 
 
 class TestSDNController(unittest.TestCase):
@@ -359,6 +362,48 @@ class TestSDNController(unittest.TestCase):
 
         for key in self.controller.sdn_props.net_spec_dict:
             self.assertEqual(self.controller.sdn_props.net_spec_dict[key]['throughput'], 0)
+
+    @patch.object(SnrMeasurements, "reevaluate_after_new_lightpath", return_value=[(10, 15.0)])
+    def test_handle_event_triggers_snr_recheck(self, mock_reeval):
+
+        # Provide a simple topology
+        G = nx.Graph()
+        G.add_edge("A", "B", length=10)
+        self.controller.sdn_props.topology = G
+        self.controller.sdn_props.source = "A"
+        self.controller.sdn_props.destination = "B"
+        self.controller.route_obj.sdn_props = self.controller.sdn_props
+        self.controller.sdn_props.mod_formats = {
+            "QPSK": {"max_length": 2000},
+            "16-QAM": {"max_length": 1000},
+            "64-QAM": {"max_length": 1000}
+        }
+
+        # Set dummy spectrum properties so allocate() works
+        self.controller.spectrum_obj.spectrum_props.start_slot = 0
+        self.controller.spectrum_obj.spectrum_props.end_slot = 3
+        self.controller.spectrum_obj.spectrum_props.core_num = 0
+        self.controller.spectrum_obj.spectrum_props.curr_band = "c"
+        self.controller.spectrum_obj.spectrum_props.lightpath_id = 99
+        self.controller.spectrum_obj.spectrum_props.is_free = True
+
+        # Patch get_spectrum to skip actual spectrum assignment
+        with patch("src.spectrum_assignment.SpectrumAssignment.get_spectrum", return_value=None), \
+                patch.object(self.controller, "_update_req_stats"):
+            self.controller.handle_event(req_dict={}, request_type="arrival")
+
+            mock_reeval.assert_called_once()
+            args, kwargs = mock_reeval.call_args
+            new_lp_info = args[0]
+
+            # Ensure correct LP details are passed
+            assert new_lp_info["path"] == ["A", "B"]
+            assert new_lp_info["spectrum"] == (0, 3)
+            assert new_lp_info["core"] == 0
+            assert new_lp_info["band"] == "c"
+            assert isinstance(new_lp_info["id"], int)  # ID should be a valid integer
+
+
 
 
 if __name__ == '__main__':

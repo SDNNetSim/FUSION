@@ -816,3 +816,99 @@ class SnrMeasurements:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
         return mod_format, bandwidth, snr_val
+
+    def _build_lightpath_list_from_net_spec(self) -> list[dict]:
+        lp_list = []
+        for (src, dst), link_info in self.sdn_props.net_spec_dict.items():
+            for band, cores in link_info['cores_matrix'].items():
+                for core_num, core_arr in enumerate(cores):
+                    current_lp = None
+                    for slot_idx, val in enumerate(core_arr):
+                        if val > 0:
+                            lp_id = int(val)
+
+                            # 🔹 Try to get mod_format from lightpath_status_dict
+                            mod_format = None
+                            if (src, dst) in self.sdn_props.lightpath_status_dict:
+                                lp_meta = self.sdn_props.lightpath_status_dict[(src, dst)].get(lp_id)
+                                if lp_meta:
+                                    mod_format = lp_meta.get("mod_format")
+
+                            if current_lp is None or current_lp["id"] != lp_id:
+                                current_lp = {
+                                    "id": lp_id,
+                                    "path": [src, dst],
+                                    "spectrum": [slot_idx, slot_idx],
+                                    "core": core_num,
+                                    "band": band,
+                                    "mod_format": mod_format or "QPSK",  # fallback
+                                }
+                                lp_list.append(current_lp)
+                            else:
+                                current_lp["spectrum"][1] = slot_idx
+        return lp_list
+
+    def load_from_lp_info(self, lp_info: dict):
+        """Load a specific lightpath's state into this SnrMeasurements object."""
+        self.spectrum_props.path_list = lp_info["path"]
+        self.spectrum_props.start_slot = lp_info["spectrum"][0]
+        self.spectrum_props.end_slot = lp_info["spectrum"][1]
+        self.spectrum_props.core_num = lp_info["core"]
+        self.spectrum_props.modulation = lp_info.get("mod_format", "QPSK")
+        self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
+
+    def evaluate_lp(self, lp_info: dict) -> float:
+        """Compute SNR for a given lightpath and return it in dB."""
+        self.load_from_lp_info(lp_info)
+
+        if self.engine_props["snr_type"] == "gsnr":
+            _, snr_db, _ = self.check_gsnr()
+        elif self.engine_props["snr_type"] == "gsnr_mb":
+            _, snr_db, _ = self.check_gsnr_mb()
+        elif self.engine_props["snr_type"] == "snr_calc_nli":
+            ok, _ = self.check_snr()
+            snr_db = float("inf") if ok else 0.0
+        else:
+            raise NotImplementedError(f"Unsupported snr_type: {self.engine_props['snr_type']}")
+
+        return snr_db
+
+    def reevaluate_lightpaths(self, lp_list: list[dict]) -> list[tuple]:
+        """Evaluate SNR for all lightpaths in lp_list."""
+        results = []
+        for lp in lp_list:
+            try:
+                snr_db = self.evaluate_lp(lp)
+                results.append((lp["id"], snr_db))
+            except Exception as e:
+                results.append((lp["id"], f"Error: {e}"))
+        return results
+
+    def reevaluate_after_new_lightpath(self, new_lp_info: dict) -> list[tuple]:
+        """
+        Recalculate SNR for all active lightpaths affected by the new LP.
+        Ensures each lightpath is only evaluated once, even if it spans multiple links.
+        """
+        from helper_scripts.snr_helpers import get_overlapping_lightpaths
+
+        # Build a list of all active LPs
+        active_lps = self._build_lightpath_list_from_net_spec()
+
+        # Filter only those affected by the new LP
+        affected_lps = get_overlapping_lightpaths(new_lp_info, active_lps)
+
+        if not affected_lps:
+            return []
+
+        # Deduplicate by LP ID (take the first occurrence of each ID)
+        unique_lps = {}
+        for lp in affected_lps:
+            if lp["id"] not in unique_lps:
+                unique_lps[lp["id"]] = lp
+
+        # Evaluate SNR once per unique LP
+        results = self.reevaluate_lightpaths(list(unique_lps.values()))
+        return results
+
+
+

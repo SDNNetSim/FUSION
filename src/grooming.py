@@ -22,6 +22,10 @@ class Grooming:
         """
         path_groups = {}
         for lp_id, lp_info in self.sdn_props.lightpath_status_dict[light_id].items():
+            # Skip lightpaths with degraded SNRs
+            if lp_info.get("is_degraded", False):
+                continue
+
             if lp_info["remaining_bandwidth"] > 0:
                 path_key = tuple(lp_info["path"])
                 reverse_path_key = tuple(reversed(lp_info["path"]))

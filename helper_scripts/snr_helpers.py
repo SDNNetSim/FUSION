@@ -70,3 +70,25 @@ def compute_response(mod_format, snr_props, spectrum_props, sdn_props):
             snr_props.bw_mapping_dict[spectrum_props.modulation] >= int(sdn_props.bandwidth)
     )
     return mod_format != 0 and is_valid_modulation and meets_bw_requirements
+
+
+def get_overlapping_lightpaths(new_lp: dict, lp_list: list[dict]) -> list[dict]:
+    """
+    Given a new lightpath and a list of active lightpaths,
+    return those that share at least one link, same core/band, and overlapping slots.
+    """
+    affected = []
+    new_links = set(zip(new_lp["path"], new_lp["path"][1:]))
+    new_start, new_end = new_lp["spectrum"]
+    new_core, new_band = new_lp["core"], new_lp["band"]
+
+    for lp in lp_list:
+        lp_links = set(zip(lp["path"], lp["path"][1:]))
+        same_core_band = lp["core"] == new_core and lp["band"] == new_band
+        slots_overlap = not (new_end < lp["spectrum"][0] or new_start > lp["spectrum"][1])
+
+        if new_links & lp_links and same_core_band and slots_overlap:
+            affected.append(lp)
+
+    return affected
+

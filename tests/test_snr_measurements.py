@@ -2,6 +2,7 @@
 
 import unittest
 from unittest.mock import MagicMock
+from unittest.mock import patch
 import numpy as np
 from src.snr_measurements import SnrMeasurements
 
@@ -309,6 +310,73 @@ class TestSnrMeasurements(unittest.TestCase):
     #     self.assertGreater(snr, 0)
     #     self.assertIsInstance(snr, float)
 
+    def test_build_lightpath_list_from_net_spec_full_check(self):
+        """Verify that the LP list is correctly built from net_spec_dict."""
+        # Simulate a lightpath occupying slots 0–2 on core 0
+        self.sdn_props.net_spec_dict[('A', 'B')]['cores_matrix']['c'][0][0:3] = 5
+
+        lp_list = self.snr_measurements._build_lightpath_list_from_net_spec()
+
+        # There should be exactly one LP entry
+        self.assertEqual(len(lp_list), 1)
+        lp = lp_list[0]
+
+        # Validate the LP details
+        self.assertEqual(lp["id"], 5)
+        self.assertEqual(lp["path"], ["A", "B"])  # path matches link keys
+        self.assertEqual(lp["core"], 0)
+        self.assertEqual(lp["band"], "c")
+        self.assertEqual(lp["spectrum"], [0, 2])  # slot range matches
+
+    @patch.object(SnrMeasurements, "evaluate_lp", return_value=15.0)
+    def test_reevaluate_after_new_lightpath_detects_overlap(self, mock_eval):
+        """Ensure that reevaluation detects overlapping LPs and returns expected results."""
+        # Create an existing LP occupying slots 0–2
+        self.sdn_props.net_spec_dict[('A', 'B')]['cores_matrix']['c'][0][0:3] = 10
+
+        # New LP overlaps slots 1–2 on the same core and band
+        new_lp_info = {
+            "id": 20,
+            "path": ["A", "B"],
+            "spectrum": (1, 2),
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+        }
+
+        results = self.snr_measurements.reevaluate_after_new_lightpath(new_lp_info)
+
+        # Ensure evaluate_lp() was called exactly once
+        mock_eval.assert_called_once()
+
+        # There should be exactly one result for LP ID 10
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0][0], 10)  # LP ID matches
+        self.assertEqual(results[0][1], 15.0)  # SNR matches mocked return value
+
+    @patch.object(SnrMeasurements, "check_snr", return_value=(True, 10.0))
+    def test_evaluate_lp(self, mock_check_snr):
+        lp_info = {
+            "id": 1,
+            "path": ["A", "B"],
+            "spectrum": [0, 3],
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+        }
+        snr_value = self.snr_measurements.evaluate_lp(lp_info)
+        assert snr_value == float("inf")
+        mock_check_snr.assert_called_once()
+
+    @patch.object(SnrMeasurements, "evaluate_lp", return_value=12.0)
+    def test_reevaluate_lightpaths(self, mock_eval):
+        lp_list = [
+            {"id": 1, "path": ["A", "B"], "spectrum": [0, 3], "core": 0, "band": "c"},
+            {"id": 2, "path": ["B", "C"], "spectrum": [1, 2], "core": 0, "band": "c"},
+        ]
+        results = self.snr_measurements.reevaluate_lightpaths(lp_list)
+        assert results == [(1, 12.0), (2, 12.0)]
+        assert mock_eval.call_count == 2
 
 if __name__ == '__main__':
     unittest.main()
