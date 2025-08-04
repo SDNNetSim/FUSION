@@ -16,7 +16,10 @@ from fusion.modules.ml.train_utils import load_model
 from fusion.sim.utils import log_message
 
 
-class Engine:
+# TODO: This will eventually work with sim/batch_runner
+
+
+class SimulationEngine:
     """
     Controls a single simulation.
     """
