@@ -6,7 +6,7 @@ from datetime import datetime
 from multiprocessing import Manager, Process
 
 from fusion.sim.input_setup import create_input, save_input
-from fusion.core.engine import Engine
+from fusion.core.simulation import SimulationEngine
 
 
 class NetworkSimulator:
@@ -76,7 +76,7 @@ class NetworkSimulator:
 
         print(f"[Simulation {erlang_index}] progress_dict id: {id(engine_props['progress_dict'])}")
 
-        engine = Engine(engine_props=engine_props)
+        engine = SimulationEngine(engine_props=engine_props)
         final_done_units = engine.run()
 
         return final_done_units
