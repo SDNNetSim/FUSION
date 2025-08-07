@@ -197,7 +197,8 @@ def setup_dqn(env: object, device: str):
     :rtype: object
     """
     network = env.engine_obj.engine_props['network']
-    yaml_path = os.path.join('sb3_scripts', 'yml', f'dqn_{network}.yml')
+    # TODO: This is connected to the TODO in model manager regarding the "consistency" of passing yaml file
+    yaml_path = os.path.join('fusion', 'configs', 'hyperparams', f'dqn_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = DQN(
