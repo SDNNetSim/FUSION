@@ -10,9 +10,32 @@ source ./venv/Scripts/activate
 
 echo "Running pyreverse before commit..."
 
-MODULES=("tests" "src")  
-OUTPUT_DIR="class_diagram_output"
 
+#detect packages
+USER_MODULES=()  # Leave empty to auto-detect
+if [ ${#USER_MODULES[@]} -gt 0 ]; then
+    echo "Using user-defined module list:"
+    MODULES=("${USER_MODULES[@]}")
+else
+    MODULES=()
+    while IFS= read -r package_dir; do
+        package_dir="${package_dir#./}"
+        MODULES+=("$package_dir")
+    done < <(
+        find . -type f -name "__init__.py" \
+            -not -path "./.git/*" \
+            -not -path "./venv/*" \
+            -not -path "./gui_scripts/*" \
+            -not -path "./__pycache__/*" \
+            -exec dirname {} \; | sort -u
+    )
+fi
+printf "Detected packages:\n"
+printf " - %s\n" "${MODULES[@]}"
+
+
+#set the output folder and delete anything inside it before generating
+OUTPUT_DIR="class_diagram_output"
 rm -rf ${OUTPUT_DIR}/*
 
 for MODULE in "${MODULES[@]}"; do
@@ -21,17 +44,6 @@ for MODULE in "${MODULES[@]}"; do
         CLASS_FILE="${OUTPUT_DIR}/${MODULE}_classes.puml"
         PACKAGE_FILE="${OUTPUT_DIR}/${MODULE}_packages.puml"
 
-        if [ -f "$CLASS_FILE" ]; then
-            echo "Class diagram saved: $CLASS_FILE"
-        else
-            echo "Warning: expected class diagram not found: $CLASS_FILE"
-        fi
-
-        if [ -f "$PACKAGE_FILE" ]; then
-            echo "Package diagram saved: $PACKAGE_FILE"
-        else
-            echo "Warning: expected package diagram not found: $PACKAGE_FILE"
-        fi
     else
         echo "Warning: pyreverse failed for module $MODULE."
     fi
