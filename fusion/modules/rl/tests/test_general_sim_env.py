@@ -59,7 +59,7 @@ class _Tensor:
         """Return tensor with dimension `dim`."""
         return self
 
-torch_mod.Tensor = _Tensor  # ✅ Fixes the AttributeError
+torch_mod.Tensor = _Tensor
 
 class _NNModule:
     """Lightweight torch.nn.Module replacement."""

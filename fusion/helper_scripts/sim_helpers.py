@@ -37,7 +37,7 @@ def update_matrices(info_dict: dict):
         resp['networks_matrix'].append(obj['network_list'])
         resp['dates_matrix'].append(obj['dates_list'])
 
-        # TODO: Patched this for a test, improve
+        # TODO: Patched this for the 'test_plot_helpers' test temporarily
         try:
             resp['algorithms_matrix'].append(obj['algorithm_list'])
         except KeyError:
