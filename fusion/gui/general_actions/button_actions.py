@@ -4,10 +4,11 @@ import os
 import multiprocessing
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
 from PyQt5 import QtWidgets, QtGui
-from fusion.gui.gui_helpers.general_helpers import SettingsDialog
+from fusion.gui.general_dialogs.settings import SettingsDialog
 
 # We import the simulation runner's run() function.
-from run_sim import run
+from fusion.sim.network_simulator import run as run_sim
+
 
 #TODO Implement Pause Resume logic for pause_simulation function
 
@@ -75,7 +76,7 @@ class ButtonHelpers:
 
         # Create and start a separate process that runs the simulations
         sim_process = multiprocessing.Process(
-            target=run,
+            target=run_sim,
             kwargs={'sims_dict': self.simulation_config, 'stop_flag': self.stop_flag}
         )
         sim_process.start()
@@ -117,7 +118,7 @@ class ButtonHelpers:
         """
         self.start_button = QtWidgets.QAction()
         resource_name = "light-green-play-button.png"
-        self.media_dir = os.path.join('gui_scripts', 'media')
+        self.media_dir = os.path.join('gui', 'media')
         self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
         self.start_button.setText("Start")
         self.start_button.triggered.connect(self.start_simulation)
