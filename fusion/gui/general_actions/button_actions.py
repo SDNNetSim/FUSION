@@ -77,7 +77,8 @@ class ButtonHelpers:
         # Create and start a separate process that runs the simulations
         sim_process = multiprocessing.Process(
             target=run_sim,
-            kwargs={'sims_dict': self.simulation_config, 'stop_flag': self.stop_flag}
+            args=(self.simulation_config,),
+            kwargs={'stop_flag': self.stop_flag},
         )
         sim_process.start()
         self.simulation_process = sim_process
@@ -118,7 +119,7 @@ class ButtonHelpers:
         """
         self.start_button = QtWidgets.QAction()
         resource_name = "light-green-play-button.png"
-        self.media_dir = os.path.join('gui', 'media')
+        self.media_dir = os.path.join('fusion', 'gui', 'media')
         self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
         self.start_button.setText("Start")
         self.start_button.triggered.connect(self.start_simulation)
