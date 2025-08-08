@@ -3,32 +3,11 @@
 import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from PyQt5 import QtWidgets as qtw, QtCore as qtc
+from PyQt5 import QtCore as qtc
+from fusion.gui.view_topology.topology_dialog import NodeInfoDialog
 
 
-class NodeInfoDialog(qtw.QDialog):  # pylint: disable=too-few-public-methods
-    """
-    Displays individual node dialog.
-    """
-
-    def __init__(self, node, info, parent=None):
-        super().__init__(parent)  # pylint: disable=super-with-arguments
-        self.setWindowTitle(f"Node Information - {node}")
-        self.setGeometry(100, 100, 300, 200)
-        self.setWindowModality(qtc.Qt.ApplicationModal)  # Make the dialog modal
-        self.setWindowFlag(qtc.Qt.WindowStaysOnTopHint)  # Ensure the dialog stays on top
-
-        layout = qtw.QVBoxLayout()
-
-        info_label = qtw.QLabel(f"Node: {node}\nInfo: {info}")
-        layout.addWidget(info_label)
-
-        close_button = qtw.QPushButton("Close")
-        close_button.clicked.connect(self.close)
-        layout.addWidget(close_button)
-
-        self.setLayout(layout)
-
+# TODO: Move actions involving topology setup here.
 
 class TopologyCanvas(FigureCanvas):
     """
