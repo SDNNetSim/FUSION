@@ -9,14 +9,17 @@ import networkx as nx
 import numpy as np
 
 # Local application imports
-from fusion.core.request_generator import get_requests
+from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.core.metrics import SimStats
 from fusion.modules.ml.train_utils import load_model
 from fusion.sim.utils import log_message
 
 
-class Engine:
+# TODO: This will eventually work with sim/batch_runner
+
+
+class SimulationEngine:
     """
     Controls a single simulation.
     """
