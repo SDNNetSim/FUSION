@@ -1,4 +1,6 @@
-from fusion.helper_scripts.random_helpers import set_seed, get_uniform_rv, get_exponential_rv
+from fusion.utils.random import set_seed, get_uniform_rv, get_exponential_rv
+
+__all__ = ["get_requests"]
 
 
 def get_requests(seed: int, engine_props: dict):

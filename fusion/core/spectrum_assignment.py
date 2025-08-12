@@ -4,8 +4,10 @@ from operator import itemgetter
 import numpy as np
 
 from fusion.cli.args.spectrum_args import SpectrumProps
-from fusion.helper_scripts.spectrum_helpers import SpectrumHelpers
+from fusion.modules.spectrum.utils import SpectrumHelpers
 from fusion.core.snr_measurements import SnrMeasurements
+
+# TODO: This file will be migrated/deleted to the modules/spectrum scripts created
 
 
 class SpectrumAssignment:
@@ -232,6 +234,7 @@ class SpectrumAssignment:
         """
         Determines the spectrum allocation method based on engine properties and spectrum requirements.
         """
+        # TODO: It will be interesting on how we'd like to handle this
         if self.spectrum_props.forced_index is not None:
             self.handle_first_last(flag='forced_index')
         elif self.engine_props['allocation_method'] == 'best_fit':

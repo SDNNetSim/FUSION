@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
 from fusion.data_scripts.structure_data import assign_link_lengths, create_network
-from fusion.helper_scripts.setup_helpers import find_project_root
+from fusion.sim.input_setup import find_project_root
 
 
 class TestNetworkFunctions(unittest.TestCase):

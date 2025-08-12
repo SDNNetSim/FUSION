@@ -6,10 +6,10 @@ import networkx as nx
 import numpy as np
 
 from fusion.modules.rl.algorithms.algorithm_props import QProps
-from fusion.helper_scripts.sim_helpers import (
+from fusion.sim.utils import (
     find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 )
-from fusion.helper_scripts.os_helpers import create_dir
+from fusion.utils.os import create_dir
 
 
 class QLearning:

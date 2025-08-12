@@ -9,8 +9,8 @@ import seaborn as sns
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
-from fusion.helper_scripts.os_helpers import create_dir
-from fusion.helper_scripts.sim_helpers import find_path_len, find_core_cong
+from fusion.utils.os import create_dir
+from fusion.sim.utils import find_path_len, find_core_cong
 
 
 def _plot_pie(input_df: pd.DataFrame, erlang: float, save_fp: str):

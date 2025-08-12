@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import numpy as np
-from fusion.helper_scripts.spectrum_helpers import SpectrumHelpers
+from fusion.modules.spectrum.utils import SpectrumHelpers
 
 
 class TestSpectrumHelpers(unittest.TestCase):
