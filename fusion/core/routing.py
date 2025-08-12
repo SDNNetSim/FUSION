@@ -4,9 +4,12 @@ import networkx as nx
 import numpy as np
 
 from fusion.cli.args.routing_args import RoutingProps
-from fusion.helper_scripts.routing_helpers import RoutingHelpers
-from fusion.helper_scripts.sim_helpers import (find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals,
-                                        find_path_cong, find_path_frag)
+from fusion.modules.routing.utils import RoutingHelpers
+from fusion.sim.utils import (find_path_len, get_path_mod, find_free_slots, sort_nested_dict_vals,
+                                    find_path_cong, find_path_frag)
+
+
+# TODO: This file will be migrated/deleted to the modules/routing scripts created
 
 
 class Routing:
@@ -351,12 +354,15 @@ class Routing:
             self.find_least_nli()
         elif self.engine_props['route_method'] == 'xt_aware':
             self.find_least_xt()
+        # TODO: Going to rename this to "least congested link"
         elif self.engine_props['route_method'] == 'least_congested':
             self.find_least_cong()
+        # TODO: Shortest path is just KSP with k = 1 so we don't need separate logic
         elif self.engine_props['route_method'] == 'shortest_path':
             self.find_least_weight(weight='length')
         elif self.engine_props['route_method'] == 'k_shortest_path':
             self.find_k_shortest()
+        # TODO: This is going to be a helper function or edition to the k shortest path file
         elif self.engine_props['route_method'] == 'external_ksp':
             self.load_k_shortest()
         # TODO: Need to change 'least congested' name above, as it doesn't find the mean least congested path

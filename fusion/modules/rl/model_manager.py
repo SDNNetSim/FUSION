@@ -8,7 +8,7 @@ from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
 
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN
-from fusion.helper_scripts.sim_helpers import parse_yaml_file
+from fusion.sim.utils import parse_yaml_file
 
 
 def _parse_policy_kwargs(string: str) -> dict:
@@ -32,8 +32,12 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
     model_type = determine_model_type(sim_dict)
     algorithm = sim_dict[model_type]
 
+    # TODO: Ensure this is consistent acoss the board (other cli, files, etc.)
+    #   We might want to find a better way to do this
     if yaml_dict is None:
-        yml = os.path.join("sb3_scripts", "yml",
+        print('\n\n', os.getcwd(), '\n\n')
+
+        yml = os.path.join("fusion", "configs", "hyperparams",
                            f"{algorithm}_{sim_dict['network']}.yml")
         yaml_dict = parse_yaml_file(yml)
         env_name = next(iter(yaml_dict))

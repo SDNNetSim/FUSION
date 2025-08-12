@@ -79,7 +79,7 @@ class TestSetupHelper(TestCase):
         # patch heavy deps once for all tests in this class
         self.engine_patcher = mock.patch.object(
             su,
-            "Engine",
+            "SimulationEngine",
             return_value=SNS(engine_props={}),
         )
         self.routing_patcher = mock.patch.object(

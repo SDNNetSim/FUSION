@@ -1,4 +1,5 @@
 # fusion/cli/run_sim.py
+
 import multiprocessing
 
 from fusion.cli.main_parser import build_parser
@@ -9,9 +10,12 @@ from fusion.sim.network_simulator import run as run_simulation
 def main(stop_flag):
     """
     Controls the run_sim script.
+    Entry point for running simulations from the command line.
+    Parses arguments and delegates to the simulation runner.
     """
     parser = build_parser()
     args = parser.parse_args()
+
     config = setup_config_from_cli(args)
     print("✅ Parsed Config:\n", config)
 

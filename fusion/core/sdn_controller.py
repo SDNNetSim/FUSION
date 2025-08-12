@@ -2,11 +2,14 @@ import time
 
 import numpy as np
 
-from fusion.helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len
-from fusion.helper_scripts.ml_helpers import get_ml_obs
+from fusion.sim.utils import sort_dict_keys, get_path_mod, find_path_len
+from fusion.modules.ml.train_utils import get_ml_obs
 from fusion.cli.args.sdn_args import SDNProps
 from fusion.core.routing import Routing
 from fusion.core.spectrum_assignment import SpectrumAssignment
+
+
+# TODO: This will eventually be refactored heavily
 
 
 class SDNController:

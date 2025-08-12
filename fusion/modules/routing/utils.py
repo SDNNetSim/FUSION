@@ -4,7 +4,11 @@ import math
 import numpy as np
 import networkx as nx
 
-from fusion.helper_scripts.sim_helpers import find_free_channels, find_taken_channels
+from fusion.sim.utils import find_free_channels, find_taken_channels
+
+
+# TODO: I think it would make more sense to have a "load KSP here instead of its own file, something to help the
+#   existing ksp
 
 
 class RoutingHelpers:

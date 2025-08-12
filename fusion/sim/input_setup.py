@@ -5,7 +5,7 @@ import time
 
 from fusion.data_scripts.structure_data import create_network
 from fusion.data_scripts.generate_data import create_bw_info, create_pt
-from fusion.helper_scripts.os_helpers import create_dir, find_project_root
+from fusion.utils.os import create_dir, find_project_root
 
 PROJECT_ROOT = find_project_root()
 

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from fusion.helper_scripts.os_helpers import create_dir
+from fusion.utils.os import create_dir
 
 
 class TestOSHelpers(unittest.TestCase):

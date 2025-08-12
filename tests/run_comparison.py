@@ -19,7 +19,7 @@ import multiprocessing
 from config_scripts.parse_args import parse_args
 from config_scripts.setup_config import read_config
 
-from fusion.helper_scripts.sim_helpers import get_start_time
+from fusion.sim.utils import get_start_time
 from run_sim import run as run_simulation
 from run_rl_sim import run_rl_sim as run_rl_simulation
 
