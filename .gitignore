@@ -1,3 +1,5 @@
+# TODO: Ensure that we update this file (delete legacy, add new)
+
 # Pycharm
 .idea/
 
@@ -44,3 +46,5 @@ unity/.tmp_config
 reinforcement_learning/plotting/figures
 reinforcement_learning/experiments/
 sb3_scripts/yml
+
+fusion/configs/hyperparams/

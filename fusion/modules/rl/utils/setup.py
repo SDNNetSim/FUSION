@@ -8,7 +8,7 @@ from stable_baselines3 import PPO, A2C, DQN
 from sb3_contrib import QRDQN
 import torch
 
-from fusion.core.engine import Engine
+from fusion.core.simulation import SimulationEngine
 from fusion.core.routing import Routing
 
 from fusion.sim.input_setup import create_input, save_input
@@ -197,7 +197,8 @@ def setup_dqn(env: object, device: str):
     :rtype: object
     """
     network = env.engine_obj.engine_props['network']
-    yaml_path = os.path.join('sb3_scripts', 'yml', f'dqn_{network}.yml')
+    # TODO: This is connected to the TODO in model manager regarding the "consistency" of passing yaml file
+    yaml_path = os.path.join('fusion', 'configs', 'hyperparams', f'dqn_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = DQN(
@@ -312,7 +313,7 @@ class SetupHelper:
         get_start_time(sim_dict={'s1': self.sim_env.sim_dict})
         file_name = "sim_input_s1.json"
 
-        self.sim_env.engine_obj = Engine(engine_props=self.sim_env.sim_dict)
+        self.sim_env.engine_obj = SimulationEngine(engine_props=self.sim_env.sim_dict)
         self.sim_env.route_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
                                          sdn_props=self.sim_env.rl_props.mock_sdn_dict)
 

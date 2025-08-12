@@ -9,6 +9,9 @@ from fusion.core.routing import Routing
 from fusion.core.spectrum_assignment import SpectrumAssignment
 
 
+# TODO: This will eventually be refactored heavily
+
+
 class SDNController:
     """
     This class contains methods to support software-defined network controller functionality.

@@ -1,7 +1,6 @@
 from stable_baselines3.common.callbacks import CallbackList
 
 from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
-
 from fusion.modules.rl.utils.setup import setup_rl_sim
 from fusion.modules.rl.utils.callbacks import EpisodicRewardCallback, LearnRateEntCallback
 
@@ -9,14 +8,17 @@ from fusion.modules.rl.utils.callbacks import EpisodicRewardCallback, LearnRateE
 def create_environment(config_path: str = None):
     """
     Creates the simulation environment and associated callback for RL.
-
-    :return: A tuple consisting of the SimEnv object and its sim_dict.
+    Returns: env, full sim_dict (including s1), callback_list
     """
     ep_call_obj = EpisodicRewardCallback(verbose=1)
     param_call_obj = LearnRateEntCallback(verbose=1)
-
     callback_list = CallbackList([ep_call_obj, param_call_obj])
-    # TODO: I don't believe the callback is even used in sim env
-    env = SimEnv(render_mode=None, custom_callback=ep_call_obj, sim_dict=setup_rl_sim(config_path=config_path))
-    env.sim_dict['callback'] = callback_list
-    return env, env.sim_dict, callback_list
+
+    flat_dict = setup_rl_sim(config_path=config_path)
+
+    # 🩹 Patch: Ensure SimEnv always receives a dict with sim_dict["s1"]
+    wrapped_dict = {"s1": flat_dict} if "s1" not in flat_dict else flat_dict
+
+    env = SimEnv(render_mode=None, custom_callback=ep_call_obj, sim_dict=wrapped_dict)
+
+    return env, wrapped_dict, callback_list

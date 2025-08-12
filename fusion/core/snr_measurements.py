@@ -7,6 +7,9 @@ from fusion.cli.args.snr_args import SNRProps
 from fusion.modules.snr.utils import get_slot_index, get_loaded_files, compute_response
 
 
+# TODO: This file will be migrated/deleted to the modules/snr scripts created
+
+
 # fixme: Only works for seven cores
 class SnrMeasurements:
     """
@@ -441,10 +444,13 @@ class SnrMeasurements:
         :rtype: tuple
         """
         self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
+        # TODO: Renamed to "snr"
         if self.engine_props['snr_type'] == "snr_calc_nli":
             snr_check, xt_cost = self.check_snr()
+        # TODO: Renamed to "xt"
         elif self.engine_props['snr_type'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
+        # TODO: Will be added to snr with an external load check
         elif self.engine_props['snr_type'] == "snr_e2e_external_resources":
             snr_check, xt_cost = self.check_snr_ext(path_index)
         else:
