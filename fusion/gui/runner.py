@@ -1,7 +1,8 @@
 # fusion/gui/runner.py
 
-from PyQt5 import QtWidgets
 import multiprocessing
+from PyQt5 import QtWidgets
+from fusion.gui.main_window import MainWindow  # local import keeps CLI lightweight
 
 def _as_dict(config_like):
     """Accept a ConfigManager or a plain dict; return a dict."""
@@ -19,7 +20,6 @@ def launch_gui(config_like):
       - create and attach shared progress dict (matches legacy run_gui behavior)
       - show and exec the event loop
     """
-    from fusion.gui.main_window import MainWindow  # local import keeps CLI lightweight
 
     cfg = _as_dict(config_like)
 

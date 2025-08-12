@@ -115,4 +115,3 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
             resp = widget.value()
 
         return resp
-

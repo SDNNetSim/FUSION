@@ -5,7 +5,6 @@
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from fusion.gui.gui_args.config_args import SETTINGS_CONFIG_DICT
 
 class DirectoryTreeView(QtWidgets.QTreeView):
     """

@@ -112,5 +112,3 @@ class SimulationThread(QtCore.QThread):
             self.paused = False
             self.output_hints_signal.emit('Stopping simulation from thread')
         self.pause_condition.wakeOne()
-
-
