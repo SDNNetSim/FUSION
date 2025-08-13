@@ -5,11 +5,11 @@ import sys
 import multiprocessing
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileSystemModel, QTabWidget, QPlainTextEdit
-from fusion.gui.gui_helpers.menu_helpers import MenuHelpers
-from fusion.gui.gui_helpers.action_helpers import ActionHelpers
-from fusion.gui.gui_helpers.button_helpers import ButtonHelpers
-from fusion.gui.gui_helpers.highlight_helpers import PythonHighlighter
-from fusion.gui.gui_helpers.general_helpers import DirectoryTreeView
+from fusion.gui.general_actions.menu_actions import MenuHelpers
+from fusion.gui.general_actions.general_actions import ActionHelpers
+from fusion.gui.general_actions.button_actions import ButtonHelpers
+from fusion.gui.global_widgets.highlighter import PythonHighlighter
+from fusion.gui.view_directory.directory_tree_view import DirectoryTreeView
 from fusion.gui.gui_args.style_args import STYLE_SHEET
 
 
