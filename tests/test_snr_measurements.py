@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import MagicMock
 import numpy as np
-from src.snr_measurements import SnrMeasurements
+from fusion.core.snr_measurements import SnrMeasurements
 
 
 class TestSnrMeasurements(unittest.TestCase):

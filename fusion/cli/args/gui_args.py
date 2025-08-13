@@ -1,0 +1,9 @@
+# TODO: Rename this file, there aren't any args...
+
+def add_gui_args(parser):
+    """
+    Adds GUI args to the argument parser.
+    """
+    parser.add_argument("--config_path", type=str, required=True, help="Path to INI config file.")
+    parser.add_argument("--run_id", type=str, required=True, help="Run identifier.")
+    # Add more GUI-specific CLI args here if needed (e.g., --debug, --theme)

@@ -1,6 +1,6 @@
 import unittest
 
-from src.request_generator import get_requests
+from fusion.core.request import get_requests
 
 
 class TestGetRequests(unittest.TestCase):

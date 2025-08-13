@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import networkx as nx
 
-from src.engine import Engine
+from fusion.core.simulation import SimulationEngine
 
 
 class TestEngine(unittest.TestCase):
@@ -44,7 +44,7 @@ class TestEngine(unittest.TestCase):
                 '50GHz': {'QPSK': {}, '16QAM': {}}
             },
         }
-        self.engine = Engine(engine_props=engine_props)
+        self.engine = SimulationEngine(engine_props=engine_props)
         self.engine.reqs_dict = {1.0: {'req_id': 10, 'request_type': 'arrival'}}
 
         # Mocking sdn_obj and stats_obj
@@ -67,7 +67,7 @@ class TestEngine(unittest.TestCase):
         self.engine.reqs_status_dict = {}
         self.engine.ml_model = None
 
-    @patch('src.engine.nx.Graph')
+    @patch('fusion.core.simulation.nx.Graph')
     def test_create_topology(self, mock_graph):
         """
         Tests the create topology method.
@@ -143,7 +143,7 @@ class TestEngine(unittest.TestCase):
         self.engine.engine_props['topology_info']['nodes'] = {'A': {}, 'B': {}}  # Ensure nodes are a dictionary
         self.engine.engine_props['is_only_core_node'] = True  # Define nodes permitted to send requests
 
-        with patch('src.engine.load_model', autospec=True) as mock_load_model:
+        with patch('fusion.core.simulation.load_model', autospec=True) as mock_load_model:
             self.engine.init_iter(iteration=iteration)
             self.assertEqual(self.engine.iteration, iteration)
             self.engine.stats_obj.init_iter_stats.assert_called_once()

@@ -3,8 +3,8 @@ from unittest.mock import patch, MagicMock
 import numpy as np
 import networkx as nx
 
-from src.routing import Routing
-from arg_scripts.routing_args import RoutingProps
+from fusion.core.routing import Routing
+from fusion.cli.args.routing_args import RoutingProps
 
 
 class TestRouting(unittest.TestCase):
@@ -148,7 +148,7 @@ class TestRouting(unittest.TestCase):
         """
         self.route_props.max_link_length = 100  # Ensure max_link_length is set
 
-        with patch('helper_scripts.sim_helpers.find_free_slots', return_value={'free_slots': []}), \
+        with patch('fusion.sim.utils.find_free_slots', return_value={'free_slots': []}), \
                 patch.object(self.instance.route_help_obj, 'find_xt_link_cost', return_value=0.1), \
                 patch.object(self.instance.route_help_obj, 'get_max_link_length', return_value=100):
             self.instance.find_least_xt()
@@ -173,7 +173,7 @@ class TestRouting(unittest.TestCase):
         }
 
         # Mock sort_nested_dict_vals
-        with patch('helper_scripts.sim_helpers.sort_nested_dict_vals', return_value={
+        with patch('fusion.sim.utils.sort_nested_dict_vals', return_value={
             '64-QAM': {'max_length': 30},
             '16-QAM': {'max_length': 20},
             'QPSK': {'max_length': 10}
