@@ -15,6 +15,7 @@ from fusion.utils.os import create_dir, find_project_root
 
 PROJECT_ROOT = find_project_root()
 
+
 class SimStats:
     """
     The SimStats class finds and stores all relevant statistics in simulations.
@@ -82,8 +83,18 @@ class SimStats:
     @staticmethod
     def _get_link_usage_summary(net_spec_dict):
         usage_summary_dict = {}
+        processed_links = set()
+
         for (src, dst), link_data in net_spec_dict.items():
-            usage_summary_dict[f"{src}-{dst}"] = {
+            # Create a canonical link representation (smaller node first)
+            link_key = f"{min(src, dst)}-{max(src, dst)}"
+
+            # Skip if we've already processed this bidirectional link
+            if link_key in processed_links:
+                continue
+
+            processed_links.add(link_key)
+            usage_summary_dict[link_key] = {
                 "usage_count": link_data.get('usage_count', 0),
                 "throughput": link_data.get('throughput', 0),
                 "link_num": link_data.get('link_num'),
@@ -219,7 +230,8 @@ class SimStats:
             bit_rate_blocking_prob = 0
         else:
             blocking_prob = self.blocked_reqs / self.engine_props['num_requests']
-            bit_rate_blocking_prob = self.bit_rate_blocked / self.bit_rate_request
+            bit_rate_blocking_prob = (self.bit_rate_blocked / self.bit_rate_request
+                                      if self.bit_rate_request > 0 else 0)
 
         self.stats_props.sim_block_list.append(blocking_prob)
         self.stats_props.sim_br_block_list.append(bit_rate_blocking_prob)
@@ -293,15 +305,18 @@ class SimStats:
 
         for _, mod_obj in self.stats_props.weights_dict.items():
             for modulation, data_list in mod_obj.items():
+                # Skip if already processed (data_list is already a dict with statistics)
+                if isinstance(data_list, dict):
+                    continue
+
                 # Modulation was never used
                 if len(data_list) == 0:
                     mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                elif len(data_list) == 1:
+                    mod_obj[modulation] = {'mean': mean(data_list), 'std': 0.0,
+                                           'min': min(data_list), 'max': max(data_list)}
                 else:
-                    if len(data_list) == 1:
-                        deviation = 0.0
-                    else:
-                        deviation = stdev(data_list)
-                    mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
+                    mod_obj[modulation] = {'mean': mean(data_list), 'std': stdev(data_list),
                                            'min': min(data_list), 'max': max(data_list)}
                 for key, value in self.stats_props.mods_used_dict[modulation]['length'].items():
                     if not isinstance(value, list):
@@ -332,8 +347,19 @@ class SimStats:
             self.stats_props.trans_list.append(trans_mean)
 
         if self.blocked_reqs > 0:
-            for block_type, num_times in self.stats_props.block_reasons_dict.items():
-                self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_reqs)
+            # Check if already normalized (values are between 0 and 1)
+            current_values = list(self.stats_props.block_reasons_dict.values())
+            is_already_normalized = all(isinstance(v, float) and 0 <= v <= 1 for v in current_values if v > 0)
+
+            if not is_already_normalized:
+                print(f"DEBUG: Normalizing block_reasons_dict. blocked_reqs={self.blocked_reqs}")
+                print(f"DEBUG: Before normalization: {dict(self.stats_props.block_reasons_dict)}")
+                for block_type, num_times in self.stats_props.block_reasons_dict.items():
+                    self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_reqs)
+                print(f"DEBUG: After normalization: {dict(self.stats_props.block_reasons_dict)}")
+            else:
+                print(
+                    f"DEBUG: Skipping normalization - already normalized: {dict(self.stats_props.block_reasons_dict)}")
 
         self._get_iter_means()
 
@@ -466,5 +492,5 @@ class SimStats:
         log_queue = self.engine_props.get('log_queue')
         if print_flag:
             log_message(message=f"Iteration {self.iteration + 1} out of {max_iters} completed for "
-                  f"Erlang: {self.engine_props['erlang']}\n", log_queue=log_queue)
+                                f"Erlang: {self.engine_props['erlang']}\n", log_queue=log_queue)
             log_message(f"Mean of blocking: {round(mean(self.stats_props.sim_block_list), 4)}\n", log_queue=log_queue)
