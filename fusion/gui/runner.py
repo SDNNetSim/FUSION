@@ -1,5 +1,7 @@
 # fusion/gui/runner.py
 
+# pylint: disable=broad-exception-caught
+
 import multiprocessing
 from PyQt5 import QtWidgets
 from fusion.gui.main_window import MainWindow  # local import keeps CLI lightweight
@@ -23,7 +25,7 @@ def launch_gui(config_like):
 
     cfg = _as_dict(config_like)
 
-    app = QtWidgets.QApplication([])
+    app = QtWidgets.QApplication([])  # pylint: disable=c-extension-no-member
     window = MainWindow()
 
     # Seed the GUI if we have a config (no logic change if empty)

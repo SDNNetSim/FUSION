@@ -1,10 +1,10 @@
 # pylint: disable=c-extension-no-member
 # pylint: disable=duplicate-code
 import sys
+from idlelib.help_about import AboutDialog
 import networkx as nx
 from PyQt5 import QtWidgets
 
-from idlelib.help_about import AboutDialog
 from fusion.gui.general_dialogs.settings import SettingsDialog
 from fusion.data_scripts.structure_data import create_network
 from fusion.gui.view_topology.topology_widget import TopologyCanvas
@@ -144,7 +144,7 @@ class ActionHelpers:
         Display the About dialog.
         """
         about_dialog = AboutDialog(self.menu_bar_obj)
-        about_dialog.exec_()  # Open dialog modally
+        about_dialog.exec_()  # pylint: disable=no-member
 
 
 def load_license_text(file_path: str) -> str:
