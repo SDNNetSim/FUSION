@@ -95,7 +95,10 @@ def _update_episode_stats(obs, reward, terminated, truncated, episodic_reward, e
         completed_episodes = 0
         print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
 
-    obs, _ = env.reset(seed=completed_trials)
+    # Only reset if we haven't completed all trials yet
+    if completed_trials < sim_dict['n_trials']:
+        obs, _ = env.reset(seed=completed_trials)
+
     return obs, episodic_reward, episodic_rew_arr, completed_episodes, completed_trials
 
 
