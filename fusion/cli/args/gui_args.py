@@ -1,9 +1,43 @@
-# TODO: Rename this file, there aren't any args...
+"""
+GUI launcher CLI arguments.
+Arguments specific to launching and configuring the graphical interface.
+"""
 
-def add_gui_args(parser):
+import argparse
+
+from .common_args import add_config_args
+
+
+def add_gui_args(parser: argparse.ArgumentParser) -> None:
     """
-    Adds GUI args to the argument parser.
+    Add GUI launcher arguments to the parser.
+
+    Args:
+        parser: ArgumentParser instance to add arguments to
     """
-    parser.add_argument("--config_path", type=str, required=True, help="Path to INI config file.")
-    parser.add_argument("--run_id", type=str, required=True, help="Run identifier.")
-    # Add more GUI-specific CLI args here if needed (e.g., --debug, --theme)
+    # Basic configuration (uses common_args now)
+    add_config_args(parser)
+
+    # GUI-specific arguments
+    parser.add_argument(
+        "--theme",
+        type=str,
+        choices=["dark", "light", "auto"],
+        default="auto",
+        help="GUI theme selection"
+    )
+    parser.add_argument(
+        "--geometry",
+        type=str,
+        help="Window geometry (format: 'widthxheight+x+y')"
+    )
+    parser.add_argument(
+        "--fullscreen",
+        action="store_true",
+        help="Launch GUI in fullscreen mode"
+    )
+    parser.add_argument(
+        "--no_splash",
+        action="store_true",
+        help="Disable splash screen on startup"
+    )

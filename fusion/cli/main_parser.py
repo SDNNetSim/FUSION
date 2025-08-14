@@ -1,48 +1,54 @@
 # fusion/cli/main_parser.py
 
-import argparse
-from fusion.cli.args.run_sim_args import register_run_sim_args
-from fusion.cli.args.run_sim_args import add_run_sim_args
-from fusion.cli.args.routing_args import add_routing_args
-from fusion.cli.args.spectrum_args import add_spectrum_args
-from fusion.cli.args.snr_args import add_snr_args
-from fusion.cli.args.sdn_args import add_sdn_args
-from fusion.cli.args.stats_args import add_stats_args
-from fusion.cli.args.gui_args import add_gui_args
+"""
+Main CLI argument parser using the centralized registry system.
+Implements the architecture plan's requirement for clean argument parsing.
+"""
+
+from .args.registry import args_registry
 
 
 def build_parser():
     """
-    Builds the argument parser.
+    Builds the main argument parser with subcommands.
+
+    Returns:
+        ArgumentParser: Configured main parser
     """
-    parser = argparse.ArgumentParser(description='FUSION Simulator CLI')
-    subparsers = parser.add_subparsers(dest="mode", required=True)
-
-    # Register subcommand parsers here
-    register_run_sim_args(subparsers)
-
-    return parser
+    return args_registry.create_main_parser()
 
 
 def get_train_args():
     """
-    Builds the argument parser for machine learning simulations.
+    Builds the argument parser for training simulations (RL or ML).
+
+    Returns:
+        Parsed arguments for training
     """
-    parser = argparse.ArgumentParser(description="Train an agent (RL or ML)")
-    add_run_sim_args(parser)
-    add_routing_args(parser)
-    add_spectrum_args(parser)
-    add_snr_args(parser)
-    add_sdn_args(parser)
-    add_stats_args(parser)
-    parser.add_argument("--agent_type", choices=["rl", "ml"], required=True, help="Type of agent to train")
+    train_groups = ["config", "debug", "simulation", "network", "traffic", "training", "statistics"]
+    parser = args_registry.create_parser_with_groups(
+        "Train an agent (RL or ML)",
+        train_groups
+    )
+    parser.add_argument(
+        "--agent_type",
+        choices=["rl", "ml"],
+        required=True,
+        help="Type of agent to train"
+    )
     return parser.parse_args()
 
 
 def get_gui_args():
     """
     Builds the argument parser for GUI simulations.
+
+    Returns:
+        Parsed arguments for GUI
     """
-    parser = argparse.ArgumentParser(description="Launch GUI for FUSION")
-    add_gui_args(parser)
+    gui_groups = ["gui", "debug", "output"]
+    parser = args_registry.create_parser_with_groups(
+        "Launch GUI for FUSION",
+        gui_groups
+    )
     return parser.parse_args()

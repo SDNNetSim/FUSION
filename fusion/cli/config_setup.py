@@ -6,10 +6,85 @@ from configparser import ConfigParser
 from pathlib import Path
 
 from fusion.utils.os import create_dir
-from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DEFAULT_CONFIG_PATH = os.path.join(PROJECT_ROOT, 'ini', 'run_ini', 'config.ini')
+
+
+def str_to_bool(string: str) -> bool:
+    """
+    Convert string to boolean value.
+
+    Args:
+        string: Input string to convert
+
+    Returns:
+        Boolean value
+    """
+    return string.lower() in ['true', 'yes', '1']
+
+
+# Configuration option mappings for INI file validation
+SIM_REQUIRED_OPTIONS = {
+    'general_settings': {
+        'erlang_start': float,
+        'erlang_stop': float,
+        'erlang_step': float,
+        'mod_assumption': str,
+        'mod_assumption_path': str,
+        'holding_time': float,
+        'thread_erlangs': str_to_bool,
+        'guard_slots': int,
+        'num_requests': int,
+        'max_iters': int,
+        'dynamic_lps': str_to_bool,
+        'route_method': str,
+        'allocation_method': str,
+        'save_snapshots': str_to_bool,
+        'snapshot_step': int,
+        'print_step': int,
+        'spectrum_priority': str,
+        'save_step': int,
+        'save_start_end_slots': str_to_bool,
+    },
+    'topology_settings': {
+        'network': str,
+        'bw_per_slot': float,
+        'cores_per_link': int,
+        'const_link_weight': str_to_bool,
+        'multi_fiber': str_to_bool,
+    },
+    'spectrum_settings': {
+        'c_band': int,
+    },
+    'snr_settings': {
+        'snr_type': str,
+        'input_power': float,
+        'egn_model': str_to_bool,
+    },
+    'file_settings': {
+        'file_type': str,
+    },
+}
+
+OTHER_OPTIONS = {
+    'general_settings': {
+        'k_paths': int,
+        'filter_mods': bool,
+    },
+    'topology_settings': {
+        'bi_directional': str_to_bool,
+    },
+    'spectrum_settings': {
+        'o_band': int,
+        'e_band': int,
+        's_band': int,
+        'l_band': int,
+    },
+    'file_settings': {
+        'run_id': str,
+    },
+}
 
 
 def normalize_config_path(config_path: str) -> str:
@@ -155,6 +230,19 @@ def _find_category(category_dict: dict, target_key: str):
             return category
     return None
 
+
+def load_and_validate_config(args):
+    """
+    Load and validate configuration from CLI arguments.
+    
+    Args:
+        args: Parsed command line arguments
+        
+    Returns:
+        dict: Validated configuration dictionary
+    """
+    config_dict = load_config(args.config_path, vars(args))
+    return config_dict
 
 class ConfigManager:
     """
