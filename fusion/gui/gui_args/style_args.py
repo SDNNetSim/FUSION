@@ -77,7 +77,7 @@ STYLE_SHEET = """
                 background: #e0e0e0;
                 border-bottom-color: #f5f5f5;
             }
-            
+
             /* QTreeView */
 
             QTreeView {
@@ -87,7 +87,7 @@ STYLE_SHEET = """
                 padding: 5px;
                 show-decoration-selected: 0;
             }
-            
+
             QTreeView::item:selected {
                 color: #000;
                 background-color: #3294f0;
