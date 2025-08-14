@@ -17,3 +17,23 @@ def train_rl_agent(config):
     workflow_runner.run(env=env, sim_dict=flat_dict, callback_list=callback_list)
 
     print("✅ RL training pipeline ran successfully using legacy logic.")
+
+
+def run_training_pipeline(args):
+    """
+    Pipeline function for running RL training from CLI.
+
+    Args:
+        args: Parsed command line arguments
+    """
+    # Create config object with args
+    class ConfigWrapper:  # pylint: disable=too-few-public-methods
+        """Wrapper class to adapt args for legacy train_rl_agent function."""
+        def __init__(self, args):
+            self.args = args
+        def get_args(self):
+            """Return the arguments."""
+            return self.args
+
+    config = ConfigWrapper(args)
+    train_rl_agent(config)
