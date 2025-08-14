@@ -7,19 +7,44 @@ import argparse
 from typing import Dict, Callable, List
 
 from .common_args import add_config_args, add_debug_args, add_output_args
-from .run_sim_args import add_run_sim_args, register_run_sim_args
+from .simulation_args import add_run_sim_args, register_run_sim_args
 from .simulation_args import add_simulation_args, add_network_args, add_traffic_args
 from .training_args import add_all_training_args, add_reinforcement_learning_args, add_machine_learning_args
 from .analysis_args import add_all_analysis_args, add_statistics_args, add_plotting_args
 from .gui_args import add_gui_args
 
-# Legacy imports for backward compatibility
-from .routing_args import add_routing_args
-from .spectrum_args import add_spectrum_args
-from .snr_args import add_snr_args
-from .sdn_args import add_sdn_args
-from .stats_args import add_stats_args
-from .plot_args import add_plot_args
+# Legacy imports for backward compatibility - these functions are now part of other modules
+
+# Legacy compatibility functions - these are now part of simulation_args
+def add_routing_args(parser: argparse.ArgumentParser) -> None:
+    """Legacy routing args - now part of add_simulation_args"""
+    # Function intentionally empty - functionality moved to add_simulation_args
+    _ = parser  # Suppress unused argument warning
+
+def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
+    """Legacy spectrum args - now part of add_simulation_args and add_network_args"""
+    # Function intentionally empty - functionality moved to add_simulation_args and add_network_args
+    _ = parser  # Suppress unused argument warning
+
+def add_snr_args(parser: argparse.ArgumentParser) -> None:
+    """Legacy SNR args - now part of add_simulation_args"""
+    # Function intentionally empty - functionality moved to add_simulation_args
+    _ = parser  # Suppress unused argument warning
+
+def add_sdn_args(parser: argparse.ArgumentParser) -> None:
+    """Legacy SDN args - now part of add_simulation_args"""
+    # Function intentionally empty - functionality moved to add_simulation_args
+    _ = parser  # Suppress unused argument warning
+
+def add_stats_args(parser: argparse.ArgumentParser) -> None:
+    """Legacy stats args - now part of add_statistics_args"""
+    # Function intentionally empty - functionality moved to add_statistics_args
+    _ = parser  # Suppress unused argument warning
+
+def add_plot_args(parser: argparse.ArgumentParser) -> None:
+    """Legacy plot args - now part of add_plotting_args"""
+    # Function intentionally empty - functionality moved to add_plotting_args
+    _ = parser  # Suppress unused argument warning
 
 
 class ArgumentRegistry:
