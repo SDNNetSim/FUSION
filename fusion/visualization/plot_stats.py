@@ -4,7 +4,7 @@ import os
 
 import matplotlib.pyplot as plt
 
-from fusion.cli.args.plot_args import PlotProps
+from fusion.visualization.properties import PlotProps
 from fusion.utils.os import create_dir
 from fusion.visualization.utils import PlotHelpers, find_times
 
