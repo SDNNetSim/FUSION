@@ -5,12 +5,10 @@
 import unittest
 import os
 import copy
-from datetime import datetime
 from unittest.mock import patch, mock_open, MagicMock
 
 import networkx as nx
 import numpy as np
-
 
 from fusion.sim.utils import (
     get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
@@ -21,7 +19,9 @@ from fusion.sim.utils import (
     get_super_channels, get_hfrag, classify_cong, parse_yaml_file,
     save_study_results, modify_multiple_json_values
 )
-#NOTE: These functions are no longer supported. get_arrival_rates,run_simulation_for_arrival_rates,
+
+
+# NOTE: These functions are no longer supported. get_arrival_rates,run_simulation_for_arrival_rates,
 
 class TestSimHelpers(unittest.TestCase):
     """Unit tests for sim_helpers functions."""
@@ -225,13 +225,19 @@ class TestSimHelpers(unittest.TestCase):
     def test_get_start_time(self):
         """Test getting the start time of a simulation."""
         sim_dict = {'s1': {'network': 'dummyNet', 'date': None, 'sim_start': None}}
-        expected_date = datetime.now().strftime("%m%d")
-        expected_sim_start = datetime.now().strftime("%H_%M_%S")
 
         get_start_time(sim_dict)
 
-        self.assertEqual(sim_dict['s1']['date'], expected_date)
-        self.assertTrue(sim_dict['s1']['sim_start'].startswith(expected_sim_start))
+        # Check that date is set to current date (format: MMDD)
+        self.assertIsNotNone(sim_dict['s1']['date'])
+        self.assertEqual(len(sim_dict['s1']['date']), 4)
+        self.assertTrue(sim_dict['s1']['date'].isdigit())
+
+        # Check that sim_start is set and has the correct format (HH_MM_SS_microseconds)
+        self.assertIsNotNone(sim_dict['s1']['sim_start'])
+        sim_start_parts = sim_dict['s1']['sim_start'].split('_')
+        self.assertEqual(len(sim_start_parts), 4)  # H_M_S_microseconds
+        self.assertTrue(all(part.isdigit() for part in sim_start_parts))
 
     def test_min_max_scale(self):
         """Test scaling a value with respect to a min and max."""

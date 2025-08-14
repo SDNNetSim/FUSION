@@ -52,6 +52,7 @@ SIM_REQUIRED_OPTIONS = {
         'bw_per_slot': float,
         'cores_per_link': int,
         'const_link_weight': str_to_bool,
+        'is_only_core_node': str_to_bool,
         'multi_fiber': str_to_bool,
     },
     'spectrum_settings': {
@@ -65,6 +66,9 @@ SIM_REQUIRED_OPTIONS = {
     'file_settings': {
         'file_type': str,
     },
+    'ml_settings': {
+        'deploy_model': str_to_bool,
+    },
 }
 
 OTHER_OPTIONS = {
@@ -74,6 +78,7 @@ OTHER_OPTIONS = {
     },
     'topology_settings': {
         'bi_directional': str_to_bool,
+        'is_only_core_node': str_to_bool,
     },
     'spectrum_settings': {
         'o_band': int,

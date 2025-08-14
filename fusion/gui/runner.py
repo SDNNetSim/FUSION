@@ -49,7 +49,7 @@ def launch_gui(config_like):
                     erlang_stop = sim_conf['erlang_stop']
                     erlang_step = sim_conf['erlang_step']
 
-                total_erlangs = len(range(erlang_start, erlang_stop, erlang_step))
+                total_erlangs = len(range(int(erlang_start), int(erlang_stop), int(erlang_step)))
 
                 manager = multiprocessing.Manager()
                 shared_progress_dict = manager.dict({i: 0 for i in range(total_erlangs)})

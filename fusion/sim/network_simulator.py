@@ -87,7 +87,7 @@ class NetworkSimulator:
         """
         start, stop = self.properties['erlang_start'], self.properties['erlang_stop']
         step = self.properties['erlang_step']
-        erlang_list = [float(x) for x in range(start, stop, step)]
+        erlang_list = [float(x) for x in range(int(start), int(stop), int(step))]
         print("Launching simulations for erlangs:", erlang_list)
 
         max_iters = self.properties['max_iters']

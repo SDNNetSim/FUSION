@@ -5,6 +5,7 @@ Consolidates routing, spectrum, SNR, and SDN related arguments.
 
 import argparse
 from .common_args import add_config_args, add_debug_args, add_output_args
+from .training_args import add_machine_learning_args
 
 
 def add_simulation_args(parser: argparse.ArgumentParser) -> None:
@@ -101,7 +102,6 @@ def add_network_args(parser: argparse.ArgumentParser) -> None:
     network_group.add_argument(
         "--network",
         type=str,
-        required=True,
         help="Network topology name (e.g., 'NSFNet', 'USbackbone60')"
     )
     network_group.add_argument(
@@ -130,6 +130,11 @@ def add_network_args(parser: argparse.ArgumentParser) -> None:
         "--multi_fiber",
         action="store_true",
         help="Enable multi-fiber links"
+    )
+    network_group.add_argument(
+        "--is_only_core_node",
+        action="store_true",
+        help="Only allow core nodes to send requests"
     )
 
     # Spectrum band configuration
@@ -233,3 +238,4 @@ def register_run_sim_args(subparsers) -> None:
     add_debug_args(parser)
     add_output_args(parser)
     add_run_sim_args(parser)
+    add_machine_learning_args(parser)

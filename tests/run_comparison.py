@@ -23,12 +23,8 @@ from fusion.sim.network_simulator import run as run_simulation
 from fusion.modules.rl import workflow_runner
 from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 from fusion.modules.rl.utils.callbacks import EpisodicRewardCallback, LearnRateEntCallback
-from fusion.cli.args.run_sim_args import add_run_sim_args
-from fusion.cli.args.routing_args import add_routing_args
-from fusion.cli.args.spectrum_args import add_spectrum_args
-from fusion.cli.args.snr_args import add_snr_args
-from fusion.cli.args.sdn_args import add_sdn_args
-from fusion.cli.args.stats_args import add_stats_args
+from fusion.cli.args.simulation_args import add_run_sim_args
+from fusion.cli.args.registry import add_routing_args, add_spectrum_args, add_snr_args, add_sdn_args, add_stats_args
 
 # TODO: (version 5.5) Use mock YML instead of using the originals from sb3
 
