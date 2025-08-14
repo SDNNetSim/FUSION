@@ -10,7 +10,7 @@ import pandas as pd
 
 from fusion.utils.os import create_dir
 from fusion.visualization.utils import find_times, PlotHelpers
-from fusion.cli.args.plot_args import PlotProps
+from fusion.visualization.properties import PlotProps
 
 NETWORK_LIST = ['NSFNet', 'USNet']
 ARRIVAL_RATE_LIST = [10, 20, 30, 50, 70, 90, 110, 130, 150, 170, 190]
