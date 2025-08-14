@@ -14,12 +14,15 @@ class TestMainParser(unittest.TestCase):
         """
         test_args = [
             "run_sim",
-            "--run_id", "test123"
+            "--config_path", "tests/fixtures/valid_config.ini",
+            "--run_id", "test123",
+            "--network", "NSFNet"
         ]
         parser = build_parser()
         args = parser.parse_args(test_args)
         self.assertEqual(args.mode, "run_sim")
         self.assertEqual(args.run_id, "test123")
+        self.assertEqual(args.network, "NSFNet")
 
     def test_run_sim_with_additional_args(self):
         """
@@ -27,7 +30,9 @@ class TestMainParser(unittest.TestCase):
         """
         test_args = [
             "run_sim",
+            "--config_path", "tests/fixtures/valid_config.ini",
             "--run_id", "test123",
+            "--network", "NSFNet",
             "--route_method", "k_shortest_path",
             "--allocation_method", "first_fit",
             "--num_requests", "500"
@@ -43,14 +48,16 @@ class TestMainParser(unittest.TestCase):
         Test basic get-train command with minimal args.
         """
         test_args = [
-            "--config_path", "ini/run_ini/config.ini",
+            "--config_path", "tests/fixtures/valid_config.ini",
             "--run_id", "train123",
+            "--network", "NSFNet",
             "--agent_type", "rl"
         ]
         with mock.patch("sys.argv", ["prog"] + test_args):
             args = get_train_args()
-            self.assertEqual(args.config_path, "ini/run_ini/config.ini")
+            self.assertEqual(args.config_path, "tests/fixtures/valid_config.ini")
             self.assertEqual(args.run_id, "train123")
+            self.assertEqual(args.network, "NSFNet")
             self.assertEqual(args.agent_type, "rl")
 
     def test_get_gui_args_minimal(self):
