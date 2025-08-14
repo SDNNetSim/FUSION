@@ -4,6 +4,7 @@ Consolidates routing, spectrum, SNR, and SDN related arguments.
 """
 
 import argparse
+from .common_args import add_config_args, add_debug_args, add_output_args
 
 
 def add_simulation_args(parser: argparse.ArgumentParser) -> None:
@@ -211,3 +212,24 @@ def add_traffic_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Enable multi-threaded Erlang processing"
     )
+
+
+def add_run_sim_args(parser: argparse.ArgumentParser) -> None:
+    """
+    Add run_sim specific arguments. Legacy compatibility function.
+    This consolidates arguments from simulation, network, and traffic groups.
+    """
+    add_simulation_args(parser)
+    add_network_args(parser)
+    add_traffic_args(parser)
+
+
+def register_run_sim_args(subparsers) -> None:
+    """
+    Register run_sim subcommand parser. Legacy compatibility function.
+    """
+    parser = subparsers.add_parser('run_sim', help='Run network simulation')
+    add_config_args(parser)
+    add_debug_args(parser)
+    add_output_args(parser)
+    add_run_sim_args(parser)

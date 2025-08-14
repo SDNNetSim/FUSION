@@ -56,6 +56,41 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Save simulation results to file"
     )
+    parser.add_argument(
+        "--save_snapshots",
+        action="store_true",
+        help="Save simulation snapshots"
+    )
+    parser.add_argument(
+        "--snapshot_step",
+        type=int,
+        help="Step interval for saving snapshots"
+    )
+    parser.add_argument(
+        "--print_step",
+        type=int,
+        help="Step interval for printing progress"
+    )
+    parser.add_argument(
+        "--save_step",
+        type=int,
+        help="Step interval for saving results"
+    )
+    parser.add_argument(
+        "--save_start_end_slots",
+        action="store_true",
+        help="Save start and end slots information"
+    )
+    parser.add_argument(
+        "--file_type",
+        type=str,
+        help="Output file format type"
+    )
+    parser.add_argument(
+        "--filter_mods",
+        action="store_true",
+        help="Enable modulation filtering"
+    )
 
 
 def add_plot_format_args(parser: argparse.ArgumentParser) -> None:

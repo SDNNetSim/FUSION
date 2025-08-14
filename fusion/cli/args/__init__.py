@@ -16,7 +16,7 @@ Registry System:
 
 from .registry import args_registry, ArgumentRegistry
 from .common_args import add_config_args, add_debug_args, add_output_args
-from .run_sim_args import register_run_sim_args, add_run_sim_args
+from .simulation_args import register_run_sim_args, add_run_sim_args
 from .simulation_args import add_simulation_args, add_network_args, add_traffic_args
 from .training_args import add_all_training_args, add_reinforcement_learning_args, add_machine_learning_args
 from .analysis_args import add_all_analysis_args, add_statistics_args, add_plotting_args
