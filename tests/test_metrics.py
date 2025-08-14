@@ -8,8 +8,8 @@ import numpy as np
 import networkx as nx
 
 from fusion.core.metrics import SimStats
-from fusion.cli.args.stats_args import StatsProps
-from fusion.cli.args.stats_args import SNAP_KEYS_LIST
+from fusion.core.properties import StatsProps
+from fusion.core.properties import SNAP_KEYS_LIST
 
 
 class TestSimStats(unittest.TestCase):

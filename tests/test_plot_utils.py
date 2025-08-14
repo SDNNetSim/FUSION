@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch, mock_open
 import numpy as np
 from fusion.visualization.utils import PlotHelpers, find_times
-from fusion.cli.args.plot_args import PlotArgs, PlotProps
+from fusion.visualization.properties import PlotArgs, PlotProps
 
 
 class TestPlotHelpers(unittest.TestCase):
