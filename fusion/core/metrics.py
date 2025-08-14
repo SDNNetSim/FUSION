@@ -8,8 +8,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from fusion.cli.args.stats_args import StatsProps
-from fusion.cli.args.stats_args import SNAP_KEYS_LIST
+from fusion.core.properties import StatsProps
+from fusion.core.properties import SNAP_KEYS_LIST
 from fusion.sim.utils import find_path_len, find_core_cong, log_message
 from fusion.utils.os import create_dir, find_project_root
 
