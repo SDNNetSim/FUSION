@@ -71,7 +71,7 @@ def add_simulation_args(parser: argparse.ArgumentParser) -> None:
     snr_group.add_argument(
         "--input_power",
         type=float,
-        default=1e-3,
+        default=None,
         help="Input power in Watts"
     )
     snr_group.add_argument(
@@ -113,7 +113,7 @@ def add_network_args(parser: argparse.ArgumentParser) -> None:
     network_group.add_argument(
         "--bw_per_slot",
         type=float,
-        default=12.5,
+        default=None,
         help="Bandwidth per spectral slot in GHz"
     )
     network_group.add_argument(
@@ -179,31 +179,31 @@ def add_traffic_args(parser: argparse.ArgumentParser) -> None:
     traffic_group.add_argument(
         "--erlang_start",
         type=float,
-        default=100.0,
+        default=None,
         help="Starting Erlang load"
     )
     traffic_group.add_argument(
         "--erlang_stop",
         type=float,
-        default=1000.0,
+        default=None,
         help="Ending Erlang load"
     )
     traffic_group.add_argument(
         "--erlang_step",
         type=float,
-        default=100.0,
+        default=None,
         help="Erlang load increment"
     )
     traffic_group.add_argument(
         "--holding_time",
         type=float,
-        default=1.0,
+        default=None,
         help="Average holding time for requests"
     )
     traffic_group.add_argument(
         "--num_requests",
         type=int,
-        default=10000,
+        default=None,
         help="Total number of requests to generate"
     )
     traffic_group.add_argument(

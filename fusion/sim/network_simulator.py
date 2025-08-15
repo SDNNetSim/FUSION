@@ -101,9 +101,6 @@ class NetworkSimulator:
         updated_props = create_input(base_fp='data', engine_props=clean_engine_props)
         engine_props.update(updated_props)
 
-        # Validate bandwidth configuration consistency after mod_per_bw is populated
-        _validate_bandwidth_consistency(engine_props)
-
         # Save input if first Erlang
         if first_erlang:
             save_input(
