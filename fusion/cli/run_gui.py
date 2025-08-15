@@ -24,6 +24,8 @@ def main():
         print("\n🛑 GUI launch interrupted by user")
         return 1
     except Exception as e:  # pylint: disable=broad-exception-caught
+        # TODO: Replace with custom error module and specific exception types
+        # Consider: ImportError, ModuleNotFoundError, GUI framework errors
         print(f"❌ Error launching GUI: {e}")
         return 1
 

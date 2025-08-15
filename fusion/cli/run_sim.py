@@ -34,6 +34,8 @@ def main(stop_flag=None):
         print("\n🛑 Simulation interrupted by user")
         return 1
     except Exception as e:  # pylint: disable=broad-exception-caught
+        # TODO: Replace with custom error module and specific exception types
+        # Consider: SimulationError, ConfigurationError, ResourceError
         # Print detailed error information for debugging
         print(f"❌ Error running simulation: {e}")
 
