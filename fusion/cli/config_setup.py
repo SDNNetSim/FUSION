@@ -167,16 +167,32 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
                     type_obj = other_dict[category][option]
                     config_dict['s1'][option] = type_obj(config[category][option])
 
-                if args_dict.get(option) is not None:
-                    config_dict['s1'][option] = args_dict[option]
+                # Only override config file values if CLI argument was explicitly provided
+                # For store_true actions: False = not provided, True = provided
+                # For other types: None = not provided, anything else = provided
+                cli_value = args_dict.get(option)
+                if cli_value is not None:
+                    # For boolean store_true arguments, only override if explicitly set to True
+                    if type_obj is str_to_bool and cli_value is False:
+                        # Don't override - use config file value
+                        pass
+                    else:
+                        config_dict['s1'][option] = cli_value
 
         for category, options_dict in other_dict.items():
             for option, type_obj in options_dict.items():
                 if option not in config[category]:
                     config_dict['s1'][option] = None
                 else:
-                    if args_dict.get(option) is not None:
-                        config_dict['s1'][option] = args_dict[option]
+                    # Only override config file values if CLI argument was explicitly provided
+                    cli_value = args_dict.get(option)
+                    if cli_value is not None:
+                        # For boolean store_true arguments, only override if explicitly set to True
+                        if type_obj is str_to_bool and cli_value is False:
+                            # Don't override - use config file value
+                            config_dict['s1'][option] = type_obj(config[category][option])
+                        else:
+                            config_dict['s1'][option] = cli_value
                     else:
                         try:
                             config_dict['s1'][option] = type_obj(config[category][option])
@@ -219,8 +235,15 @@ def _setup_threads(config: ConfigParser, config_dict: dict, section_list: list,
             except Exception:
                 continue
 
-            if args_dict.get(key) is not None:
-                config_dict[new_thread][key] = args_dict[key]
+            # Only override config file values if CLI argument was explicitly provided
+            cli_value = args_dict.get(key)
+            if cli_value is not None:
+                # For boolean store_true arguments, only override if explicitly set to True
+                if type_obj is str_to_bool and cli_value is False:
+                    # Don't override - use config file value
+                    pass
+                else:
+                    config_dict[new_thread][key] = cli_value
 
     return config_dict
 

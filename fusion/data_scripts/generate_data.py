@@ -39,6 +39,12 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
             'span_length': 100,
         }
         topology_dict['links'][link_num] = link_props_dict
+
+    # Validation check to ensure we have nodes
+    if not topology_dict['nodes']:
+        raise ValueError(
+            f"create_pt generated empty nodes dictionary. Input net_spec_dict had {len(net_spec_dict)} links: {list(net_spec_dict.keys())[:5]}...")
+
     return topology_dict
 
 

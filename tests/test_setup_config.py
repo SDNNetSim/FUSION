@@ -26,9 +26,9 @@ class TestConfigManager(unittest.TestCase):
         config_dict = config.as_dict()
 
         self.assertIn("s1", config_dict)
-        # CLI defaults override config file values due to argparse default handling
-        self.assertEqual(config_dict["s1"]["erlang_start"], 100.0)  # CLI default
-        self.assertEqual(config_dict["s1"]["holding_time"], 1.0)    # CLI default
+        # When CLI arguments are not provided (default=None), config file values are used
+        self.assertEqual(config_dict["s1"]["erlang_start"], 300.0)  # Config file value
+        self.assertEqual(config_dict["s1"]["holding_time"], 0.2)    # Config file value
 
     @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/invalid_config.ini', '--run_id', 'test', '--network', 'NSFNet'])
     def test_invalid_config_read(self):
