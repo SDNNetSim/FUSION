@@ -92,9 +92,12 @@ class ValidationRunner:
                 if check_return_code:
                     self.print_error(f"{description} failed ({elapsed:.1f}s)")
                     self.failed_checks.append(description)
+                    # For pylint, always show stdout as it contains the warnings/errors
+                    if "Pylint" in description and result.stdout:
+                        print(f"Pylint issues found:\n{result.stdout}")
                     if result.stderr:
                         print(f"Error output:\n{result.stderr}")
-                    if result.stdout:
+                    elif result.stdout and "Pylint" not in description:
                         print(f"Standard output:\n{result.stdout}")
                     return False
                 else:
@@ -185,17 +188,17 @@ class ValidationRunner:
         """Run pylint on the codebase."""
         self.print_header("Running Pylint")
         
-        # Use the existing lint script approach but with improved error handling
+        # Run pylint with strict checking - fail on warnings and errors
         fusion_success = self.run_command(
             ['pylint', './fusion'],
             "Pylint on fusion package",
-            check_return_code=False  # Pylint can return non-zero for warnings
+            check_return_code=True  # Fail validation on pylint warnings/errors
         )
         
         tests_success = self.run_command(
             ['pylint', './tests'],
             "Pylint on tests package", 
-            check_return_code=False  # Pylint can return non-zero for warnings
+            check_return_code=True  # Fail validation on pylint warnings/errors
         )
         
         return fusion_success and tests_success

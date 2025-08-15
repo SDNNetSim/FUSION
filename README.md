@@ -161,3 +161,50 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
   doi={10.1109/ANTS63515.2024.10898199}
 }
 ```
+
+---
+
+## 🛠️ Development & Contributing
+
+### PR Validation
+
+Before submitting a pull request, validate your changes locally to ensure they pass all CI/CD checks:
+
+```bash
+# Quick validation (recommended during development)
+make quick-validate
+
+# Complete validation (before submitting PR)
+make validate
+
+# Individual checks
+make lint            # Code style and quality
+make test            # Unit tests
+make cross-platform  # Cross-platform compatibility
+```
+
+**Alternative methods:**
+```bash
+# Python script (full-featured)
+python tools/validate_pr.py --quick
+
+# Shell script (simple)
+./tools/validate_pr.sh quick
+```
+
+For detailed information, see [tools/VALIDATION.md](tools/VALIDATION.md).
+
+### What Gets Validated
+- Python syntax and imports
+- Code style (pylint)
+- Unit tests (pytest)
+- Configuration file validation
+- Cross-platform compatibility
+
+### Development Workflow
+1. Make your changes
+2. Run `make quick-validate` during development
+3. Run `make validate` before committing
+4. Submit your PR - CI/CD should pass ✅
+
+The validation tools mirror our GitHub Actions workflows, so passing locally means passing in CI/CD.
