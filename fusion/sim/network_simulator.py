@@ -9,10 +9,46 @@ from fusion.sim.input_setup import create_input, save_input
 from fusion.core.simulation import SimulationEngine
 
 
+def _validate_bandwidth_consistency(engine_props):
+    """
+    Validates that bandwidth configuration is consistent between request_distribution and mod_per_bw.
+    This should be called after create_input populates mod_per_bw.
+    """
+    request_distribution = engine_props.get('request_distribution', {})
+    mod_per_bw = engine_props.get('mod_per_bw', {})
+
+    if not request_distribution:
+        return  # No request distribution to validate
+
+    if not mod_per_bw:
+        raise ValueError(
+            "mod_per_bw is empty after input setup. Check mod_assumption_path configuration."
+        )
+
+    # Check that all bandwidths in request_distribution exist in mod_per_bw
+    missing_bandwidths = []
+    for bandwidth in request_distribution.keys():
+        if bandwidth not in mod_per_bw:
+            missing_bandwidths.append(bandwidth)
+
+    if missing_bandwidths:
+        available_bandwidths = list(mod_per_bw.keys())
+        mod_assumption_path = engine_props.get('mod_assumption_path', 'Unknown')
+        raise ValueError(
+            f"Bandwidth configuration mismatch: request_distribution references "
+            f"bandwidths {missing_bandwidths} that are not available in mod_per_bw. "
+            f"Available bandwidths in mod_per_bw: {available_bandwidths}. "
+            f"Current mod_assumption_path: {mod_assumption_path}. "
+            f"Please ensure your mod_assumption file contains all required bandwidths "
+            f"or update request_distribution to only use available bandwidths."
+        )
+
+
 class NetworkSimulator:
     """
     Controls all simulations for this project.
     """
+
     def __init__(self):
         self.properties = None
 
@@ -64,6 +100,9 @@ class NetworkSimulator:
 
         updated_props = create_input(base_fp='data', engine_props=clean_engine_props)
         engine_props.update(updated_props)
+
+        # Validate bandwidth configuration consistency after mod_per_bw is populated
+        _validate_bandwidth_consistency(engine_props)
 
         # Save input if first Erlang
         if first_erlang:

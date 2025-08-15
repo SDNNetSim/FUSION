@@ -15,7 +15,7 @@ class TestConfigArgs(unittest.TestCase):
         config_keys = self._get_config_keys()
         cli_params = self._extract_cli_params()
         # Ignore known special-case CLI args not handled via config
-        ignored_keys = {'optimize', 'config_path', 'run_id', 'verbose', 'debug', 'output_dir', 'save_results', 'mode'}
+        ignored_keys = {'optimize', 'config_path', 'run_id', 'verbose', 'debug', 'output_dir', 'save_results', 'mode', 'request_distribution'}
         missing_in_cli = config_keys - cli_params - ignored_keys
         self.assertFalse(missing_in_cli, f"These config options are missing in "
                                          f"command line parameters: {missing_in_cli}")

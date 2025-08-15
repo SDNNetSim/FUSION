@@ -20,16 +20,16 @@ def run_simulation(config_dict):
     # Add default values for parameters that might be missing but accessed by simulation
     defaults = {
         'seeds': None,  # Use default seed behavior (iteration + 1)
-        'request_distribution': {"100": 1.0},  # Default single bandwidth
+        'request_distribution': {"25": 0.10, "50": 0.10, "100": 0.50, "200": 0.20, "400": 0.10},  # Default comprehensive bandwidth distribution
         'max_segments': 4,
         'fixed_grid': False,
         'pre_calc_mod_selection': False,
         # SNR parameters
         'beta': 0.5,
         'theta': 0.0,
-        'phi': {"QPSK": 1},
+        'phi': {"QPSK": 1, "16-QAM": 0.68, "64-QAM": 0.6190476190476191},
         'xt_noise': False,
-        'requested_xt': {"QPSK": -26.19},
+        'requested_xt': {"QPSK": -26.19, "16-QAM": -36.69, "64-QAM": -41.69},
         'xt_type': 'without_length',
         # RL/ML parameters that might be accessed
         'is_training': False,
@@ -63,10 +63,12 @@ def run_simulation(config_dict):
         }
     }
 
+
     # Create and launch the simulation with proper stop_flag
     simulator = NetworkSimulator()
     sims_dict['s1']['stop_flag'] = stop_flag
     simulator.run_sim(thread_num='s1', thread_params=sims_dict['s1'], sim_start=sim_start)
+
 
 
 def run_simulation_pipeline(args, stop_flag=None):  # pylint: disable=unused-argument

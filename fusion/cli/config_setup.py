@@ -75,6 +75,7 @@ OTHER_OPTIONS = {
     'general_settings': {
         'k_paths': int,
         'filter_mods': bool,
+        'request_distribution': str,
     },
     'topology_settings': {
         'bi_directional': str_to_bool,
