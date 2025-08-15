@@ -24,6 +24,8 @@ def main():
         print("\n🛑 Training interrupted by user")
         return 1
     except Exception as e:  # pylint: disable=broad-exception-caught
+        # TODO: Replace with custom error module and specific exception types
+        # Consider: TrainingError, ModelError, DataError, ResourceError
         print(f"❌ Error during training: {e}")
         return 1
 

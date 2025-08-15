@@ -121,11 +121,62 @@ def setup_config_from_cli(args) -> dict:
         config_data = load_config(config_path, args_dict)
         return config_data
     except Exception as e:
+        # TODO: Replace with custom error module once available
+        # Consider specific exceptions: FileNotFoundError, ConfigParser errors, ValueError
         print(f"[ERROR] Failed to load config: {e}")
         return {}
 
 
-# (version 6.0.0) TODO: Fix this pylint error in the future
+def _process_required_options(config: ConfigParser, config_dict: dict, 
+                             required_dict: dict, other_dict: dict, args_dict: dict) -> None:
+    """Process required configuration options."""
+    for category, options_dict in required_dict.items():
+        for option, type_obj in options_dict.items():
+            if not config.has_option(category, option):
+                raise ValueError(f"Missing required option '{option}' in section [{category}].")
+
+            try:
+                config_dict['s1'][option] = type_obj(config[category][option])
+            except KeyError:
+                type_obj = other_dict[category][option]
+                config_dict['s1'][option] = type_obj(config[category][option])
+
+            # Only override config file values if CLI argument was explicitly provided
+            cli_value = args_dict.get(option)
+            if cli_value is not None:
+                # For boolean store_true arguments, only override if explicitly set to True
+                if type_obj is str_to_bool and cli_value is False:
+                    # Don't override - use config file value
+                    pass
+                else:
+                    config_dict['s1'][option] = cli_value
+
+
+def _process_other_options(config: ConfigParser, config_dict: dict, 
+                          other_dict: dict, args_dict: dict) -> None:
+    """Process optional configuration options."""
+    for category, options_dict in other_dict.items():
+        for option, type_obj in options_dict.items():
+            if option not in config[category]:
+                config_dict['s1'][option] = None
+            else:
+                # Only override config file values if CLI argument was explicitly provided
+                cli_value = args_dict.get(option)
+                if cli_value is not None:
+                    # For boolean store_true arguments, only override if explicitly set to True
+                    if type_obj is str_to_bool and cli_value is False:
+                        # Don't override - use config file value
+                        config_dict['s1'][option] = type_obj(config[category][option])
+                    else:
+                        config_dict['s1'][option] = cli_value
+                else:
+                    try:
+                        config_dict['s1'][option] = type_obj(config[category][option])
+                    except (ValueError, TypeError, KeyError):
+                        # TODO: Log these conversion failures when error module is available
+                        continue
+
+
 def load_config(config_path: str, args_dict: dict = None) -> dict:
     """
     Loads an existing config from a config file.
@@ -156,48 +207,8 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
         required_dict = SIM_REQUIRED_OPTIONS
         other_dict = OTHER_OPTIONS
 
-        for category, options_dict in required_dict.items():
-            for option, type_obj in options_dict.items():
-                if not config.has_option(category, option):
-                    raise ValueError(f"Missing required option '{option}' in section [{category}].")
-
-                try:
-                    config_dict['s1'][option] = type_obj(config[category][option])
-                except KeyError:
-                    type_obj = other_dict[category][option]
-                    config_dict['s1'][option] = type_obj(config[category][option])
-
-                # Only override config file values if CLI argument was explicitly provided
-                # For store_true actions: False = not provided, True = provided
-                # For other types: None = not provided, anything else = provided
-                cli_value = args_dict.get(option)
-                if cli_value is not None:
-                    # For boolean store_true arguments, only override if explicitly set to True
-                    if type_obj is str_to_bool and cli_value is False:
-                        # Don't override - use config file value
-                        pass
-                    else:
-                        config_dict['s1'][option] = cli_value
-
-        for category, options_dict in other_dict.items():
-            for option, type_obj in options_dict.items():
-                if option not in config[category]:
-                    config_dict['s1'][option] = None
-                else:
-                    # Only override config file values if CLI argument was explicitly provided
-                    cli_value = args_dict.get(option)
-                    if cli_value is not None:
-                        # For boolean store_true arguments, only override if explicitly set to True
-                        if type_obj is str_to_bool and cli_value is False:
-                            # Don't override - use config file value
-                            config_dict['s1'][option] = type_obj(config[category][option])
-                        else:
-                            config_dict['s1'][option] = cli_value
-                    else:
-                        try:
-                            config_dict['s1'][option] = type_obj(config[category][option])
-                        except ValueError:
-                            continue
+        _process_required_options(config, config_dict, required_dict, other_dict, args_dict)
+        _process_other_options(config, config_dict, other_dict, args_dict)
 
         other_sections = config.sections()[1:]  # skip general_settings
         config_dict = _setup_threads(
@@ -211,8 +222,13 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
 
         return config_dict or {}
 
-    except Exception as error:
+    except (FileNotFoundError, ValueError) as error:
         print(f"[ERROR] Failed to load config: {error}")
+        return {}
+    except Exception as error:
+        # TODO: Replace with custom error module - this catch-all should be narrowed
+        # Consider: ConfigParser.Error, KeyError, TypeError for type conversions
+        print(f"[ERROR] Unexpected error loading config: {error}")
         return {}
 
 
@@ -232,7 +248,8 @@ def _setup_threads(config: ConfigParser, config_dict: dict, section_list: list,
             try:
                 type_obj = types_dict.get(category, {}).get(key) or other_dict.get(category, {}).get(key)
                 config_dict[new_thread][key] = type_obj(value)
-            except Exception:
+            except (ValueError, TypeError, KeyError):
+                # TODO: Log these conversion failures when error module is available
                 continue
 
             # Only override config file values if CLI argument was explicitly provided
