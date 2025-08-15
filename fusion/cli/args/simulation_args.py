@@ -18,7 +18,7 @@ def add_simulation_args(parser: argparse.ArgumentParser) -> None:
     routing_group.add_argument(
         "--route_method",
         type=str,
-        choices=["shortest_path", "k_shortest_path", "yen", "congestion_aware", "fragmentation_aware"],
+        choices=["shortest_path", "k_shortest_path"],
         help="Routing algorithm method"
     )
     routing_group.add_argument(
@@ -33,7 +33,7 @@ def add_simulation_args(parser: argparse.ArgumentParser) -> None:
     spectrum_group.add_argument(
         "--allocation_method",
         type=str,
-        choices=["first_fit", "best_fit", "last_fit", "random_fit", "multi_band_priority"],
+        choices=["first_fit", "best_fit", "last_fit"],
         help="Spectrum allocation method"
     )
     spectrum_group.add_argument(
@@ -45,7 +45,7 @@ def add_simulation_args(parser: argparse.ArgumentParser) -> None:
     spectrum_group.add_argument(
         "--spectrum_priority",
         type=str,
-        choices=["c_band_first", "l_band_first", "balanced"],
+        choices=["BSC", "CSB"],
         help="Priority order for multi-band allocation"
     )
 
@@ -54,7 +54,7 @@ def add_simulation_args(parser: argparse.ArgumentParser) -> None:
     snr_group.add_argument(
         "--mod_assumption",
         type=str,
-        choices=["fixed", "adaptive", "precalculated"],
+        choices=["fixed", "adaptive", "precalculated", "DEFAULT", "CUSTOM", "slicing_dissertation", "ARASH_MOD_ASSUMPTIONS", "ARASH", "SNR_ASSUMPTIONS", "XTAR_ASSUMPTIONS"],
         help="Modulation format selection strategy"
     )
     snr_group.add_argument(

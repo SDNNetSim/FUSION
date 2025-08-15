@@ -16,7 +16,7 @@ def add_snr_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--mod_assumption",
         type=str,
-        choices=["fixed", "adaptive", "precalculated"],
+        choices=["fixed", "adaptive", "precalculated", "DEFAULT", "CUSTOM", "slicing_dissertation", "ARASH_MOD_ASSUMPTIONS", "ARASH", "SNR_ASSUMPTIONS", "XTAR_ASSUMPTIONS"],
         help="Modulation format selection strategy"
     )
     parser.add_argument(

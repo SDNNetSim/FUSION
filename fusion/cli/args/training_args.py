@@ -16,19 +16,19 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     rl_group.add_argument(
         "--path_algorithm",
         type=str,
-        choices=["dqn", "ppo", "a2c", "q_learning", "bandits"],
+        choices=["dqn", "ppo", "a2c", "q_learning", "bandits", "epsilon_greedy_bandit"],
         help="Path selection RL algorithm"
     )
     rl_group.add_argument(
         "--core_algorithm",
         type=str,
-        choices=["dqn", "ppo", "a2c", "q_learning", "bandits"],
+        choices=["dqn", "ppo", "a2c", "q_learning", "bandits", "epsilon_greedy_bandit", "first_fit"],
         help="Core selection RL algorithm"
     )
     rl_group.add_argument(
         "--spectrum_algorithm",
         type=str,
-        choices=["dqn", "ppo", "a2c", "q_learning", "bandits"],
+        choices=["dqn", "ppo", "a2c", "q_learning", "bandits", "epsilon_greedy_bandit", "first_fit"],
         help="Spectrum allocation RL algorithm"
     )
 
@@ -82,7 +82,7 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     rl_group.add_argument(
         "--epsilon_update",
         type=str,
-        choices=["linear", "exponential", "step"],
+        choices=["linear", "exponential", "step", "linear_decay", "exp_decay"],
         default="linear",
         help="Epsilon decay strategy"
     )
@@ -115,13 +115,13 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     feature_group.add_argument(
         "--feature_extractor",
         type=str,
-        choices=["gnn", "cnn", "mlp", "graphormer", "path_gnn"],
+        choices=["graphormer", "path_gnn"],
         help="Feature extraction method"
     )
     feature_group.add_argument(
         "--gnn_type",
         type=str,
-        choices=["gcn", "gat", "sage", "gin"],
+        choices=["gcn", "gat", "sage", "graphconv"],
         help="Graph Neural Network architecture type"
     )
     feature_group.add_argument(
@@ -163,7 +163,7 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     ml_group.add_argument(
         "--ml_model",
         type=str,
-        choices=["random_forest", "svm", "linear_regression", "neural_network"],
+        choices=["random_forest", "svm", "linear_regression", "neural_network", "decision_tree"],
         help="Machine learning model type"
     )
     ml_group.add_argument(
