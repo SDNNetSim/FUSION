@@ -127,8 +127,8 @@ def setup_config_from_cli(args) -> dict:
         return {}
 
 
-def _process_required_options(config: ConfigParser, config_dict: dict, 
-                             required_dict: dict, other_dict: dict, args_dict: dict) -> None:
+def _process_required_options(config: ConfigParser, config_dict: dict,
+                              required_dict: dict, other_dict: dict, args_dict: dict) -> None:
     """Process required configuration options."""
     for category, options_dict in required_dict.items():
         for option, type_obj in options_dict.items():
@@ -152,8 +152,8 @@ def _process_required_options(config: ConfigParser, config_dict: dict,
                     config_dict['s1'][option] = cli_value
 
 
-def _process_other_options(config: ConfigParser, config_dict: dict, 
-                          other_dict: dict, args_dict: dict) -> None:
+def _process_other_options(config: ConfigParser, config_dict: dict,
+                           other_dict: dict, args_dict: dict) -> None:
     """Process optional configuration options."""
     for category, options_dict in other_dict.items():
         for option, type_obj in options_dict.items():
@@ -289,6 +289,7 @@ def load_and_validate_config(args):
     """
     config_dict = load_config(args.config_path, vars(args))
     return config_dict
+
 
 class ConfigManager:
     """

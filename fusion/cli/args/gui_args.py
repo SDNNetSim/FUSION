@@ -19,25 +19,4 @@ def add_gui_args(parser: argparse.ArgumentParser) -> None:
     add_config_args(parser)
 
     # GUI-specific arguments
-    parser.add_argument(
-        "--theme",
-        type=str,
-        choices=["dark", "light", "auto"],
-        default="auto",
-        help="GUI theme selection"
-    )
-    parser.add_argument(
-        "--geometry",
-        type=str,
-        help="Window geometry (format: 'widthxheight+x+y')"
-    )
-    parser.add_argument(
-        "--fullscreen",
-        action="store_true",
-        help="Launch GUI in fullscreen mode"
-    )
-    parser.add_argument(
-        "--no_splash",
-        action="store_true",
-        help="Disable splash screen on startup"
-    )
+    # Note: Currently no GUI-specific arguments are implemented
