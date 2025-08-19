@@ -6,9 +6,10 @@ import networkx as nx
 from arg_scripts.snr_args import SNRProps
 from helper_scripts.snr_helpers import get_slot_index, get_loaded_files, compute_response
 from helper_scripts.sim_helpers import sort_nested_dict_vals
-
+from helper_scripts.snr_helpers import get_overlapping_lightpaths
 
 # fixme: Only works for seven cores
+#TODO: Known Issue in Timing of lightpath additions to lightpath_status_dict
 class SnrMeasurements:
     """
     Handles signal-to-noise ratio calculations for a given request.
@@ -818,35 +819,109 @@ class SnrMeasurements:
         return mod_format, bandwidth, snr_val
 
     def _build_lightpath_list_from_net_spec(self) -> list[dict]:
-        lp_list = []
+        """Build lightpath list using net_spec_dict as primary source, lightpath_status_dict as reference"""
+        lightpath_info = {}
+
+        # Build lightpath_info from net_spec_dict (existing code)
         for (src, dst), link_info in self.sdn_props.net_spec_dict.items():
             for band, cores in link_info['cores_matrix'].items():
                 for core_num, core_arr in enumerate(cores):
-                    current_lp = None
                     for slot_idx, val in enumerate(core_arr):
                         if val > 0:
                             lp_id = int(val)
-
-                            # 🔹 Try to get mod_format from lightpath_status_dict
-                            mod_format = None
-                            if (src, dst) in self.sdn_props.lightpath_status_dict:
-                                lp_meta = self.sdn_props.lightpath_status_dict[(src, dst)].get(lp_id)
-                                if lp_meta:
-                                    mod_format = lp_meta.get("mod_format")
-
-                            if current_lp is None or current_lp["id"] != lp_id:
-                                current_lp = {
-                                    "id": lp_id,
-                                    "path": [src, dst],
-                                    "spectrum": [slot_idx, slot_idx],
-                                    "core": core_num,
+                            if lp_id not in lightpath_info:
+                                lightpath_info[lp_id] = {
                                     "band": band,
-                                    "mod_format": mod_format or "QPSK",  # fallback
+                                    "core": core_num,
+                                    "links": [],
+                                    "spectrum": [slot_idx, slot_idx],
+                                    "mod_format": "QPSK"
                                 }
-                                lp_list.append(current_lp)
-                            else:
-                                current_lp["spectrum"][1] = slot_idx
+
+                            # Extend spectrum range
+                            lightpath_info[lp_id]["spectrum"][0] = min(lightpath_info[lp_id]["spectrum"][0], slot_idx)
+                            lightpath_info[lp_id]["spectrum"][1] = max(lightpath_info[lp_id]["spectrum"][1], slot_idx)
+
+                            # Add link if new
+                            if (src, dst) not in lightpath_info[lp_id]["links"]:
+                                lightpath_info[lp_id]["links"].append((src, dst))
+
+        # FIXED: Create a reverse lookup from lightpath_id to light_id
+        lp_id_to_light_id = {}
+        for light_id, lightpaths in self.sdn_props.lightpath_status_dict.items():
+            for lp_id in lightpaths.keys():
+                lp_id_to_light_id[lp_id] = light_id
+
+        # Second pass: Reconstruct paths and enhance with lightpath_status_dict info
+        lp_list = []
+        found_in_status_dict = 0
+        not_found_in_status_dict = 0
+
+        for lp_id, info in lightpath_info.items():
+            path = None
+            enhanced_info = {}
+            found_in_status = False
+
+            if lp_id in lp_id_to_light_id:
+                light_id = lp_id_to_light_id[lp_id]
+                lp_data = self.sdn_props.lightpath_status_dict[light_id][lp_id]
+
+                path = lp_data.get("path")
+                actual_mod_format = lp_data.get("mod_format", "QPSK")
+                enhanced_info = {"mod_format": actual_mod_format}
+                found_in_status = True
+
+
+
+            # Fallback: reconstruct path from links if not in lightpath_status_dict
+            if path is None:
+                path = self._reconstruct_path_from_links(info["links"])
+
+            if path and len(path) >= 2:
+                lp_entry = {
+                    "id": lp_id,
+                    "path": path,
+                    "spectrum": info["spectrum"],
+                    "core": info["core"],
+                    "band": info["band"],
+                    "mod_format": enhanced_info.get("mod_format", info["mod_format"]),
+                }
+                lp_list.append(lp_entry)
+
         return lp_list
+
+    def _reconstruct_path_from_links(self, links: list) -> list:
+        """Reconstruct a continuous path from a list of link tuples"""
+        if not links:
+            return []
+
+        if len(links) == 1:
+            return list(links[0])
+
+        # Build adjacency and reconstruct path
+        # This is complex - might need graph traversal
+        # Simplified version for now:
+        path = [links[0][0], links[0][1]]
+        remaining_links = links[1:]
+
+        while remaining_links:
+            found_next = False
+            for i, (src, dst) in enumerate(remaining_links):
+                if src == path[-1]:
+                    path.append(dst)
+                    remaining_links.pop(i)
+                    found_next = True
+                    break
+                elif dst == path[-1]:
+                    path.append(src)
+                    remaining_links.pop(i)
+                    found_next = True
+                    break
+
+            if not found_next:
+                break  # Disconnected path
+
+        return path
 
     def load_from_lp_info(self, lp_info: dict):
         """Load a specific lightpath's state into this SnrMeasurements object."""
@@ -884,31 +959,40 @@ class SnrMeasurements:
                 results.append((lp["id"], f"Error: {e}"))
         return results
 
-    def reevaluate_after_new_lightpath(self, new_lp_info: dict) -> list[tuple]:
+    def snr_recheck_after_allocation(self, new_lp_info: dict) -> tuple[bool, list[tuple[str, float, float]]]:
         """
-        Recalculate SNR for all active lightpaths affected by the new LP.
-        Ensures each lightpath is only evaluated once, even if it spans multiple links.
+        After a new LP is allocated, re-evaluate all overlapping LPs to ensure their SNR thresholds
+        are still met. If not, return False and the list of violated LPs.
         """
-        from helper_scripts.snr_helpers import get_overlapping_lightpaths
+        # Check feature toggle
+        if not self.engine_props.get("snr_recheck", False):
+            return True, []
 
-        # Build a list of all active LPs
-        active_lps = self._build_lightpath_list_from_net_spec()
+        all_active_lps = self._build_lightpath_list_from_net_spec()
 
-        # Filter only those affected by the new LP
-        affected_lps = get_overlapping_lightpaths(new_lp_info, active_lps)
+        overlapping_lps = get_overlapping_lightpaths(
+            new_lp=new_lp_info,
+            lp_list=all_active_lps,
+            cores_per_link=self.engine_props["cores_per_link"],
+            include_adjacent_cores=self.engine_props.get("recheck_adjacent_cores", True),
+            include_all_bands=self.engine_props.get("recheck_cross_band", True),
+            bidirectional_links= self.engine_props.get("bi_directional"),
+        )
 
-        if not affected_lps:
-            return []
+        violations = []
+        for lp in overlapping_lps:
+            observed_snr = self.evaluate_lp(lp)
+            required_snr = self.snr_props.req_snr[lp["mod_format"]]
+            if observed_snr < required_snr:
+                violations.append((lp["id"], observed_snr, required_snr))
 
-        # Deduplicate by LP ID (take the first occurrence of each ID)
-        unique_lps = {}
-        for lp in affected_lps:
-            if lp["id"] not in unique_lps:
-                unique_lps[lp["id"]] = lp
+        return not violations, violations
 
-        # Evaluate SNR once per unique LP
-        results = self.reevaluate_lightpaths(list(unique_lps.values()))
-        return results
+
+
+
+
+
 
 
 

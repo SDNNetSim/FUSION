@@ -57,32 +57,49 @@ class SDNController:
             print(f"[WARNING] Throughput update skipped due to missing or invalid timing/bandwidth: {e}")
 
         # Remove lightpath from lightpath_status_dict
-        if not  slicing_flag:
-
-            # update the transponder dict
+        if not slicing_flag:
+            # Always update transponders (this should always work)
             for node in [self.sdn_props.source, self.sdn_props.destination]:
-
                 if node not in self.sdn_props.transponder_usage_dict:
                     raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
-                    
                 self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
-        
 
             light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
-            # TODO: save it in stats 
-            try:
-                average_bw_usage = average_bandwidth_usage(bw_dict = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['time_bw_usage'], departure_time = self.sdn_props.depart)
-            
-                self.sdn_props.lp_bw_utilization_dict.update({lightpath_id:{"band":  self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['band'], 
-                                                                            "core": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]["core"], 
-                                                                            "bit_rate": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['lightpath_bandwidth'], 
-                                                                            "utilization": average_bw_usage}})
-            except (TypeError, ValueError) as e:
-                print(f"[WARNING] Average BW update skipped due to missing or invalid timing/spectrum: {e}")
-                
-            if self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['requests_dict'] and self.engine_props['is_grooming_enabled']:
-                raise ValueError('The releasing lightpath are currently using')
-            self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
+
+            # ONLY wrap the lightpath_status_dict operations
+            if (light_id in self.sdn_props.lightpath_status_dict and
+                    lightpath_id in self.sdn_props.lightpath_status_dict[light_id]):
+
+                # Bandwidth utilization stats
+                try:
+                    average_bw_usage = average_bandwidth_usage(
+                        bw_dict=self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['time_bw_usage'],
+                        departure_time=self.sdn_props.depart
+                    )
+
+                    self.sdn_props.lp_bw_utilization_dict.update({
+                        lightpath_id: {
+                            "band": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['band'],
+                            "core": self.sdn_props.lightpath_status_dict[light_id][lightpath_id]["core"],
+                            "bit_rate": self.sdn_props.lightpath_status_dict[light_id][lightpath_id][
+                                'lightpath_bandwidth'],
+                            "utilization": average_bw_usage
+                        }
+                    })
+                except (TypeError, ValueError) as e:
+                    print(f"[WARNING] Average BW update skipped due to missing or invalid timing/spectrum: {e}")
+
+                # Grooming validation
+                if (self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['requests_dict'] and
+                        self.engine_props['is_grooming_enabled']):
+                    raise ValueError('The releasing lightpath are currently using')
+
+                # Remove from status dict
+                self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
+            #else:   #NOTE: Uncomment for lightpath_status_dict tracking
+            #    # Log but don't break - lightpath might not support grooming
+            #    print(f"[INFO] Lightpath {lightpath_id} not tracked in lightpath_status_dict (possibly non-grooming)")
+#
 
     def _allocate_gb(self, band: str, core_matrix: list, rev_core_matrix: list, core_num: int, end_slot: int, lightpath_id: int):
         if core_matrix[band][core_num][end_slot] != 0.0 or rev_core_matrix[band][core_num][end_slot] != 0.0:
@@ -166,8 +183,17 @@ class SDNController:
         for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
             if self.spectrum_obj.spectrum_props.is_free:
+                lp_id = self.sdn_props.get_lightpath_id()
+                self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth)
+
+                if not self._check_snr_after_allocation(lp_id):
+                    self.sdn_props.was_routed = False
+                    self.sdn_props.block_reason = 'snr_recheck_failed'
+                    self.release()
+                    break
+
             else:
                 self.sdn_props.was_routed = False
                 self.sdn_props.block_reason = 'congestion'
@@ -205,7 +231,7 @@ class SDNController:
                 return
 
             self.sdn_props.is_sliced = False
-    
+
     def _handle_congestion(self, remaining_bw):
         """
         Handles the case where allocation fails due to congestion.
@@ -245,6 +271,14 @@ class SDNController:
                     self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                     self.spectrum_obj.spectrum_props.lightpath_bandwidth = bw
                     self.allocate()
+
+                    if not self._check_snr_after_allocation(lp_id):
+                        # Rollback this lightpath and stop
+                        self.sdn_props.was_routed = False
+                        self.sdn_props.block_reason = 'snr_recheck_failed'
+                        self._handle_congestion(remaining_bw)
+                        break
+
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     self._update_req_stats(bandwidth=str(dedicated_bw), remaining= str(remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else 0))
                     remaining_bw -= bw
@@ -307,7 +341,56 @@ class SDNController:
                             return
                     self._handle_congestion(remaining_bw)
                     break
-                
+
+    def _check_snr_after_allocation(self, lp_id: int) -> bool:
+        """Performs post-allocation SNR recheck and rolls back if needed."""
+        if not self.engine_props.get("snr_recheck", False):
+            return True
+
+        new_lp_info = {
+            "id": lp_id,
+            "path": self.sdn_props.path_list,
+            "spectrum": (
+                self.spectrum_obj.spectrum_props.start_slot,
+                self.spectrum_obj.spectrum_props.end_slot,
+            ),
+            "core": self.spectrum_obj.spectrum_props.core_num,
+            "band": self.spectrum_obj.spectrum_props.curr_band,
+            "mod_format": self.spectrum_obj.spectrum_props.modulation,
+        }
+
+        snr_checker = SnrMeasurements(
+            self.engine_props,
+            self.sdn_props,
+            self.spectrum_obj.spectrum_props,
+            self.route_obj.route_props,
+        )
+        recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
+
+        if recheck_enable:
+            return True
+
+        # Rollback
+        self.release(lightpath_id=lp_id)
+        if lp_id in self.sdn_props.lightpath_id_list:
+            idx = self.sdn_props.lightpath_id_list.index(lp_id)
+            for l in [
+                self.sdn_props.lightpath_id_list,
+                self.sdn_props.lightpath_bandwidth_list,
+                self.sdn_props.start_slot_list,
+                self.sdn_props.band_list,
+                self.sdn_props.core_list,
+                self.sdn_props.end_slot_list,
+                self.sdn_props.xt_list,
+                self.sdn_props.bandwidth_list,
+                self.sdn_props.modulation_list,
+            ]:
+                l.pop(idx)
+        if lp_id in self.sdn_props.was_new_lp_established:
+            self.sdn_props.was_new_lp_established.remove(lp_id)
+        self.sdn_props.was_routed = False
+        self.sdn_props.block_reason = "snr_recheck_failed"
+        return False
 
     def _init_req_stats(self):
         self.sdn_props.bandwidth_list = list()
@@ -437,36 +520,9 @@ class SDNController:
                         self.sdn_props.was_new_lp_established.append(lp_id)
                         self.allocate()
 
+                        if not self._check_snr_after_allocation(lp_id):
+                            continue
 
-                        new_lp_info = {
-                            "id": lp_id,
-                            "path": self.sdn_props.path_list,
-                            "spectrum": (
-                                self.spectrum_obj.spectrum_props.start_slot,
-                                self.spectrum_obj.spectrum_props.end_slot,
-                            ),
-                            "core": self.spectrum_obj.spectrum_props.core_num,
-                            "band": self.spectrum_obj.spectrum_props.curr_band,
-                            "mod_format": self.spectrum_obj.spectrum_props.modulation,
-                        }
-
-                        snr_rechecker = SnrMeasurements(
-                            self.engine_props,
-                            self.sdn_props,
-                            self.spectrum_obj.spectrum_props,
-                            self.route_obj.route_props,
-                        )
-
-                        results = snr_rechecker.reevaluate_after_new_lightpath(new_lp_info)
-
-                        for lp_check_id, snr in results:
-                            for _, lps in self.sdn_props.lightpath_status_dict.items():
-                                if lp_check_id in lps:
-                                    required_snr = snr_rechecker.snr_props.req_snr[lps[lp_check_id]["mod_format"]]
-                                    if isinstance(snr, float) and snr < required_snr:
-                                        lps[lp_check_id]["is_degraded"] = True
-                                        print(
-                                            f"⚠️ Lightpath {lp_check_id} degraded: SNR={snr:.2f} dB (< {required_snr} dB)")
                     return
 
             if self.engine_props['max_segments'] > 1 and self.sdn_props.bandwidth != '25' and not segment_slicing:
@@ -486,3 +542,5 @@ class SDNController:
             self.sdn_props.block_reason = 'distance'
             self.sdn_props.was_routed = False
             return
+
+

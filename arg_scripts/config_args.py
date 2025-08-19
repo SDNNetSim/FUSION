@@ -68,6 +68,9 @@ SIM_REQUIRED_OPTIONS = {
         'xt_type': str,
         'beta': float,
         'input_power': float,
+        'snr_recheck': str_to_bool,
+        'recheck_adjacent_cores': str_to_bool,
+        'recheck_crossband': str_to_bool,
     },
     'file_settings': {
         'file_type': str,
@@ -251,6 +254,10 @@ COMMAND_LINE_PARAMS = [
     ['frag_calc_step', int, ''],
     ['save_start_end_slots', bool, ''],
     ['run_id', str, ''],
+    ['snr_recheck', bool, ''],
+    ['recheck_adjacent_cores', bool, ''],
+    ['recheck_crossband', bool, ''],
+
 
     # TODO: (version 5.5-6) RLZoo3 will be removed
     # StableBaselines3 arguments

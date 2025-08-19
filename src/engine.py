@@ -14,7 +14,7 @@ from src.sdn_controller import SDNController
 from helper_scripts.stats_helpers import SimStats
 from helper_scripts.ml_helpers import load_model
 
-
+#TODO: Known Issue, lightpath additions to lightpath_status_dict should be done after allocation, move update to sdn_controller
 class Engine:
     """
     Controls a single simulation.
