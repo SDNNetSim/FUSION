@@ -13,6 +13,12 @@ class TestSnrMeasurements(unittest.TestCase):
     def setUp(self):
         """Set up necessary parameters and objects for the tests."""
         self.engine_props = {
+
+            'cores_per_link': 7,
+            'snr_recheck': False,
+            'recheck_adjacent_cores': True,
+            'recheck_cross_band': True,
+            'bi_directional': True,
             'bw_per_slot': 12.5,
             'input_power': 0.001,
             'topology_info': {
@@ -40,6 +46,7 @@ class TestSnrMeasurements(unittest.TestCase):
         }
 
         self.sdn_props = MagicMock()
+        self.sdn_props.lightpath_status_dict = {}
         self.sdn_props.net_spec_dict = {
             ('A', 'B'): {
                 'cores_matrix': {'c': np.zeros((7, 40))},
@@ -310,50 +317,6 @@ class TestSnrMeasurements(unittest.TestCase):
     #     self.assertGreater(snr, 0)
     #     self.assertIsInstance(snr, float)
 
-    def test_build_lightpath_list_from_net_spec_full_check(self):
-        """Verify that the LP list is correctly built from net_spec_dict."""
-        # Simulate a lightpath occupying slots 0–2 on core 0
-        self.sdn_props.net_spec_dict[('A', 'B')]['cores_matrix']['c'][0][0:3] = 5
-
-        lp_list = self.snr_measurements._build_lightpath_list_from_net_spec()
-
-        # There should be exactly one LP entry
-        self.assertEqual(len(lp_list), 1)
-        lp = lp_list[0]
-
-        # Validate the LP details
-        self.assertEqual(lp["id"], 5)
-        self.assertEqual(lp["path"], ["A", "B"])  # path matches link keys
-        self.assertEqual(lp["core"], 0)
-        self.assertEqual(lp["band"], "c")
-        self.assertEqual(lp["spectrum"], [0, 2])  # slot range matches
-
-    @patch.object(SnrMeasurements, "evaluate_lp", return_value=15.0)
-    def test_reevaluate_after_new_lightpath_detects_overlap(self, mock_eval):
-        """Ensure that reevaluation detects overlapping LPs and returns expected results."""
-        # Create an existing LP occupying slots 0–2
-        self.sdn_props.net_spec_dict[('A', 'B')]['cores_matrix']['c'][0][0:3] = 10
-
-        # New LP overlaps slots 1–2 on the same core and band
-        new_lp_info = {
-            "id": 20,
-            "path": ["A", "B"],
-            "spectrum": (1, 2),
-            "core": 0,
-            "band": "c",
-            "mod_format": "QPSK",
-        }
-
-        results = self.snr_measurements.reevaluate_after_new_lightpath(new_lp_info)
-
-        # Ensure evaluate_lp() was called exactly once
-        mock_eval.assert_called_once()
-
-        # There should be exactly one result for LP ID 10
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0][0], 10)  # LP ID matches
-        self.assertEqual(results[0][1], 15.0)  # SNR matches mocked return value
-
     @patch.object(SnrMeasurements, "check_snr", return_value=(True, 10.0))
     def test_evaluate_lp(self, mock_check_snr):
         lp_info = {
@@ -377,6 +340,110 @@ class TestSnrMeasurements(unittest.TestCase):
         results = self.snr_measurements.reevaluate_lightpaths(lp_list)
         assert results == [(1, 12.0), (2, 12.0)]
         assert mock_eval.call_count == 2
+
+    def test_snr_recheck_detects_violations(self):
+        """Test that SNR recheck properly detects violations."""
+        self.engine_props["snr_recheck"] = True
+        self.engine_props["cores_per_link"] = 7
+
+        # Mock overlapping lightpath with low SNR
+        mock_overlapping_lp = {
+            "id": 2,
+            "path": ['A', 'B'],
+            "spectrum": [1, 3],
+            "core": 0,
+            "band": 'c',
+            "mod_format": 'QPSK'
+        }
+
+        with patch.object(self.snr_measurements, '_build_lightpath_list_from_net_spec',
+                          return_value=[mock_overlapping_lp]), \
+                patch('helper_scripts.snr_helpers.get_overlapping_lightpaths',
+                      return_value=[mock_overlapping_lp]), \
+                patch.object(self.snr_measurements, 'evaluate_lp', return_value=5.0):  # Below QPSK threshold
+
+            # Set up SNR requirements
+            self.snr_measurements.snr_props.req_snr = {'QPSK': 6.72}
+
+            new_lp_info = {
+                "id": 1,
+                "path": ['A', 'B'],
+                "spectrum": (0, 3),
+                "core": 0,
+                "band": 'c',
+                "mod_format": 'QPSK'
+            }
+
+            success, violations = self.snr_measurements.snr_recheck_after_allocation(new_lp_info)
+
+            self.assertFalse(success)
+            self.assertEqual(len(violations), 1)
+            self.assertEqual(violations[0][0], 2)  # LP ID 2 violated
+            self.assertAlmostEqual(violations[0][1], 5.0)  # Observed SNR
+            self.assertAlmostEqual(violations[0][2], 6.72)  # Required SNR
+
+    def test_build_lightpath_list_with_reverse_lookup(self):
+        """Test the fixed _build_lightpath_list_from_net_spec with reverse lookup."""
+        # Set up lightpath in net_spec_dict
+        self.sdn_props.net_spec_dict[('A', 'B')]['cores_matrix']['c'][0][0:3] = 5
+
+        # Set up corresponding entry in lightpath_status_dict with correct key structure
+        self.sdn_props.lightpath_status_dict = {
+            ('A', 'B'): {  # Note: this should match the actual key structure
+                5: {
+                    'path': ['A', 'B'],
+                    'mod_format': '16-QAM',
+                    'core': 0,
+                    'band': 'c'
+                }
+            }
+        }
+
+        with patch('builtins.print'):  # Suppress debug prints
+            lp_list = self.snr_measurements._build_lightpath_list_from_net_spec()
+
+        self.assertEqual(len(lp_list), 1)
+        lp = lp_list[0]
+        self.assertEqual(lp["id"], 5)
+        self.assertEqual(lp["mod_format"], '16-QAM')  # Should get real modulation format
+
+    def test_snr_recheck_after_allocation_basic(self):
+        """Test SNR recheck functionality."""
+        self.engine_props["snr_recheck"] = True
+        self.engine_props["cores_per_link"] = 7
+
+        with patch.object(self.snr_measurements, '_build_lightpath_list_from_net_spec',
+                          return_value=[]) as mock_build, \
+                patch('src.snr_measurements.get_overlapping_lightpaths',  # CHANGED THIS LINE
+                      return_value=[]) as mock_overlap:
+            new_lp_info = {
+                "id": 1,
+                "path": ['A', 'B'],
+                "spectrum": (0, 3),
+                "core": 0,
+                "band": 'c',
+                "mod_format": 'QPSK'
+            }
+
+            success, violations = self.snr_measurements.snr_recheck_after_allocation(new_lp_info)
+
+            self.assertTrue(success)
+            self.assertEqual(len(violations), 0)
+            mock_build.assert_called_once()
+            mock_overlap.assert_called_once()
+
+    def test_snr_recheck_disabled(self):
+        """Test that SNR recheck is bypassed when disabled."""
+        self.engine_props["snr_recheck"] = False
+
+        new_lp_info = {"id": 1, "path": ['A', 'B'], "spectrum": (0, 3), "core": 0, "band": 'c'}
+
+        with patch.object(self.snr_measurements, '_build_lightpath_list_from_net_spec') as mock_build:
+            success, violations = self.snr_measurements.snr_recheck_after_allocation(new_lp_info)
+
+            self.assertTrue(success)
+            self.assertEqual(len(violations), 0)
+            mock_build.assert_not_called()  # Should be bypassed
 
 if __name__ == '__main__':
     unittest.main()

@@ -24,13 +24,29 @@ class TestSDNController(unittest.TestCase):
             'max_segments': 1,
             'band_list': ['c'],
             'is_grooming_enabled': False,
+            'can_partially_serve': False,
+            'k_paths': 3,
+            'dynamic_lps': False,
+            'fixed_grid': False,
+            'topology': None,
+            'mod_per_bw': {
+                '50': {'QPSK': {'max_length': 100}},
+                '100': {'16-QAM': {'max_length': 200}}
+            },
         }
         self.controller = SDNController(engine_props=self.engine_props)
+
 
         # Mock SDNProps to ensure it's treated as a class object
         self.controller.sdn_props = SDNProps()
         self.controller.sdn_props.path_list = ['A', 'B', 'C']
         self.controller.sdn_props.req_id = 1
+        self.controller.sdn_props.was_partially_groomed = False
+        self.controller.sdn_props.was_new_lp_established = []
+        self.controller.sdn_props.was_routed = False
+        self.controller.sdn_props.block_reason = None
+        self.controller.sdn_props.is_sliced = False
+        self.controller.sdn_props.remaining_bw = 0
         self.controller.sdn_props.net_spec_dict = {
             ('A', 'B'): {
                 'cores_matrix': {'c': np.zeros((7, 10))},
@@ -363,8 +379,9 @@ class TestSDNController(unittest.TestCase):
         for key in self.controller.sdn_props.net_spec_dict:
             self.assertEqual(self.controller.sdn_props.net_spec_dict[key]['throughput'], 0)
 
-    @patch.object(SnrMeasurements, "reevaluate_after_new_lightpath", return_value=[(10, 15.0)])
-    def test_handle_event_triggers_snr_recheck(self, mock_reeval):
+    @patch.object(SnrMeasurements, "snr_recheck_after_allocation", return_value=(False, [("lp1", 5.0, 6.0)]))
+    def test_handle_event_triggers_snr_recheck(self, mock_recheck):
+        self.engine_props["snr_recheck"] = True
 
         # Provide a simple topology
         G = nx.Graph()
@@ -392,8 +409,8 @@ class TestSDNController(unittest.TestCase):
                 patch.object(self.controller, "_update_req_stats"):
             self.controller.handle_event(req_dict={}, request_type="arrival")
 
-            mock_reeval.assert_called_once()
-            args, kwargs = mock_reeval.call_args
+            mock_recheck.assert_called_once()
+            args, kwargs = mock_recheck.call_args
             new_lp_info = args[0]
 
             # Ensure correct LP details are passed
@@ -403,8 +420,79 @@ class TestSDNController(unittest.TestCase):
             assert new_lp_info["band"] == "c"
             assert isinstance(new_lp_info["id"], int)  # ID should be a valid integer
 
+    def test_allocate_slicing_with_snr_recheck(self):
+        """Test that _allocate_slicing calls SNR recheck correctly."""
+        self.engine_props["snr_recheck"] = True
 
+        with patch.object(self.controller.spectrum_obj, 'get_spectrum') as mock_get_spectrum, \
+                patch.object(self.controller, 'allocate') as mock_allocate, \
+                patch.object(self.controller, '_check_snr_after_allocation', return_value=True) as mock_snr_check, \
+                patch.object(self.controller, '_update_req_stats') as mock_update_stats, \
+                patch.object(self.controller.sdn_props, 'get_lightpath_id', return_value=99):
 
+            self.controller.spectrum_obj.spectrum_props.is_free = True
+            self.controller._allocate_slicing(2, 'QPSK', ['A', 'B'], '50G')
+
+            # Verify correct order: allocate then SNR check
+            self.assertTrue(mock_allocate.called)
+            self.assertTrue(mock_snr_check.called)
+
+    def test_snr_recheck_enabled_in_dynamic_slicing(self):
+        """Test that SNR recheck is called during dynamic slicing."""
+        self.engine_props["snr_recheck"] = True
+        self.engine_props["fixed_grid"] = True
+        self.engine_props["can_partially_serve"] = False
+
+        self.controller.sdn_props.bandwidth = '100'
+        self.controller.sdn_props.remaining_bw = 100
+        self.controller.sdn_props.was_partially_groomed = False
+
+        with patch.object(SnrMeasurements, "snr_recheck_after_allocation", return_value=(True, [])) as mock_recheck, \
+                patch.object(self.controller.spectrum_obj, 'get_spectrum_dynamic_slicing',
+                             return_value=('QPSK', 50)), \
+                patch.object(self.controller, 'allocate'), \
+                patch.object(self.controller, '_update_req_stats'), \
+                patch.object(self.controller.sdn_props, 'get_lightpath_id', return_value=99), \
+                patch('src.sdn_controller.find_path_len', return_value=100):
+            self.controller.spectrum_obj.spectrum_props.is_free = True
+            self.controller._handle_dynamic_slicing(['A', 'B'], -1)
+
+            # SNR recheck should be called
+            self.assertTrue(mock_recheck.called)
+
+    @patch.object(SnrMeasurements, "snr_recheck_after_allocation", return_value=(False, [("lp1", 5.0, 6.0)]))
+    def test_snr_recheck_failure_causes_rollback(self, mock_recheck):
+        """Test that SNR recheck failure causes proper rollback."""
+        self.engine_props["snr_recheck"] = True
+
+        # Set up successful allocation that fails SNR recheck
+        self.controller.spectrum_obj.spectrum_props.is_free = True
+        self.controller.spectrum_obj.spectrum_props.start_slot = 0
+        self.controller.spectrum_obj.spectrum_props.end_slot = 3
+        self.controller.spectrum_obj.spectrum_props.core_num = 0
+        self.controller.spectrum_obj.spectrum_props.curr_band = 'c'
+        self.controller.spectrum_obj.spectrum_props.modulation = 'QPSK'
+
+        with patch.object(self.controller, 'allocate'), \
+                patch.object(self.controller, 'release') as mock_release, \
+                patch.object(self.controller, '_update_req_stats'):
+            result = self.controller._check_snr_after_allocation(99)
+
+            self.assertFalse(result)
+            self.assertFalse(self.controller.sdn_props.was_routed)
+            self.assertEqual(self.controller.sdn_props.block_reason, "snr_recheck_failed")
+            mock_release.assert_called_with(lightpath_id=99)
+            mock_recheck.assert_called_once()
+
+    def test_snr_recheck_bypassed_when_disabled(self):
+        """Test that SNR recheck is bypassed when snr_recheck is False."""
+        self.engine_props["snr_recheck"] = False
+
+        with patch.object(SnrMeasurements, "snr_recheck_after_allocation") as mock_recheck:
+            result = self.controller._check_snr_after_allocation(99)
+
+            self.assertTrue(result)  # Should return True immediately
+            mock_recheck.assert_not_called()  # Should never be called
 
 if __name__ == '__main__':
     unittest.main()
