@@ -1,7 +1,7 @@
 Structure Data
 ==============
 
-.. automodule:: data_scripts.structure_data
+.. automodule:: fusion.io.structure
     :members:
     :undoc-members:
     :private-members:
