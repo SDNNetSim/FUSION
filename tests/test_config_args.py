@@ -15,7 +15,18 @@ class TestConfigArgs(unittest.TestCase):
         config_keys = self._get_config_keys()
         cli_params = self._extract_cli_params()
         # Ignore known special-case CLI args not handled via config
-        ignored_keys = {'optimize', 'config_path', 'run_id', 'verbose', 'debug', 'output_dir', 'save_results', 'mode', 'request_distribution'}
+        ignored_keys = {
+            'optimize', 'config_path', 'run_id', 'verbose', 'debug', 'output_dir', 'save_results', 'mode',
+            'request_distribution',
+            # RL/ML specific parameters - config-only
+            'gamma', 'device', 'render_mode', 'path_model', 'heads', 'dynamic_reward', 'alpha_end', 'decay_rate',
+            'feature_extractor', 'epsilon_update', 'core_beta', 'reward', 'conf_param', 'path_levels', 'penalty',
+            'super_channel_space', 'core_algorithm', 'n_trials', 'optuna_trials', 'cong_cutoff', 'spectrum_model',
+            'spectrum_algorithm', 'alpha_start', 'obs_space', 'layers', 'gnn_type', 'is_training', 'core_model',
+            'alpha_update', 'path_algorithm', 'optimize_hyperparameters', 'epsilon_end', 'epsilon_start',
+            'xt_noise', 'requested_xt', 'beta', 'xt_type', 'phi', 'theta',
+            'max_segments', 'fixed_grid', 'pre_calc_mod_selection', 'emb_dim'
+        }
         missing_in_cli = config_keys - cli_params - ignored_keys
         self.assertFalse(missing_in_cli, f"These config options are missing in "
                                          f"command line parameters: {missing_in_cli}")

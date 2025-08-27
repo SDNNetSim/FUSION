@@ -2,6 +2,7 @@
 
 import os
 import re
+import ast
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -38,6 +39,9 @@ SIM_REQUIRED_OPTIONS = {
         'num_requests': int,
         'max_iters': int,
         'dynamic_lps': str_to_bool,
+        'fixed_grid': str_to_bool,
+        'pre_calc_mod_selection': str_to_bool,
+        'max_segments': int,
         'route_method': str,
         'allocation_method': str,
         'save_snapshots': str_to_bool,
@@ -62,6 +66,12 @@ SIM_REQUIRED_OPTIONS = {
         'snr_type': str,
         'input_power': float,
         'egn_model': str_to_bool,
+        'beta': float,
+        'theta': float,
+        'xt_type': str,
+        'xt_noise': str_to_bool,
+        'requested_xt': str,
+        'phi': str,
     },
     'file_settings': {
         'file_type': str,
@@ -89,6 +99,50 @@ OTHER_OPTIONS = {
     },
     'file_settings': {
         'run_id': str,
+    },
+    'rl_settings': {
+        'obs_space': str,
+        'n_trials': int,
+        'device': str,
+        'optimize_hyperparameters': str_to_bool,
+        'optuna_trials': int,
+        'is_training': str_to_bool,
+        'path_algorithm': str,
+        'path_model': str,
+        'core_algorithm': str,
+        'core_model': str,
+        'spectrum_algorithm': str,
+        'spectrum_model': str,
+        'render_mode': str,
+        'super_channel_space': int,
+        'alpha_start': float,
+        'alpha_end': float,
+        'alpha_update': str,
+        'gamma': float,
+        'epsilon_start': float,
+        'epsilon_end': float,
+        'epsilon_update': str,
+        'path_levels': int,
+        'decay_rate': float,
+        'feature_extractor': str,
+        'gnn_type': str,
+        'layers': int,
+        'emb_dim': int,
+        'heads': int,
+        'conf_param': int,
+        'cong_cutoff': float,
+        'reward': int,
+        'penalty': int,
+        'dynamic_reward': str_to_bool,
+        'core_beta': float,
+    },
+    'ml_settings': {
+        'deploy_model': str_to_bool,
+        'output_train_data': str_to_bool,
+        'ml_training': str_to_bool,
+        'ml_model': str,
+        'train_file_path': str,
+        'test_size': float,
     },
 }
 
@@ -141,6 +195,13 @@ def _process_required_options(config: ConfigParser, config_dict: dict,
                 type_obj = other_dict[category][option]
                 config_dict['s1'][option] = type_obj(config[category][option])
 
+            # Special handling for dictionary parameters - convert string to dict
+            if option in ['request_distribution', 'requested_xt', 'phi'] and isinstance(config_dict['s1'][option], str):
+                try:
+                    config_dict['s1'][option] = ast.literal_eval(config_dict['s1'][option])
+                except (ValueError, SyntaxError):
+                    pass  # Keep as string if parsing fails
+
             # Only override config file values if CLI argument was explicitly provided
             cli_value = args_dict.get(option)
             if cli_value is not None:
@@ -152,6 +213,30 @@ def _process_required_options(config: ConfigParser, config_dict: dict,
                     config_dict['s1'][option] = cli_value
 
 
+def _convert_dict_params(config_dict: dict, option: str) -> None:
+    """Convert string dictionary parameters to actual dictionaries."""
+    if option in ['request_distribution', 'requested_xt', 'phi'] and isinstance(
+            config_dict['s1'][option], str):
+        try:
+            config_dict['s1'][option] = ast.literal_eval(config_dict['s1'][option])
+        except (ValueError, SyntaxError):
+            pass  # Keep as string if parsing fails
+
+
+def _process_cli_override(config_dict: dict, option: str, type_obj, cli_value, config_value: str) -> None:
+    """Handle CLI argument overrides for configuration options."""
+    if cli_value is not None:
+        # For boolean store_true arguments, only override if explicitly set to True
+        if type_obj is str_to_bool and cli_value is False:
+            # Don't override - use config file value
+            config_dict['s1'][option] = type_obj(config_value)
+        else:
+            config_dict['s1'][option] = cli_value
+    else:
+        config_dict['s1'][option] = type_obj(config_value)
+        _convert_dict_params(config_dict, option)
+
+
 def _process_other_options(config: ConfigParser, config_dict: dict,
                            other_dict: dict, args_dict: dict) -> None:
     """Process optional configuration options."""
@@ -160,21 +245,12 @@ def _process_other_options(config: ConfigParser, config_dict: dict,
             if option not in config[category]:
                 config_dict['s1'][option] = None
             else:
-                # Only override config file values if CLI argument was explicitly provided
-                cli_value = args_dict.get(option)
-                if cli_value is not None:
-                    # For boolean store_true arguments, only override if explicitly set to True
-                    if type_obj is str_to_bool and cli_value is False:
-                        # Don't override - use config file value
-                        config_dict['s1'][option] = type_obj(config[category][option])
-                    else:
-                        config_dict['s1'][option] = cli_value
-                else:
-                    try:
-                        config_dict['s1'][option] = type_obj(config[category][option])
-                    except (ValueError, TypeError, KeyError):
-                        # TODO: Log these conversion failures when error module is available
-                        continue
+                try:
+                    _process_cli_override(config_dict, option, type_obj,
+                                          args_dict.get(option), config[category][option])
+                except (ValueError, TypeError, KeyError):
+                    # TODO: Log these conversion failures when error module is available
+                    continue
 
 
 def load_config(config_path: str, args_dict: dict = None) -> dict:
