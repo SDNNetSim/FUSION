@@ -94,6 +94,11 @@ class BatchRunner:
         current_params = sim_params.copy()
         current_params['erlang'] = erlang
         current_params['arrival_rate'] = erlang / current_params['holding_time']
+        
+        # Add stop_flag if not present (required by SimulationEngine)
+        if 'stop_flag' not in current_params:
+            # Create a dummy event that's never set for single-threaded execution
+            current_params['stop_flag'] = multiprocessing.Event()
 
         # Log star
         log_message(f"Starting simulation for {erlang} Erlang (load {erlang_index + 1}/{total_erlangs})")
