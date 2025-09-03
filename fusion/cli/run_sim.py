@@ -31,13 +31,13 @@ def main(stop_flag=None):
         run_simulation_pipeline(args, stop_flag)
 
     except KeyboardInterrupt:
-        print("\n🛑 Simulation interrupted by user")
+        print("\nSimulation interrupted by user")
         return 1
     except Exception as e:  # pylint: disable=broad-exception-caught
         # TODO: Replace with custom error module and specific exception types
         # Consider: SimulationError, ConfigurationError, ResourceError
         # Print detailed error information for debugging
-        print(f"❌ Error running simulation: {e}")
+        print(f"Error running simulation: {e}")
 
         # If it's a runtime error with more context, show the full chain
         if hasattr(e, '__cause__') and e.__cause__:
