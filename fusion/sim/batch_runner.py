@@ -53,7 +53,9 @@ class BatchRunner:
             Updated simulation parameters with input data
         """
         # Create input data and topology
-        sim_params = create_input(sim_params, self.sim_start)
+        # Extract base_fp from sim_params or use default
+        base_fp = sim_params.get('base_fp', 'data')
+        sim_params = create_input(base_fp=base_fp, engine_props=sim_params)
 
         # Save input files if requested
         if sim_params.get('save_files', True):
