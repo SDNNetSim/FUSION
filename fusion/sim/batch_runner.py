@@ -55,6 +55,15 @@ class BatchRunner:
         # Create input data and topology
         # Extract base_fp from sim_params or use default
         base_fp = sim_params.get('base_fp', 'data')
+        
+        # Set required fields for create_input
+        if 'thread_num' not in sim_params:
+            sim_params['thread_num'] = 's1'  # Default thread identifier
+        if 'date' not in sim_params:
+            sim_params['date'] = self.sim_start.split('_')[0]  # Extract date portion
+        if 'sim_start' not in sim_params:
+            sim_params['sim_start'] = self.sim_start
+            
         sim_params = create_input(base_fp=base_fp, engine_props=sim_params)
 
         # Save input files if requested
