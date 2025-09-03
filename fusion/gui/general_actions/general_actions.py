@@ -6,7 +6,7 @@ import networkx as nx
 from PyQt5 import QtWidgets
 
 from fusion.gui.general_dialogs.settings import SettingsDialog
-from fusion.data_scripts.structure_data import create_network
+from fusion.io.structure import create_network
 from fusion.gui.view_topology.topology_widget import TopologyCanvas
 
 
