@@ -55,15 +55,6 @@ class BatchRunner:
         # Create input data and topology
         # Extract base_fp from sim_params or use default
         base_fp = sim_params.get('base_fp', 'data')
-
-        # Set required fields for create_input
-        if 'thread_num' not in sim_params:
-            sim_params['thread_num'] = 's1'  # Default thread identifier
-        if 'date' not in sim_params:
-            sim_params['date'] = self.sim_start.split('_')[0]  # Extract date portion
-        if 'sim_start' not in sim_params:
-            sim_params['sim_start'] = self.sim_start
-
         sim_params = create_input(base_fp=base_fp, engine_props=sim_params)
 
         # Save input files if requested
@@ -94,15 +85,6 @@ class BatchRunner:
         current_params = sim_params.copy()
         current_params['erlang'] = erlang
         current_params['arrival_rate'] = erlang / current_params['holding_time']
-
-        # Add stop_flag if not present (required by SimulationEngine)
-        if 'stop_flag' not in current_params:
-            # Create a dummy event that's never set for single-threaded execution
-            current_params['stop_flag'] = multiprocessing.Event()
-
-        # Add seeds if not present (required by SimulationEngine)
-        if 'seeds' not in current_params:
-            current_params['seeds'] = None  # Will use iteration number as seed
 
         # Log star
         log_message(f"Starting simulation for {erlang} Erlang (load {erlang_index + 1}/{total_erlangs})")
