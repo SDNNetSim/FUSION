@@ -1,27 +1,37 @@
 # fusion/cli/run_gui.py
 
+"""
+CLI entry point for launching the GUI.
+Follows architecture best practice: entry points should have no logic.
+"""
+
 from fusion.cli.main_parser import get_gui_args
-from fusion.cli.config_setup import ConfigManager
-from fusion.gui.runner import launch_gui
+from fusion.gui.runner import launch_gui_pipeline
 
 
 def main():
     """
-    Controls the run_gui script.
+    Entry point for launching the GUI from the command line.
+    Delegates all logic to appropriate modules.
     """
-    args = get_gui_args()
-    config = ConfigManager.from_args(args)
-
-    print("🖥️  GUI launch invoked.")
-    print(f"✅ Parsed config for run_id: {args.run_id}")
-    print("📂 Config summary (s1):")
-    print(config.get("s1"))
-
     try:
-        launch_gui(config)
-    except ImportError:
-        print("🚧 GUI logic not implemented or runner missing.")
+        args = get_gui_args()
+
+        # Delegate to GUI pipeline - no business logic here
+        launch_gui_pipeline(args)
+
+    except KeyboardInterrupt:
+        print("\n🛑 GUI launch interrupted by user")
+        return 1
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # TODO: Replace with custom error module and specific exception types
+        # Consider: ImportError, ModuleNotFoundError, GUI framework errors
+        print(f"❌ Error launching GUI: {e}")
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())

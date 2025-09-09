@@ -1,28 +1,37 @@
+# fusion/cli/run_train.py
+
+"""
+CLI entry point for training agents (RL or ML).
+Follows architecture best practice: entry points should have no logic.
+"""
+
 from fusion.cli.main_parser import get_train_args
-from fusion.cli.config_setup import ConfigManager
-from fusion.sim.train_pipeline import train_rl_agent
-from fusion.sim.ml_pipeline import train_ml_model
+from fusion.sim.train_pipeline import run_training_pipeline
 
 
 def main():
     """
-    Controls the run_train script.
+    Entry point for training agents from the command line.
+    Delegates all logic to appropriate modules.
     """
-    args = get_train_args()
-    config = ConfigManager.from_args(args)
+    try:
+        args = get_train_args()
 
-    print("✅ CLI args and config parsed successfully.")
-    print("🔁 Dispatching to training pipeline...")
+        # Delegate to training pipeline - no business logic here
+        run_training_pipeline(args)
 
-    agent_type = config.get_args().agent_type
+    except KeyboardInterrupt:
+        print("\n🛑 Training interrupted by user")
+        return 1
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # TODO: Replace with custom error module and specific exception types
+        # Consider: TrainingError, ModelError, DataError, ResourceError
+        print(f"❌ Error during training: {e}")
+        return 1
 
-    if agent_type == "rl":
-        train_rl_agent(config)
-    elif agent_type == "ml":
-        train_ml_model(config)
-    else:
-        raise ValueError(f"Unsupported agent type: {agent_type}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())

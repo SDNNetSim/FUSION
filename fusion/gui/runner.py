@@ -49,7 +49,7 @@ def launch_gui(config_like):
                     erlang_stop = sim_conf['erlang_stop']
                     erlang_step = sim_conf['erlang_step']
 
-                total_erlangs = len(range(erlang_start, erlang_stop, erlang_step))
+                total_erlangs = len(range(int(erlang_start), int(erlang_stop), int(erlang_step)))
 
                 manager = multiprocessing.Manager()
                 shared_progress_dict = manager.dict({i: 0 for i in range(total_erlangs)})
@@ -64,3 +64,19 @@ def launch_gui(config_like):
 
     window.show()
     app.exec_()
+
+
+def launch_gui_pipeline(args):
+    """
+    Pipeline function for launching GUI from CLI.
+    
+    Args:
+        args: Parsed command line arguments
+    """
+    from fusion.cli.config_setup import load_and_validate_config  # pylint: disable=import-outside-toplevel
+
+    # Convert args to config dictionary
+    config_dict = load_and_validate_config(args)
+
+    # Launch the GUI
+    launch_gui(config_dict)

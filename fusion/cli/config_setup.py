@@ -2,14 +2,149 @@
 
 import os
 import re
+import ast
 from configparser import ConfigParser
 from pathlib import Path
 
 from fusion.utils.os import create_dir
-from fusion.cli.args.run_sim_args import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DEFAULT_CONFIG_PATH = os.path.join(PROJECT_ROOT, 'ini', 'run_ini', 'config.ini')
+
+
+def str_to_bool(string: str) -> bool:
+    """
+    Convert string to boolean value.
+
+    Args:
+        string: Input string to convert
+
+    Returns:
+        Boolean value
+    """
+    return string.lower() in ['true', 'yes', '1']
+
+
+# Configuration option mappings for INI file validation
+SIM_REQUIRED_OPTIONS = {
+    'general_settings': {
+        'erlang_start': float,
+        'erlang_stop': float,
+        'erlang_step': float,
+        'mod_assumption': str,
+        'mod_assumption_path': str,
+        'holding_time': float,
+        'thread_erlangs': str_to_bool,
+        'guard_slots': int,
+        'num_requests': int,
+        'max_iters': int,
+        'dynamic_lps': str_to_bool,
+        'fixed_grid': str_to_bool,
+        'pre_calc_mod_selection': str_to_bool,
+        'max_segments': int,
+        'route_method': str,
+        'allocation_method': str,
+        'save_snapshots': str_to_bool,
+        'snapshot_step': int,
+        'print_step': int,
+        'spectrum_priority': str,
+        'save_step': int,
+        'save_start_end_slots': str_to_bool,
+    },
+    'topology_settings': {
+        'network': str,
+        'bw_per_slot': float,
+        'cores_per_link': int,
+        'const_link_weight': str_to_bool,
+        'is_only_core_node': str_to_bool,
+        'multi_fiber': str_to_bool,
+    },
+    'spectrum_settings': {
+        'c_band': int,
+    },
+    'snr_settings': {
+        'snr_type': str,
+        'input_power': float,
+        'egn_model': str_to_bool,
+        'beta': float,
+        'theta': float,
+        'xt_type': str,
+        'xt_noise': str_to_bool,
+        'requested_xt': str,
+        'phi': str,
+    },
+    'file_settings': {
+        'file_type': str,
+    },
+    'ml_settings': {
+        'deploy_model': str_to_bool,
+    },
+}
+
+OTHER_OPTIONS = {
+    'general_settings': {
+        'k_paths': int,
+        'filter_mods': bool,
+        'request_distribution': str,
+    },
+    'topology_settings': {
+        'bi_directional': str_to_bool,
+        'is_only_core_node': str_to_bool,
+    },
+    'spectrum_settings': {
+        'o_band': int,
+        'e_band': int,
+        's_band': int,
+        'l_band': int,
+    },
+    'file_settings': {
+        'run_id': str,
+    },
+    'rl_settings': {
+        'obs_space': str,
+        'n_trials': int,
+        'device': str,
+        'optimize_hyperparameters': str_to_bool,
+        'optuna_trials': int,
+        'is_training': str_to_bool,
+        'path_algorithm': str,
+        'path_model': str,
+        'core_algorithm': str,
+        'core_model': str,
+        'spectrum_algorithm': str,
+        'spectrum_model': str,
+        'render_mode': str,
+        'super_channel_space': int,
+        'alpha_start': float,
+        'alpha_end': float,
+        'alpha_update': str,
+        'gamma': float,
+        'epsilon_start': float,
+        'epsilon_end': float,
+        'epsilon_update': str,
+        'path_levels': int,
+        'decay_rate': float,
+        'feature_extractor': str,
+        'gnn_type': str,
+        'layers': int,
+        'emb_dim': int,
+        'heads': int,
+        'conf_param': int,
+        'cong_cutoff': float,
+        'reward': int,
+        'penalty': int,
+        'dynamic_reward': str_to_bool,
+        'core_beta': float,
+    },
+    'ml_settings': {
+        'deploy_model': str_to_bool,
+        'output_train_data': str_to_bool,
+        'ml_training': str_to_bool,
+        'ml_model': str,
+        'train_file_path': str,
+        'test_size': float,
+    },
+}
 
 
 def normalize_config_path(config_path: str) -> str:
@@ -40,11 +175,84 @@ def setup_config_from_cli(args) -> dict:
         config_data = load_config(config_path, args_dict)
         return config_data
     except Exception as e:
+        # TODO: Replace with custom error module once available
+        # Consider specific exceptions: FileNotFoundError, ConfigParser errors, ValueError
         print(f"[ERROR] Failed to load config: {e}")
         return {}
 
 
-# (version 6.0.0) TODO: Fix this pylint error in the future
+def _process_required_options(config: ConfigParser, config_dict: dict,
+                              required_dict: dict, other_dict: dict, args_dict: dict) -> None:
+    """Process required configuration options."""
+    for category, options_dict in required_dict.items():
+        for option, type_obj in options_dict.items():
+            if not config.has_option(category, option):
+                raise ValueError(f"Missing required option '{option}' in section [{category}].")
+
+            try:
+                config_dict['s1'][option] = type_obj(config[category][option])
+            except KeyError:
+                type_obj = other_dict[category][option]
+                config_dict['s1'][option] = type_obj(config[category][option])
+
+            # Special handling for dictionary parameters - convert string to dict
+            if option in ['request_distribution', 'requested_xt', 'phi'] and isinstance(config_dict['s1'][option], str):
+                try:
+                    config_dict['s1'][option] = ast.literal_eval(config_dict['s1'][option])
+                except (ValueError, SyntaxError):
+                    pass  # Keep as string if parsing fails
+
+            # Only override config file values if CLI argument was explicitly provided
+            cli_value = args_dict.get(option)
+            if cli_value is not None:
+                # For boolean store_true arguments, only override if explicitly set to True
+                if type_obj is str_to_bool and cli_value is False:
+                    # Don't override - use config file value
+                    pass
+                else:
+                    config_dict['s1'][option] = cli_value
+
+
+def _convert_dict_params(config_dict: dict, option: str) -> None:
+    """Convert string dictionary parameters to actual dictionaries."""
+    if option in ['request_distribution', 'requested_xt', 'phi'] and isinstance(
+            config_dict['s1'][option], str):
+        try:
+            config_dict['s1'][option] = ast.literal_eval(config_dict['s1'][option])
+        except (ValueError, SyntaxError):
+            pass  # Keep as string if parsing fails
+
+
+def _process_cli_override(config_dict: dict, option: str, type_obj, cli_value, config_value: str) -> None:
+    """Handle CLI argument overrides for configuration options."""
+    if cli_value is not None:
+        # For boolean store_true arguments, only override if explicitly set to True
+        if type_obj is str_to_bool and cli_value is False:
+            # Don't override - use config file value
+            config_dict['s1'][option] = type_obj(config_value)
+        else:
+            config_dict['s1'][option] = cli_value
+    else:
+        config_dict['s1'][option] = type_obj(config_value)
+        _convert_dict_params(config_dict, option)
+
+
+def _process_other_options(config: ConfigParser, config_dict: dict,
+                           other_dict: dict, args_dict: dict) -> None:
+    """Process optional configuration options."""
+    for category, options_dict in other_dict.items():
+        for option, type_obj in options_dict.items():
+            if option not in config[category]:
+                config_dict['s1'][option] = None
+            else:
+                try:
+                    _process_cli_override(config_dict, option, type_obj,
+                                          args_dict.get(option), config[category][option])
+                except (ValueError, TypeError, KeyError):
+                    # TODO: Log these conversion failures when error module is available
+                    continue
+
+
 def load_config(config_path: str, args_dict: dict = None) -> dict:
     """
     Loads an existing config from a config file.
@@ -75,32 +283,8 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
         required_dict = SIM_REQUIRED_OPTIONS
         other_dict = OTHER_OPTIONS
 
-        for category, options_dict in required_dict.items():
-            for option, type_obj in options_dict.items():
-                if not config.has_option(category, option):
-                    raise ValueError(f"Missing required option '{option}' in section [{category}].")
-
-                try:
-                    config_dict['s1'][option] = type_obj(config[category][option])
-                except KeyError:
-                    type_obj = other_dict[category][option]
-                    config_dict['s1'][option] = type_obj(config[category][option])
-
-                if args_dict.get(option) is not None:
-                    config_dict['s1'][option] = args_dict[option]
-
-        for category, options_dict in other_dict.items():
-            for option, type_obj in options_dict.items():
-                if option not in config[category]:
-                    config_dict['s1'][option] = None
-                else:
-                    if args_dict.get(option) is not None:
-                        config_dict['s1'][option] = args_dict[option]
-                    else:
-                        try:
-                            config_dict['s1'][option] = type_obj(config[category][option])
-                        except ValueError:
-                            continue
+        _process_required_options(config, config_dict, required_dict, other_dict, args_dict)
+        _process_other_options(config, config_dict, other_dict, args_dict)
 
         other_sections = config.sections()[1:]  # skip general_settings
         config_dict = _setup_threads(
@@ -114,8 +298,13 @@ def load_config(config_path: str, args_dict: dict = None) -> dict:
 
         return config_dict or {}
 
-    except Exception as error:
+    except (FileNotFoundError, ValueError) as error:
         print(f"[ERROR] Failed to load config: {error}")
+        return {}
+    except Exception as error:
+        # TODO: Replace with custom error module - this catch-all should be narrowed
+        # Consider: ConfigParser.Error, KeyError, TypeError for type conversions
+        print(f"[ERROR] Unexpected error loading config: {error}")
         return {}
 
 
@@ -135,11 +324,19 @@ def _setup_threads(config: ConfigParser, config_dict: dict, section_list: list,
             try:
                 type_obj = types_dict.get(category, {}).get(key) or other_dict.get(category, {}).get(key)
                 config_dict[new_thread][key] = type_obj(value)
-            except Exception:
+            except (ValueError, TypeError, KeyError):
+                # TODO: Log these conversion failures when error module is available
                 continue
 
-            if args_dict.get(key) is not None:
-                config_dict[new_thread][key] = args_dict[key]
+            # Only override config file values if CLI argument was explicitly provided
+            cli_value = args_dict.get(key)
+            if cli_value is not None:
+                # For boolean store_true arguments, only override if explicitly set to True
+                if type_obj is str_to_bool and cli_value is False:
+                    # Don't override - use config file value
+                    pass
+                else:
+                    config_dict[new_thread][key] = cli_value
 
     return config_dict
 
@@ -154,6 +351,20 @@ def _find_category(category_dict: dict, target_key: str):
         if target_key in subdict:
             return category
     return None
+
+
+def load_and_validate_config(args):
+    """
+    Load and validate configuration from CLI arguments.
+    
+    Args:
+        args: Parsed command line arguments
+        
+    Returns:
+        dict: Validated configuration dictionary
+    """
+    config_dict = load_config(args.config_path, vars(args))
+    return config_dict
 
 
 class ConfigManager:

@@ -21,6 +21,18 @@ def get_requests(seed: int, engine_props: dict):
     # Means some nodes are nodes
     else:
         nodes_list = engine_props['core_nodes']
+
+    # Defensive check for empty nodes list
+    if not nodes_list:
+        if engine_props['is_only_core_node']:
+            topology_keys = list(engine_props.get('topology_info', {}).keys())
+            node_keys = list(engine_props.get('topology_info', {}).get('nodes',
+                                                                       {}).keys()) if 'topology_info' in engine_props else []
+            raise ValueError(
+                f"No nodes found in topology_info. is_only_core_node={engine_props['is_only_core_node']}, topology_keys={topology_keys}, node_keys={node_keys}")
+        raise ValueError(
+            f"No core nodes found. is_only_core_node={engine_props['is_only_core_node']}, core_nodes={engine_props.get('core_nodes', [])}")
+
     set_seed(seed=seed)
 
     bw_counts_dict = {bandwidth: int(engine_props['request_distribution'][bandwidth] * engine_props['num_requests'])

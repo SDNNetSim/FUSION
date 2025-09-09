@@ -5,7 +5,7 @@ from statistics import mean
 import numpy as np
 
 from fusion.sim.utils import dict_to_list, list_to_title, update_matrices
-from fusion.cli.args.plot_args import PlotArgs, PlotProps
+from fusion.visualization.properties import PlotArgs, PlotProps
 
 
 # TODO: (version 5.5-6) RL no longer uses anything from here, although there is some overlap

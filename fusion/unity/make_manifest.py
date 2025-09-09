@@ -15,9 +15,14 @@ except ModuleNotFoundError:
     yaml = None  # pylint: disable=invalid-name
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from fusion.cli.args.run_sim_args import COMMAND_LINE_PARAMS  # pylint: disable=wrong-import-position
+from fusion.cli.config_setup import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS  # pylint: disable=wrong-import-position
 
-_PARAM_TYPES: dict[str, type] = {name: typ for name, typ, _ in COMMAND_LINE_PARAMS}
+# Build parameter types from config setup
+_PARAM_TYPES: dict[str, type] = {}
+for options_dict in [SIM_REQUIRED_OPTIONS, OTHER_OPTIONS]:
+    for category, options in options_dict.items():
+        for option_name, option_type in options.items():
+            _PARAM_TYPES[option_name] = option_type
 _BOOL_STRS = {"true", "yes", "1"}
 
 _RESOURCE_KEYS = {
@@ -81,7 +86,7 @@ def _validate_keys(mapping: Dict[str, Any], ctx: str) -> None:
     for key in mapping:
         if key in _PARAM_TYPES or key in _RESOURCE_KEYS:
             continue
-        sys.exit(f"Unknown parameter '{key}' in {ctx}. Must exist in COMMAND_LINE_PARAMS.")
+        sys.exit(f"Unknown parameter '{key}' in {ctx}. Must exist in config options.")
 
 
 def _read_spec(path: pathlib.Path) -> Dict[str, Any]:
