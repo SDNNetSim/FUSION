@@ -1,4 +1,6 @@
-"""Configuration setup module for the FUSION simulator CLI."""
+"""
+Configuration setup module for the FUSION simulator CLI.
+"""
 
 import os
 import re
