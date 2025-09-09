@@ -5,12 +5,20 @@ Consolidates visualization and data analysis arguments.
 
 import argparse
 
-from .common_args import add_plot_format_args
+from .shared import add_plot_format_args
 
 
 def add_statistics_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add statistics collection and analysis arguments.
+    Add statistics collection and analysis arguments to the parser.
+    
+    Configures arguments for simulation state snapshots, progress tracking,
+    and detailed result saving during simulation execution.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     stats_group = parser.add_argument_group('Statistics Configuration')
     stats_group.add_argument(
@@ -45,7 +53,15 @@ def add_statistics_args(parser: argparse.ArgumentParser) -> None:
 
 def add_plotting_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add plotting and visualization arguments.
+    Add plotting and visualization arguments to the parser.
+    
+    Configures arguments for plot generation, display options, and
+    visualization formatting parameters.
+    
+    :param parser: ArgumentParser instance to add arguments to  
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     plot_group = parser.add_argument_group('Plotting Configuration')
     plot_group.add_argument(
@@ -65,35 +81,21 @@ def add_plotting_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Display plots interactively (in addition to saving)"
     )
-    plot_group.add_argument(
-        "--plot_style",
-        type=str,
-        choices=["seaborn", "matplotlib", "ggplot", "bmh"],
-        default="seaborn",
-        help="Plotting style to use"
-    )
 
 
 def add_export_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add data export and file handling arguments.
+    Add data export and file handling arguments to the parser.
+    
+    Configures arguments for exporting simulation results to various
+    formats including Excel, CSV, JSON, and TSV.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser  
+    :return: None
+    :rtype: None
     """
     export_group = parser.add_argument_group('Export Configuration')
-    export_group.add_argument(
-        "--export_excel",
-        action="store_true",
-        help="Export results to Excel format"
-    )
-    export_group.add_argument(
-        "--export_csv",
-        action="store_true",
-        help="Export results to CSV format"
-    )
-    export_group.add_argument(
-        "--export_json",
-        action="store_true",
-        help="Export results to JSON format"
-    )
     export_group.add_argument(
         "--file_type",
         type=str,
@@ -101,16 +103,49 @@ def add_export_args(parser: argparse.ArgumentParser) -> None:
         default="json",
         help="Default file format for data export"
     )
-    export_group.add_argument(
-        "--compress_results",
+
+
+def add_filtering_args(parser: argparse.ArgumentParser) -> None:
+    """
+    Add arguments for filtering and post-processing simulation results.
+    
+    Configures filters for modulation formats, Erlang load ranges,
+    core exclusions, and time window analysis.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
+    """
+    filter_group = parser.add_argument_group('Filtering Configuration')
+    filter_group.add_argument(
+        "--filter_mods",
         action="store_true",
-        help="Compress output files to save space"
+        help="Filter results by modulation format"
+    )
+    filter_group.add_argument(
+        "--min_erlang",
+        type=float,
+        help="Minimum Erlang load to include in analysis"
+    )
+    filter_group.add_argument(
+        "--max_erlang",
+        type=float,
+        help="Maximum Erlang load to include in analysis"
     )
 
 
 def add_comparison_args(parser: argparse.ArgumentParser) -> None:
     """
     Add arguments for comparing multiple simulation runs.
+    
+    Configures arguments for multi-run comparisons, statistical tests,
+    and baseline analysis across different simulation executions.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     comparison_group = parser.add_argument_group('Comparison Configuration')
     comparison_group.add_argument(
@@ -139,43 +174,17 @@ def add_comparison_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_filtering_args(parser: argparse.ArgumentParser) -> None:
-    """
-    Add arguments for filtering and post-processing results.
-    """
-    filter_group = parser.add_argument_group('Filtering Configuration')
-    filter_group.add_argument(
-        "--filter_mods",
-        action="store_true",
-        help="Filter results by modulation format"
-    )
-    filter_group.add_argument(
-        "--min_erlang",
-        type=float,
-        help="Minimum Erlang load to include in analysis"
-    )
-    filter_group.add_argument(
-        "--max_erlang",
-        type=float,
-        help="Maximum Erlang load to include in analysis"
-    )
-    filter_group.add_argument(
-        "--exclude_cores",
-        type=int,
-        nargs='+',
-        help="Core numbers to exclude from analysis"
-    )
-    filter_group.add_argument(
-        "--time_window",
-        type=str,
-        help="Time window for analysis (format: 'start,end')"
-    )
-
-
 def add_all_analysis_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add all analysis-related argument groups.
-    Convenience function to add all analysis arguments at once.
+    Add all analysis-related argument groups to the parser.
+    
+    Convenience function that adds statistics, plotting, export,
+    and filtering arguments in a single call.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     add_statistics_args(parser)
     add_plotting_args(parser)

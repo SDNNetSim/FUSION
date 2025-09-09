@@ -9,6 +9,14 @@ import argparse
 def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     """
     Add reinforcement learning specific arguments.
+    
+    Configures RL algorithms, model paths, training parameters,
+    exploration strategies, and reward functions for RL-based optimization.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     rl_group = parser.add_argument_group('Reinforcement Learning Configuration')
 
@@ -110,6 +118,14 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
 def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     """
     Add feature extraction and neural network arguments.
+    
+    Configures feature extraction methods, neural network architectures,
+    and observation space representations for ML model training.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     feature_group = parser.add_argument_group('Feature Extraction Configuration')
     feature_group.add_argument(
@@ -153,6 +169,14 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
 def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     """
     Add traditional machine learning arguments.
+    
+    Configures classical ML algorithms, training data paths,
+    test/train splits, and model deployment options.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     ml_group = parser.add_argument_group('Machine Learning Configuration')
     ml_group.add_argument(
@@ -192,6 +216,14 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
 def add_optimization_args(parser: argparse.ArgumentParser) -> None:
     """
     Add hyperparameter optimization arguments.
+    
+    Configures automated hyperparameter tuning, optimization trials,
+    and computing device selection for training acceleration.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     opt_group = parser.add_argument_group('Optimization Configuration')
     opt_group.add_argument(
@@ -228,7 +260,14 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
 def add_all_training_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all training-related argument groups.
-    Convenience function to add all training arguments at once.
+    
+    Convenience function that combines reinforcement learning,
+    feature extraction, machine learning, and optimization arguments.
+    
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     add_reinforcement_learning_args(parser)
     add_feature_extraction_args(parser)
