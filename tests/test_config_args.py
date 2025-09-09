@@ -1,7 +1,7 @@
 import unittest
 import argparse
 
-from fusion.cli.config_setup import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS
+from fusion.configs.schema import SIM_REQUIRED_OPTIONS, OPTIONAL_OPTIONS
 from fusion.cli.args.registry import args_registry
 
 
@@ -34,7 +34,7 @@ class TestConfigArgs(unittest.TestCase):
     def _get_config_keys(self):
         """Extract all configuration keys from config dictionaries."""
         config_keys = set()
-        for option_group in [SIM_REQUIRED_OPTIONS, OTHER_OPTIONS]:
+        for option_group in [SIM_REQUIRED_OPTIONS, OPTIONAL_OPTIONS]:
             for _, options in option_group.items():
                 config_keys.update(options.keys())
         return config_keys
