@@ -1,0 +1,236 @@
+name: 🚀 Feature Request
+description: Suggest a new feature or enhancement for FUSION simulator
+title: "[FEATURE] "
+labels: ["enhancement", "needs-discussion"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚀 Feature Request
+        
+        Thank you for suggesting a new feature! Please provide detailed information to help us understand and evaluate your request.
+
+  - type: input
+    id: feature-title
+    attributes:
+      label: Feature Title
+      description: Provide a concise, descriptive title for your feature
+      placeholder: "Add support for dynamic spectrum management"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority-level
+    attributes:
+      label: Priority Level
+      description: How important is this feature to you?
+      options:
+        - Critical (blocks major functionality)
+        - High (significantly improves user experience)
+        - Medium (nice to have improvement)
+        - Low (minor enhancement)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target-component
+    attributes:
+      label: Target Component
+      description: Select the component(s) this feature would affect
+      multiple: true
+      options:
+        - CLI Interface (fusion/cli/)
+        - Configuration System (fusion/configs/)
+        - Simulation Core (fusion/core/)
+        - ML/RL Modules (fusion/modules/rl/, fusion/modules/ml/)
+        - Routing Algorithms (fusion/modules/routing/)
+        - Spectrum Assignment (fusion/modules/spectrum/)
+        - SNR Calculations (fusion/modules/snr/)
+        - Visualization (fusion/visualization/)
+        - GUI Interface (fusion/gui/)
+        - Unity/HPC Integration (fusion/unity/)
+        - Testing Framework (tests/)
+        - Documentation
+        - Architecture (cross-cutting concerns)
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What are users currently unable to do?
+      placeholder: |
+        **Current Limitation:**
+        Users currently cannot...
+        
+        **User Story:**
+        As a [type of user], I want [goal] so that [benefit]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency-of-need
+    attributes:
+      label: Frequency of Need
+      description: How often would this feature be used?
+      options:
+        - Daily use case
+        - Weekly use case
+        - Occasional use case
+        - Edge case but important
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution in detail
+      placeholder: |
+        **High-level Description:**
+        The feature would work by...
+        
+        **Detailed Implementation Ideas:**
+        Technical details and implementation approach...
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-design
+    attributes:
+      label: API/Interface Design (Optional)
+      description: If applicable, provide examples of how users would interact with this feature
+      placeholder: |
+        ```python
+        # Example of how users would interact with this feature
+        from fusion.modules.my_feature import NewFeature
+        
+        feature = NewFeature(config={'param': 'value'})
+        result = feature.execute(input_data)
+        ```
+
+  - type: textarea
+    id: config-changes
+    attributes:
+      label: Configuration Changes (Optional)
+      description: If applicable, describe what configuration options would be needed
+      placeholder: |
+        ```ini
+        [new_feature_settings]
+        enable_feature = True
+        parameter_1 = value
+        parameter_2 = value
+        ```
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe alternative approaches you've considered and why you prefer the proposed solution
+      placeholder: |
+        **Alternative 1:**
+        Another approach would be...
+        
+        **Alternative 2:**
+        We could also...
+        
+        **Why the proposed solution is preferred:**
+        The proposed solution is better because...
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what "done" looks like for this feature
+      placeholder: |
+        - [ ] Feature works with existing CLI commands
+        - [ ] Configuration validation supports new parameters
+        - [ ] Unit tests cover new functionality
+        - [ ] Documentation updated
+        - [ ] Backward compatibility maintained
+    validations:
+      required: true
+
+  - type: dropdown
+    id: breaking-changes
+    attributes:
+      label: Impact on Existing Code
+      description: Would this feature require breaking changes?
+      options:
+        - No breaking changes
+        - Minor breaking changes (with migration path)
+        - Major architectural changes
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing-strategy
+    attributes:
+      label: Testing Strategy
+      description: How should this feature be tested?
+      placeholder: |
+        **Unit Tests:**
+        Test individual components...
+        
+        **Integration Tests:**
+        Test interaction with other systems...
+        
+        **Performance Tests:**
+        Measure impact on simulation performance...
+
+  - type: checkboxes
+    id: user-types
+    attributes:
+      label: User Types
+      description: Who would benefit from this feature?
+      options:
+        - label: Simulation researchers
+        - label: ML/RL practitioners
+        - label: Network operators
+        - label: Software developers
+        - label: Students/educators
+        - label: HPC users
+
+  - type: dropdown
+    id: estimated-effort
+    attributes:
+      label: Estimated Implementation Effort
+      description: How much effort do you think this would require?
+      options:
+        - Small (< 1 week)
+        - Medium (1-4 weeks)
+        - Large (1-2 months)
+        - Extra Large (> 2 months)
+        - Unknown
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information, research, mockups, or context that would be helpful
+      placeholder: |
+        **Dependencies/Blockers:**
+        This feature depends on...
+        
+        **Related Issues:**
+        Link related issues with #issue_number
+        
+        **Success Metrics:**
+        We would measure success by...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and discussions for similar requests
+          required: true
+        - label: I have provided sufficient detail about the problem and proposed solution
+          required: true
+        - label: I understand this request will be evaluated against project priorities
+          required: true

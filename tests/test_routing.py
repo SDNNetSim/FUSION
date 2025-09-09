@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 
 from fusion.core.routing import Routing
-from fusion.cli.args.routing_args import RoutingProps
+from fusion.core.properties import RoutingProps
 
 
 class TestRouting(unittest.TestCase):

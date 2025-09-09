@@ -3,8 +3,8 @@ import os
 import copy
 import time
 
-from fusion.data_scripts.structure_data import create_network
-from fusion.data_scripts.generate_data import create_bw_info, create_pt
+from fusion.io.structure import create_network
+from fusion.io.generate import create_bw_info, create_pt
 from fusion.utils.os import create_dir, find_project_root
 
 PROJECT_ROOT = find_project_root()
