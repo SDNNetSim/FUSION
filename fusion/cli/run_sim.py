@@ -6,12 +6,12 @@ and provides comprehensive error reporting with actionable user feedback.
 """
 
 import multiprocessing
-import sys
 import traceback
 from typing import Optional
 
 from fusion.cli.constants import SUCCESS_EXIT_CODE, ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, DEFAULT_MAX_TRACEBACK_LINES
 from fusion.cli.main_parser import build_main_argument_parser
+from fusion.cli.utils import create_main_wrapper
 from fusion.sim.run_simulation import run_simulation_pipeline
 
 
@@ -107,17 +107,8 @@ def run_simulation_main(stop_flag: Optional[multiprocessing.Event] = None) -> in
     return main(stop_flag)
 
 
-def run_sim_main() -> None:
-    """
-    Execute the simulation main function and exit with appropriate code.
-    
-    Convenience function that handles the sys.exit call for the main
-    simulation entry point. Provides clean separation between main logic
-    and process exit handling.
-
-    :raises SystemExit: Always exits with code from main() function
-    """
-    sys.exit(main())
+# Create standardized entry point using shared utilities
+run_sim_main = create_main_wrapper(main)
 
 
 if __name__ == "__main__":

@@ -6,10 +6,9 @@ user interface. It handles GUI dependency validation, display configuration,
 and provides helpful error messages for common setup issues.
 """
 
-import sys
-
 from fusion.cli.constants import SUCCESS_EXIT_CODE, ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE
 from fusion.cli.main_parser import create_gui_argument_parser
+from fusion.cli.utils import create_entry_point_wrapper
 from fusion.gui.runner import launch_gui_pipeline
 
 
@@ -48,29 +47,12 @@ def main() -> int:
     return SUCCESS_EXIT_CODE
 
 
-# Backward compatibility function alias
-def launch_gui_main() -> int:
-    """
-    Legacy function name for main GUI entry point.
-    
-    :return: Exit code from main function
-    :rtype: int
-    :deprecated: Use main() directly instead
-    """
-    return main()
-
-
-def run_gui_main() -> None:
-    """
-    Execute the GUI main function and exit with appropriate code.
-    
-    Convenience function that handles the sys.exit call for the main
-    GUI entry point. Provides a clean separation between the main logic
-    and process exit handling.
-
-    :raises SystemExit: Always exits with code from main() function
-    """
-    sys.exit(main())
+# Create entry point functions using shared utilities
+launch_gui_main, run_gui_main = create_entry_point_wrapper(
+    main,
+    "GUI",
+    "Convenience function that handles the sys.exit call for the main GUI entry point. Provides a clean separation between the main logic and process exit handling."
+)
 
 
 if __name__ == "__main__":
