@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
-from fusion.data_scripts.structure_data import assign_link_lengths, create_network
+from fusion.io.structure import assign_link_lengths, create_network
 from fusion.sim.input_setup import find_project_root
 
 
@@ -30,7 +30,7 @@ class TestNetworkFunctions(unittest.TestCase):
             expected_response = {('A', 'B'): 1.0, ('B', 'C'): 1.0}
             self.assertEqual(response_dict, expected_response)
 
-    @patch("fusion.data_scripts.structure_data.assign_link_lengths")
+    @patch("fusion.io.structure.assign_link_lengths")
     def test_create_network(self, mock_assign_link_lengths):
         """
         Test create network.
@@ -74,7 +74,7 @@ class TestNetworkFunctions(unittest.TestCase):
         Test create network with base_fp specified.
         """
         base_fp = Path(find_project_root()) / 'custom' / 'path'
-        with patch("fusion.data_scripts.structure_data.assign_link_lengths") as mock_assign_link_lengths:
+        with patch("fusion.io.structure.assign_link_lengths") as mock_assign_link_lengths:
             mock_assign_link_lengths.return_value = {'link_lengths': 'mocked'}
 
             net_name = 'USNet'

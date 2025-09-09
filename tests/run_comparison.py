@@ -20,15 +20,10 @@ from stable_baselines3.common.callbacks import CallbackList
 from fusion.cli.config_setup import load_config
 from fusion.sim.utils import get_start_time
 from fusion.sim.network_simulator import run as run_simulation
+from fusion.sim.input_setup import create_input
 from fusion.modules.rl import workflow_runner
 from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 from fusion.modules.rl.utils.callbacks import EpisodicRewardCallback, LearnRateEntCallback
-from fusion.cli.args.run_sim_args import add_run_sim_args
-from fusion.cli.args.routing_args import add_routing_args
-from fusion.cli.args.spectrum_args import add_spectrum_args
-from fusion.cli.args.snr_args import add_snr_args
-from fusion.cli.args.sdn_args import add_sdn_args
-from fusion.cli.args.stats_args import add_stats_args
 
 # TODO: (version 5.5) Use mock YML instead of using the originals from sb3
 
@@ -71,14 +66,6 @@ def run_rl_simulation(input_dict: dict, config_path: str):
         thread_dict['thread_erlangs'] = False
         if 'num_threads' in thread_dict:
             thread_dict['num_threads'] = 1
-
-        # Debug: print configuration to see what's being passed
-        print(f"DEBUG: Original input_dict keys: {list(input_dict.keys())}")
-        print(f"DEBUG: Filtered input_dict keys: {list(filtered_input_dict.keys())}")
-        print(f"DEBUG: RL sim_dict keys: {list(sim_dict.keys())}")
-        print(f"DEBUG: thread_dict erlang_start: {thread_dict.get('erlang_start')}")
-        print(f"DEBUG: thread_dict erlang_stop: {thread_dict.get('erlang_stop')}")
-        print(f"DEBUG: thread_dict erlang_step: {thread_dict.get('erlang_step')}")
 
         thread_dict["callback"] = callback_list
 
@@ -228,13 +215,20 @@ def _find_output_directory(sim_dict: Dict, artefact_root: Path) -> Path:
     """Find the output directory for the simulation results."""
     output_dir = None
 
+    network = sim_dict['s1'].get('network', 'unknown')
+    date = sim_dict['s1'].get('date', 'unknown')
+    if not artefact_root.exists():
+        return None
+
     for topo_dir in artefact_root.iterdir():
         if not topo_dir.is_dir():
             continue
+
         for date_dir in topo_dir.iterdir():
-            if topo_dir.name != sim_dict['s1']['network'] or date_dir.name != sim_dict['s1']['date']:
-                continue
             if not date_dir.is_dir():
+                continue
+
+            if topo_dir.name != network or date_dir.name != date:
                 continue
 
             # Find the most recent time directory that contains an s1 subdirectory
@@ -245,7 +239,6 @@ def _find_output_directory(sim_dict: Dict, artefact_root: Path) -> Path:
                 s1_path = time_dir / "s1"
                 if s1_path.exists() and s1_path.is_dir():
                     output_dir = s1_path
-                    print(f"DEBUG: Found output directory: {output_dir}")
                     break
 
     return output_dir
@@ -261,8 +254,16 @@ def _compare_files(case_dir: Path, output_dir: Path, cleanup: bool) -> List[str]
         if expected.name in {config_path.name, "mod_formats.json"}:
             continue  # skip inputs
 
-        expected_name = "_".join(expected.name.split("_")[-2:])
-        actual = produced.get(expected_name)
+        # The actual files are named like "300.0_erlang.json"
+        # Expected files might have the test case prefix, so we need to try both patterns
+        actual = produced.get(expected.name)
+        if actual is None:
+            # Try removing the test case prefix from expected filename
+            # e.g. "xtar_slicing_pff_2000.0_erlang.json" -> "2000.0_erlang.json"
+            if expected.name.startswith(case_dir.name + "_"):
+                suffix = expected.name[len(case_dir.name + "_"):]
+                actual = produced.get(suffix)
+
         rel_name = f"{case_dir.name}/{expected.name}"
 
         if actual is None:
@@ -293,10 +294,43 @@ def _run_single_case(case_dir: Path, base_args: Dict, cleanup: bool) -> bool:
     sim_dict = get_start_time(sim_dict)
     sim_start = sim_dict['s1']['sim_start']
 
-    # Inject the custom mod_formats path
-    for thread_params in sim_dict.values():
+    # Add default values for parameters that might be missing but accessed by simulation
+    defaults = {
+        'seeds': None,  # Use default seed behavior (iteration + 1)
+        'request_distribution': {"25": 0.10, "50": 0.10, "100": 0.50, "200": 0.20, "400": 0.10},
+        # SNR parameters
+        'beta': 0.5,
+        'theta': 0.0,
+        'phi': {"QPSK": 1, "16-QAM": 0.68, "64-QAM": 0.6190476190476191},
+        'xt_noise': False,
+        'requested_xt': {"QPSK": -26.19, "16-QAM": -36.69, "64-QAM": -41.69},
+        'xt_type': 'without_length',
+        # RL/ML parameters that might be accessed
+        'is_training': False,
+        'ml_training': False,
+        'output_train_data': False,
+        'ml_model': None,
+    }
+
+    # Apply defaults and inject the custom mod_formats path
+    for thread_key, thread_params in sim_dict.items():
+        # Apply defaults for missing parameters
+        for key, default_value in defaults.items():
+            if key not in thread_params:
+                thread_params[key] = default_value
+
+        # Keep original is_training values from config to match expected results behavior
+
+        # Add 'optimize' parameter that SimEnv expects - set to False for test runs
+        thread_params['optimize'] = False
+
         thread_params["mod_assumption_path"] = str(mod_assumption_path)
         thread_params['sim_start'] = sim_start
+        thread_params['thread_num'] = thread_key  # Ensure thread_num is set
+
+        # Create input data (topology_info, mod_per_bw, etc.)
+        updated_props = create_input(base_fp='data', engine_props=thread_params)
+        thread_params.update(updated_props)
 
     # Kick off the simulation (inherits cwd set to repo root)
     if case_dir.name in ('epsilon_greedy_bandit', 'ucb_bandit', 'ppo'):
@@ -349,28 +383,12 @@ def main() -> None:
 
     cases = _discover_cases(fixtures_root)
 
-    # Create a simple parser for comparison tests (no subcommands needed)
-
-    simple_parser = argparse.ArgumentParser(description="Comparison Test Parser")
-    add_run_sim_args(simple_parser)
-    add_routing_args(simple_parser)
-    add_spectrum_args(simple_parser)
-    add_snr_args(simple_parser)
-    add_sdn_args(simple_parser)
-    add_stats_args(simple_parser)
-
-    # Override required args with defaults for comparison tests
-    # Only provide essential args, let the test-specific config files control other parameters
-    default_args = [
-        "--config_path", "ini/run_ini/config.ini",
-        "--run_id", "comparison_test"
-    ]
-    base_args = vars(simple_parser.parse_args(default_args))
-
-    # Remove non-essential args that could override test-specific config values
-    # Keep only the essential args needed for the test framework
-    essential_args = {'config_path', 'run_id'}
-    base_args = {k: v for k, v in base_args.items() if k in essential_args or v is None}
+    # Create a minimal base_args dict for comparison tests
+    # We don't need to parse CLI args since the test configs provide all settings
+    base_args = {
+        "config_path": "ini/run_ini/config.ini",  # This will be overridden per test
+        "run_id": "comparison_test"
+    }
 
     all_ok = True
     for case in cases:

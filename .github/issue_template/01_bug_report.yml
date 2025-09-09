@@ -1,0 +1,214 @@
+name: 🐛 Bug Report
+description: Report a bug to help us improve FUSION simulator
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Bug Report
+        
+        Thank you for taking the time to report a bug! Please fill out the form below with as much detail as possible.
+
+  - type: textarea
+    id: bug-summary
+    attributes:
+      label: Bug Summary
+      description: Provide a clear and concise description of what the bug is
+      placeholder: Describe the bug in a few sentences...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact Level
+      description: How does this bug affect your work?
+      options:
+        - Critical (simulation crashes, data corruption)
+        - High (incorrect results, major functionality broken)  
+        - Medium (workflow disruption, performance issues)
+        - Low (minor inconvenience, cosmetic issues)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Select the primary component where the bug occurs
+      options:
+        - CLI Interface (fusion/cli/)
+        - Configuration System (fusion/configs/)
+        - Simulation Core (fusion/core/)
+        - ML/RL Modules (fusion/modules/rl/, fusion/modules/ml/)
+        - Routing Algorithms (fusion/modules/routing/)
+        - Spectrum Assignment (fusion/modules/spectrum/)
+        - SNR Calculations (fusion/modules/snr/)
+        - Visualization (fusion/visualization/)
+        - GUI Interface (fusion/gui/)
+        - Unity/HPC Integration (fusion/unity/)
+        - Testing Framework (tests/)
+        - Documentation
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce this bug
+      placeholder: |
+        1. Run command: `python -m fusion.cli.run_sim run_sim --config_path my_config.ini --run_id test`
+        2. Wait for simulation to start...
+        3. See error...
+      value: |
+        **Configuration Used:**
+        ```ini
+        # Please paste your configuration file or relevant sections
+        [general_settings]
+        # your config here...
+        ```
+        
+        **Command Executed:**
+        ```bash
+        # Example:
+        python -m fusion.cli.run_sim run_sim --config_path my_config.ini --run_id test_run
+        ```
+        
+        **Step-by-step reproduction:**
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Clear and concise description of what you expected to happen
+      placeholder: I expected the simulation to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: Clear and concise description of what actually happened
+      placeholder: Instead, the simulation...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-information
+    attributes:
+      label: Error Information
+      description: Please paste any error messages or log output
+      placeholder: |
+        Error Message:
+        ```
+        Paste the complete error message and stack trace here
+        ```
+        
+        Log Output:
+        ```
+        Paste relevant log output here
+        ```
+
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS 13 (Ventura)
+        - macOS 14 (Sonoma)
+        - macOS 15 (Sequoia)
+        - Ubuntu 20.04
+        - Ubuntu 22.04
+        - Ubuntu 24.04
+        - Other Linux (specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What Python version are you using?
+      placeholder: "3.11.5"
+    validations:
+      required: true
+
+  - type: input
+    id: fusion-version
+    attributes:
+      label: FUSION Version/Branch
+      description: What version or branch of FUSION are you using?
+      placeholder: "main, refactor/cli, v1.2.3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: simulation-context
+    attributes:
+      label: Simulation Context
+      description: Provide details about your simulation setup
+      placeholder: |
+        Network Topology: NSFNet
+        Simulation Type: Standard simulation
+        Traffic Load: 300-1200 Erlang
+        Request Size: 25-400 Gbps mixed
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Bug Frequency
+      description: How often does this bug occur?
+      options:
+        - Always reproduces (100%)
+        - Usually reproduces (>75%)
+        - Sometimes reproduces (25-75%)
+        - Rarely reproduces (<25%)
+        - Only under specific conditions
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or files that help explain the problem
+      placeholder: |
+        **Workaround (if found):**
+        Describe any temporary solution you've found
+        
+        **Screenshots/Output:**
+        Add screenshots or output files if applicable
+        
+        **Related Issues:**
+        Link any related issues with #issue_number
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I am using the latest version from the appropriate branch
+          required: true
+        - label: I have provided sufficient information to reproduce the issue
+          required: true
+        - label: I have included relevant configuration files and error messages
+          required: false
+        - label: I have tested with a minimal configuration (if possible)
+          required: false
