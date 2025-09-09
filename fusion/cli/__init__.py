@@ -19,7 +19,7 @@ Entry Points:
 - run_gui.py: Graphical user interface launcher with dependency management
 
 Core Modules:
-- args/: Modular argument definitions and centralized registry system
+- parameters/: Modular argument definitions and centralized registry system
 - main_parser.py: Centralized parser construction with modern naming
 - config_setup.py: Configuration management with proper error handling
 - constants.py: Shared CLI constants including exit codes and settings
@@ -39,7 +39,7 @@ from .main_parser import (
 from .main_parser import build_parser, get_train_args, get_gui_args
 
 # Core functionality imports
-from .args.registry import args_registry
+from .parameters.registry import args_registry
 from .config_setup import setup_config_from_cli, ConfigManager
 from .constants import SUCCESS_EXIT_CODE, ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE
 

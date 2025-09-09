@@ -2,7 +2,7 @@ import unittest
 import argparse
 
 from fusion.configs.schema import SIM_REQUIRED_OPTIONS, OPTIONAL_OPTIONS
-from fusion.cli.args.registry import args_registry
+from fusion.cli.parameters.registry import args_registry
 
 
 class TestConfigArgs(unittest.TestCase):

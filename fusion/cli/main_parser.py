@@ -5,7 +5,7 @@ Main CLI argument parser using the centralized registry system.
 from argparse import ArgumentParser, Namespace
 from typing import List
 
-from .args.registry import args_registry
+from .parameters.registry import args_registry
 
 # Argument group configurations
 TRAINING_GROUP_NAMES: List[str] = ["config", "debug", "simulation", "network", "traffic", "training", "statistics"]
