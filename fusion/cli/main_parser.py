@@ -1,54 +1,107 @@
-# fusion/cli/main_parser.py
-
 """
 Main CLI argument parser using the centralized registry system.
-Implements the architecture plan's requirement for clean argument parsing.
 """
+
+from argparse import ArgumentParser, Namespace
+from typing import List
 
 from .args.registry import args_registry
 
+# Argument group configurations
+TRAINING_GROUP_NAMES: List[str] = ["config", "debug", "simulation", "network", "traffic", "training", "statistics"]
+GUI_GROUP_NAMES: List[str] = ["gui", "debug", "output"]
 
-def build_parser():
+# Agent type choices
+AGENT_TYPE_CHOICES: List[str] = ["rl", "ml"]
+
+
+def build_main_argument_parser() -> ArgumentParser:
     """
-    Builds the main argument parser with subcommands.
+    Build the main CLI argument parser with all subcommands configured.
+    
+    Creates the primary argument parser that handles all CLI interactions
+    for the FUSION simulator, including subcommands for different operations
+    like training, GUI launch, and simulation execution.
 
-    Returns:
-        ArgumentParser: Configured main parser
+    :return: Fully configured argument parser with subcommands
+    :rtype: ArgumentParser
     """
     return args_registry.create_main_parser()
 
 
-def get_train_args():
+def create_training_argument_parser() -> Namespace:
     """
-    Builds the argument parser for training simulations (RL or ML).
+    Create and parse arguments for training simulations (RL or ML).
+    
+    Builds a specialized argument parser configured for machine learning
+    and reinforcement learning training workflows. Includes all necessary
+    argument groups for comprehensive training configuration.
 
-    Returns:
-        Parsed arguments for training
+    :return: Parsed command line arguments for training operations
+    :rtype: Namespace
+    :raises SystemExit: If required arguments are missing or invalid
     """
-    train_groups = ["config", "debug", "simulation", "network", "traffic", "training", "statistics"]
-    parser = args_registry.create_parser_with_groups(
+    training_parser = args_registry.create_parser_with_groups(
         "Train an agent (RL or ML)",
-        train_groups
+        TRAINING_GROUP_NAMES
     )
-    parser.add_argument(
+    training_parser.add_argument(
         "--agent_type",
-        choices=["rl", "ml"],
+        choices=AGENT_TYPE_CHOICES,
         required=True,
-        help="Type of agent to train"
+        help="Type of agent to train (rl=reinforcement learning, ml=machine learning)"
     )
-    return parser.parse_args()
+    return training_parser.parse_args()
 
 
-def get_gui_args():
+def create_gui_argument_parser() -> Namespace:
     """
-    Builds the argument parser for GUI simulations.
+    Create and parse arguments for GUI-based simulator interface.
+    
+    Builds a specialized argument parser configured for graphical user
+    interface operations. Includes GUI-specific settings, debug options,
+    and output configuration parameters.
 
-    Returns:
-        Parsed arguments for GUI
+    :return: Parsed command line arguments for GUI operations
+    :rtype: Namespace
+    :raises SystemExit: If argument parsing fails
     """
-    gui_groups = ["gui", "debug", "output"]
-    parser = args_registry.create_parser_with_groups(
+    gui_parser = args_registry.create_parser_with_groups(
         "Launch GUI for FUSION",
-        gui_groups
+        GUI_GROUP_NAMES
     )
-    return parser.parse_args()
+    return gui_parser.parse_args()
+
+
+# Backward compatibility functions
+def build_parser() -> ArgumentParser:
+    """
+    Legacy function name for building main argument parser.
+    
+    :return: Configured main parser
+    :rtype: ArgumentParser
+    :deprecated: Use build_main_argument_parser() instead
+    """
+    return build_main_argument_parser()
+
+
+def get_train_args() -> Namespace:
+    """
+    Legacy function name for creating training argument parser.
+    
+    :return: Parsed arguments for training
+    :rtype: Namespace  
+    :deprecated: Use create_training_argument_parser() instead
+    """
+    return create_training_argument_parser()
+
+
+def get_gui_args() -> Namespace:
+    """
+    Legacy function name for creating GUI argument parser.
+    
+    :return: Parsed arguments for GUI
+    :rtype: Namespace
+    :deprecated: Use create_gui_argument_parser() instead  
+    """
+    return create_gui_argument_parser()
