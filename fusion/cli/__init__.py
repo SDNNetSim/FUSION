@@ -1,33 +1,63 @@
-# fusion/cli/__init__.py
 """
-fusion.cli: Command-line interface entrypoints and argument parsing.
+fusion.cli: Command-line interface entry points and argument parsing.
 
-This package provides a clean CLI architecture following the FUSION refactor plan:
+Provides a clean CLI architecture following the FUSION refactor plan with
+modern Python practices, comprehensive error handling, and maintainable code
+organization following established coding standards.
+
+Features:
 - Minimal entry scripts that delegate to appropriate modules
 - Centralized argument registry system for consistent parsing
-- Modular argument groups for reusability
-- Proper error handling and validation
+- Modular argument groups for reusability and maintainability
+- Comprehensive error handling with specific exception types
+- Proper type annotations and Sphinx-style documentation
+- Backward compatibility for existing integrations
 
 Entry Points:
-- run_sim.py: Main simulation runner
-- run_train.py: Agent training (RL/ML)
-- run_gui.py: GUI launcher
+- run_sim.py: Main network simulation runner with multiprocessing support
+- run_train.py: Machine learning and reinforcement learning agent training
+- run_gui.py: Graphical user interface launcher with dependency management
 
-Architecture:
-- args/: Modular argument definitions and registry
-- main_parser.py: Centralized parser construction
-- config_setup.py: Configuration management
+Core Modules:
+- args/: Modular argument definitions and centralized registry system
+- main_parser.py: Centralized parser construction with modern naming
+- config_setup.py: Configuration management with proper error handling
+- constants.py: Shared CLI constants including exit codes and settings
+
+Backward Compatibility:
+All legacy function names are maintained through compatibility aliases.
 """
 
+# Modern function imports (recommended)
+from .main_parser import (
+    build_main_argument_parser,
+    create_training_argument_parser,
+    create_gui_argument_parser
+)
+
+# Legacy function imports (backward compatibility)
 from .main_parser import build_parser, get_train_args, get_gui_args
+
+# Core functionality imports
 from .args.registry import args_registry
 from .config_setup import setup_config_from_cli, ConfigManager
+from .constants import SUCCESS_EXIT_CODE, ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE
 
 __all__ = [
+    # Modern function names (recommended)
+    'build_main_argument_parser',
+    'create_training_argument_parser',
+    'create_gui_argument_parser',
+    # Legacy function names (backward compatibility)
     'build_parser',
     'get_train_args',
     'get_gui_args',
+    # Core functionality
     'args_registry',
     'setup_config_from_cli',
-    'ConfigManager'
+    'ConfigManager',
+    # CLI constants
+    'SUCCESS_EXIT_CODE',
+    'ERROR_EXIT_CODE',
+    'INTERRUPT_EXIT_CODE'
 ]
