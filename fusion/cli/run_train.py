@@ -5,10 +5,9 @@ and reinforcement learning agents. It supports multiple training algorithms
 and provides detailed error handling with helpful guidance for common issues.
 """
 
-import sys
-
 from fusion.cli.constants import SUCCESS_EXIT_CODE, ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE
 from fusion.cli.main_parser import create_training_argument_parser
+from fusion.cli.utils import create_entry_point_wrapper
 from fusion.sim.train_pipeline import run_training_pipeline
 
 
@@ -53,29 +52,12 @@ def main() -> int:
     return SUCCESS_EXIT_CODE
 
 
-# Backward compatibility function alias
-def train_main() -> int:
-    """
-    Legacy function name for main training entry point.
-    
-    :return: Exit code from main function
-    :rtype: int
-    :deprecated: Use main() directly instead
-    """
-    return main()
-
-
-def run_train_main() -> None:
-    """
-    Execute the training main function and exit with appropriate code.
-    
-    Convenience function that handles the sys.exit call for the main
-    training entry point. Provides clean separation between main logic
-    and process exit handling.
-
-    :raises SystemExit: Always exits with code from main() function
-    """
-    sys.exit(main())
+# Create entry point functions using shared utilities
+train_main, run_train_main = create_entry_point_wrapper(
+    main,
+    "training",
+    "Convenience function that handles the sys.exit call for the main training entry point. Provides clean separation between main logic and process exit handling."
+)
 
 
 if __name__ == "__main__":
