@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - 'release/**'
   pull_request:
     branches:
       - main
+      - 'release/**'
 
 jobs:
   test:
@@ -50,4 +52,4 @@ jobs:
           pip install -r other_requirements.txt
 
       - name: Run Python script
-        run: python ./run_sim.py --config_path=ini/example_ini/cross_platform.ini
+        run: python -m fusion.cli.run_sim run_sim --config_path=fusion/configs/templates/cross_platform.ini --run_id=ci_test

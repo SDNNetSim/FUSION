@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 
 from fusion.core.sdn_controller import SDNController
-from fusion.cli.args.sdn_args import SDNProps  # Class import for sdn_props
+from fusion.core.properties import SDNProps  # Class import for sdn_props
 
 
 class TestSDNController(unittest.TestCase):

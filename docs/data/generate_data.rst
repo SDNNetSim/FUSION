@@ -1,7 +1,7 @@
 Generate Data
 ==============
 
-.. automodule:: data_scripts.generate_data
+.. automodule:: fusion.io.generate
     :members:
     :undoc-members:
     :private-members:

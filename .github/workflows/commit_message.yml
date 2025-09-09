@@ -1,11 +1,11 @@
-name: Commit Message
+name: Commit Message Validation
 
 on:
   pull_request:
     types:
       - opened
       - edited
-      - reopened
+      - reopened  
       - synchronize
   pull_request_target:
     types:
@@ -16,20 +16,151 @@ on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
-
-  check-commit-message:
-    name: Check Commit Message
+  validate_commit_messages:
+    name: Validate Commit Messages
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ "3.11" ]
 
     steps:
-      - name: Check Commit Type
-        uses: gsactions/commit-message-checker@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          pattern: '^[A-Z].*'
-          flags: 'gm'
-          error: 'Your commit message must begin with an uppercase letter.'
+          fetch-depth: 0
+
+      - name: Debug commit information
+        run: |
+          echo "=== DEBUG: Current branch and commit info ==="
+          echo "Current branch: $(git branch --show-current)"
+          echo "HEAD commit: $(git rev-parse HEAD)"
+          echo "HEAD commit message:"
+          git log --format="%B" -n 1 HEAD
+          echo "=== All commits in this PR ==="
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Base: ${{ github.event.pull_request.base.sha }}"
+            echo "Head: ${{ github.event.pull_request.head.sha }}"
+            echo "Commits in PR:"
+            git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+            echo "=== Individual commit messages ==="
+            git log --format="%H: %s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+          else
+            echo "Push event - checking last commit"
+            git log --oneline -1
+          fi
+          echo "=== End Debug ==="
+
+      - name: Validate commit messages with custom script
+        run: |
+          #!/bin/bash
+          set -e
+          
+          echo "=== Custom Commit Message Validation ==="
+          
+          # Enhanced validation for conventional commits
+          # Allow detailed commit bodies while enforcing subject line format
+          validate_commit() {
+            local commit_sha="$1"
+            local subject_line="$2"
+            
+            # Check if this is a merge commit - these have different rules
+            local MERGE_PATTERN='^Merge (branch|pull request|remote-tracking branch)'
+            if echo "$subject_line" | grep -qE "$MERGE_PATTERN"; then
+              return 0  # Pass silently for merge commits
+            fi
+            
+            # Pattern for conventional commit subject line
+            # - Type is required
+            # - Scope is optional  
+            # - Description must be at least 5 chars, max 100 for entire subject line
+            # - Use imperative mood (no period at end)
+            # - Allow upper or lowercase start (for acronyms like CLI, API, etc.)
+            local SUBJECT_PATTERN='^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\(.+\))?: [a-zA-Z].{4,}[^.]$'
+            
+            # Check subject line length (entire line should be <= 100 chars)
+            if [ ${#subject_line} -gt 100 ]; then
+              echo "❌ COMMIT $commit_sha FAILED:"
+              echo "   Subject: '$subject_line'"
+              echo "   Error: Subject line too long (${#subject_line} chars, max 100)"
+              echo ""
+              return 1
+            fi
+            
+            # Check subject line format
+            if echo "$subject_line" | grep -qE "$SUBJECT_PATTERN"; then
+              return 0  # Pass silently
+            else
+              echo "❌ COMMIT $commit_sha FAILED:"
+              echo "   Subject: '$subject_line'"
+              echo "   Error: Subject line does not match conventional commit format"
+              echo ""
+              return 1
+            fi
+          }
+          
+          # Get commits to validate
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Validating PR commits from ${{ github.event.pull_request.base.sha }} to ${{ github.event.pull_request.head.sha }}"
+            echo ""
+            
+            failed_commits=()
+            total_commits=0
+            
+            # Get all commit SHAs and messages in the PR
+            while IFS='|' read -r sha msg; do
+              total_commits=$((total_commits + 1))
+              if ! validate_commit "$sha" "$msg"; then
+                failed_commits+=("$sha")
+              fi
+            done < <(git log --format="%H|%s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+            
+            # Show summary
+            if [ ${#failed_commits[@]} -eq 0 ]; then
+              echo "✅ All $total_commits commit messages are valid!"
+            else
+              echo ""
+              echo "📋 Required Format: <type>(scope): <description>"
+              echo ""
+              echo "Optional detailed body and footer are allowed below the subject line."
+              echo "Merge commits (starting with 'Merge branch/pull request') are automatically valid."
+              echo ""
+              echo "🏷️ Valid Types:"
+              echo "• feat     - New feature"
+              echo "• fix      - Bug fix"  
+              echo "• docs     - Documentation changes"
+              echo "• style    - Code style changes (formatting, etc.)"
+              echo "• refactor - Code refactoring"
+              echo "• perf     - Performance improvements"
+              echo "• test     - Adding or updating tests"
+              echo "• chore    - Maintenance tasks"
+              echo "• build    - Build system changes"
+              echo "• ci       - CI/CD changes"
+              echo ""
+              echo "📏 Subject Line Requirements:"
+              echo "• Total length: ≤100 characters"
+              echo "• Description: ≥5 characters"
+              echo "• Start with letter after colon (upper/lowercase both OK)"
+              echo "• No trailing period"
+              echo "• Be descriptive and clear"
+              echo ""
+              echo "✅ Good Examples:"
+              echo "  feat(cli): add configuration validation"
+              echo "  fix(routing): resolve path calculation bug"
+              echo "  refactor(gui): CLI integration for entry point"
+              echo "  docs: update installation guide with new requirements"
+              echo ""
+              exit 1
+            fi
+          else
+            # Push event - validate the pushed commit
+            echo "Validating push commit"
+            commit_sha=$(git rev-parse HEAD)
+            commit_msg=$(git log --format="%s" -n 1 HEAD)
+            
+            if validate_commit "$commit_sha" "$commit_msg"; then
+              echo "✅ Commit message is valid!"
+            else
+              exit 1
+            fi
+          fi
+

@@ -1,6 +1,9 @@
 import os
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 
 def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str):

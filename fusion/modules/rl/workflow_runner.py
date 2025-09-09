@@ -195,7 +195,7 @@ def run(env: object, sim_dict: dict, callback_list: list = None, trial=None):
 def run_optuna_study(sim_dict, callback_list):
     """
     Runs Optuna study for hyperparameter optimization.
-    
+
     :param env: The reinforcement learning environment.
     :param sim_dict: The simulation configuration dictionary containing paths, algorithms, and statistical parameters.
     """

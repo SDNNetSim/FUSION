@@ -1,26 +1,39 @@
 # fusion/sim/run_simulation.py
 
-# import multiprocessing
-from datetime import datetime
-from fusion.sim.network_simulator import NetworkSimulator  # we'll move class here
+from fusion.sim.batch_runner import run_batch_simulation
+
 
 def run_simulation(config_dict):
     """
-    Entry point for CLI. Kicks off one-thread simulation with config_dict.
-    If you want multi-threaded erlang later, extend this.
+    Legacy entry point maintained for backward compatibility.
+    New code should use run_batch_simulation directly.
     """
-    # TODO: Why isn't this used?
-    # stop_flag = multiprocessing.Event()
-    sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+    # Use the new batch runner with single-threaded execution
+    results = run_batch_simulation(config_dict, parallel=False)
 
-    # Wrap into the old sims_dict format
-    sims_dict = {
-        's1': {
-            **config_dict,
-            'sim_start': sim_start
-        }
-    }
+    # Return first result for compatibility
+    return results[0] if results else None
 
-    # Create and launch the simulation
-    simulator = NetworkSimulator()
-    simulator.run_sim(thread_num='s1', thread_params=sims_dict['s1'], sim_start=sim_start)
+
+def run_simulation_pipeline(args, stop_flag=None):  # pylint: disable=unused-argument
+    """
+    Pipeline function for running simulations from CLI.
+    Now uses the new batch_runner orchestrator.
+
+    Args:
+        args: Parsed command line arguments
+        stop_flag: Optional threading stop flag for cancellation
+    """
+    from fusion.cli.config_setup import load_and_validate_config  # pylint: disable=import-outside-toplevel
+
+    # Convert args to config dictionary
+    config_dict = load_and_validate_config(args)
+
+    # Determine if parallel execution is requested
+    parallel = args.parallel if hasattr(args, 'parallel') else False
+    num_processes = args.num_processes if hasattr(args, 'num_processes') else None
+
+    # Run using the new batch runner
+    results = run_batch_simulation(config_dict, parallel=parallel, num_processes=num_processes)
+
+    return results

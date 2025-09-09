@@ -1,9 +1,10 @@
+# pylint: disable=duplicate-code
 import math
 
 import numpy as np
 import networkx as nx
 
-from fusion.cli.args.snr_args import SNRProps
+from fusion.core.properties import SNRProps
 from fusion.modules.snr.utils import get_slot_index, get_loaded_files, compute_response
 
 
