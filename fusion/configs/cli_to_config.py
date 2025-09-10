@@ -1,16 +1,28 @@
 """CLI argument to configuration mapping for FUSION simulator."""
 
-from typing import Dict, Any
 import argparse
+from typing import Dict, Any, Tuple
+
+from fusion.configs.errors import ConfigTypeConversionError
 
 
 class CLIToConfigMapper:
-    """Maps CLI arguments to configuration structure."""
+    """Maps CLI arguments to configuration structure.
+    
+    This class provides utilities to map command-line arguments to the
+    hierarchical configuration structure used by FUSION. It maintains a
+    mapping dictionary that associates CLI argument names with their
+    corresponding configuration sections and keys.
+    """
 
     def __init__(self):
-        """Initialize CLI to config mapper."""
+        """Initialize CLI to config mapper.
+        
+        Sets up the internal mapping dictionary that defines how CLI
+        arguments correspond to configuration sections and keys.
+        """
         # Define mapping from CLI argument names to config sections and keys
-        self.arg_mapping = {
+        self.arg_mapping_dict: Dict[str, Tuple[str, str]] = {
             # General settings
             'holding_time': ('general_settings', 'holding_time'),
             'mod_assumption': ('general_settings', 'mod_assumption'),
@@ -111,57 +123,103 @@ class CLIToConfigMapper:
     def map_args_to_config(self, args: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """Map CLI arguments to configuration structure.
         
-        Args:
-            args: Dictionary of CLI arguments
-            
-        Returns:
-            Configuration dictionary organized by sections
+        Takes a flat dictionary of CLI arguments and transforms it into a
+        hierarchical configuration dictionary organized by sections.
+        
+        :param args: Dictionary of CLI arguments where keys are argument names
+                    and values are the argument values
+        :type args: Dict[str, Any]
+        :return: Configuration dictionary organized by sections where each
+                section contains its respective configuration parameters
+        :rtype: Dict[str, Dict[str, Any]]
+        
+        Example:
+            >>> mapper = CLIToConfigMapper()
+            >>> cli_args = {'holding_time': 10, 'network': 'nsfnet'}
+            >>> config = mapper.map_args_to_config(cli_args)
+            >>> print(config)
+            {'general_settings': {'holding_time': 10}, 
+             'topology_settings': {'network': 'nsfnet'}}
         """
-        config = {}
+        config: Dict[str, Dict[str, Any]] = {}
 
         for arg_name, value in args.items():
             if value is None:
                 continue
 
-            if arg_name in self.arg_mapping:
-                section, key = self.arg_mapping[arg_name]
+            try:
+                if arg_name in self.arg_mapping_dict:
+                    section, key = self.arg_mapping_dict[arg_name]
 
-                if section not in config:
-                    config[section] = {}
+                    if section not in config:
+                        config[section] = {}
 
-                config[section][key] = value
-            else:
-                # Handle unmapped arguments - put them in general_settings
-                if 'general_settings' not in config:
-                    config['general_settings'] = {}
-                config['general_settings'][arg_name] = value
+                    config[section][key] = value
+                else:
+                    # Handle unmapped arguments - put them in general_settings
+                    if 'general_settings' not in config:
+                        config['general_settings'] = {}
+                    config['general_settings'][arg_name] = value
+            except Exception as e:
+                raise ConfigTypeConversionError(
+                    f"Failed to map argument '{arg_name}' with value '{value}': {str(e)}"
+                ) from e
 
         return config
 
     def map_namespace_to_config(self, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
         """Map argparse Namespace to configuration structure.
         
-        Args:
-            args: argparse.Namespace object
-            
-        Returns:
-            Configuration dictionary organized by sections
+        Convenience method that converts an argparse.Namespace object to a
+        configuration dictionary.
+        
+        :param args: argparse.Namespace object containing parsed CLI arguments
+        :type args: argparse.Namespace
+        :return: Configuration dictionary organized by sections
+        :rtype: Dict[str, Dict[str, Any]]
+        :raises AttributeError: If args is not a valid Namespace object
         """
-        return self.map_args_to_config(vars(args))
+        try:
+            return self.map_args_to_config(vars(args))
+        except AttributeError as e:
+            raise AttributeError(
+                f"Invalid argparse.Namespace object provided: {str(e)}"
+            ) from e
 
     def get_cli_override_config(self, cli_args: Dict[str, Any],
                                 base_config: Dict[str, Any]) -> Dict[str, Any]:
         """Get configuration with CLI arguments overriding base config.
         
-        Args:
-            cli_args: CLI arguments dictionary
-            base_config: Base configuration dictionary
-            
-        Returns:
-            Merged configuration with CLI overrides
+        Merges CLI arguments with a base configuration, where CLI arguments
+        take precedence over base configuration values.
+        
+        :param cli_args: CLI arguments dictionary to override base config
+        :type cli_args: Dict[str, Any]
+        :param base_config: Base configuration dictionary to be overridden
+        :type base_config: Dict[str, Any]
+        :return: Merged configuration with CLI overrides applied
+        :rtype: Dict[str, Any]
+        
+        Example:
+            >>> base = {'general_settings': {'holding_time': 5}}
+            >>> cli = {'holding_time': 10}
+            >>> merged = mapper.get_cli_override_config(cli, base)
+            >>> print(merged['general_settings']['holding_time'])
+            10
         """
-        # Start with base config
-        result = base_config.copy()
+        # Validate inputs
+        if not isinstance(base_config, dict):
+            raise TypeError(
+                f"base_config must be a dictionary, got {type(base_config).__name__}"
+            )
+
+        # Start with deep copy of base config to avoid modifying original
+        result: Dict[str, Any] = {}
+        for key, value in base_config.items():
+            if isinstance(value, dict):
+                result[key] = value.copy()
+            else:
+                result[key] = value
 
         # Map CLI args to config format
         cli_config = self.map_args_to_config(cli_args)
@@ -177,10 +235,19 @@ class CLIToConfigMapper:
     def get_reverse_mapping(self) -> Dict[str, str]:
         """Get reverse mapping from config path to CLI argument name.
         
-        Returns:
-            Dictionary mapping (section, key) tuples to CLI argument names
+        Creates a reverse lookup dictionary that maps configuration paths
+        (in the format 'section.key') to their corresponding CLI argument names.
+        
+        :return: Dictionary mapping config paths to CLI argument names
+        :rtype: Dict[str, str]
+        
+        Example:
+            >>> mapper = CLIToConfigMapper()
+            >>> reverse_map = mapper.get_reverse_mapping()
+            >>> print(reverse_map['general_settings.holding_time'])
+            'holding_time'
         """
-        reverse_map = {}
-        for cli_arg, (section, key) in self.arg_mapping.items():
-            reverse_map[f"{section}.{key}"] = cli_arg
-        return reverse_map
+        reverse_map_dict: Dict[str, str] = {}
+        for cli_arg, (section, key) in self.arg_mapping_dict.items():
+            reverse_map_dict[f"{section}.{key}"] = cli_arg
+        return reverse_map_dict
