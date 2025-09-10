@@ -1,14 +1,22 @@
 """Configuration schema definitions for FUSION simulator.
 
-Defines the required and optional configuration options with their types.
+This module defines the required and optional configuration options
+for the FUSION simulator, including their expected types and conversion
+functions. These schemas are used for validation and type conversion
+during configuration loading.
 """
 
-from typing import Dict, Callable
+# Standard library imports
+from typing import Dict, Callable, Any
 
+# Third-party imports
+# None
+
+# Local application imports
 from fusion.utils.config import str_to_bool
 
 # Required configuration options for simulation
-SIM_REQUIRED_OPTIONS: Dict[str, Dict[str, Callable]] = {
+SIM_REQUIRED_OPTIONS_DICT: Dict[str, Dict[str, Callable[..., Any]]] = {
     'general_settings': {
         'erlang_start': float,
         'erlang_stop': float,
@@ -63,8 +71,8 @@ SIM_REQUIRED_OPTIONS: Dict[str, Dict[str, Callable]] = {
     },
 }
 
-# Optional configuration options
-OPTIONAL_OPTIONS: Dict[str, Dict[str, Callable]] = {
+# Optional configuration options with their type converters
+OPTIONAL_OPTIONS_DICT: Dict[str, Dict[str, Callable[..., Any]]] = {
     'general_settings': {
         'k_paths': int,
         'filter_mods': bool,
