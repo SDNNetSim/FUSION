@@ -216,12 +216,66 @@ Validation includes:
 
 ## Template System
 
-Templates in the `templates/` directory provide:
+Templates in the `templates/` directory provide pre-configured setups for different use cases:
 
-- **default.ini**: Comprehensive default configuration with all sections
-- **minimal.ini**: Minimal configuration for quick testing
-- **rl_training.ini**: Optimized for reinforcement learning training
-- **Legacy templates**: Existing configurations moved from `ini/` directory
+### Available Templates
+
+#### **default.ini** - Comprehensive Default Configuration
+Complete configuration with all sections and reasonable defaults for production use.
+
+**Key Features:**
+- Full spectrum of parameters across all sections
+- Balanced settings for general-purpose simulations
+- Comprehensive RL settings for machine learning experiments
+- Well-documented parameter choices
+
+**Best For:** Production simulations, baseline experiments, comprehensive testing
+
+#### **minimal.ini** - Quick Testing Configuration  
+Stripped-down configuration with only essential parameters for rapid testing.
+
+**Key Features:**
+- Only required parameters included
+- Fast execution with reduced complexity
+- Small traffic loads (300-500 Erlang)
+- Limited iterations (max_iters = 2)
+
+**Best For:** Unit testing, development debugging, quick validation
+
+#### **runtime_config.ini** - Runtime Optimized Configuration
+Optimized for runtime performance with epsilon-greedy algorithms.
+
+**Key Features:**
+- Epsilon-greedy bandit path algorithm for faster convergence
+- Medium traffic loads (300-500 Erlang)
+- Balanced between speed and accuracy
+- Thread section example (s2) included
+
+**Best For:** Development testing, algorithm comparison, runtime benchmarks
+
+#### **xtar_example_config.ini** - Cross-Talk Aware Configuration
+Specialized configuration for cross-talk aware simulations with XTAR assumptions.
+
+**Key Features:**
+- XTAR modulation assumptions enabled
+- Pan-European network topology
+- Cross-talk aware routing (xt_aware)
+- Priority-first allocation method
+- High traffic loads (2000+ Erlang)
+- Extended holding times (3600s)
+
+**Best For:** Cross-talk research, advanced optical simulations, European network studies
+
+#### **cross_platform.ini** - Cross-Platform Compatible Configuration
+Standardized configuration ensuring compatibility across different operating systems.
+
+**Key Features:**
+- Platform-agnostic file paths
+- Single request size distribution (100 Gbps only)
+- Simplified parameter set
+- Conservative resource usage
+
+**Best For:** CI/CD pipelines, multi-platform testing, containerized deployments
 
 ## Migration from Legacy System
 
@@ -298,6 +352,165 @@ python -m fusion.cli.run_sim run_sim \
 **`[rl_settings]`** - Reinforcement learning parameters (when using RL agents)
 
 For complete schema details, see `fusion/configs/schemas/main.json`
+
+## 📋 Complete Parameter Reference
+
+### `[general_settings]` - Core Simulation Parameters
+
+#### **Traffic Load Parameters**
+- `erlang_start` (number, ≥0): Starting traffic load in Erlangs (e.g., 300)
+- `erlang_stop` (number, ≥0): Ending traffic load in Erlangs (e.g., 1200)  
+- `erlang_step` (number, ≥0): Step size for traffic load increments (e.g., 300)
+
+#### **Simulation Control**
+- `max_iters` (integer, ≥1): Maximum simulation iterations per Erlang point (e.g., 4)
+- `num_requests` (integer, ≥1): Number of connection requests per iteration (e.g., 500)
+- `holding_time` (number, ≥0): Average connection holding time in seconds (e.g., 0.2)
+
+#### **Routing & Spectrum Assignment**
+- `route_method` (string): Routing algorithm
+  - `k_shortest_path`: K-shortest path routing
+  - `xt_aware`: Cross-talk aware routing
+- `allocation_method` (string): Spectrum allocation method
+  - `first_fit`: First-fit allocation
+  - `priority_first`: Priority-based allocation  
+- `k_paths` (integer, ≥1): Number of candidate paths to consider (e.g., 4)
+
+#### **Request Generation**
+- `request_distribution` (JSON object): Distribution of request sizes in Gbps
+  ```ini
+  request_distribution = {"25": 0.1, "50": 0.1, "100": 0.5, "200": 0.2, "400": 0.1}
+  ```
+
+#### **Modulation & Grid Settings**
+- `mod_assumption` (string): Modulation assumption type
+  - `DEFAULT`: Standard modulation formats
+  - `XTAR_ASSUMPTIONS`: Cross-talk aware modulation
+- `mod_assumption_path` (string): Path to modulation format definitions
+- `fixed_grid` (boolean): Enable fixed grid mode (true/false)
+- `guard_slots` (integer, ≥0): Number of guard slots between channels
+
+#### **Performance Optimization**
+- `thread_erlangs` (boolean): Enable parallel processing of Erlang points
+- `dynamic_lps` (boolean): Enable dynamic lightpath sizing
+- `pre_calc_mod_selection` (boolean): Pre-calculate modulation selection
+- `max_segments` (integer, ≥1): Maximum segments per lightpath
+
+#### **Output & Monitoring**
+- `save_snapshots` (boolean): Save network snapshots during simulation
+- `snapshot_step` (integer, ≥1): Frequency of snapshot saves
+- `print_step` (integer, ≥1): Frequency of progress output
+- `save_step` (integer, ≥1): Frequency of result saves
+- `save_start_end_slots` (boolean): Save spectrum slot allocation details
+
+### `[topology_settings]` - Network Configuration
+
+#### **Network Topology**
+- `network` (string): Network topology name
+  - `NSFNet`: US National Science Foundation Network
+  - `Pan-European`: European research network
+  - `USbackbone60`: 60-node US backbone network
+
+#### **Physical Parameters**
+- `bw_per_slot` (number, >0): Bandwidth per spectrum slot in GHz (e.g., 12.5)
+- `cores_per_link` (integer, ≥1): Number of fiber cores per link (e.g., 3)
+- `multi_fiber` (boolean): Enable multiple fiber support
+
+#### **Link Properties**
+- `const_link_weight` (boolean): Use constant link weights
+- `is_only_core_node` (boolean): Restrict connections to core nodes only
+
+### `[spectrum_settings]` - Spectral Resources
+
+- `c_band` (integer, ≥1): Number of spectrum slots in C-band (e.g., 320)
+- `o_band` (integer, ≥0): Number of spectrum slots in O-band (optional)
+- `e_band` (integer, ≥0): Number of spectrum slots in E-band (optional)  
+- `s_band` (integer, ≥0): Number of spectrum slots in S-band (optional)
+- `l_band` (integer, ≥0): Number of spectrum slots in L-band (optional)
+
+### `[snr_settings]` - Signal Quality Parameters
+
+#### **SNR Calculation**
+- `snr_type` (string): SNR calculation method
+  - `None`: Disable SNR calculations
+  - `xt_calculation`: Enable cross-talk aware SNR
+
+#### **Cross-Talk Parameters**
+- `xt_type` (string): Cross-talk calculation type
+  - `without_length`: Length-independent cross-talk
+  - `with_length`: Length-dependent cross-talk
+- `xt_noise` (boolean): Enable cross-talk noise modeling
+- `requested_xt` (JSON object): Target cross-talk levels per modulation
+  ```ini
+  requested_xt = {"QPSK": -26.19, "16-QAM": -36.69, "64-QAM": -41.69}
+  ```
+
+#### **Physical Layer Parameters**
+- `input_power` (number, >0): Optical input power in Watts (e.g., 0.001)
+- `beta` (number, ≥0): Fiber parameter beta
+- `theta` (number): Angle parameter for calculations
+- `phi` (JSON object): Modulation-specific phi values
+- `egn_model` (boolean): Enable EGN noise model
+- `bi_directional` (boolean): Enable bidirectional transmission
+
+### `[rl_settings]` - Reinforcement Learning
+
+#### **Training Configuration**
+- `is_training` (boolean): Enable training mode
+- `n_trials` (integer, ≥1): Number of training trials
+- `device` (string): Computation device (`cpu`, `cuda`, `mps`)
+- `optimize_hyperparameters` (boolean): Enable hyperparameter optimization
+- `optuna_trials` (integer, ≥1): Number of Optuna optimization trials
+
+#### **Algorithm Selection**
+- `path_algorithm` (string): Path selection algorithm
+  - `dqn`: Deep Q-Network
+  - `epsilon_greedy_bandit`: Epsilon-greedy bandit
+  - `first_fit`: First-fit heuristic
+- `core_algorithm` (string): Core selection algorithm  
+- `spectrum_algorithm` (string): Spectrum allocation algorithm
+
+#### **Learning Parameters**
+- `gamma` (number, 0-1): Discount factor for future rewards
+- `alpha_start` (number, >0): Initial learning rate
+- `alpha_end` (number, >0): Final learning rate  
+- `alpha_update` (string): Learning rate decay method
+- `epsilon_start` (number, 0-1): Initial exploration rate
+- `epsilon_end` (number, 0-1): Final exploration rate
+- `epsilon_update` (string): Exploration decay method
+
+#### **Network Architecture**
+- `feature_extractor` (string): Feature extraction method
+- `gnn_type` (string): Graph neural network type
+- `layers` (integer, ≥1): Number of network layers
+- `emb_dim` (integer, ≥1): Embedding dimension
+- `heads` (integer, ≥1): Number of attention heads
+
+#### **Reward Structure**
+- `reward` (integer): Positive reward value for successful allocations
+- `penalty` (integer): Negative penalty for blocking/failures
+- `dynamic_reward` (boolean): Enable dynamic reward scaling
+
+### `[ml_settings]` - Machine Learning
+
+- `deploy_model` (boolean): Deploy trained ML model
+- `ml_training` (boolean): Enable ML training mode
+- `ml_model` (string): ML algorithm type (`decision_tree`, `random_forest`, etc.)
+- `train_file_path` (string): Path to training data
+- `test_size` (number, 0-1): Fraction of data for testing
+- `output_train_data` (boolean): Save training data for analysis
+
+### `[file_settings]` - Output Configuration
+
+- `file_type` (string): Output file format (`json`, `csv`, `pickle`)
+
+### Thread Sections `[s1], [s2], ...` - Multi-Threading
+
+Thread-specific overrides for parallel simulation:
+```ini
+[s2]
+k_paths = 3  # Override k_paths for thread 2
+```
 
 ## 🛠️ Troubleshooting Guide
 
