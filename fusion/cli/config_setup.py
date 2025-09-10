@@ -17,7 +17,7 @@ from fusion.configs.constants import (
     DEFAULT_CONFIG_PATH, DEFAULT_THREAD_NAME,
     THREAD_SECTION_PATTERN, REQUIRED_SECTION, CONFIG_DIR_PATH
 )
-from fusion.configs.schema import SIM_REQUIRED_OPTIONS, OPTIONAL_OPTIONS
+from fusion.configs.schema import SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT
 from fusion.utils.config import (
     apply_cli_override, safe_type_convert, convert_dict_params_if_needed
 )
@@ -187,8 +187,8 @@ def load_config(config_path: Optional[str], args_dict: Optional[Dict[str, Any]] 
         resolved_path = _resolve_config_path(config_path)
         config = _read_config_file(resolved_path)
         _validate_config_structure(config)
-        _process_required_options(config, config_dict, SIM_REQUIRED_OPTIONS, OPTIONAL_OPTIONS, args_dict)
-        _process_optional_options(config, config_dict, OPTIONAL_OPTIONS, args_dict)
+        _process_required_options(config, config_dict, SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT, args_dict)
+        _process_optional_options(config, config_dict, OPTIONAL_OPTIONS_DICT, args_dict)
 
         thread_sections = [s for s in config.sections() if s != REQUIRED_SECTION]
         if thread_sections:
@@ -196,8 +196,8 @@ def load_config(config_path: Optional[str], args_dict: Optional[Dict[str, Any]] 
                 config=config,
                 config_dict=config_dict,
                 section_list=thread_sections,
-                types_dict=SIM_REQUIRED_OPTIONS,
-                optional_dict=OPTIONAL_OPTIONS,
+                types_dict=SIM_REQUIRED_OPTIONS_DICT,
+                optional_dict=OPTIONAL_OPTIONS_DICT,
                 args_dict=args_dict
             )
 
