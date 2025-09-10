@@ -23,8 +23,8 @@ def add_gui_args(parser: argparse.ArgumentParser) -> None:
     # Basic configuration (shared with other modules)
     add_config_args(parser)
 
-    # TODO: Add GUI-specific arguments as needed
-    # Examples: window size, theme, display options, etc.
+    # GUI-specific arguments pending - see cli/TODO.md for planned features
+    # Future: window size, theme, display options, etc.
 
 
 def add_all_gui_args(parser: argparse.ArgumentParser) -> None:
