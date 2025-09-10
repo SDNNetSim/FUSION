@@ -1,10 +1,10 @@
 """
-SNR measurement CLI arguments.
-Deprecated: Use simulation_args.py instead.
-Kept for backward compatibility.
+SNR and modulation CLI arguments.
+Handles signal-to-noise ratio calculations and modulation format selection.
 """
 
 import argparse
+
 
 def add_snr_args(parser: argparse.ArgumentParser) -> None:
     """
@@ -16,7 +16,8 @@ def add_snr_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--mod_assumption",
         type=str,
-        choices=["fixed", "adaptive", "precalculated", "DEFAULT", "CUSTOM", "slicing_dissertation", "ARASH_MOD_ASSUMPTIONS", "ARASH", "SNR_ASSUMPTIONS", "XTAR_ASSUMPTIONS"],
+        choices=["fixed", "adaptive", "precalculated", "DEFAULT", "CUSTOM", "slicing_dissertation",
+                 "ARASH_MOD_ASSUMPTIONS", "ARASH", "SNR_ASSUMPTIONS", "XTAR_ASSUMPTIONS"],
         help="Modulation format selection strategy"
     )
     parser.add_argument(
@@ -35,4 +36,9 @@ def add_snr_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=1e-3,
         help="Input power in Watts"
+    )
+    parser.add_argument(
+        "--egn_model",
+        action="store_true",
+        help="Enable Enhanced Gaussian Noise (EGN) model for SNR calculations"
     )
