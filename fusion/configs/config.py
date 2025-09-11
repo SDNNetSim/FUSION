@@ -1,23 +1,33 @@
 """Centralized configuration management for FUSION simulator."""
 
-import os
-import json
 import configparser
-from typing import Dict, Any, Optional
+import json
+import os
 from dataclasses import dataclass
+from typing import Dict, Any, Optional
 
 try:
     import yaml
 except ImportError:
     yaml = None
 
-from .validate import SchemaValidator
 from .cli_to_config import CLIToConfigMapper
+from .errors import (
+    ConfigError,
+    ConfigFileNotFoundError,
+    ConfigParseError,
+    ConfigTypeConversionError
+)
+from .validate import SchemaValidator
 
 
 @dataclass
 class SimulationConfig:
-    """Data class for simulation configuration."""
+    """Data class for simulation configuration.
+    
+    Contains all configuration sections needed for FUSION simulation.
+    Each attribute represents a configuration section with its parameters.
+    """
     general: Dict[str, Any]
     topology: Dict[str, Any]
     spectrum: Dict[str, Any]
@@ -28,19 +38,25 @@ class SimulationConfig:
 
 
 class ConfigManager:
-    """Centralized configuration manager with schema validation."""
+    """Centralized configuration manager with schema validation.
+    
+    Manages loading, validation, and access to FUSION configuration from
+    various file formats (INI, JSON, YAML). Supports schema validation
+    and CLI argument merging.
+    """
 
     def __init__(self, config_path: Optional[str] = None, schema_dir: Optional[str] = None):
         """Initialize configuration manager.
         
-        Args:
-            config_path: Path to configuration file
-            schema_dir: Directory containing schema files
+        :param config_path: Path to configuration file to load on initialization
+        :type config_path: Optional[str]
+        :param schema_dir: Directory containing schema files for validation
+        :type schema_dir: Optional[str]
         """
         self.config_path = config_path
         self.schema_validator = SchemaValidator(schema_dir) if schema_dir else None
         self._config: Optional[SimulationConfig] = None
-        self._raw_config: Dict[str, Any] = {}
+        self._raw_config_dict: Dict[str, Any] = {}
 
         if config_path and os.path.exists(config_path):
             self.load_config(config_path)
@@ -48,82 +64,114 @@ class ConfigManager:
     def load_config(self, path: str) -> SimulationConfig:
         """Load and validate configuration from file.
         
-        Args:
-            path: Path to configuration file
-            
-        Returns:
-            Validated configuration object
-            
-        Raises:
-            ValueError: If configuration is invalid
-            FileNotFoundError: If configuration file doesn't exist
+        Automatically detects file format based on extension and loads
+        the configuration. Validates against schema if available.
+        
+        :param path: Path to configuration file (INI, JSON, or YAML)
+        :type path: str
+        :return: Validated configuration object
+        :rtype: SimulationConfig
+        :raises ConfigFileNotFoundError: If configuration file doesn't exist
+        :raises ConfigParseError: If file format is unsupported or parsing fails
+        :raises ConfigError: If configuration validation fails
+        
+        Example:
+            >>> manager = ConfigManager()
+            >>> config = manager.load_config('config.ini')
+            >>> print(config.general['holding_time'])
+            10
         """
         if not os.path.exists(path):
-            raise FileNotFoundError(f"Configuration file not found: {path}")
+            raise ConfigFileNotFoundError(
+                f"Configuration file not found: '{path}'. "
+                f"Please ensure the file exists or provide a valid path."
+            )
 
-        # Determine file type and load accordingly
-        if path.endswith('.ini'):
-            self._raw_config = self._load_ini(path)
-        elif path.endswith('.json'):
-            self._raw_config = self._load_json(path)
-        elif path.endswith(('.yaml', '.yml')):
-            self._raw_config = self._load_yaml(path)
-        else:
-            raise ValueError(f"Unsupported configuration file format: {path}")
+        # Load configuration based on file extension
+        try:
+            if path.endswith('.ini'):
+                self._raw_config_dict = self._load_ini(path)
+            elif path.endswith('.json'):
+                self._raw_config_dict = self._load_json(path)
+            elif path.endswith(('.yaml', '.yml')):
+                self._raw_config_dict = self._load_yaml(path)
+            else:
+                raise ConfigParseError(
+                    f"Unsupported configuration file format: '{path}'. "
+                    f"Supported formats: .ini, .json, .yaml, .yml"
+                )
+        except Exception as e:
+            if isinstance(e, (ConfigError, ConfigFileNotFoundError, ConfigParseError)):
+                raise
+            raise ConfigParseError(f"Failed to parse configuration file: {str(e)}") from e
 
         # Validate against schema if validator is available
         if self.schema_validator:
-            self.schema_validator.validate(self._raw_config)
+            try:
+                self.schema_validator.validate(self._raw_config_dict)
+            except Exception as e:
+                raise ConfigError(
+                    f"Configuration validation failed: {str(e)}"
+                ) from e
 
-        # Convert to structured configuration
-        self._config = self._create_config_object(self._raw_config)
+        # Convert to structured configuration object
+        self._config = self._create_config_object(self._raw_config_dict)
         return self._config
 
     def _load_ini(self, path: str) -> Dict[str, Any]:
-        """Load INI configuration file."""
         config = configparser.ConfigParser()
         config.read(path)
 
-        result = {}
+        result_dict: Dict[str, Any] = {}
         for section_name in config.sections():
-            section = {}
+            section_dict: Dict[str, Any] = {}
             for key, value in config[section_name].items():
-                # Try to parse JSON values (for lists/dicts)
+                # Parse JSON values first (handles lists/dicts/null)
                 try:
-                    section[key] = json.loads(value)
+                    section_dict[key] = json.loads(value)
                 except (json.JSONDecodeError, ValueError):
-                    # Try to parse as number
+                    # Parse numeric values
                     try:
                         if '.' in value:
-                            section[key] = float(value)
+                            section_dict[key] = float(value)
                         else:
-                            section[key] = int(value)
+                            section_dict[key] = int(value)
                     except ValueError:
-                        # Try to parse as boolean
+                        # Parse boolean values
                         if value.lower() in ('true', 'false'):
-                            section[key] = value.lower() == 'true'
+                            section_dict[key] = value.lower() == 'true'
                         elif value.lower() == 'none':
-                            section[key] = None
+                            section_dict[key] = None
                         else:
-                            section[key] = value
-            result[section_name] = section
+                            section_dict[key] = value
+            result_dict[section_name] = section_dict
 
-        return result
+        return result_dict
 
     def _load_json(self, path: str) -> Dict[str, Any]:
-        """Load JSON configuration file."""
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            raise ConfigParseError(
+                f"Invalid JSON format in '{path}': {str(e)}"
+            ) from e
 
     def _load_yaml(self, path: str) -> Dict[str, Any]:
-        """Load YAML configuration file."""
         if yaml is None:
-            raise ImportError("PyYAML is required for YAML configuration files")
-        with open(path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
+            raise ImportError(
+                "PyYAML is required for YAML configuration files. "
+                "Install it with: pip install pyyaml"
+            )
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise ConfigParseError(
+                f"Invalid YAML format in '{path}': {str(e)}"
+            ) from e
 
     def _create_config_object(self, raw_config: Dict[str, Any]) -> SimulationConfig:
-        """Create structured configuration object from raw config."""
         return SimulationConfig(
             general=raw_config.get('general_settings', {}),
             topology=raw_config.get('topology_settings', {}),
@@ -135,22 +183,33 @@ class ConfigManager:
         )
 
     def get_config(self) -> Optional[SimulationConfig]:
-        """Get the loaded configuration object."""
+        """Get the loaded configuration object.
+        
+        :return: Loaded configuration or None if not loaded
+        :rtype: Optional[SimulationConfig]
+        """
         return self._config
 
     def get_module_config(self, module_name: str) -> Dict[str, Any]:
         """Get configuration for a specific module.
         
-        Args:
-            module_name: Name of the module (e.g., 'routing', 'spectrum', 'snr')
-            
-        Returns:
-            Module-specific configuration dictionary
+        Returns the configuration section(s) relevant to a specific module.
+        Some modules like 'routing' may combine multiple sections.
+        
+        :param module_name: Name of the module (e.g., 'routing', 'spectrum', 'snr')
+        :type module_name: str
+        :return: Module-specific configuration dictionary
+        :rtype: Dict[str, Any]
+        
+        Example:
+            >>> config = manager.get_module_config('routing')
+            >>> print(config['k_paths'])  # From general settings
+            3
         """
         if not self._config:
             return {}
 
-        module_map = {
+        module_map_dict: Dict[str, Dict[str, Any]] = {
             'general': self._config.general,
             'topology': self._config.topology,
             'spectrum': self._config.spectrum,
@@ -164,35 +223,51 @@ class ConfigManager:
             },
         }
 
-        return module_map.get(module_name, {})
+        return module_map_dict.get(module_name, {})
 
     def save_config(self, path: str, format_type: str = 'ini') -> None:
         """Save current configuration to file.
         
-        Args:
-            path: Output file path
-            format_type: Output format ('ini', 'json', 'yaml')
+        Saves the current configuration in the specified format.
+        
+        :param path: Output file path
+        :type path: str
+        :param format_type: Output format ('ini', 'json', 'yaml'), defaults to 'ini'
+        :type format_type: str
+        :raises ValueError: If no configuration is loaded
+        :raises ConfigError: If format is unsupported or save fails
         """
-        if not self._raw_config:
-            raise ValueError("No configuration loaded to save")
+        if not self._raw_config_dict:
+            raise ValueError(
+                "No configuration loaded to save. "
+                "Please load a configuration first using load_config()."
+            )
 
-        if format_type == 'ini':
-            self._save_ini(path)
-        elif format_type == 'json':
-            self._save_json(path)
-        elif format_type == 'yaml':
-            self._save_yaml(path)
-        else:
-            raise ValueError(f"Unsupported format: {format_type}")
+        try:
+            if format_type == 'ini':
+                self._save_ini(path)
+            elif format_type == 'json':
+                self._save_json(path)
+            elif format_type == 'yaml':
+                self._save_yaml(path)
+            else:
+                raise ConfigError(
+                    f"Unsupported format: '{format_type}'. "
+                    f"Supported formats: 'ini', 'json', 'yaml'"
+                )
+        except Exception as e:
+            if isinstance(e, ConfigError):
+                raise
+            raise ConfigError(f"Failed to save configuration: {str(e)}") from e
 
     def _save_ini(self, path: str) -> None:
-        """Save configuration as INI file."""
         config = configparser.ConfigParser()
 
-        for section_name, section_data in self._raw_config.items():
+        for section_name, section_data in self._raw_config_dict.items():
             config[section_name] = {}
             for key, value in section_data.items():
                 if isinstance(value, (dict, list)):
+                    # Complex types saved as JSON strings
                     config[section_name][key] = json.dumps(value)
                 else:
                     config[section_name][key] = str(value)
@@ -201,48 +276,69 @@ class ConfigManager:
             config.write(f)
 
     def _save_json(self, path: str) -> None:
-        """Save configuration as JSON file."""
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(self._raw_config, f, indent=2)
+            json.dump(self._raw_config_dict, f, indent=2)
 
     def _save_yaml(self, path: str) -> None:
-        """Save configuration as YAML file."""
         if yaml is None:
-            raise ImportError("PyYAML is required for YAML configuration files")
+            raise ImportError(
+                "PyYAML is required for YAML configuration files. "
+                "Install it with: pip install pyyaml"
+            )
         with open(path, 'w', encoding='utf-8') as f:
-            yaml.dump(self._raw_config, f, default_flow_style=False)
+            yaml.dump(self._raw_config_dict, f, default_flow_style=False)
 
     def update_config(self, section: str, key: str, value: Any) -> None:
         """Update a specific configuration value.
         
-        Args:
-            section: Configuration section name
-            key: Configuration key
-            value: New value
+        Updates a single configuration value and recreates the
+        configuration object to reflect the change.
+        
+        :param section: Configuration section name
+        :type section: str
+        :param key: Configuration key within the section
+        :type key: str
+        :param value: New value to set
+        :type value: Any
+        
+        Example:
+            >>> manager.update_config('general_settings', 'holding_time', 20)
         """
-        if section not in self._raw_config:
-            self._raw_config[section] = {}
+        if section not in self._raw_config_dict:
+            self._raw_config_dict[section] = {}
 
-        self._raw_config[section][key] = value
+        self._raw_config_dict[section][key] = value
 
-        # Recreate config object
+        # Recreate config object to reflect changes
         if self._config:
-            self._config = self._create_config_object(self._raw_config)
+            self._config = self._create_config_object(self._raw_config_dict)
 
     def merge_cli_args(self, args: Dict[str, Any]) -> None:
         """Merge CLI arguments into configuration.
         
-        Args:
-            args: Dictionary of CLI arguments
+        CLI arguments take precedence over existing configuration values.
+        
+        :param args: Dictionary of CLI arguments to merge
+        :type args: Dict[str, Any]
+        :raises ConfigTypeConversionError: If CLI argument mapping fails
+        
+        Example:
+            >>> cli_args = {'holding_time': 15, 'network': 'nsfnet'}
+            >>> manager.merge_cli_args(cli_args)
         """
-        mapper = CLIToConfigMapper()
-        cli_config = mapper.map_args_to_config(args)
+        try:
+            mapper = CLIToConfigMapper()
+            cli_config_dict = mapper.map_args_to_config(args)
 
-        # Merge CLI config into existing config
-        for section, values in cli_config.items():
-            if section not in self._raw_config:
-                self._raw_config[section] = {}
-            self._raw_config[section].update(values)
+            # Merge CLI config into existing config
+            for section, values in cli_config_dict.items():
+                if section not in self._raw_config_dict:
+                    self._raw_config_dict[section] = {}
+                self._raw_config_dict[section].update(values)
 
-        # Recreate config object
-        self._config = self._create_config_object(self._raw_config)
+            # Recreate config object with merged values
+            self._config = self._create_config_object(self._raw_config_dict)
+        except Exception as e:
+            raise ConfigTypeConversionError(
+                f"Failed to merge CLI arguments: {str(e)}"
+            ) from e
