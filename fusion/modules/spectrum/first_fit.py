@@ -73,8 +73,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
         self.spectrum_props.is_free = False
         self.spectrum_props.start_slot = None
         self.spectrum_props.end_slot = None
-        self.spectrum_props.core_num = None
-        self.spectrum_props.curr_band = None
+        self.spectrum_props.core_number = None
+        self.spectrum_props.current_band = None
 
         # Try first fit allocation
         success = self._find_first_fit()
@@ -86,8 +86,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             return {
                 'start_slot': self.spectrum_props.start_slot,
                 'end_slot': self.spectrum_props.end_slot,
-                'core_num': self.spectrum_props.core_num,
-                'band': self.spectrum_props.curr_band,
+                'core_number': self.spectrum_props.core_number,
+                'band': self.spectrum_props.current_band,
                 'is_free': self.spectrum_props.is_free,
                 'slots_needed': self.spectrum_props.slots_needed
             }
@@ -169,8 +169,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
                 if is_contiguous:
                     self.spectrum_props.start_slot = start_slot
                     self.spectrum_props.end_slot = start_slot + self.spectrum_props.slots_needed - 1
-                    self.spectrum_props.core_num = core_num
-                    self.spectrum_props.curr_band = band
+                    self.spectrum_props.core_number = core_num
+                    self.spectrum_props.current_band = band
                     self.spectrum_props.is_free = True
                     return True
 
@@ -184,10 +184,10 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             dest = self.spectrum_props.path_list[i + 1]
             link_key = (source, dest)
 
-            if link_key not in self.sdn_props.net_spec_dict:
+            if link_key not in self.sdn_props.network_spectrum_dict:
                 return False
 
-            link_dict = self.sdn_props.net_spec_dict[link_key]
+            link_dict = self.sdn_props.network_spectrum_dict[link_key]
 
             # Try to find assignment for this link
             if self._try_cores_and_bands_for_link(link_dict):
@@ -238,10 +238,10 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             source, dest = path[i], path[i + 1]
             link_key = (source, dest)
 
-            if link_key not in self.sdn_props.net_spec_dict:
+            if link_key not in self.sdn_props.network_spectrum_dict:
                 return False
 
-            link_dict = self.sdn_props.net_spec_dict[link_key]
+            link_dict = self.sdn_props.network_spectrum_dict[link_key]
 
             if (band not in link_dict['cores_matrix'] or
                     core_num >= len(link_dict['cores_matrix'][band])):
@@ -263,10 +263,10 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             source, dest = path[i], path[i + 1]
             link_key = (source, dest)
 
-            if link_key not in self.sdn_props.net_spec_dict:
+            if link_key not in self.sdn_props.network_spectrum_dict:
                 return False
 
-            link_dict = self.sdn_props.net_spec_dict[link_key]
+            link_dict = self.sdn_props.network_spectrum_dict[link_key]
             core_array = link_dict['cores_matrix'][band][core_num]
 
             # Allocate slots with request ID
@@ -282,10 +282,10 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             source, dest = path[i], path[i + 1]
             link_key = (source, dest)
 
-            if link_key not in self.sdn_props.net_spec_dict:
+            if link_key not in self.sdn_props.network_spectrum_dict:
                 return False
 
-            link_dict = self.sdn_props.net_spec_dict[link_key]
+            link_dict = self.sdn_props.network_spectrum_dict[link_key]
             core_array = link_dict['cores_matrix'][band][core_num]
 
             # Free slots by setting to 0
@@ -303,8 +303,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             source, dest = path[i], path[i + 1]
             link_key = (source, dest)
 
-            if link_key in self.sdn_props.net_spec_dict:
-                link_dict = self.sdn_props.net_spec_dict[link_key]
+            if link_key in self.sdn_props.network_spectrum_dict:
+                link_dict = self.sdn_props.network_spectrum_dict[link_key]
                 link_fragmentation = self._calculate_link_fragmentation(link_dict)
                 total_fragmentation += link_fragmentation
                 link_count += 1

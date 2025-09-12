@@ -17,12 +17,12 @@ class SpectrumHelpers:
 
         self.start_index = None
         self.end_index = None
-        self.core_num = None
-        self.curr_band = None
+        self.core_number = None
+        self.current_band = None
 
     def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
-        core_arr = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix'][self.curr_band][self.core_num]
-        rev_core_arr = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix'][self.curr_band][self.core_num]
+        core_arr = self.sdn_props.network_spectrum_dict[link_tuple]['cores_matrix'][self.current_band][self.core_number]
+        rev_core_arr = self.sdn_props.network_spectrum_dict[rev_link_tuple]['cores_matrix'][self.current_band][self.core_number]
         if self.spectrum_props.slots_needed == 1 and self.engine_props['guard_slots'] == 0:
             return bool(core_arr[self.start_index] == 0.0 and rev_core_arr[self.start_index] == 0.0)
 
@@ -57,10 +57,10 @@ class SpectrumHelpers:
 
     def _update_spec_props(self):
         if self.spectrum_props.forced_core is not None:
-            self.core_num = self.spectrum_props.forced_core
+            self.core_number = self.spectrum_props.forced_core
 
         if self.spectrum_props.forced_band is not None:
-            self.curr_band = self.spectrum_props.forced_band
+            self.current_band = self.spectrum_props.forced_band
 
         if self.engine_props['allocation_method'] == 'last_fit':
             self.spectrum_props.start_slot = self.end_index
@@ -69,8 +69,8 @@ class SpectrumHelpers:
             self.spectrum_props.start_slot = self.start_index
             self.spectrum_props.end_slot = self.end_index + self.engine_props['guard_slots']
 
-        self.spectrum_props.core_num = self.core_num
-        self.spectrum_props.curr_band = self.curr_band
+        self.spectrum_props.core_number = self.core_number
+        self.spectrum_props.current_band = self.current_band
         return self.spectrum_props
 
     def check_super_channels(self, open_slots_matrix: list, flag: str):
@@ -139,8 +139,8 @@ class SpectrumHelpers:
                      'channel_inters_dict': {}}
 
         for source_dest in zip(self.spectrum_props.path_list, self.spectrum_props.path_list[1:]):
-            free_slots = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=source_dest)
-            free_channels = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
+            free_slots = find_free_slots(network_spectrum_dict=self.sdn_props.network_spectrum_dict, link_tuple=source_dest)
+            free_channels = find_free_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                                slots_needed=self.spectrum_props.slots_needed,
                                                link_tuple=source_dest)
 

@@ -47,7 +47,7 @@ def create_input(base_fp: str, engine_props: dict):
                                                    net_name=engine_props['network'],
                                                    is_only_core_node=engine_props['is_only_core_node'])
     engine_props['topology_info'] = create_pt(cores_per_link=engine_props['cores_per_link'],
-                                              net_spec_dict=network_dict)
+                                              network_spectrum_dict=network_dict)
     engine_props['core_nodes'] = core_nodes_list
 
     return engine_props

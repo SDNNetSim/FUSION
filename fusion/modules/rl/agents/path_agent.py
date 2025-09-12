@@ -46,13 +46,13 @@ class PathAgent(BaseAgent):
         if self.hyperparam_obj.epsilon_strategy not in EPISODIC_STRATEGIES:
             self.hyperparam_obj.update_eps()
 
-    def update(self, was_allocated: bool, net_spec_dict: dict, iteration: int,
+    def update(self, was_allocated: bool, network_spectrum_dict: dict, iteration: int,
                path_length: int, trial: int):  # pylint: disable=unused-argument
         """
         Makes updates to the agent for each time step.
 
         :param was_allocated: If the request was allocated.
-        :param net_spec_dict: The current network spectrum database.
+        :param network_spectrum_dict: The current network spectrum database.
         :param path_length: Length of the path.
         :param trial: The current trial.
         :param iteration: The current iteration.
@@ -76,7 +76,7 @@ class PathAgent(BaseAgent):
         self.algorithm_obj.iteration = iteration
         if self.algorithm == 'q_learning':
             self.algorithm_obj.learn_rate = self.hyperparam_obj.curr_alpha
-            self.algorithm_obj.update_q_matrix(reward=reward, level_index=self.level_index, net_spec_dict=net_spec_dict,
+            self.algorithm_obj.update_q_matrix(reward=reward, level_index=self.level_index, network_spectrum_dict=network_spectrum_dict,
                                                flag='path', trial=trial, iteration=iteration)
         elif self.algorithm == 'epsilon_greedy_bandit':
             self.algorithm_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration,

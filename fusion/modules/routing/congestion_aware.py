@@ -58,7 +58,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         # Check if topology has the required attributes for congestion calculation
         return (hasattr(topology, 'nodes') and
                 hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'net_spec_dict'))
+                hasattr(self.sdn_props, 'network_spectrum_dict'))
 
     def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
         """Find a route from source to destination considering congestion.
@@ -121,7 +121,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.net_spec_dict[(path_list[i], path_list[i + 1])]
+            link_dict = self.sdn_props.network_spectrum_dict[(path_list[i], path_list[i + 1])]
             free_slots = 0
             for band in link_dict['cores_matrix']:
                 cores_matrix = link_dict['cores_matrix'][band]
@@ -157,8 +157,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
 
         for i in range(len(path) - 1):
             link_key = (path[i], path[i + 1])
-            if link_key in self.sdn_props.net_spec_dict:
-                link_dict = self.sdn_props.net_spec_dict[link_key]
+            if link_key in self.sdn_props.network_spectrum_dict:
+                link_dict = self.sdn_props.network_spectrum_dict[link_key]
                 for band in link_dict['cores_matrix']:
                     cores_matrix = link_dict['cores_matrix'][band]
                     for core_arr in cores_matrix:
@@ -190,7 +190,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             topology: NetworkX graph to update weights for
         """
         # Update congestion costs for all links based on current spectrum usage
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             congestion = self._calculate_link_congestion(source, destination)
 
@@ -202,10 +202,10 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
     def _calculate_link_congestion(self, source: Any, destination: Any) -> float:
         """Calculate congestion level for a specific link."""
         link_key = (source, destination)
-        if link_key not in self.sdn_props.net_spec_dict:
+        if link_key not in self.sdn_props.network_spectrum_dict:
             return 0.0
 
-        link_dict = self.sdn_props.net_spec_dict[link_key]
+        link_dict = self.sdn_props.network_spectrum_dict[link_key]
         total_used_slots = 0
         total_slots = 0
 

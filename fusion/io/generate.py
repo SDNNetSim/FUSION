@@ -4,12 +4,12 @@ import math
 import json
 
 
-def create_pt(cores_per_link: int, net_spec_dict: dict):
+def create_pt(cores_per_link: int, network_spectrum_dict: dict):
     """
     Generates information relevant to the physical topology of the network.
 
     :param cores_per_link: The number of cores in each fiber's link.
-    :param net_spec_dict: The network spectrum database.
+    :param network_spectrum_dict: The network spectrum database.
     :return: Physical layer information topology of the network.
     :rtype: dict
     """
@@ -26,14 +26,14 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
     }
 
     topology_dict = {
-        'nodes': {node: {'type': 'CDC'} for nodes in net_spec_dict for node in nodes},
+        'nodes': {node: {'type': 'CDC'} for nodes in network_spectrum_dict for node in nodes},
         'links': {},
     }
 
-    for link_num, (source_node, destination_node) in enumerate(net_spec_dict, 1):
+    for link_num, (source_node, destination_node) in enumerate(network_spectrum_dict, 1):
         link_props_dict = {
             'fiber': fiber_props_dict,
-            'length': net_spec_dict[(source_node, destination_node)],
+            'length': network_spectrum_dict[(source_node, destination_node)],
             'source': source_node,
             'destination': destination_node,
             'span_length': 100,
@@ -43,7 +43,7 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
     # Validation check to ensure we have nodes
     if not topology_dict['nodes']:
         raise ValueError(
-            f"create_pt generated empty nodes dictionary. Input net_spec_dict had {len(net_spec_dict)} links: {list(net_spec_dict.keys())[:5]}...")
+            f"create_pt generated empty nodes dictionary. Input network_spectrum_dict had {len(network_spectrum_dict)} links: {list(network_spectrum_dict.keys())[:5]}...")
 
     return topology_dict
 

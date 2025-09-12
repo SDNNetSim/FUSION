@@ -57,7 +57,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         """
         return (hasattr(topology, 'nodes') and
                 hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'net_spec_dict'))
+                hasattr(self.sdn_props, 'network_spectrum_dict'))
 
     def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
         """Find a route from source to destination considering fragmentation.
@@ -77,7 +77,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         # Reset paths matrix for new calculation
         self.route_props.paths_matrix = []
         self.route_props.weights_list = []
-        self.route_props.mod_formats_matrix = []
+        self.route_props.modulation_formats_matrix = []
 
         try:
             # Update fragmentation costs for all links
@@ -104,13 +104,13 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
         # Calculate fragmentation for each direct link
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             path_list = [source, destination]
 
             # Compute average fragmentation on this direct link
             frag_score = find_path_frag(path_list=path_list,
-                                        net_spec_dict=self.sdn_props.net_spec_dict)
+                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
             # Store frag score for both directions if bidirectional
             if hasattr(topology, 'edges'):
@@ -143,7 +143,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
 
         try:
             return find_path_frag(path_list=path,
-                                  net_spec_dict=self.sdn_props.net_spec_dict)
+                                  network_spectrum_dict=self.sdn_props.network_spectrum_dict)
         except (KeyError, AttributeError, TypeError):
             return 0.0
 
@@ -184,12 +184,12 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             topology: NetworkX graph to update weights for
         """
         # Recalculate fragmentation costs for all links
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             path_list = [source, destination]
 
             frag_score = find_path_frag(path_list=path_list,
-                                        net_spec_dict=self.sdn_props.net_spec_dict)
+                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
             if hasattr(topology, 'edges'):
                 topology[source][destination]['frag_cost'] = frag_score

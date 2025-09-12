@@ -52,9 +52,9 @@ class RoutingHelpers:
         total_mci = 0
         for channel in channels_list:
             # The current center frequency for the occupied channel
-            curr_freq = channel[0] * self.route_props.freq_spacing
-            curr_freq += (len(channel) * self.route_props.freq_spacing) / 2
-            bandwidth = len(channel) * self.route_props.freq_spacing
+            curr_freq = channel[0] * self.route_props.frequency_spacing
+            curr_freq += (len(channel) * self.route_props.frequency_spacing) / 2
+            bandwidth = len(channel) * self.route_props.frequency_spacing
             # Power spectral density
             power_spec_dens = self.route_props.input_power / bandwidth
 
@@ -76,8 +76,8 @@ class RoutingHelpers:
                 for channel in free_channels_list:
                     num_channels += 1
                     # Calculate the center frequency for the open channel
-                    center_freq = channel[0] * self.route_props.freq_spacing
-                    center_freq += (self.sdn_props.slots_needed * self.route_props.freq_spacing) / 2
+                    center_freq = channel[0] * self.route_props.frequency_spacing
+                    center_freq += (self.sdn_props.slots_needed * self.route_props.frequency_spacing) / 2
 
                     nli_cost += self._find_channel_mci(channels_list=taken_channels_dict[band][core_num],
                                                        center_freq=center_freq, num_span=num_span)
@@ -99,20 +99,20 @@ class RoutingHelpers:
         :return: The worst NLI.
         :rtype: float
         """
-        links_list = list(self.sdn_props.net_spec_dict.keys())
+        links_list = list(self.sdn_props.network_spectrum_dict.keys())
         sim_link_list = self._get_simulated_link()
 
-        orig_link_list = copy.copy(self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][band])
-        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][band][0] = sim_link_list
+        orig_link_list = copy.copy(self.sdn_props.network_spectrum_dict[links_list[0]]['cores_matrix'][band])
+        self.sdn_props.network_spectrum_dict[links_list[0]]['cores_matrix'][band][0] = sim_link_list
 
-        free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
+        free_channels_dict = find_free_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                                 slots_needed=self.sdn_props.slots_needed, link_tuple=links_list[0])
-        taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props.net_spec_dict,
+        taken_channels_dict = find_taken_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                                   link_tuple=links_list[0])
         nli_worst = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)
 
-        self.sdn_props.net_spec_dict[links_list[0]]['cores_matrix'][band] = orig_link_list
+        self.sdn_props.network_spectrum_dict[links_list[0]]['cores_matrix'][band] = orig_link_list
         return nli_worst
 
     @staticmethod
@@ -170,7 +170,7 @@ class RoutingHelpers:
             for core_num in free_slots_dict[band]:
                 free_slots += len(free_slots_dict[band][core_num])
                 for channel in free_slots_dict[band][core_num]:
-                    core_info_dict = self.sdn_props.net_spec_dict[link_list]['cores_matrix']
+                    core_info_dict = self.sdn_props.network_spectrum_dict[link_list]['cores_matrix']
                     num_overlapped = self._find_num_overlapped(channel=channel, core_num=core_num,
                                                                core_info_dict=core_info_dict, band=band)
                     xt_cost += num_overlapped
@@ -193,7 +193,7 @@ class RoutingHelpers:
         nli_cost = 0
         for source, destination in zip(path_list, path_list[1:]):
             link_length = self.engine_props['topology'][source][destination]['length']
-            num_span = link_length / self.route_props.span_len
+            num_span = link_length / self.route_props.span_length
             link_tuple = (source, destination)
             nli_cost += self.get_nli_cost(link_tuple=link_tuple, num_span=num_span)
 
@@ -215,9 +215,9 @@ class RoutingHelpers:
         :return: The calculated NLI cost.
         :rtype: float
         """
-        free_channels_dict = find_free_channels(net_spec_dict=self.sdn_props.net_spec_dict,
+        free_channels_dict = find_free_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                                 slots_needed=self.sdn_props.slots_needed, link_tuple=link_tuple)
-        taken_channels_dict = find_taken_channels(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=link_tuple)
+        taken_channels_dict = find_taken_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict, link_tuple=link_tuple)
 
         link_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)

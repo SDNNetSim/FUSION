@@ -94,7 +94,7 @@ def get_ml_obs(req_dict: dict, engine_props: dict, sdn_props: object):
     path_length = find_path_len(path_list=sdn_props.path_list, topology=engine_props['topology'])
     cong_arr = np.array([])
     for core_num in range(engine_props['cores_per_link']):
-        curr_cong = find_core_cong(core_index=core_num, net_spec_dict=sdn_props.net_spec_dict,
+        curr_cong = find_core_cong(core_index=core_num, network_spectrum_dict=sdn_props.network_spectrum_dict,
                                    path_list=sdn_props.path_list)
         cong_arr = np.append(cong_arr, curr_cong)
 
