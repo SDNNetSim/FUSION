@@ -38,8 +38,8 @@ class SpectrumAssignment:
                 if len(self.spectrum_props.path_list) > 2:
                     self.spec_help_obj.start_index = start_index
                     self.spec_help_obj.end_index = end_index
-                    self.spec_help_obj.core_num = channel_dict['core']
-                    self.spec_help_obj.curr_band = channel_dict['band']
+                    self.spec_help_obj.core_number = channel_dict['core']
+                    self.spec_help_obj.current_band = channel_dict['band']
                     self.spec_help_obj.check_other_links()
 
                 if self.spectrum_props.is_free or len(self.spectrum_props.path_list) <= 2:
@@ -47,8 +47,8 @@ class SpectrumAssignment:
                     self.spectrum_props.start_slot = start_index
                     self.spectrum_props.end_slot = end_index + self.engine_props['guard_slots']
                     self.spectrum_props.end_slot = end_index
-                    self.spectrum_props.core_num = channel_dict['core']
-                    self.spectrum_props.curr_band = channel_dict['band']
+                    self.spectrum_props.core_number = channel_dict['core']
+                    self.spectrum_props.current_band = channel_dict['band']
                     return
 
     # TODO: No support for multi-band
@@ -68,7 +68,7 @@ class SpectrumAssignment:
                     if self.spectrum_props.forced_band is not None and self.spectrum_props.forced_band != band:
                         continue
 
-                    core_arr = self.sdn_props.net_spec_dict[(src, dest)]['cores_matrix'][band][core_num]
+                    core_arr = self.sdn_props.network_spectrum_dict[(src, dest)]['cores_matrix'][band][core_num]
                     open_slots_arr = np.where(core_arr == 0)[0]
 
                     tmp_matrix = [list(map(itemgetter(1), g)) for k, g in
@@ -133,8 +133,8 @@ class SpectrumAssignment:
                 open_slots_arr = np.where(core_arr[band_index] == 0)[0]
                 open_slots_matrix = self._get_open_slots_matrix(open_slots_arr, flag)
 
-                self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band
+                self.spec_help_obj.core_number = core_num
+                self.spec_help_obj.current_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
                     return
@@ -152,8 +152,8 @@ class SpectrumAssignment:
                 open_slots_arr = np.where(core_arr[band_index] == 0)[0]
                 open_slots_matrix = self._get_open_slots_matrix(open_slots_arr, flag)
 
-                self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band
+                self.spec_help_obj.core_number = core_num
+                self.spec_help_obj.current_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
                     if (self.engine_props['cores_per_link'] in [13, 19] and
@@ -179,8 +179,8 @@ class SpectrumAssignment:
                 open_slots_arr = np.where(core_arr[band_index] == 0)[0]
                 open_slots_matrix = self._get_open_slots_matrix(open_slots_arr, flag)
 
-                self.spec_help_obj.core_num = core_num
-                self.spec_help_obj.curr_band = band
+                self.spec_help_obj.core_number = core_num
+                self.spec_help_obj.current_band = band
                 was_allocated = self.spec_help_obj.check_super_channels(open_slots_matrix=open_slots_matrix, flag=flag)
                 if was_allocated:
                     if (self.engine_props['cores_per_link'] in [13, 19] and
@@ -253,8 +253,8 @@ class SpectrumAssignment:
     def _init_spectrum_info(self):
         link_tuple = (self.spectrum_props.path_list[0], self.spectrum_props.path_list[1])
         rev_link_tuple = (self.spectrum_props.path_list[1], self.spectrum_props.path_list[0])
-        self.spectrum_props.cores_matrix = self.sdn_props.net_spec_dict[link_tuple]['cores_matrix']
-        self.spectrum_props.rev_cores_matrix = self.sdn_props.net_spec_dict[rev_link_tuple]['cores_matrix']
+        self.spectrum_props.cores_matrix = self.sdn_props.network_spectrum_dict[link_tuple]['cores_matrix']
+        self.spectrum_props.reverse_cores_matrix = self.sdn_props.network_spectrum_dict[rev_link_tuple]['cores_matrix']
         self.spectrum_props.is_free = False
 
     def get_spectrum(self, mod_format_list: list, slice_bandwidth: str = None):
@@ -277,7 +277,7 @@ class SpectrumAssignment:
                 if self.engine_props['fixed_grid']:
                     self.spectrum_props.slots_needed = 1
                 else:
-                    self.spectrum_props.slots_needed = self.sdn_props.mod_formats_dict[modulation]['slots_needed']
+                    self.spectrum_props.slots_needed = self.sdn_props.modulation_formats_dict[modulation]['slots_needed']
 
             if self.spectrum_props.slots_needed is None:
                 raise ValueError('Slots needed cannot be none.')
@@ -288,7 +288,7 @@ class SpectrumAssignment:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
                     snr_check, xt_cost = self.snr_obj.handle_snr(self.sdn_props.path_index)
-                    self.spectrum_props.xt_cost = xt_cost
+                    self.spectrum_props.crosstalk_cost = xt_cost
                     if not snr_check:
                         self.spectrum_props.is_free = False
                         self.sdn_props.block_reason = 'xt_threshold'
@@ -322,7 +322,7 @@ class SpectrumAssignment:
                 else:
 
                     self.spectrum_props.modulation = mod_format
-                    self.spectrum_props.xt_cost = snr_val
+                    self.spectrum_props.crosstalk_cost = snr_val
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
                 return mod_format, bandwidth

@@ -31,7 +31,7 @@ class Routing:
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.net_spec_dict[(path_list[i], path_list[i + 1])]
+            link_dict = self.sdn_props.network_spectrum_dict[(path_list[i], path_list[i + 1])]
             free_slots = 0
             for band in link_dict['cores_matrix']:
                 cores_matrix = link_dict['cores_matrix'][band]
@@ -54,7 +54,7 @@ class Routing:
         self.route_props.paths_matrix = [sorted_paths_list[0]['path_list']]
         self.route_props.weights_list = [int(sorted_paths_list[0]['link_dict']['free_slots'])]
         # TODO: Constant QPSK format (Ask Arash)
-        self.route_props.mod_formats_matrix.append(['QPSK'])
+        self.route_props.modulation_formats_matrix.append(['QPSK'])
 
     def find_least_cong(self):
         """
@@ -91,21 +91,21 @@ class Routing:
                 resp_weight = sum(self.sdn_props.topology[path_list[i]][path_list[i + 1]][weight]
                                   for i in range(len(path_list) - 1))
 
-                mod_formats = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
+                mod_formats = sort_nested_dict_vals(original_dict=self.sdn_props.modulation_formats_dict,
                                                     nested_key='max_length')
                 path_len = find_path_len(path_list=path_list, topology=self.sdn_props.topology)
                 mod_format_list = list()
                 for mod_format in mod_formats:
-                    if self.sdn_props.mod_formats_dict[mod_format]['max_length'] >= path_len:
+                    if self.sdn_props.modulation_formats_dict[mod_format]['max_length'] >= path_len:
                         mod_format_list.append(mod_format)
                     else:
                         mod_format_list.append(False)
 
-                self.route_props.mod_formats_matrix.append(mod_format_list)
+                self.route_props.modulation_formats_matrix.append(mod_format_list)
             else:
                 resp_weight = find_path_len(path_list=path_list, topology=self.sdn_props.topology)
                 mod_format = get_path_mod(self.sdn_props.mod_formats, resp_weight)
-                self.route_props.mod_formats_matrix.append([mod_format])
+                self.route_props.modulation_formats_matrix.append([mod_format])
 
             self.route_props.weights_list.append(resp_weight)
             self.route_props.paths_matrix.append(path_list)
@@ -115,13 +115,13 @@ class Routing:
         """
         Finds and selects the path with the least average fragmentation ratio.
         """
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             path_list = [source, destination]
 
             # Compute average fragmentation on this direct link
             frag_score = find_path_frag(path_list=path_list,
-                                        net_spec_dict=self.sdn_props.net_spec_dict)
+                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
             # Store frag score for both directions if bidirectional
             self.sdn_props.topology[source][destination]['frag_cost'] = frag_score
@@ -146,11 +146,11 @@ class Routing:
                 mod_formats_list = [
                     get_path_mod(mods_dict=self.engine_props['mod_per_bw'][chosen_bw], path_len=path_len)]
             else:
-                mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
+                mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.modulation_formats_dict,
                                                          nested_key='max_length')
                 mod_formats_list = list(mod_formats_dict.keys())
             self.route_props.paths_matrix.append(path_list)
-            self.route_props.mod_formats_matrix.append(mod_formats_list)
+            self.route_props.modulation_formats_matrix.append(mod_formats_list)
             self.route_props.weights_list.append(path_len)
 
     def find_least_nli(self):
@@ -158,9 +158,9 @@ class Routing:
         Finds and selects the path with the least amount of non-linear impairment.
         """
         # Bidirectional links are identical, therefore, we don't have to check each one
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple[0], link_tuple[1]
-            num_spans = self.sdn_props.topology[source][destination]['length'] / self.route_props.span_len
+            num_spans = self.sdn_props.topology[source][destination]['length'] / self.route_props.span_length
             bandwidth = self.sdn_props.bandwidth
             # TODO: Constant QPSK for slots needed (Ask Arash)
             slots_needed = self.engine_props['mod_per_bw'][bandwidth]['QPSK']['slots_needed']
@@ -179,11 +179,11 @@ class Routing:
         :rtype: list
         """
         # At the moment, we have identical bidirectional links (no need to loop over all links)
-        for link_list in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_list in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_list[0], link_list[1]
-            num_spans = self.sdn_props.topology[source][destination]['length'] / self.route_props.span_len
+            num_spans = self.sdn_props.topology[source][destination]['length'] / self.route_props.span_length
 
-            free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict, link_tuple=link_list)
+            free_slots_dict = find_free_slots(network_spectrum_dict=self.sdn_props.network_spectrum_dict, link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict, link_list=link_list)
 
             if self.engine_props['xt_type'] == 'with_length':
@@ -207,7 +207,7 @@ class Routing:
 
     def _init_route_info(self):
         self.route_props.paths_matrix = list()
-        self.route_props.mod_formats_matrix = list()
+        self.route_props.modulation_formats_matrix = list()
         self.route_props.weights_list = list()
         self.route_props.path_index_list = list()
         self.route_props.connection_index = None
@@ -249,11 +249,11 @@ class Routing:
                     path_len = pre_comp_matrix[3][0][paths_calculated]
                     if path_len.dtype != np.float64:
                         path_len = path_len.astype(np.float64)
-                    mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
+                    mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.modulation_formats_dict,
                                                              nested_key='max_length')
                     mod_formats_list = list(mod_formats_dict.keys())
                     self.route_props.paths_matrix.append(temp_path)
-                    self.route_props.mod_formats_matrix.append(mod_formats_list[::-1])
+                    self.route_props.modulation_formats_matrix.append(mod_formats_list[::-1])
                     self.route_props.weights_list.append(path_len)
                     self.route_props.path_index_list.append(paths_calculated)
 
@@ -299,7 +299,7 @@ class Routing:
 
             # mean congestion feature — exactly what the RL agent sees
             mean_cong, _ = find_path_cong(path_list=path,
-                                          net_spec_dict=self.sdn_props.net_spec_dict)
+                                          network_spectrum_dict=self.sdn_props.network_spectrum_dict)
             path_congs.append(mean_cong)
 
         if not cand_paths:  # safety guard
@@ -334,13 +334,13 @@ class Routing:
                 ]
             else:
                 mods_sorted = sort_nested_dict_vals(
-                    original_dict=self.sdn_props.mod_formats_dict,
+                    original_dict=self.sdn_props.modulation_formats_dict,
                     nested_key="max_length",
                 )
                 mod_list = list(mods_sorted.keys())
 
             self.route_props.paths_matrix.append(p)
-            self.route_props.mod_formats_matrix.append(mod_list)
+            self.route_props.modulation_formats_matrix.append(mod_list)
             self.route_props.weights_list.append(sc)
 
     def get_route(self):
