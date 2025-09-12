@@ -36,7 +36,7 @@ class TestSnrMeasurements(unittest.TestCase):
         }
 
         self.sdn_props = MagicMock()
-        self.sdn_props.net_spec_dict = {
+        self.sdn_props.network_spectrum_dict = {
             ('A', 'B'): {
                 'cores_matrix': {'c': np.zeros((7, 40))},
                 'link_num': 0
@@ -52,8 +52,8 @@ class TestSnrMeasurements(unittest.TestCase):
         self.spectrum_props.path_list = ['A', 'B', 'C']
         self.spectrum_props.start_slot = 10
         self.spectrum_props.end_slot = 15
-        self.spectrum_props.core_num = 0
-        self.spectrum_props.curr_band = 'c'
+        self.spectrum_props.core_number = 0
+        self.spectrum_props.current_band = 'c'
         self.spectrum_props.modulation = 'QPSK'
 
         self.snr_measurements = SnrMeasurements(
@@ -67,7 +67,7 @@ class TestSnrMeasurements(unittest.TestCase):
         """Test the calculation of self-phase power spectral density (SCI PSD)."""
         self.snr_measurements.snr_props.center_psd = 1e-3
         self.snr_measurements.snr_props.bandwidth = 1e-9
-        self.snr_measurements.snr_props.link_dict = {
+        self.snr_measurements.snr_props.link_dictionary = {
             'dispersion': 16.7,
             'attenuation': 0.2
         }
@@ -83,10 +83,10 @@ class TestSnrMeasurements(unittest.TestCase):
         slot_index = 5
         curr_xci = 0.0
         curr_link = np.zeros((7, 40))
-        curr_link[self.spectrum_props.core_num][slot_index] = req_id
+        curr_link[self.spectrum_props.core_number][slot_index] = req_id
 
-        # Initialize center_freq to avoid NoneType error
-        self.snr_measurements.snr_props.center_freq = (
+        # Initialize center_frequency to avoid NoneType error
+        self.snr_measurements.snr_props.center_frequency = (
                 self.spectrum_props.start_slot * self.engine_props['bw_per_slot'] * 10 ** 9
         )
 
