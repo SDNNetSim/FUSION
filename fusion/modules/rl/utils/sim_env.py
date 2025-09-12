@@ -58,7 +58,7 @@ class SimEnvUtils:
         if self.sim_env.sim_dict['is_training']:
             if self.sim_env.sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS:
                 self.sim_env.path_agent.update(was_allocated=was_allocated,
-                                               net_spec_dict=self.sim_env.engine_obj.net_spec_dict,
+                                               network_spectrum_dict=self.sim_env.engine_obj.network_spectrum_dict,
                                                iteration=self.sim_env.iteration, path_length=path_length,
                                                trial=trial)
             elif self.sim_env.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
@@ -67,10 +67,10 @@ class SimEnvUtils:
                 raise NotImplementedError
         else:
             self.sim_env.path_agent.update(was_allocated=was_allocated,
-                                           net_spec_dict=self.sim_env.engine_obj.net_spec_dict,
+                                           network_spectrum_dict=self.sim_env.engine_obj.network_spectrum_dict,
                                            iteration=self.sim_env.iteration, path_length=path_length)
             self.sim_env.core_agent.update(was_allocated=was_allocated,
-                                           net_spec_dict=self.sim_env.engine_obj.net_spec_dict,
+                                           network_spectrum_dict=self.sim_env.engine_obj.network_spectrum_dict,
                                            iteration=self.sim_env.iteration)
 
     def handle_step(self, action: int, is_drl_agent: bool):
@@ -187,7 +187,7 @@ class SimEnvObs:
         self.sim_env.rl_props.chosen_path = [self.sim_env.route_obj.route_props.paths_matrix[0]]
         self.sim_env.rl_props.chosen_path_index = 0
         for path_index, path_list in enumerate(self.sim_env.route_obj.route_props.paths_matrix):
-            mod_format_list = self.sim_env.route_obj.route_props.mod_formats_matrix[path_index]
+            mod_format_list = self.sim_env.route_obj.route_props.modulation_formats_matrix[path_index]
 
             was_allocated = self.sim_env.rl_help_obj.mock_handle_arrival(
                 engine_props=self.sim_env.engine_obj.engine_props,
@@ -242,7 +242,7 @@ class SimEnvObs:
 
         slots_needed_list = list()
         mod_bw_dict = self.sim_env.engine_obj.engine_props['mod_per_bw']
-        for mod_format in route_props.mod_formats_matrix:
+        for mod_format in route_props.modulation_formats_matrix:
             if not mod_format[0]:
                 slots_needed = -1
             else:
@@ -253,7 +253,7 @@ class SimEnvObs:
         available_slots = list()
         for curr_path in route_props.paths_matrix:
             curr_cong, curr_slots = find_path_cong(path_list=curr_path,
-                                                   net_spec_dict=self.sim_env.engine_obj.net_spec_dict)
+                                                   network_spectrum_dict=self.sim_env.engine_obj.network_spectrum_dict)
             paths_cong.append(curr_cong)
             available_slots.append(curr_slots)
 

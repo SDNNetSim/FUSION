@@ -32,7 +32,7 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
     engine_obj = SimpleNamespace(
         engine_props=engine_props,
         end_iter=mock.MagicMock(),
-        net_spec_dict={},
+        network_spectrum_dict={},
         reqs_dict={0: {"depart": 10}, 1: {"depart": 15}},
         stats_obj=None,
     )
@@ -70,7 +70,7 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
         route_obj=SimpleNamespace(
             route_props=SimpleNamespace(
                 paths_matrix=[[0, 1]],
-                mod_formats_matrix=[["QPSK"]],
+                modulation_formats_matrix=[["QPSK"]],
             ),
             engine_props={},
             sdn_props={},

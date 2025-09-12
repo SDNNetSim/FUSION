@@ -66,8 +66,8 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         self.spectrum_props.path_list = path
         self.spectrum_props.start_slot = spectrum_info.get('start_slot', 0)
         self.spectrum_props.end_slot = spectrum_info.get('end_slot', 0)
-        self.spectrum_props.core_num = spectrum_info.get('core_num', 0)
-        self.spectrum_props.curr_band = spectrum_info.get('band', 'c')
+        self.spectrum_props.core_number = spectrum_info.get('core_number', 0)
+        self.spectrum_props.current_band = spectrum_info.get('band', 'c')
 
         # Calculate parameters for SNR computation
         self._setup_snr_calculation(spectrum_info)
@@ -102,7 +102,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         slot_width = self.engine_props.get('bw_per_slot', 12.5e9)  # Hz
 
         self.snr_props.bandwidth = self.num_slots * slot_width
-        self.snr_props.center_freq = (start_slot + self.num_slots / 2) * slot_width
+        self.snr_props.center_frequency = (start_slot + self.num_slots / 2) * slot_width
 
         # Calculate power spectral density
         input_power = self.engine_props.get('input_power', 1e-3)  # W
@@ -122,7 +122,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         """
         link_key = (source, destination)
 
-        if link_key not in self.sdn_props.net_spec_dict:
+        if link_key not in self.sdn_props.network_spectrum_dict:
             return 0.0
 
         # Get link properties
@@ -131,7 +131,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         else:
             link_length = 100  # Default link length
 
-        self.snr_props.link_dict = {
+        self.snr_props.link_dictionary = {
             'length': link_length,
             'attenuation': self.engine_props.get('fiber_attenuation', 0.2),  # dB/km
             'dispersion': self.engine_props.get('fiber_dispersion', 16.7),  # ps/nm/km
@@ -197,8 +197,8 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         self.spectrum_props.path_list = path
         self.spectrum_props.start_slot = spectrum_info.get('start_slot', 0)
         self.spectrum_props.end_slot = spectrum_info.get('end_slot', 0)
-        self.spectrum_props.core_num = spectrum_info.get('core_num', 0)
-        self.spectrum_props.curr_band = spectrum_info.get('band', 'c')
+        self.spectrum_props.core_number = spectrum_info.get('core_number', 0)
+        self.spectrum_props.current_band = spectrum_info.get('band', 'c')
 
         # Setup calculation parameters
         self._setup_snr_calculation(spectrum_info)
@@ -237,8 +237,8 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
     def _calculate_sci_psd(self) -> float:
         """Calculate the self-channel interference power spectral density."""
-        rho_param = (math.pi ** 2) * abs(self.snr_props.link_dict['dispersion'])
-        rho_param /= (2 * self.snr_props.link_dict['attenuation'])
+        rho_param = (math.pi ** 2) * abs(self.snr_props.link_dictionary['dispersion'])
+        rho_param /= (2 * self.snr_props.link_dictionary['attenuation'])
 
         sci_psd = self.snr_props.center_psd ** 2
         sci_psd *= math.asinh(rho_param * (self.snr_props.bandwidth ** 2))
@@ -254,11 +254,11 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         link_tuple = (self.spectrum_props.path_list[link_num],
                       self.spectrum_props.path_list[link_num + 1])
 
-        if link_tuple not in self.sdn_props.net_spec_dict:
+        if link_tuple not in self.sdn_props.network_spectrum_dict:
             return 0.0
 
-        curr_link = self.sdn_props.net_spec_dict[link_tuple]
-        band = self.spectrum_props.curr_band
+        curr_link = self.sdn_props.network_spectrum_dict[link_tuple]
+        band = self.spectrum_props.current_band
         core_num = self.spectrum_props.core_num
 
         if band not in curr_link['cores_matrix']:
@@ -298,9 +298,9 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         channel_psd = self.engine_props.get('input_power', 1e-3) / channel_bw
 
-        if self.snr_props.center_freq != channel_freq:
-            log_term = abs(self.snr_props.center_freq - channel_freq) + (channel_bw / 2)
-            log_term /= (abs(self.snr_props.center_freq - channel_freq) - (channel_bw / 2))
+        if self.snr_props.center_frequency != channel_freq:
+            log_term = abs(self.snr_props.center_frequency - channel_freq) + (channel_bw / 2)
+            log_term /= (abs(self.snr_props.center_frequency - channel_freq) - (channel_bw / 2))
 
             calculated_xci = (channel_psd ** 2) * math.log(abs(log_term))
             new_xci = curr_xci + calculated_xci
@@ -341,7 +341,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
     def _calculate_pxt(self, num_adjacent: int) -> float:
         """Calculate cross-talk noise power."""
         # Statistical mean of cross-talk
-        _bending_radius = self.snr_props.link_dict.get('bending_radius', 7.5e-3)
+        _bending_radius = self.snr_props.link_dictionary.get('bending_radius', 7.5e-3)
         # Cross-talk coefficient calculation uses bending radius
 
         # Cross-talk power (simplified model)
