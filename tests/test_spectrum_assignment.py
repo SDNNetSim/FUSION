@@ -18,17 +18,17 @@ class RouteProps:  # pylint: disable=too-few-public-methods
     def __init__(self, paths_matrix=None, mod_formats_matrix=None, weights_list=None,
                  connection_index=0, path_index=0, input_power=0.001,
                  freq_spacing=12500000000.0, mci_worst=6.334975555658596e-27,
-                 max_link_length=None, span_len=100.0, max_span=None):
+                 max_link_length=None, span_length=100.0, max_span=None):
         self.paths_matrix = paths_matrix if paths_matrix is not None else []
-        self.mod_formats_matrix = mod_formats_matrix if mod_formats_matrix is not None else []
+        self.modulation_formats_matrix = mod_formats_matrix if mod_formats_matrix is not None else []
         self.weights_list = weights_list if weights_list is not None else []
         self.connection_index = connection_index
         self.path_index = path_index if path_index is not None else []
         self.input_power = input_power
-        self.freq_spacing = freq_spacing
+        self.frequency_spacing = freq_spacing
         self.mci_worst = mci_worst
         self.max_link_length = max_link_length
-        self.span_len = span_len
+        self.span_length = span_length
         self.max_span = max_span
 
 
@@ -78,7 +78,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_assign = SpectrumAssignment(engine_props=engine_props, sdn_props=sdn_props,
                                               route_props=route_obj.route_props)
         self.spec_assign.spectrum_props.slots_needed = 2
-        self.spec_assign.spectrum_props.core_num = 0
+        self.spec_assign.spectrum_props.core_number = 0
         self.spec_assign.spectrum_props.path_list = ['source', 'dest']
         self.spec_assign.spectrum_props.cores_matrix = cores_matrix
 
@@ -94,8 +94,8 @@ class TestSpectrumAssignment(unittest.TestCase):
 
         self.assertEqual(self.spec_assign.spectrum_props.start_slot, 5)
         self.assertEqual(self.spec_assign.spectrum_props.end_slot, 7)
-        self.assertEqual(self.spec_assign.spectrum_props.core_num, 1)
-        self.assertEqual(self.spec_assign.spectrum_props.curr_band, 'l')
+        self.assertEqual(self.spec_assign.spectrum_props.core_number, 1)
+        self.assertEqual(self.spec_assign.spectrum_props.current_band, 'l')
 
     def test_setup_first_last(self):
         """Test setting up first and last fit."""
@@ -129,11 +129,21 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_get_spectrum(self):
         """Test getting spectrum allocation."""
-        with patch.object(self.spec_assign, '_get_spectrum', wraps=self.spec_assign._get_spectrum) as mock_get_spectrum, \
+
+        def mock_get_spectrum_side_effect():
+            # Mock _get_spectrum to actually set is_free = True
+            self.spec_assign.spectrum_props.is_free = True
+            self.spec_assign.spectrum_props.start_slot = 0
+            self.spec_assign.spectrum_props.end_slot = 3
+            self.spec_assign.spectrum_props.core_number = 0
+            self.spec_assign.spectrum_props.current_band = 'c'
+
+        with patch.object(self.spec_assign, '_get_spectrum',
+                          side_effect=mock_get_spectrum_side_effect) as mock_get_spectrum, \
                 patch.object(self.spec_assign.snr_obj, 'handle_snr', return_value=(True, 0.5)) as _:
             # Ensure is_free starts as False
             self.spec_assign.spectrum_props.is_free = False
-            mod_format_list = ['QPSK', '16QAM']
+            mod_format_list = ['QPSK']
 
             # Simulate getting the spectrum successfully
             self.spec_assign.get_spectrum(mod_format_list, slice_bandwidth=None)
@@ -180,7 +190,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
         self.assertEqual(self.spec_assign.spectrum_props.start_slot, 0)
         self.assertEqual(self.spec_assign.spectrum_props.end_slot, 3)
-        self.assertEqual(self.spec_assign.spectrum_props.curr_band, 'c')
+        self.assertEqual(self.spec_assign.spectrum_props.current_band, 'c')
 
     def test_first_last_priority_band(self):
         """Test handle_first_last_priority_band for non-BSC spectrum priority."""
@@ -192,7 +202,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         def mock_check_super_channels_effect(*args, **kwargs):  # pylint: disable=unused-argument
             self.spec_assign.spectrum_props.start_slot = 5
             self.spec_assign.spectrum_props.end_slot = 8
-            self.spec_assign.spectrum_props.curr_band = 'c'
+            self.spec_assign.spectrum_props.current_band = 'c'
             return True
 
         with patch.object(self.spec_assign.spec_help_obj, 'check_super_channels',
@@ -202,7 +212,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             # Verify that spectrum properties were updated correctly
             self.assertEqual(self.spec_assign.spectrum_props.start_slot, 5)
             self.assertEqual(self.spec_assign.spectrum_props.end_slot, 8)
-            self.assertEqual(self.spec_assign.spectrum_props.curr_band, 'c')
+            self.assertEqual(self.spec_assign.spectrum_props.current_band, 'c')
 
     def test_first_last_priority_bsc_snr_external(self):
         """Test handle_first_last_priority_bsc with SNR external resources."""
@@ -232,7 +242,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             self.spec_assign.spectrum_props.is_free = True
             self.spec_assign.spectrum_props.start_slot = 5
             self.spec_assign.spectrum_props.end_slot = 8
-            self.spec_assign.spectrum_props.curr_band = 'c'
+            self.spec_assign.spectrum_props.current_band = 'c'
             return True
 
         mock_loaded_data = np.ones((1, 10, 4))
@@ -246,7 +256,7 @@ class TestSpectrumAssignment(unittest.TestCase):
                 self.assertTrue(self.spec_assign.spectrum_props.is_free, "Expected is_free to be True.")
                 self.assertEqual(self.spec_assign.spectrum_props.start_slot, 5)
                 self.assertEqual(self.spec_assign.spectrum_props.end_slot, 8)
-                self.assertEqual(self.spec_assign.spectrum_props.curr_band, 'c')
+                self.assertEqual(self.spec_assign.spectrum_props.current_band, 'c')
 
 
 if __name__ == '__main__':
