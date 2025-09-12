@@ -33,16 +33,16 @@ class SDNController:
         for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
             for band in self.engine_props['band_list']:
                 for core_num in range(self.engine_props['cores_per_link']):
-                    core_arr = self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num]
-                    req_id_arr = np.where(core_arr == self.sdn_props.req_id)
-                    gb_arr = np.where(core_arr == (self.sdn_props.req_id * -1))
+                    core_arr = self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][band][core_num]
+                    req_id_arr = np.where(core_arr == self.sdn_props.request_id)
+                    gb_arr = np.where(core_arr == (self.sdn_props.request_id * -1))
 
                     for req_index in req_id_arr:
-                        self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][req_index] = 0
-                        self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][req_index] = 0
+                        self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][band][core_num][req_index] = 0
+                        self.sdn_props.network_spectrum_dict[(dest, source)]['cores_matrix'][band][core_num][req_index] = 0
                     for gb_index in gb_arr:
-                        self.sdn_props.net_spec_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
-                        self.sdn_props.net_spec_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
+                        self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][band][core_num][gb_index] = 0
+                        self.sdn_props.network_spectrum_dict[(dest, source)]['cores_matrix'][band][core_num][gb_index] = 0
 
         try:
             duration = self.sdn_props.depart - self.sdn_props.arrive  # seconds
@@ -50,8 +50,8 @@ class SDNController:
             data_transferred = bandwidth * duration  # Gbps·s
 
             for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
-                self.sdn_props.net_spec_dict[(source, dest)]['throughput'] += data_transferred
-                self.sdn_props.net_spec_dict[(dest, source)]['throughput'] += data_transferred
+                self.sdn_props.network_spectrum_dict[(source, dest)]['throughput'] += data_transferred
+                self.sdn_props.network_spectrum_dict[(dest, source)]['throughput'] += data_transferred
         except (TypeError, ValueError) as e:
             print(f"[WARNING] Throughput update skipped due to missing or invalid timing/bandwidth: {e}")
 
@@ -59,8 +59,8 @@ class SDNController:
         if core_matrix[band][core_num][end_slot] != 0.0 or rev_core_matrix[band][core_num][end_slot] != 0.0:
             raise BufferError("Attempted to allocate a taken spectrum.")
 
-        core_matrix[band][core_num][end_slot] = self.sdn_props.req_id * -1
-        rev_core_matrix[band][core_num][end_slot] = self.sdn_props.req_id * -1
+        core_matrix[band][core_num][end_slot] = self.sdn_props.request_id * -1
+        rev_core_matrix[band][core_num][end_slot] = self.sdn_props.request_id * -1
 
     def allocate(self):
         """
@@ -68,8 +68,8 @@ class SDNController:
         """
         start_slot = self.spectrum_obj.spectrum_props.start_slot
         end_slot = self.spectrum_obj.spectrum_props.end_slot
-        core_num = self.spectrum_obj.spectrum_props.core_num
-        band = self.spectrum_obj.spectrum_props.curr_band
+        core_num = self.spectrum_obj.spectrum_props.core_number
+        band = self.spectrum_obj.spectrum_props.current_band
 
         if self.engine_props['guard_slots'] != 0:
             end_slot = end_slot - 1
@@ -78,8 +78,8 @@ class SDNController:
 
         for link_tuple in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:]):
             # Remember, Python list indexing is up to and NOT including!
-            link_dict = self.sdn_props.net_spec_dict[(link_tuple[0], link_tuple[1])]
-            rev_link_dict = self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]
+            link_dict = self.sdn_props.network_spectrum_dict[(link_tuple[0], link_tuple[1])]
+            rev_link_dict = self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])]
 
 
 
@@ -92,13 +92,13 @@ class SDNController:
             if tmp_set != {0.0} or rev_tmp_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
-            self.sdn_props.net_spec_dict[link_tuple]['usage_count'] += 1
-            self.sdn_props.net_spec_dict[(link_tuple[1], link_tuple[0])]['usage_count'] += 1
+            self.sdn_props.network_spectrum_dict[link_tuple]['usage_count'] += 1
+            self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])]['usage_count'] += 1
 
             core_matrix = link_dict['cores_matrix']
             rev_core_matrix = rev_link_dict['cores_matrix']
-            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.req_id
-            rev_core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.req_id
+            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
+            rev_core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
 
             if self.engine_props['guard_slots']:
                 self._allocate_gb(core_matrix=core_matrix, rev_core_matrix=rev_core_matrix, end_slot=end_slot,
@@ -109,12 +109,12 @@ class SDNController:
         self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
             spectrum_key = stat_key.split('_')[0]  # pylint: disable=use-maxsplit-arg
-            if spectrum_key == 'xt':
-                spectrum_key = 'xt_cost'
+            if spectrum_key == 'crosstalk':
+                spectrum_key = 'crosstalk_cost'
             elif spectrum_key == 'core':
-                spectrum_key = 'core_num'
+                spectrum_key = 'core_number'
             elif spectrum_key == 'band':
-                spectrum_key = 'curr_band'
+                spectrum_key = 'current_band'
             elif spectrum_key == 'start':
                 spectrum_key = 'start_slot'
             elif spectrum_key == 'end':
@@ -123,7 +123,7 @@ class SDNController:
             self.sdn_props.update_params(key=stat_key, spectrum_key=spectrum_key, spectrum_obj=self.spectrum_obj)
 
     def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list, bandwidth: str):
-        self.sdn_props.num_trans = num_segments
+        self.sdn_props.number_of_transponders = num_segments
         self.spectrum_obj.spectrum_props.path_list = path_list
         mod_format_list = [mod_format]
         for _ in range(num_segments):
@@ -175,7 +175,7 @@ class SDNController:
         """
         self.sdn_props.was_routed = False
         self.sdn_props.block_reason = 'congestion'
-        self.sdn_props.num_trans = 1
+        self.sdn_props.number_of_transponders = 1
 
         if remaining_bw != int(self.sdn_props.bandwidth):
             self.release()
@@ -194,7 +194,7 @@ class SDNController:
         bw_mod_dict = sort_dict_keys(self.engine_props['mod_per_bw'])  # pylint: disable=unused-variable
 
         self.spectrum_obj.spectrum_props.path_list = path_list
-        self.sdn_props.num_trans = 0
+        self.sdn_props.number_of_transponders = 0
 
         while remaining_bw > 0:
             if not self.engine_props['fixed_grid']:
@@ -211,7 +211,7 @@ class SDNController:
                 dedicated_bw = min(bandwidth, remaining_bw)
                 self._update_req_stats(bandwidth=str(dedicated_bw))
                 remaining_bw -= bandwidth
-                self.sdn_props.num_trans += 1
+                self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True
             else:
                 self._handle_congestion(remaining_bw=remaining_bw)
@@ -240,7 +240,7 @@ class SDNController:
         """
         self._init_req_stats()
         # Even if the request is blocked, we still consider one transponder
-        self.sdn_props.num_trans = 1
+        self.sdn_props.number_of_transponders = 1
 
         if request_type == "release":
             self.release()
@@ -253,7 +253,7 @@ class SDNController:
         else:
             route_matrix = force_route_matrix
             # TODO: (drl_path_agents) This is an inconsistency when forcing a modulation format
-            self.route_obj.route_props.mod_formats_matrix = [force_mod_format]
+            self.route_obj.route_props.modulation_formats_matrix = [force_mod_format]
             # fixme (drl_path_agents)
             self.route_obj.route_props.weights_list = [0]
         route_time = time.time() - start_time
@@ -265,7 +265,7 @@ class SDNController:
                 if path_list is not False:
                     self.sdn_props.path_list = path_list
                     self.sdn_props.path_index = path_index
-                    mod_format_list = self.route_obj.route_props.mod_formats_matrix[path_index]
+                    mod_format_list = self.route_obj.route_props.modulation_formats_matrix[path_index]
 
                     if ml_model is not None:
                         input_df = get_ml_obs(req_dict=req_dict, engine_props=self.engine_props,
@@ -285,7 +285,7 @@ class SDNController:
                         else:
                             self._handle_slicing(path_list=path_list, forced_segments=forced_segments)
                             if not self.sdn_props.was_routed:
-                                self.sdn_props.num_trans = 1
+                                self.sdn_props.number_of_transponders = 1
                                 continue
                     else:
                         self.spectrum_obj.spectrum_props.forced_index = forced_index

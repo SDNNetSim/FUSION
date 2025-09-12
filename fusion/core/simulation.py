@@ -12,8 +12,14 @@ import numpy as np
 from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.core.metrics import SimStats
+from fusion.core.persistence import StatsPersistence
+from fusion.core.ml_metrics import MLMetricsCollector
 from fusion.modules.ml.train_utils import load_model
 from fusion.sim.utils import log_message
+from fusion.reporting.simulation_reporter import SimulationReporter
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 # TODO: This will eventually work with sim/batch_runner
@@ -26,7 +32,7 @@ class SimulationEngine:
 
     def __init__(self, engine_props: dict):
         self.engine_props = engine_props
-        self.net_spec_dict = dict()
+        self.network_spectrum_dict = dict()
         self.reqs_dict = None
         self.reqs_status_dict = dict()
 
@@ -37,6 +43,14 @@ class SimulationEngine:
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
+        self.reporter = SimulationReporter(logger=logger)
+        self.persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
+
+        # Initialize ML metrics collector if needed
+        if engine_props.get('output_train_data', False):
+            self.ml_metrics = MLMetricsCollector(engine_props=self.engine_props, sim_info=self.sim_info)
+        else:
+            self.ml_metrics = None
 
         self.ml_model = None
         self.stop_flag = engine_props.get('stop_flag')  # Get the stop flag from engine_props
@@ -48,9 +62,9 @@ class SimulationEngine:
         :param curr_time: The current simulated time.
         """
         sdn_props = self.sdn_obj.sdn_props
-        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props, net_spec_dict=self.net_spec_dict)
+        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props, network_spectrum_dict=self.network_spectrum_dict)
         if sdn_props.was_routed:
-            self.stats_obj.curr_trans = sdn_props.num_trans
+            self.stats_obj.current_transponders = sdn_props.number_of_transponders
 
             self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
                 "mod_format": sdn_props.modulation_list,
@@ -62,7 +76,7 @@ class SimulationEngine:
                 "start_slot_list": sdn_props.start_slot_list,
                 "end_slot_list": sdn_props.end_slot_list,
                 "bandwidth_list": sdn_props.bandwidth_list,
-                "snr_cost": sdn_props.xt_list,
+                "snr_cost": sdn_props.crosstalk_list,
             }})
 
     def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
@@ -80,14 +94,16 @@ class SimulationEngine:
         for req_key, req_value in self.reqs_dict[curr_time].items():
             # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
-                req_key = 'mod_formats_dict'
+                req_key = 'modulation_formats_dict'
+            elif req_key == 'req_id':
+                req_key = 'request_id'
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
         self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
                                   ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time],
                                   force_mod_format=force_mod_format)
-        self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
+        self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(curr_time=curr_time)
 
     def handle_release(self, curr_time: float):
@@ -99,13 +115,15 @@ class SimulationEngine:
         for req_key, req_value in self.reqs_dict[curr_time].items():
             # TODO: This should be changed in reqs_dict directly
             if req_key == 'mod_formats':
-                req_key = 'mod_formats_dict'
+                req_key = 'modulation_formats_dict'
+            elif req_key == 'req_id':
+                req_key = 'request_id'
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
             self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
-            self.net_spec_dict = self.sdn_obj.sdn_props.net_spec_dict
+            self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         # Request was blocked, nothing to release
         else:
             pass
@@ -114,7 +132,7 @@ class SimulationEngine:
         """
         Create the physical topology of the simulation.
         """
-        self.net_spec_dict = {}
+        self.network_spectrum_dict = {}
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
 
         # TODO: (drl_path_agents) This list should be stored somewhere else, like an arguments script
@@ -136,12 +154,12 @@ class SimulationEngine:
                 band_slots = self.engine_props[f'{band}_band']
                 cores_matrix[band] = np.zeros((link_data['fiber']['num_cores'], band_slots))
 
-            self.net_spec_dict[(source, dest)] = {'cores_matrix': cores_matrix,
+            self.network_spectrum_dict[(source, dest)] = {'cores_matrix': cores_matrix,
                                                   'link_num': int(link_num),
                                                   'usage_count': 0,
                                                   'throughput': 0
                                                   }
-            self.net_spec_dict[(dest, source)] = {'cores_matrix': cores_matrix,
+            self.network_spectrum_dict[(dest, source)] = {'cores_matrix': cores_matrix,
                                                   'link_num': int(link_num),
                                                   'usage_count': 0,
                                                   'throughput': 0
@@ -150,7 +168,7 @@ class SimulationEngine:
 
         self.engine_props['topology'] = self.topology
         self.stats_obj.topology = self.topology
-        self.sdn_obj.sdn_props.net_spec_dict = self.net_spec_dict
+        self.sdn_obj.sdn_props.network_spectrum_dict = self.network_spectrum_dict
         self.sdn_obj.sdn_props.topology = self.topology
 
     def generate_requests(self, seed: int):
@@ -171,19 +189,24 @@ class SimulationEngine:
         """
         req_type = self.reqs_dict[curr_time]["request_type"]
         if req_type == "arrival":
-            old_net_spec_dict = copy.deepcopy(self.net_spec_dict)
+            old_network_spectrum_dict = copy.deepcopy(self.network_spectrum_dict)
             old_req_info_dict = copy.deepcopy(self.reqs_dict[curr_time])
             self.handle_arrival(curr_time=curr_time)
 
             if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
-                self.stats_obj.update_snapshot(net_spec_dict=self.net_spec_dict, req_num=req_num)
+                self.stats_obj.update_snapshot(network_spectrum_dict=self.network_spectrum_dict, req_num=req_num)
 
             if self.engine_props['output_train_data']:
                 was_routed = self.sdn_obj.sdn_props.was_routed
                 if was_routed:
                     req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
-                    self.stats_obj.update_train_data(old_req_info_dict=old_req_info_dict, req_info_dict=req_info_dict,
-                                                     net_spec_dict=old_net_spec_dict)
+                    if self.ml_metrics:
+                        self.ml_metrics.update_train_data(
+                            old_request_info_dict=old_req_info_dict,
+                            request_info_dict=req_info_dict,
+                            network_spectrum_dict=old_network_spectrum_dict,
+                            current_transponders=self.stats_obj.current_transponders
+                        )
 
         elif req_type == "release":
             self.handle_release(curr_time=curr_time)
@@ -199,20 +222,28 @@ class SimulationEngine:
         :param print_flag: Whether to print or not.
         :param base_fp: The base file path to save output statistics.
         """
-        self.stats_obj.get_blocking()
-        self.stats_obj.end_iter_update()
+        self.stats_obj.calculate_blocking_statistics()
+        self.stats_obj.finalize_iteration_statistics()
         # Some form of ML/RL is being used, ignore confidence intervals for training and testing
         if not self.engine_props['is_training']:
-            resp = bool(self.stats_obj.get_conf_inter())
+            resp = bool(self.stats_obj.calculate_confidence_interval())
         else:
             resp = False
         if (iteration + 1) % self.engine_props['print_step'] == 0 or iteration == 0 or (iteration + 1) == \
                 self.engine_props['max_iters']:
-            self.stats_obj.print_iter_stats(max_iters=self.engine_props['max_iters'], print_flag=print_flag)
+            # Use the reporter for output instead of metrics class
+            if hasattr(self, 'reporter'):
+                self.reporter.report_iteration_stats(
+                    iteration=iteration,
+                    max_iterations=self.engine_props['max_iters'],
+                    erlang=self.engine_props['erlang'],
+                    blocking_list=self.stats_obj.stats_props.simulation_blocking_list,
+                    print_flag=print_flag
+                )
 
         if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == \
                 self.engine_props['max_iters']:
-            self.stats_obj.save_stats(base_fp=base_fp)
+            self._save_all_stats(base_fp)
 
         return resp
 
@@ -233,14 +264,14 @@ class SimulationEngine:
         self.stats_obj.iteration = iteration
         self.stats_obj.init_iter_stats()
 
-        for link_key in self.net_spec_dict:
-            self.net_spec_dict[link_key]['usage_count'] = 0
-            self.net_spec_dict[link_key]['throughput'] = 0
+        for link_key in self.network_spectrum_dict:
+            self.network_spectrum_dict[link_key]['usage_count'] = 0
+            self.network_spectrum_dict[link_key]['throughput'] = 0
 
         # To prevent incomplete saves
         try:
-            signal.signal(signal.SIGINT, self.stats_obj.save_stats)
-            signal.signal(signal.SIGTERM, self.stats_obj.save_stats)
+            signal.signal(signal.SIGINT, self._signal_save_handler)
+            signal.signal(signal.SIGTERM, self._signal_save_handler)
         # Signal only works in the main thread...
         except ValueError:
             pass
@@ -319,3 +350,42 @@ class SimulationEngine:
         )
 
         return done_units
+
+    def _save_all_stats(self, base_file_path: str = 'data') -> None:
+        """
+        Save all statistics using the persistence module.
+
+        :param base_file_path: Base path for output files
+        """
+        # Create save dictionary with iteration stats
+        save_dict = {'iter_stats': {}}
+
+        # Get blocking statistics from metrics
+        blocking_stats = self.stats_obj.get_blocking_statistics()
+
+        # Save main statistics
+        self.persistence.save_stats(
+            stats_dict=save_dict,
+            stats_props=self.stats_obj.stats_props,
+            blocking_stats=blocking_stats,
+            base_file_path=base_file_path
+        )
+
+        # Save ML training data if available
+        if self.ml_metrics:
+            self.ml_metrics.save_train_data(
+                iteration=self.stats_obj.iteration,
+                max_iterations=self.engine_props['max_iters'],
+                base_file_path=base_file_path
+            )
+
+    def _signal_save_handler(self, signum, frame):  # pylint: disable=unused-argument
+        """
+        Handle save operation when receiving signals.
+
+        :param signum: Signal number
+        :param frame: Current stack frame
+        """
+        logger.warning("Received signal %d, saving statistics...", signum)
+        self._save_all_stats()
+        logger.info("Statistics saved due to signal")
