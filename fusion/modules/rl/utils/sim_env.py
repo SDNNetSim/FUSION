@@ -40,7 +40,7 @@ class SimEnvUtils:
             elif self.sim_env.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS and self.sim_env.sim_dict[
                 'is_training']:
                 self.sim_env.core_agent.end_iter()
-            self.sim_env.engine_obj.end_iter(iteration=self.sim_env.iteration, print_flag=False, base_fp=base_fp)
+            self.sim_env.engine_obj.end_iter(iteration=self.sim_env.iteration, print_flag=False, base_file_path=base_fp)
             self.sim_env.iteration += 1
         else:
             terminated = False

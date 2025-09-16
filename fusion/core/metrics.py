@@ -3,7 +3,7 @@ from statistics import mean, variance, stdev
 
 import numpy as np
 
-from fusion.core.properties import StatsProps
+from fusion.core.properties import StatsProps, SDNProps
 from fusion.core.properties import SNAP_KEYS_LIST
 from fusion.sim.utils import find_path_len
 from fusion.analysis.network_analysis import NetworkAnalyzer
@@ -71,28 +71,28 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    def update_snapshot(self, network_spectrum_dict: dict, req_num: int, path_list: list = None):
+    def update_snapshot(self, network_spectrum_dict: dict, request_number: int, path_list: list = None):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
 
         :param network_spectrum_dict: The current network spectrum database.
-        :param req_num: The current request number.
+        :param request_number: The current request number.
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
         occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(network_spectrum_dict=network_spectrum_dict,
                                                                            path_list=path_list)
         link_usage = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
-        blocking_prob = self.blocked_requests / req_num
+        blocking_prob = self.blocked_requests / request_number
         bit_rate_block_prob = self.bit_rate_blocked / self.bit_rate_request
 
-        self.stats_props.snapshots_dict[req_num]['occupied_slots'].append(occupied_slots)
-        self.stats_props.snapshots_dict[req_num]['guard_slots'].append(guard_slots)
-        self.stats_props.snapshots_dict[req_num]['active_requests'].append(active_reqs)
-        self.stats_props.snapshots_dict[req_num]["blocking_prob"].append(blocking_prob)
-        self.stats_props.snapshots_dict[req_num]['num_segments'].append(self.current_transponders)
-        self.stats_props.snapshots_dict[req_num]["bit_rate_blocking_prob"].append(bit_rate_block_prob)
-        self.stats_props.snapshots_dict[req_num]['link_usage'] = link_usage
+        self.stats_props.snapshots_dict[request_number]['occupied_slots'].append(occupied_slots)
+        self.stats_props.snapshots_dict[request_number]['guard_slots'].append(guard_slots)
+        self.stats_props.snapshots_dict[request_number]['active_requests'].append(active_reqs)
+        self.stats_props.snapshots_dict[request_number]["blocking_prob"].append(blocking_prob)
+        self.stats_props.snapshots_dict[request_number]['num_segments'].append(self.current_transponders)
+        self.stats_props.snapshots_dict[request_number]["bit_rate_blocking_prob"].append(bit_rate_block_prob)
+        self.stats_props.snapshots_dict[request_number]['link_usage'] = link_usage
 
     def _init_snapshots(self):
         for req_num in range(0, self.engine_props['num_requests'] + 1, self.engine_props['snapshot_step']):
@@ -181,7 +181,7 @@ class SimStats:
         self.stats_props.simulation_blocking_list.append(blocking_prob)
         self.stats_props.simulation_bitrate_blocking_list.append(bit_rate_blocking_prob)
 
-    def _handle_iter_lists(self, sdn_data: object):
+    def _handle_iter_lists(self, sdn_data: SDNProps):
         for stat_key in sdn_data.stat_key_list:
             curr_sdn_data = sdn_data.get_data(key=stat_key)
             if stat_key == 'crosstalk_list':
@@ -207,7 +207,7 @@ class SimStats:
                 elif stat_key == 'bandwidth_list':
                     self.stats_props.bandwidth_list.append(int(data))
 
-    def iter_update(self, req_data: dict, sdn_data: object, network_spectrum_dict: dict):
+    def iter_update(self, req_data: dict, sdn_data: SDNProps, network_spectrum_dict: dict):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 

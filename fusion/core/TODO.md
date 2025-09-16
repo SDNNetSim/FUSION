@@ -4,6 +4,26 @@ This file tracks known issues and future improvements for the FUSION core module
 
 ## High Priority
 
+### Code Architecture Migration
+- **Issue**: Legacy files need migration to new module structure
+- **Files**: `fusion/core/spectrum_assignment.py:11`, `fusion/core/snr_measurements.py:11`
+- **Description**: Both spectrum assignment and SNR measurement files are marked for migration/deletion to modules/spectrum and modules/snr
+- **Impact**: Code organization and maintainability
+- **Next Steps**:
+  1. Complete migration to modules/spectrum scripts
+  2. Complete migration to modules/snr scripts
+  3. Remove deprecated files after migration validation
+
+### Request Dictionary Structure Issues
+- **Issue**: Request dictionary key mapping requires manual conversion
+- **Files**: `fusion/core/simulation.py:95`, `fusion/core/simulation.py:115`
+- **Description**: Manual key mapping from 'mod_formats' to 'modulation_formats_dict' and 'req_id' to 'request_id'
+- **Impact**: Code duplication and maintenance overhead
+- **Next Steps**:
+  1. Standardize request dictionary structure at source
+  2. Update request generation to use proper keys
+  3. Remove manual mapping code
+
 ### SimStats Class Enhancements (metrics.py)
 - **Issue**: Implement ability to pick up from previously run simulations
 - **File**: `fusion/core/metrics.py:25`
@@ -26,6 +46,56 @@ This file tracks known issues and future improvements for the FUSION core module
 
 ## Medium Priority
 
+### DRL Path Agents Configuration
+- **Issue**: Band list configuration should be externalized
+- **File**: `fusion/core/simulation.py:137`
+- **Description**: Band list for DRL path agents is hardcoded and should be moved to configuration
+- **Impact**: Reduces flexibility for different network configurations
+- **Next Steps**:
+  1. Move band list to configuration file or arguments script
+  2. Update simulation engine to read from external configuration
+  3. Add validation for band list configuration
+
+### Variable Naming Consistency
+- **Issue**: Band variable naming is inconsistent across codebase
+- **File**: `fusion/core/simulation.py:152`
+- **Description**: Variable names for bands change and are not consistent throughout the codebase
+- **Impact**: Code readability and maintainability
+- **Next Steps**:
+  1. Audit all band-related variable names
+  2. Establish consistent naming convention
+  3. Update all references to use standard naming
+
+### Spectrum Assignment Enhancements
+- **Issue**: Multi-band support missing and methods need testing
+- **Files**: `fusion/core/spectrum_assignment.py:54`, `fusion/core/spectrum_assignment.py:30`
+- **Description**: Best-fit allocation lacks testing and multi-band support not implemented
+- **Impact**: Limited spectrum allocation capabilities
+- **Next Steps**:
+  1. Implement multi-band support for spectrum assignment
+  2. Add comprehensive testing for best-fit allocation
+  3. Validate allocation algorithms across different scenarios
+
+### SNR Measurement System Updates
+- **Issue**: SNR measurement system needs variable renaming and feature additions
+- **Files**: `fusion/core/snr_measurements.py:448`, `fusion/core/snr_measurements.py:451`, `fusion/core/snr_measurements.py:454`
+- **Description**: Variables need renaming (to 'snr', 'xt') and external load check integration needed
+- **Impact**: Code clarity and measurement accuracy
+- **Next Steps**:
+  1. Rename variables to follow naming conventions
+  2. Integrate external load check with SNR calculations
+  3. Update documentation for new variable names
+
+### Simulation Engine Integration
+- **Issue**: Integration with batch runner system incomplete
+- **File**: `fusion/core/simulation.py:25`
+- **Description**: Simulation engine needs integration with sim/batch_runner system
+- **Impact**: Limited batch processing capabilities
+- **Next Steps**:
+  1. Design integration interface with batch runner
+  2. Implement communication protocols
+  3. Test batch processing functionality
+
 ### Configuration System Integration
 - **Issue**: Add CI percent to configuration file
 - **File**: `fusion/core/metrics.py:399`
@@ -47,6 +117,36 @@ This file tracks known issues and future improvements for the FUSION core module
   3. Consider alternative statistical approaches
 
 ## Low Priority
+
+### Flexigrid Implementation
+- **Issue**: Flexigrid functionality needs development
+- **File**: `fusion/core/spectrum_assignment.py:333`
+- **Description**: Flexigrid support needs to be developed for spectrum assignment
+- **Impact**: Limited flexibility in spectrum allocation strategies
+- **Next Steps**:
+  1. Research flexigrid requirements and specifications
+  2. Design flexigrid allocation algorithms
+  3. Implement and test flexigrid functionality
+
+### Spectrum Assignment Design Decisions
+- **Issue**: Unclear handling strategy for certain allocation scenarios
+- **File**: `fusion/core/spectrum_assignment.py:238`
+- **Description**: Need to determine proper handling approach for specific allocation cases
+- **Impact**: Potential allocation inefficiencies
+- **Next Steps**:
+  1. Analyze allocation scenarios requiring special handling
+  2. Design consistent allocation strategy
+  3. Document decision rationale
+
+### SNR Measurement Band Support
+- **Issue**: SNR measurements only work for C-band
+- **File**: `fusion/core/snr_measurements.py:78`
+- **Description**: Current SNR calculations are limited to C-band operations
+- **Impact**: Reduced multi-band network support
+- **Next Steps**:
+  1. Extend SNR calculations to support all bands
+  2. Update measurement algorithms for multi-band scenarios
+  3. Test SNR accuracy across different bands
 
 ### Debug Statement Cleanup
 - **Issue**: Debug print statements in production code

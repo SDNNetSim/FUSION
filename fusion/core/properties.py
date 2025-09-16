@@ -313,7 +313,7 @@ class SDNProps:
         ]
 
     def update_params(self, key: str, spectrum_key: str,
-                      spectrum_obj: object, value: Optional[Any] = None) -> None:
+                      spectrum_obj: Optional['SpectrumProps'], value: Optional[Any] = None) -> None:
         """
         Update lists to track statistics of routed requests or general network metrics.
         
@@ -325,7 +325,7 @@ class SDNProps:
         :param spectrum_key: Property key from spectrum object to retrieve value
         :type spectrum_key: str
         :param spectrum_obj: Spectrum assignment object containing spectrum_props
-        :type spectrum_obj: object
+        :type spectrum_obj: Optional[SpectrumProps]
         :param value: Direct value to set (used when spectrum_key is None)
         :type value: Optional[Any]
         :raises AttributeError: If key doesn't exist in SDNProps

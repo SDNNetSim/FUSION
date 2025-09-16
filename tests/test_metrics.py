@@ -115,7 +115,7 @@ class TestSimStats(unittest.TestCase):
         req_num = 2
         path_list = [(0, 1)]
 
-        self.sim_stats.update_snapshot(network_spectrum_dict={}, req_num=req_num, path_list=path_list)
+        self.sim_stats.update_snapshot(network_spectrum_dict={}, request_number=req_num, path_list=path_list)
 
         # Assertions to verify correct update
         self.assertIn(req_num, self.sim_stats.stats_props.snapshots_dict)

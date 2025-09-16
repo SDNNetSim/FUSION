@@ -136,7 +136,7 @@ class TestEngine(unittest.TestCase):
         self.engine.reqs_status_dict[req_id] = {
             'path': ['A', 'B', 'C']
         }
-        self.engine.handle_release(curr_time=curr_time)
+        self.engine.handle_release(current_time=curr_time)
 
         self.engine.sdn_obj.handle_event.assert_called_once_with(
             self.engine.reqs_dict[curr_time], request_type='release'
@@ -208,7 +208,7 @@ class TestEngine(unittest.TestCase):
         base_fp = "/path/to/output"
         self.engine.engine_props['save_step'] = 1
 
-        self.engine.end_iter(iteration=iteration, base_fp=base_fp)
+        self.engine.end_iter(iteration=iteration, base_file_path=base_fp)
 
 
 if __name__ == '__main__':
