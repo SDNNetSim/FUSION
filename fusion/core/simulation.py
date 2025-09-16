@@ -22,9 +22,6 @@ from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-# TODO: This will eventually work with sim/batch_runner
-
-
 class SimulationEngine:
     """
     Controls a single simulation.
@@ -55,18 +52,19 @@ class SimulationEngine:
         self.ml_model = None
         self.stop_flag = engine_props.get('stop_flag')  # Get the stop flag from engine_props
 
-    def update_arrival_params(self, curr_time: float):
+    def update_arrival_params(self, current_time: float):
         """
         Updates parameters for a request after attempted allocation.
 
-        :param curr_time: The current simulated time.
+        :param current_time: The current simulated time.
         """
         sdn_props = self.sdn_obj.sdn_props
-        self.stats_obj.iter_update(req_data=self.reqs_dict[curr_time], sdn_data=sdn_props, network_spectrum_dict=self.network_spectrum_dict)
+        self.stats_obj.iter_update(req_data=self.reqs_dict[current_time], sdn_data=sdn_props,
+                                   network_spectrum_dict=self.network_spectrum_dict)
         if sdn_props.was_routed:
             self.stats_obj.current_transponders = sdn_props.number_of_transponders
 
-            self.reqs_status_dict.update({self.reqs_dict[curr_time]['req_id']: {
+            self.reqs_status_dict.update({self.reqs_dict[current_time]['req_id']: {
                 "mod_format": sdn_props.modulation_list,
                 "path": sdn_props.path_list,
                 "is_sliced": sdn_props.is_sliced,
@@ -79,49 +77,50 @@ class SimulationEngine:
                 "snr_cost": sdn_props.crosstalk_list,
             }})
 
-    def handle_arrival(self, curr_time: float, force_route_matrix: list = None, force_core: int = None,
+    def handle_arrival(self, current_time: float, force_route_matrix: list = None, force_core: int = None,
                        force_slicing: bool = False, forced_index: int = None, force_mod_format: str = None):
         """
         Updates the SDN controller to handle an arrival request and retrieves relevant request statistics.
 
-        :param curr_time: The arrival time of the request.
+        :param current_time: The arrival time of the request.
         :param force_route_matrix: Passes forced routes to the SDN controller.
         :param force_slicing: Forces slicing in the SDN controller.
         :param forced_index: Forces an index in the SDN controller.
         :param force_mod_format: Forces a modulation format.
         :param force_core: Force a certain core for allocation.
         """
-        for req_key, req_value in self.reqs_dict[curr_time].items():
-            # TODO: This should be changed in reqs_dict directly
-            if req_key == 'mod_formats':
-                req_key = 'modulation_formats_dict'
-            elif req_key == 'req_id':
-                req_key = 'request_id'
-            self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
+        for request_key, request_value in self.reqs_dict[current_time].items():
+            if request_key == 'mod_formats':
+                request_key = 'modulation_formats_dict'
+            elif request_key == 'req_id':
+                request_key = 'request_id'
+            self.sdn_obj.sdn_props.update_params(key=request_key, spectrum_key=None, spectrum_obj=None,
+                                                 value=request_value)
 
-        self.sdn_obj.handle_event(self.reqs_dict[curr_time], request_type='arrival', force_route_matrix=force_route_matrix,
+        self.sdn_obj.handle_event(self.reqs_dict[current_time], request_type='arrival',
+                                  force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
                                   ml_model=self.ml_model, force_mod_format=force_mod_format)
         self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
-        self.update_arrival_params(curr_time=curr_time)
+        self.update_arrival_params(current_time=current_time)
 
-    def handle_release(self, curr_time: float):
+    def handle_release(self, current_time: float):
         """
         Updates the SDN controller to handle the release of a request.
 
-        :param curr_time: The arrival time of the request.
+        :param current_time: The arrival time of the request.
         """
-        for req_key, req_value in self.reqs_dict[curr_time].items():
-            # TODO: This should be changed in reqs_dict directly
-            if req_key == 'mod_formats':
-                req_key = 'modulation_formats_dict'
-            elif req_key == 'req_id':
-                req_key = 'request_id'
-            self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
+        for request_key, request_value in self.reqs_dict[current_time].items():
+            if request_key == 'mod_formats':
+                request_key = 'modulation_formats_dict'
+            elif request_key == 'req_id':
+                request_key = 'request_id'
+            self.sdn_obj.sdn_props.update_params(key=request_key, spectrum_key=None, spectrum_obj=None,
+                                                 value=request_value)
 
-        if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
-            self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
-            self.sdn_obj.handle_event(self.reqs_dict[curr_time], request_type='release')
+        if self.reqs_dict[current_time]['req_id'] in self.reqs_status_dict:
+            self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[current_time]['req_id']]['path']
+            self.sdn_obj.handle_event(self.reqs_dict[current_time], request_type='release')
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         # Request was blocked, nothing to release
         else:
@@ -134,7 +133,6 @@ class SimulationEngine:
         self.network_spectrum_dict = {}
         self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
 
-        # TODO: (drl_path_agents) This list should be stored somewhere else, like an arguments script
         self.engine_props['band_list'] = list()
         for band in ['c', 'l', 's', 'o', 'e']:
             try:
@@ -149,20 +147,19 @@ class SimulationEngine:
 
             cores_matrix = dict()
             for band in self.engine_props['band_list']:
-                # TODO: This variable name for bands changes and is not consistent
                 band_slots = self.engine_props[f'{band}_band']
                 cores_matrix[band] = np.zeros((link_data['fiber']['num_cores'], band_slots))
 
             self.network_spectrum_dict[(source, dest)] = {'cores_matrix': cores_matrix,
-                                                  'link_num': int(link_num),
-                                                  'usage_count': 0,
-                                                  'throughput': 0
-                                                  }
+                                                          'link_num': int(link_num),
+                                                          'usage_count': 0,
+                                                          'throughput': 0
+                                                          }
             self.network_spectrum_dict[(dest, source)] = {'cores_matrix': cores_matrix,
-                                                  'link_num': int(link_num),
-                                                  'usage_count': 0,
-                                                  'throughput': 0
-                                                  }
+                                                          'link_num': int(link_num),
+                                                          'usage_count': 0,
+                                                          'throughput': 0
+                                                          }
             self.topology.add_edge(source, dest, length=link_data['length'], nli_cost=None)
 
         self.engine_props['topology'] = self.topology
@@ -179,47 +176,47 @@ class SimulationEngine:
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
         self.reqs_dict = dict(sorted(self.reqs_dict.items()))
 
-    def handle_request(self, curr_time: float, req_num: int):
+    def handle_request(self, current_time: float, request_number: int):
         """
         Carries out arrival or departure functions for a given request.
 
-        :param curr_time: The current simulated time.
-        :param req_num: The request number.
+        :param current_time: The current simulated time.
+        :param request_number: The request number.
         """
-        req_type = self.reqs_dict[curr_time]["request_type"]
-        if req_type == "arrival":
+        request_type = self.reqs_dict[current_time]["request_type"]
+        if request_type == "arrival":
             old_network_spectrum_dict = copy.deepcopy(self.network_spectrum_dict)
-            old_req_info_dict = copy.deepcopy(self.reqs_dict[curr_time])
-            self.handle_arrival(curr_time=curr_time)
+            old_request_info_dict = copy.deepcopy(self.reqs_dict[current_time])
+            self.handle_arrival(current_time=current_time)
 
-            if self.engine_props['save_snapshots'] and req_num % self.engine_props['snapshot_step'] == 0:
-                self.stats_obj.update_snapshot(network_spectrum_dict=self.network_spectrum_dict, req_num=req_num)
+            if self.engine_props['save_snapshots'] and request_number % self.engine_props['snapshot_step'] == 0:
+                self.stats_obj.update_snapshot(network_spectrum_dict=self.network_spectrum_dict, request_number=request_number)
 
             if self.engine_props['output_train_data']:
                 was_routed = self.sdn_obj.sdn_props.was_routed
                 if was_routed:
-                    req_info_dict = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]
+                    request_info_dict = self.reqs_status_dict[self.reqs_dict[current_time]['req_id']]
                     if self.ml_metrics:
                         self.ml_metrics.update_train_data(
-                            old_request_info_dict=old_req_info_dict,
-                            request_info_dict=req_info_dict,
+                            old_request_info_dict=old_request_info_dict,
+                            request_info_dict=request_info_dict,
                             network_spectrum_dict=old_network_spectrum_dict,
                             current_transponders=self.stats_obj.current_transponders
                         )
 
-        elif req_type == "release":
-            self.handle_release(curr_time=curr_time)
+        elif request_type == "release":
+            self.handle_release(current_time=current_time)
         else:
             raise NotImplementedError(f'Request type unrecognized. Expected arrival or release, '
-                                      f'got: {req_type}')
+                                      f'got: {request_type}')
 
-    def end_iter(self, iteration: int, print_flag: bool = True, base_fp: str = None):
+    def end_iter(self, iteration: int, print_flag: bool = True, base_file_path: str = None):
         """
         Updates iteration statistics.
 
         :param iteration: The current iteration.
         :param print_flag: Whether to print or not.
-        :param base_fp: The base file path to save output statistics.
+        :param base_file_path: The base file path to save output statistics.
         """
         self.stats_obj.calculate_blocking_statistics()
         self.stats_obj.finalize_iteration_statistics()
@@ -242,7 +239,7 @@ class SimulationEngine:
 
         if (iteration + 1) % self.engine_props['save_step'] == 0 or iteration == 0 or (iteration + 1) == \
                 self.engine_props['max_iters']:
-            self._save_all_stats(base_fp)
+            self._save_all_stats(base_file_path)
 
         return resp
 
@@ -276,8 +273,8 @@ class SimulationEngine:
             pass
 
         if iteration == 0 and print_flag:
-            print(f"Simulation started for Erlang: {self.engine_props['erlang']} "
-                  f"simulation number: {self.engine_props['thread_num']}.\n")
+            logger.info("Simulation started for Erlang: %s simulation number: %s",
+                        self.engine_props['erlang'], self.engine_props['thread_num'])
 
             if self.engine_props['deploy_model']:
                 self.ml_model = load_model(engine_props=self.engine_props)
@@ -296,59 +293,128 @@ class SimulationEngine:
         We do not produce a local fraction. Instead, each iteration => done_units += 1,
         which we push to the parent's queue. If done_offset is given, we start from that offset.
         """
-        # Create a local logging helper that uses the shared log_queue if available.
-        log_queue = self.engine_props.get('log_queue')
-        self.create_topology()
-
-        max_iters = self.engine_props["max_iters"]
-        progress_queue = self.engine_props.get('progress_queue')
-        thread_num = self.engine_props.get('thread_num', 'unknown')
-
-        # The total # of iteration units in this process
-        my_iteration_units = self.engine_props.get('my_iteration_units', max_iters)
-        # The offset for if we've completed some from previous Erlangs in the same process
-        done_offset = self.engine_props.get('done_offset', 0)
-
-        # Start from done_offset
-        done_units = done_offset
-
-        log_message(message=f"[Engine] thread={thread_num}, offset={done_offset}, "
-              f"my_iteration_units={my_iteration_units}, erlang={self.engine_props['erlang']}\n", log_queue=log_queue)
+        simulation_context = self._setup_simulation_context()
+        self._log_simulation_start(simulation_context)
 
         for iteration in range(self.engine_props["max_iters"]):
-            if self.stop_flag.is_set():  # Check if the stop flag is set
-                log_message(message=f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
-                      f"simulation number: {thread_num}.\n", log_queue=log_queue)
+            if self._should_stop_simulation(simulation_context):
                 break
 
-            self.init_iter(iteration=iteration, seed=seed)
-            req_num = 1
-            for curr_time in self.reqs_dict:
-                self.handle_request(curr_time=curr_time, req_num=req_num)
+            simulation_context['done_units'] = self._run_single_iteration(
+                iteration, seed, simulation_context
+            )
 
-                if self.reqs_dict[curr_time]['request_type'] == 'arrival':
-                    req_num += 1
-
-            end_iter = self.end_iter(iteration=iteration)
-
-            done_units += 1  # finished another iteration
-            if progress_queue:
-                progress_queue.put((thread_num, done_units))
-
-            log_message(message=f"CHILD={thread_num} iteration={iteration}, done_units={done_units}\n",
-                        log_queue=log_queue)
-
-            time.sleep(0.2)
-
-            if end_iter:
+            if simulation_context['end_iter']:
                 break
 
+        self._log_simulation_complete(simulation_context)
+        return simulation_context['done_units']
+
+    def _setup_simulation_context(self) -> dict:
+        """
+        Initialize simulation context with necessary parameters.
+        
+        :return: Dictionary containing simulation context parameters
+        :rtype: dict
+        """
+        self.create_topology()
+
+        return {
+            'log_queue': self.engine_props.get('log_queue'),
+            'max_iters': self.engine_props["max_iters"],
+            'progress_queue': self.engine_props.get('progress_queue'),
+            'thread_num': self.engine_props.get('thread_num', 'unknown'),
+            'my_iteration_units': self.engine_props.get('my_iteration_units', self.engine_props["max_iters"]),
+            'done_offset': self.engine_props.get('done_offset', 0),
+            'done_units': self.engine_props.get('done_offset', 0),
+            'end_iter': False
+        }
+
+    def _log_simulation_start(self, context: dict) -> None:
+        """
+        Log simulation start message.
+        
+        :param context: Simulation context dictionary
+        """
         log_message(
-            message=f"Simulation finished for Erlang: {self.engine_props['erlang']} "
-            f"finished for simulation number: {thread_num}.\n", log_queue=log_queue
+            message=f"[Engine] thread={context['thread_num']}, offset={context['done_offset']}, "
+                    f"my_iteration_units={context['my_iteration_units']}, erlang={self.engine_props['erlang']}\n",
+            log_queue=context['log_queue']
         )
 
-        return done_units
+    def _should_stop_simulation(self, context: dict) -> bool:
+        """
+        Check if simulation should be stopped.
+        
+        :param context: Simulation context dictionary
+        :return: True if simulation should stop
+        :rtype: bool
+        """
+        if self.stop_flag.is_set():
+            log_message(
+                message=f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
+                        f"simulation number: {context['thread_num']}.\n",
+                log_queue=context['log_queue']
+            )
+            return True
+        return False
+
+    def _run_single_iteration(self, iteration: int, seed: int, context: dict) -> int:
+        """
+        Execute a single simulation iteration.
+        
+        :param iteration: Current iteration number
+        :param seed: Random seed for request generation
+        :param context: Simulation context dictionary
+        :return: Updated done_units count
+        :rtype: int
+        """
+        self.init_iter(iteration=iteration, seed=seed)
+        self._process_all_requests()
+
+        context['end_iter'] = self.end_iter(iteration=iteration)
+        context['done_units'] += 1
+
+        self._update_progress(iteration, context)
+        time.sleep(0.2)
+
+        return context['done_units']
+
+    def _process_all_requests(self) -> None:
+        """Process all requests for the current iteration."""
+        request_number = 1
+        for current_time in self.reqs_dict:
+            self.handle_request(current_time=current_time, request_number=request_number)
+
+            if self.reqs_dict[current_time]['request_type'] == 'arrival':
+                request_number += 1
+
+    def _update_progress(self, iteration: int, context: dict) -> None:
+        """
+        Update progress tracking and logging.
+        
+        :param iteration: Current iteration number
+        :param context: Simulation context dictionary
+        """
+        if context['progress_queue']:
+            context['progress_queue'].put((context['thread_num'], context['done_units']))
+
+        log_message(
+            message=f"CHILD={context['thread_num']} iteration={iteration}, done_units={context['done_units']}\n",
+            log_queue=context['log_queue']
+        )
+
+    def _log_simulation_complete(self, context: dict) -> None:
+        """
+        Log simulation completion message.
+        
+        :param context: Simulation context dictionary
+        """
+        log_message(
+            message=f"Simulation finished for Erlang: {self.engine_props['erlang']} "
+                    f"finished for simulation number: {context['thread_num']}.\n",
+            log_queue=context['log_queue']
+        )
 
     def _save_all_stats(self, base_file_path: str = 'data') -> None:
         """

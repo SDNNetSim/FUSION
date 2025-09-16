@@ -116,7 +116,7 @@ class TestHandleReleases(TestCase):
 
         helper.handle_releases()
 
-        eng.handle_release.assert_called_once_with(curr_time=0)
+        eng.handle_release.assert_called_once_with(current_time=0)
         self.assertEqual(helper._last_processed_index, 1)  # pylint: disable=protected-access
 
 

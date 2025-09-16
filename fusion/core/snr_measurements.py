@@ -4,11 +4,9 @@ import math
 import numpy as np
 import networkx as nx
 
-from fusion.core.properties import SNRProps
+from fusion.core.properties import SNRProps, SDNProps, SpectrumProps, RoutingProps
 from fusion.modules.snr.utils import get_slot_index, get_loaded_files, compute_response
 
-
-# TODO: This file will be migrated/deleted to the modules/snr scripts created
 
 
 # fixme: Only works for seven cores
@@ -17,7 +15,7 @@ class SnrMeasurements:
     Handles signal-to-noise ratio calculations for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: object, route_props: object):
+    def __init__(self, engine_props: dict, sdn_props: SDNProps, spectrum_props: SpectrumProps, route_props: RoutingProps):
         self.snr_props = SNRProps()
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -75,7 +73,6 @@ class SnrMeasurements:
         self.channels_list = []
         # Cross-phase modulation noise
         xci_noise = 0
-        # TODO: Only works for c-band
         for slot_index in range(self.engine_props['c_band']):
             source = self.spectrum_props.path_list[link_num]
             dest = self.spectrum_props.path_list[link_num + 1]
@@ -445,13 +442,10 @@ class SnrMeasurements:
         :rtype: tuple
         """
         self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
-        # TODO: Renamed to "snr"
         if self.engine_props['snr_type'] == "snr_calc_nli":
             snr_check, xt_cost = self.check_snr()
-        # TODO: Renamed to "xt"
         elif self.engine_props['snr_type'] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
-        # TODO: Will be added to snr with an external load check
         elif self.engine_props['snr_type'] == "snr_e2e_external_resources":
             snr_check, xt_cost = self.check_snr_ext(path_index)
         else:

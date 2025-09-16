@@ -4,11 +4,9 @@ from operator import itemgetter
 
 import numpy as np
 
-from fusion.core.properties import SpectrumProps
+from fusion.core.properties import SpectrumProps, SDNProps, RoutingProps
 from fusion.modules.spectrum.utils import SpectrumHelpers
 from fusion.core.snr_measurements import SnrMeasurements
-
-# TODO: This file will be migrated/deleted to the modules/spectrum scripts created
 
 
 class SpectrumAssignment:
@@ -16,7 +14,7 @@ class SpectrumAssignment:
     Attempt to find the available spectrum for a given request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
+    def __init__(self, engine_props: dict, sdn_props: SDNProps, route_props: RoutingProps):
         self.spectrum_props = SpectrumProps()
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -27,7 +25,6 @@ class SpectrumAssignment:
         self.spec_help_obj = SpectrumHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              spectrum_props=self.spectrum_props)
 
-    # TODO: No longer supported and needs a test
     def _allocate_best_fit(self, channels_list: list):
         for channel_dict in channels_list:
             for start_index in channel_dict['channel']:
@@ -51,7 +48,6 @@ class SpectrumAssignment:
                     self.spectrum_props.current_band = channel_dict['band']
                     return
 
-    # TODO: No support for multi-band
     def find_best_fit(self):
         """
         Searches for and allocates the best-fit super channel on each link along the path.
@@ -235,7 +231,6 @@ class SpectrumAssignment:
         """
         Determines the spectrum allocation method based on engine properties and spectrum requirements.
         """
-        # TODO: It will be interesting on how we'd like to handle this
         if self.spectrum_props.forced_index is not None:
             self.handle_first_last(flag='forced_index')
         elif self.engine_props['allocation_method'] == 'best_fit':
@@ -330,6 +325,5 @@ class SpectrumAssignment:
             mod_format, bandwidth = (False, False)
             return mod_format, bandwidth
 
-        # TODO: Develop for flexigrid
         mod_format, bandwidth = False, False
         return mod_format, bandwidth

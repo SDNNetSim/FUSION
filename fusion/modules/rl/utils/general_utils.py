@@ -127,7 +127,7 @@ class CoreUtilHelpers:
             if req_obj['depart'] > curr_time:
                 break
 
-            self.engine_obj.handle_release(curr_time=req_obj['depart'])
+            self.engine_obj.handle_release(current_time=req_obj['depart'])
             self._last_processed_index += 1
 
     def allocate(self):
@@ -149,7 +149,7 @@ class CoreUtilHelpers:
             forced_index = None
 
         force_mod_format = self.route_obj.route_props.modulation_formats_matrix[0]
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
+        self.engine_obj.handle_arrival(current_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
                                        force_core=self.rl_props.core_index,
                                        forced_index=forced_index, force_mod_format=force_mod_format)
 
