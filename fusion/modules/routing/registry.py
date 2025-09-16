@@ -11,6 +11,7 @@ from fusion.interfaces.router import AbstractRoutingAlgorithm
 # Import all routing algorithm implementations
 from .k_shortest_path import KShortestPath
 from .congestion_aware import CongestionAwareRouting
+from .least_congested import LeastCongestedRouting
 from .fragmentation_aware import FragmentationAwareRouting
 from .nli_aware import NLIAwareRouting
 from .xt_aware import XTAwareRouting
@@ -29,6 +30,7 @@ class RoutingRegistry:
         algorithms = [
             KShortestPath,
             CongestionAwareRouting,
+            LeastCongestedRouting,
             FragmentationAwareRouting,
             NLIAwareRouting,
             XTAwareRouting
@@ -169,6 +171,7 @@ def get_routing_algorithm_info(name: str) -> Dict[str, str]:
 ROUTING_ALGORITHMS = {
     'k_shortest_path': KShortestPath,
     'congestion_aware': CongestionAwareRouting,
+    'least_congested': LeastCongestedRouting,
     'fragmentation_aware': FragmentationAwareRouting,
     'nli_aware': NLIAwareRouting,
     'xt_aware': XTAwareRouting
