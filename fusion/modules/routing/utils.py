@@ -136,16 +136,21 @@ class RoutingHelpers:
 
     def _find_num_overlapped(self, channel: int, core_num: int, core_info_dict: dict, band: str):
         num_overlapped = 0.0
-        if core_num != 6:
+        num_cores = len(core_info_dict[band])
+
+        if core_num != 6 or num_cores <= 6:
             adj_cores_list = self._find_adjacent_cores(core_num=core_num)
             for curr_core in adj_cores_list:
-                if core_info_dict[band][curr_core][channel] > 0:
+                # Check bounds before accessing
+                if curr_core < num_cores and core_info_dict[band][curr_core][channel] > 0:
                     num_overlapped += 1
 
-            num_overlapped /= 3
+            # Avoid division by zero
+            if len([c for c in adj_cores_list if c < num_cores]) > 0:
+                num_overlapped /= len([c for c in adj_cores_list if c < num_cores])
         # The number of overlapped cores for core six will be different since it's the center core
         else:
-            for sub_core_num in range(6):
+            for sub_core_num in range(min(6, num_cores)):
                 if core_info_dict[band][sub_core_num][channel] > 0:
                     num_overlapped += 1
 
@@ -217,7 +222,8 @@ class RoutingHelpers:
         """
         free_channels_dict = find_free_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                                 slots_needed=self.sdn_props.slots_needed, link_tuple=link_tuple)
-        taken_channels_dict = find_taken_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict, link_tuple=link_tuple)
+        taken_channels_dict = find_taken_channels(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
+                                                  link_tuple=link_tuple)
 
         link_cost = self._find_link_cost(free_channels_dict=free_channels_dict, taken_channels_dict=taken_channels_dict,
                                          num_span=num_span)

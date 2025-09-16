@@ -274,8 +274,8 @@ class SDNProps:
 
         # Current request properties
         self.request_id: Optional[int] = None
-        self.source: Optional[int] = None
-        self.destination: Optional[int] = None
+        self.source: Optional[str] = None  # Node IDs are strings in the topology
+        self.destination: Optional[str] = None  # Node IDs are strings in the topology
         self.bandwidth: Optional[float] = None
         self.arrive: Optional[float] = None
         self.depart: Optional[float] = None

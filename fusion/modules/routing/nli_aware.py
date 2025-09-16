@@ -9,6 +9,7 @@ import networkx as nx
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.core.properties import RoutingProps
+from fusion.sim.utils import find_path_len, get_path_mod
 
 
 class NLIAwareRouting(AbstractRoutingAlgorithm):
@@ -136,8 +137,16 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
             resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
+            # Calculate actual path length for modulation format selection
+            path_len = find_path_len(path_list=path_list, topology=topology)
+            # Get modulation format
+            mod_formats = getattr(self.sdn_props, 'mod_formats', {})
+            mod_format = get_path_mod(mod_formats, path_len)
+            mod_format_list = [mod_format if mod_format else 'QPSK']
+
             self.route_props.weights_list.append(resp_weight)
             self.route_props.paths_matrix.append(path_list)
+            self.route_props.modulation_formats_matrix.append(mod_format_list)
             # For NLI-aware, we typically take the first (best) path
             break
 
