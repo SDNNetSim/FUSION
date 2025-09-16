@@ -382,7 +382,7 @@ class Routing:
                     modulation_formats = list(sorted_formats.keys())
 
                     self.route_props.paths_matrix.append(path)
-                    self.route_props.modulation_formats_matrix.append(modulation_formats)
+                    self.route_props.modulation_formats_matrix.append(modulation_formats[::-1])
                     self.route_props.weights_list.append(path_length)
                     self.route_props.path_index_list.append(paths_found)
 
