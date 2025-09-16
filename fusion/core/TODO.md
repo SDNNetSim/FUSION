@@ -81,12 +81,40 @@ This file tracks known issues and future improvements for the FUSION core module
   2. Update type annotations throughout the class
   3. Add return type annotations where missing
 
-## Completed Items
+## High Priority
 
-### ✅ Initial Code Review
-- Analyzed metrics.py against coding standards
-- Identified key improvement areas
-- Documented TODO items for tracking
+### Variable Naming Consistency Check
+- **Issue**: Review remaining variable names for consistency with coding standards
+- **Files**: Multiple files across codebase  
+- **Description**: Some variables like `req_dict`, `mod_format`, `route_matrix` are used across many files but don't follow naming conventions
+- **Impact**: Inconsistent naming reduces code readability
+- **Next Steps**:
+  1. Audit usage across all 36+ files that use `mod_format`
+  2. Create migration plan for high-usage variables
+  3. Update tests and configuration files
+  4. Consider backward compatibility for external APIs
+
+### Dynamic Slicing Implementation Issues
+- **Issue**: Dynamic slicing has unclear code paths and ignored parameters
+- **File**: `fusion/modules/spectrum/light_path_slicing.py:89-91`
+- **Description**: TODO comments indicate mod_format_list is ignored and path_len is unused
+- **Impact**: Potential bugs in dynamic slicing allocation
+- **Next Steps**:
+  1. Research intended behavior for dynamic slicing
+  2. Fix parameter usage or remove unused parameters
+  3. Add proper testing for dynamic slicing scenarios
+
+## Medium Priority
+
+### Route Matrix Forced Modulation Inconsistency  
+- **Issue**: Inconsistency when forcing modulation format with route matrix
+- **File**: `fusion/core/sdn_controller.py:221`
+- **Description**: Code comment indicates design issue with DRL path agents
+- **Impact**: May affect ML model integration
+- **Next Steps**:
+  1. Review DRL path agent requirements
+  2. Design consistent interface for forced parameters
+  3. Update related documentation
 
 ---
 

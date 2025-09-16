@@ -99,10 +99,9 @@ class SimulationEngine:
                 req_key = 'request_id'
             self.sdn_obj.sdn_props.update_params(key=req_key, spectrum_key=None, spectrum_obj=None, value=req_value)
 
-        self.sdn_obj.handle_event(request_type='arrival', force_route_matrix=force_route_matrix,
+        self.sdn_obj.handle_event(self.reqs_dict[curr_time], request_type='arrival', force_route_matrix=force_route_matrix,
                                   force_slicing=force_slicing, forced_index=forced_index, force_core=force_core,
-                                  ml_model=self.ml_model, req_dict=self.reqs_dict[curr_time],
-                                  force_mod_format=force_mod_format)
+                                  ml_model=self.ml_model, force_mod_format=force_mod_format)
         self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(curr_time=curr_time)
 
@@ -122,7 +121,7 @@ class SimulationEngine:
 
         if self.reqs_dict[curr_time]['req_id'] in self.reqs_status_dict:
             self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[self.reqs_dict[curr_time]['req_id']]['path']
-            self.sdn_obj.handle_event(req_dict=self.reqs_dict[curr_time], request_type='release')
+            self.sdn_obj.handle_event(self.reqs_dict[curr_time], request_type='release')
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         # Request was blocked, nothing to release
         else:

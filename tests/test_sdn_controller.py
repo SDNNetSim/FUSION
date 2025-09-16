@@ -25,6 +25,8 @@ class TestSDNController(unittest.TestCase):
 
         # Mock SDNProps to ensure it's treated as a class object
         self.controller.sdn_props = SDNProps()
+        # Update slicing manager's reference to the new sdn_props
+        self.controller.slicing_manager.sdn_props = self.controller.sdn_props
         self.controller.sdn_props.path_list = ['A', 'B', 'C']
         self.controller.sdn_props.request_id = 1
         self.controller.sdn_props.network_spectrum_dict = {
@@ -138,7 +140,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.spectrum_obj.spectrum_props.is_free = True
         mock_spectrum.return_value = None
 
-        self.controller.handle_event(req_dict={}, request_type="arrival")
+        self.controller.handle_event({}, request_type="arrival")
 
         mock_allocate.assert_called_once()
         self.assertTrue(self.controller.sdn_props.was_routed)
@@ -191,7 +193,7 @@ class TestSDNController(unittest.TestCase):
                    return_value=('16QAM', 50)) as mock_get_spectrum, \
                 patch.object(self.controller, 'allocate') as mock_allocate, \
                 patch.object(self.controller, '_update_req_stats') as mock_update_stats, \
-                patch('fusion.core.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
+                patch('fusion.modules.spectrum.light_path_slicing.find_path_len', return_value=100) as mock_find_path_len:
             self.controller._handle_dynamic_slicing(path_list=['A', 'B', 'C'], path_index=0, forced_segments=1)
 
             # Verify methods were called
@@ -225,7 +227,7 @@ class TestSDNController(unittest.TestCase):
         with patch('fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing',
                    return_value=('16QAM', 50)) as mock_get_spectrum, \
                 patch.object(self.controller, 'allocate') as mock_allocate, \
-                patch('fusion.core.sdn_controller.find_path_len', return_value=100) as mock_find_path_len:
+                patch('fusion.modules.spectrum.light_path_slicing.find_path_len', return_value=100) as mock_find_path_len:
             # Use the real _handle_congestion function
             with patch.object(self.controller, '_handle_congestion',
                               wraps=self.controller._handle_congestion) as mock_handle_congestion:

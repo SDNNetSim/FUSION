@@ -139,7 +139,7 @@ class TestEngine(unittest.TestCase):
         self.engine.handle_release(curr_time=curr_time)
 
         self.engine.sdn_obj.handle_event.assert_called_once_with(
-            req_dict=self.engine.reqs_dict[curr_time], request_type='release'
+            self.engine.reqs_dict[curr_time], request_type='release'
         )
         self.assertEqual(self.engine.net_spec_dict, self.engine.sdn_obj.sdn_props.net_spec_dict)
 
