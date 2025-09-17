@@ -20,7 +20,7 @@ class SpectrumAssignment:
         self.sdn_props = sdn_props
         self.route_props = route_props
 
-        self.snr_obj = SnrMeasurements(engine_props=self.engine_props, sdn_props=self.sdn_props,
+        self.snr_obj = SnrMeasurements(engine_props_dict=self.engine_props, sdn_props=self.sdn_props,
                                        spectrum_props=self.spectrum_props, route_props=self.route_props)
         self.spec_help_obj = SpectrumHelpers(engine_props=self.engine_props, sdn_props=self.sdn_props,
                                              spectrum_props=self.spectrum_props)
