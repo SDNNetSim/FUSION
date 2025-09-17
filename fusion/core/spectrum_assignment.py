@@ -333,15 +333,15 @@ class SpectrumAssignment:
             self.spectrum_props.block_reason = 'congestion'
             continue
 
-    def get_spectrum_dynamic_slicing(self, _mod_format_list: list, _slice_bandwidth: str = None,
-                                     path_index: int = None):
+    def get_spectrum_dynamic_slicing(self, mod_format_list: list, slice_bandwidth: str = None,
+                                     path_index: int = None):  # pylint: disable=unused-argument
         """
         Controls the class, attempts to find an available spectrum.
 
-        :param _mod_format_list: A list of modulation formats to attempt allocation.
-        :type _mod_format_list: list
-        :param _slice_bandwidth: A bandwidth used for light-segment slicing.
-        :type _slice_bandwidth: str or None
+        :param mod_format_list: A list of modulation formats to attempt allocation.
+        :type mod_format_list: list
+        :param slice_bandwidth: A bandwidth used for light-segment slicing.
+        :type slice_bandwidth: str or None
         :param path_index: Index of the path for dynamic slicing.
         :type path_index: int or None
         """
