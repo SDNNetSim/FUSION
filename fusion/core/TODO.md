@@ -86,6 +86,26 @@ This file tracks known issues and future improvements for the FUSION core module
   2. Integrate external load check with SNR calculations
   3. Update documentation for new variable names
 
+### SNR Core Support Limitation
+- **Issue**: SnrMeasurements class only works for seven cores
+- **File**: `fusion/core/snr_measurements.py:12`
+- **Description**: The class has a hardcoded limitation for seven-core fiber configurations
+- **Impact**: Limited support for different core configurations (4, 13, 19 cores)
+- **Next Steps**:
+  1. Analyze code dependencies on seven-core assumption
+  2. Generalize methods to support all core configurations
+  3. Test with different core counts
+
+### Adjacent Core Calculation Issue
+- **Issue**: Number of adjacent cores hardcoded to negative 100
+- **File**: `fusion/core/snr_measurements.py:213`
+- **Description**: In _calculate_pxt method, num_adjacent is set to -100 which appears to be a placeholder value
+- **Impact**: Incorrect cross-talk calculations when xt_noise is enabled
+- **Next Steps**:
+  1. Determine correct method to calculate number of adjacent cores
+  2. Replace hardcoded value with proper calculation
+  3. Validate cross-talk calculations with correct adjacent core count
+
 ### Simulation Engine Integration
 - **Issue**: Integration with batch runner system incomplete
 - **File**: `fusion/core/simulation.py:25`

@@ -57,7 +57,7 @@ class TestSnrMeasurements(unittest.TestCase):
         self.spectrum_props.modulation = 'QPSK'
 
         self.snr_measurements = SnrMeasurements(
-            engine_props=self.engine_props,
+            engine_props_dict=self.engine_props,
             sdn_props=self.sdn_props,
             spectrum_props=self.spectrum_props,
             route_props=self.route_props
@@ -81,9 +81,9 @@ class TestSnrMeasurements(unittest.TestCase):
         """Test the update of cross-phase modulation noise (XCI) on a link."""
         req_id = 1.0
         slot_index = 5
-        curr_xci = 0.0
-        curr_link = np.zeros((7, 40))
-        curr_link[self.spectrum_props.core_number][slot_index] = req_id
+        current_xci = 0.0
+        current_link = np.zeros((7, 40))
+        current_link[self.spectrum_props.core_number][slot_index] = req_id
 
         # Initialize center_frequency to avoid NoneType error
         self.snr_measurements.snr_props.center_frequency = (
@@ -91,7 +91,7 @@ class TestSnrMeasurements(unittest.TestCase):
         )
 
         new_xci = self.snr_measurements._update_link_xci(
-            req_id=req_id, curr_link=curr_link, slot_index=slot_index, curr_xci=curr_xci
+            request_id=req_id, current_link=current_link, slot_index=slot_index, current_xci=current_xci
         )
         expected_xci = 1.428e-27  # Update with actual expected value
 
@@ -102,8 +102,8 @@ class TestSnrMeasurements(unittest.TestCase):
         self.snr_measurements.spectrum_props.start_slot = 10
         self.snr_measurements.spectrum_props.end_slot = 15
 
-        # Set num_slots to the correct value before calling check_xt
-        self.snr_measurements.num_slots = (
+        # Set number_of_slots to the correct value before calling check_xt
+        self.snr_measurements.number_of_slots = (
                 self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         )
 
