@@ -2,7 +2,8 @@
 Factory classes for creating algorithm instances using interfaces.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 from fusion.interfaces.snr import AbstractSNRMeasurer
@@ -262,7 +263,7 @@ class SimulationPipeline:
 
         # Get modulation format for SNR threshold
         modulation = request.modulation if hasattr(request, 'modulation') else 'QPSK'
-        topology = self.engine_props.get('topology', self.sdn_props.topology)
+        topology: Any = self.engine_props.get('topology', self.sdn_props.topology)
         path_length = sum(topology[path[i]][path[i + 1]]['length']
                           for i in range(len(path) - 1))
 

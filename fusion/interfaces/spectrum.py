@@ -4,7 +4,7 @@ Abstract base class for spectrum assignment algorithms in FUSION.
 # pylint: disable=duplicate-code
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 class AbstractSpectrumAssigner(ABC):
