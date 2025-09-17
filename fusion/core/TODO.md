@@ -76,6 +76,17 @@ This file tracks known issues and future improvements for the FUSION core module
   2. Add comprehensive testing for best-fit allocation
   3. Validate allocation algorithms across different scenarios
 
+### Cross-talk Aware Allocation Limitation
+- **Issue**: Cross-talk aware allocation only works for 7-core configurations
+- **File**: `fusion/core/spectrum_assignment.py:216`
+- **Description**: The handle_crosstalk_aware_allocation method has hardcoded limitations for seven-core fiber configurations
+- **Impact**: Limited support for different core configurations (4, 13, 19 cores)
+- **Next Steps**:
+  1. Analyze code dependencies on seven-core assumption
+  2. Generalize method to support all core configurations  
+  3. Test with different core counts
+  4. Update algorithm to dynamically determine core adjacency patterns
+
 ### SNR Measurement System Updates
 - **Issue**: SNR measurement system needs variable renaming and feature additions
 - **Files**: `fusion/core/snr_measurements.py:448`, `fusion/core/snr_measurements.py:451`, `fusion/core/snr_measurements.py:454`
