@@ -7,6 +7,7 @@ from unittest import TestCase, mock
 
 import numpy as np
 from fusion.modules.rl.agents import path_agent
+from fusion.modules.rl.errors import AgentError, InvalidActionError
 
 
 class TestPathAgent(TestCase):
@@ -85,7 +86,7 @@ class TestPathAgent(TestCase):
         """update raises when iteration exceeds max_iters."""
         agent = self._mk_agent()
         agent.hyperparam_obj.iteration = 10
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AgentError):
             agent.update(True, {}, 0, 5, 0)
 
     @mock.patch.object(path_agent, "VALID_DRL_ALGORITHMS", ["ppo"])
@@ -134,5 +135,5 @@ class TestPathAgent(TestCase):
     def test_drl_route_unsupported_algo_raises(self):
         """_drl_route raises for unsupported algorithm."""
         agent = self._mk_agent(alg="epsilon_greedy_bandit")
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(InvalidActionError):
             agent._drl_route(route_obj=mock.MagicMock(), action=0)
