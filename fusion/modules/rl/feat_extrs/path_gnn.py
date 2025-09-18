@@ -30,11 +30,11 @@ class PathGNN(BaseGraphFeatureExtractor):
     """
 
     def __init__(
-        self, 
-        obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
-        emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
-        gnn_type: str = DEFAULT_GNN_TYPE,
-        layers: int = DEFAULT_NUM_LAYERS
+            self,
+            obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
+            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
+            gnn_type: str = DEFAULT_GNN_TYPE,
+            layers: int = DEFAULT_NUM_LAYERS
     ):
         """
         Initialize the Path GNN feature extractor.
@@ -56,32 +56,32 @@ class PathGNN(BaseGraphFeatureExtractor):
         num_paths = obs_space["path_masks"].shape[0]
         features_dimension = emb_dim * num_paths
         super().__init__(obs_space, features_dimension)
-        
+
         # Map string names to convolution classes
         convolution_type_mapping = {
-            "gat": GATv2Conv, 
-            "sage": SAGEConv, 
+            "gat": GATv2Conv,
+            "sage": SAGEConv,
             "graphconv": GraphConv
         }
-        
+
         if gnn_type not in convolution_type_mapping:
             raise ValueError(
                 f"Unknown GNN type: {gnn_type}. "
                 f"Valid types: {list(convolution_type_mapping.keys())}"
             )
-        
+
         selected_convolution_class = convolution_type_mapping[gnn_type]
         input_dimension = obs_space["x"].shape[1]
-        
+
         # Create convolution layers
         self.convolution_layers = torch.nn.ModuleList([
             selected_convolution_class(
-                input_dimension if layer_idx == 0 else emb_dim, 
+                input_dimension if layer_idx == 0 else emb_dim,
                 emb_dim
             )
             for layer_idx in range(layers)
         ])
-        
+
         # Readout layer for final transformation
         self.readout_layer = torch.nn.Linear(emb_dim, emb_dim)
 
@@ -105,42 +105,42 @@ class PathGNN(BaseGraphFeatureExtractor):
         node_features_list = observation_dict["x"]
         edge_index = observation_dict["edge_index"].long()
         path_masks_list = observation_dict["path_masks"]
-        
+
         # Process batch dimensions
-        node_features_list, edge_index, path_masks_list, batch_size = \
+        node_features_list, edge_index, path_masks_list, _ = \
             self._process_batch_dimensions(
                 node_features_list, edge_index, path_masks_list
             )
-        
+
         # Process each sample in the batch
         batch_outputs: List[torch.Tensor] = []
         actual_batch_size = node_features_list.size(0)
-        
+
         for batch_idx in range(actual_batch_size):
             # Extract batch sample
             node_features_batch = node_features_list[batch_idx]
             edge_index_batch = edge_index[batch_idx]
             path_masks_batch = path_masks_list[batch_idx]
-            
+
             # Process through convolution layers
             node_embeddings = node_features_batch
             for convolution_layer in self.convolution_layers:
                 node_embeddings = convolution_layer(
                     node_embeddings, edge_index_batch
                 ).relu()
-            
+
             # Compute edge embeddings
             edge_embeddings = self._compute_edge_embeddings(
                 node_embeddings, edge_index_batch
             )
-            
+
             # Aggregate edge embeddings according to path masks
             path_embeddings = self._compute_path_embeddings(
                 edge_embeddings, path_masks_batch
             )
-            
+
             # Apply readout layer and flatten
             path_vectors = self.readout_layer(path_embeddings).flatten()
             batch_outputs.append(path_vectors)
-        
+
         return torch.stack(batch_outputs, dim=0)
