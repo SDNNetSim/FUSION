@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Any
 import numpy as np
 
 # Removed unused imports: sort_dict_keys, get_path_mod, find_path_len
-from fusion.modules.ml.train_utils import get_ml_obs
+from fusion.modules.ml import get_ml_obs
 from fusion.core.properties import SDNProps
 from fusion.core.routing import Routing
 from fusion.core.spectrum_assignment import SpectrumAssignment
@@ -238,8 +238,8 @@ class SDNController:
         :rtype: float
         """
         if ml_model is not None:
-            input_df = get_ml_obs(req_dict=request_dict, engine_props=self.engine_props,
-                                  sdn_props=self.sdn_props)
+            input_df = get_ml_obs(request_dict=request_dict, engine_properties=self.engine_props,
+                                  sdn_properties=self.sdn_props)
             return ml_model.predict(input_df)[0]
         return -1.0
 

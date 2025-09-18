@@ -14,7 +14,7 @@ from fusion.core.sdn_controller import SDNController
 from fusion.core.metrics import SimStats
 from fusion.core.persistence import StatsPersistence
 from fusion.core.ml_metrics import MLMetricsCollector
-from fusion.modules.ml.train_utils import load_model
+from fusion.modules.ml import load_model
 from fusion.sim.utils import log_message
 from fusion.reporting.simulation_reporter import SimulationReporter
 from fusion.utils.logging_config import get_logger
@@ -277,7 +277,7 @@ class SimulationEngine:
                         self.engine_props['erlang'], self.engine_props['thread_num'])
 
             if self.engine_props['deploy_model']:
-                self.ml_model = load_model(engine_props=self.engine_props)
+                self.ml_model = load_model(engine_properties=self.engine_props)
 
         # You can pass a list of seeds, a constant seed, or default to iteration number
         if seed is None:
