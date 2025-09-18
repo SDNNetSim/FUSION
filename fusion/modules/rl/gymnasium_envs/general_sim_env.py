@@ -6,7 +6,7 @@ in a Gymnasium-compatible interface for reinforcement learning training and eval
 The environment handles simulation setup, state management, and reward calculation
 for network resource allocation problems.
 """
-from typing import Dict, List, Tuple, Optional, Any, Union
+from typing import Dict, Optional, Any
 import gymnasium as gym
 
 from fusion.modules.rl.utils.sim_env import SimEnvUtils, SimEnvObs
@@ -33,12 +33,12 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     metadata = dict()
 
     def __init__(
-        self, 
-        render_mode: Optional[str] = None, 
-        custom_callback: Optional[object] = None, 
-        sim_dict: Optional[Dict[str, Any]] = None,
-        **kwargs: Any
-    ) -> None:  # pylint: disable=unused-argument
+            self,
+            render_mode: Optional[str] = None,
+            custom_callback: Optional[object] = None,
+            sim_dict: Optional[Dict[str, Any]] = None,
+            **kwargs: Any
+    ) -> None:
         """
         Initialize the simulation environment.
         
@@ -55,6 +55,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         :type kwargs: Any
         """
         super().__init__()
+        # Acknowledge kwargs parameter (required by Gymnasium interface)
+        _ = kwargs
 
         self.rl_props = RLProps()
         if sim_dict is None:
@@ -262,7 +264,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         placeholders for core and spectrum agents (currently unused).
         """
         self.path_agent = PathAgent(
-            path_algorithm=self.sim_dict['path_algorithm'], 
+            path_algorithm=self.sim_dict['path_algorithm'],
             rl_props=self.rl_props,
             rl_help_obj=self.rl_help_obj
         )
