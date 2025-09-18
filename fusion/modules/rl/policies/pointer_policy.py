@@ -1,54 +1,138 @@
-# pylint: disable=duplicate-code
+"""Pointer-based policy implementation for reinforcement learning.
 
-# TODO: (version 5.5-6) Remove and address all duplicate code fragments
-# TODO: (version 5.5-6) No longer supported.
+This module implements a pointer network-based policy that uses attention mechanisms
+for path selection in network routing scenarios.
+"""
 
+# Standard library imports
 import math
+from typing import Optional
 
+# Third-party imports
 import torch
 
+# Third-party ML imports
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+
+# Module constants
+DEFAULT_ATTENTION_HEADS = 3
+QUERY_KEY_VALUE_MULTIPLIER = 3
 
 
 class PointerHead(torch.nn.Module):
     """
-    Pointer head used in the pointer policy
+    Pointer head implementation for attention-based path selection.
+    
+    Uses query-key-value attention mechanism to compute logits for path selection
+    in reinforcement learning policies. The attention mechanism allows the model
+    to focus on the most relevant paths for decision making.
     """
 
-    def __init__(self, dim):
+    def __init__(self, dimension: int) -> None:
+        """
+        Initialize the pointer head with specified dimension.
+        
+        :param dimension: Input feature dimension for linear transformations
+        :type dimension: int
+        :raises ValueError: If dimension is not positive
+        """
         super().__init__()
-        self.qkv = torch.nn.Linear(dim, dim * 3)
+        if dimension <= 0:
+            raise ValueError(f"Dimension must be positive, got {dimension}")
 
-    def forward(self, path_feats):  # shape (batch, 3, dim)
+        self.query_key_value = torch.nn.Linear(dimension, dimension * QUERY_KEY_VALUE_MULTIPLIER)
+        self.dimension = dimension
+
+    def forward(self, path_features: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass of the pointer head.
+        Compute attention-based logits for path selection.
+        
+        Performs multi-head attention computation to generate path selection logits.
+        The attention mechanism allows the model to weigh different paths based on
+        their relevance for the current decision.
+        
+        :param path_features: Input tensor with shape (batch, 3, dimension)
+        :type path_features: torch.Tensor
+        :return: Path selection logits with shape (batch, 3)
+        :rtype: torch.Tensor
+        :raises ValueError: If input tensor has incorrect shape
+        
+        Example:
+            >>> head = PointerHead(64)
+            >>> features = torch.randn(32, 3, 64)
+            >>> logits = head.forward(features)
+            >>> print(logits.shape)
+            torch.Size([32, 3])
         """
-        qkv = self.qkv(path_feats)  # (batch,3,3*dim)
-        q, k, v = qkv.chunk(3, dim=-1)
-        # attention scores
-        scores = torch.einsum("bid,bjd->bij", q, k) / math.sqrt(q.size(-1))
-        attn = torch.softmax(scores, dim=-1)  # (batch,3,3)
-        # weighted sum
-        out = torch.einsum("bij,bjd->bid", attn, v)  # (batch,3,dim)
-        # return logits per path
-        logits = out.sum(dim=-1)  # (batch,3)
+        # Input validation
+        if path_features.dim() != 3:
+            raise ValueError(f"Expected 3D tensor, got {path_features.dim()}D tensor")
+        if path_features.size(1) != DEFAULT_ATTENTION_HEADS:
+            raise ValueError(f"Expected {DEFAULT_ATTENTION_HEADS} paths, got {path_features.size(1)}")
+        if path_features.size(-1) != self.dimension:
+            raise ValueError(f"Expected dimension {self.dimension}, got {path_features.size(-1)}")
+
+        # Compute query, key, value transformations
+        query_key_value = self.query_key_value(path_features)  # (batch, 3, 3*dimension)
+        query, key, value = query_key_value.chunk(QUERY_KEY_VALUE_MULTIPLIER, dim=-1)
+
+        # Compute attention scores
+        scores = torch.einsum("bid,bjd->bij", query, key) / math.sqrt(query.size(-1))
+        attention = torch.softmax(scores, dim=-1)  # (batch, 3, 3)
+
+        # Apply attention to values
+        output = torch.einsum("bij,bjd->bid", attention, value)  # (batch, 3, dimension)
+
+        # Generate path logits
+        logits = output.sum(dim=-1)  # (batch, 3)
         return logits
 
 
 class PointerPolicy(ActorCriticPolicy):
     """
-    The pointer policy.
+    Pointer-based policy for reinforcement learning with attention mechanisms.
+    
+    Integrates the PointerHead attention mechanism with Stable Baselines3's
+    ActorCriticPolicy framework. This policy is designed for scenarios where
+    the agent needs to select from a discrete set of paths or options.
+    
+    The policy uses attention-based path selection rather than traditional
+    multi-layer perceptrons for the policy network.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
+        """
+        Initialize the pointer policy.
+        
+        :param args: Positional arguments passed to ActorCriticPolicy
+        :param kwargs: Keyword arguments passed to ActorCriticPolicy
+        """
         super().__init__(*args, **kwargs)
 
-        self.mlp_extractor = None
+        self.mlp_extractor: Optional[BaseFeaturesExtractor] = None
 
-    def _build_mlp_extractor(self):
-        # override to use PointerHead
-        self.mlp_extractor = BaseFeaturesExtractor(self.features_extractor.observation_space,
-                                                   features_dim=self.features_extractor.features_dim)
+    def _build_mlp_extractor(self) -> None:
+        """
+        Build the MLP extractor using PointerHead for policy network.
+
+        Overrides the default MLP extractor to use the attention-based PointerHead
+        for the policy network while maintaining a standard linear layer for the
+        value network.
+
+        :raises AttributeError: If features_extractor is not properly initialized
+        """
+        if not hasattr(self, 'features_extractor') or self.features_extractor is None:
+            raise AttributeError("Features extractor must be initialized before building MLP extractor")
+
+        # Initialize base extractor
+        self.mlp_extractor = BaseFeaturesExtractor(
+            self.features_extractor.observation_space,
+            features_dim=self.features_extractor.features_dim
+        )
+
+        # Use PointerHead for policy network (attention-based path selection)
         self.mlp_extractor.policy_net = PointerHead(self.features_extractor.features_dim)
+
+        # Use standard linear layer for value network
         self.mlp_extractor.value_net = torch.nn.Linear(self.features_extractor.features_dim, 1)
