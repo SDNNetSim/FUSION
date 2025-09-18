@@ -85,7 +85,7 @@ class PathGNN(BaseGraphFeatureExtractor):
         # Readout layer for final transformation
         self.readout_layer = torch.nn.Linear(emb_dim, emb_dim)
 
-    def forward(self, observation_dict: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, observation: Dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Convert graph observation into fixed-size feature vector.
         
@@ -93,18 +93,18 @@ class PathGNN(BaseGraphFeatureExtractor):
         aggregates them according to path masks, and produces a flattened
         feature vector for each sample in the batch.
         
-        :param observation_dict: Dictionary containing:
+        :param observation: Dictionary containing:
             - 'x': Node features [batch_size, num_nodes, features] or [num_nodes, features]
             - 'edge_index': Edge indices [batch_size, 2, num_edges] or [2, num_edges]
             - 'path_masks': Path masks [batch_size, num_paths, num_edges] or [num_paths, num_edges]
-        :type observation_dict: Dict[str, torch.Tensor]
+        :type observation: Dict[str, torch.Tensor]
         :return: Feature vector [batch_size, feature_dim] or [1, feature_dim]
         :rtype: torch.Tensor
         """
         # Extract components from observation
-        node_features_list = observation_dict["x"]
-        edge_index = observation_dict["edge_index"].long()
-        path_masks_list = observation_dict["path_masks"]
+        node_features_list = observation["x"]
+        edge_index = observation["edge_index"].long()
+        path_masks_list = observation["path_masks"]
 
         # Process batch dimensions
         node_features_list, edge_index, path_masks_list, _ = \
