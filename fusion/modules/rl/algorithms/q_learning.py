@@ -1,6 +1,7 @@
 import os
 import json
 from itertools import islice
+from typing import Dict, Any, Tuple, Optional
 
 import networkx as nx
 import numpy as np
@@ -10,6 +11,7 @@ from fusion.sim.utils import (
     find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 )
 from fusion.utils.os import create_dir
+from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 
 class QLearning:
@@ -17,7 +19,7 @@ class QLearning:
     Q-learning agent responsible for handling routing and core selection.
     """
 
-    def __init__(self, rl_props, engine_props):
+    def __init__(self, rl_props: object, engine_props: Dict[str, Any]) -> None:
         self.props = QProps()
         self.engine_props = engine_props
         self.rl_props = rl_props
@@ -31,21 +33,21 @@ class QLearning:
         self.rewards_stats_dict = None
         self.error_stats_dict = None
 
-    def _initialize_matrices(self):
+    def _initialize_matrices(self) -> None:
         """Initializes Q-tables for paths and cores."""
         self.props.epsilon = self.engine_props['epsilon_start']
         self.props.routes_matrix = self._create_routes_matrix()
         self.props.cores_matrix = self._create_cores_matrix()
         self._populate_q_tables()
 
-    def _create_routes_matrix(self):
+    def _create_routes_matrix(self) -> np.ndarray:
         """Creates an empty routes matrix."""
         return np.empty(
             (self.rl_props.num_nodes, self.rl_props.num_nodes, self.rl_props.k_paths, self.path_levels),
             dtype=[('path', 'O'), ('q_value', 'f8')]
         )
 
-    def _create_cores_matrix(self):
+    def _create_cores_matrix(self) -> np.ndarray:
         """Creates an empty cores matrix."""
         return np.empty(
             (self.rl_props.num_nodes, self.rl_props.num_nodes, self.rl_props.k_paths,
@@ -53,7 +55,7 @@ class QLearning:
             dtype=[('path', 'O'), ('core_action', 'i8'), ('q_value', 'f8')]
         )
 
-    def _populate_q_tables(self):
+    def _populate_q_tables(self) -> None:
         ssp = nx.shortest_simple_paths
         topology = self.engine_props['topology']
 
@@ -71,7 +73,7 @@ class QLearning:
                             self.props.cores_matrix[src, dst, k, core, level] = (
                                 path, core, 0.0)
 
-    def get_max_future_q(self, path_list, network_spectrum_dict, matrix, flag, core_index=None):
+    def get_max_future_q(self, path_list: list, network_spectrum_dict: Dict[str, Any], matrix: np.ndarray, flag: str, core_index: Optional[int] = None) -> float:
         """Retrieves the maximum future Q-value based on congestion levels."""
         new_cong, _ = find_core_cong(core_index, network_spectrum_dict, path_list) if flag == 'core' else find_path_cong(
             path_list, network_spectrum_dict)
@@ -80,7 +82,7 @@ class QLearning:
         max_future_q = matrix[core_index if flag == 'core' else new_cong_index]['q_value']
         return max_future_q
 
-    def get_max_curr_q(self, cong_list, matrix_flag):
+    def get_max_curr_q(self, cong_list: list, matrix_flag: str) -> Tuple[int, Any]:
         """Gets the maximum current Q-value from the current state."""
         matrix = (
             self.props.routes_matrix[self.rl_props.source, self.rl_props.destination]
@@ -99,7 +101,7 @@ class QLearning:
 
         return max_index, max_obj
 
-    def update_q_matrix(self, reward, level_index, network_spectrum_dict, flag, trial: int, iteration, core_index=None):
+    def update_q_matrix(self, reward: float, level_index: int, network_spectrum_dict: Dict[str, Any], flag: str, trial: int, iteration: int, core_index: Optional[int] = None) -> None:
         """Updates Q-values for either path or core selection."""
         matrix = self.props.cores_matrix if flag == 'core' else self.props.routes_matrix
         matrix = matrix[self.rl_props.source, self.rl_props.destination]
@@ -116,7 +118,7 @@ class QLearning:
         self.update_q_stats(reward, td_error, 'cores_dict' if flag == 'core' else 'routes_dict', trial=trial)
         matrix[core_index if flag == 'core' else level_index]['q_value'] = new_q
 
-    def update_q_stats(self, reward, td_error, stats_flag, trial: int):
+    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, trial: int) -> None:
         """Updates statistics related to Q-learning performance."""
         episode = str(self.iteration)
         if episode not in self.props.rewards_dict[stats_flag]['rewards']:
@@ -131,7 +133,7 @@ class QLearning:
                 len(self.props.rewards_dict[stats_flag]['rewards'][episode]) == self.engine_props['num_requests']:
             self._calc_q_averages(stats_flag, trial=trial)
 
-    def _calc_q_averages(self, stats_flag, trial: int):
+    def _calc_q_averages(self, stats_flag: str, trial: int) -> None:
         """
         Calculates averages for rewards and errors at the end of an episode.
         Once the number of requests is reached, mark sim as complete, compute final stats,
@@ -141,7 +143,7 @@ class QLearning:
         self.error_stats_dict = calc_matrix_stats(self.props.errors_dict[stats_flag]['errors'])
         self.save_model(trial)
 
-    def _convert_q_tables_to_dict(self, which_table: str):
+    def _convert_q_tables_to_dict(self, which_table: str) -> Dict[str, list]:
         """
         Converts either 'routes_matrix' or 'cores_matrix' into a dict suitable for JSON.
         which_table: 'routes' or 'cores'
@@ -160,11 +162,14 @@ class QLearning:
 
                     q_dict[str((src, dst))] = q_vals_list
         elif which_table == 'cores':
-            raise NotImplementedError
+            raise AlgorithmNotFoundError(
+                "Core table conversion is not yet implemented. "
+                "Only routes table conversion is currently supported."
+            )
 
         return q_dict
 
-    def save_model(self, trial: int):
+    def save_model(self, trial: int) -> None:
         """
         Saves the Q-learning model similarly to bandits:
           - Uses iteration-based checks (if 'save_step' > 0).
@@ -190,7 +195,10 @@ class QLearning:
             np.save(save_path_npy, self.rewards_stats_dict['average'])
             q_dict = self._convert_q_tables_to_dict('routes')
         else:
-            raise NotImplementedError
+            raise AlgorithmNotFoundError(
+                "Core Q-learning model saving is not yet implemented. "
+                "Only routes Q-learning models are currently supported."
+            )
 
         json_filename = f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
         save_path_json = os.path.join(save_dir, json_filename)

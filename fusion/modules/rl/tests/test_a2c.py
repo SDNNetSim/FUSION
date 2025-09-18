@@ -29,7 +29,7 @@ class TestA2C(TestCase):
         "fusion.modules.rl.algorithms.a2c.spaces.Dict"
     )
     @mock.patch(
-        "fusion.modules.rl.algorithms.a2c.get_observation_space",
+        "fusion.modules.rl.algorithms.base_drl.get_observation_space",
         return_value={"a": 1},
     )
     def test_get_obs_space_wraps_dict(

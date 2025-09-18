@@ -10,6 +10,7 @@ from unittest import TestCase, mock
 
 import numpy as np
 from fusion.modules.rl.algorithms import bandits
+from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 
 # ----------------------------- helpers --------------------------------
@@ -74,7 +75,7 @@ class TestSaveModelLowLevel(TestCase):
 
     def test_save_model_cores_not_implemented(self):
         """_save_model raises when is_path False."""
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AlgorithmNotFoundError):
             bandits._save_model({}, 10, 2, "d", False, 1)
 
 
