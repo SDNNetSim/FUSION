@@ -4,7 +4,8 @@ Base feature extractor class for graph neural networks.
 This module provides common functionality for GNN-based feature extractors
 to reduce code duplication across different implementations.
 """
-from typing import Dict, Tuple, Optional
+from abc import abstractmethod
+from typing import Tuple, Optional
 import torch
 from gymnasium import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -19,7 +20,7 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
     This class provides common functionality for processing graph observations
     and handling batch dimensions consistently across different GNN architectures.
     """
-    
+
     def __init__(self, observation_space: spaces.Dict, features_dim: int):
         """
         Initialize the base graph feature extractor.
@@ -30,12 +31,12 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         :type features_dim: int
         """
         super().__init__(observation_space, features_dim)
-    
+
     def _process_batch_dimensions(
-        self, 
-        node_features: torch.Tensor, 
-        edge_index: torch.Tensor, 
-        path_masks: torch.Tensor
+            self,
+            node_features: torch.Tensor,
+            edge_index: torch.Tensor,
+            path_masks: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[int]]:
         """
         Process and normalize batch dimensions for consistent handling.
@@ -57,13 +58,13 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
             batch_size = None  # Indicates single sample
         else:
             batch_size = node_features.size(0)
-            
+
         return node_features, edge_index, path_masks, batch_size
-    
+
     def _compute_edge_embeddings(
-        self, 
-        node_embeddings: torch.Tensor, 
-        edge_index: torch.Tensor
+            self,
+            node_embeddings: torch.Tensor,
+            edge_index: torch.Tensor
     ) -> torch.Tensor:
         """
         Compute edge embeddings from node embeddings.
@@ -77,14 +78,14 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         """
         source_idx, destination_idx = edge_index
         edge_embeddings = (
-            node_embeddings[source_idx] + node_embeddings[destination_idx]
-        ) * EDGE_EMBEDDING_SCALE_FACTOR
+                                  node_embeddings[source_idx] + node_embeddings[destination_idx]
+                          ) * EDGE_EMBEDDING_SCALE_FACTOR
         return edge_embeddings
-    
+
     def _compute_path_embeddings(
-        self, 
-        edge_embeddings: torch.Tensor, 
-        path_masks: torch.Tensor
+            self,
+            edge_embeddings: torch.Tensor,
+            path_masks: torch.Tensor
     ) -> torch.Tensor:
         """
         Compute path embeddings from edge embeddings using path masks.
@@ -97,3 +98,15 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         :rtype: torch.Tensor
         """
         return path_masks @ edge_embeddings
+    
+    @abstractmethod
+    def forward(self, observation):
+        """
+        Abstract method for processing observations.
+        
+        Must be implemented by subclasses to define the forward pass.
+        
+        :param observation: Input observation data
+        :return: Processed feature tensor
+        """
+        pass

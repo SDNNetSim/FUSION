@@ -30,11 +30,11 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
     """
 
     def __init__(
-        self, 
-        obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
-        emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
-        heads: int = DEFAULT_NUM_HEADS,  # Note: parameter name kept for backward compatibility
-        layers: int = DEFAULT_NUM_LAYERS
+            self,
+            obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
+            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
+            heads: int = DEFAULT_NUM_HEADS,  # Note: parameter name kept for backward compatibility
+            layers: int = DEFAULT_NUM_LAYERS
     ):
         """
         Initialize the Graph Transformer feature extractor.
@@ -55,16 +55,16 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
         # Calculate dimensions
         num_paths = obs_space["path_masks"].shape[0]
         input_dimension = obs_space["x"].shape[1]
-        
+
         if emb_dim % heads != 0:
             raise ValueError(
                 f"Embedding dimension ({emb_dim}) must be divisible by "
                 f"number of heads ({heads})"
             )
-        
+
         output_per_head = emb_dim // heads
         convolution_output_dimension = heads * output_per_head
-        
+
         # Initialize base class with total feature dimension
         features_dimension = emb_dim * num_paths
         super().__init__(obs_space, features_dimension)
@@ -79,7 +79,7 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
             )
             for layer_idx in range(layers)
         ])
-        
+
         # Readout layer to transform concatenated head outputs to final embedding
         self.readout_layer = torch.nn.Linear(convolution_output_dimension, emb_dim)
 
@@ -103,42 +103,42 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
         # Handle batch dimensions for three-dimensional inputs
         if node_features_list.dim() == 3:
             batch_size = node_features_list.size(0)
-            
+
             if batch_size > 1:
                 # Process multiple samples in batch
                 batch_outputs: List[torch.Tensor] = []
-                
+
                 for batch_idx in range(batch_size):
                     # Extract sample from batch
                     node_features_batch = node_features_list[batch_idx]
-                    edge_index_batch = (edge_index_list[batch_idx] 
-                                      if edge_index_list.dim() == 3 
-                                      else edge_index_list)
-                    path_masks_batch = (path_masks_list[batch_idx] 
-                                      if path_masks_list.dim() == 3 
-                                      else path_masks_list)
-                    
+                    edge_index_batch = (edge_index_list[batch_idx]
+                                        if edge_index_list.dim() == 3
+                                        else edge_index_list)
+                    path_masks_batch = (path_masks_list[batch_idx]
+                                        if path_masks_list.dim() == 3
+                                        else path_masks_list)
+
                     # Process through transformer layers
                     node_embeddings_batch = node_features_batch
                     for convolution_layer in self.convolution_layers:
                         node_embeddings_batch = convolution_layer(
                             node_embeddings_batch, edge_index_batch
                         ).relu()
-                    
+
                     # Compute edge embeddings
                     source_idx, destination_idx = edge_index_batch
                     edge_embeddings_batch = (
-                        node_embeddings_batch[source_idx] + 
-                        node_embeddings_batch[destination_idx]
-                    ) * EDGE_EMBEDDING_SCALE_FACTOR
-                    
+                                                    node_embeddings_batch[source_idx] +
+                                                    node_embeddings_batch[destination_idx]
+                                            ) * EDGE_EMBEDDING_SCALE_FACTOR
+
                     # Aggregate path embeddings
                     path_embeddings_batch = path_masks_batch @ edge_embeddings_batch
-                    
+
                     # Apply readout and flatten
                     path_vectors_batch = self.readout_layer(path_embeddings_batch).flatten()
                     batch_outputs.append(path_vectors_batch)
-                
+
                 return torch.stack(batch_outputs, dim=0)
 
             # Handle single sample with batch dimension
@@ -156,14 +156,14 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
         # Compute edge embeddings
         source_idx, destination_idx = edge_index_list
         edge_embeddings = (
-            node_embeddings[source_idx] + 
-            node_embeddings[destination_idx]
-        ) * EDGE_EMBEDDING_SCALE_FACTOR
-        
+                                  node_embeddings[source_idx] +
+                                  node_embeddings[destination_idx]
+                          ) * EDGE_EMBEDDING_SCALE_FACTOR
+
         # Aggregate path embeddings
         path_embeddings = path_masks_list @ edge_embeddings
         path_vectors = self.readout_layer(path_embeddings)
         flattened_features = path_vectors.flatten()
-        
+
         # Add batch dimension for consistency
         return flattened_features.unsqueeze(0)
