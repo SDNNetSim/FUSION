@@ -98,7 +98,7 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         :rtype: torch.Tensor
         """
         return path_masks @ edge_embeddings
-    
+
     @abstractmethod
     def forward(self, observation):
         """
@@ -109,4 +109,4 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         :param observation: Input observation data
         :return: Processed feature tensor
         """
-        pass
+        raise NotImplementedError("Subclasses must implement forward method")
