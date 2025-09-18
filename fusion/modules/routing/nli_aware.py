@@ -9,6 +9,7 @@ import networkx as nx
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.core.properties import RoutingProps
+from fusion.sim.utils import find_path_len, get_path_mod
 
 
 class NLIAwareRouting(AbstractRoutingAlgorithm):
@@ -56,7 +57,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         """
         return (hasattr(topology, 'nodes') and
                 hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'net_spec_dict'))
+                hasattr(self.sdn_props, 'network_spectrum_dict'))
 
     def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
         """Find a route from source to destination considering NLI.
@@ -76,7 +77,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         # Reset paths matrix for new calculation
         self.route_props.paths_matrix = []
         self.route_props.weights_list = []
-        self.route_props.mod_formats_matrix = []
+        self.route_props.modulation_formats_matrix = []
 
         try:
             # Update NLI costs for all links
@@ -103,9 +104,9 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
         # Bidirectional links are identical, therefore, we don't have to check each one
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple[0], link_tuple[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_len
+            num_spans = topology[source][destination]['length'] / self.route_props.span_length
             bandwidth = self.sdn_props.bandwidth
 
             # Get slots needed for bandwidth (using QPSK as default)
@@ -136,8 +137,16 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
             resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
+            # Calculate actual path length for modulation format selection
+            path_len = find_path_len(path_list=path_list, topology=topology)
+            # Get modulation format
+            mod_formats = getattr(self.sdn_props, 'mod_formats', {})
+            mod_format = get_path_mod(mod_formats, path_len)
+            mod_format_list = [mod_format if mod_format else 'QPSK']
+
             self.route_props.weights_list.append(resp_weight)
             self.route_props.paths_matrix.append(path_list)
+            self.route_props.modulation_formats_matrix.append(mod_format_list)
             # For NLI-aware, we typically take the first (best) path
             break
 
@@ -194,9 +203,9 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
             topology: NetworkX graph to update weights for
         """
         # Recalculate NLI costs for all links
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple[0], link_tuple[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_len
+            num_spans = topology[source][destination]['length'] / self.route_props.span_length
 
             link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
 

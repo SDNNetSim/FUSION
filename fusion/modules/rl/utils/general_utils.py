@@ -37,7 +37,7 @@ class CoreUtilHelpers:
         snapshot_step = self.engine_obj.engine_props['snapshot_step']
 
         if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
-            self.engine_obj.stats_obj.update_snapshot(net_spec_dict=self.engine_obj.net_spec_dict,
+            self.engine_obj.stats_obj.update_snapshot(network_spectrum_dict=self.engine_obj.network_spectrum_dict,
                                                       req_num=arrival_count + 1)
 
     def get_super_channels(self, slots_needed: int, num_channels: int):
@@ -51,7 +51,7 @@ class CoreUtilHelpers:
         """
         # TODO: (drl_path_agents) The 'c' band used by default
         path_list = self.rl_props.chosen_path_list[0]
-        sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, net_spec_dict=self.engine_obj.net_spec_dict,
+        sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, network_spectrum_dict=self.engine_obj.network_spectrum_dict,
                                             spectral_slots=self.rl_props.spectral_slots, core_num=self.core_num,
                                             slots_needed=slots_needed, band='c')
 
@@ -84,7 +84,7 @@ class CoreUtilHelpers:
         info_list = list()
         paths_list = paths_list[:, 0]
         for path_index, curr_path in enumerate(paths_list):
-            curr_cong, _ = find_path_cong(path_list=curr_path, net_spec_dict=self.engine_obj.net_spec_dict)
+            curr_cong, _ = find_path_cong(path_list=curr_path, network_spectrum_dict=self.engine_obj.network_spectrum_dict)
             cong_index = classify_cong(curr_cong=curr_cong, cong_cutoff=self.engine_obj.engine_props['cong_cutoff'])
 
             info_list.append((path_index, curr_path, cong_index))
@@ -111,7 +111,7 @@ class CoreUtilHelpers:
         self.route_obj.route_props.paths_matrix = chosen_path
         path_len = find_path_len(path_list=chosen_path[0], topology=self.engine_obj.engine_props['topology'])
         mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
-        self.route_obj.route_props.mod_formats_matrix = [[mod_format]]
+        self.route_obj.route_props.modulation_formats_matrix = [[mod_format]]
         self.route_obj.route_props.weights_list.append(path_len)
 
     def handle_releases(self):
@@ -127,7 +127,7 @@ class CoreUtilHelpers:
             if req_obj['depart'] > curr_time:
                 break
 
-            self.engine_obj.handle_release(curr_time=req_obj['depart'])
+            self.engine_obj.handle_release(current_time=req_obj['depart'])
             self._last_processed_index += 1
 
     def allocate(self):
@@ -148,8 +148,8 @@ class CoreUtilHelpers:
         else:
             forced_index = None
 
-        force_mod_format = self.route_obj.route_props.mod_formats_matrix[0]
-        self.engine_obj.handle_arrival(curr_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
+        force_mod_format = self.route_obj.route_props.modulation_formats_matrix[0]
+        self.engine_obj.handle_arrival(current_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
                                        force_core=self.rl_props.core_index,
                                        forced_index=forced_index, force_mod_format=force_mod_format)
 
@@ -192,13 +192,13 @@ class CoreUtilHelpers:
             'source': curr_req['source'],
             'destination': curr_req['destination'],
             'bandwidth': curr_req['bandwidth'],
-            'net_spec_dict': self.engine_obj.net_spec_dict,
+            'network_spectrum_dict': self.engine_obj.network_spectrum_dict,
             'topology': self.topology,
             'mod_formats_dict': curr_req['mod_formats'],
             'num_trans': 1.0,
             'block_reason': None,
             'modulation_list': list(),
-            'xt_list': list(),
+            'crosstalk_list': list(),
             'is_sliced': False,
             'core_list': list(),
             'bandwidth_list': list(),

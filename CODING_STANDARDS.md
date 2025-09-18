@@ -105,6 +105,43 @@ def process_config(path: str, out_dir: str) -> bool:  # Abbreviations
 def process(p: str, o: str) -> bool:  # Single letters
 ```
 
+### Variable Naming Best Practices
+- **Be descriptive**: `blocked_requests` instead of `blocked_reqs`
+- **Use full words**: `current_congestion` instead of `curr_cong`
+- **Indicate units when relevant**: `timeout_seconds`, `distance_km`
+- **Boolean variables should sound like questions**: `is_valid`, `has_data`, `was_routed`
+
+### ⚠️ CRITICAL: Refactoring Variable Names
+
+When changing variable or function names, you MUST:
+
+1. **Search entire codebase** for all occurrences:
+   - Variable assignments and usage
+   - Function/method calls
+   - Dictionary keys that might reference the name
+   - Configuration files that might use the name
+   - Tests that might depend on the name
+
+2. **Be especially careful with**:
+   - Dictionary keys (e.g., `stats_dict['blocking_prob']`)
+   - Public API methods that external code might call
+   - Configuration parameters that users might have in their files
+   - Serialized data formats that might break compatibility
+
+3. **Example of careful refactoring**:
+```python
+# BEFORE: Check if 'req_num' is used as:
+# - Variable: self.req_num
+# - Parameter: def process(req_num: int)
+# - Dict key: data['req_num']
+# - Config: config.req_num
+# - External API: might be called by other modules
+
+# AFTER: Change ALL occurrences consistently
+# BUT preserve dictionary keys if they're part of data format:
+data['req_num'] = request_number  # Keep key for compatibility
+```
+
 ## Code Organization
 
 ### Module Structure
@@ -155,6 +192,47 @@ class ExampleClass:
     def _private_method(self):
         pass
 ```
+
+### Single Responsibility Principle
+
+Each class should have **one reason to change** and **one clear responsibility**:
+
+```python
+# BAD: Too many responsibilities
+class SimStats:
+    def collect_metrics(self): pass        # ✅ Core responsibility
+    def calculate_statistics(self): pass   # ✅ Related to metrics
+    def save_to_file(self): pass          # ❌ File I/O responsibility
+    def generate_ml_data(self): pass       # ❌ ML-specific responsibility
+    def analyze_network(self): pass        # ❌ Network analysis responsibility
+
+# GOOD: Single responsibility
+class SimStats:
+    def collect_metrics(self): pass
+    def calculate_statistics(self): pass
+    def get_blocking_statistics(self): pass
+    
+class StatsPersistence:
+    def save_stats(self): pass
+    def load_stats(self): pass
+    
+class MLMetricsCollector:
+    def update_train_data(self): pass
+    def save_train_data(self): pass
+```
+
+### File and Class Responsibility Guidelines
+
+**Before adding a method to a class, ask:**
+- Does this method directly relate to the class's core purpose?
+- Would this method make sense in a different, more specialized class?
+- Does this method introduce dependencies that don't belong?
+
+**When to split classes:**
+- File I/O operations (→ dedicated persistence classes)
+- Format-specific operations (→ formatter classes)
+- Domain-specific logic (→ specialized domain classes)
+- External integrations (→ adapter/connector classes)
 
 ## Documentation Standards
 
@@ -389,6 +467,52 @@ repos:
 - Avoid circular references
 - Clean up resources in finally blocks
 
+## Logging Guidelines
+
+### Logging Architecture
+- Use the centralized logging configuration from `fusion.utils.logging_config`
+- Separate presentation logic from data collection
+- Use the reporting module for output formatting
+
+### Logger Setup
+```python
+# At module level
+from fusion.utils.logging_config import get_logger
+logger = get_logger(__name__)
+
+# For simulation-specific logging
+from fusion.utils.logging_config import configure_simulation_logging
+logger = configure_simulation_logging(sim_name, erlang, thread_num)
+```
+
+### Logging Levels
+- **DEBUG**: Detailed information for diagnosing problems
+- **INFO**: General informational messages
+- **WARNING**: Warning messages for potentially harmful situations
+- **ERROR**: Error messages for serious problems
+- **CRITICAL**: Critical messages for very serious errors
+
+### Best Practices
+- Never use `print()` statements - always use logging
+- Log at appropriate levels (don't log everything as INFO)
+- Include context in log messages
+- Use structured logging for complex data
+
+```python
+# Good
+logger.info(f"Processing request {request_id} for user {user_id}")
+logger.error(f"Failed to connect to database: {e}", exc_info=True)
+
+# Avoid
+print(f"Processing request")  # Use logger instead
+logger.info("Error occurred")  # Too vague, wrong level
+```
+
+### Output Organization
+- Runtime logs go to `logs/` directory (gitignored)
+- Simulation results go to `data/output/`
+- Reporting code goes in `fusion/reporting/`
+
 ## Security Guidelines
 
 ### Input Validation
@@ -423,6 +547,10 @@ repos:
 - [ ] Specific exception handling
 - [ ] Imports organized correctly
 - [ ] Tests cover main functionality
+- [ ] No print statements (use logging)
+- [ ] Proper separation of concerns
+- [ ] Variable names are descriptive and complete
+- [ ] All name changes verified across codebase
 
 ---
 

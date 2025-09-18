@@ -64,7 +64,7 @@ class TestSetupHelpers(unittest.TestCase):
         )
         mock_create_pt.assert_called_once_with(
             cores_per_link=self.engine_props['cores_per_link'],
-            net_spec_dict=self.network_dict
+            network_spectrum_dict=self.network_dict
         )
         mock_open_file.assert_called_once_with(
             os.path.join(self.base_fp, 'input', self.engine_props['network'], self.engine_props['date'],

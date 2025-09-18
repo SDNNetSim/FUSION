@@ -7,6 +7,8 @@ from typing import List, Dict, Any, Optional
 import networkx as nx
 
 from fusion.interfaces.router import AbstractRoutingAlgorithm
+from fusion.core.properties import RoutingProps
+from fusion.sim.utils import find_path_len, get_path_mod, sort_nested_dict_vals
 
 
 class KShortestPath(AbstractRoutingAlgorithm):
@@ -25,9 +27,12 @@ class KShortestPath(AbstractRoutingAlgorithm):
         """
         super().__init__(engine_props, sdn_props)
         self.k = engine_props.get('k_paths', 3)
-        self.weight = engine_props.get('routing_weight', None)
+        self.weight = engine_props.get('routing_weight', 'length')
         self._path_count = 0
         self._total_hops = 0
+
+        # Initialize route properties for legacy compatibility
+        self.route_props = RoutingProps()
 
     @property
     def algorithm_name(self) -> str:
@@ -62,19 +67,62 @@ class KShortestPath(AbstractRoutingAlgorithm):
         Returns:
             Shortest available path, or None if no path found
         """
+        # Clear previous route properties
+        self.route_props.paths_matrix = []
+        self.route_props.modulation_formats_matrix = []
+        self.route_props.weights_list = []
+        self.route_props.path_index_list = []
+        self.route_props.connection_index = None
+
         paths = self.get_paths(source, destination, k=self.k)
 
         if not paths:
             return None
 
+        # Populate route_props for legacy compatibility
+        topology = self.engine_props.get('topology', self.sdn_props.topology)
+
+        for path in paths:
+            # Calculate path length
+            path_len = find_path_len(path_list=path, topology=topology)
+
+            # Get modulation formats
+            chosen_bw = getattr(self.sdn_props, 'bandwidth', None)
+            if chosen_bw and not self.engine_props.get('pre_calc_mod_selection', False):
+                # Use mod_per_bw if available
+                if 'mod_per_bw' in self.engine_props and chosen_bw in self.engine_props['mod_per_bw']:
+                    mod_formats_list = [get_path_mod(
+                        mods_dict=self.engine_props['mod_per_bw'][chosen_bw],
+                        path_len=path_len
+                    )]
+                else:
+                    # Fallback to mod_formats
+                    mod_formats = getattr(self.sdn_props, 'mod_formats', {})
+                    mod_format = get_path_mod(mod_formats, path_len)
+                    mod_formats_list = [mod_format]
+            else:
+                # Use all modulation formats sorted by max_length
+                if hasattr(self.sdn_props, 'modulation_formats_dict'):
+                    mod_formats_dict = sort_nested_dict_vals(
+                        original_dict=self.sdn_props.modulation_formats_dict,
+                        nested_key='max_length'
+                    )
+                    mod_formats_list = list(mod_formats_dict.keys())[::-1]
+                else:
+                    # Fallback to simple list
+                    mod_formats_list = ['QPSK']
+
+            self.route_props.paths_matrix.append(path)
+            self.route_props.modulation_formats_matrix.append(mod_formats_list)
+            self.route_props.weights_list.append(path_len)
+
         # Return the first (shortest) path
-        # In a more sophisticated implementation, we might check
-        # resource availability along each path
-        selected_path = paths[0]
+        selected_path = paths[0] if paths else None
 
         # Update metrics
-        self._path_count += 1
-        self._total_hops += len(selected_path) - 1
+        if selected_path:
+            self._path_count += 1
+            self._total_hops += len(selected_path) - 1
 
         return selected_path
 

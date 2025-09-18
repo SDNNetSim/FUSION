@@ -35,11 +35,11 @@ def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict
     raise ValueError(f"No matching file found for core_num={core_num}, cores_per_link={cores_per_link}")
 
 
-def get_slot_index(curr_band, start_slot, engine_props):
+def get_slot_index(current_band, start_slot, engine_props):
     """
     Compute the slot index based on the current band and start slot.
 
-    :param curr_band: The current band ('l', 'c', or 's').
+    :param current_band: The current band ('l', 'c', or 's').
     :param start_slot: The starting slot index.
     :param engine_props: The engine properties containing band offsets.
     :return: The computed slot index.
@@ -50,9 +50,9 @@ def get_slot_index(curr_band, start_slot, engine_props):
         'c': engine_props['l_band'],
         's': engine_props['l_band'] + engine_props['c_band'],
     }
-    if curr_band not in band_offset:
-        raise ValueError(f"Unexpected band: {curr_band}")
-    return band_offset[curr_band] + start_slot
+    if current_band not in band_offset:
+        raise ValueError(f"Unexpected band: {current_band}")
+    return band_offset[current_band] + start_slot
 
 
 def compute_response(mod_format, snr_props, spectrum_props, sdn_props):
@@ -67,9 +67,9 @@ def compute_response(mod_format, snr_props, spectrum_props, sdn_props):
     :rtype: bool
     """
     is_valid_modulation = (
-            snr_props.mod_format_mapping_dict[mod_format] == spectrum_props.modulation
+            snr_props.modulation_format_mapping_dict[mod_format] == spectrum_props.modulation
     )
     meets_bw_requirements = (
-            snr_props.bw_mapping_dict[spectrum_props.modulation] >= int(sdn_props.bandwidth)
+            snr_props.bandwidth_mapping_dict[spectrum_props.modulation] >= int(sdn_props.bandwidth)
     )
     return mod_format != 0 and is_valid_modulation and meets_bw_requirements

@@ -129,12 +129,12 @@ def find_path_len(path_list: list, topology: nx.Graph):
 
 
 # TODO: (version 5.5-6) Defaulting to 'c' band
-def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
+def find_path_cong(path_list: list, network_spectrum_dict: dict, band: str = 'c'):
     """
     Computes average path congestion and scaled available capacity, accounting for multiple cores per link.
 
     :param path_list: Sequence of nodes in the path.
-    :param net_spec_dict: Current spectrum allocation info.
+    :param network_spectrum_dict: Current spectrum allocation info.
     :param band: Spectral band to evaluate.
     :return: (average congestion [0,1], scaled available capacity [0,1])
     :rtype: tuple[float, float]
@@ -144,7 +144,7 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
 
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
-        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        cores_matrix = network_spectrum_dict[src_dest]['cores_matrix']
         band_cores_matrix = cores_matrix[band]
 
         num_cores = len(band_cores_matrix)
@@ -168,12 +168,12 @@ def find_path_cong(path_list: list, net_spec_dict: dict, band: str = 'c'):
 
 
 # TODO: (version 5.5-6) Defaults to 'c' band
-def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> float:
+def find_path_frag(path_list: list, network_spectrum_dict: dict, band: str = 'c') -> float:
     """
     Computes the average fragmentation ratio along a path.
 
     :param path_list: Sequence of nodes in the path.
-    :param net_spec_dict: Spectrum allocation per link.
+    :param network_spectrum_dict: Spectrum allocation per link.
     :param band: Spectral band to use (e.g., 'c').
     :return: Average fragmentation score [0,1] (higher = worse fragmentation).
     """
@@ -181,7 +181,7 @@ def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> flo
 
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
-        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        cores_matrix = network_spectrum_dict[src_dest]['cores_matrix']
         cores = cores_matrix[band]
 
         for core in cores:
@@ -213,12 +213,12 @@ def find_path_frag(path_list: list, net_spec_dict: dict, band: str = 'c') -> flo
     return float(np.mean(frag_ratios_list)) if frag_ratios_list else 1.0
 
 
-def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
+def find_core_cong(core_index: int, network_spectrum_dict: dict, path_list: list):
     """
     Finds the current percentage of congestion on a core along a path.
 
     :param core_index: Index of the core.
-    :param net_spec_dict: Network spectrum database.
+    :param network_spectrum_dict: Network spectrum database.
     :param path_list: Current path.
     :return: The average congestion percentage on the core.
     :rtype: float
@@ -226,7 +226,7 @@ def find_core_cong(core_index: int, net_spec_dict: dict, path_list: list):
     links_cong_list = list()
     for src, dest in zip(path_list, path_list[1:]):
         src_dest = (src, dest)
-        cores_matrix = net_spec_dict[src_dest]['cores_matrix']
+        cores_matrix = network_spectrum_dict[src_dest]['cores_matrix']
         total_slots = 0
         slots_taken = 0
         for band in cores_matrix:
@@ -332,40 +332,40 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
     return resp_dict
 
 
-def find_free_slots(net_spec_dict: dict, link_tuple: tuple):
+def find_free_slots(network_spectrum_dict: dict, link_tuple: tuple):
     """
     Find every unallocated spectral slot for a given link.
 
-    :param net_spec_dict: The most updated network spectrum database.
+    :param network_spectrum_dict: The most updated network spectrum database.
     :param link_tuple: The link to find the free slots on.
     :return: The indexes of the free spectral slots on the link for each core.
     :rtype: dict
     """
     resp_dict = {}
-    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+    for band in network_spectrum_dict[link_tuple]['cores_matrix'].keys():
         resp_dict[band] = dict()
 
-        num_cores = len(net_spec_dict[link_tuple]['cores_matrix'][band])
+        num_cores = len(network_spectrum_dict[link_tuple]['cores_matrix'][band])
         for core_num in range(num_cores):  # pylint: disable=consider-using-enumerate
-            free_slots_list = np.where(net_spec_dict[link_tuple]['cores_matrix'][band][core_num] == 0)[0]
+            free_slots_list = np.where(network_spectrum_dict[link_tuple]['cores_matrix'][band][core_num] == 0)[0]
             resp_dict[band].update({core_num: free_slots_list})
 
     return resp_dict
 
 
-def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple):
+def find_free_channels(network_spectrum_dict: dict, slots_needed: int, link_tuple: tuple):
     """
     Finds the free super-channels on a given link.
 
-    :param net_spec_dict: The most updated network spectrum database.
+    :param network_spectrum_dict: The most updated network spectrum database.
     :param slots_needed: The number of slots needed for the request.
     :param link_tuple: The link to search on.
     :return: Available super-channels for every core.
     :rtype: dict
     """
     resp_dict = {}
-    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
-        cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
+    for band in network_spectrum_dict[link_tuple]['cores_matrix'].keys():
+        cores_matrix = copy.deepcopy(network_spectrum_dict[link_tuple]['cores_matrix'][band])
         resp_dict.update({band: {}})
         for core_num, link_list in enumerate(cores_matrix):
             indexes = np.where(link_list == 0)[0]
@@ -391,19 +391,19 @@ def find_free_channels(net_spec_dict: dict, slots_needed: int, link_tuple: tuple
     return resp_dict
 
 
-def find_taken_channels(net_spec_dict: dict, link_tuple: tuple):
+def find_taken_channels(network_spectrum_dict: dict, link_tuple: tuple):
     """
     Finds the taken super-channels on a given link.
 
-    :param net_spec_dict: The most updated network spectrum database.
+    :param network_spectrum_dict: The most updated network spectrum database.
     :param link_tuple: The link to search on.
     :return: Unavailable super-channels for every core.
     :rtype: dict
     """
     resp_dict = {}
-    for band in net_spec_dict[link_tuple]['cores_matrix'].keys():
+    for band in network_spectrum_dict[link_tuple]['cores_matrix'].keys():
         resp_dict.update({band: {}})
-        cores_matrix = copy.deepcopy(net_spec_dict[link_tuple]['cores_matrix'][band])
+        cores_matrix = copy.deepcopy(network_spectrum_dict[link_tuple]['cores_matrix'][band])
         for core_num, link_list in enumerate(cores_matrix):
             channels_list = []
             curr_channel_list = []
@@ -618,7 +618,7 @@ def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     return resp_score
 
 
-def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spectral_slots: int, net_spec_dict: dict):
+def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spectral_slots: int, network_spectrum_dict: dict):
     """
     Gets the shannon entropy fragmentation scores for allocating a request.
 
@@ -627,7 +627,7 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
     :param band: Current allocated band.
     :param slots_needed: The slots needed by the request.
     :param spectral_slots: The number of spectral slots on a single core.
-    :param net_spec_dict: The up-to-date network spectrum database.
+    :param network_spectrum_dict: The up-to-date network spectrum database.
     :return: An array with all shannon entropy fragmentation scores.
     """
     path_alloc_arr = np.zeros(spectral_slots)
@@ -637,7 +637,7 @@ def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spec
         core_num = 0
 
     for source, dest in zip(path_list, path_list[1:]):
-        core_arr = net_spec_dict[(source, dest)]['cores_matrix'][band][core_num]
+        core_arr = network_spectrum_dict[(source, dest)]['cores_matrix'][band][core_num]
         path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
 
     sc_index_mat = get_super_channels(input_arr=path_alloc_arr, slots_needed=slots_needed)

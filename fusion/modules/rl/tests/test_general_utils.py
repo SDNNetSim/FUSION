@@ -40,7 +40,7 @@ def _engine(snapshot=True):
                 block_bw_dict={"100G": 0},
             ),
         ),
-        net_spec_dict="net",
+        network_spectrum_dict="net",
         handle_release=mock.MagicMock(),
         handle_arrival=mock.MagicMock(),
         generate_requests=mock.MagicMock(),
@@ -51,7 +51,7 @@ def _engine(snapshot=True):
 def _route():
     return SimpleNamespace(route_props=SimpleNamespace(
         paths_matrix=None,
-        mod_formats_matrix=None,
+        modulation_formats_matrix=None,
         weights_list=[],
     ))
 
@@ -116,7 +116,7 @@ class TestHandleReleases(TestCase):
 
         helper.handle_releases()
 
-        eng.handle_release.assert_called_once_with(curr_time=0)
+        eng.handle_release.assert_called_once_with(current_time=0)
         self.assertEqual(helper._last_processed_index, 1)  # pylint: disable=protected-access
 
 
