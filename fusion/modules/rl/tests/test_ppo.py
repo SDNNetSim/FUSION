@@ -29,7 +29,7 @@ class TestPPO(TestCase):
         "fusion.modules.rl.algorithms.ppo.spaces.Dict"
     )
     @mock.patch(
-        "fusion.modules.rl.algorithms.ppo.get_observation_space",
+        "fusion.modules.rl.algorithms.base_drl.get_observation_space",
         return_value={"a": 1},
     )
     def test_get_obs_space_wraps_dict(

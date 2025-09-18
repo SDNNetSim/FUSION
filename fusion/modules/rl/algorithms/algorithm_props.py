@@ -1,12 +1,14 @@
-# pylint: disable=too-few-public-methods
+"""Properties classes for RL algorithms."""
+
+from typing import Any
 
 
-class RLProps:
+class RLProps:  # pylint: disable=too-few-public-methods
     """
     Main reinforcement learning properties used in run_rl_sim.py script.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.k_paths = None  # Number of paths the agent has to choose from
         self.cores_per_link = None  # Number of cores on every link
         self.spectral_slots = None  # Numerical value of spectral slots on every core
@@ -30,10 +32,10 @@ class RLProps:
 
 class QProps:
     """
-    Properties object used in the ql_helpers.py script.
+    Properties object used in the Q-learning algorithm.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.epsilon = None  # Current epsilon used at a certain point in time
         self.epsilon_start = None  # Starting value of epsilon
         self.epsilon_end = None  # Ending value of epsilon to be linearly decayed
@@ -67,28 +69,31 @@ class QProps:
                                    'gamma', 'epsilon_update', 'alpha_update']
         }
 
-    def get_data(self, key: str):
+    def get_data(self, key: str) -> Any:
         """
         Retrieve a property of the object.
 
-        :param key: The property name.
-        :return: The value of the property.
+        :param key: The property name
+        :type key: str
+        :return: The value of the property
+        :rtype: Any
+        :raises AttributeError: If the property doesn't exist
         """
         if hasattr(self, key):
             return getattr(self, key)
 
-        raise AttributeError(f"'SDNProps' object has no attribute '{key}'")
+        raise AttributeError(f"'RLProps' object has no attribute '{key}'")
 
     def __repr__(self):
         return f"QProps({self.__dict__})"
 
 
-class BanditProps:
+class BanditProps:  # pylint: disable=too-few-public-methods
     """
-    Properties object used in the bandit_helpers.py script.
+    Properties object used in the bandit algorithms.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.rewards_matrix = []  # Total sum of rewards for each episode
         self.counts_list = []  # Total number of counts for each action taken for every episode
         self.state_values_list = []  # Every possible V(s)
@@ -97,9 +102,10 @@ class BanditProps:
         return f"BanditProps({self.__dict__})"
 
 
-class PPOProps:
+class PPOProps:  # pylint: disable=too-few-public-methods
     """
-    Not implemented at this time.
+    Properties object for PPO algorithm.
+    
+    Currently not implemented. Will be added when PPO-specific
+    properties are needed beyond the base DRL functionality.
     """
-    # TODO: (version 5.5-6) Determine if this is needed
-    pass  # pylint: disable=unnecessary-pass

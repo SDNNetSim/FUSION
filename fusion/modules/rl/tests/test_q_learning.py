@@ -7,6 +7,7 @@ from unittest import TestCase, mock
 
 import numpy as np
 from fusion.modules.rl.algorithms import q_learning as ql
+from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 
 # -------------------------- helpers -----------------------------------
@@ -131,9 +132,9 @@ class TestConvertQTables(TestCase):
         self.assertEqual(result, expected)
 
     def test_convert_cores_raises_not_implemented(self):
-        """Passing 'cores' raises NotImplementedError."""
+        """Passing 'cores' raises AlgorithmNotFoundError."""
         agent = _new_agent()
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AlgorithmNotFoundError):
             agent._convert_q_tables_to_dict("cores")
 
 

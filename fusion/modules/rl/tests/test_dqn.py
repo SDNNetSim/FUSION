@@ -29,7 +29,7 @@ class TestDQN(TestCase):
         "fusion.modules.rl.algorithms.dqn.spaces.Dict"
     )
     @mock.patch(
-        "fusion.modules.rl.algorithms.dqn.get_observation_space",
+        "fusion.modules.rl.algorithms.base_drl.get_observation_space",
         return_value={"a": 1},
     )
     def test_get_obs_space_wraps_dict(
