@@ -80,7 +80,12 @@ class SimulationReporter:
         else:
             # For non-verbose, only log every 10th iteration
             if iteration_num % 10 == 0 or iteration_num == max_iterations:
-                self.logger.info("Progress: %d/%d - %s", iteration_num, max_iterations, stats_message)
+                self.logger.info(
+                    "Progress: %d/%d - %s",
+                    iteration_num,
+                    max_iterations,
+                    stats_message
+                )
 
     def report_simulation_start(self, simulation_info_dict: Dict[str, Any]) -> None:
         """Report the start of a simulation run.
@@ -147,7 +152,9 @@ class SimulationReporter:
             return
 
         blocking_probability = blocked_requests / total_requests
-        bit_rate_blocking_probability = bit_rate_blocked / bit_rate_total if bit_rate_total > 0 else 0
+        bit_rate_blocking_probability = (
+            bit_rate_blocked / bit_rate_total if bit_rate_total > 0 else 0
+        )
 
         self.logger.info("-" * 40)
         self.logger.info("BLOCKING STATISTICS")
