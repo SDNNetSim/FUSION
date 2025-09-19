@@ -77,7 +77,7 @@ class TestEpisodicRewardCallback(TestCase):
         self.cb.sim_dict = self.sim
         self.cb.max_iters = self.sim["max_iters"]
 
-    @mock.patch("fusion.modules.rl.utils.callbacks.create_dir")
+    @mock.patch("fusion.modules.rl.utils.callbacks.create_directory")
     @mock.patch("fusion.modules.rl.utils.callbacks.np.save")
     def test_first_call_creates_matrix_and_accumulates(
             self, mock_save, mock_dir

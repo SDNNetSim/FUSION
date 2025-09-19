@@ -134,11 +134,11 @@ class TestPlotStats(unittest.TestCase):
         """
         file_name = 'test_save_plot.png'
 
-        with patch('fusion.visualization.plot_stats.create_dir', autospec=True) as mock_create_dir:
+        with patch('fusion.visualization.plot_stats.create_directory', autospec=True) as mock_create_directory:
             self.plot_stats._save_plot(file_name)
 
             # Verify that directory creation was called
-            mock_create_dir.assert_called_once()
+            mock_create_directory.assert_called_once()
 
             # Verify that savefig was called with the correct path
             expected_save_path = os.path.join('..', 'data', 'plots', 'Network2', 'Date2', 'Time2', file_name)

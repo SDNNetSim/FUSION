@@ -11,7 +11,7 @@ from datetime import datetime
 from statistics import mean
 from typing import Dict, Any, Optional
 
-from fusion.utils.os import create_dir, find_project_root
+from fusion.utils.os import create_directory, find_project_root
 from fusion.utils.logging_config import get_logger
 
 PROJECT_ROOT = find_project_root()
@@ -106,7 +106,7 @@ class StatsPersistence:
         save_dir = os.path.dirname(json_path)
 
         logger.info("Saving to: %s", save_dir)
-        create_dir(save_dir)
+        create_directory(save_dir)
 
         sim_end_time = datetime.now().strftime("%m%d_%H_%M_%S_%f")
         save_dict['sim_end_time'] = sim_end_time

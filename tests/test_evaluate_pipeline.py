@@ -154,9 +154,9 @@ class TestEvaluationPipeline:
         assert results['episodes'] == 10
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('fusion.sim.evaluate_pipeline.create_dir')
+    @patch('fusion.sim.evaluate_pipeline.create_directory')
     @patch('fusion.sim.evaluate_pipeline.log_message')
-    def test_generate_markdown_summary(self, _mock_log, _mock_create_dir, mock_file):
+    def test_generate_markdown_summary(self, _mock_log, _mock_create_directory, mock_file):
         """Test markdown summary generation."""
         pipeline = EvaluationPipeline(self.test_config)
 
@@ -195,9 +195,9 @@ class TestEvaluationPipeline:
         assert '## RL Agent Evaluation' in written_content
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('fusion.sim.evaluate_pipeline.create_dir')
+    @patch('fusion.sim.evaluate_pipeline.create_directory')
     @patch('fusion.sim.evaluate_pipeline.log_message')
-    def test_generate_report(self, _mock_log, mock_create_dir, mock_file):
+    def test_generate_report(self, _mock_log, mock_create_directory, mock_file):
         """Test complete report generation."""
         pipeline = EvaluationPipeline(self.test_config)
 
@@ -209,7 +209,7 @@ class TestEvaluationPipeline:
         output_dir = '/test/output'
         pipeline.generate_report(results, output_dir)
 
-        mock_create_dir.assert_called_once_with(output_dir)
+        mock_create_directory.assert_called_once_with(output_dir)
 
         # Check JSON was saved
         assert any('evaluation_results.json' in str(call) for call in mock_file.call_args_list)

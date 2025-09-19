@@ -10,7 +10,7 @@ from fusion.modules.rl.algorithms.algorithm_props import QProps
 from fusion.sim.utils import (
     find_path_cong, classify_cong, calc_matrix_stats, find_core_cong
 )
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 
@@ -183,7 +183,7 @@ class QLearning:
             self.engine_props['date'],
             self.engine_props['sim_start']
         )
-        create_dir(save_dir)
+        create_directory(save_dir)
 
         erlang = self.engine_props['erlang']
         cores_per_link = self.engine_props['cores_per_link']

@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from stable_baselines3.common.callbacks import BaseCallback
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 
 
 class GetModelParams(BaseCallback):
@@ -58,7 +58,7 @@ class EpisodicRewardCallback(BaseCallback):
         cores = int(self.sim_dict['cores_per_link'])
         file_path = os.path.join('logs', self.sim_dict['path_algorithm'], self.sim_dict['network'],
                                  self.sim_dict['date'], self.sim_dict['sim_start'])
-        create_dir(file_path=file_path)
+        create_directory(directory_path=file_path)
 
         file_name = os.path.join(file_path, f'rewards_e{erlang}_routes_c{cores}_t{self.trial}_iter_{self.iteration}.npy')
         rewards_matrix = self.rewards_matrix[:self.iteration + 1, :].mean(axis=0)
