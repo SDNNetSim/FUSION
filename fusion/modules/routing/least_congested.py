@@ -99,20 +99,20 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         """Find paths with minimum hops ± 1 and select least congested."""
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
-        all_paths_obj = nx.shortest_simple_paths(
+        all_paths_generator = nx.shortest_simple_paths(
             topology,
             self.sdn_props.source,
             self.sdn_props.destination
         )
-        min_hops = None
+        minimum_hops = None
 
-        for i, path_list in enumerate(all_paths_obj):
-            num_hops = len(path_list)
-            if i == 0:
-                min_hops = num_hops
+        for path_index, path_list in enumerate(all_paths_generator):
+            hop_count = len(path_list)
+            if path_index == 0:
+                minimum_hops = hop_count
                 self._find_most_cong_link(path_list=path_list)
             else:
-                if num_hops <= min_hops + 1:
+                if hop_count <= minimum_hops + 1:
                     self._find_most_cong_link(path_list=path_list)
                 # We exceeded minimum hops plus one, return the best path
                 else:
@@ -125,32 +125,32 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
 
     def _find_most_cong_link(self, path_list: list) -> None:
         """Find the most congested link along a path."""
-        most_cong_link = None
-        most_cong_slots = -1
+        most_congested_link = None
+        most_congested_free_slots = -1
 
-        for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.network_spectrum_dict[(path_list[i], path_list[i + 1])]
-            free_slots = 0
+        for link_index in range(len(path_list) - 1):
+            link_dict = self.sdn_props.network_spectrum_dict[(path_list[link_index], path_list[link_index + 1])]
+            total_free_slots = 0
             for band in link_dict['cores_matrix']:
                 cores_matrix = link_dict['cores_matrix'][band]
-                for core_arr in cores_matrix:
-                    free_slots += np.sum(core_arr == 0)
+                for core_array in cores_matrix:
+                    total_free_slots += np.sum(core_array == 0)
 
-            if free_slots < most_cong_slots or most_cong_link is None:
-                most_cong_slots = free_slots
-                most_cong_link = link_dict
+            if total_free_slots < most_congested_free_slots or most_congested_link is None:
+                most_congested_free_slots = total_free_slots
+                most_congested_link = link_dict
 
         self.route_props.paths_matrix.append({
             'path_list': path_list,
-            'link_dict': {'link': most_cong_link, 'free_slots': most_cong_slots}
+            'link_dict': {'link': most_congested_link, 'free_slots': most_congested_free_slots}
         })
 
     def _select_least_congested(self) -> None:
         """Select the path with the least congested link."""
-        # Sort dictionary by number of free slots, descending
+        # Sort paths by number of free slots, descending (most free slots first)
         sorted_paths_list = sorted(
             self.route_props.paths_matrix,
-            key=lambda d: d['link_dict']['free_slots'],
+            key=lambda path_data: path_data['link_dict']['free_slots'],
             reverse=True
         )
 
@@ -160,7 +160,7 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         # But only populate weights and modulation for the best path
         best_path_data = sorted_paths_list[0]
         self.route_props.weights_list = [int(best_path_data['link_dict']['free_slots'])]
-        # TODO: Constant QPSK format (Ask Arash)
+        # Use QPSK as the default modulation format for least congested routing
         self.route_props.modulation_formats_matrix = [['QPSK']]
 
     def _calculate_path_congestion(self, path: List[Any]) -> float:

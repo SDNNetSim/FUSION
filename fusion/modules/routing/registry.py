@@ -27,7 +27,7 @@ class RoutingRegistry:
 
     def _register_default_algorithms(self):
         """Register all default routing algorithms."""
-        algorithms = [
+        algorithm_classes = [
             KShortestPath,
             CongestionAwareRouting,
             LeastCongestedRouting,
@@ -36,10 +36,10 @@ class RoutingRegistry:
             XTAwareRouting
         ]
 
-        for algorithm_class in algorithms:
+        for algorithm_class in algorithm_classes:
             # Create temporary instance to get algorithm name
-            temp_instance = algorithm_class({}, None)
-            self.register(temp_instance.algorithm_name, algorithm_class)
+            temporary_instance = algorithm_class({}, None)
+            self.register(temporary_instance.algorithm_name, algorithm_class)
 
     def register(self, name: str, algorithm_class: Type[AbstractRoutingAlgorithm]):
         """Register a routing algorithm.
@@ -112,13 +112,13 @@ class RoutingRegistry:
         algorithm_class = self.get(name)
 
         # Create temporary instance to get properties
-        temp_instance = algorithm_class({}, None)
+        temporary_instance = algorithm_class({}, None)
 
         return {
             'name': name,
             'class': algorithm_class.__name__,
             'module': algorithm_class.__module__,
-            'supported_topologies': ', '.join(temp_instance.supported_topologies),
+            'supported_topologies': ', '.join(temporary_instance.supported_topologies),
             'description': algorithm_class.__doc__.strip() if algorithm_class.__doc__ else 'No description'
         }
 
@@ -133,8 +133,8 @@ class RoutingRegistry:
             True if algorithm supports the topology
         """
         algorithm_class = self.get(name)
-        temp_instance = algorithm_class({}, None)
-        return temp_instance.validate_environment(topology)
+        temporary_instance = algorithm_class({}, None)
+        return temporary_instance.validate_environment(topology)
 
 
 # Global registry instance
