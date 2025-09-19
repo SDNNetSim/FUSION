@@ -56,7 +56,15 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             
         Returns:
             Dictionary containing spectrum assignment details or None if assignment fails
+            
+        Raises:
+            ValueError: If path is empty or request is invalid
         """
+        # Validate inputs
+        if not path:
+            raise ValueError("Path cannot be empty")
+        if request is None:
+            raise ValueError("Request cannot be None")
         # Store path and request info
         self.spectrum_props.path_list = path
 
@@ -95,14 +103,32 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
         return None
 
     def _calculate_slots_needed(self, bandwidth: float) -> int:
-        """Calculate number of slots needed for given bandwidth."""
+        """Calculate number of slots needed for given bandwidth.
+        
+        Args:
+            bandwidth: Required bandwidth in bps
+            
+        Returns:
+            Number of spectrum slots required
+            
+        Note:
+            This is a simplified calculation. In practice, this would depend on
+            modulation format, guard bands, forward error correction overhead, etc.
+        """
         # This is a simplified calculation - in reality this would depend on
         # modulation format, guard bands, etc.
         slots_per_gbps = self.engine_props.get('slots_per_gbps', 1)
         return int(np.ceil(bandwidth * slots_per_gbps))
 
     def _find_first_fit(self) -> bool:
-        """Find first available spectrum slots using first fit strategy."""
+        """Find first available spectrum slots using first fit strategy.
+        
+        Returns:
+            True if spectrum assignment successful, False otherwise
+            
+        Updates:
+            spectrum_props: Updates start_slot, end_slot, core_number, current_band, is_free
+        """
         # Set up cores and bands to check
         core_matrix = []
 
@@ -142,7 +168,16 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
         return False
 
     def _find_contiguous_slots(self, core_array, core_num: int, band: str) -> bool:
-        """Find contiguous free slots in a core array."""
+        """Find contiguous free slots in a core array.
+        
+        Args:
+            core_array: Array representing spectrum usage in a core
+            core_num: Core number being checked
+            band: Frequency band being checked
+            
+        Returns:
+            True if contiguous slots found and assigned, False otherwise
+        """
         if not hasattr(core_array, '__len__'):
             return False
 
@@ -233,7 +268,18 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
 
     def check_spectrum_availability(self, path: List[Any], start_slot: int,
                                     end_slot: int, core_num: int, band: str) -> bool:
-        """Check if spectrum slots are available along the entire path."""
+        """Check if spectrum slots are available along the entire path.
+        
+        Args:
+            path: List of nodes representing the path
+            start_slot: Starting slot index
+            end_slot: Ending slot index
+            core_num: Core number to check
+            band: Frequency band to check
+            
+        Returns:
+            True if all slots are available along the path, False otherwise
+        """
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
             link_key = (source, dest)
@@ -258,7 +304,19 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
 
     def allocate_spectrum(self, path: List[Any], start_slot: int,
                           end_slot: int, core_num: int, band: str, request_id: Any) -> bool:
-        """Allocate spectrum resources along the path."""
+        """Allocate spectrum resources along the path.
+        
+        Args:
+            path: List of nodes representing the path
+            start_slot: Starting slot index to allocate
+            end_slot: Ending slot index to allocate
+            core_num: Core number to allocate on
+            band: Frequency band to allocate in
+            request_id: Unique identifier for the request
+            
+        Returns:
+            True if allocation successful, False otherwise
+        """
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
             link_key = (source, dest)
