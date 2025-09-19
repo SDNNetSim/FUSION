@@ -8,6 +8,7 @@ from fusion.sim.utils import find_path_len, get_path_mod, get_hfrag
 from fusion.sim.utils import find_path_cong, classify_cong
 
 from fusion.core.properties import SDNProps
+from fusion.modules.rl.utils.errors import RLUtilsError, ConfigurationError
 
 
 class CoreUtilHelpers:
@@ -15,18 +16,18 @@ class CoreUtilHelpers:
     Contains methods to assist with reinforcement learning simulations.
     """
 
-    def __init__(self, rl_props: object, engine_obj: object, route_obj: object):
+    def __init__(self, rl_props: object, engine_props: object, route_obj: object):
         self.rl_props = rl_props
 
-        self.engine_obj = engine_obj
+        self.engine_props = engine_props
         self.route_obj = route_obj
 
         self.topology = None
 
-        self.core_num = None
+        self.core_number = None
         self.super_channel = None
         self.super_channel_indexes = list()
-        self.mod_format = None
+        self.modulation_format = None
         self._last_processed_index = 0
 
     def update_snapshots(self):
@@ -34,11 +35,11 @@ class CoreUtilHelpers:
         Updates snapshot saves for the simulation.
         """
         arrival_count = self.rl_props.arrival_count
-        snapshot_step = self.engine_obj.engine_props['snapshot_step']
+        snapshot_step = self.engine_props.engine_props['snapshot_step']
 
-        if self.engine_obj.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
-            self.engine_obj.stats_obj.update_snapshot(network_spectrum_dict=self.engine_obj.network_spectrum_dict,
-                                                      req_num=arrival_count + 1)
+        if self.engine_props.engine_props['save_snapshots'] and (arrival_count + 1) % snapshot_step == 0:
+            self.engine_props.stats_obj.update_snapshot(network_spectrum_dict=self.engine_props.network_spectrum_dict,
+                                                      request_number=arrival_count + 1)
 
     def get_super_channels(self, slots_needed: int, num_channels: int):
         """
@@ -49,29 +50,29 @@ class CoreUtilHelpers:
         :return: A matrix of super-channels with their fragmentation score.
         :rtype: list
         """
-        # TODO: (drl_path_agents) The 'c' band used by default
+        # NOTE: Currently hardcoded to use 'c' band - should be configurable for different spectral bands
         path_list = self.rl_props.chosen_path_list[0]
-        sc_index_mat, hfrag_arr = get_hfrag(path_list=path_list, network_spectrum_dict=self.engine_obj.network_spectrum_dict,
-                                            spectral_slots=self.rl_props.spectral_slots, core_num=self.core_num,
+        super_channel_index_matrix, horizontal_fragmentation_array = get_hfrag(path_list=path_list, network_spectrum_dict=self.engine_props.network_spectrum_dict,
+                                            spectral_slots=self.rl_props.spectral_slots, core_num=self.core_number,
                                             slots_needed=slots_needed, band='c')
 
-        self.super_channel_indexes = sc_index_mat[:num_channels]
+        self.super_channel_indexes = super_channel_index_matrix[:num_channels]
         # There were not enough super-channels, do not penalize the agent
         no_penalty = len(self.super_channel_indexes) == 0
 
-        resp_frag_mat = list()
+        response_fragmentation_matrix = list()
         for channel in self.super_channel_indexes:
             start_index = channel[0]
-            resp_frag_mat.append(hfrag_arr[start_index])
+            response_fragmentation_matrix.append(horizontal_fragmentation_array[start_index])
 
-        resp_frag_mat = np.where(np.isinf(resp_frag_mat), 100.0, resp_frag_mat)
-        difference = self.rl_props.super_channel_space - len(resp_frag_mat)
+        response_fragmentation_matrix = np.where(np.isinf(response_fragmentation_matrix), 100.0, response_fragmentation_matrix)
+        difference = self.rl_props.super_channel_space - len(response_fragmentation_matrix)
 
-        if len(resp_frag_mat) < self.rl_props.super_channel_space or np.any(np.isinf(resp_frag_mat)):
+        if len(response_fragmentation_matrix) < self.rl_props.super_channel_space or np.any(np.isinf(response_fragmentation_matrix)):
             for _ in range(difference):
-                resp_frag_mat = np.append(resp_frag_mat, 100.0)
+                response_fragmentation_matrix = np.append(response_fragmentation_matrix, 100.0)
 
-        return resp_frag_mat, no_penalty
+        return response_fragmentation_matrix, no_penalty
 
     def classify_paths(self, paths_list: list):
         """
@@ -81,15 +82,15 @@ class CoreUtilHelpers:
         :return: The index of the path, the path itself, and its congestion index for every path.
         :rtype: list
         """
-        info_list = list()
+        information_list = list()
         paths_list = paths_list[:, 0]
-        for path_index, curr_path in enumerate(paths_list):
-            curr_cong, _ = find_path_cong(path_list=curr_path, network_spectrum_dict=self.engine_obj.network_spectrum_dict)
-            cong_index = classify_cong(curr_cong=curr_cong, cong_cutoff=self.engine_obj.engine_props['cong_cutoff'])
+        for path_index, current_path in enumerate(paths_list):
+            current_congestion, _ = find_path_cong(path_list=current_path, network_spectrum_dict=self.engine_props.network_spectrum_dict)
+            congestion_index = classify_cong(curr_cong=current_congestion, cong_cutoff=self.engine_props.engine_props['cong_cutoff'])
 
-            info_list.append((path_index, curr_path, cong_index))
+            information_list.append((path_index, current_path, congestion_index))
 
-        return info_list
+        return information_list
 
     def classify_cores(self, cores_list: list):
         """
@@ -98,8 +99,13 @@ class CoreUtilHelpers:
         :param cores_list: A list of cores.
         :return: The core index, the core itself, and the congestion level of that core for every core.
         :rtype: list
+        :raises RLUtilsError: This functionality is not yet implemented
         """
-        raise NotImplementedError
+        raise RLUtilsError(
+            "Core classification functionality is not yet implemented. "
+            "This feature requires additional development to analyze "
+            "core-level congestion patterns."
+        )
 
     def update_route_props(self, bandwidth: str, chosen_path: list):
         """
@@ -109,49 +115,49 @@ class CoreUtilHelpers:
         :param chosen_path: Path of the current request.
         """
         self.route_obj.route_props.paths_matrix = chosen_path
-        path_len = find_path_len(path_list=chosen_path[0], topology=self.engine_obj.engine_props['topology'])
-        mod_format = get_path_mod(mods_dict=self.engine_obj.engine_props['mod_per_bw'][bandwidth], path_len=path_len)
-        self.route_obj.route_props.modulation_formats_matrix = [[mod_format]]
-        self.route_obj.route_props.weights_list.append(path_len)
+        path_length = find_path_len(path_list=chosen_path[0], topology=self.engine_props.engine_props['topology'])
+        modulation_format = get_path_mod(mods_dict=self.engine_props.engine_props['mod_per_bw'][bandwidth], path_len=path_length)
+        self.route_obj.route_props.modulation_formats_matrix = [[modulation_format]]
+        self.route_obj.route_props.weights_list.append(path_length)
 
     def handle_releases(self):
         """
         Checks if a request or multiple requests need to be released.
         """
-        curr_time = self.rl_props.arrival_list[min(self.rl_props.arrival_count,
+        current_time = self.rl_props.arrival_list[min(self.rl_props.arrival_count,
                                                    len(self.rl_props.arrival_list) - 1)]['arrive']
 
-        depart_list = self.rl_props.depart_list
-        while self._last_processed_index < len(depart_list):
-            req_obj = depart_list[self._last_processed_index]
-            if req_obj['depart'] > curr_time:
+        departure_list = self.rl_props.depart_list
+        while self._last_processed_index < len(departure_list):
+            request_object = departure_list[self._last_processed_index]
+            if request_object['depart'] > current_time:
                 break
 
-            self.engine_obj.handle_release(current_time=req_obj['depart'])
+            self.engine_props.handle_release(current_time=request_object['depart'])
             self._last_processed_index += 1
 
     def allocate(self):
         """
         Attempts to allocate a request.
         """
-        curr_time = self.rl_props.arrival_list[self.rl_props.arrival_count]['arrive']
+        current_time = self.rl_props.arrival_list[self.rl_props.arrival_count]['arrive']
         if self.rl_props.forced_index is not None:
             try:
                 forced_index = self.super_channel_indexes[self.rl_props.forced_index][0]
             # DRL agent picked a super-channel that is not available, block
             except IndexError:
-                self.engine_obj.stats_obj.blocked_reqs += 1
-                self.engine_obj.stats_obj.stats_props['block_reasons_dict']['congestion'] += 1
+                self.engine_props.stats_obj.blocked_reqs += 1
+                self.engine_props.stats_obj.stats_props['block_reasons_dict']['congestion'] += 1
                 bandwidth = self.rl_props.arrival_list[self.rl_props.arrival_count]['bandwidth']
-                self.engine_obj.stats_obj.stats_props['block_bw_dict'][bandwidth] += 1
+                self.engine_props.stats_obj.stats_props['block_bw_dict'][bandwidth] += 1
                 return
         else:
             forced_index = None
 
-        force_mod_format = self.route_obj.route_props.modulation_formats_matrix[0]
-        self.engine_obj.handle_arrival(current_time=curr_time, force_route_matrix=self.rl_props.chosen_path_list,
+        forced_modulation_format = self.route_obj.route_props.modulation_formats_matrix[0]
+        self.engine_props.handle_arrival(current_time=current_time, force_route_matrix=self.rl_props.chosen_path_list,
                                        force_core=self.rl_props.core_index,
-                                       forced_index=forced_index, force_mod_format=force_mod_format)
+                                       forced_index=forced_index, force_mod_format=forced_modulation_format)
 
     @staticmethod
     def mock_handle_arrival(engine_props: dict, sdn_props: dict, path_list: list, mod_format_list: list):
@@ -178,23 +184,23 @@ class CoreUtilHelpers:
 
         return True
 
-    def update_mock_sdn(self, curr_req: dict):
+    def update_mock_sdn(self, current_request: dict):
         """
         Updates the mock sdn dictionary to find select routes.
 
-        :param curr_req: The current request.
+        :param current_request: The current request.
         :return: The mock return of the SDN controller.
         :rtype: dict
         """
         mock_sdn = SDNProps()
         params = {
-            'req_id': curr_req['req_id'],
-            'source': curr_req['source'],
-            'destination': curr_req['destination'],
-            'bandwidth': curr_req['bandwidth'],
-            'network_spectrum_dict': self.engine_obj.network_spectrum_dict,
+            'req_id': current_request['req_id'],
+            'source': current_request['source'],
+            'destination': current_request['destination'],
+            'bandwidth': current_request['bandwidth'],
+            'network_spectrum_dict': self.engine_props.network_spectrum_dict,
             'topology': self.topology,
-            'mod_formats_dict': curr_req['mod_formats'],
+            'mod_formats_dict': current_request['mod_formats'],
             'num_trans': 1.0,
             'block_reason': None,
             'modulation_list': list(),
@@ -217,17 +223,18 @@ class CoreUtilHelpers:
         :param seed: The random seed.
         """
         self._last_processed_index = 0
-        self.engine_obj.reqs_status_dict = dict()
-        self.engine_obj.generate_requests(seed=seed)
+        self.engine_props.reqs_status_dict = dict()
+        self.engine_props.generate_requests(seed=seed)
 
-        for req_time in self.engine_obj.reqs_dict:
-            if self.engine_obj.reqs_dict[req_time]['request_type'] == 'arrival':
-                self.rl_props.arrival_list.append(self.engine_obj.reqs_dict[req_time])
+        for request_time in self.engine_props.reqs_dict:
+            if self.engine_props.reqs_dict[request_time]['request_type'] == 'arrival':
+                self.rl_props.arrival_list.append(self.engine_props.reqs_dict[request_time])
             else:
-                self.rl_props.depart_list.append(self.engine_obj.reqs_dict[req_time])
+                self.rl_props.depart_list.append(self.engine_props.reqs_dict[request_time])
 
 
-# TODO: (drl_path_agents) Only works for s1
+# NOTE: Current implementation is limited to 's1' simulation thread
+# Future versions should support multi-threaded simulation environments
 def determine_model_type(sim_dict: dict) -> str:
     """
     Determines the type of agent being used based on the provided simulation dictionary.
@@ -244,8 +251,12 @@ def determine_model_type(sim_dict: dict) -> str:
     if sim_dict.get('spectrum_algorithm') is not None:
         return 'spectrum_algorithm'
 
-    raise ValueError("No valid algorithm type found in sim_dict. "
-                     "Ensure 'path_algorithm', 'core_algorithm', or 'spectrum_algorithm' is set.")
+    raise ConfigurationError(
+        "No valid algorithm type found in simulation configuration. "
+        f"Expected one of: 'path_algorithm', 'core_algorithm', or 'spectrum_algorithm' "
+        f"in sim_dict keys: {list(sim_dict.keys())}. "
+        "Please verify your configuration file contains a valid algorithm setting."
+    )
 
 
 def save_arr(arr: np.array, sim_dict: dict, file_name: str):

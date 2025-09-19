@@ -105,9 +105,11 @@ def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> No
     for fp in files:
         try:
             meta, df = _parse_one_out(fp)
-        # TODO: (version 5.5-6) We should address all broad exceptions and better warning/logging for errors
+        except (ValueError, KeyError, json.JSONDecodeError) as e:
+            print(f"   [skip] {fp.name}: Failed to parse file - {e}")
+            continue
         except Exception as e:  # pylint: disable=broad-exception-caught
-            print(f"   [skip] {fp.name}: {e}")
+            print(f"   [skip] {fp.name}: Unexpected error - {e}")
             continue
 
         dest_dir, csv_name = _destination(meta, out_root, fp)

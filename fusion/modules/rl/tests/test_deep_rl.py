@@ -10,9 +10,9 @@ from fusion.modules.rl.utils import deep_rl as drl
 class _DummyAlgo:  # pylint: disable=too-few-public-methods
     """Minimal algorithm with obs/action space helpers."""
 
-    def __init__(self, rl_props, engine_obj):
+    def __init__(self, rl_props, engine_props):
         self.rl_props = rl_props
-        self.engine_obj = engine_obj
+        self.engine_obj = engine_props
 
     def get_obs_space(self):
         """
@@ -48,7 +48,7 @@ class TestGetAlgorithmInstance(TestCase):
         """ValueError when model_type has no underscore."""
         with mock.patch.object(drl, "determine_model_type",
                                return_value="ppo"), self.assertRaises(
-            ValueError
+            drl.ConfigurationError
         ):
             drl.get_algorithm_instance({}, None, _engine())
 
@@ -69,7 +69,7 @@ class TestGetAlgorithmInstance(TestCase):
         with vp, rg, mock.patch.object(drl, "determine_model_type",
                                        return_value="ppo_path"):
             sim = {"ppo_path": "ppo"}
-            with self.assertRaises(NotImplementedError):
+            with self.assertRaises(drl.ModelSetupError):
                 drl.get_algorithm_instance(sim, None, _engine())
 
     def test_registered_algorithm_returns_instance(self):

@@ -64,7 +64,7 @@ class TestUpdateSnapshots(TestCase):
         """update_snapshot called at snapshot_step."""
         helper = gu.CoreUtilHelpers(_rl_props(), _engine(), _route())
         helper.update_snapshots()
-        helper.engine_obj.stats_obj.update_snapshot.assert_called_once()
+        helper.engine_props.stats_obj.update_snapshot.assert_called_once()
 
 
 class TestGetSuperChannels(TestCase):
@@ -153,7 +153,7 @@ class TestDetermineModelType(TestCase):
 
     def test_raises_when_missing(self):
         """Raises ValueError when no algo keys present."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(gu.ConfigurationError):
             gu.determine_model_type({})
 
 
