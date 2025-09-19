@@ -101,7 +101,7 @@ class TestPathAgent(TestCase):
     def test_bandit_route_selects_arm_and_sets_attrs(self):
         """_bandit_route sets chosen indices for bandit agent."""
         agent = self._mk_agent(alg="epsilon_greedy_bandit")
-        agent.hyperparam_obj.curr_epsilon = 0.3
+        agent.hyperparam_obj.current_epsilon = 0.3
         agent.algorithm_obj.select_path_arm.return_value = 1
 
         paths = np.array([[0, 1, 2], [0, 3, 1]])

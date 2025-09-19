@@ -71,15 +71,15 @@ class PathAgent(BaseAgent):
         reward = self.get_reward(was_allocated=was_allocated, dynamic=self.engine_props['dynamic_reward'],
                                  core_index=None, req_id=None)
         self.reward_penalty_list[self.hyperparam_obj.iteration] += reward
-        self.hyperparam_obj.curr_reward = reward
+        self.hyperparam_obj.current_reward = reward
         self.iteration = iteration
-        self.algorithm_obj.learn_rate = self.hyperparam_obj.curr_alpha
+        self.algorithm_obj.learn_rate = self.hyperparam_obj.current_alpha
 
         self._handle_hyperparams()
 
         self.algorithm_obj.iteration = iteration
         if self.algorithm == 'q_learning':
-            self.algorithm_obj.learn_rate = self.hyperparam_obj.curr_alpha
+            self.algorithm_obj.learn_rate = self.hyperparam_obj.current_alpha
             self.algorithm_obj.update_q_matrix(reward=reward, level_index=self.level_index, network_spectrum_dict=network_spectrum_dict,
                                                flag='path', trial=trial, iteration=iteration)
         elif self.algorithm == 'epsilon_greedy_bandit':
@@ -95,7 +95,7 @@ class PathAgent(BaseAgent):
             )
 
     def __ql_route(self, random_float: float) -> None:
-        if random_float < self.hyperparam_obj.curr_epsilon:
+        if random_float < self.hyperparam_obj.current_epsilon:
             self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)
             # The level will always be the last index
             self.level_index = self.congestion_list[self.rl_props.chosen_path_index][-1]
@@ -130,7 +130,7 @@ class PathAgent(BaseAgent):
         source = paths_list[0][0]
         dest = paths_list[0][-1]
 
-        self.algorithm_obj.epsilon = self.hyperparam_obj.curr_epsilon
+        self.algorithm_obj.epsilon = self.hyperparam_obj.current_epsilon
         self.rl_props.chosen_path_index = self.algorithm_obj.select_path_arm(source=int(source), dest=int(dest))
         self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
