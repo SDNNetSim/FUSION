@@ -44,8 +44,8 @@ class EvaluationPipeline:
         """
         Initialize evaluation pipeline.
 
-        Args:
-            config: Configuration dictionary
+:param config: Configuration dictionary
+        :type config: Dict[str, Any]
         """
         self.config = config
         self.results = {}
@@ -55,12 +55,12 @@ class EvaluationPipeline:
         """
         Evaluate a trained model against test configurations.
 
-        Args:
-            model_path: Path to trained model
-            test_configs: List of test configuration dictionaries
-
-        Returns:
-            Dictionary containing evaluation results
+:param model_path: Path to trained model
+        :type model_path: str
+        :param test_configs: List of test configuration dictionaries
+        :type test_configs: List[Dict]
+        :return: Dictionary containing evaluation results
+        :rtype: Dict
         """
         log_message(f"Evaluating model: {model_path}")
 
@@ -96,12 +96,12 @@ class EvaluationPipeline:
         """
         Compare performance of different algorithms/models.
 
-        Args:
-            algorithms: Dictionary mapping algorithm names to configurations
-            test_scenario: Base test scenario configuration
-
-        Returns:
-            Comparison results dictionary
+:param algorithms: Dictionary mapping algorithm names to configurations
+        :type algorithms: Dict[str, Dict]
+        :param test_scenario: Base test scenario configuration
+        :type test_scenario: Dict
+        :return: Comparison results dictionary
+        :rtype: Dict
         """
         log_message("Running algorithm comparison")
         comparison_results = {}
@@ -124,12 +124,12 @@ class EvaluationPipeline:
         """
         Evaluate a trained RL agent.
 
-        Args:
-            agent_path: Path to trained agen
-            episodes: Number of evaluation episodes
-
-        Returns:
-            Evaluation metrics
+:param agent_path: Path to trained agent
+        :type agent_path: str
+        :param episodes: Number of evaluation episodes
+        :type episodes: int
+        :return: Evaluation metrics
+        :rtype: Dict
         """
         log_message(f"Evaluating RL agent: {agent_path}")
 
@@ -167,9 +167,10 @@ class EvaluationPipeline:
         """
         Generate comprehensive evaluation report.
 
-        Args:
-            results: Evaluation results
-            output_dir: Directory to save reports
+:param results: Evaluation results
+        :type results: Dict
+        :param output_dir: Directory to save reports
+        :type output_dir: str
         """
         output_path = Path(output_dir)
         create_dir(str(output_path))
@@ -185,7 +186,7 @@ class EvaluationPipeline:
         if 'comparison' in results:
             self._generate_comparison_plots(results['comparison'], output_path)
 
-        # Generate Excel repor
+        # Generate Excel report
         if 'test_results' in results:
             self._generate_excel_report(results['test_results'], output_path)
 
@@ -198,11 +199,10 @@ class EvaluationPipeline:
         """
         Run complete evaluation pipeline based on configuration.
 
-        Args:
-            eval_config: Evaluation configuration specifying what to evaluate
-
-        Returns:
-            Complete evaluation results
+:param eval_config: Evaluation configuration specifying what to evaluate
+        :type eval_config: Dict
+        :return: Complete evaluation results
+        :rtype: Dict
         """
         results = {}
 
@@ -230,7 +230,7 @@ class EvaluationPipeline:
                 rl_config.get('episodes', 100)
             )
 
-        # Generate repor
+        # Generate report
         if eval_config.get('generate_report', True):
             output_dir = eval_config.get('output_dir', './evaluation_results')
             self.generate_report(results, output_dir)
@@ -351,11 +351,10 @@ def run_evaluation_pipeline(config: Dict) -> Dict:
     """
     Convenience function to run evaluation pipeline.
 
-    Args:
-        config: Evaluation configuration
-
-    Returns:
-        Evaluation results
+:param config: Evaluation configuration
+    :type config: Dict
+    :return: Evaluation results
+    :rtype: Dict
     """
     pipeline = EvaluationPipeline(config)
     return pipeline.run_full_evaluation(config)
