@@ -6,11 +6,25 @@ from fusion.sim.utils import find_free_channels, find_free_slots, get_channel_ov
 
 
 class SpectrumHelpers:
-    """
-    Contains methods that assist with the spectrum assignment class.
+    """Helper utilities for spectrum assignment algorithms.
+    
+    This class provides utility methods for spectrum assignment operations
+    including spectrum availability checking, band management, and slot allocation.
+    
+    Args:
+        engine_props: Dictionary containing engine configuration
+        sdn_props: Object containing SDN controller properties
+        spectrum_props: Object containing spectrum assignment properties
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: object):
+    def __init__(self, engine_props: dict, sdn_props: object, spectrum_props: object) -> None:
+        """Initialize spectrum helper utilities.
+        
+        Args:
+            engine_props: Dictionary containing engine configuration
+            sdn_props: Object containing SDN controller properties  
+            spectrum_props: Object containing spectrum assignment properties
+        """
         self.engine_props = engine_props
         self.spectrum_props = spectrum_props
         self.sdn_props = sdn_props
@@ -20,7 +34,19 @@ class SpectrumHelpers:
         self.core_number = None
         self.current_band = None
 
-    def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple):
+    def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple) -> bool:
+        """Check if spectrum slots are free on both forward and reverse links.
+        
+        Args:
+            link_tuple: Tuple representing the forward link (source, destination)
+            rev_link_tuple: Tuple representing the reverse link (destination, source)
+            
+        Returns:
+            True if spectrum slots are free on both links, False otherwise
+            
+        Raises:
+            ValueError: If spectrum set is empty
+        """
         core_arr = self.sdn_props.network_spectrum_dict[link_tuple]['cores_matrix'][self.current_band][self.core_number]
         rev_core_arr = self.sdn_props.network_spectrum_dict[rev_link_tuple]['cores_matrix'][self.current_band][self.core_number]
         if self.spectrum_props.slots_needed == 1 and self.engine_props['guard_slots'] == 0:
@@ -34,17 +60,22 @@ class SpectrumHelpers:
         spectrum_set = core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
         rev_spectrum_set = rev_core_arr[self.start_index:tmp_end_index + self.engine_props['guard_slots']]
 
-        if set(spectrum_set) == {} or set(rev_spectrum_set) == {}:  # pylint: disable=use-implicit-booleaness-not-comparison
+        if len(spectrum_set) == 0 or len(rev_spectrum_set) == 0:
             raise ValueError('Spectrum set cannot be empty.')
 
-        if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}: # pylint: disable=use-implicit-booleaness-not-comparison
+        if set(spectrum_set) == {0.0} and set(rev_spectrum_set) == {0.0}:
             return True
 
         return False
 
-    def check_other_links(self):
-        """
-        Checks other links in the path since the first link was free.
+    def check_other_links(self) -> None:
+        """Check spectrum availability on remaining links in the path.
+        
+        This method validates that the spectrum slots identified as free on the
+        first link are also available on all subsequent links in the path.
+        
+        Updates:
+            spectrum_props.is_free: Set to False if any link has conflicting spectrum
         """
         self.spectrum_props.is_free = True
         for node in range(len(self.spectrum_props.path_list) - 1):

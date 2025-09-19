@@ -13,6 +13,8 @@ except ImportError:
 
 from fusion.interfaces.snr import AbstractSNRMeasurer
 from fusion.core.properties import SNRProps
+
+
 # Removed unused imports
 
 
@@ -61,7 +63,18 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
             
         Returns:
             SNR value in dB
+            
+        Raises:
+            ValueError: If path is empty or spectrum_info is invalid
         """
+        # Validate inputs
+        if not path:
+            raise ValueError("Path cannot be empty")
+        if not spectrum_info:
+            raise ValueError("Spectrum info cannot be empty")
+        if 'start_slot' not in spectrum_info or 'end_slot' not in spectrum_info:
+            raise ValueError("Spectrum info must contain 'start_slot' and 'end_slot'")
+
         # Store path and spectrum info
         self.spectrum_props.path_list = path
         self.spectrum_props.start_slot = spectrum_info.get('start_slot', 0)
@@ -92,8 +105,13 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         return total_snr_db
 
-    def _setup_snr_calculation(self, spectrum_info: Dict[str, Any]):
-        """Setup parameters for SNR calculation."""
+    def _setup_snr_calculation(self, spectrum_info: Dict[str, Any]) -> None:
+        """Setup parameters for SNR calculation.
+        
+        Args:
+            spectrum_info: Dictionary containing spectrum assignment details
+                          including start_slot, end_slot, core_number, and band
+        """
         # Calculate center frequency and bandwidth
         start_slot = spectrum_info.get('start_slot', 0)
         end_slot = spectrum_info.get('end_slot', 0)
@@ -122,7 +140,11 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         """
         link_key = (source, destination)
 
-        if link_key not in self.sdn_props.network_spectrum_dict:
+        # Validate inputs
+        if source is None or destination is None:
+            raise ValueError("Source and destination cannot be None")
+
+        if not hasattr(self.sdn_props, 'network_spectrum_dict') or link_key not in self.sdn_props.network_spectrum_dict:
             return 0.0
 
         # Get link properties
@@ -165,7 +187,14 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         return snr_db
 
     def _calculate_ase_noise(self, link_length: float) -> float:
-        """Calculate amplified spontaneous emission noise."""
+        """Calculate amplified spontaneous emission noise.
+        
+        Args:
+            link_length: Physical length of the fiber link in kilometers
+            
+        Returns:
+            ASE noise power in watts
+        """
         # Simplified ASE noise calculation
         h = 6.626e-34  # Planck constant
         freq = 193.1e12  # Optical frequency (Hz) - C band center
@@ -221,7 +250,16 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
     def _calculate_nonlinear_noise(self, _source: Any, _destination: Any,
                                    _spectrum_info: Dict[str, Any]) -> Dict[str, float]:
-        """Calculate nonlinear noise components."""
+        """Calculate nonlinear noise components for a single link.
+        
+        Args:
+            _source: Source node identifier (unused in current implementation)
+            _destination: Destination node identifier (unused in current implementation)
+            _spectrum_info: Dictionary containing spectrum assignment details
+            
+        Returns:
+            Dictionary containing nonlinear noise components (SCI, XCI, XPM, FWM)
+        """
         # Self-channel interference (SCI)
         sci_noise = self._calculate_sci_psd()
 
@@ -236,7 +274,11 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         }
 
     def _calculate_sci_psd(self) -> float:
-        """Calculate the self-channel interference power spectral density."""
+        """Calculate the self-channel interference power spectral density.
+        
+        Returns:
+            SCI power spectral density in watts/Hz
+        """
         rho_param = (math.pi ** 2) * abs(self.snr_props.link_dictionary['dispersion'])
         rho_param /= (2 * self.snr_props.link_dictionary['attenuation'])
 
@@ -246,7 +288,14 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         return sci_psd
 
     def _calculate_xci(self, link_num: int) -> float:
-        """Calculate cross-channel interference noise."""
+        """Calculate cross-channel interference noise from other channels.
+        
+        Args:
+            link_num: Index of the link in the path (0-based)
+            
+        Returns:
+            Total XCI noise power in watts
+        """
         self.channels_list = []
         xci_noise = 0
 
@@ -259,9 +308,9 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         curr_link = self.sdn_props.network_spectrum_dict[link_tuple]
         band = self.spectrum_props.current_band
-        core_num = self.spectrum_props.core_num
+        core_num = getattr(self.spectrum_props, 'core_num', 0)
 
-        if band not in curr_link['cores_matrix']:
+        if band not in curr_link.get('cores_matrix', {}):
             return 0.0
 
         core_array = curr_link['cores_matrix'][band][core_num]
@@ -281,7 +330,17 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
     def _update_link_xci(self, req_id: float, curr_link: Any,
                          slot_index: int, curr_xci: float) -> float:
-        """Update cross-channel interference from a specific interfering channel."""
+        """Update cross-channel interference from a specific interfering channel.
+        
+        Args:
+            req_id: Request ID of the interfering channel
+            curr_link: Current link spectrum state array
+            slot_index: Slot index of the interfering channel
+            curr_xci: Current accumulated XCI noise power
+            
+        Returns:
+            Updated XCI noise power in watts
+        """
         # Calculate interfering channel bandwidth and frequency
         if np is not None:
             # Use numpy if available
@@ -322,7 +381,17 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
     def _calculate_crosstalk_noise(self, _source: Any, _destination: Any,
                                    spectrum_info: Dict[str, Any]) -> float:
-        """Calculate crosstalk noise for a single link."""
+        """Calculate crosstalk noise for a single link in multi-core fiber.
+        
+        Args:
+            _source: Source node identifier (unused in current implementation)
+            _destination: Destination node identifier (unused in current implementation)
+            spectrum_info: Dictionary containing spectrum assignment details
+                          including core_num for multi-core calculations
+                          
+        Returns:
+            Cross-talk noise power in watts
+        """
         if not self.supports_multicore:
             return 0.0
 
@@ -339,7 +408,14 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         return self._calculate_pxt(num_adjacent)
 
     def _calculate_pxt(self, num_adjacent: int) -> float:
-        """Calculate cross-talk noise power."""
+        """Calculate cross-talk noise power based on adjacent cores.
+        
+        Args:
+            num_adjacent: Number of adjacent cores contributing to cross-talk
+            
+        Returns:
+            Total cross-talk noise power in watts
+        """
         # Statistical mean of cross-talk
         _bending_radius = self.snr_props.link_dictionary.get('bending_radius', 7.5e-3)
         # Cross-talk coefficient calculation uses bending radius
@@ -354,7 +430,15 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         return total_xt
 
     def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
-        """Get the required SNR threshold for a given modulation format and reach."""
+        """Get the required SNR threshold for a given modulation format and reach.
+        
+        Args:
+            modulation: Modulation format (e.g., 'QPSK', '16QAM', '64QAM')
+            reach: Transmission reach in kilometers
+            
+        Returns:
+            Required SNR threshold in dB
+        """
         # SNR thresholds for different modulations (simplified)
         thresholds = {
             'BPSK': 6.0,  # dB
@@ -379,7 +463,17 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
     def update_link_state(self, source: Any, destination: Any,
                           spectrum_info: Dict[str, Any]) -> None:
-        """Update link state based on new spectrum allocation."""
+        """Update link state based on new spectrum allocation.
+        
+        Args:
+            source: Source node identifier
+            destination: Destination node identifier
+            spectrum_info: Dictionary containing spectrum assignment details
+            
+        Note:
+            This implementation doesn't maintain dynamic state.
+            Subclasses can override for adaptive algorithms.
+        """
         # This implementation doesn't maintain dynamic state
         # Subclasses can override for adaptive algorithms
 
