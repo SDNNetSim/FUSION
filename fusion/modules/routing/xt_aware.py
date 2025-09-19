@@ -9,7 +9,7 @@ import networkx as nx
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.core.properties import RoutingProps
-from fusion.sim.utils import find_free_slots
+from fusion.sim.utils import find_free_slots, find_path_len, get_path_mod, sort_nested_dict_vals
 
 
 class XTAwareRouting(AbstractRoutingAlgorithm):
@@ -57,7 +57,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         """
         return (hasattr(topology, 'nodes') and
                 hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'net_spec_dict'))
+                hasattr(self.sdn_props, 'network_spectrum_dict'))
 
     def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
         """Find a route from source to destination considering cross-talk.
@@ -77,7 +77,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         # Reset paths matrix for new calculation
         self.route_props.paths_matrix = []
         self.route_props.weights_list = []
-        self.route_props.mod_formats_matrix = []
+        self.route_props.modulation_formats_matrix = []
 
         try:
             # Update XT costs for all links
@@ -104,11 +104,11 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
         # At the moment, we have identical bidirectional links (no need to loop over all links)
-        for link_list in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_list in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_list[0], link_list[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_len
+            num_spans = topology[source][destination]['length'] / self.route_props.span_length
 
-            free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict,
+            free_slots_dict = find_free_slots(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                               link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict,
                                                             link_list=link_list)
@@ -145,8 +145,31 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
             resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
+            # Calculate actual path length for modulation format selection
+            path_len = find_path_len(path_list=path_list, topology=topology)
+
+            # Get modulation formats based on path length
+            if hasattr(self.sdn_props, 'modulation_formats_dict'):
+                # Use sorted modulation formats
+                mod_formats_dict = sort_nested_dict_vals(
+                    original_dict=self.sdn_props.modulation_formats_dict,
+                    nested_key='max_length'
+                )
+                mod_format_list = []
+                for mod_format in mod_formats_dict:
+                    if self.sdn_props.modulation_formats_dict[mod_format]['max_length'] >= path_len:
+                        mod_format_list.append(mod_format)
+                    else:
+                        mod_format_list.append(False)
+            else:
+                # Fallback to simple modulation selection
+                mod_formats = getattr(self.sdn_props, 'mod_formats', {})
+                mod_format = get_path_mod(mod_formats, path_len)
+                mod_format_list = [mod_format if mod_format else 'QPSK']
+
             self.route_props.weights_list.append(resp_weight)
             self.route_props.paths_matrix.append(path_list)
+            self.route_props.modulation_formats_matrix.append(mod_format_list)
             # For XT-aware, we typically take the first (best) path
             break
 
@@ -203,11 +226,11 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
             topology: NetworkX graph to update weights for
         """
         # Recalculate XT costs for all links
-        for link_list in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_list in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_list[0], link_list[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_len
+            num_spans = topology[source][destination]['length'] / self.route_props.span_length
 
-            free_slots_dict = find_free_slots(net_spec_dict=self.sdn_props.net_spec_dict,
+            free_slots_dict = find_free_slots(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
                                               link_tuple=link_list)
             xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict,
                                                             link_list=link_list)

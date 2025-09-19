@@ -71,10 +71,10 @@ class QLearning:
                             self.props.cores_matrix[src, dst, k, core, level] = (
                                 path, core, 0.0)
 
-    def get_max_future_q(self, path_list, net_spec_dict, matrix, flag, core_index=None):
+    def get_max_future_q(self, path_list, network_spectrum_dict, matrix, flag, core_index=None):
         """Retrieves the maximum future Q-value based on congestion levels."""
-        new_cong, _ = find_core_cong(core_index, net_spec_dict, path_list) if flag == 'core' else find_path_cong(
-            path_list, net_spec_dict)
+        new_cong, _ = find_core_cong(core_index, network_spectrum_dict, path_list) if flag == 'core' else find_path_cong(
+            path_list, network_spectrum_dict)
         new_cong_index = classify_cong(new_cong, cong_cutoff=self.engine_props['cong_cutoff'])
 
         max_future_q = matrix[core_index if flag == 'core' else new_cong_index]['q_value']
@@ -99,7 +99,7 @@ class QLearning:
 
         return max_index, max_obj
 
-    def update_q_matrix(self, reward, level_index, net_spec_dict, flag, trial: int, iteration, core_index=None):
+    def update_q_matrix(self, reward, level_index, network_spectrum_dict, flag, trial: int, iteration, core_index=None):
         """Updates Q-values for either path or core selection."""
         matrix = self.props.cores_matrix if flag == 'core' else self.props.routes_matrix
         matrix = matrix[self.rl_props.source, self.rl_props.destination]
@@ -107,7 +107,7 @@ class QLearning:
         current_q = matrix[core_index if flag == 'core' else level_index]['q_value']
 
         max_future_q = self.get_max_future_q(matrix[core_index if flag == 'core' else level_index]['path'],
-                                             net_spec_dict, matrix, flag, core_index)
+                                             network_spectrum_dict, matrix, flag, core_index)
         delta = reward + self.engine_props['gamma'] * max_future_q
         td_error = current_q - delta
         new_q = ((1 - self.learn_rate) * current_q) + (self.learn_rate * delta)

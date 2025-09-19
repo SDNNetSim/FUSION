@@ -9,7 +9,7 @@ import networkx as nx
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.core.properties import RoutingProps
-from fusion.sim.utils import find_path_frag
+from fusion.sim.utils import find_path_frag, find_path_len, get_path_mod
 
 
 class FragmentationAwareRouting(AbstractRoutingAlgorithm):
@@ -57,7 +57,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         """
         return (hasattr(topology, 'nodes') and
                 hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'net_spec_dict'))
+                hasattr(self.sdn_props, 'network_spectrum_dict'))
 
     def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
         """Find a route from source to destination considering fragmentation.
@@ -77,7 +77,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         # Reset paths matrix for new calculation
         self.route_props.paths_matrix = []
         self.route_props.weights_list = []
-        self.route_props.mod_formats_matrix = []
+        self.route_props.modulation_formats_matrix = []
 
         try:
             # Update fragmentation costs for all links
@@ -104,13 +104,13 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
         # Calculate fragmentation for each direct link
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             path_list = [source, destination]
 
             # Compute average fragmentation on this direct link
             frag_score = find_path_frag(path_list=path_list,
-                                        net_spec_dict=self.sdn_props.net_spec_dict)
+                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
             # Store frag score for both directions if bidirectional
             if hasattr(topology, 'edges'):
@@ -131,8 +131,16 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
+            # Calculate actual path length for modulation format selection
+            path_len = find_path_len(path_list=path_list, topology=topology)
+            # Get modulation format
+            mod_formats = getattr(self.sdn_props, 'mod_formats', {})
+            mod_format = get_path_mod(mod_formats, path_len)
+            mod_format_list = [mod_format if mod_format else 'QPSK']
+
             self.route_props.weights_list.append(resp_weight)
             self.route_props.paths_matrix.append(path_list)
+            self.route_props.modulation_formats_matrix.append(mod_format_list)
             # For fragmentation-aware, we typically take the first (best) path
             break
 
@@ -143,7 +151,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
 
         try:
             return find_path_frag(path_list=path,
-                                  net_spec_dict=self.sdn_props.net_spec_dict)
+                                  network_spectrum_dict=self.sdn_props.network_spectrum_dict)
         except (KeyError, AttributeError, TypeError):
             return 0.0
 
@@ -184,12 +192,12 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             topology: NetworkX graph to update weights for
         """
         # Recalculate fragmentation costs for all links
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             path_list = [source, destination]
 
             frag_score = find_path_frag(path_list=path_list,
-                                        net_spec_dict=self.sdn_props.net_spec_dict)
+                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
             if hasattr(topology, 'edges'):
                 topology[source][destination]['frag_cost'] = frag_score

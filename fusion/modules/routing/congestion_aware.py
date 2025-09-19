@@ -10,6 +10,7 @@ import numpy as np
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.core.properties import RoutingProps
+from fusion.sim.utils import find_path_len, find_path_cong, get_path_mod, sort_nested_dict_vals
 
 
 class CongestionAwareRouting(AbstractRoutingAlgorithm):
@@ -29,9 +30,9 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         super().__init__(engine_props, sdn_props)
         self.route_props = RoutingProps()
         self.route_help_obj = RoutingHelpers(
+            route_props=self.route_props,
             engine_props=self.engine_props,
-            sdn_props=self.sdn_props,
-            route_props=self.route_props
+            sdn_props=self.sdn_props
         )
         self._path_count = 0
         self._total_congestion = 0
@@ -58,10 +59,13 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         # Check if topology has the required attributes for congestion calculation
         return (hasattr(topology, 'nodes') and
                 hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'net_spec_dict'))
+                hasattr(self.sdn_props, 'network_spectrum_dict'))
 
     def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
-        """Find a route from source to destination considering congestion.
+        """Find a route from source to destination using congestion-aware k-shortest.
+        
+        For the first k shortest-length candidate paths we compute:
+            score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len_in_set)
         
         Args:
             source: Source node identifier
@@ -69,7 +73,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             request: Request object containing traffic demand details
             
         Returns:
-            Least congested path, or None if no path found
+            Best path based on congestion score, or None if no path found
         """
         # Store source/destination in sdn_props for compatibility
         self.sdn_props.source = source
@@ -77,18 +81,99 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
 
         # Reset paths matrix for new calculation
         self.route_props.paths_matrix = []
+        self.route_props.modulation_formats_matrix = []
+        self.route_props.weights_list = []
 
         try:
-            path = self._find_least_congested_path()
-            if path:
+            self._find_congestion_aware_paths()
+            if self.route_props.paths_matrix:
                 self._path_count += 1
-                # Calculate congestion metric for this path
-                congestion = self._calculate_path_congestion(path)
+                # Calculate congestion metric for the best path
+                best_path = self.route_props.paths_matrix[0]
+                congestion = self._calculate_path_congestion(best_path)
                 self._total_congestion += congestion
-
-            return path
+                return best_path
+            return None
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
+
+    def _find_congestion_aware_paths(self) -> None:
+        """Implement the sophisticated congestion-aware k-shortest routing.
+        
+        For the first k shortest-length candidate paths we compute:
+            score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len_in_set)
+        
+        All k paths are stored in route_props.*, sorted by score so the
+        downstream allocator will try the most promising path first.
+        """
+        # -------- 0 | gather k shortest-length paths -------------------------
+        # α can be set per-experiment in your YAML / JSON config
+        alpha = float(self.engine_props.get("ca_alpha", 0.3))  # default 0.3
+        k = int(self.engine_props.get("k_paths", 1))  # default to 1 if not set
+
+        topology = self.engine_props.get('topology', self.sdn_props.topology)
+        paths_iter = nx.shortest_simple_paths(
+            G=topology,
+            source=self.sdn_props.source,
+            target=self.sdn_props.destination,
+            weight="length",
+        )
+
+        cand_paths, path_lens, path_congs = [], [], []
+        for idx, path in enumerate(paths_iter):
+            if idx >= k:
+                break
+            cand_paths.append(path)
+
+            # length (same helper you already use elsewhere)
+            plen = find_path_len(path_list=path, topology=topology)
+            path_lens.append(plen)
+
+            # mean congestion feature — exactly what the RL agent sees
+            mean_cong, _ = find_path_cong(path_list=path,
+                                          network_spectrum_dict=self.sdn_props.network_spectrum_dict)
+            path_congs.append(mean_cong)
+
+        if not cand_paths:  # safety guard
+            self.route_props.blocked = True  # consistent with other funcs
+            return
+
+        # -------- 1 | compute scores & sort paths ----------------------------
+        path_lens = np.asarray(path_lens, dtype=float)
+        path_congs = np.asarray(path_congs, dtype=float)
+
+        max_len = path_lens.max() if path_lens.max() > 0 else 1.0
+        hop_norm = path_lens / max_len
+        scores = alpha * path_congs + (1.0 - alpha) * hop_norm
+
+        # sort indices by score ascending
+        order = scores.argsort()
+
+        # -------- 2 | populate route_props in that order ---------------------
+        chosen_bw = self.sdn_props.bandwidth
+        for idx in order:
+            p = cand_paths[idx]
+            plen = path_lens[idx]
+            sc = float(scores[idx])
+
+            # modulation list (mirrors logic in find_k_shortest)
+            if not self.engine_props.get("pre_calc_mod_selection", False):
+                mod_list = [
+                    get_path_mod(
+                        mods_dict=self.engine_props["mod_per_bw"][chosen_bw],
+                        path_len=plen,
+                    )
+                ]
+            else:
+                mods_sorted = sort_nested_dict_vals(
+                    original_dict=self.sdn_props.mod_formats_dict,
+                    nested_key="max_length",
+                )
+                mod_list = list(mods_sorted.keys())
+
+            self.route_props.paths_matrix.append(p)
+            self.route_props.modulation_formats_matrix.append(mod_list)
+            self.route_props.weights_list.append(sc)
 
     def _find_least_congested_path(self) -> Optional[List[Any]]:
         """Find the least congested path using the original algorithm logic."""
@@ -121,7 +206,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.net_spec_dict[(path_list[i], path_list[i + 1])]
+            link_dict = self.sdn_props.network_spectrum_dict[(path_list[i], path_list[i + 1])]
             free_slots = 0
             for band in link_dict['cores_matrix']:
                 cores_matrix = link_dict['cores_matrix'][band]
@@ -157,8 +242,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
 
         for i in range(len(path) - 1):
             link_key = (path[i], path[i + 1])
-            if link_key in self.sdn_props.net_spec_dict:
-                link_dict = self.sdn_props.net_spec_dict[link_key]
+            if link_key in self.sdn_props.network_spectrum_dict:
+                link_dict = self.sdn_props.network_spectrum_dict[link_key]
                 for band in link_dict['cores_matrix']:
                     cores_matrix = link_dict['cores_matrix'][band]
                     for core_arr in cores_matrix:
@@ -190,7 +275,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             topology: NetworkX graph to update weights for
         """
         # Update congestion costs for all links based on current spectrum usage
-        for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             congestion = self._calculate_link_congestion(source, destination)
 
@@ -202,10 +287,10 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
     def _calculate_link_congestion(self, source: Any, destination: Any) -> float:
         """Calculate congestion level for a specific link."""
         link_key = (source, destination)
-        if link_key not in self.sdn_props.net_spec_dict:
+        if link_key not in self.sdn_props.network_spectrum_dict:
             return 0.0
 
-        link_dict = self.sdn_props.net_spec_dict[link_key]
+        link_dict = self.sdn_props.network_spectrum_dict[link_key]
         total_used_slots = 0
         total_slots = 0
 

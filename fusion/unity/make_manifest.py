@@ -15,11 +15,11 @@ except ModuleNotFoundError:
     yaml = None  # pylint: disable=invalid-name
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from fusion.cli.config_setup import SIM_REQUIRED_OPTIONS, OTHER_OPTIONS  # pylint: disable=wrong-import-position
+from fusion.configs.schema import SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT  # pylint: disable=wrong-import-position
 
 # Build parameter types from config setup
 _PARAM_TYPES: dict[str, type] = {}
-for options_dict in [SIM_REQUIRED_OPTIONS, OTHER_OPTIONS]:
+for options_dict in [SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT]:
     for category, options in options_dict.items():
         for option_name, option_type in options.items():
             _PARAM_TYPES[option_name] = option_type

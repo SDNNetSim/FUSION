@@ -12,11 +12,11 @@ class RouteProps:
     """
     Mocks the routing props class.
     """
-    def __init__(self, freq_spacing, input_power, mci_worst, span_len, max_link_length=None):
-        self.freq_spacing = freq_spacing
+    def __init__(self, freq_spacing, input_power, mci_worst, span_length, max_link_length=None):
+        self.frequency_spacing = freq_spacing
         self.input_power = input_power
         self.mci_worst = mci_worst
-        self.span_len = span_len
+        self.span_length = span_length
         self.max_link_length = max_link_length
 
 
@@ -24,9 +24,9 @@ class SDNProps:
     """
     Mocks the SDN props class.
     """
-    def __init__(self, slots_needed, net_spec_dict):
+    def __init__(self, slots_needed, network_spectrum_dict):
         self.slots_needed = slots_needed
-        self.net_spec_dict = net_spec_dict
+        self.network_spectrum_dict = network_spectrum_dict
 
 
 class TestRoutingHelpers(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestRoutingHelpers(unittest.TestCase):
             freq_spacing=50,
             input_power=0.001,
             mci_worst=1.0,
-            span_len=50,
+            span_length=50,
             max_link_length=None
         )
         self.engine_props = {
@@ -54,7 +54,7 @@ class TestRoutingHelpers(unittest.TestCase):
 
         self.sdn_props = SDNProps(
             slots_needed=10,
-            net_spec_dict={
+            network_spectrum_dict={
                 ('A', 'B'): {
                     'cores_matrix': {
                         'c': [  # 'c' band
@@ -131,8 +131,8 @@ class TestRoutingHelpers(unittest.TestCase):
 
     def test_find_worst_nli(self):
         """Test the find worst NLI method."""
-        # Adjust net_spec_dict to use the correct structure for cores_matrix with bands
-        self.sdn_props.net_spec_dict = {('A', 'B'): {
+        # Adjust network_spectrum_dict to use the correct structure for cores_matrix with bands
+        self.sdn_props.network_spectrum_dict = {('A', 'B'): {  # pylint: disable=attribute-defined-outside-init
             'cores_matrix': {
                 'c': [  # 'c' band
                     np.array([1, 1, -1, 0, 1, 1, 0, 0, 1, 0]),  # Core 0
@@ -209,7 +209,7 @@ class TestRoutingHelpers(unittest.TestCase):
         }
 
         link_list = ('A', 'B')
-        self.sdn_props.net_spec_dict = {
+        self.sdn_props.network_spectrum_dict = {  # pylint: disable=attribute-defined-outside-init
             link_list: {
                 'cores_matrix': {
                     'c': np.ones((7, 10)),  # 'c' band with 7 cores, 10 channels
@@ -225,7 +225,7 @@ class TestRoutingHelpers(unittest.TestCase):
     def test_get_nli_path(self):
         """Tests the get NLI path method."""
         path_list = ['A', 'B', 'C']
-        self.route_props.span_len = 50
+        self.route_props.span_length = 50
 
         with patch.object(self.helpers, 'get_nli_cost', return_value=10.0) as mock_get_nli_cost:
             nli_cost = self.helpers.get_nli_path(path_list)
@@ -250,7 +250,7 @@ class TestRoutingHelpers(unittest.TestCase):
         self.engine_props['topology'].add_edge('A', 'B', length=100)
         self.engine_props['beta'] = 0.5
         self.route_props.max_link_length = 100
-        self.sdn_props.net_spec_dict = {('A', 'B'): {'cores_matrix': {'c': np.array(np.zeros((7, 10)))}}}
+        self.sdn_props.network_spectrum_dict = {('A', 'B'): {'cores_matrix': {'c': np.array(np.zeros((7, 10)))}}}  # pylint: disable=attribute-defined-outside-init
         self.sdn_props.slots_needed = 3
 
         with patch('fusion.sim.utils.find_free_channels', return_value={0: [1, 2, 3]}), \

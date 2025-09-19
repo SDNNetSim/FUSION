@@ -25,13 +25,15 @@ class TestRouting(unittest.TestCase):
             'route_method': 'k_shortest_path',
             'pre_calc_mod_selection': False,
             'network': 'USbackbone60',
+            'spectral_slots': 320,  # Add spectral_slots for routing helpers
+            'guard_slots': 1,  # Add guard_slots for routing helpers
         }
         self.engine_props['topology'].add_edge('A', 'B', weight=1, xt_cost=10, length=1)
         self.engine_props['topology'].add_edge('B', 'C', weight=1, xt_cost=5, length=1)
         self.engine_props['topology'].add_edge('A', 'C', weight=3, xt_cost=100, length=2)
 
         self.sdn_props = MagicMock()
-        self.sdn_props.net_spec_dict = {
+        self.sdn_props.network_spectrum_dict = {
             ('A', 'B'): {'cores_matrix': {'c': np.zeros((1, 10))}},
             ('B', 'C'): {'cores_matrix': {'c': np.ones((1, 10))}},
             ('A', 'C'): {'cores_matrix': {'c': np.zeros((1, 10))}}
@@ -39,14 +41,18 @@ class TestRouting(unittest.TestCase):
         self.sdn_props.source = 'A'
         self.sdn_props.destination = 'C'
         self.sdn_props.topology = self.engine_props['topology']
-        self.sdn_props.mod_formats = {
-            'QPSK': {'max_length': 10},
-            '16-QAM': {'max_length': 20},
-            '64-QAM': {'max_length': 30}
+        self.sdn_props.modulation_formats_dict = {
+            'QPSK': {'max_length': 10, 'slots_needed': 10},
+            '16-QAM': {'max_length': 20, 'slots_needed': 8},
+            '64-QAM': {'max_length': 30, 'slots_needed': 6}
         }
         self.sdn_props.bandwidth = '50GHz'
+        self.sdn_props.slots_needed = 10
 
         self.route_props = RoutingProps()
+        self.route_props.frequency_spacing = 12.5e9  # Set frequency_spacing property
+        self.route_props.input_power = 0.001  # Set input_power property
+        self.route_props.mci_worst = 6.334975555658596e-27  # Set mci_worst property
         self.route_props.loaded_data_dict_mock = [
             [
                 None,  # Placeholder for irrelevant indices
@@ -101,11 +107,47 @@ class TestRouting(unittest.TestCase):
         """
         Test find the least weight path method.
         """
-        self.instance.find_least_weight('weight')
+        # Store original sdn_props reference
+        original_sdn_props = self.instance.sdn_props
 
-        expected_path = ['A', 'B', 'C']
-        selected_path = self.instance.route_props.paths_matrix[0]
-        self.assertEqual(selected_path, expected_path, f"Expected path {expected_path} but got {selected_path}")
+        # Create a simple object to replace problematic MagicMock properties
+        class MockSDNProps:  # pylint: disable=too-few-public-methods
+            """Mock SDN properties object to avoid MagicMock comparison issues."""
+            def __init__(self, original):
+                self.slots_needed = 10
+                self.modulation_formats_dict = {
+                    'QPSK': {'max_length': 10, 'slots_needed': 10},
+                    '16-QAM': {'max_length': 20, 'slots_needed': 8},
+                    '64-QAM': {'max_length': 30, 'slots_needed': 6}
+                }
+                self.mod_formats = {
+                    'QPSK': {'max_length': 10, 'slots_needed': 10},
+                    '16-QAM': {'max_length': 20, 'slots_needed': 8},
+                    '64-QAM': {'max_length': 30, 'slots_needed': 6}
+                }
+                self.topology = original.topology
+                self.source = original.source
+                self.destination = original.destination
+                self.network_spectrum_dict = original.network_spectrum_dict
+
+        # Replace with mock
+        self.instance.sdn_props = MockSDNProps(original_sdn_props)
+
+        try:
+            with patch('fusion.core.routing.sort_nested_dict_vals', return_value={
+                'QPSK': {'max_length': 10},
+                '16-QAM': {'max_length': 20},
+                '64-QAM': {'max_length': 30}
+            }), \
+                    patch('fusion.core.routing.find_path_len', return_value=2):
+                self.instance.find_least_weight('weight')
+
+            expected_path = ['A', 'B', 'C']
+            selected_path = self.instance.route_props.paths_matrix[0]
+            self.assertEqual(selected_path, expected_path, f"Expected path {expected_path} but got {selected_path}")
+        finally:
+            # Restore original sdn_props
+            self.instance.sdn_props = original_sdn_props
 
     def test_find_k_shortest_paths(self):
         """
@@ -122,7 +164,7 @@ class TestRouting(unittest.TestCase):
                          "Did not find the expected number of shortest paths")
         for path in self.instance.route_props.paths_matrix:
             self.assertIsInstance(path, list, "Each path should be a list")
-        for mod_format_list in self.instance.route_props.mod_formats_matrix:
+        for mod_format_list in self.instance.route_props.modulation_formats_matrix:
             self.assertEqual(len(mod_format_list), 1, "Each path should have exactly one modulation format")
         for weight in self.instance.route_props.weights_list:
             self.assertIsInstance(weight, (int, float), "Each weight should be a number")
@@ -131,16 +173,57 @@ class TestRouting(unittest.TestCase):
         """
         Test find the least non-linear impairment cost method.
         """
-        self.sdn_props.bandwidth = '50GHz'
         self.engine_props['mod_per_bw'] = {
             '50GHz': {'QPSK': {'slots_needed': 10}}
         }
-        with patch.object(self.instance.route_help_obj, 'get_nli_cost', return_value=1.0):
-            self.instance.find_least_nli()
 
-            for link_tuple in list(self.sdn_props.net_spec_dict.keys())[::2]:
-                source, destination = link_tuple
-                self.assertIn('nli_cost', self.sdn_props.topology[source][destination], "NLI cost not set for link")
+        # Set route_props span_length to avoid any undefined access
+        self.instance.route_props.span_length = 100.0
+
+        # Store original sdn_props reference
+        original_sdn_props = self.instance.sdn_props
+
+        # Create a simple object to replace problematic MagicMock properties
+        class MockSDNProps:  # pylint: disable=too-few-public-methods
+            """Mock SDN properties object to avoid MagicMock comparison issues."""
+            def __init__(self, original):
+                self.bandwidth = '50GHz'
+                self.slots_needed = 10
+                self.modulation_formats_dict = {
+                    'QPSK': {'max_length': 10, 'slots_needed': 10},
+                    '16-QAM': {'max_length': 20, 'slots_needed': 8},
+                    '64-QAM': {'max_length': 30, 'slots_needed': 6}
+                }
+                self.mod_formats = {
+                    'QPSK': {'max_length': 10, 'slots_needed': 10},
+                    '16-QAM': {'max_length': 20, 'slots_needed': 8},
+                    '64-QAM': {'max_length': 30, 'slots_needed': 6}
+                }
+                self.topology = original.topology
+                self.source = original.source
+                self.destination = original.destination
+                self.network_spectrum_dict = original.network_spectrum_dict
+
+        # Replace with mock
+        self.instance.sdn_props = MockSDNProps(original_sdn_props)
+
+        try:
+            with patch.object(self.instance.route_help_obj, 'get_nli_cost', return_value=1.0), \
+                    patch('fusion.core.routing.sort_nested_dict_vals', return_value={
+                        'QPSK': {'max_length': 10},
+                        '16-QAM': {'max_length': 20},
+                        '64-QAM': {'max_length': 30}
+                    }), \
+                    patch('fusion.core.routing.find_path_len', return_value=2):
+                self.instance.find_least_nli()
+
+                for link_tuple in list(self.instance.sdn_props.network_spectrum_dict.keys())[::2]:
+                    source, destination = link_tuple
+                    self.assertIn('nli_cost', self.instance.sdn_props.topology[source][destination],
+                                  "NLI cost not set for link")
+        finally:
+            # Restore original sdn_props
+            self.instance.sdn_props = original_sdn_props
 
     def test_find_least_xt(self):
         """
@@ -153,7 +236,7 @@ class TestRouting(unittest.TestCase):
                 patch.object(self.instance.route_help_obj, 'get_max_link_length', return_value=100):
             self.instance.find_least_xt()
 
-            for link_list in list(self.sdn_props.net_spec_dict.keys())[::2]:
+            for link_list in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
                 source, destination = link_list
                 self.assertIn('xt_cost', self.sdn_props.topology[source][destination], "XT cost not set for link")
 
@@ -165,8 +248,8 @@ class TestRouting(unittest.TestCase):
         self.sdn_props.source = '1'
         self.sdn_props.destination = '4'
 
-        # Mock mod_formats_dict
-        self.sdn_props.mod_formats_dict = {
+        # Mock modulation_formats_dict
+        self.sdn_props.modulation_formats_dict = {
             'QPSK': {'max_length': 10},
             '16-QAM': {'max_length': 20},
             '64-QAM': {'max_length': 30}
@@ -192,9 +275,9 @@ class TestRouting(unittest.TestCase):
 
                 # Verify modulation formats were added in reverse order
                 expected_mod_formats = ['64-QAM', '16-QAM', 'QPSK']
-                self.assertGreater(len(self.instance.route_props.mod_formats_matrix[0]), 0)
+                self.assertGreater(len(self.instance.route_props.modulation_formats_matrix[0]), 0)
                 self.assertEqual(
-                    self.instance.route_props.mod_formats_matrix[0],
+                    self.instance.route_props.modulation_formats_matrix[0],
                     expected_mod_formats
                 )
 
