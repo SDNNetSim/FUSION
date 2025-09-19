@@ -214,8 +214,8 @@ def _train_drl_trial(
     for cb in callback_list.callbacks:
         cb.trial += 1
 
-    callback_list.callbacks[1].current_ent = sim_dict["epsilon_start"]
-    callback_list.callbacks[1].current_lr = sim_dict["alpha_start"]
+    callback_list.callbacks[1].current_entropy = sim_dict["epsilon_start"]
+    callback_list.callbacks[1].current_learning_rate = sim_dict["alpha_start"]
     callback_list.callbacks[1].iter = 0
     env.iteration = 0
 

@@ -9,6 +9,7 @@ from fusion.sim.utils import find_path_cong
 from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS
 from fusion.modules.rl.args.observation_args import OBS_DICT
 from fusion.modules.rl.utils.topology import convert_networkx_topo
+from fusion.modules.rl.utils.errors import RLUtilsError
 
 
 class SimEnvUtils:
@@ -62,9 +63,17 @@ class SimEnvUtils:
                                                iteration=self.sim_env.iteration, path_length=path_length,
                                                trial=trial)
             elif self.sim_env.sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
-                raise NotImplementedError
+                raise RLUtilsError(
+                    "Core algorithm handling is not yet implemented. "
+                    "This feature requires additional development for core-specific RL agents."
+                )
             else:
-                raise NotImplementedError
+                raise RLUtilsError(
+                    "Unsupported algorithm configuration for observation handling. "
+                    f"Expected valid path or core algorithm, got: "
+                    f"path={self.sim_env.sim_dict.get('path_algorithm')}, "
+                    f"core={self.sim_env.sim_dict.get('core_algorithm')}"
+                )
         else:
             self.sim_env.path_agent.update(was_allocated=was_allocated,
                                            network_spectrum_dict=self.sim_env.engine_obj.network_spectrum_dict,
@@ -128,7 +137,7 @@ class SimEnvUtils:
         self.sim_env.rl_help_obj.handle_releases()
         self.sim_env.rl_props.source = int(curr_req['source'])
         self.sim_env.rl_props.destination = int(curr_req['destination'])
-        self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(curr_req=curr_req)
+        self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(current_request=curr_req)
 
         resp_dict = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth, holding_time=holding_time)
         return resp_dict
@@ -174,7 +183,7 @@ class SimEnvObs:
             self.sim_env.rl_help_obj.rl_props.forced_index = None
 
         self.sim_env.rl_help_obj.rl_props = self.sim_env.rl_props
-        self.sim_env.rl_help_obj.engine_obj = self.sim_env.engine_obj
+        self.sim_env.rl_help_obj.engine_props = self.sim_env.engine_obj
         self.sim_env.rl_help_obj.handle_releases()
         self.sim_env.rl_help_obj.update_route_props(chosen_path=self.sim_env.rl_props.chosen_path_list,
                                                     bandwidth=bandwidth)
@@ -230,7 +239,7 @@ class SimEnvObs:
         return scaled_holding
 
     def _get_paths_slots(self, bandwidth):
-        # TODO: Can move this to the constructor...
+        # NOTE: Consider moving routing object initialization to constructor for better performance
         self.routing_obj = Routing(engine_props=self.sim_env.engine_obj.engine_props,
                                    sdn_props=self.sim_env.engine_obj.sdn_obj.sdn_props)
 
@@ -322,8 +331,8 @@ class SimEnvObs:
             req_holding_scaled = self._scale_req_holding(holding_time=holding_time)
             resp_dict['holding_time'] = req_holding_scaled
 
-        # TODO: Add and initialize bandwidth in self
-        # TODO: Filter these later, but they may not always be in the observation space
+        # NOTE: Consider adding bandwidth as instance variable for better performance
+        # NOTE: These features may not always be in the observation space - add filtering logic
         slots_needed, path_lengths, paths_cong, available_slots = self._get_paths_slots(bandwidth=bandwidth)
 
         if 'slots_needed' in OBS_DICT[obs_space_key]:
@@ -335,7 +344,10 @@ class SimEnvObs:
         if 'available_slots' in OBS_DICT[obs_space_key]:
             resp_dict['available_slots'] = available_slots
         if 'is_feasible' in OBS_DICT[obs_space_key]:
-            raise NotImplementedError
+            raise RLUtilsError(
+                "Feasibility observation feature is not yet implemented. "
+                "This feature requires additional development to determine path feasibility."
+            )
 
         if include_graph:
             self.get_path_masks(resp_dict=resp_dict)
