@@ -5,7 +5,7 @@ It creates requests based on specified distributions and traffic patterns.
 """
 
 from typing import Dict, Any, List, Tuple
-from fusion.utils.random import set_seed, get_uniform_rv, get_exponential_rv
+from fusion.utils.random import set_random_seed, generate_uniform_random_variable, generate_exponential_random_variable
 from fusion.utils.logging_config import get_logger
 
 # Module-level constants
@@ -60,11 +60,11 @@ def _select_random_node_pair(
     :return: Tuple of (source_node, destination_node)
     :rtype: Tuple[str, str]
     """
-    source = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
-    destination = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
+    source = nodes_list[generate_uniform_random_variable(scale_parameter=len(nodes_list))]
+    destination = nodes_list[generate_uniform_random_variable(scale_parameter=len(nodes_list))]
 
     while destination == source:
-        destination = nodes_list[get_uniform_rv(scale_param=len(nodes_list))]
+        destination = nodes_list[generate_uniform_random_variable(scale_parameter=len(nodes_list))]
 
     return source, destination
 
@@ -87,8 +87,8 @@ def _generate_request_times(
     :return: Tuple of (arrival_time, departure_time)
     :rtype: Tuple[float, float]
     """
-    arrival_time = current_time + get_exponential_rv(scale_param=arrival_rate)
-    departure_time = arrival_time + get_exponential_rv(scale_param=1 / holding_time)
+    arrival_time = current_time + generate_exponential_random_variable(scale_parameter=arrival_rate)
+    departure_time = arrival_time + generate_exponential_random_variable(scale_parameter=1 / holding_time)
 
     return arrival_time, departure_time
 
@@ -212,7 +212,7 @@ def generate_simulation_requests(
         raise ValueError(error_msg)
 
     # Set random seed for reproducibility
-    set_seed(seed=seed)
+    set_random_seed(seed_value=seed)
 
     # Calculate bandwidth allocation counts
     bandwidth_count_dict = {
@@ -256,7 +256,7 @@ def generate_simulation_requests(
         chosen_bandwidth = None
         while chosen_bandwidth is None:
             candidate_bandwidth = bandwidth_list[
-                get_uniform_rv(scale_param=len(bandwidth_list))
+                generate_uniform_random_variable(scale_parameter=len(bandwidth_list))
             ]
             if bandwidth_count_dict[candidate_bandwidth] > 0:
                 bandwidth_count_dict[candidate_bandwidth] -= 1

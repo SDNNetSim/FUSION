@@ -21,7 +21,7 @@ try:
 except ImportError:
     HAS_PERMUTATION_IMPORTANCE = False
 
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -51,7 +51,7 @@ def plot_data_distributions(
         >>> plot_data_distributions(sim_dict, data, 1000.0)
     """
     save_filepath = os.path.join('data', 'plots', simulation_dict['train_file_path'], 'input_analysis')
-    create_dir(file_path=save_filepath)
+    create_directory(directory_path=save_filepath)
 
     _plot_pie_charts(
         erlang=erlang,
@@ -221,7 +221,7 @@ def plot_feature_importance(
 
     # Save plot
     save_filepath = os.path.join('data', 'plots', simulation_dict['train_file_path'])
-    create_dir(file_path=save_filepath)
+    create_directory(directory_path=save_filepath)
     output_path = os.path.join(save_filepath, f'feature_importance_{erlang}.png')
     plt.savefig(output_path, bbox_inches='tight')
     plt.close()
@@ -294,7 +294,7 @@ def plot_confusion_matrix(
 
     # Save plot
     save_filepath = os.path.join('data', 'plots', simulation_dict['train_file_path'])
-    create_dir(file_path=save_filepath)
+    create_directory(directory_path=save_filepath)
     output_path = os.path.join(save_filepath, f'confusion_matrix_{erlang}.png')
     plt.savefig(output_path, bbox_inches='tight')
     plt.close()

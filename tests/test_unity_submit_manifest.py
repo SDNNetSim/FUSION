@@ -8,8 +8,7 @@ import csv
 import pathlib
 import tempfile
 import unittest
-from unittest.mock import Mock, patch, MagicMock
-from argparse import Namespace
+from unittest.mock import patch, MagicMock
 
 from fusion.unity.submit_manifest import (
     parse_cli,
@@ -17,6 +16,8 @@ from fusion.unity.submit_manifest import (
     build_env,
     RESOURCE_KEYS,
 )
+
+from .test_data import TEST_RESOURCES
 
 
 class TestSubmitManifest(unittest.TestCase):
@@ -27,20 +28,15 @@ class TestSubmitManifest(unittest.TestCase):
         self.test_manifest_data = [
             {
                 "run_id": "00001",
-                "path_algorithm": "ppo", 
+                "path_algorithm": "ppo",
                 "erlang_start": "100",
                 "network": "test_network",
-                "partition": "gpu",
-                "time": "24:00:00",
-                "mem": "32G",
-                "cpus": "8",
-                "gpus": "1",
-                "nodes": "1"
+                **TEST_RESOURCES
             },
             {
                 "run_id": "00002",
                 "path_algorithm": "dqn",
-                "erlang_start": "200", 
+                "erlang_start": "200",
                 "network": "test_network",
                 "partition": "gpu",
                 "time": "12:00:00",
@@ -64,7 +60,7 @@ class TestSubmitManifest(unittest.TestCase):
     def test_parse_cli_basic(self):
         """Test parse_cli with basic arguments."""
         args = parse_cli()
-        
+
         self.assertEqual(args.exp, 'test_exp')
         self.assertEqual(args.script, 'run_rl_sim.sh')
         self.assertIsNone(args.rows)
@@ -73,7 +69,7 @@ class TestSubmitManifest(unittest.TestCase):
     def test_parse_cli_with_rows(self):
         """Test parse_cli with rows argument."""
         args = parse_cli()
-        
+
         self.assertEqual(args.exp, 'test_exp')
         self.assertEqual(args.script, 'run_rl_sim.sh')
         self.assertEqual(args.rows, 10)
@@ -81,10 +77,10 @@ class TestSubmitManifest(unittest.TestCase):
     def test_read_first_row(self):
         """Test read_first_row reads manifest correctly."""
         manifest_path = self.create_test_manifest()
-        
+
         try:
             first_row, total_rows = read_first_row(manifest_path)
-            
+
             self.assertEqual(total_rows, 2)
             self.assertEqual(first_row["run_id"], "00001")
             self.assertEqual(first_row["path_algorithm"], "ppo")
@@ -98,7 +94,7 @@ class TestSubmitManifest(unittest.TestCase):
             # Write just the header
             f.write("run_id,algorithm\n")
             manifest_path = pathlib.Path(f.name)
-        
+
         try:
             with self.assertRaises(SystemExit):
                 read_first_row(manifest_path)
@@ -110,16 +106,16 @@ class TestSubmitManifest(unittest.TestCase):
         first_row = self.test_manifest_data[0]
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
-        
+
         env = build_env(first_row, 2, job_dir, exp)
-        
+
         # Check mandatory metadata
         self.assertEqual(env["MANIFEST"], "unity/experiments/test_exp/manifest.csv")
         self.assertEqual(env["N_JOBS"], "1")  # 2 rows - 1 (0-indexed)
         self.assertEqual(env["JOB_DIR"], "experiments/test_exp")
         self.assertEqual(env["NETWORK"], "test_network")
         self.assertIn("JOB_NAME", env)
-        
+
         # Check resource propagation (should be uppercase)
         self.assertEqual(env["PARTITION"], "gpu")
         self.assertEqual(env["TIME"], "24:00:00")
@@ -133,9 +129,9 @@ class TestSubmitManifest(unittest.TestCase):
         first_row = self.test_manifest_data[0]
         job_dir = pathlib.Path("experiments/0315/142530")
         exp = "0315/142530"
-        
+
         env = build_env(first_row, 5, job_dir, exp)
-        
+
         expected_job_name = "ppo_100_0315_142530"
         self.assertEqual(env["JOB_NAME"], expected_job_name)
 
@@ -145,9 +141,9 @@ class TestSubmitManifest(unittest.TestCase):
         del first_row["network"]
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
-        
+
         env = build_env(first_row, 2, job_dir, exp)
-        
+
         self.assertEqual(env["NETWORK"], "")
 
     def test_build_env_missing_resources(self):
@@ -160,9 +156,9 @@ class TestSubmitManifest(unittest.TestCase):
         }
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
-        
+
         env = build_env(first_row, 1, job_dir, exp)
-        
+
         # Missing resource keys should not be in environment
         for key in RESOURCE_KEYS:
             self.assertNotIn(key.upper(), env)
@@ -174,13 +170,13 @@ class TestSubmitManifest(unittest.TestCase):
         first_row["gpus"] = ""
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
-        
+
         env = build_env(first_row, 2, job_dir, exp)
-        
+
         # Empty values should not be propagated
         self.assertNotIn("PARTITION", env)
         self.assertNotIn("GPUS", env)
-        
+
         # Non-empty values should still be there
         self.assertEqual(env["TIME"], "24:00:00")
         self.assertEqual(env["MEM"], "32G")
@@ -197,13 +193,13 @@ class TestSubmitManifest(unittest.TestCase):
         """Test main function integration (mocked external calls)."""
         # Mock file system checks
         mock_exists.return_value = True
-        
+
         # Mock manifest reading
         mock_read_first_row.return_value = (self.test_manifest_data[0], 2)
-        
+
         # Mock successful subprocess execution
         mock_subprocess.return_value = MagicMock(returncode=0)
-        
+
         # Test would require more complex mocking of sys.argv and main execution
         # This is a placeholder for integration testing structure
 
