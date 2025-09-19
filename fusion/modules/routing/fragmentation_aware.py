@@ -105,42 +105,42 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
 
         # Calculate fragmentation for each direct link
         for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
-            source, destination = link_tuple
-            path_list = [source, destination]
+            source_node, destination_node = link_tuple
+            direct_path = [source_node, destination_node]
 
             # Compute average fragmentation on this direct link
-            frag_score = find_path_frag(path_list=path_list,
-                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
+            fragmentation_score = find_path_frag(path_list=direct_path,
+                                                  network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
-            # Store frag score for both directions if bidirectional
+            # Store fragmentation score for both directions if bidirectional
             if hasattr(topology, 'edges'):
-                topology[source][destination]['frag_cost'] = frag_score
-                topology[destination][source]['frag_cost'] = frag_score
+                topology[source_node][destination_node]['frag_cost'] = fragmentation_score
+                topology[destination_node][source_node]['frag_cost'] = fragmentation_score
 
     def _find_least_weight(self, weight: str):
         """Find the path with least weight (fragmentation cost)."""
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
-        paths_obj = nx.shortest_simple_paths(G=topology,
-                                             source=self.sdn_props.source,
-                                             target=self.sdn_props.destination,
-                                             weight=weight)
+        paths_generator = nx.shortest_simple_paths(G=topology,
+                                                   source=self.sdn_props.source,
+                                                   target=self.sdn_props.destination,
+                                                   weight=weight)
 
-        for path_list in paths_obj:
+        for path_list in paths_generator:
             # Calculate path weight as sum across the path
-            resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
+            path_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
             # Calculate actual path length for modulation format selection
-            path_len = find_path_len(path_list=path_list, topology=topology)
+            path_length = find_path_len(path_list=path_list, topology=topology)
             # Get modulation format
-            mod_formats = getattr(self.sdn_props, 'mod_formats', {})
-            mod_format = get_path_mod(mod_formats, path_len)
-            mod_format_list = [mod_format if mod_format else 'QPSK']
+            modulation_formats = getattr(self.sdn_props, 'mod_formats', {})
+            modulation_format = get_path_mod(modulation_formats, path_length)
+            modulation_format_list = [modulation_format if modulation_format else 'QPSK']
 
-            self.route_props.weights_list.append(resp_weight)
+            self.route_props.weights_list.append(path_weight)
             self.route_props.paths_matrix.append(path_list)
-            self.route_props.modulation_formats_matrix.append(mod_format_list)
+            self.route_props.modulation_formats_matrix.append(modulation_format_list)
             # For fragmentation-aware, we typically take the first (best) path
             break
 
@@ -174,13 +174,13 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             paths_generator = nx.shortest_simple_paths(topology, source, destination,
                                                        weight='frag_cost')
 
-            paths = []
-            for i, path in enumerate(paths_generator):
-                if i >= k:
+            paths_list = []
+            for path_index, path in enumerate(paths_generator):
+                if path_index >= k:
                     break
-                paths.append(list(path))
+                paths_list.append(list(path))
 
-            return paths
+            return paths_list
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
@@ -193,15 +193,15 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         """
         # Recalculate fragmentation costs for all links
         for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
-            source, destination = link_tuple
-            path_list = [source, destination]
+            source_node, destination_node = link_tuple
+            direct_path = [source_node, destination_node]
 
-            frag_score = find_path_frag(path_list=path_list,
-                                        network_spectrum_dict=self.sdn_props.network_spectrum_dict)
+            fragmentation_score = find_path_frag(path_list=direct_path,
+                                                  network_spectrum_dict=self.sdn_props.network_spectrum_dict)
 
             if hasattr(topology, 'edges'):
-                topology[source][destination]['frag_cost'] = frag_score
-                topology[destination][source]['frag_cost'] = frag_score
+                topology[source_node][destination_node]['frag_cost'] = fragmentation_score
+                topology[destination_node][source_node]['frag_cost'] = fragmentation_score
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get routing algorithm performance metrics.

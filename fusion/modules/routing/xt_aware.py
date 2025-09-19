@@ -104,49 +104,53 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
         # At the moment, we have identical bidirectional links (no need to loop over all links)
-        for link_list in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
-            source, destination = link_list[0], link_list[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_length
+        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
+            source_node, destination_node = link_tuple[0], link_tuple[1]
+            span_count = topology[source_node][destination_node]['length'] / self.route_props.span_length
 
-            free_slots_dict = find_free_slots(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
-                                              link_tuple=link_list)
-            xt_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=free_slots_dict,
-                                                            link_list=link_list)
+            available_slots_dict = find_free_slots(network_spectrum_dict=self.sdn_props.network_spectrum_dict,
+                                                   link_tuple=link_tuple)
+            crosstalk_cost = self.route_help_obj.find_xt_link_cost(free_slots_dict=available_slots_dict,
+                                                                   link_list=link_tuple)
 
             # Consider XT type configuration
-            if self.engine_props.get('xt_type') == 'with_length':
+            xt_calculation_type = self.engine_props.get('xt_type')
+            beta_coefficient = self.engine_props.get('beta', 0.5)
+
+            if xt_calculation_type == 'with_length':
                 if self.route_props.max_link_length is None:
                     self.route_help_obj.get_max_link_length()
 
-                link_cost = topology[source][destination]['length'] / self.route_props.max_link_length
-                link_cost *= self.engine_props.get('beta', 0.5)
-                link_cost += (1 - self.engine_props.get('beta', 0.5)) * xt_cost
-            elif self.engine_props.get('xt_type') == 'without_length':
-                link_cost = num_spans * xt_cost
+                normalized_length = topology[source_node][destination_node]['length'] / self.route_props.max_link_length
+                length_weighted_cost = normalized_length * beta_coefficient
+                crosstalk_weighted_cost = (1 - beta_coefficient) * crosstalk_cost
+                final_link_cost = length_weighted_cost + crosstalk_weighted_cost
+            elif xt_calculation_type == 'without_length':
+                final_link_cost = span_count * crosstalk_cost
             else:
                 # Default behavior
-                link_cost = xt_cost
+                final_link_cost = crosstalk_cost
 
             if hasattr(topology, 'edges'):
-                topology[source][destination]['xt_cost'] = link_cost
-                topology[destination][source]['xt_cost'] = link_cost
+                topology[source_node][destination_node]['xt_cost'] = final_link_cost
+                topology[destination_node][source_node]['xt_cost'] = final_link_cost
 
     def _find_least_weight(self, weight: str):
         """Find the path with least weight (XT cost)."""
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
-        paths_obj = nx.shortest_simple_paths(G=topology,
-                                             source=self.sdn_props.source,
-                                             target=self.sdn_props.destination,
-                                             weight=weight)
+        paths_generator = nx.shortest_simple_paths(G=topology,
+                                                   source=self.sdn_props.source,
+                                                   target=self.sdn_props.destination,
+                                                   weight=weight)
 
-        for path_list in paths_obj:
+        for path_list in paths_generator:
             # Calculate path weight as sum across the path
-            resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
+            path_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
             # Calculate actual path length for modulation format selection
-            path_len = find_path_len(path_list=path_list, topology=topology)
+            path_length = find_path_len(path_list=path_list, topology=topology)
 
             # Get modulation formats based on path length
             if hasattr(self.sdn_props, 'modulation_formats_dict'):
@@ -157,17 +161,17 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
                 )
                 mod_format_list = []
                 for mod_format in mod_formats_dict:
-                    if self.sdn_props.modulation_formats_dict[mod_format]['max_length'] >= path_len:
+                    if self.sdn_props.modulation_formats_dict[mod_format]['max_length'] >= path_length:
                         mod_format_list.append(mod_format)
                     else:
                         mod_format_list.append(False)
             else:
                 # Fallback to simple modulation selection
                 mod_formats = getattr(self.sdn_props, 'mod_formats', {})
-                mod_format = get_path_mod(mod_formats, path_len)
+                mod_format = get_path_mod(mod_formats, path_length)
                 mod_format_list = [mod_format if mod_format else 'QPSK']
 
-            self.route_props.weights_list.append(resp_weight)
+            self.route_props.weights_list.append(path_weight)
             self.route_props.paths_matrix.append(path_list)
             self.route_props.modulation_formats_matrix.append(mod_format_list)
             # For XT-aware, we typically take the first (best) path

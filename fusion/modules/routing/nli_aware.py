@@ -105,48 +105,48 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
 
         # Bidirectional links are identical, therefore, we don't have to check each one
         for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
-            source, destination = link_tuple[0], link_tuple[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_length
-            bandwidth = self.sdn_props.bandwidth
+            source_node, destination_node = link_tuple[0], link_tuple[1]
+            span_count = topology[source_node][destination_node]['length'] / self.route_props.span_length
+            connection_bandwidth = self.sdn_props.bandwidth
 
             # Get slots needed for bandwidth (using QPSK as default)
-            if hasattr(self.engine_props, 'mod_per_bw') and bandwidth in self.engine_props['mod_per_bw']:
-                slots_needed = self.engine_props['mod_per_bw'][bandwidth].get('QPSK', {}).get('slots_needed', 1)
+            if hasattr(self.engine_props, 'mod_per_bw') and connection_bandwidth in self.engine_props['mod_per_bw']:
+                required_slots = self.engine_props['mod_per_bw'][connection_bandwidth].get('QPSK', {}).get('slots_needed', 1)
             else:
-                slots_needed = 1
+                required_slots = 1
 
-            self.sdn_props.slots_needed = slots_needed
+            self.sdn_props.slots_needed = required_slots
 
-            link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
+            nli_link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=span_count)
 
             if hasattr(topology, 'edges'):
-                topology[source][destination]['nli_cost'] = link_cost
-                topology[destination][source]['nli_cost'] = link_cost
+                topology[source_node][destination_node]['nli_cost'] = nli_link_cost
+                topology[destination_node][source_node]['nli_cost'] = nli_link_cost
 
     def _find_least_weight(self, weight: str):
         """Find the path with least weight (NLI cost)."""
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
-        paths_obj = nx.shortest_simple_paths(G=topology,
-                                             source=self.sdn_props.source,
-                                             target=self.sdn_props.destination,
-                                             weight=weight)
+        paths_generator = nx.shortest_simple_paths(G=topology,
+                                                   source=self.sdn_props.source,
+                                                   target=self.sdn_props.destination,
+                                                   weight=weight)
 
-        for path_list in paths_obj:
+        for path_list in paths_generator:
             # Calculate path weight as sum across the path
-            resp_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
+            path_weight = sum(topology[path_list[i]][path_list[i + 1]][weight]
                               for i in range(len(path_list) - 1))
 
             # Calculate actual path length for modulation format selection
-            path_len = find_path_len(path_list=path_list, topology=topology)
+            path_length = find_path_len(path_list=path_list, topology=topology)
             # Get modulation format
-            mod_formats = getattr(self.sdn_props, 'mod_formats', {})
-            mod_format = get_path_mod(mod_formats, path_len)
-            mod_format_list = [mod_format if mod_format else 'QPSK']
+            modulation_formats = getattr(self.sdn_props, 'mod_formats', {})
+            modulation_format = get_path_mod(modulation_formats, path_length)
+            modulation_format_list = [modulation_format if modulation_format else 'QPSK']
 
-            self.route_props.weights_list.append(resp_weight)
+            self.route_props.weights_list.append(path_weight)
             self.route_props.paths_matrix.append(path_list)
-            self.route_props.modulation_formats_matrix.append(mod_format_list)
+            self.route_props.modulation_formats_matrix.append(modulation_format_list)
             # For NLI-aware, we typically take the first (best) path
             break
 
@@ -158,11 +158,11 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
         total_nli = 0.0
 
-        for i in range(len(path) - 1):
-            source, destination = path[i], path[i + 1]
-            if hasattr(topology, 'edges') and topology.has_edge(source, destination):
-                nli_cost = topology[source][destination].get('nli_cost', 0.0)
-                total_nli += nli_cost
+        for link_index in range(len(path) - 1):
+            source_node, destination_node = path[link_index], path[link_index + 1]
+            if hasattr(topology, 'edges') and topology.has_edge(source_node, destination_node):
+                link_nli_cost = topology[source_node][destination_node].get('nli_cost', 0.0)
+                total_nli += link_nli_cost
 
         return total_nli
 
@@ -185,13 +185,13 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
             paths_generator = nx.shortest_simple_paths(topology, source, destination,
                                                        weight='nli_cost')
 
-            paths = []
-            for i, path in enumerate(paths_generator):
-                if i >= k:
+            paths_list = []
+            for path_index, path in enumerate(paths_generator):
+                if path_index >= k:
                     break
-                paths.append(list(path))
+                paths_list.append(list(path))
 
-            return paths
+            return paths_list
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
@@ -204,14 +204,14 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         """
         # Recalculate NLI costs for all links
         for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
-            source, destination = link_tuple[0], link_tuple[1]
-            num_spans = topology[source][destination]['length'] / self.route_props.span_length
+            source_node, destination_node = link_tuple[0], link_tuple[1]
+            span_count = topology[source_node][destination_node]['length'] / self.route_props.span_length
 
-            link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=num_spans)
+            nli_link_cost = self.route_help_obj.get_nli_cost(link_tuple=link_tuple, num_span=span_count)
 
             if hasattr(topology, 'edges'):
-                topology[source][destination]['nli_cost'] = link_cost
-                topology[destination][source]['nli_cost'] = link_cost
+                topology[source_node][destination_node]['nli_cost'] = nli_link_cost
+                topology[destination_node][source_node]['nli_cost'] = nli_link_cost
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get routing algorithm performance metrics.
