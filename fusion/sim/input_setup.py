@@ -1,7 +1,15 @@
+"""
+Input setup utilities for FUSION simulations.
+
+This module provides functions for creating and preparing simulation input data,
+including network topology, bandwidth information, and physical topology setup.
+"""
+
+import copy
 import json
 import os
-import copy
 import time
+from typing import Dict
 
 from fusion.io.structure import create_network
 from fusion.io.generate import create_bw_info, create_pt
@@ -10,13 +18,21 @@ from fusion.utils.os import create_dir, find_project_root
 PROJECT_ROOT = find_project_root()
 
 
-def create_input(base_fp: str, engine_props: dict):
+def create_input(base_fp: str, engine_props: Dict) -> Dict:
     """
-    Creates input data to run simulations.
+    Create input data to run simulations.
 
-    :param base_fp: The base file path to save input data.
-    :param engine_props: Input of properties to engine.
-    :return: Engine props modified with network, physical topology, and bandwidth information.
+    This function generates all necessary input files and data structures
+    required for running FUSION simulations, including bandwidth information,
+    network topology, and physical topology configuration.
+
+    :param base_fp: The base file path to save input data
+    :type base_fp: str
+    :param engine_props: Input properties to engine containing simulation parameters
+    :type engine_props: Dict
+    :return: Engine props modified with network, physical topology, and bandwidth information
+    :rtype: Dict
+    :raises RuntimeError: If bandwidth info file is empty or invalid after multiple attempts
     """
     bw_info_dict = create_bw_info(
         mod_assumption=engine_props['mod_assumption'],
@@ -42,25 +58,36 @@ def create_input(base_fp: str, engine_props: dict):
     else:
         raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
 
-    network_dict, core_nodes_list = create_network(base_fp=os.path.join(PROJECT_ROOT, base_fp),
-                                                   const_weight=engine_props['const_link_weight'],
-                                                   net_name=engine_props['network'],
-                                                   is_only_core_node=engine_props['is_only_core_node'])
-    engine_props['topology_info'] = create_pt(cores_per_link=engine_props['cores_per_link'],
-                                              network_spectrum_dict=network_dict)
+    network_dict, core_nodes_list = create_network(
+        base_fp=os.path.join(PROJECT_ROOT, base_fp),
+        const_weight=engine_props['const_link_weight'],
+        net_name=engine_props['network'],
+        is_only_core_node=engine_props['is_only_core_node']
+    )
+    engine_props['topology_info'] = create_pt(
+        cores_per_link=engine_props['cores_per_link'],
+        network_spectrum_dict=network_dict
+    )
     engine_props['core_nodes'] = core_nodes_list
 
     return engine_props
 
 
-def save_input(base_fp: str, properties: dict, file_name: str, data_dict: dict):
+def save_input(base_fp: str, properties: Dict, file_name: str, data_dict: Dict) -> None:
     """
-    Saves simulation input.
+    Save simulation input data to file.
 
-    :param base_fp: The base file path to save input.
-    :param properties: Properties of the simulation, used for name when saving.
-    :param file_name: The desired file name.
-    :param data_dict: A dictionary containing the data to save.
+    This function saves simulation input data to a JSON file in the appropriate
+    directory structure, ensuring proper serialization and file synchronization.
+
+    :param base_fp: The base file path to save input
+    :type base_fp: str
+    :param properties: Properties of the simulation, used for directory structure
+    :type properties: Dict
+    :param file_name: The desired file name
+    :type file_name: str
+    :param data_dict: A dictionary containing the data to save
+    :type data_dict: Dict
     """
     base_dir = os.path.join(PROJECT_ROOT, base_fp)
     path = os.path.join(base_dir, 'input', properties['network'], properties['date'], properties['sim_start'])

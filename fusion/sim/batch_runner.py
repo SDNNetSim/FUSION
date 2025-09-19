@@ -8,7 +8,7 @@ supporting both single and multi-threaded execution with various traffic loads.
 import multiprocessing
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fusion.sim.input_setup import create_input
 from fusion.core.simulation import SimulationEngine
@@ -29,12 +29,12 @@ class BatchRunner:
     - Result aggregation
     """
 
-    def __init__(self, config: Dict[str, any]):
+    def __init__(self, config: Dict[str, Any]):
         """
         Initialize batch runner with configuration.
 
-        Args:
-            config: Configuration dictionary containing simulation parameters
+:param config: Configuration dictionary containing simulation parameters
+        :type config: Dict[str, Any]
         """
         self.config = config
         self.sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
@@ -46,11 +46,10 @@ class BatchRunner:
         """
         Prepare simulation parameters and create necessary input files.
 
-        Args:
-            sim_params: Base simulation parameters
-
-        Returns:
-            Updated simulation parameters with input data
+:param sim_params: Base simulation parameters
+        :type sim_params: Dict
+        :return: Updated simulation parameters with input data
+        :rtype: Dict
         """
         # Create input data and topology
         # Extract base_fp from sim_params or use default
@@ -81,14 +80,16 @@ class BatchRunner:
         """
         Run simulation for a single Erlang load value.
 
-        Args:
-            erlang: Traffic load in Erlangs
-            sim_params: Simulation parameters
-            erlang_index: Index of current Erlang in the lis
-            total_erlangs: Total number of Erlang values
-
-        Returns:
-            Dictionary containing simulation results
+:param erlang: Traffic load in Erlangs
+        :type erlang: float
+        :param sim_params: Simulation parameters
+        :type sim_params: Dict
+        :param erlang_index: Index of current Erlang in the list
+        :type erlang_index: int
+        :param total_erlangs: Total number of Erlang values
+        :type total_erlangs: int
+        :return: Dictionary containing simulation results
+        :rtype: Dict
         """
         # Update parameters for this Erlang value
         current_params = sim_params.copy()
@@ -139,13 +140,14 @@ class BatchRunner:
         """
         Run multiple Erlang simulations in parallel.
 
-        Args:
-            erlangs: List of Erlang values to simulate
-            sim_params: Base simulation parameters
-            num_processes: Number of parallel processes (None for CPU count)
-
-        Returns:
-            List of result dictionaries
+:param erlangs: List of Erlang values to simulate
+        :type erlangs: List[float]
+        :param sim_params: Base simulation parameters
+        :type sim_params: Dict
+        :param num_processes: Number of parallel processes (None for CPU count)
+        :type num_processes: Optional[int]
+        :return: List of result dictionaries
+        :rtype: List[Dict]
         """
         if num_processes is None:
             num_processes = multiprocessing.cpu_count()
@@ -168,12 +170,12 @@ class BatchRunner:
         """
         Run multiple Erlang simulations sequentially.
 
-        Args:
-            erlangs: List of Erlang values to simulate
-            sim_params: Base simulation parameters
-
-        Returns:
-            List of result dictionaries
+:param erlangs: List of Erlang values to simulate
+        :type erlangs: List[float]
+        :param sim_params: Base simulation parameters
+        :type sim_params: Dict
+        :return: List of result dictionaries
+        :rtype: List[Dict]
         """
         results = []
 
@@ -187,12 +189,12 @@ class BatchRunner:
         """
         Execute batch simulation run.
 
-        Args:
-            parallel: Whether to run simulations in parallel
-            num_processes: Number of parallel processes (if parallel=True)
-
-        Returns:
-            List of simulation results
+:param parallel: Whether to run simulations in parallel
+        :type parallel: bool
+        :param num_processes: Number of parallel processes (if parallel=True)
+        :type num_processes: Optional[int]
+        :return: List of simulation results
+        :rtype: List[Dict]
         """
         # Extract configuration
         sim_params = self.config.get('s1', self.config)
@@ -298,13 +300,14 @@ def run_batch_simulation(config: Dict, parallel: bool = False,
     """
     Convenience function to run batch simulation.
 
-    Args:
-        config: Simulation configuration
-        parallel: Whether to run in parallel
-        num_processes: Number of parallel processes
-
-    Returns:
-        List of simulation results
+:param config: Simulation configuration
+    :type config: Dict
+    :param parallel: Whether to run in parallel
+    :type parallel: bool
+    :param num_processes: Number of parallel processes
+    :type num_processes: Optional[int]
+    :return: List of simulation results
+    :rtype: List[Dict]
     """
     runner = BatchRunner(config)
     return runner.run(parallel=parallel, num_processes=num_processes)

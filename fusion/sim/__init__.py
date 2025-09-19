@@ -1,5 +1,7 @@
-# fusion/sim/__init__.py
 """
 Simulation orchestration module for FUSION.
-Includes multi-threaded control, single-thread simulation logic, and runtime interfaces.
+
+This module provides the main simulation orchestration capabilities including
+batch processing, pipeline management, and runtime interfaces for the
+FUSION optical network simulation framework.
 """

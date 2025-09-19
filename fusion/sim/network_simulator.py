@@ -1,18 +1,33 @@
-# fusion/sim/network_simulator.py
+"""
+Legacy network simulator for FUSION.
 
-import multiprocessing
+This module provides the legacy multi-process network simulation capability.
+New code should use the batch_runner module for improved orchestration.
+"""
+
 import copy
+import multiprocessing
 from datetime import datetime
 from multiprocessing import Manager, Process
+from typing import Any, Dict, Optional
 
 from fusion.sim.input_setup import create_input, save_input
 from fusion.core.simulation import SimulationEngine
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
-def _validate_bandwidth_consistency(engine_props):
+def _validate_bandwidth_consistency(engine_props: Dict[str, Any]) -> None:
     """
-    Validates that bandwidth configuration is consistent between request_distribution and mod_per_bw.
-    This should be called after create_input populates mod_per_bw.
+    Validate bandwidth configuration consistency.
+    
+    Ensures that bandwidth configuration is consistent between request_distribution
+    and mod_per_bw. This should be called after create_input populates mod_per_bw.
+    
+    :param engine_props: Engine properties containing configuration
+    :type engine_props: Dict[str, Any]
+    :raises ValueError: If bandwidth configuration is inconsistent
     """
     request_distribution = engine_props.get('request_distribution', {})
     mod_per_bw = engine_props.get('mod_per_bw', {})
@@ -46,18 +61,42 @@ def _validate_bandwidth_consistency(engine_props):
 
 class NetworkSimulator:
     """
-    Controls all simulations for this project.
+    Legacy network simulator controller.
+    
+    This class provides the original multi-process simulation control.
+    New implementations should use BatchRunner from batch_runner module.
     """
 
-    def __init__(self):
-        self.properties = None
+    def __init__(self) -> None:
+        """Initialize the network simulator."""
+        self.properties: Optional[Dict[str, Any]] = None
 
-    def _run_generic_sim(self, erlang: float, first_erlang: bool, erlang_index: int,
-                         progress_dict, done_offset: int):
+    def _run_generic_sim(
+            self,
+            erlang: float,
+            first_erlang: bool,
+            erlang_index: int,
+            progress_dict: Any,
+            done_offset: int
+    ) -> int:
         """
-        Handles one Erlang in this single process. Sets arrival_rate,
-        passes done_offset to avoid resetting progress between volumes,
-        and calls Engine.run(), which returns how many iteration units are now done.
+        Handle simulation for one Erlang value in this process.
+        
+        Sets arrival_rate, passes done_offset to avoid resetting progress
+        between volumes, and calls Engine.run().
+        
+        :param erlang: Traffic load in Erlangs
+        :type erlang: float
+        :param first_erlang: Whether this is the first Erlang in sequence
+        :type first_erlang: bool
+        :param erlang_index: Index of current Erlang
+        :type erlang_index: int
+        :param progress_dict: Shared progress dictionary
+        :type progress_dict: Any
+        :param done_offset: Offset for progress tracking
+        :type done_offset: int
+        :return: Final number of done units
+        :rtype: int
         """
 
         # Remove unpickleable keys so we can deepcopy
@@ -110,21 +149,23 @@ class NetworkSimulator:
                 data_dict=updated_props
             )
 
-        print(f"[Simulation {erlang_index}] progress_dict id: {id(engine_props['progress_dict'])}")
+        logger.debug("[Simulation %s] progress_dict id: %s", erlang_index, id(engine_props['progress_dict']))
 
         engine = SimulationEngine(engine_props=engine_props)
         final_done_units = engine.run()
 
         return final_done_units
 
-    def run_generic_sim(self):
+    def run_generic_sim(self) -> None:
         """
         Run multiple Erlangs sequentially in this single process.
+        
+        :raises ValueError: If properties are not properly configured
         """
         start, stop = self.properties['erlang_start'], self.properties['erlang_stop']
         step = self.properties['erlang_step']
         erlang_list = [float(x) for x in range(int(start), int(stop), int(step))]
-        print("Launching simulations for erlangs:", erlang_list)
+        logger.info("Launching simulations for erlangs: %s", erlang_list)
 
         max_iters = self.properties['max_iters']
         my_iteration_units = len(erlang_list) * max_iters
@@ -135,7 +176,7 @@ class NetworkSimulator:
             self.properties['progress_dict'] = manager.dict()
 
         progress_dict = self.properties['progress_dict']
-        print("Initial shared progress dict:", dict(progress_dict))
+        logger.debug("Initial shared progress dict: %s", dict(progress_dict))
 
         done_units_so_far = 0
 
@@ -150,9 +191,12 @@ class NetworkSimulator:
                 done_offset=done_units_so_far
             )
 
-    def run_sim(self, **kwargs):
+    def run_sim(self, **kwargs: Any) -> None:
         """
-        Sets up internal state and triggers the run_generic_sim().
+        Set up internal state and trigger the run_generic_sim().
+        
+        :param kwargs: Keyword arguments containing simulation parameters
+        :type kwargs: Any
         """
         self.properties = kwargs['thread_params']
         self.properties['date'] = kwargs['sim_start'].split('_')[0]
@@ -165,19 +209,29 @@ class NetworkSimulator:
         self.run_generic_sim()
 
 
-def run(sims_dict: dict, stop_flag: multiprocessing.Event):
+def run(sims_dict: Dict[str, Any], stop_flag: multiprocessing.Event) -> None:
     """
-    Spawns one process per simulation config, each handling multiple Erlangs.
+    Spawn one process per simulation config, each handling multiple Erlangs.
+    
+    :param sims_dict: Dictionary of simulation configurations
+    :type sims_dict: Dict[str, Any]
+    :param stop_flag: Multiprocessing event for stopping simulations
+    :type stop_flag: multiprocessing.Event
     """
     any_conf = list(sims_dict.values())[0]
     log_queue = any_conf.get('log_queue')
     progress_queue = any_conf.get('progress_queue')
 
-    def log(message):
+    def log(message: str) -> None:
+        """Log message to queue or logger.
+        
+        :param message: Message to log
+        :type message: str
+        """
         if log_queue:
             log_queue.put(message)
         else:
-            print(message)
+            logger.info(message)
 
     processes = []
 
