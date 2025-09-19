@@ -37,7 +37,7 @@ class TestQrDQN(TestCase):
         result = agent.get_obs_space()
 
         mock_get_obs.assert_called_once_with(
-            rl_props=agent.rl_props, engine_obj=agent.engine_obj
+            rl_props=agent.rl_props, engine_props=agent.engine_obj
         )
         mock_dict_space.assert_called_once_with({"x": 1})
         self.assertIs(result, mock_dict_space.return_value)

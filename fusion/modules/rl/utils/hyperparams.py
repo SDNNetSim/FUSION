@@ -6,9 +6,11 @@ import torch.nn as nn  # pylint: disable=consider-using-from-import
 from fusion.modules.rl.algorithms.bandits import get_q_table
 
 from fusion.modules.rl.args.general_args import EPISODIC_STRATEGIES
+from fusion.modules.rl.utils.errors import HyperparameterError
 
 
-# TODO: (version 5.5-6) Clean up functions to work with shared hyper parameters and cut lines of code (DRL mostly)
+# NOTE: Future refactoring should consolidate hyperparameter handling across DRL algorithms
+# to reduce code duplication and improve maintainability
 
 class HyperparamConfig:  # pylint: disable=too-few-public-methods
     """
@@ -26,7 +28,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             self.n_arms = engine_props['cores_per_link']
 
         self.iteration = 0
-        self.curr_reward = None
+        self.current_reward = None
         self.state_action_pair = None
         self.action_index = None
         self.alpha_strategy = engine_props['alpha_update']
@@ -39,11 +41,11 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
         self.alpha_start = engine_props['alpha_start']
         self.alpha_end = engine_props['alpha_end']
-        self.curr_alpha = self.alpha_start
+        self.current_alpha = self.alpha_start
 
         self.epsilon_start = engine_props['epsilon_start']
         self.epsilon_end = engine_props['epsilon_end']
-        self.curr_epsilon = self.epsilon_start
+        self.current_epsilon = self.epsilon_start
 
         self.temperature = None
         self.counts = None
@@ -71,7 +73,15 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
     def _softmax(self, q_vals_list: list):
         """
-        Compute the softmax probabilities for a given set of Q-values
+        Compute the softmax probabilities for a given set of Q-values.
+        
+        Uses the current temperature parameter to control exploration vs exploitation.
+        Higher temperature values lead to more uniform action probabilities.
+        
+        :param q_vals_list: List of Q-values for different actions
+        :type q_vals_list: list
+        :return: Array of softmax probabilities
+        :rtype: numpy.ndarray
         """
         exp_values = np.exp(np.array(q_vals_list) / self.temperature)
         probabilities = exp_values / np.sum(exp_values)
@@ -97,9 +107,9 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             print('Did not update epsilon due to the length of the reward list.')
             return
 
-        curr_reward, last_reward = self.reward_list
-        reward_diff = abs(curr_reward - last_reward)
-        self.curr_epsilon = self.epsilon_start * (1 / (1 + reward_diff))
+        current_reward, last_reward = self.reward_list
+        reward_difference = abs(current_reward - last_reward)
+        self.current_epsilon = self.epsilon_start * (1 / (1 + reward_difference))
 
     def _reward_based_alpha(self):
         """
@@ -109,9 +119,9 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
             print('Did not update alpha due to the length of the reward list.')
             return
 
-        curr_reward, last_reward = self.reward_list
-        reward_diff = abs(curr_reward - last_reward)
-        self.curr_alpha = self.alpha_start * (1 / (1 + reward_diff))
+        current_reward, last_reward = self.reward_list
+        reward_difference = abs(current_reward - last_reward)
+        self.current_alpha = self.alpha_start * (1 / (1 + reward_difference))
 
     def _state_based_eps(self):
         """
@@ -119,7 +129,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         self.counts[self.state_action_pair][self.action_index] += 1
         total_visits = self.counts[self.state_action_pair][self.action_index]
-        self.curr_epsilon = self.epsilon_start / (1 + total_visits)
+        self.current_epsilon = self.epsilon_start / (1 + total_visits)
 
     def _state_based_alpha(self):
         """
@@ -127,25 +137,25 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         self.counts[self.state_action_pair][self.action_index] += 1
         total_visits = self.counts[self.state_action_pair][self.action_index]
-        self.curr_alpha = 1 / (1 + total_visits)
+        self.current_alpha = 1 / (1 + total_visits)
 
     def _exp_eps(self):
         """
         Exponential distribution epsilon update.
         """
-        self.curr_epsilon = self.epsilon_start * (self.decay_rate ** self.iteration)
+        self.current_epsilon = self.epsilon_start * (self.decay_rate ** self.iteration)
 
     def _exp_alpha(self):
         """
         Exponential distribution alpha update.
         """
-        self.curr_alpha = self.alpha_start * (self.decay_rate ** self.iteration)
+        self.current_alpha = self.alpha_start * (self.decay_rate ** self.iteration)
 
     def _linear_eps(self):
         """
         Linear decay epsilon update.
         """
-        self.curr_epsilon = self.epsilon_end + (
+        self.current_epsilon = self.epsilon_end + (
                 (self.epsilon_start - self.epsilon_end) * (self.total_iters - self.iteration) / self.total_iters
         )
 
@@ -153,7 +163,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Linear decay alpha update.
         """
-        self.curr_alpha = self.alpha_end + (
+        self.current_alpha = self.alpha_end + (
                 (self.alpha_start - self.alpha_end) * (self.total_iters - self.iteration) / self.total_iters
         )
 
@@ -166,12 +176,12 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
         if len(self.reward_list) == 2:
             # Moves old current reward to now last reward, current reward always first index
-            self.reward_list = [self.curr_reward, self.reward_list[0]]
+            self.reward_list = [self.current_reward, self.reward_list[0]]
         elif len(self.reward_list) == 1:
             last_reward = self.reward_list[0]
-            self.reward_list = [self.curr_reward, last_reward]
+            self.reward_list = [self.current_reward, last_reward]
         else:
-            self.reward_list.append(self.curr_reward)
+            self.reward_list.append(self.current_reward)
 
     def update_eps(self):
         """
@@ -180,7 +190,11 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         if self.epsilon_strategy in self.epsilon_strategies:
             self.epsilon_strategies[self.epsilon_strategy]()
         else:
-            raise NotImplementedError(f'{self.epsilon_strategy} not in any known strategies: {self.epsilon_strategies}')
+            raise HyperparameterError(
+                f"Unknown epsilon update strategy: '{self.epsilon_strategy}'. "
+                f"Supported strategies are: {list(self.epsilon_strategies.keys())}. "
+                f"Please check your configuration and specify a valid epsilon update strategy."
+            )
 
     def update_alpha(self):
         """
@@ -189,7 +203,11 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         if self.alpha_strategy in self.alpha_strategies:
             self.alpha_strategies[self.alpha_strategy]()
         else:
-            raise NotImplementedError(f'{self.alpha_strategy} not in any known strategies: {self.alpha_strategies}')
+            raise HyperparameterError(
+                f"Unknown alpha update strategy: '{self.alpha_strategy}'. "
+                f"Supported strategies are: {list(self.alpha_strategies.keys())}. "
+                f"Please check your configuration and specify a valid alpha update strategy."
+            )
 
     def reset(self):
         """
@@ -317,7 +335,11 @@ def _drl_hyperparams(sim_dict: dict, trial: optuna.Trial):
         return _dqn_hyperparams(sim_dict, trial)
     if alg == "qr_dqn":
         return _qr_dqn_hyperparams(sim_dict, trial)
-    raise NotImplementedError(f"Algorithm '{alg}' not supported.")
+    raise HyperparameterError(
+        f"Unsupported DRL algorithm: '{alg}'. "
+        f"Supported algorithms are: a2c, ppo, dqn, qr_dqn. "
+        f"Please verify your algorithm configuration is correct."
+    )
 
 
 def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):

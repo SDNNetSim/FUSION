@@ -35,7 +35,7 @@ class BaseDRLAlgorithm:
         :return: Dictionary observation space compatible with Gymnasium
         :rtype: spaces.Dict
         """
-        obs_space_dict = get_observation_space(rl_props=self.rl_props, engine_obj=self.engine_obj)
+        obs_space_dict = get_observation_space(rl_props=self.rl_props, engine_props=self.engine_obj)
         return spaces.Dict(obs_space_dict)
 
     def get_action_space(self) -> spaces.Discrete:
