@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from fusion.sim.utils import sort_dict_keys, get_path_mod, find_path_len
 from fusion.utils.logging_config import get_logger
@@ -202,7 +202,7 @@ class LightPathSlicingManager:
 
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
-                mod_format_list=[], path_index=path_index
+                _mod_format_list=[], path_index=path_index
             )
 
             if self.spectrum_obj.spectrum_props.is_free:
@@ -275,7 +275,7 @@ class LightPathSlicingManager:
 
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
-                mod_format_list=[], path_index=path_index
+                _mod_format_list=[], path_index=path_index
             )
 
             if self.spectrum_obj.spectrum_props.is_free:
