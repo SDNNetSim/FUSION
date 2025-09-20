@@ -10,14 +10,13 @@ import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
+from tests.test_unity_fixtures import COMMON_RESOURCES
 from fusion.unity.submit_manifest import (
     parse_cli,
     read_first_row,
     build_env,
     RESOURCE_KEYS,
 )
-
-from .test_data import TEST_RESOURCES
 
 
 class TestSubmitManifest(unittest.TestCase):
@@ -31,7 +30,7 @@ class TestSubmitManifest(unittest.TestCase):
                 "path_algorithm": "ppo",
                 "erlang_start": "100",
                 "network": "test_network",
-                **TEST_RESOURCES
+                **COMMON_RESOURCES
             },
             {
                 "run_id": "00002",
