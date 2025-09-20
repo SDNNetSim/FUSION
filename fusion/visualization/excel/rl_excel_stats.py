@@ -8,7 +8,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.visualization.utils import find_times, PlotHelpers
 from fusion.visualization.properties import PlotProps
 
@@ -195,7 +195,7 @@ for network in NETWORK_LIST:
         BATCH_SIZE = 200
 
         save_fp = os.path.join('..', 'data', 'excel')
-        create_dir(file_path=save_fp)
+        create_directory(directory_path=save_fp)
         csv_file = os.path.join(save_fp, f'{network}_analysis_{arrival_rate / 0.2}.csv')
 
 

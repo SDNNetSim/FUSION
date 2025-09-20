@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 
 from fusion.visualization.properties import PlotProps
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.visualization.utils import PlotHelpers, find_times
 
 
@@ -27,7 +27,7 @@ class PlotStats:
         network = self.sims_info_dict['networks_matrix'][0][-1]
         date = self.sims_info_dict['dates_matrix'][0][-1]
         save_fp = os.path.join('..', 'data', 'plots', network, date, time)
-        create_dir(file_path=save_fp)
+        create_directory(directory_path=save_fp)
 
         save_fp = os.path.join(save_fp, file_name)
         plt.savefig(save_fp)

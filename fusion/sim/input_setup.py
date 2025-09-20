@@ -13,7 +13,7 @@ from typing import Dict
 
 from fusion.io.structure import create_network
 from fusion.io.generate import create_bw_info, create_pt
-from fusion.utils.os import create_dir, find_project_root
+from fusion.utils.os import create_directory, find_project_root
 
 PROJECT_ROOT = find_project_root()
 
@@ -91,8 +91,8 @@ def save_input(base_fp: str, properties: Dict, file_name: str, data_dict: Dict) 
     """
     base_dir = os.path.join(PROJECT_ROOT, base_fp)
     path = os.path.join(base_dir, 'input', properties['network'], properties['date'], properties['sim_start'])
-    create_dir(path)
-    create_dir(os.path.join(PROJECT_ROOT, 'data', 'output'))
+    create_directory(path)
+    create_directory(os.path.join(PROJECT_ROOT, 'data', 'output'))
 
     save_path = os.path.join(path, file_name)
 

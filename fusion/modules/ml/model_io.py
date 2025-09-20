@@ -30,7 +30,7 @@ try:
 except ImportError:
     HAS_PMML = False
 
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -68,7 +68,7 @@ def save_model(
     """
     # Create directory structure
     base_filepath = os.path.join('logs', algorithm, simulation_dict['train_file_path'])
-    create_dir(file_path=base_filepath)
+    create_directory(directory_path=base_filepath)
 
     # Generate filenames
     model_filename = f'{algorithm}_{erlang}.joblib'
@@ -192,7 +192,7 @@ def save_model_ensemble(
         >>> path = save_model_ensemble(models, sim_dict, "voting_ensemble", "1000")
     """
     base_filepath = os.path.join('logs', ensemble_name, simulation_dict['train_file_path'])
-    create_dir(file_path=base_filepath)
+    create_directory(directory_path=base_filepath)
 
     ensemble_data = {
         'models': models,

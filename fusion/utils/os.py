@@ -1,29 +1,60 @@
+"""Operating system utility functions for FUSION."""
+
 import os
+from typing import Optional
 
 
-def create_dir(file_path: str):
+def create_directory(directory_path: str) -> None:
+    """Create a directory at the specified path if it doesn't already exist.
+    
+    Creates all intermediate directories as needed. If the directory already
+    exists, this function does nothing.
+    
+    :param directory_path: The path to the directory that should be created
+    :type directory_path: str
+    :raises ValueError: If directory_path is None
+    
+    Example:
+        >>> create_directory("/path/to/new/directory")
+        # Creates the directory and any missing parent directories
     """
-    Create a directory at the specified file path if it doesn't already exist.
+    if directory_path is None:
+        raise ValueError("Directory path cannot be None")
 
-    :param file_path: The path to the directory that should be created.
+    absolute_path = os.path.abspath(directory_path)
+    os.makedirs(absolute_path, exist_ok=True)
+
+
+def find_project_root(start_path: Optional[str] = None) -> str:
+    """Find the project root directory by looking for git or project markers.
+    
+    Searches upward from the given start path (or current file location)
+    until it finds a directory containing either a .git directory or
+    run_sim.py file, which indicates the project root.
+    
+    :param start_path: Directory to start searching from, defaults to current file location
+    :type start_path: Optional[str]
+    :return: Absolute path to the project root directory
+    :rtype: str
+    :raises RuntimeError: If project root cannot be found
+    
+    Example:
+        >>> root = find_project_root()
+        >>> print(root)  # /path/to/FUSION
     """
-    if file_path is None:
-        raise ValueError("File path cannot be None.")
+    if start_path is None:
+        current_directory = os.path.abspath(os.path.dirname(__file__))
+    else:
+        current_directory = os.path.abspath(start_path)
 
-    abs_path = os.path.abspath(file_path)
-    os.makedirs(abs_path, exist_ok=True)
-
-
-def find_project_root():
-    """
-    Find the project root.
-    """
-    curr_dir = os.path.abspath(os.path.dirname(__file__))
     while True:
-        if os.path.isdir(os.path.join(curr_dir, ".git")) or \
-                os.path.isfile(os.path.join(curr_dir, "run_sim.py")):
-            return curr_dir
-        parent = os.path.dirname(curr_dir)
-        if parent == curr_dir:
-            raise RuntimeError("Project root not found.")
-        curr_dir = parent
+        git_directory = os.path.join(current_directory, ".git")
+        run_sim_file = os.path.join(current_directory, "run_sim.py")
+
+        if os.path.isdir(git_directory) or os.path.isfile(run_sim_file):
+            return current_directory
+
+        parent_directory = os.path.dirname(current_directory)
+        if parent_directory == current_directory:
+            raise RuntimeError("Project root not found")
+        current_directory = parent_directory

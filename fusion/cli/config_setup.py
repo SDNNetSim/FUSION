@@ -8,7 +8,7 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.configs.errors import (
     ConfigError, ConfigFileNotFoundError, ConfigParseError,
     MissingRequiredOptionError, ConfigTypeConversionError
@@ -128,7 +128,7 @@ def _process_optional_options(config: ConfigParser, config_dict: Dict[str, Any],
 
 def _validate_config_structure(config: ConfigParser) -> None:
     if not config.has_section(REQUIRED_SECTION):
-        create_dir(CONFIG_DIR_PATH)
+        create_directory(CONFIG_DIR_PATH)
         raise ConfigParseError(
             f"Missing '{REQUIRED_SECTION}' section in config file. "
             "Ensure config.ini exists in ini/run_ini/."

@@ -4,7 +4,7 @@ from typing import Dict, Any, Tuple
 
 import numpy as np
 
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 from fusion.modules.rl.algorithms.algorithm_props import BanditProps
 from fusion.modules.rl.algorithms.persistence import BanditModelPersistence
 
@@ -59,7 +59,7 @@ def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None
         date_time = os.path.join(self.engine_props['network'], self.engine_props['date'],
                                  self.engine_props['sim_start'])
         save_dir = os.path.join('logs', algorithm, date_time)
-        create_dir(file_path=save_dir)
+        create_directory(directory_path=save_dir)
 
         erlang = self.engine_props['erlang']
         cores_per_link = self.engine_props['cores_per_link']
