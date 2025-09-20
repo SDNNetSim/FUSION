@@ -4,11 +4,8 @@ import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
 
 from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
-from fusion.modules.rl.errors import (
-    AlgorithmNotFoundError,
-    ModelLoadError,
-    RLConfigurationError,
-)
+from fusion.modules.rl.errors import (AlgorithmNotFoundError, ModelLoadError,
+                                      RLConfigurationError)
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN
 from fusion.modules.rl.utils.general_utils import determine_model_type
@@ -66,7 +63,7 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
         parameters["policy_kwargs"] = policy_kwargs
         policy_kwargs.update(
             features_extractor_class=CachedPathGNN,
-            features_extractor_kwargs=dict(cached_embedding=cached),
+            features_extractor_kwargs={"cached_embedding": cached},
         )
         parameters["policy_kwargs"] = policy_kwargs
         logger.info("Using CachedPathGNN from %s", cache_file_path)

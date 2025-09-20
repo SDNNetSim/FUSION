@@ -1,9 +1,10 @@
 """Quantile Regression Deep Q-Network (QR-DQN) algorithm implementation."""
 
 # Import spaces at module level for test compatibility
-from fusion.modules.rl.algorithms.base_drl import (  # pylint: disable=unused-import
-    BaseDRLAlgorithm,
-)
+from gymnasium import spaces  # pylint: disable=unused-import  # noqa: F401
+
+from fusion.modules.rl.algorithms.base_drl import \
+    BaseDRLAlgorithm  # pylint: disable=unused-import
 
 
 class QrDQN(BaseDRLAlgorithm):

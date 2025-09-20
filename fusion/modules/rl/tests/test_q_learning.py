@@ -13,22 +13,22 @@ from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 # -------------------------- helpers -----------------------------------
 def _mk_engine(**overrides):
-    base = dict(
-        epsilon_start=0.5,
-        path_levels=1,
-        cores_per_link=2,
-        cong_cutoff=0.7,
-        gamma=0.9,
-        save_step=1,
-        max_iters=5,
-        num_requests=1,
-        network="net",
-        date="d",
-        sim_start="t0",
-        erlang=30,
-        path_algorithm="q_learning",
-        topology=mock.MagicMock(),  # unused due to patching
-    )
+    base = {
+        "epsilon_start": 0.5,
+        "path_levels": 1,
+        "cores_per_link": 2,
+        "cong_cutoff": 0.7,
+        "gamma": 0.9,
+        "save_step": 1,
+        "max_iters": 5,
+        "num_requests": 1,
+        "network": "net",
+        "date": "d",
+        "sim_start": "t0",
+        "erlang": 30,
+        "path_algorithm": "q_learning",
+        "topology": mock.MagicMock(),  # unused due to patching
+    }
     base.update(overrides)
     return base
 

@@ -332,7 +332,9 @@ def _plot_diff_matrices(best_path_data, path_colors, save_path):
             ax.set_title(f"Traffic = {traffic}", fontsize=12, fontweight="bold")
             _annotate_heatmap(ax, n_nodes)
 
-        for j in range(idx + 1, nrows * ncols):  # pylint: disable=undefined-loop-variable
+        for j in range(
+            idx + 1, nrows * ncols
+        ):  # pylint: disable=undefined-loop-variable
             r, c = divmod(j, ncols)
             axes[r][c].axis("off")
 

@@ -38,6 +38,7 @@ bash_scripts/slurm/*
 
 .vscode/
 .venv/
+venv/
 
 # Virtual environments
 venvs/unity_venv/venv
@@ -58,3 +59,10 @@ reinforcement_learning/experiments/
 sb3_scripts/yml
 
 fusion/configs/hyperparams/
+
+# Coverage files
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/

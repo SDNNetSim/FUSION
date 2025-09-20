@@ -259,7 +259,7 @@ def find_core_cong(
     :return: The average congestion percentage on the core.
     :rtype: float
     """
-    links_cong_list = list()
+    links_cong_list = []
     for src, dest in zip(path_list, path_list[1:], strict=False):
         src_dest = (src, dest)
         cores_matrix = network_spectrum_dict[src_dest]["cores_matrix"]
@@ -334,16 +334,16 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dic
     :return: The overlapping and non-overlapping channels for every core.
     :rtype: dict
     """
-    resp_dict = dict()
+    resp_dict = {}
     for link in free_channels_dict.keys():  # pylint: disable=too-many-nested-blocks
         resp_dict.update({link: {"overlapped_dict": {}, "non_over_dict": {}}})
         for band, free_channels in free_channels_dict[link].items():
             num_cores = int(len(free_channels.keys()))
-            resp_dict[link]["overlapped_dict"][band] = dict()
-            resp_dict[link]["non_over_dict"][band] = dict()
+            resp_dict[link]["overlapped_dict"][band] = {}
+            resp_dict[link]["non_over_dict"][band] = {}
             for core_num, channels_list in free_channels.items():
-                resp_dict[link]["overlapped_dict"][band][core_num] = list()
-                resp_dict[link]["non_over_dict"][band][core_num] = list()
+                resp_dict[link]["overlapped_dict"][band][core_num] = []
+                resp_dict[link]["non_over_dict"][band][core_num] = []
 
                 for curr_channel in channels_list:
                     for sub_core, slots_dict in free_slots_dict[link][band].items():
@@ -400,7 +400,7 @@ def find_free_slots(network_spectrum_dict: dict, link_tuple: tuple[int, int]) ->
     """
     resp_dict = {}
     for band in network_spectrum_dict[link_tuple]["cores_matrix"].keys():
-        resp_dict[band] = dict()
+        resp_dict[band] = {}
 
         num_cores = len(network_spectrum_dict[link_tuple]["cores_matrix"][band])
         for core_num in range(num_cores):  # pylint: disable=consider-using-enumerate
@@ -558,7 +558,7 @@ def list_to_title(input_list: list[tuple[str, Any]]) -> str:
     if not input_list:
         return ""
 
-    unique_list = list()
+    unique_list = []
     for item in input_list:
         if item[0] not in unique_list:
             unique_list.append(item[0])
@@ -576,7 +576,7 @@ def calc_matrix_stats(input_dict: dict[str, list]) -> dict[str, list]:
     :return: The min, max, and average of columns.
     :rtype: dict
     """
-    resp_dict = dict()
+    resp_dict = {}
     tmp_matrix = np.array([])
     for episode, curr_list in input_dict.items():
         if episode == "0":

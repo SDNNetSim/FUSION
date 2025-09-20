@@ -55,7 +55,9 @@ class ActionHelpers:
 
     def _display_topology(self, net_name: str):
         # The new create network structure returns a tuple, we just care about the dictionary
-        topology_information_dict, core_nodes_list = create_network(net_name=net_name)  # pylint: disable=unused-variable
+        topology_information_dict, core_nodes_list = create_network(
+            net_name=net_name
+        )  # pylint: disable=unused-variable
 
         edge_list = [
             (src, des, {"weight": link_len})

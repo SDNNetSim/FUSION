@@ -9,15 +9,11 @@ import torch
 from gymnasium import spaces
 from torch_geometric.nn import GATv2Conv, GraphConv, SAGEConv
 
-from fusion.modules.rl.feat_extrs.base_feature_extractor import (
-    BaseGraphFeatureExtractor,
-)
+from fusion.modules.rl.feat_extrs.base_feature_extractor import \
+    BaseGraphFeatureExtractor
 from fusion.modules.rl.feat_extrs.constants import (
-    DEFAULT_EMBEDDING_DIMENSION,
-    DEFAULT_GNN_TYPE,
-    DEFAULT_NUM_LAYERS,
-    EDGE_EMBEDDING_SCALE_FACTOR,
-)
+    DEFAULT_EMBEDDING_DIMENSION, DEFAULT_GNN_TYPE, DEFAULT_NUM_LAYERS,
+    EDGE_EMBEDDING_SCALE_FACTOR)
 
 
 class PathGNNEncoder(torch.nn.Module):

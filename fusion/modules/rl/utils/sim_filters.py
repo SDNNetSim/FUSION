@@ -125,7 +125,7 @@ def find_times(
                         'not_filter_list', 'or_filter_list', and 'and_filter_list'.
     :return: A dictionary with lists for simulation times, simulation numbers, networks, and dates.
     """
-    resp = dict()
+    resp = {}
     info_dict = {}
 
     for date, network in dates_dict.items():

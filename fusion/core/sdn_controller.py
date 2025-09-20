@@ -6,7 +6,6 @@ import numpy as np
 from fusion.core.properties import SDNProps
 from fusion.core.routing import Routing
 from fusion.core.spectrum_assignment import SpectrumAssignment
-
 # Removed unused imports: sort_dict_keys, get_path_mod, find_path_len
 from fusion.modules.ml import get_ml_obs
 from fusion.modules.spectrum.light_path_slicing import LightPathSlicingManager
@@ -87,12 +86,12 @@ class SDNController:
             for source, dest in zip(
                 self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
             ):
-                self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += (
-                    data_transferred
-                )
-                self.sdn_props.network_spectrum_dict[(dest, source)]["throughput"] += (
-                    data_transferred
-                )
+                self.sdn_props.network_spectrum_dict[(source, dest)][
+                    "throughput"
+                ] += data_transferred
+                self.sdn_props.network_spectrum_dict[(dest, source)][
+                    "throughput"
+                ] += data_transferred
         except (TypeError, ValueError) as e:
             logger.warning(
                 "Throughput update skipped due to missing or invalid timing/bandwidth: %s",
@@ -181,9 +180,9 @@ class SDNController:
             core_matrix = link_dict["cores_matrix"]
             rev_core_matrix = rev_link_dict["cores_matrix"]
             core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
-            rev_core_matrix[band][core_num][start_slot:end_slot] = (
-                self.sdn_props.request_id
-            )
+            rev_core_matrix[band][core_num][
+                start_slot:end_slot
+            ] = self.sdn_props.request_id
 
             if self.engine_props["guard_slots"]:
                 self._allocate_gb(
@@ -266,7 +265,7 @@ class SDNController:
 
     def _init_req_stats(self) -> None:
         """Initialize request statistics for a new request."""
-        self.sdn_props.bandwidth_list = list()
+        self.sdn_props.bandwidth_list = []
         self.sdn_props.reset_params()
 
     def _setup_routing(

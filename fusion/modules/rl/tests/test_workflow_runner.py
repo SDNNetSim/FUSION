@@ -290,11 +290,9 @@ def run(
     """
     High-level wrapper that dispatches to either training or testing.
     """
-    from fusion.modules.rl.args.general_args import (
-        VALID_CORE_ALGORITHMS,
-        VALID_DRL_ALGORITHMS,
-        VALID_PATH_ALGORITHMS,
-    )
+    from fusion.modules.rl.args.general_args import (VALID_CORE_ALGORITHMS,
+                                                     VALID_DRL_ALGORITHMS,
+                                                     VALID_PATH_ALGORITHMS)
     from fusion.modules.rl.utils.setup import print_info
 
     print_info(sim_dict=sim_dict)
@@ -328,13 +326,9 @@ def run_optuna_study(sim_dict: dict, callback_list):
     from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
     from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
     from fusion.modules.rl.utils.setup import setup_rl_sim
-    from fusion.sim.utils import (
-        get_erlang_vals,
-        modify_multiple_json_values,
-        run_simulation_for_erlangs,
-        save_study_results,
-        update_dict_from_list,
-    )
+    from fusion.sim.utils import (get_erlang_vals, modify_multiple_json_values,
+                                  run_simulation_for_erlangs,
+                                  save_study_results, update_dict_from_list)
 
     def objective(tr: optuna.Trial):  # noqa: ANN001
         env = SimEnv(

@@ -20,14 +20,9 @@ from .fragmentation_aware import FragmentationAwareRouting
 from .k_shortest_path import KShortestPath
 from .least_congested import LeastCongestedRouting
 from .nli_aware import NLIAwareRouting
-from .registry import (
-    ROUTING_ALGORITHMS,
-    RoutingRegistry,
-    create_algorithm,
-    get_algorithm,
-    get_routing_algorithm_info,
-    list_routing_algorithms,
-)
+from .registry import (ROUTING_ALGORITHMS, RoutingRegistry, create_algorithm,
+                       get_algorithm, get_routing_algorithm_info,
+                       list_routing_algorithms)
 from .xt_aware import XTAwareRouting
 
 __all__ = [

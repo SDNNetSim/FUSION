@@ -267,14 +267,16 @@ class TestRoutingHelpers(unittest.TestCase):
         }
 
         link_list = ("A", "B")
-        self.sdn_props.network_spectrum_dict = {  # pylint: disable=attribute-defined-outside-init
-            link_list: {
-                "cores_matrix": {
-                    "c": np.ones((7, 10)),  # 'c' band with 7 cores, 10 channels
-                    "l": np.ones((7, 10)),  # 'l' band with 7 cores, 10 channels
+        self.sdn_props.network_spectrum_dict = (
+            {  # pylint: disable=attribute-defined-outside-init
+                link_list: {
+                    "cores_matrix": {
+                        "c": np.ones((7, 10)),  # 'c' band with 7 cores, 10 channels
+                        "l": np.ones((7, 10)),  # 'l' band with 7 cores, 10 channels
+                    }
                 }
             }
-        }
+        )
 
         with patch.object(self.helpers, "_find_num_overlapped", return_value=1.0):
             xt_cost = self.helpers.find_xt_link_cost(free_slots_dict, link_list)

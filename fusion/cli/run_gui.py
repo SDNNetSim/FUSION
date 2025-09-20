@@ -6,7 +6,8 @@ user interface. It handles GUI dependency validation, display configuration,
 and provides helpful error messages for common setup issues.
 """
 
-from fusion.cli.constants import ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, SUCCESS_EXIT_CODE
+from fusion.cli.constants import (ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE,
+                                  SUCCESS_EXIT_CODE)
 from fusion.cli.main_parser import create_gui_argument_parser
 from fusion.cli.utils import create_entry_point_wrapper
 from fusion.gui.runner import launch_gui_pipeline

@@ -12,12 +12,8 @@ except ImportError:
     yaml = None
 
 from .cli_to_config import CLIToConfigMapper
-from .errors import (
-    ConfigError,
-    ConfigFileNotFoundError,
-    ConfigParseError,
-    ConfigTypeConversionError,
-)
+from .errors import (ConfigError, ConfigFileNotFoundError, ConfigParseError,
+                     ConfigTypeConversionError)
 from .validate import SchemaValidator
 
 
@@ -102,7 +98,7 @@ class ConfigManager:
                     f"Supported formats: .ini, .json, .yaml, .yml"
                 )
         except Exception as e:
-            if isinstance(e, (ConfigError, ConfigFileNotFoundError, ConfigParseError)):
+            if isinstance(e, ConfigError | ConfigFileNotFoundError | ConfigParseError):
                 raise
             raise ConfigParseError(
                 f"Failed to parse configuration file: {str(e)}"
@@ -260,7 +256,7 @@ class ConfigManager:
         for section_name, section_data in self._raw_config_dict.items():
             config[section_name] = {}
             for key, value in section_data.items():
-                if isinstance(value, (dict, list)):
+                if isinstance(value, dict | list):
                     # Complex types saved as JSON strings
                     config[section_name][key] = json.dumps(value)
                 else:

@@ -8,12 +8,8 @@ import numpy as np
 
 from fusion.modules.rl.algorithms.algorithm_props import QProps
 from fusion.modules.rl.errors import AlgorithmNotFoundError
-from fusion.sim.utils import (
-    calc_matrix_stats,
-    classify_cong,
-    find_core_cong,
-    find_path_cong,
-)
+from fusion.sim.utils import (calc_matrix_stats, classify_cong, find_core_cong,
+                              find_path_cong)
 from fusion.utils.os import create_directory
 
 
@@ -195,7 +191,9 @@ class QLearning:
             or self.iteration == self.engine_props["max_iters"] - 1
         ) and len(
             self.props.rewards_dict[stats_flag]["rewards"][episode]
-        ) == self.engine_props["num_requests"]:
+        ) == self.engine_props[
+            "num_requests"
+        ]:
             self._calc_q_averages(stats_flag, trial=trial)
 
     def _calc_q_averages(self, stats_flag: str, trial: int) -> None:
@@ -223,7 +221,7 @@ class QLearning:
                 for dst in range(self.rl_props.num_nodes):
                     if src == dst:
                         continue
-                    q_vals_list = list()
+                    q_vals_list = []
                     for k in range(self.rl_props.k_paths):
                         entry = self.props.routes_matrix[src, dst, k, 0]
                         current_q = entry[1]

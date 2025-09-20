@@ -1,7 +1,8 @@
 # pylint: disable=c-extension-no-member
 # pylint: disable=duplicate-code
 import networkx as nx
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import \
+    FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5 import QtCore as qtc
 

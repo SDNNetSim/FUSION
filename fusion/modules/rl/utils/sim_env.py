@@ -3,10 +3,8 @@ import os
 import numpy as np
 
 from fusion.core.routing import Routing
-from fusion.modules.rl.args.general_args import (
-    VALID_CORE_ALGORITHMS,
-    VALID_PATH_ALGORITHMS,
-)
+from fusion.modules.rl.args.general_args import (VALID_CORE_ALGORITHMS,
+                                                 VALID_PATH_ALGORITHMS)
 from fusion.modules.rl.args.observation_args import OBS_DICT
 from fusion.modules.rl.utils.errors import RLUtilsError
 from fusion.modules.rl.utils.topology import convert_networkx_topo
@@ -33,9 +31,8 @@ class SimEnvUtils:
 
         :return: A boolean indicating if the simulation is terminated.
         """
-        if (
-            self.sim_env.rl_props.arrival_count
-            == (self.sim_env.engine_obj.engine_props["num_requests"])
+        if self.sim_env.rl_props.arrival_count == (
+            self.sim_env.engine_obj.engine_props["num_requests"]
         ):
             terminated = True
             base_fp = os.path.join("data")
@@ -304,7 +301,7 @@ class SimEnvObs:
         self.routing_obj.get_route()
         route_props = self.routing_obj.route_props
 
-        slots_needed_list = list()
+        slots_needed_list = []
         mod_bw_dict = self.sim_env.engine_obj.engine_props["mod_per_bw"]
         for mod_format in route_props.modulation_formats_matrix:
             if not mod_format[0]:
@@ -313,8 +310,8 @@ class SimEnvObs:
                 slots_needed = mod_bw_dict[bandwidth][mod_format[0]]["slots_needed"]
             slots_needed_list.append(slots_needed)
 
-        paths_cong = list()
-        available_slots = list()
+        paths_cong = []
+        available_slots = []
         for curr_path in route_props.paths_matrix:
             curr_cong, curr_slots = find_path_cong(
                 path_list=curr_path,
@@ -360,7 +357,7 @@ class SimEnvObs:
         """
         topo_graph = self.sim_env.engine_obj.engine_props["topology"]
         include_graph = False
-        resp_dict = dict()
+        resp_dict = {}
         obs_space_key = self.sim_env.engine_obj.engine_props["obs_space"]
         if "graph" in obs_space_key:
             if None in (self.node_feats, self.edge_attr, self.edge_index):

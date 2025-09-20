@@ -164,9 +164,3 @@ class AbstractSNRMeasurer(ABC):
         Returns:
             Dictionary containing algorithm-specific metrics
         """
-
-    def reset(self) -> None:
-        """Reset the SNR measurement algorithm state.
-
-        This method can be overridden by subclasses that maintain state.
-        """

@@ -83,7 +83,9 @@ class TestRouting(unittest.TestCase):
         Test the find most congested link method.
         """
         path_list = ["A", "B", "C"]
-        self.instance._find_most_cong_link(path_list)  # pylint: disable=protected-access
+        self.instance._find_most_cong_link(
+            path_list
+        )  # pylint: disable=protected-access
         self.assertEqual(len(self.instance.route_props.paths_matrix), 1)
 
         cores_arr = self.instance.route_props.paths_matrix[0]["link_dict"]["link"][

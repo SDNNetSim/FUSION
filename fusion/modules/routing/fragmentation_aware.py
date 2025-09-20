@@ -120,12 +120,12 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
 
             # Store fragmentation score for both directions if bidirectional
             if hasattr(topology, "edges"):
-                topology[source_node][destination_node]["frag_cost"] = (
-                    fragmentation_score
-                )
-                topology[destination_node][source_node]["frag_cost"] = (
-                    fragmentation_score
-                )
+                topology[source_node][destination_node][
+                    "frag_cost"
+                ] = fragmentation_score
+                topology[destination_node][source_node][
+                    "frag_cost"
+                ] = fragmentation_score
 
     def _find_least_weight(self, weight: str):
         """Find the path with least weight (fragmentation cost)."""
@@ -221,12 +221,12 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             )
 
             if hasattr(topology, "edges"):
-                topology[source_node][destination_node]["frag_cost"] = (
-                    fragmentation_score
-                )
-                topology[destination_node][source_node]["frag_cost"] = (
-                    fragmentation_score
-                )
+                topology[source_node][destination_node][
+                    "frag_cost"
+                ] = fragmentation_score
+                topology[destination_node][source_node][
+                    "frag_cost"
+                ] = fragmentation_score
 
     def get_metrics(self) -> dict[str, Any]:
         """Get routing algorithm performance metrics.

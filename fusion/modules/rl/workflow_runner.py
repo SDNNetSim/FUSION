@@ -5,24 +5,18 @@ import optuna
 import psutil
 from optuna.pruners import HyperbandPruner
 
-from fusion.modules.rl.args.general_args import (
-    VALID_CORE_ALGORITHMS,
-    VALID_DRL_ALGORITHMS,
-    VALID_PATH_ALGORITHMS,
-)
+from fusion.modules.rl.args.general_args import (VALID_CORE_ALGORITHMS,
+                                                 VALID_DRL_ALGORITHMS,
+                                                 VALID_PATH_ALGORITHMS)
 from fusion.modules.rl.errors import TrainingError
 from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 from fusion.modules.rl.model_manager import get_model, save_model
 from fusion.modules.rl.utils.general_utils import save_arr
 from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
 from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
-from fusion.sim.utils import (
-    get_erlang_vals,
-    modify_multiple_json_values,
-    run_simulation_for_erlangs,
-    save_study_results,
-    update_dict_from_list,
-)
+from fusion.sim.utils import (get_erlang_vals, modify_multiple_json_values,
+                              run_simulation_for_erlangs, save_study_results,
+                              update_dict_from_list)
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)

@@ -122,9 +122,9 @@ class RoutingHelpers:
         orig_link_list = copy.copy(
             self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band]
         )
-        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band][0] = (
-            sim_link_list
-        )
+        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band][
+            0
+        ] = sim_link_list
 
         free_channels_dict = find_free_channels(
             network_spectrum_dict=self.sdn_props.network_spectrum_dict,
@@ -141,9 +141,9 @@ class RoutingHelpers:
             num_span=span_count,
         )
 
-        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band] = (
-            orig_link_list
-        )
+        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][
+            band
+        ] = orig_link_list
         return nli_worst
 
     @staticmethod

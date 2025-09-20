@@ -95,9 +95,3 @@ class AbstractRoutingAlgorithm(ABC):
         Returns:
             Dictionary containing algorithm-specific metrics
         """
-
-    def reset(self) -> None:
-        """Reset the routing algorithm state.
-
-        This method can be overridden by subclasses that maintain state.
-        """

@@ -11,12 +11,8 @@ import networkx as nx
 from fusion.core.properties import RoutingProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
-from fusion.sim.utils import (
-    find_free_slots,
-    find_path_len,
-    get_path_mod,
-    sort_nested_dict_vals,
-)
+from fusion.sim.utils import (find_free_slots, find_path_len, get_path_mod,
+                              sort_nested_dict_vals)
 
 
 class XTAwareRouting(AbstractRoutingAlgorithm):

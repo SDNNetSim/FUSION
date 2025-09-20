@@ -5,8 +5,10 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
-from fusion.core.properties import RoutingProps, SDNProps, SNRProps, SpectrumProps
-from fusion.modules.snr.utils import compute_response, get_loaded_files, get_slot_index
+from fusion.core.properties import (RoutingProps, SDNProps, SNRProps,
+                                    SpectrumProps)
+from fusion.modules.snr.utils import (compute_response, get_loaded_files,
+                                      get_slot_index)
 
 # Constants for calculations
 POWER_CONVERSION_FACTOR = 10**9  # Convert to GHz

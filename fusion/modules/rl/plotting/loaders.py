@@ -172,7 +172,9 @@ def _handle_drl_run(
         metadata_run_id = metadata.get("run_id")
 
     timestamp = base_run_directory.name
-    metadata_run_id = metadata_run_id or timestamp  # pylint: disable=possibly-unused-variable
+    metadata_run_id = (
+        metadata_run_id or timestamp
+    )  # pylint: disable=possibly-unused-variable
     composite_run_id = f"{metadata_run_id}@{timestamp}"
     unique_run_id = f"{composite_run_id}_{seed}"
 

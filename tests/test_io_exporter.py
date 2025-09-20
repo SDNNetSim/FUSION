@@ -6,12 +6,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from fusion.io.exporter import (
-    CSVExporter,
-    ExporterRegistry,
-    JSONExporter,
-    SimulationDataExporter,
-)
+from fusion.io.exporter import (CSVExporter, ExporterRegistry, JSONExporter,
+                                SimulationDataExporter)
 
 
 class TestJSONExporter(unittest.TestCase):

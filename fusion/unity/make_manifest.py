@@ -16,14 +16,12 @@ except ModuleNotFoundError:
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 from fusion.configs.schema import (  # pylint: disable=wrong-import-position
-    OPTIONAL_OPTIONS_DICT,
-    SIM_REQUIRED_OPTIONS_DICT,
-)
+    OPTIONAL_OPTIONS_DICT, SIM_REQUIRED_OPTIONS_DICT)
 
 # Build parameter types from config setup
 _PARAM_TYPES: dict[str, type] = {}
 for options_dict in [SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT]:
-    for category, options in options_dict.items():
+    for _category, options in options_dict.items():
         for option_name, option_type in options.items():
             _PARAM_TYPES[option_name] = option_type
 _BOOL_STRS = {"true", "yes", "1"}
@@ -59,7 +57,7 @@ def _cast(key: str, value: Any) -> Any:
 def _encode(val: Any) -> str:
     if isinstance(val, bool):
         return "true" if val else "false"
-    if isinstance(val, (list, dict)):
+    if isinstance(val, list | dict):
         return json.dumps(val, separators=(",", ":"))
     if isinstance(val, float):
         return format(val, ".10f").rstrip("0").rstrip(".")  # e.g., 0.000057

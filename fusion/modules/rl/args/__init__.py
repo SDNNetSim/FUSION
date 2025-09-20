@@ -9,19 +9,12 @@ This package contains configuration constants used throughout the FUSION RL modu
 
 # Algorithm-related constants
 from fusion.modules.rl.args.general_args import (
-    EPISODIC_STRATEGIES,
-    VALID_CORE_ALGORITHMS,
-    VALID_DEEP_REINFORCEMENT_LEARNING_ALGORITHMS,
-    VALID_DRL_ALGORITHMS,
-    VALID_PATH_ALGORITHMS,
-)
-
+    EPISODIC_STRATEGIES, VALID_CORE_ALGORITHMS,
+    VALID_DEEP_REINFORCEMENT_LEARNING_ALGORITHMS, VALID_DRL_ALGORITHMS,
+    VALID_PATH_ALGORITHMS)
 # Observation space definitions
 from fusion.modules.rl.args.observation_args import (
-    OBS_DICT,
-    OBSERVATION_SPACE_DEFINITIONS,
-    VALID_OBSERVATION_FEATURES,
-)
+    OBS_DICT, OBSERVATION_SPACE_DEFINITIONS, VALID_OBSERVATION_FEATURES)
 
 # Note: ALGORITHM_REGISTRY not imported here to avoid circular imports
 # Import it directly from registry_args when needed

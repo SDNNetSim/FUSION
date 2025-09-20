@@ -27,7 +27,7 @@ class TestSetupHelpers(unittest.TestCase):
             "mod_assumption": "example_mod_a",
             "mod_assumption_path": None,
         }
-        self.core_nodes = list()
+        self.core_nodes = []
         self.bw_info_dict = {"bandwidth": 100}
         self.network_dict = {"nodes": [], "links": []}
         self.pt_info = {"cores": 7, "specifications": {}}
@@ -74,7 +74,7 @@ class TestSetupHelpers(unittest.TestCase):
             data_dict=self.bw_info_dict,
         )
         mock_create_network.assert_called_once_with(
-            base_fp=self.base_fp,
+            base_fp=os.path.join(find_project_root(), self.base_fp),
             const_weight=self.engine_props["const_link_weight"],
             net_name=self.engine_props["network"],
             is_only_core_node=True,
@@ -85,6 +85,7 @@ class TestSetupHelpers(unittest.TestCase):
         )
         mock_open_file.assert_called_once_with(
             os.path.join(
+                find_project_root(),
                 self.base_fp,
                 "input",
                 self.engine_props["network"],
@@ -92,7 +93,6 @@ class TestSetupHelpers(unittest.TestCase):
                 self.engine_props["sim_start"],
                 f"bw_info_{self.engine_props['thread_num']}.json",
             ),
-            "r",
             encoding="utf-8",
         )
         self.assertEqual(result["mod_per_bw"], {"bandwidth": 100})
@@ -101,7 +101,9 @@ class TestSetupHelpers(unittest.TestCase):
     @patch("os.fsync")  # <-- Add this line
     @patch("fusion.sim.input_setup.create_directory")
     @patch("builtins.open", new_callable=mock_open)
-    def test_save_input(self, mock_open_file, mock_create_directory, mock_fsync):  # pylint: disable=unused-argument
+    def test_save_input(
+        self, mock_open_file, mock_create_directory, mock_fsync
+    ):  # pylint: disable=unused-argument
         """Tests save input."""
         # Test data
         data_dict = {"key": "value"}

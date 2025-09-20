@@ -7,11 +7,9 @@ It creates requests based on specified distributions and traffic patterns.
 from typing import Any
 
 from fusion.utils.logging_config import get_logger
-from fusion.utils.random import (
-    generate_exponential_random_variable,
-    generate_uniform_random_variable,
-    set_random_seed,
-)
+from fusion.utils.random import (generate_exponential_random_variable,
+                                 generate_uniform_random_variable,
+                                 set_random_seed)
 
 # Module-level constants
 DEFAULT_REQUEST_TYPE_ARRIVAL = "arrival"

@@ -11,12 +11,8 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
-from fusion.unity.submit_manifest import (
-    RESOURCE_KEYS,
-    build_env,
-    parse_cli,
-    read_first_row,
-)
+from fusion.unity.submit_manifest import (RESOURCE_KEYS, build_env, parse_cli,
+                                          read_first_row)
 from tests.test_unity_fixtures import COMMON_RESOURCES
 
 

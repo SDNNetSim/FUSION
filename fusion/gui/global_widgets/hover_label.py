@@ -24,12 +24,14 @@ class HoverLabel(qtw.QLabel):
         self.icon = None
         self.pixmap = None
 
-    def set_icon(self, icon_path, size=qtc.QSize(64, 64)):
+    def set_icon(self, icon_path, size=None):
         """
         Sets a specific icon.
         :param icon_path: The icon location.
         :param size: Desired size of the icon.
         """
+        if size is None:
+            size = qtc.QSize(64, 64)
         self.icon = qtg.QIcon(icon_path)
         self.pixmap = self.icon.pixmap(size)
         self.setPixmap(self.pixmap)

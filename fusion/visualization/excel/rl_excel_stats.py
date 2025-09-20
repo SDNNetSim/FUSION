@@ -194,10 +194,14 @@ for network in NETWORK_LIST:
         create_directory(directory_path=save_fp)
         csv_file = os.path.join(save_fp, f"{network}_analysis_{arrival_rate / 0.2}.csv")
 
-        def read_files():
+        def read_files(network_param, date_param, run_time_param, erlang_param):
             """
             Reads a file from a single reinforcement learning simulation run.
 
+            :param network_param: Network name
+            :param date_param: Date string
+            :param run_time_param: Run time string
+            :param erlang_param: Erlang value
             :return: The input and output JSON files.
             :rtype: tuple
             """
@@ -205,14 +209,20 @@ for network in NETWORK_LIST:
                 "..",
                 "data",
                 "output",
-                network,
-                date,
-                run_time,
+                network_param,
+                date_param,
+                run_time_param,
                 "s1",
-                f"{erlang}_erlang.json",
+                f"{erlang_param}_erlang.json",
             )
             input_fp = os.path.join(
-                "..", "data", "input", network, date, run_time, "sim_input_s1.json"
+                "..",
+                "data",
+                "input",
+                network_param,
+                date_param,
+                run_time_param,
+                "sim_input_s1.json",
             )
 
             if not os.path.exists(output_fp):
@@ -290,7 +300,7 @@ for network in NETWORK_LIST:
             :return: Relevant data from input/output with percentage reductions.
             :rtype: dict
             """
-            tmp_dict = dict()
+            tmp_dict = {}
             last_key = list(output_dict["iter_stats"].keys())[-1]
             tmp_dict["Blocking"] = np.mean(
                 output_dict["iter_stats"][last_key]["sim_block_list"][-10:]
@@ -334,7 +344,7 @@ for network in NETWORK_LIST:
                 print(f"No data found in dictionary. Skipping: {run_time}")
                 continue
 
-            input_dict, output_dict = read_files()
+            input_dict, output_dict = read_files(network, date, run_time, erlang)
 
             if not input_dict or not output_dict:
                 continue

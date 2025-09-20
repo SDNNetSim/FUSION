@@ -2,7 +2,8 @@ import copy
 
 import numpy as np
 
-from fusion.sim.utils import find_free_channels, find_free_slots, get_channel_overlaps
+from fusion.sim.utils import (find_free_channels, find_free_slots,
+                              get_channel_overlaps)
 
 
 class SpectrumHelpers:
@@ -202,7 +203,7 @@ class SpectrumHelpers:
                 slot_inters = slot_inters_dict & free_slots_set
                 info_dict["slots_inters_dict"][core_num] = slot_inters
 
-                tmp_list = list()
+                tmp_list = []
                 for item in info_dict["channel_inters_dict"][core_num]:
                     if item in info_dict["free_channels_dict"][source_dest][core_num]:
                         tmp_list.append(item)

@@ -12,7 +12,7 @@ class GetModelParams(BaseCallback):
     """
 
     def __init__(self, verbose: int = 0):
-        super(GetModelParams, self).__init__(verbose)  # pylint: disable=super-with-arguments
+        super().__init__(verbose)  # pylint: disable=super-with-arguments
 
         self.model_params = None
         self.value_estimate = 0.0
@@ -34,7 +34,7 @@ class EpisodicRewardCallback(BaseCallback):
     """
 
     def __init__(self, verbose=0):
-        super(EpisodicRewardCallback, self).__init__(verbose)  # pylint: disable=super-with-arguments
+        super().__init__(verbose)  # pylint: disable=super-with-arguments
         self.episode_rewards = np.array([])
         self.current_episode_reward = 0
         self.max_iters = None
@@ -116,7 +116,7 @@ class LearnRateEntCallback(BaseCallback):
     """
 
     def __init__(self, verbose=1):
-        super(LearnRateEntCallback, self).__init__(verbose)  # pylint: disable=super-with-arguments
+        super().__init__(verbose)  # pylint: disable=super-with-arguments
         self.sim_dict = None
         self.iteration = 0
         self.trial = 1

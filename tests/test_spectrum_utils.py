@@ -170,9 +170,9 @@ class TestSpectrumHelpers(unittest.TestCase):
     def test_check_free_spectrum_l_band_only(self):
         """Test the _check_free_spectrum method when only the 'l' band is available."""
         # Fill the 'c' band and make the 'l' band available
-        self.sdn_props.network_spectrum_dict[(1, 2)]["cores_matrix"]["c"][0][:] = (
-            1  # Fill 'c' band
-        )
+        self.sdn_props.network_spectrum_dict[(1, 2)]["cores_matrix"]["c"][0][
+            :
+        ] = 1  # Fill 'c' band
         self.sdn_props.network_spectrum_dict[(1, 2)]["cores_matrix"]["l"] = np.zeros(
             (2, 10)
         )  # 'l' band is free

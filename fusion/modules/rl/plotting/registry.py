@@ -1,15 +1,13 @@
-from fusion.modules.rl.plotting.blocking import (
-    plot_blocking_probabilities,
-    plot_effect_heatmaps,
-)
+from fusion.modules.rl.plotting.blocking import (plot_blocking_probabilities,
+                                                 plot_effect_heatmaps)
 from fusion.modules.rl.plotting.bw_block import plot_bw_blocked
-from fusion.modules.rl.plotting.link_data import plot_link_throughput, plot_link_usage
+from fusion.modules.rl.plotting.link_data import (plot_link_throughput,
+                                                  plot_link_usage)
 from fusion.modules.rl.plotting.memory_usage import plot_memory_usage
 from fusion.modules.rl.plotting.mod_usage import plot_modulation_usage
 from fusion.modules.rl.plotting.path_index import plot_path_index
-from fusion.modules.rl.plotting.resource_stats import (
-    plot_resource_percent_delta_heatmaps,
-)
+from fusion.modules.rl.plotting.resource_stats import \
+    plot_resource_percent_delta_heatmaps
 from fusion.modules.rl.plotting.rewards import plot_rewards_mean_var
 from fusion.modules.rl.plotting.sim_times import plot_sim_times
 from fusion.modules.rl.plotting.state_values import plot_best_path_matrix

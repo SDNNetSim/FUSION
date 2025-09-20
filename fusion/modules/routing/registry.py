@@ -9,7 +9,6 @@ from fusion.interfaces.router import AbstractRoutingAlgorithm
 
 from .congestion_aware import CongestionAwareRouting
 from .fragmentation_aware import FragmentationAwareRouting
-
 # Import all routing algorithm implementations
 from .k_shortest_path import KShortestPath
 from .least_congested import LeastCongestedRouting

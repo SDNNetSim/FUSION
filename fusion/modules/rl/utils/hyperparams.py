@@ -218,7 +218,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Resets certain class variables.
         """
-        self.reward_list = list()
+        self.reward_list = []
         self.counts, self.values = get_q_table(self=self)
 
 
@@ -239,19 +239,19 @@ def _mlp_arch(
 
 
 def _policy_kwargs_actor_critic(trial: optuna.Trial):
-    return dict(
-        ortho_init=True,
-        activation_fn=_get_activation(trial),
-        net_arch=dict(pi=_mlp_arch(trial, "pi"), vf=_mlp_arch(trial, "vf")),
-    )
+    return {
+        "ortho_init": True,
+        "activation_fn": _get_activation(trial),
+        "net_arch": {"pi": _mlp_arch(trial, "pi"), "vf": _mlp_arch(trial, "vf")},
+    }
 
 
 def _policy_kwargs_dqn(trial: optuna.Trial, prefix: str):
-    return dict(net_arch=_mlp_arch(trial, prefix))
+    return {"net_arch": _mlp_arch(trial, prefix)}
 
 
 def _ppo_hyperparams(sim_dict: dict, trial: optuna.Trial):
-    params = dict()
+    params = {}
     params["normalize"] = True
     params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
     params["policy"] = "MultiInputPolicy"
@@ -291,7 +291,7 @@ def _ppo_hyperparams(sim_dict: dict, trial: optuna.Trial):
 
 
 def _a2c_hyperparams(sim_dict: dict, trial: optuna.Trial):
-    params = dict()
+    params = {}
     params["normalize"] = True
     params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
     params["policy"] = "MultiInputPolicy"
@@ -322,7 +322,7 @@ def _a2c_hyperparams(sim_dict: dict, trial: optuna.Trial):
 
 
 def _dqn_hyperparams(sim_dict: dict, trial: optuna.Trial):
-    params = dict()
+    params = {}
     params["normalize"] = True
     params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
     params["policy"] = "MultiInputPolicy"
@@ -360,10 +360,10 @@ def _dqn_hyperparams(sim_dict: dict, trial: optuna.Trial):
 def _qr_dqn_hyperparams(sim_dict: dict, trial: optuna.Trial):
     params = _dqn_hyperparams(sim_dict, trial)
     params["n_quantiles"] = trial.suggest_int("n_quantiles", 25, 200, step=25)
-    params["policy_kwargs"] = dict(
-        net_arch=_mlp_arch(trial, "qr_dqn"),
-        n_quantiles=params["n_quantiles"],
-    )
+    params["policy_kwargs"] = {
+        "net_arch": _mlp_arch(trial, "qr_dqn"),
+        "n_quantiles": params["n_quantiles"],
+    }
     return params
 
 
@@ -388,7 +388,7 @@ def get_optuna_hyperparams(sim_dict: dict, trial: optuna.trial):
     """
     Suggests hyperparameters for the Optuna trial.
     """
-    resp_dict = dict()
+    resp_dict = {}
 
     if sim_dict["path_algorithm"] in ("a2c", "ppo", "dqn", "qr_dqn"):
         resp_dict = _drl_hyperparams(sim_dict=sim_dict, trial=trial)

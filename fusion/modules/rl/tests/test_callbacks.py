@@ -33,22 +33,22 @@ def _dummy_model():
 
 
 def _mk_sim_dict(**extra):
-    base = dict(
-        max_iters=2,
-        num_requests=3,
-        save_step=1,
-        erlang_start=1,
-        cores_per_link=2,
-        path_algorithm="ppo",
-        network="net",
-        date="d",
-        sim_start="t0",
-        epsilon_start=0.5,
-        epsilon_end=0.1,
-        decay_rate=0.5,
-        alpha_start=1e-3,
-        alpha_end=5e-4,
-    )
+    base = {
+        "max_iters": 2,
+        "num_requests": 3,
+        "save_step": 1,
+        "erlang_start": 1,
+        "cores_per_link": 2,
+        "path_algorithm": "ppo",
+        "network": "net",
+        "date": "d",
+        "sim_start": "t0",
+        "epsilon_start": 0.5,
+        "epsilon_end": 0.1,
+        "decay_rate": 0.5,
+        "alpha_start": 1e-3,
+        "alpha_end": 5e-4,
+    }
     base.update(extra)
     return base
 

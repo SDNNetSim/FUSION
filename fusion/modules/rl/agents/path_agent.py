@@ -1,11 +1,10 @@
 import numpy as np
 
 from fusion.modules.rl.agents.base_agent import BaseAgent
-from fusion.modules.rl.args.general_args import (
-    EPISODIC_STRATEGIES,
-    VALID_DRL_ALGORITHMS,
-)
-from fusion.modules.rl.errors import AgentError, InvalidActionError, RouteSelectionError
+from fusion.modules.rl.args.general_args import (EPISODIC_STRATEGIES,
+                                                 VALID_DRL_ALGORITHMS)
+from fusion.modules.rl.errors import (AgentError, InvalidActionError,
+                                      RouteSelectionError)
 
 
 class PathAgent(BaseAgent):

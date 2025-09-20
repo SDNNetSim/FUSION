@@ -7,7 +7,6 @@ from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QEasingCurve, QPropertyAnimation
 
 from fusion.gui.general_dialogs.settings import SettingsDialog
-
 # We import the simulation runner's run() function.
 from fusion.sim.network_simulator import run as run_sim
 

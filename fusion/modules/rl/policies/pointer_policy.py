@@ -9,7 +9,6 @@ import math
 
 # Third-party imports
 import torch
-
 # Third-party ML imports
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor

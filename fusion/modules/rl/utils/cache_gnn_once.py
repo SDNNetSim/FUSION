@@ -23,12 +23,10 @@ def main():
     :raises CacheError: If caching operation fails
     """
     # Import here to avoid issues when this module is imported as a library
-    from fusion.modules.rl.utils.gym_envs import (  # pylint: disable=import-outside-toplevel
-        create_environment,
-    )
-    from fusion.utils.logging_config import (  # pylint: disable=import-outside-toplevel
-        get_logger,
-    )
+    from fusion.modules.rl.utils.gym_envs import \
+        create_environment  # pylint: disable=import-outside-toplevel
+    from fusion.utils.logging_config import \
+        get_logger  # pylint: disable=import-outside-toplevel
 
     logger = get_logger(__name__)
 

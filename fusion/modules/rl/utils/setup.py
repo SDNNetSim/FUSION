@@ -14,18 +14,15 @@ from fusion.cli.config_setup import ConfigManager
 from fusion.cli.main_parser import get_train_args
 from fusion.core.routing import Routing
 from fusion.core.simulation import SimulationEngine
-from fusion.modules.rl.args.general_args import (
-    VALID_CORE_ALGORITHMS,
-    VALID_PATH_ALGORITHMS,
-)
+from fusion.modules.rl.args.general_args import (VALID_CORE_ALGORITHMS,
+                                                 VALID_PATH_ALGORITHMS)
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.graphormer import GraphTransformerExtractor
-from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN, PathGNNEncoder
-from fusion.modules.rl.utils.errors import (
-    ConfigurationError,
-    FeatureExtractorError,
-    ModelSetupError,
-)
+from fusion.modules.rl.feat_extrs.path_gnn_cached import (CachedPathGNN,
+                                                          PathGNNEncoder)
+from fusion.modules.rl.utils.errors import (ConfigurationError,
+                                            FeatureExtractorError,
+                                            ModelSetupError)
 from fusion.sim.input_setup import create_input, save_input
 from fusion.sim.utils import get_start_time, parse_yaml_file
 

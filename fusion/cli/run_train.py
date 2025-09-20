@@ -5,7 +5,8 @@ and reinforcement learning agents. It supports multiple training algorithms
 and provides detailed error handling with helpful guidance for common issues.
 """
 
-from fusion.cli.constants import ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, SUCCESS_EXIT_CODE
+from fusion.cli.constants import (ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE,
+                                  SUCCESS_EXIT_CODE)
 from fusion.cli.main_parser import create_training_argument_parser
 from fusion.cli.utils import create_entry_point_wrapper
 from fusion.sim.train_pipeline import run_training_pipeline

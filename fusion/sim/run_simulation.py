@@ -29,7 +29,9 @@ def run_simulation(config_dict: dict[str, Any]) -> dict | None:
     return results[0] if results else None
 
 
-def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> list[dict]:  # pylint: disable=unused-argument
+def run_simulation_pipeline(
+    args: Any, stop_flag: Any = None
+) -> list[dict]:  # pylint: disable=unused-argument
     """
     Pipeline function for running simulations from CLI.
 
@@ -43,9 +45,8 @@ def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> list[dict]:  # 
     :return: List of simulation results
     :rtype: List[Dict]
     """
-    from fusion.cli.config_setup import (  # pylint: disable=import-outside-toplevel
-        load_and_validate_config,
-    )
+    from fusion.cli.config_setup import \
+        load_and_validate_config  # pylint: disable=import-outside-toplevel
 
     # Convert args to config dictionary
     config_dict = load_and_validate_config(args)

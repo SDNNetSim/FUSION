@@ -58,14 +58,20 @@ class PlotArgs:
         self.blocking_list = []  # Blocking values to be plotted
         self.lengths_list = []  # Average path length values
         self.hops_list = []  # Average path hop
-        self.occ_slot_matrix = []  # Occupied slots in the entire network at different snapshots
-        self.active_req_matrix = []  # Number of requests allocated in the network (snapshots)
+        self.occ_slot_matrix = (
+            []
+        )  # Occupied slots in the entire network at different snapshots
+        self.active_req_matrix = (
+            []
+        )  # Number of requests allocated in the network (snapshots)
         self.block_req_matrix = []  # Running average blocking probabilities (snapshots)
         self.req_num_list = []  # Active request identification numbers (snapshots)
         self.times_list = []  # Simulation start times
-        self.modulations_dict = dict()  # Modulation formats used
+        self.modulations_dict = {}  # Modulation formats used
         self.dist_block_list = []  # Percentage of blocking due to a reach constraint
-        self.cong_block_list = []  # Percentage of blocking due to a congestion constraint
+        self.cong_block_list = (
+            []
+        )  # Percentage of blocking due to a congestion constraint
         self.holding_time = None  # Holding time for the simulation run
         self.cores_per_link = None  # Number of cores per link
         # TODO: (drl_path_agents) Does not support all bands, check on this
@@ -75,8 +81,12 @@ class PlotArgs:
         )
         self.discount_factor = None  # For AI, discount factor used if any
 
-        self.block_per_iter = []  # Blocking probability per iteration of one simulation configuration
-        self.sum_rewards_list = []  # For reinforcement learning (RL), sum of rewards per episode
+        self.block_per_iter = (
+            []
+        )  # Blocking probability per iteration of one simulation configuration
+        self.sum_rewards_list = (
+            []
+        )  # For reinforcement learning (RL), sum of rewards per episode
         self.sum_errors_list = []  # For RL, sum of errors per episode
         self.epsilon_list = []  # For RL, decay of epsilon w.r.t. each episode
 

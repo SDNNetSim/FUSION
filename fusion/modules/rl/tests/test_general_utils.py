@@ -36,10 +36,10 @@ def _engine(snapshot=True):
         stats_obj=SimpleNamespace(
             update_snapshot=mock.MagicMock(),
             blocked_reqs=0,
-            stats_props=dict(
-                block_reasons_dict=dict(congestion=0),
-                block_bw_dict={"100G": 0},
-            ),
+            stats_props={
+                "block_reasons_dict": {"congestion": 0},
+                "block_bw_dict": {"100G": 0},
+            },
         ),
         network_spectrum_dict="net",
         handle_release=mock.MagicMock(),
@@ -119,7 +119,9 @@ class TestHandleReleases(TestCase):
         helper.handle_releases()
 
         eng.handle_release.assert_called_once_with(current_time=0)
-        self.assertEqual(helper._last_processed_index, 1)  # pylint: disable=protected-access
+        self.assertEqual(
+            helper._last_processed_index, 1
+        )  # pylint: disable=protected-access
 
 
 class TestAllocateBlocking(TestCase):

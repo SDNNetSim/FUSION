@@ -22,12 +22,12 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
         mock_sdn_dict={},
     )
 
-    engine_props = dict(
-        num_requests=1,
-        is_drl_agent=is_drl,
-        topology="topo",
-        obs_space="obs_1",
-    )
+    engine_props = {
+        "num_requests": 1,
+        "is_drl_agent": is_drl,
+        "topology": "topo",
+        "obs_space": "obs_1",
+    }
 
     engine_obj = SimpleNamespace(
         engine_props=engine_props,
@@ -54,13 +54,13 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
         engine_props=engine_obj,  # CoreUtilHelpers expects engine_props
     )
 
-    sim_dict = dict(
-        path_algorithm=path_algo,
-        core_algorithm="none",
-        spectrum_algorithm=None,
-        is_training=True,
-        request_distribution={"100": 1},
-    )
+    sim_dict = {
+        "path_algorithm": path_algo,
+        "core_algorithm": "none",
+        "spectrum_algorithm": None,
+        "is_training": True,
+        "request_distribution": {"100": 1},
+    }
 
     return SimpleNamespace(
         rl_props=rl_props,
@@ -114,13 +114,17 @@ class TestScaleReqHolding(TestCase):
 
     def test_correct_scaling_value(self):
         """(12-10)/(15-10-1)=0.5 when diff counted discretely."""
-        scaled = self.obs._scale_req_holding(holding_time=12)  # pylint:disable=protected-access
+        scaled = self.obs._scale_req_holding(
+            holding_time=12
+        )  # pylint:disable=protected-access
         self.assertAlmostEqual(scaled, 0.5)
 
     def test_equal_min_max_returns_one(self):
         """When all departures equal, value defaults to 1.0."""
         self.senv.engine_obj.reqs_dict = {0: {"depart": 10}, 1: {"depart": 10}}
-        scaled = self.obs._scale_req_holding(holding_time=10)  # pylint:disable=protected-access
+        scaled = self.obs._scale_req_holding(
+            holding_time=10
+        )  # pylint:disable=protected-access
         self.assertEqual(scaled, 1.0)
 
 

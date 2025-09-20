@@ -10,13 +10,12 @@ from typing import Any
 
 from fusion.modules.rl.algorithms.a2c import A2C
 from fusion.modules.rl.algorithms.dqn import DQN
-
 # Import algorithm classes
 from fusion.modules.rl.algorithms.ppo import PPO
 from fusion.modules.rl.algorithms.qr_dqn import QrDQN
-
 # Import setup functions
-from fusion.modules.rl.utils.setup import setup_a2c, setup_dqn, setup_ppo, setup_qr_dqn
+from fusion.modules.rl.utils.setup import (setup_a2c, setup_dqn, setup_ppo,
+                                           setup_qr_dqn)
 
 # Type alias for clarity
 AlgorithmConfig = dict[str, Callable[..., Any] | None]

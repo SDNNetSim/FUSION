@@ -14,15 +14,9 @@ through the SNRRegistry for dynamic algorithm selection.
 """
 
 from . import utils
-from .registry import (
-    SNR_ALGORITHMS,
-    SNRRegistry,
-    create_snr_algorithm,
-    get_multicore_snr_algorithms,
-    get_snr_algorithm,
-    get_snr_algorithm_info,
-    list_snr_algorithms,
-)
+from .registry import (SNR_ALGORITHMS, SNRRegistry, create_snr_algorithm,
+                       get_multicore_snr_algorithms, get_snr_algorithm,
+                       get_snr_algorithm_info, list_snr_algorithms)
 from .snr import StandardSNRMeasurer
 
 __all__ = [

@@ -14,13 +14,8 @@ import gymnasium as gym
 from fusion.modules.rl.agents.path_agent import PathAgent
 from fusion.modules.rl.algorithms.algorithm_props import RLProps
 from fusion.modules.rl.gymnasium_envs.constants import (
-    ARRIVAL_DICT_KEYS,
-    DEFAULT_ARRIVAL_COUNT,
-    DEFAULT_ITERATION,
-    DEFAULT_SAVE_SIMULATION,
-    DEFAULT_SIMULATION_KEY,
-    SUPPORTED_SPECTRAL_BANDS,
-)
+    ARRIVAL_DICT_KEYS, DEFAULT_ARRIVAL_COUNT, DEFAULT_ITERATION,
+    DEFAULT_SAVE_SIMULATION, DEFAULT_SIMULATION_KEY, SUPPORTED_SPECTRAL_BANDS)
 from fusion.modules.rl.utils.deep_rl import get_action_space, get_obs_space
 from fusion.modules.rl.utils.general_utils import CoreUtilHelpers
 from fusion.modules.rl.utils.setup import SetupHelper, setup_rl_sim
@@ -33,7 +28,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     setup utilities, and step management for dynamic, iterative simulations.
     """
 
-    metadata = dict()
+    metadata = {}
 
     def __init__(
         self,
@@ -100,7 +95,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
         )
 
-    def reset(self, seed: int = None, options: dict = None):  # pylint: disable=arguments-differ
+    def reset(
+        self, seed: int = None, options: dict = None
+    ):  # pylint: disable=arguments-differ
         """
         Resets necessary variables after each iteration of the simulation.
 
@@ -111,8 +108,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         super().reset(seed=seed)
         self.trial = seed
-        self.rl_props.arrival_list = list()
-        self.rl_props.depart_list = list()
+        self.rl_props.arrival_list = []
+        self.rl_props.depart_list = []
 
         if self.optimize is None:
             self.setup()

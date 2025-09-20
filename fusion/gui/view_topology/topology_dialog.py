@@ -9,7 +9,7 @@ class NodeInfoDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
     """
 
     def __init__(self, node, info, parent=None):
-        super(NodeInfoDialog, self).__init__(parent)  # pylint: disable=super-with-arguments
+        super().__init__(parent)  # pylint: disable=super-with-arguments
         self.setWindowTitle(f"Node Information - {node}")
         self.setGeometry(100, 100, 300, 200)
         self.setWindowModality(QtCore.Qt.ApplicationModal)  # Make the dialog modal

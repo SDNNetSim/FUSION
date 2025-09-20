@@ -20,10 +20,8 @@ from stable_baselines3.common.callbacks import CallbackList
 from fusion.cli.config_setup import load_config
 from fusion.modules.rl import workflow_runner
 from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
-from fusion.modules.rl.utils.callbacks import (
-    EpisodicRewardCallback,
-    LearnRateEntCallback,
-)
+from fusion.modules.rl.utils.callbacks import (EpisodicRewardCallback,
+                                               LearnRateEntCallback)
 from fusion.sim.input_setup import create_input
 from fusion.sim.network_simulator import run as run_simulation
 from fusion.sim.utils import get_start_time

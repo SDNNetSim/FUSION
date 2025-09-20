@@ -256,7 +256,9 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_assign.spectrum_props.slots_needed = 2
 
         # Simulate side effects of check_super_channels
-        def mock_check_super_channels_effect(*args, **kwargs):  # pylint: disable=unused-argument
+        def mock_check_super_channels_effect(
+            *args, **kwargs
+        ):  # pylint: disable=unused-argument
             self.spec_assign.spectrum_props.start_slot = 5
             self.spec_assign.spectrum_props.end_slot = 8
             self.spec_assign.spectrum_props.current_band = "c"
@@ -302,7 +304,9 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_assign.engine_props_dict["snr_type"] = "snr_e2e_external_resources"
 
         # Simulate the behavior of check_super_channels and handle_snr_dynamic_slicing
-        def mock_check_super_channels_effect(*args, **kwargs):  # pylint: disable=unused-argument
+        def mock_check_super_channels_effect(
+            *args, **kwargs
+        ):  # pylint: disable=unused-argument
             self.spec_assign.spectrum_props.is_free = True
             self.spec_assign.spectrum_props.start_slot = 5
             self.spec_assign.spectrum_props.end_slot = 8

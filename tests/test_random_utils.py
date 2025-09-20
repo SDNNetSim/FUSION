@@ -1,10 +1,8 @@
 import unittest
 
-from fusion.utils.random import (
-    generate_exponential_random_variable,
-    generate_uniform_random_variable,
-    set_random_seed,
-)
+from fusion.utils.random import (generate_exponential_random_variable,
+                                 generate_uniform_random_variable,
+                                 set_random_seed)
 
 
 class TestRandomGenerators(unittest.TestCase):

@@ -6,7 +6,8 @@ import multiprocessing
 
 from PyQt5 import QtWidgets
 
-from fusion.gui.main_window import MainWindow  # local import keeps CLI lightweight
+from fusion.gui.main_window import \
+    MainWindow  # local import keeps CLI lightweight
 
 
 def _as_dict(config_like):
@@ -81,9 +82,8 @@ def launch_gui_pipeline(args):
     Args:
         args: Parsed command line arguments
     """
-    from fusion.cli.config_setup import (  # pylint: disable=import-outside-toplevel
-        load_and_validate_config,
-    )
+    from fusion.cli.config_setup import \
+        load_and_validate_config  # pylint: disable=import-outside-toplevel
 
     # Convert args to config dictionary
     config_dict = load_and_validate_config(args)

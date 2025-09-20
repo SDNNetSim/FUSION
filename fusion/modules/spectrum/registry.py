@@ -10,7 +10,6 @@ from typing import Any
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 
 from .best_fit import BestFitSpectrum
-
 # Import all spectrum assignment algorithm implementations
 from .first_fit import FirstFitSpectrum
 from .last_fit import LastFitSpectrum

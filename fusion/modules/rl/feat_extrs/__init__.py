@@ -7,24 +7,17 @@ Available extractors include standard GNN, cached GNN, and graph transformer
 architectures.
 """
 
-from fusion.modules.rl.feat_extrs.base_feature_extractor import (
-    BaseGraphFeatureExtractor,
-)
-
+from fusion.modules.rl.feat_extrs.base_feature_extractor import \
+    BaseGraphFeatureExtractor
 # Import constants
 from fusion.modules.rl.feat_extrs.constants import (
-    CACHE_DIR,
-    DEFAULT_EMBEDDING_DIMENSION,
-    DEFAULT_GNN_TYPE,
-    DEFAULT_NUM_HEADS,
-    DEFAULT_NUM_LAYERS,
-    EDGE_EMBEDDING_SCALE_FACTOR,
-)
+    CACHE_DIR, DEFAULT_EMBEDDING_DIMENSION, DEFAULT_GNN_TYPE,
+    DEFAULT_NUM_HEADS, DEFAULT_NUM_LAYERS, EDGE_EMBEDDING_SCALE_FACTOR)
 from fusion.modules.rl.feat_extrs.graphormer import GraphTransformerExtractor
-
 # Import feature extractors
 from fusion.modules.rl.feat_extrs.path_gnn import PathGNN
-from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN, PathGNNEncoder
+from fusion.modules.rl.feat_extrs.path_gnn_cached import (CachedPathGNN,
+                                                          PathGNNEncoder)
 
 __all__ = [
     # Feature extractors

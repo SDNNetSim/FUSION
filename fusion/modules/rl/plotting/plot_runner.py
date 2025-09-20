@@ -4,7 +4,6 @@
 import argparse
 from inspect import signature
 from pathlib import Path
-
 # Standard library imports
 from typing import Any
 
@@ -12,16 +11,11 @@ from typing import Any
 import yaml
 
 from fusion.modules.rl.plotting import processors
-
 # Local imports
-from fusion.modules.rl.plotting.errors import (
-    InvalidConfigurationError,
-    PlottingFileNotFoundError,
-)
-from fusion.modules.rl.plotting.loaders import (
-    discover_all_run_ids,
-    load_metric_for_runs,
-)
+from fusion.modules.rl.plotting.errors import (InvalidConfigurationError,
+                                               PlottingFileNotFoundError)
+from fusion.modules.rl.plotting.loaders import (discover_all_run_ids,
+                                                load_metric_for_runs)
 from fusion.modules.rl.plotting.registry import PLOTS
 
 

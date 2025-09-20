@@ -11,7 +11,6 @@ import numpy as np
 from fusion.core.metrics import SimStats
 from fusion.core.ml_metrics import MLMetricsCollector
 from fusion.core.persistence import StatsPersistence
-
 # Local application imports
 from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
@@ -30,9 +29,9 @@ class SimulationEngine:
 
     def __init__(self, engine_props: dict):
         self.engine_props = engine_props
-        self.network_spectrum_dict = dict()
+        self.network_spectrum_dict = {}
         self.reqs_dict = None
-        self.reqs_status_dict = dict()
+        self.reqs_status_dict = {}
 
         self.iteration = 0
         self.topology = nx.Graph()
@@ -177,7 +176,7 @@ class SimulationEngine:
         self.network_spectrum_dict = {}
         self.topology.add_nodes_from(self.engine_props["topology_info"]["nodes"])
 
-        self.engine_props["band_list"] = list()
+        self.engine_props["band_list"] = []
         for band in ["c", "l", "s", "o", "e"]:
             try:
                 if self.engine_props[f"{band}_band"]:
@@ -189,7 +188,7 @@ class SimulationEngine:
             source = link_data["source"]
             dest = link_data["destination"]
 
-            cores_matrix = dict()
+            cores_matrix = {}
             for band in self.engine_props["band_list"]:
                 band_slots = self.engine_props[f"{band}_band"]
                 cores_matrix[band] = np.zeros(

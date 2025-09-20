@@ -212,10 +212,8 @@ class LightPathSlicingManager:
         :rtype: bool
         """
         remaining_bw = int(self.sdn_props.bandwidth)
-        path_len = find_path_len(
-            path_list=path_list, topology=self.engine_props["topology"]
-        )
-        bandwidth_modulation_dict = sort_dict_keys(self.engine_props["mod_per_bw"])
+        find_path_len(path_list=path_list, topology=self.engine_props["topology"])
+        sort_dict_keys(self.engine_props["mod_per_bw"])
 
         self.spectrum_obj.spectrum_props.path_list = path_list
         self.sdn_props.number_of_transponders = 0
@@ -297,10 +295,8 @@ class LightPathSlicingManager:
         :type forced_segments: int
         """
         remaining_bw = int(self.sdn_props.bandwidth)
-        path_len = find_path_len(
-            path_list=path_list, topology=self.engine_props["topology"]
-        )
-        bandwidth_modulation_dict = sort_dict_keys(self.engine_props["mod_per_bw"])
+        find_path_len(path_list=path_list, topology=self.engine_props["topology"])
+        sort_dict_keys(self.engine_props["mod_per_bw"])
 
         self.spectrum_obj.spectrum_props.path_list = path_list
         self.sdn_props.number_of_transponders = 0

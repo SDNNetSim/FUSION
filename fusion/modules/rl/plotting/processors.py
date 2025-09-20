@@ -99,7 +99,7 @@ def process_blocking(raw_runs: dict[str, Any], runid_to_algo: dict[str, str]) ->
                     )
                 else:
                     raise NotImplementedError
-            elif isinstance(info_vector, (float, int)):
+            elif isinstance(info_vector, float | int):
                 merged_data[algorithm][str(traffic_volume)].append(float(info_vector))
 
     # Extract baseline data for comparisons
@@ -153,7 +153,7 @@ def _add(
     :param value: Numeric value(s) to append
     :type value: Union[float, List[float], np.ndarray]
     """
-    if isinstance(value, (list, tuple, np.ndarray)):
+    if isinstance(value, list | tuple | np.ndarray):
         collector[algorithm][traffic_volume].extend(map(float, value))
     else:
         collector[algorithm][traffic_volume].append(float(value))
@@ -219,7 +219,9 @@ def process_sim_times(
     for run_id, data in raw_runs.items():
         algorithm = runid_to_algo.get(run_id, "unknown")
 
-        if isinstance(start_timestamps, dict) and run_id in start_timestamps:  # pylint: disable=unsupported-membership-test
+        if (
+            isinstance(start_timestamps, dict) and run_id in start_timestamps
+        ):  # pylint: disable=unsupported-membership-test
             start_time = _stamp_to_dt(start_timestamps[run_id])
 
             for traffic_volume, info in data.items():

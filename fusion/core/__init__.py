@@ -9,14 +9,8 @@ This package provides the fundamental building blocks for optical network simula
 - Routing, spectrum assignment, and SNR measurement components
 """
 
-from .properties import (
-    SNAP_KEYS_LIST,
-    RoutingProps,
-    SDNProps,
-    SNRProps,
-    SpectrumProps,
-    StatsProps,
-)
+from .properties import (SNAP_KEYS_LIST, RoutingProps, SDNProps, SNRProps,
+                         SpectrumProps, StatsProps)
 
 __all__ = [
     "RoutingProps",

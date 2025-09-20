@@ -7,7 +7,8 @@ Tests for evaluate_pipeline orchestrator.
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
-from fusion.sim.evaluate_pipeline import EvaluationPipeline, run_evaluation_pipeline
+from fusion.sim.evaluate_pipeline import (EvaluationPipeline,
+                                          run_evaluation_pipeline)
 
 
 class TestEvaluationPipeline:

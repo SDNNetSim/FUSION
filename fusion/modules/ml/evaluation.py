@@ -12,18 +12,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from sklearn.metrics import (
-    accuracy_score,
-    classification_report,
-    confusion_matrix,
-    f1_score,
-    mean_absolute_error,
-    mean_squared_error,
-    precision_score,
-    r2_score,
-    recall_score,
-    roc_auc_score,
-)
+from sklearn.metrics import (accuracy_score, classification_report,
+                             confusion_matrix, f1_score, mean_absolute_error,
+                             mean_squared_error, precision_score, r2_score,
+                             recall_score, roc_auc_score)
 from sklearn.model_selection import cross_validate, train_test_split
 
 from fusion.utils.logging_config import get_logger

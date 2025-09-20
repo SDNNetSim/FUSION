@@ -112,16 +112,16 @@ class SimStats:
         for req_num in range(
             0, self.engine_props["num_requests"] + 1, self.engine_props["snapshot_step"]
         ):
-            self.stats_props.snapshots_dict[req_num] = dict()
+            self.stats_props.snapshots_dict[req_num] = {}
             for key in SNAP_KEYS_LIST:
-                self.stats_props.snapshots_dict[req_num][key] = list()
+                self.stats_props.snapshots_dict[req_num][key] = []
 
     def _init_mods_weights_bws(self):
         for bandwidth, obj in self.engine_props["mod_per_bw"].items():
-            self.stats_props.modulations_used_dict[bandwidth] = dict()
-            self.stats_props.weights_dict[bandwidth] = dict()
+            self.stats_props.modulations_used_dict[bandwidth] = {}
+            self.stats_props.weights_dict[bandwidth] = {}
             for modulation in obj.keys():
-                self.stats_props.weights_dict[bandwidth][modulation] = list()
+                self.stats_props.weights_dict[bandwidth][modulation] = []
                 self.stats_props.modulations_used_dict[bandwidth][modulation] = 0
                 if (
                     modulation not in self.stats_props.modulations_used_dict
@@ -132,18 +132,16 @@ class SimStats:
                         dict,
                     )
                 ):
-                    self.stats_props.modulations_used_dict[modulation] = dict()
-                    self.stats_props.modulations_used_dict[modulation]["length"] = (
-                        dict()
-                    )
+                    self.stats_props.modulations_used_dict[modulation] = {}
+                    self.stats_props.modulations_used_dict[modulation]["length"] = {}
                     self.stats_props.modulations_used_dict[modulation]["length"][
                         "overall"
-                    ] = list()
+                    ] = []
                     for band in self.engine_props["band_list"]:
                         self.stats_props.modulations_used_dict[modulation][band] = 0
                         self.stats_props.modulations_used_dict[modulation]["length"][
                             band
-                        ] = list()
+                        ] = []
 
             self.stats_props.bandwidth_blocking_dict[bandwidth] = 0
 
@@ -171,7 +169,7 @@ class SimStats:
                     "xt_threshold": 0,
                 }
             elif stat_key == "link_usage_dict":
-                self.stats_props.link_usage_dict = dict()
+                self.stats_props.link_usage_dict = {}
             elif stat_key != "iter_stats":
                 raise ValueError("Dictionary statistic was not reset in props.")
 
@@ -187,7 +185,7 @@ class SimStats:
                     continue
                 if stat_key == "path_index_list":
                     continue
-                setattr(self.stats_props, stat_key, list())
+                setattr(self.stats_props, stat_key, [])
 
     def init_iter_stats(self):
         """
@@ -477,9 +475,8 @@ class SimStats:
         :param base_fp: Base file path for saving
         """
         # Import here to avoid circular imports
-        from fusion.core.persistence import (  # pylint: disable=import-outside-toplevel
-            StatsPersistence,
-        )
+        from fusion.core.persistence import \
+            StatsPersistence  # pylint: disable=import-outside-toplevel
 
         # Ensure iteration is set to 0 if not initialized (for backward compatibility)
         if self.iteration is None:

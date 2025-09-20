@@ -7,9 +7,9 @@ from typing import Any
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.interfaces.snr import AbstractSNRMeasurer
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
-
 # Import registries
-from fusion.modules.routing.registry import create_algorithm as create_routing_algorithm
+from fusion.modules.routing.registry import \
+    create_algorithm as create_routing_algorithm
 from fusion.modules.snr.registry import create_snr_algorithm
 from fusion.modules.spectrum.registry import create_spectrum_algorithm
 

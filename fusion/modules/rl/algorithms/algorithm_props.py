@@ -21,9 +21,13 @@ class RLProps:  # pylint: disable=too-few-public-methods
         self.source = None  # Source node for a single request
         self.destination = None  # Destination node for a single request
 
-        self.paths_list = []  # Potential paths from source to destination for a single request
+        self.paths_list = (
+            []
+        )  # Potential paths from source to destination for a single request
         self.path_index = None  # Index of the last path chosen in a reinforcement learning (RL) simulation
-        self.chosen_path_list = []  # The actual chosen path (including the nodes) for a single request
+        self.chosen_path_list = (
+            []
+        )  # The actual chosen path (including the nodes) for a single request
         self.core_index = None  # Index of the last core chosen for a request
 
     def __repr__(self):
@@ -111,7 +115,9 @@ class BanditProps:  # pylint: disable=too-few-public-methods
 
     def __init__(self) -> None:
         self.rewards_matrix = []  # Total sum of rewards for each episode
-        self.counts_list = []  # Total number of counts for each action taken for every episode
+        self.counts_list = (
+            []
+        )  # Total number of counts for each action taken for every episode
         self.state_values_list = []  # Every possible V(s)
 
     def __repr__(self):

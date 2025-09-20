@@ -6,6 +6,15 @@ import sys
 from types import ModuleType, SimpleNamespace
 from unittest import TestCase, mock
 
+# Create mock modules that need to exist before importing
+sb3_contrib = ModuleType("sb3_contrib")
+for _name in ("ARS", "QRDQN"):
+    setattr(sb3_contrib, _name, type(_name, (), {}))
+sys.modules["sb3_contrib"] = sb3_contrib
+
+from fusion.modules.rl.gymnasium_envs import \
+    general_sim_env as gen_env  # noqa: E402
+
 gym_mod = ModuleType("gymnasium")
 spaces_mod = ModuleType("gymnasium.spaces")
 
@@ -146,15 +155,6 @@ sys.modules.update(
         "stable_baselines3.common.base_class": sb3_base_class,
         "stable_baselines3.common.torch_layers": sb3_torch_layers,
     }
-)
-
-sb3_contrib = ModuleType("sb3_contrib")
-for _name in ("ARS", "QRDQN"):
-    setattr(sb3_contrib, _name, type(_name, (), {}))
-sys.modules["sb3_contrib"] = sb3_contrib
-
-from fusion.modules.rl.gymnasium_envs import (
-    general_sim_env as gen_env,  # pylint: disable=wrong-import-position
 )
 
 

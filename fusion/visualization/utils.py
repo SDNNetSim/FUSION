@@ -266,7 +266,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
         :param sims_info_dict: A dictionary of specified configurations to find.
         """
-        self.file_info = dict()
+        self.file_info = {}
         matrix_count = 0
         networks_matrix = sims_info_dict["networks_matrix"]
         dates_matrix = sims_info_dict["dates_matrix"]
@@ -283,7 +283,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 self.file_info[time] = {
                     "network": network,
                     "date": date,
-                    "sim_dict": dict(),
+                    "sim_dict": {},
                 }
                 curr_dir = os.path.join(self.plot_props.output_dir, network, date, time)
                 # Sort by sim number
@@ -306,7 +306,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                         continue
 
                     curr_fp = os.path.join(curr_dir, sim)
-                    self.file_info[time]["sim_dict"][sim] = list()
+                    self.file_info[time]["sim_dict"][sim] = []
                     files_list = os.listdir(curr_fp)
                     sorted_files_list = sorted(
                         files_list, key=lambda x: float(x.split("_")[0])
@@ -404,12 +404,12 @@ def find_times(dates_dict: dict, filter_dict: dict):
     :rtype: dict
     """
     resp = {
-        "times_matrix": list(),
-        "sims_matrix": list(),
-        "networks_matrix": list(),
-        "dates_matrix": list(),
+        "times_matrix": [],
+        "sims_matrix": [],
+        "networks_matrix": [],
+        "dates_matrix": [],
     }
-    info_dict = dict()
+    info_dict = {}
     for date, network in dates_dict.items():
         times_path = os.path.join("..", "data", "input", network, date)
         times_list = [
@@ -441,9 +441,9 @@ def find_times(dates_dict: dict, filter_dict: dict):
                 if keep_config:
                     if curr_time not in info_dict:
                         info_dict[curr_time] = {
-                            "sim_list": list(),
-                            "network_list": list(),
-                            "dates_list": list(),
+                            "sim_list": [],
+                            "network_list": [],
+                            "dates_list": [],
                         }
 
                     sim = input_file.split("_")[2]

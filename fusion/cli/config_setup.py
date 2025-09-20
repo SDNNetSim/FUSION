@@ -8,26 +8,17 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Any
 
-from fusion.configs.constants import (
-    CONFIG_DIR_PATH,
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_THREAD_NAME,
-    REQUIRED_SECTION,
-    THREAD_SECTION_PATTERN,
-)
-from fusion.configs.errors import (
-    ConfigError,
-    ConfigFileNotFoundError,
-    ConfigParseError,
-    ConfigTypeConversionError,
-    MissingRequiredOptionError,
-)
-from fusion.configs.schema import OPTIONAL_OPTIONS_DICT, SIM_REQUIRED_OPTIONS_DICT
-from fusion.utils.config import (
-    apply_cli_override,
-    convert_dict_params_if_needed,
-    safe_type_convert,
-)
+from fusion.configs.constants import (CONFIG_DIR_PATH, DEFAULT_CONFIG_PATH,
+                                      DEFAULT_THREAD_NAME, REQUIRED_SECTION,
+                                      THREAD_SECTION_PATTERN)
+from fusion.configs.errors import (ConfigError, ConfigFileNotFoundError,
+                                   ConfigParseError, ConfigTypeConversionError,
+                                   MissingRequiredOptionError)
+from fusion.configs.schema import (OPTIONAL_OPTIONS_DICT,
+                                   SIM_REQUIRED_OPTIONS_DICT)
+from fusion.utils.config import (apply_cli_override,
+                                 convert_dict_params_if_needed,
+                                 safe_type_convert)
 from fusion.utils.os import create_directory
 
 
@@ -212,7 +203,7 @@ def load_config(
     if args_dict is None:
         args_dict = {}
 
-    config_dict = {DEFAULT_THREAD_NAME: dict()}
+    config_dict = {DEFAULT_THREAD_NAME: {}}
 
     try:
         resolved_path = _resolve_config_path(config_path)

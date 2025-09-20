@@ -42,8 +42,12 @@ def main(stop_flag=None):
         if hasattr(e, "__cause__") and e.__cause__:
             print(f"  ↳ Caused by: {e.__cause__}")
             cause = e.__cause__
-            if hasattr(cause, "__cause__") and cause.__cause__:  # pylint: disable=no-member
-                print(f"    ↳ Root cause: {cause.__cause__}")  # pylint: disable=no-member
+            if (
+                hasattr(cause, "__cause__") and cause.__cause__
+            ):  # pylint: disable=no-member
+                print(
+                    f"    ↳ Root cause: {cause.__cause__}"
+                )  # pylint: disable=no-member
 
         # Show exception type for better debugging
         print(f"  Exception type: {type(e).__name__}")

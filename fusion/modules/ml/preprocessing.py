@@ -135,7 +135,7 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
     }
 
     segment_dataframes = {}
-    for segments, weight in segment_weights.items():
+    for segments, _weight in segment_weights.items():
         segment_df = dataframe[dataframe["num_segments"] == segments]
         if len(segment_df) > 0:
             segment_dataframes[segments] = segment_df

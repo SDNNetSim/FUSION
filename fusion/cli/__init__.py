@@ -30,18 +30,12 @@ All legacy function names are maintained through compatibility aliases.
 
 from .config_setup import ConfigManager, setup_config_from_cli
 from .constants import ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, SUCCESS_EXIT_CODE
-
 # Legacy function imports (backward compatibility)
 # Modern function imports (recommended)
-from .main_parser import (
-    build_main_argument_parser,
-    build_parser,
-    create_gui_argument_parser,
-    create_training_argument_parser,
-    get_gui_args,
-    get_train_args,
-)
-
+from .main_parser import (build_main_argument_parser, build_parser,
+                          create_gui_argument_parser,
+                          create_training_argument_parser, get_gui_args,
+                          get_train_args)
 # Core functionality imports
 from .parameters.registry import args_registry
 

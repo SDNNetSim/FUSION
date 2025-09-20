@@ -11,20 +11,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from fusion.unity.make_manifest import (
-    _cast,
-    _encode,
-    _expand_grid,
-    _explicit,
-    _fetch,
-    _is_rl,
-    _parse_literal,
-    _resolve_spec_path,
-    _str_to_bool,
-    _to_list,
-    _validate_resource_keys,
-    _write_csv,
-)
+from fusion.unity.make_manifest import (_cast, _encode, _expand_grid,
+                                        _explicit, _fetch, _is_rl,
+                                        _parse_literal, _resolve_spec_path,
+                                        _str_to_bool, _to_list,
+                                        _validate_resource_keys, _write_csv)
 from tests.test_unity_fixtures import COMMON_RESOURCES
 
 

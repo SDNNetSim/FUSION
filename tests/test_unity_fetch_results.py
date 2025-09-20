@@ -13,10 +13,8 @@ import unittest
 from fusion.unity.fetch_results import (
     convert_output_path_to_input_path,
     extract_path_algorithm_from_input_directory,
-    extract_topology_from_output_path,
-    get_last_path_segments,
-    iterate_runs_index_file,
-)
+    extract_topology_from_output_path, get_last_path_segments,
+    iterate_runs_index_file)
 
 
 class TestFetchResults(unittest.TestCase):

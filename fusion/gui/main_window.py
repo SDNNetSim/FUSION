@@ -293,7 +293,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Each process might run multiple Erlang volumes, each with a certain number of iterations.
         total_work_units = 0
         for (
-            key,
+            _key,
             conf,
         ) in self.simulation_config.items():  # pylint: disable=unused-variable
             # Unified access to Erlang start/stop/step
@@ -316,7 +316,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Insert the queues into each process config.
         # They will push logs & partial iteration counts to these queues.
-        for key, conf in self.simulation_config.items():
+        for _key, conf in self.simulation_config.items():
             conf["progress_queue"] = self.progress_queue
             conf["log_queue"] = self.log_queue
 

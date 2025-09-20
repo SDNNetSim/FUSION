@@ -5,13 +5,8 @@ import numpy as np
 from fusion.core.properties import SDNProps
 from fusion.core.spectrum_assignment import SpectrumAssignment
 from fusion.modules.rl.utils.errors import ConfigurationError, RLUtilsError
-from fusion.sim.utils import (
-    classify_cong,
-    find_path_cong,
-    find_path_len,
-    get_hfrag,
-    get_path_mod,
-)
+from fusion.sim.utils import (classify_cong, find_path_cong, find_path_len,
+                              get_hfrag, get_path_mod)
 
 
 class CoreUtilHelpers:
@@ -29,7 +24,7 @@ class CoreUtilHelpers:
 
         self.core_number = None
         self.super_channel = None
-        self.super_channel_indexes = list()
+        self.super_channel_indexes = []
         self.modulation_format = None
         self._last_processed_index = 0
 
@@ -73,7 +68,7 @@ class CoreUtilHelpers:
         # There were not enough super-channels, do not penalize the agent
         no_penalty = len(self.super_channel_indexes) == 0
 
-        response_fragmentation_matrix = list()
+        response_fragmentation_matrix = []
         for channel in self.super_channel_indexes:
             start_index = channel[0]
             response_fragmentation_matrix.append(
@@ -109,7 +104,7 @@ class CoreUtilHelpers:
         :return: The index of the path, the path itself, and its congestion index for every path.
         :rtype: list
         """
-        information_list = list()
+        information_list = []
         paths_list = paths_list[:, 0]
         for path_index, current_path in enumerate(paths_list):
             current_congestion, _ = find_path_cong(
@@ -257,12 +252,12 @@ class CoreUtilHelpers:
             "mod_formats_dict": current_request["mod_formats"],
             "num_trans": 1.0,
             "block_reason": None,
-            "modulation_list": list(),
-            "crosstalk_list": list(),
+            "modulation_list": [],
+            "crosstalk_list": [],
             "is_sliced": False,
-            "core_list": list(),
-            "bandwidth_list": list(),
-            "path_weight": list(),
+            "core_list": [],
+            "bandwidth_list": [],
+            "path_weight": [],
         }
 
         for key, value in params.items():
@@ -277,7 +272,7 @@ class CoreUtilHelpers:
         :param seed: The random seed.
         """
         self._last_processed_index = 0
-        self.engine_props.reqs_status_dict = dict()
+        self.engine_props.reqs_status_dict = {}
         self.engine_props.generate_requests(seed=seed)
 
         for request_time in self.engine_props.reqs_dict:

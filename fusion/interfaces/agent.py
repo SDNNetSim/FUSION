@@ -157,21 +157,3 @@ class AgentInterface(ABC):
         Returns:
             Dictionary containing agent-specific metrics
         """
-
-    def reset(self) -> None:
-        """Reset the agent's internal state.
-
-        This method can be overridden by subclasses that maintain episode state.
-        """
-
-    def on_episode_start(self) -> None:
-        """Called at the beginning of each episode.
-
-        This method can be overridden by subclasses for episode initialization.
-        """
-
-    def on_episode_end(self) -> None:
-        """Called at the end of each episode.
-
-        This method can be overridden by subclasses for episode cleanup.
-        """

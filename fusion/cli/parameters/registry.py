@@ -6,42 +6,22 @@ Provides a unified interface for managing CLI argument parsing.
 import argparse
 from collections.abc import Callable
 
-from .analysis import (
-    add_all_analysis_args,
-    add_comparison_args,
-    add_export_args,
-    add_filtering_args,
-    add_plotting_args,
-    add_statistics_args,
-)
+from .analysis import (add_all_analysis_args, add_comparison_args,
+                       add_export_args, add_filtering_args, add_plotting_args,
+                       add_statistics_args)
 from .gui import add_gui_args
-from .network import (
-    add_link_args,
-    add_network_args,
-    add_node_args,
-    add_spectrum_bands_args,
-    add_topology_args,
-)
-from .routing import (
-    add_modulation_args,
-    add_routing_args,
-    add_sdn_args,
-    add_spectrum_args,
-)
+from .network import (add_link_args, add_network_args, add_node_args,
+                      add_spectrum_bands_args, add_topology_args)
+from .routing import (add_modulation_args, add_routing_args, add_sdn_args,
+                      add_spectrum_args)
 from .shared import add_config_args, add_debug_args, add_output_args
-from .simulation import add_run_sim_args, add_simulation_args, register_run_sim_args
+from .simulation import (add_run_sim_args, add_simulation_args,
+                         register_run_sim_args)
 from .snr import add_snr_args
-from .traffic import (
-    add_erlang_args,
-    add_request_args,
-    add_simulation_control_args,
-    add_traffic_args,
-)
-from .training import (
-    add_all_training_args,
-    add_machine_learning_args,
-    add_reinforcement_learning_args,
-)
+from .traffic import (add_erlang_args, add_request_args,
+                      add_simulation_control_args, add_traffic_args)
+from .training import (add_all_training_args, add_machine_learning_args,
+                       add_reinforcement_learning_args)
 
 
 class ArgumentRegistry:

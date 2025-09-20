@@ -14,34 +14,34 @@ class _DummyEnv:  # pylint: disable=too-few-public-methods
 
     def __init__(self, obs_space="obs_1"):
         self.engine_obj = SNS(
-            engine_props=dict(
-                obs_space=obs_space,
-                feature_extractor="path_gnn",
-                emb_dim=32,
-                layers=2,
-                gnn_type="sage",
-                heads=4,
-            )
+            engine_props={
+                "obs_space": obs_space,
+                "feature_extractor": "path_gnn",
+                "emb_dim": 32,
+                "layers": 2,
+                "gnn_type": "sage",
+                "heads": 4,
+            }
         )
         self.rl_props = SNS(mock_sdn_dict={})
 
 
 def _yaml_dict():
     return {
-        "env": dict(
-            policy="MlpPolicy",
-            learning_rate=1e-3,
-            n_steps=64,
-            batch_size=32,
-            n_epochs=4,
-            gamma=0.99,
-            gae_lambda=0.95,
-            clip_range=0.2,
-            ent_coef=0.0,
-            vf_coef=0.5,
-            max_grad_norm=0.5,
-            policy_kwargs="{'net_arch':[64]}",
-        )
+        "env": {
+            "policy": "MlpPolicy",
+            "learning_rate": 1e-3,
+            "n_steps": 64,
+            "batch_size": 32,
+            "n_epochs": 4,
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "clip_range": 0.2,
+            "ent_coef": 0.0,
+            "vf_coef": 0.5,
+            "max_grad_norm": 0.5,
+            "policy_kwargs": "{'net_arch':[64]}",
+        }
     }
 
 
@@ -52,11 +52,11 @@ class TestPrintInfo(TestCase):
     @mock.patch("builtins.print")
     def test_path_agent_string(self, mock_print):
         """Prints correct message for path algorithm."""
-        sim = dict(
-            path_algorithm="q_learning",
-            core_algorithm="none",
-            spectrum_algorithm=None,
-        )
+        sim = {
+            "path_algorithm": "q_learning",
+            "core_algorithm": "none",
+            "spectrum_algorithm": None,
+        }
         su.print_info(sim)
         mock_print.assert_called_once_with(
             "Beginning training process for the PATH AGENT using the "
@@ -65,9 +65,11 @@ class TestPrintInfo(TestCase):
 
     def test_invalid_algorithms_raise(self):
         """No RL algorithms → ValueError."""
-        sim = dict(
-            path_algorithm="none", core_algorithm="none", spectrum_algorithm=None
-        )
+        sim = {
+            "path_algorithm": "none",
+            "core_algorithm": "none",
+            "spectrum_algorithm": None,
+        }
         with self.assertRaises(su.ModelSetupError):
             su.print_info(sim)
 
@@ -105,12 +107,12 @@ class TestSetupHelper(TestCase):
             p.start()
             self.addCleanup(p.stop)
 
-        self.sim = dict(
-            path_algorithm="q_learning",
-            core_algorithm="none",
-            is_training=True,
-            network="net",
-        )
+        self.sim = {
+            "path_algorithm": "q_learning",
+            "core_algorithm": "none",
+            "is_training": True,
+            "network": "net",
+        }
         self.sim_env = SNS(
             sim_dict=self.sim,
             rl_props=SNS(mock_sdn_dict={}),

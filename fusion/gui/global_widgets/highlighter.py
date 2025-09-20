@@ -5,7 +5,9 @@ from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 
 
-class PythonHighlighter(qtg.QSyntaxHighlighter):  # pylint: disable=too-few-public-methods
+class PythonHighlighter(
+    qtg.QSyntaxHighlighter
+):  # pylint: disable=too-few-public-methods
     """
     Adds python syntax highlighting.
     """

@@ -109,7 +109,7 @@ class PlotStats:
         force_legend: bool,
         file_name: str,
     ):
-        legend_list = list()
+        legend_list = []
         color_count = 0
         style_count = 0
         for sims_dict in self.props.plot_dict.values():

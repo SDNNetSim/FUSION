@@ -10,33 +10,17 @@ from unittest.mock import MagicMock, mock_open, patch
 import networkx as nx
 import numpy as np
 
-from fusion.sim.utils import (
-    calc_matrix_stats,
-    classify_cong,
-    combine_and_one_hot,
-    dict_to_list,
-    find_core_cong,
-    find_core_frag_cong,
-    find_free_channels,
-    find_free_slots,
-    find_max_path_len,
-    find_path_cong,
-    find_path_len,
-    find_taken_channels,
-    get_hfrag,
-    get_path_mod,
-    get_start_time,
-    get_super_channels,
-    int_to_string,
-    list_to_title,
-    min_max_scale,
-    modify_multiple_json_values,
-    parse_yaml_file,
-    save_study_results,
-    snake_to_title,
-    sort_dict_keys,
-    sort_nested_dict_vals,
-)
+from fusion.sim.utils import (calc_matrix_stats, classify_cong,
+                              combine_and_one_hot, dict_to_list,
+                              find_core_cong, find_core_frag_cong,
+                              find_free_channels, find_free_slots,
+                              find_max_path_len, find_path_cong, find_path_len,
+                              find_taken_channels, get_hfrag, get_path_mod,
+                              get_start_time, get_super_channels,
+                              int_to_string, list_to_title, min_max_scale,
+                              modify_multiple_json_values, parse_yaml_file,
+                              save_study_results, snake_to_title,
+                              sort_dict_keys, sort_nested_dict_vals)
 
 # NOTE: These functions are no longer supported. get_arrival_rates,run_simulation_for_arrival_rates,
 
@@ -320,7 +304,7 @@ class TestSimHelpers(unittest.TestCase):
         result = parse_yaml_file(yaml_file)
         self.assertEqual(result, {"key": "value"})
 
-        mock_open_file.assert_called_once_with(yaml_file, "r", encoding="utf-8")
+        mock_open_file.assert_called_once_with(yaml_file, encoding="utf-8")
         mock_yaml_load.assert_called_once()
 
     @patch("builtins.open", new_callable=mock_open)
@@ -386,7 +370,7 @@ class TestSimHelpers(unittest.TestCase):
 
         # Ensure the file was read correctly
         mock_open_file.assert_any_call(
-            os.path.join(file_path, "sim_input_s1.json"), "r", encoding="utf-8"
+            os.path.join(file_path, "sim_input_s1.json"), encoding="utf-8"
         )
         # Ensure the file was written correctly to s2.json
         mock_open_file.assert_any_call(

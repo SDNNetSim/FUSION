@@ -14,13 +14,8 @@ Main components:
 # Local application imports
 from .cli_to_config import CLIToConfigMapper
 from .config import ConfigManager, SimulationConfig
-from .errors import (
-    ConfigError,
-    ConfigFileNotFoundError,
-    ConfigParseError,
-    ConfigTypeConversionError,
-    MissingRequiredOptionError,
-)
+from .errors import (ConfigError, ConfigFileNotFoundError, ConfigParseError,
+                     ConfigTypeConversionError, MissingRequiredOptionError)
 from .registry import ConfigRegistry
 from .validate import SchemaValidator, ValidationError
 

@@ -16,18 +16,18 @@ from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 # ----------------------------- helpers --------------------------------
 def _mk_engine(**overrides):
-    base = dict(
-        k_paths=3,
-        cores_per_link=3,
-        conf_param=2.0,
-        max_iters=10,
-        save_step=1,
-        num_requests=1,
-        network="net",
-        date="d",
-        sim_start="t0",
-        erlang=30,
-    )
+    base = {
+        "k_paths": 3,
+        "cores_per_link": 3,
+        "conf_param": 2.0,
+        "max_iters": 10,
+        "save_step": 1,
+        "num_requests": 1,
+        "network": "net",
+        "date": "d",
+        "sim_start": "t0",
+        "erlang": 30,
+    }
     base.update(overrides)
     return base
 
