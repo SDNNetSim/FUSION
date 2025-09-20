@@ -1,28 +1,51 @@
+"""
+Utility functions for FUSION simulations.
+
+This module provides various utility functions for network analysis,
+path calculations, spectrum management, and data processing used
+throughout the FUSION simulation framework.
+"""
+
 import copy
-import os
 import json
+import os
 import pickle
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, Union
 
 import networkx as nx
 import numpy as np
 import yaml
 
+from fusion.utils.logging_config import get_logger
 
-def log_message(message, log_queue):
+logger = get_logger(__name__)
+
+
+def log_message(message: str, log_queue: Any) -> None:
     """
-    Logs a message.
+    Log a message to queue or logger.
+    
+    :param message: Message to log
+    :type message: str
+    :param log_queue: Queue for message logging (None to use logger)
+    :type log_queue: Any
     """
     if log_queue:
         log_queue.put(message)
     else:
-        print(message)
+        logger.info(message)
 
-def update_matrices(info_dict: dict):
+def update_matrices(info_dict: Dict[str, Any]) -> Dict[str, List]:
     """
-    Misc. update of network resource matrices.
+    Update network resource matrices from info dictionary.
+    
+    :param info_dict: Dictionary containing simulation information
+    :type info_dict: Dict[str, Any]
+    :return: Dictionary containing updated matrices
+    :rtype: Dict[str, List]
     """
     resp = {
         'times_matrix': [],
@@ -46,7 +69,7 @@ def update_matrices(info_dict: dict):
     return resp
 
 
-def get_path_mod(mods_dict: dict, path_len: int):
+def get_path_mod(mods_dict: Dict[str, Dict], path_len: float) -> Union[str, bool]:
     """
     Choose a modulation format that will allocate a network request.
 
@@ -68,7 +91,7 @@ def get_path_mod(mods_dict: dict, path_len: int):
     return resp
 
 
-def find_max_path_len(source: int, destination: int, topology: nx.Graph):
+def find_max_path_len(source: int, destination: int, topology: nx.Graph) -> float:
     """
     Find the maximum path length possible of a path in the network.
 
@@ -85,7 +108,7 @@ def find_max_path_len(source: int, destination: int, topology: nx.Graph):
     return resp
 
 
-def sort_nested_dict_vals(original_dict: dict, nested_key: str):
+def sort_nested_dict_vals(original_dict: Dict[str, Any], nested_key: str) -> Dict[str, Any]:
     """
     Sort a dictionary by a value which belongs to a nested key.
 
@@ -99,7 +122,7 @@ def sort_nested_dict_vals(original_dict: dict, nested_key: str):
     return sorted_dict
 
 
-def sort_dict_keys(dictionary: dict):
+def sort_dict_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     """
     Sort a dictionary by keys in descending order.
 
@@ -113,7 +136,7 @@ def sort_dict_keys(dictionary: dict):
     return sorted_dict
 
 
-def find_path_len(path_list: list, topology: nx.Graph):
+def find_path_len(path_list: List[int], topology: nx.Graph) -> float:
     """
     Finds the length of a path in a physical topology.
 
@@ -129,7 +152,7 @@ def find_path_len(path_list: list, topology: nx.Graph):
 
 
 # TODO: (version 5.5-6) Defaulting to 'c' band
-def find_path_cong(path_list: list, network_spectrum_dict: dict, band: str = 'c'):
+def find_path_cong(path_list: List[int], network_spectrum_dict: Dict, band: str = 'c') -> Tuple[float, float]:
     """
     Computes average path congestion and scaled available capacity, accounting for multiple cores per link.
 
@@ -168,7 +191,7 @@ def find_path_cong(path_list: list, network_spectrum_dict: dict, band: str = 'c'
 
 
 # TODO: (version 5.5-6) Defaults to 'c' band
-def find_path_frag(path_list: list, network_spectrum_dict: dict, band: str = 'c') -> float:
+def find_path_frag(path_list: List[int], network_spectrum_dict: Dict, band: str = 'c') -> float:
     """
     Computes the average fragmentation ratio along a path.
 
@@ -213,7 +236,7 @@ def find_path_frag(path_list: list, network_spectrum_dict: dict, band: str = 'c'
     return float(np.mean(frag_ratios_list)) if frag_ratios_list else 1.0
 
 
-def find_core_cong(core_index: int, network_spectrum_dict: dict, path_list: list):
+def find_core_cong(core_index: int, network_spectrum_dict: Dict, path_list: List[int]) -> float:
     """
     Finds the current percentage of congestion on a core along a path.
 
@@ -241,7 +264,7 @@ def find_core_cong(core_index: int, network_spectrum_dict: dict, path_list: list
     return average_core_cong
 
 
-def find_core_frag_cong(net_spec_db: dict, path: list, core: int, band: str):
+def find_core_frag_cong(net_spec_db: Dict, path: List[int], core: int, band: str) -> Tuple[float, float]:
     """
     Finds the congestion and fragmentation scores for a specific request.
 
@@ -285,7 +308,7 @@ def find_core_frag_cong(net_spec_db: dict, path: list, core: int, band: str):
     return frag_resp, cong_resp
 
 
-def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
+def get_channel_overlaps(free_channels_dict: Dict, free_slots_dict: Dict) -> Dict:
     """
     Find the number of overlapping and non-overlapping channels between adjacent cores.
 
@@ -332,7 +355,7 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict):
     return resp_dict
 
 
-def find_free_slots(network_spectrum_dict: dict, link_tuple: tuple):
+def find_free_slots(network_spectrum_dict: Dict, link_tuple: Tuple[int, int]) -> Dict:
     """
     Find every unallocated spectral slot for a given link.
 
@@ -353,7 +376,7 @@ def find_free_slots(network_spectrum_dict: dict, link_tuple: tuple):
     return resp_dict
 
 
-def find_free_channels(network_spectrum_dict: dict, slots_needed: int, link_tuple: tuple):
+def find_free_channels(network_spectrum_dict: Dict, slots_needed: int, link_tuple: Tuple[int, int]) -> Dict:
     """
     Finds the free super-channels on a given link.
 
@@ -391,7 +414,7 @@ def find_free_channels(network_spectrum_dict: dict, slots_needed: int, link_tupl
     return resp_dict
 
 
-def find_taken_channels(network_spectrum_dict: dict, link_tuple: tuple):
+def find_taken_channels(network_spectrum_dict: Dict, link_tuple: Tuple[int, int]) -> Dict:
     """
     Finds the taken super-channels on a given link.
 
@@ -447,7 +470,7 @@ def int_to_string(number: int):
     return '{:,}'.format(number)  # pylint: disable=consider-using-f-string
 
 
-def dict_to_list(data_dict: dict, nested_key: str, path_list: list = None, find_mean: bool = False):
+def dict_to_list(data_dict: Dict, nested_key: str, path_list: List[str] = None, find_mean: bool = False) -> Union[List, float]:
     """
     Creates a list from a dictionary taken values from a specified key.
 
@@ -475,7 +498,7 @@ def dict_to_list(data_dict: dict, nested_key: str, path_list: list = None, find_
     return np.array(extracted_list)
 
 
-def list_to_title(input_list: list):
+def list_to_title(input_list: List[Tuple[str, Any]]) -> str:
     """
     Converts a list to a title case.
 
@@ -497,7 +520,7 @@ def list_to_title(input_list: list):
     return unique_list[0]
 
 
-def calc_matrix_stats(input_dict: dict):
+def calc_matrix_stats(input_dict: Dict[str, List]) -> Dict[str, List]:
     """
     Creates a matrix based on dict values and takes the min, max, and average of columns.
     :param input_dict: The input dict with values as lists.
@@ -519,7 +542,7 @@ def calc_matrix_stats(input_dict: dict):
     return resp_dict
 
 
-def combine_and_one_hot(arr1: np.array, arr2: np.array):
+def combine_and_one_hot(arr1: np.ndarray, arr2: np.ndarray) -> np.ndarray:
     """
     Or operation of two arrays to find overlaps.
     :param arr1: The first input array.
@@ -537,7 +560,7 @@ def combine_and_one_hot(arr1: np.array, arr2: np.array):
     return result
 
 
-def get_start_time(sim_dict: dict):
+def get_start_time(sim_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     Gets a unique start time for a simulation, ensuring it does not already exist.
     :param sim_dict: Holds the simulation parameters.
@@ -555,7 +578,7 @@ def get_start_time(sim_dict: dict):
         if not full_path.exists():
             break
 
-        print('\n\n [WARNING] Duplicate start times, picking a new start!\n\n')
+        logger.warning('Duplicate start times, picking a new start!')
 
     sim_dict['s1']['date'] = date
     sim_dict['s1']['sim_start'] = time_string
@@ -576,7 +599,7 @@ def min_max_scale(value: float, min_value: float, max_value: float):
     return (value - min_value) / (max_value - min_value)
 
 
-def get_super_channels(input_arr: np.array, slots_needed: int):
+def get_super_channels(input_arr: np.ndarray, slots_needed: int) -> np.ndarray:
     """
     Gets available super-channels w.r.t. the current request's needs.
 
@@ -608,7 +631,7 @@ def get_super_channels(input_arr: np.array, slots_needed: int):
 
 # TODO: (version 5.5-6) Add reference
 # Please refer to this paper for the formulation:
-def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
+def _get_hfrag_score(sc_index_mat: np.ndarray, spectral_slots: int) -> float:
     big_n = len(sc_index_mat) * -1.0
     if big_n == 0.0:
         return np.inf
@@ -618,7 +641,7 @@ def _get_hfrag_score(sc_index_mat: np.array, spectral_slots: int):
     return resp_score
 
 
-def get_hfrag(path_list: list, core_num: int, band: str, slots_needed: int, spectral_slots: int, network_spectrum_dict: dict):
+def get_hfrag(path_list: List[int], core_num: int, band: str, slots_needed: int, spectral_slots: int, network_spectrum_dict: Dict) -> Tuple[np.ndarray, np.ndarray]:
     """
     Gets the shannon entropy fragmentation scores for allocating a request.
 
@@ -692,7 +715,7 @@ def parse_yaml_file(yaml_file: str):
             return exc
 
 
-def get_erlang_vals(sim_dict: dict):
+def get_erlang_vals(sim_dict: Dict[str, Any]) -> List[int]:
     """
     Generate a list of arrival rates based on the configuration dictionary.
 
@@ -707,7 +730,7 @@ def get_erlang_vals(sim_dict: dict):
     return list(range(start, stop, step))
 
 
-def run_simulation_for_erlangs(env, erlang_list: list, sim_dict: dict, run_func, callback_list: object, trial):
+def run_simulation_for_erlangs(env: Any, erlang_list: List[float], sim_dict: Dict[str, Any], run_func: Any, callback_list: Any, trial: Any) -> float:
     """
     Run the simulation for each arrival rate in the given list.
 
@@ -729,7 +752,7 @@ def run_simulation_for_erlangs(env, erlang_list: list, sim_dict: dict, run_func,
     return np.mean(total_rewards)
 
 
-def save_study_results(study, env, study_name: str, best_params: dict, best_reward: float, best_sim_start: int):
+def save_study_results(study: Any, env: Any, study_name: str, best_params: Dict[str, Any], best_reward: float, best_sim_start: int) -> None:
     """
     Save the results of the study, including the best hyperparameters and the best reward value.
 
@@ -759,7 +782,7 @@ def save_study_results(study, env, study_name: str, best_params: dict, best_rewa
 
 
 # TODO: (version 5.5-6) Only support for one process
-def modify_multiple_json_values(trial_num: int, file_path: str, update_list: list):
+def modify_multiple_json_values(trial_num: int, file_path: str, update_list: List[Tuple[str, Any]]) -> None:
     """
     Opens a JSON file, modifies multiple key-value pairs in a dictionary, and saves it back to the file.
 
@@ -783,7 +806,7 @@ def modify_multiple_json_values(trial_num: int, file_path: str, update_list: lis
         json.dump(data, json_file, indent=4)
 
 
-def update_dict_from_list(input_dict: dict, updates_list: list):
+def update_dict_from_list(input_dict: Dict[str, Any], updates_list: List[Tuple[str, Any]]) -> Dict[str, Any]:
     """
     Updates the input dictionary with values from the updates list. The keys are derived from the tuples in the list.
 
