@@ -1,5 +1,10 @@
 import unittest
-from fusion.utils.random import set_random_seed, generate_uniform_random_variable, generate_exponential_random_variable
+
+from fusion.utils.random import (
+    generate_exponential_random_variable,
+    generate_uniform_random_variable,
+    set_random_seed,
+)
 
 
 class TestRandomGenerators(unittest.TestCase):
@@ -15,7 +20,11 @@ class TestRandomGenerators(unittest.TestCase):
         result1 = generate_uniform_random_variable()
         set_random_seed(42)
         result2 = generate_uniform_random_variable()
-        self.assertEqual(result1, result2, "The results should be the same when the same seed is set.")
+        self.assertEqual(
+            result1,
+            result2,
+            "The results should be the same when the same seed is set.",
+        )
 
     def test_uniform_rv_without_scale(self):
         """
@@ -32,7 +41,9 @@ class TestRandomGenerators(unittest.TestCase):
         set_random_seed(42)
         scale_param = 10
         result = generate_uniform_random_variable(scale_param)
-        self.assertTrue(0 <= result <= scale_param, "The result should be within [0, scale_param].")
+        self.assertTrue(
+            0 <= result <= scale_param, "The result should be within [0, scale_param]."
+        )
 
     def test_exponential_rv(self):
         """

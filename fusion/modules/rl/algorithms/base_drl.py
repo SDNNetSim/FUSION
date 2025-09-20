@@ -8,7 +8,7 @@ from fusion.modules.rl.utils.observation_space import get_observation_space
 class BaseDRLAlgorithm:
     """
     Base class for Deep Reinforcement Learning algorithms.
-    
+
     Provides common functionality for observation space and action space
     handling across different DRL frameworks (PPO, A2C, DQN, QR-DQN).
     """
@@ -28,14 +28,16 @@ class BaseDRLAlgorithm:
     def get_obs_space(self) -> spaces.Dict:
         """
         Get the observation space for the reinforcement learning framework.
-        
+
         Creates a dictionary-based observation space using the configured
         RL and engine properties.
-        
+
         :return: Dictionary observation space compatible with Gymnasium
         :rtype: spaces.Dict
         """
-        obs_space_dict = get_observation_space(rl_props=self.rl_props, engine_props=self.engine_obj)
+        obs_space_dict = get_observation_space(
+            rl_props=self.rl_props, engine_props=self.engine_obj
+        )
         return spaces.Dict(obs_space_dict)
 
     def get_action_space(self) -> spaces.Discrete:
@@ -48,5 +50,5 @@ class BaseDRLAlgorithm:
         :return: Discrete action space object compatible with Gymnasium
         :rtype: spaces.Discrete
         """
-        action_space = spaces.Discrete(self.engine_obj.engine_props['k_paths'])
+        action_space = spaces.Discrete(self.engine_obj.engine_props["k_paths"])
         return action_space

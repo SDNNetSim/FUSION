@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
+
 from fusion.modules.rl.utils import general_utils as gu
 
 
@@ -49,11 +50,13 @@ def _engine(snapshot=True):
 
 
 def _route():
-    return SimpleNamespace(route_props=SimpleNamespace(
-        paths_matrix=None,
-        modulation_formats_matrix=None,
-        weights_list=[],
-    ))
+    return SimpleNamespace(
+        route_props=SimpleNamespace(
+            paths_matrix=None,
+            modulation_formats_matrix=None,
+            weights_list=[],
+        )
+    )
 
 
 # ------------------------------------------------------------------ #
@@ -78,8 +81,7 @@ class TestGetSuperChannels(TestCase):
         mock_hfrag.return_value = (sc_mat, hfrag)
 
         helper = gu.CoreUtilHelpers(_rl_props(), _engine(), _route())
-        frag, no_penalty = helper.get_super_channels(slots_needed=1,
-                                                     num_channels=1)
+        frag, no_penalty = helper.get_super_channels(slots_needed=1, num_channels=1)
 
         self.assertFalse(no_penalty)
         # after padding to super_channel_space = 2
@@ -89,10 +91,10 @@ class TestGetSuperChannels(TestCase):
 class TestClassifyPathsAndCores(TestCase):
     """classify_paths/cores delegate helpers."""
 
-    @mock.patch("fusion.modules.rl.utils.general_utils.classify_cong",
-                return_value=2)
-    @mock.patch("fusion.modules.rl.utils.general_utils.find_path_cong",
-                return_value=(0.4, None))
+    @mock.patch("fusion.modules.rl.utils.general_utils.classify_cong", return_value=2)
+    @mock.patch(
+        "fusion.modules.rl.utils.general_utils.find_path_cong", return_value=(0.4, None)
+    )
     def test_classify_paths_returns_info(self, *_):
         """Returns list of tuples (idx,path,cong)."""
         helper = gu.CoreUtilHelpers(_rl_props(), _engine(), _route())
@@ -137,9 +139,7 @@ class TestAllocateBlocking(TestCase):
         self.assertEqual(
             eng.stats_obj.stats_props["block_reasons_dict"]["congestion"], 1
         )
-        self.assertEqual(
-            eng.stats_obj.stats_props["block_bw_dict"]["100G"], 1
-        )
+        self.assertEqual(eng.stats_obj.stats_props["block_bw_dict"]["100G"], 1)
         eng.handle_arrival.assert_not_called()
 
 
@@ -161,8 +161,10 @@ class TestSaveArr(TestCase):
     """save_arr constructs path and calls np.save."""
 
     @mock.patch("fusion.modules.rl.utils.general_utils.np.save")
-    @mock.patch("fusion.modules.rl.utils.general_utils.os.path.join",
-                return_value="joined/path.npy")
+    @mock.patch(
+        "fusion.modules.rl.utils.general_utils.os.path.join",
+        return_value="joined/path.npy",
+    )
     def test_save_arr_joins_path_and_saves(self, mock_join, mock_save):
         """np.save called with path from os.path.join."""
         sim = {
@@ -174,7 +176,5 @@ class TestSaveArr(TestCase):
         arr = np.array([1, 2])
         gu.save_arr(arr, sim, "file.npy")
 
-        mock_join.assert_called_once_with(
-            "logs", "ppo", "net", "d", "t0", "file.npy"
-        )
+        mock_join.assert_called_once_with("logs", "ppo", "net", "d", "t0", "file.npy")
         mock_save.assert_called_once_with("joined/path.npy", arr)

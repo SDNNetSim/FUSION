@@ -6,23 +6,35 @@ from inspect import signature
 from pathlib import Path
 
 # Standard library imports
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 # Third-party imports
 import yaml
 
-# Local imports
-from fusion.modules.rl.plotting.errors import InvalidConfigurationError, PlottingFileNotFoundError
-from fusion.modules.rl.plotting.loaders import load_metric_for_runs, discover_all_run_ids
 from fusion.modules.rl.plotting import processors
+
+# Local imports
+from fusion.modules.rl.plotting.errors import (
+    InvalidConfigurationError,
+    PlottingFileNotFoundError,
+)
+from fusion.modules.rl.plotting.loaders import (
+    discover_all_run_ids,
+    load_metric_for_runs,
+)
 from fusion.modules.rl.plotting.registry import PLOTS
 
 
-def call_processor(processor_function, raw_runs: Dict[str, Any], runid_to_algo: Dict[str, str], **context) -> Any:
+def call_processor(
+    processor_function,
+    raw_runs: dict[str, Any],
+    runid_to_algo: dict[str, str],
+    **context,
+) -> Any:
     """
     Call processor_function with (raw_runs, runid_to_algo) and pass **context
     only if the function signature accepts it.
-    
+
     :param processor_function: Function to process the data
     :param raw_runs: Raw run data
     :type raw_runs: Dict[str, Any]
@@ -38,7 +50,11 @@ def call_processor(processor_function, raw_runs: Dict[str, Any], runid_to_algo: 
     return processor_function(raw_runs, runid_to_algo)  # legacy 2-arg processors
 
 
-def _collect_run_ids(config_algorithm: str, config_variants: List[Dict[str, Any]], discovered: Dict[str, List[str]]) -> List[str]:
+def _collect_run_ids(
+    config_algorithm: str,
+    config_variants: list[dict[str, Any]],
+    discovered: dict[str, list[str]],
+) -> list[str]:
     """Collect run IDs for a specific algorithm from configuration or discovered runs."""
     if config_variants:
         return [variant["run_id"] for variant in config_variants]
@@ -54,18 +70,27 @@ def _collect_run_ids(config_algorithm: str, config_variants: List[Dict[str, Any]
 def _load_and_validate_cfg(config_path: str) -> dict:
     """Load and validate plotting configuration from YAML file."""
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config = yaml.safe_load(f)
     except (OSError, yaml.YAMLError) as exc:
-        raise PlottingFileNotFoundError(f"Failed to load configuration file {config_path}: {exc}") from exc
+        raise PlottingFileNotFoundError(
+            f"Failed to load configuration file {config_path}: {exc}"
+        ) from exc
 
     if not config.get("network") or not config.get("dates"):
-        raise InvalidConfigurationError("YAML configuration must contain 'network' and 'dates' fields.")
+        raise InvalidConfigurationError(
+            "YAML configuration must contain 'network' and 'dates' fields."
+        )
 
     return config
 
 
-def _get_algorithms(config: Dict[str, Any], network: str, dates: List[str], observation_spaces: Optional[List[str]]) -> List[str]:
+def _get_algorithms(
+    config: dict[str, Any],
+    network: str,
+    dates: list[str],
+    observation_spaces: list[str] | None,
+) -> list[str]:
     """Get list of algorithms to process from configuration or discovery."""
     variants = config["runs"].get("variants", {})
     if variants:
@@ -74,13 +99,21 @@ def _get_algorithms(config: Dict[str, Any], network: str, dates: List[str], obse
     if config.get("algorithms"):
         return config["algorithms"]
 
-    all_drl = discover_all_run_ids(network, dates, drl=True, obs_filter=observation_spaces)
+    all_drl = discover_all_run_ids(
+        network, dates, drl=True, obs_filter=observation_spaces
+    )
     all_non_drl = discover_all_run_ids(network, dates, drl=False, obs_filter=None)
     return sorted(set(all_drl) | set(all_non_drl))
 
 
-def _process_plot(config: Dict[str, Any], plot_name: str, network: str, dates: List[str], algorithms: List[str],
-                  observation_spaces: Optional[List[str]]):
+def _process_plot(
+    config: dict[str, Any],
+    plot_name: str,
+    network: str,
+    dates: list[str],
+    algorithms: list[str],
+    observation_spaces: list[str] | None,
+):
     plot_metadata = PLOTS[plot_name]
     plot_function = plot_metadata["plot"]
     processor_function = getattr(processors, plot_metadata["process"])
@@ -93,11 +126,17 @@ def _process_plot(config: Dict[str, Any], plot_name: str, network: str, dates: L
             continue
 
         drl_flag = run_type == "drl"
-        discovered = discover_all_run_ids(network, dates, drl=drl_flag, obs_filter=observation_spaces)
+        discovered = discover_all_run_ids(
+            network, dates, drl=drl_flag, obs_filter=observation_spaces
+        )
 
         for algorithm in algorithms:
-            run_ids = _collect_run_ids(algorithm, variants_block.get(algorithm, []), discovered)
-            print(f"[DEBUG] Using run_ids for {algorithm} ({'DRL' if drl_flag else 'non-DRL'}): {run_ids}")
+            run_ids = _collect_run_ids(
+                algorithm, variants_block.get(algorithm, []), discovered
+            )
+            print(
+                f"[DEBUG] Using run_ids for {algorithm} ({'DRL' if drl_flag else 'non-DRL'}): {run_ids}"
+            )
             if not run_ids:
                 continue
 
@@ -106,7 +145,7 @@ def _process_plot(config: Dict[str, Any], plot_name: str, network: str, dates: L
                 metric=plot_name,
                 drl=drl_flag,
                 network=network,
-                dates=dates
+                dates=dates,
             )
             combined_raw.update(raw_metric)
             combined_runid_to_algo.update(runid_to_algo)
@@ -115,9 +154,13 @@ def _process_plot(config: Dict[str, Any], plot_name: str, network: str, dates: L
     if not combined_raw:
         return
 
-    context = {"start_stamps": combined_start_stamps} if plot_name == "sim_times" else {}
+    context = (
+        {"start_stamps": combined_start_stamps} if plot_name == "sim_times" else {}
+    )
 
-    processed = call_processor(processor_function, combined_raw, combined_runid_to_algo, **context)
+    processed = call_processor(
+        processor_function, combined_raw, combined_runid_to_algo, **context
+    )
 
     save_directory = config.get("save_dir")
     title = f"{plot_name.capitalize()} – {network}"

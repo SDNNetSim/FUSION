@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
+
 from fusion.modules.rl.algorithms import q_learning as ql
 from fusion.modules.rl.errors import AlgorithmNotFoundError
 
@@ -107,10 +108,11 @@ class TestGetMaxCurrQ(TestCase):
 class TestGetMaxFutureQ(TestCase):
     """Future-Q computation with congestion helpers."""
 
-    @mock.patch("fusion.modules.rl.algorithms.q_learning.classify_cong",
-                return_value=0)
-    @mock.patch("fusion.modules.rl.algorithms.q_learning.find_path_cong",
-                return_value=(0.4, None))
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.classify_cong", return_value=0)
+    @mock.patch(
+        "fusion.modules.rl.algorithms.q_learning.find_path_cong",
+        return_value=(0.4, None),
+    )
     def test_max_future_q_path(self, _cong, _classify):
         """Path mode returns correct Q from matrix."""
         agent = _new_agent()
@@ -147,14 +149,15 @@ class TestSaveModel(TestCase):
     @mock.patch("fusion.modules.rl.algorithms.q_learning.np.save")
     @mock.patch("fusion.modules.rl.algorithms.q_learning.create_directory")
     def test_save_model_writes_files(
-            self, mock_dir, mock_npsave, mock_open_fn, mock_dump
+        self, mock_dir, mock_npsave, mock_open_fn, mock_dump
     ):
         """save_model calls create_directory, np.save, and json.dump."""
         agent = _new_agent()
         agent.iteration = 0
         agent.rewards_stats_dict = {"average": np.array([1.0])}
-        with mock.patch.object(agent, "_convert_q_tables_to_dict",
-                               return_value={"k": [1]}):
+        with mock.patch.object(
+            agent, "_convert_q_tables_to_dict", return_value={"k": [1]}
+        ):
             agent.save_model(trial=0)
 
         mock_dir.assert_called_once()

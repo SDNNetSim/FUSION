@@ -6,17 +6,17 @@ by the simulation environment implementation.
 """
 
 # Configuration keys
-DEFAULT_SIMULATION_KEY: str = 's1'
+DEFAULT_SIMULATION_KEY: str = "s1"
 DEFAULT_SAVE_SIMULATION: bool = False
 
 # Supported spectral bands
-SUPPORTED_SPECTRAL_BANDS: list = ['c']  # Currently only C-band supported
+SUPPORTED_SPECTRAL_BANDS: list = ["c"]  # Currently only C-band supported
 
 # Configuration dictionary keys for arrival parameters
 ARRIVAL_DICT_KEYS: dict = {
-    'start': 'erlang_start',
-    'stop': 'erlang_stop',
-    'step': 'erlang_step'
+    "start": "erlang_start",
+    "stop": "erlang_stop",
+    "step": "erlang_step",
 }
 
 # Environment setup constants

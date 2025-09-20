@@ -42,8 +42,18 @@ This simulator is an open-source initiative, and we welcome contributions from e
 ### 4. Testing and Quality Assurance
 
 1. **Comprehensive Testing**: Test every function and its branches thoroughly.
-2. **Formatting**: Use an auto-formatting tool to maintain consistent code formatting, adhering to a style guide like
-   PEP 8.
+2. **Development Tools**: We use a modern development stack for code quality:
+   - **black**: Code formatter (automatic code style)
+   - **ruff**: Fast linting and code analysis
+   - **mypy**: Type checking for better code safety
+   - **pytest**: Testing framework with coverage reporting
+   - **pre-commit**: Automated quality checks before commits
+3. **Development Workflow**: Follow our established development process:
+   - Run `make format` to format code before commits
+   - Run `make lint-new` for linting and type checking
+   - Run `make test-new` for testing with coverage
+   - Run `make check-all` for comprehensive quality checks
+4. **Quality Standards**: All code must pass our automated quality checks including formatting, linting, type checking, and maintain test coverage above 80%.
 
 ### 5. Additional Considerations
 
@@ -52,10 +62,31 @@ This simulator is an open-source initiative, and we welcome contributions from e
 
 ## Pull Request Process
 
-1. Fork the repository and create your branch from `main`.
-2. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-3. Increase the version numbers in any examples files and the README.md to the new version that this Pull Request would represent. The versioning scheme we use is semantic.
-4. You may merge* the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
+### Before You Start
+1. **Set up development environment**:
+   ```bash
+   pip install -r requirements-dev.txt
+   make setup-hooks
+   ```
+2. **Fork and branch**: Fork the repository and create your branch from `main`.
+
+### Development Process
+1. **Code Quality**: All code must pass our quality checks:
+   ```bash
+   make check-all  # Runs format, lint, test, and analysis
+   ```
+2. **Pre-commit hooks**: Our hooks will automatically check your code on commit. If they fail, fix the issues and commit again.
+3. **Testing**: Ensure all tests pass and maintain coverage above 80%:
+   ```bash
+   make test-new
+   ```
+4. **Documentation**: Update documentation if your changes affect user-facing functionality.
+
+### Submitting Your PR
+1. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
+2. Increase the version numbers in any examples files and the README.md to the new version that this Pull Request would represent. The versioning scheme we use is semantic.
+3. Your PR must pass all automated checks in our CI/CD pipeline.
+4. You may merge the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
 
 *Check to ensure that your pull request meets the requirements as outlined by the [PR template](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/pull_request_template.md) before merging.
 

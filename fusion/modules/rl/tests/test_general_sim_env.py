@@ -2,9 +2,9 @@
 
 # pylint: disable=too-few-public-methods, unused-argument
 
+import sys
 from types import ModuleType, SimpleNamespace
 from unittest import TestCase, mock
-import sys
 
 gym_mod = ModuleType("gymnasium")
 spaces_mod = ModuleType("gymnasium.spaces")
@@ -37,16 +37,20 @@ spaces_mod.Box = _DummySpace
 spaces_mod.Discrete = _DummySpace
 gym_mod.Env = _StubGymEnv
 gym_mod.spaces = spaces_mod
-sys.modules.update({
-    "gymnasium": gym_mod,
-    "gymnasium.spaces": spaces_mod,
-})
+sys.modules.update(
+    {
+        "gymnasium": gym_mod,
+        "gymnasium.spaces": spaces_mod,
+    }
+)
 
 torch_mod = ModuleType("torch")
 torch_nn_mod = ModuleType("torch.nn")
 
+
 class _Tensor:
     """Minimal placeholder for torch.Tensor."""
+
     def numel(self):
         """Return number of elements in tensor."""
         return 1
@@ -59,7 +63,9 @@ class _Tensor:
         """Return tensor with dimension `dim`."""
         return self
 
+
 torch_mod.Tensor = _Tensor
+
 
 class _NNModule:
     """Lightweight torch.nn.Module replacement."""
@@ -92,10 +98,12 @@ torch_nn_mod.Linear = _Linear
 torch_nn_mod.ReLU = _NNModule
 torch_mod.nn = torch_nn_mod
 torch_mod.randn = _randn
-sys.modules.update({
-    "torch": torch_mod,
-    "torch.nn": torch_nn_mod,
-})
+sys.modules.update(
+    {
+        "torch": torch_mod,
+        "torch.nn": torch_nn_mod,
+    }
+)
 
 # torch_geometric.nn with dummy convs
 tg_mod = ModuleType("torch_geometric")
@@ -103,10 +111,12 @@ tg_nn_mod = ModuleType("torch_geometric.nn")
 for _name in ("GraphConv", "SAGEConv", "GATv2Conv", "TransformerConv"):
     setattr(tg_nn_mod, _name, _NNModule)
 tg_mod.nn = tg_nn_mod
-sys.modules.update({
-    "torch_geometric": tg_mod,
-    "torch_geometric.nn": tg_nn_mod,
-})
+sys.modules.update(
+    {
+        "torch_geometric": tg_mod,
+        "torch_geometric.nn": tg_nn_mod,
+    }
+)
 
 sb3_root = ModuleType("stable_baselines3")
 
@@ -125,26 +135,26 @@ sb3_common = ModuleType("stable_baselines3.common")
 sb3_base_class = ModuleType("stable_baselines3.common.base_class")
 sb3_torch_layers = ModuleType("stable_baselines3.common.torch_layers")
 sb3_base_class.BaseAlgorithm = _BaseAlgo
-sb3_torch_layers.BaseFeaturesExtractor = type(
-    "BaseFeaturesExtractor", (), {}
-)
+sb3_torch_layers.BaseFeaturesExtractor = type("BaseFeaturesExtractor", (), {})
 sb3_common.base_class = sb3_base_class
 sb3_common.torch_layers = sb3_torch_layers
 
-sys.modules.update({
-    "stable_baselines3": sb3_root,
-    "stable_baselines3.common": sb3_common,
-    "stable_baselines3.common.base_class": sb3_base_class,
-    "stable_baselines3.common.torch_layers": sb3_torch_layers,
-})
+sys.modules.update(
+    {
+        "stable_baselines3": sb3_root,
+        "stable_baselines3.common": sb3_common,
+        "stable_baselines3.common.base_class": sb3_base_class,
+        "stable_baselines3.common.torch_layers": sb3_torch_layers,
+    }
+)
 
 sb3_contrib = ModuleType("sb3_contrib")
 for _name in ("ARS", "QRDQN"):
     setattr(sb3_contrib, _name, type(_name, (), {}))
 sys.modules["sb3_contrib"] = sb3_contrib
 
-from fusion.modules.rl.gymnasium_envs import (  # pylint: disable=wrong-import-position
-    general_sim_env as gen_env,
+from fusion.modules.rl.gymnasium_envs import (
+    general_sim_env as gen_env,  # pylint: disable=wrong-import-position
 )
 
 

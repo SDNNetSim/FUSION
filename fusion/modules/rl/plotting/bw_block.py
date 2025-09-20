@@ -10,12 +10,16 @@ def plot_bw_blocked(data, save_path=None, title="Blocked Bandwidth (Normalized)"
     """
     Plots normalized blocked bandwidth by dividing blocked counts by request distribution.
     """
-    request_distribution = {"25": 0.10, "50": 0.10, "100": 0.50, "200": 0.20, "400": 0.10}
+    request_distribution = {
+        "25": 0.10,
+        "50": 0.10,
+        "100": 0.50,
+        "200": 0.20,
+        "400": 0.10,
+    }
 
     plt.style.use(
-        'seaborn-whitegrid'
-        if 'seaborn-whitegrid' in plt.style.available
-        else 'default'
+        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
     )
 
     all_tvs = sorted({tv for algo in data.values() for tv in algo})
@@ -49,13 +53,7 @@ def plot_bw_blocked(data, save_path=None, title="Blocked Bandwidth (Normalized)"
             patch.set_zorder(3)
 
         ax.set_axisbelow(True)
-        ax.grid(
-            axis="y",
-            linestyle="--",
-            linewidth=0.8,
-            alpha=0.7,
-            zorder=0
-        )
+        ax.grid(axis="y", linestyle="--", linewidth=0.8, alpha=0.7, zorder=0)
 
         ax.set_xticks(x_pos + width * (len(all_algos) - 1) / 2)
         ax.set_xticklabels([int(bw) for bw in bws])

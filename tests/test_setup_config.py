@@ -1,8 +1,9 @@
 import os
 import unittest
 from unittest.mock import patch
+
+from fusion.cli.config_setup import ConfigManager, load_config
 from fusion.cli.main_parser import build_parser
-from fusion.cli.config_setup import load_config, ConfigManager
 
 
 class TestConfigManager(unittest.TestCase):
@@ -12,10 +13,22 @@ class TestConfigManager(unittest.TestCase):
 
     def setUp(self):
         base = os.path.dirname(__file__)
-        self.valid_config = os.path.join(base, 'fixtures', 'valid_config.ini')
-        self.invalid_config = os.path.join(base, 'fixtures', 'invalid_config.ini')
+        self.valid_config = os.path.join(base, "fixtures", "valid_config.ini")
+        self.invalid_config = os.path.join(base, "fixtures", "invalid_config.ini")
 
-    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test', '--network', 'NSFNet'])
+    @patch(
+        "sys.argv",
+        [
+            "prog",
+            "run_sim",
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "test",
+            "--network",
+            "NSFNet",
+        ],
+    )
     def test_successful_config_load(self):
         """
         Test successful config loading.
@@ -28,9 +41,21 @@ class TestConfigManager(unittest.TestCase):
         self.assertIn("s1", config_dict)
         # When CLI arguments are not provided (default=None), config file values are used
         self.assertEqual(config_dict["s1"]["erlang_start"], 300.0)  # Config file value
-        self.assertEqual(config_dict["s1"]["holding_time"], 0.2)    # Config file value
+        self.assertEqual(config_dict["s1"]["holding_time"], 0.2)  # Config file value
 
-    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/invalid_config.ini', '--run_id', 'test', '--network', 'NSFNet'])
+    @patch(
+        "sys.argv",
+        [
+            "prog",
+            "run_sim",
+            "--config_path",
+            "tests/fixtures/invalid_config.ini",
+            "--run_id",
+            "test",
+            "--network",
+            "NSFNet",
+        ],
+    )
     def test_invalid_config_read(self):
         """
         Test invalid config reading.
@@ -40,7 +65,19 @@ class TestConfigManager(unittest.TestCase):
         config = load_config(self.invalid_config, vars(args))
         self.assertEqual(config, {})  # load_config fails gracefully and returns {}
 
-    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'non_existent_config.ini', '--run_id', 'test', '--network', 'NSFNet'])
+    @patch(
+        "sys.argv",
+        [
+            "prog",
+            "run_sim",
+            "--config_path",
+            "non_existent_config.ini",
+            "--run_id",
+            "test",
+            "--network",
+            "NSFNet",
+        ],
+    )
     def test_missing_config_file(self):
         """
         Test missing config file.
@@ -50,7 +87,21 @@ class TestConfigManager(unittest.TestCase):
         config = load_config("non_existent_config.ini", vars(args))
         self.assertEqual(config, {})  # Should not raise, should return {}
 
-    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test', '--network', 'NSFNet', '--holding_time', '1.5'])
+    @patch(
+        "sys.argv",
+        [
+            "prog",
+            "run_sim",
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "test",
+            "--network",
+            "NSFNet",
+            "--holding_time",
+            "1.5",
+        ],
+    )
     def test_command_line_override(self):
         """
         Test command line override.
@@ -61,7 +112,19 @@ class TestConfigManager(unittest.TestCase):
         config_dict = config.as_dict()
         self.assertEqual(config_dict["s1"]["holding_time"], 1.5)
 
-    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test', '--network', 'NSFNet'])
+    @patch(
+        "sys.argv",
+        [
+            "prog",
+            "run_sim",
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "test",
+            "--network",
+            "NSFNet",
+        ],
+    )
     def test_default_values_handled(self):
         """
         Test default values handled.
@@ -73,7 +136,19 @@ class TestConfigManager(unittest.TestCase):
         self.assertIn("s1", config_dict)
         self.assertIsNone(config_dict["s1"].get("some_nonexistent_param"))
 
-    @patch('sys.argv', ['prog', 'run_sim', '--config_path', 'tests/fixtures/valid_config.ini', '--run_id', 'test', '--network', 'NSFNet'])
+    @patch(
+        "sys.argv",
+        [
+            "prog",
+            "run_sim",
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "test",
+            "--network",
+            "NSFNet",
+        ],
+    )
     def test_multi_thread_sections(self):
         """
         Test multi-thread sections.
@@ -88,5 +163,5 @@ class TestConfigManager(unittest.TestCase):
         self.assertIsInstance(config_dict["s3"], dict)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

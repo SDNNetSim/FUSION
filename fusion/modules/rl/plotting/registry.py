@@ -1,14 +1,18 @@
-from fusion.modules.rl.plotting.blocking import plot_blocking_probabilities
+from fusion.modules.rl.plotting.blocking import (
+    plot_blocking_probabilities,
+    plot_effect_heatmaps,
+)
+from fusion.modules.rl.plotting.bw_block import plot_bw_blocked
+from fusion.modules.rl.plotting.link_data import plot_link_throughput, plot_link_usage
 from fusion.modules.rl.plotting.memory_usage import plot_memory_usage
+from fusion.modules.rl.plotting.mod_usage import plot_modulation_usage
+from fusion.modules.rl.plotting.path_index import plot_path_index
+from fusion.modules.rl.plotting.resource_stats import (
+    plot_resource_percent_delta_heatmaps,
+)
 from fusion.modules.rl.plotting.rewards import plot_rewards_mean_var
 from fusion.modules.rl.plotting.sim_times import plot_sim_times
 from fusion.modules.rl.plotting.state_values import plot_best_path_matrix
-from fusion.modules.rl.plotting.mod_usage import plot_modulation_usage
-from fusion.modules.rl.plotting.bw_block import plot_bw_blocked
-from fusion.modules.rl.plotting.blocking import plot_effect_heatmaps
-from fusion.modules.rl.plotting.link_data import plot_link_usage, plot_link_throughput
-from fusion.modules.rl.plotting.path_index import plot_path_index
-from fusion.modules.rl.plotting.resource_stats import plot_resource_percent_delta_heatmaps
 
 PLOTS = {
     "blocking": {"plot": plot_blocking_probabilities, "process": "process_blocking"},
@@ -32,17 +36,10 @@ PLOTS = {
         "process": "process_resource_metrics",
         "plot": plot_resource_percent_delta_heatmaps,
     },
-
     "link_usage": {
         "plot": plot_link_usage,
         "process": "process_link_data",
     },
-    "link_throughput": {
-        "plot": plot_link_throughput,
-        "process": "process_link_data"
-    },
-    "path_index": {
-        "plot": plot_path_index,
-        "process": "process_path_index"
-    }
+    "link_throughput": {"plot": plot_link_throughput, "process": "process_link_data"},
+    "path_index": {"plot": plot_path_index, "process": "process_path_index"},
 }

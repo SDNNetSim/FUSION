@@ -1,8 +1,8 @@
 # pylint: disable=c-extension-no-member
 
 from PyQt5 import QtWidgets
-from fusion.gui.gui_args.config_args import SETTINGS_CONFIG_DICT
 
+from fusion.gui.gui_args.config_args import SETTINGS_CONFIG_DICT
 
 
 class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
@@ -27,7 +27,9 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
             tab_layout = QtWidgets.QFormLayout()
             for setting in category["settings"]:
                 widget, label = self._create_widget(setting)
-                if isinstance(widget, QtWidgets.QLabel): # choosing QLabel for all headers
+                if isinstance(
+                    widget, QtWidgets.QLabel
+                ):  # choosing QLabel for all headers
                     tab_layout.addRow(widget)
                 else:
                     tab_layout.addRow(label, widget)
@@ -64,10 +66,12 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
             widget.setSingleStep(setting.get("step", 1.0))
         elif widget_type == "header":
             widget = QtWidgets.QLabel(label)
-            widget.setStyleSheet("""
+            widget.setStyleSheet(
+                """
                 font-weight: bold;
                 font-size: 13pt;
-            """)
+            """
+            )
         return widget, label
 
     def _setup_buttons(self):
@@ -92,8 +96,9 @@ class SettingsDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
             for setting in category["settings"]:
                 label = setting["label"]
                 widget = self.settings_widgets[label]
-                settings[category_name][
-                    self._format_label(label)] = self._get_widget_value(widget)
+                settings[category_name][self._format_label(label)] = (
+                    self._get_widget_value(widget)
+                )
         return {"s1": settings}
 
     @staticmethod

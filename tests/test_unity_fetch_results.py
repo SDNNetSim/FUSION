@@ -4,6 +4,7 @@ Unit tests for fusion.unity.fetch_results module.
 Tests the functionality for fetching results from remote cluster storage,
 including path conversion, file syncing, and manifest parsing.
 """
+
 import json
 import pathlib
 import tempfile
@@ -11,9 +12,9 @@ import unittest
 
 from fusion.unity.fetch_results import (
     convert_output_path_to_input_path,
-    get_last_path_segments,
-    extract_topology_from_output_path,
     extract_path_algorithm_from_input_directory,
+    extract_topology_from_output_path,
+    get_last_path_segments,
     iterate_runs_index_file,
 )
 
@@ -118,12 +119,12 @@ class TestFetchResults(unittest.TestCase):
         test_data = [
             '{"path": "/data/output/topology1/experiment1/s1"}',
             '{"path": "/data/output/topology1/experiment2/s1"}',
-            '{"path": "/data/output/topology2/experiment1/s1"}'
+            '{"path": "/data/output/topology2/experiment1/s1"}',
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
             for line in test_data:
-                f.write(line + '\n')
+                f.write(line + "\n")
             f.flush()
 
             index_file = pathlib.Path(f.name)
@@ -144,15 +145,15 @@ class TestFetchResults(unittest.TestCase):
         """Test iterate_runs_index_file skips empty lines."""
         test_data = [
             '{"path": "/data/output/topology1/experiment1/s1"}',
-            '',
+            "",
             '{"path": "/data/output/topology1/experiment2/s1"}',
-            '   ',
-            '{"path": "/data/output/topology2/experiment1/s1"}'
+            "   ",
+            '{"path": "/data/output/topology2/experiment1/s1"}',
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
             for line in test_data:
-                f.write(line + '\n')
+                f.write(line + "\n")
             f.flush()
 
             index_file = pathlib.Path(f.name)
@@ -170,5 +171,5 @@ class TestFetchResults(unittest.TestCase):
             index_file.unlink()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

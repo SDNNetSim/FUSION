@@ -1,12 +1,11 @@
 import math
-from statistics import mean, variance, stdev
+from statistics import mean, stdev, variance
 
 import numpy as np
 
-from fusion.core.properties import StatsProps, SDNProps
-from fusion.core.properties import SNAP_KEYS_LIST
-from fusion.sim.utils import find_path_len
 from fusion.analysis.network_analysis import NetworkAnalyzer
+from fusion.core.properties import SNAP_KEYS_LIST, SDNProps, StatsProps
+from fusion.sim.utils import find_path_len
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -62,7 +61,7 @@ class SimStats:
             if path_list is not None and link not in path_list:
                 continue
             link_data = network_spectrum_dict[link]
-            for core in link_data['cores_matrix']:
+            for core in link_data["cores_matrix"]:
                 requests_set = set(core[core > 0])
                 for curr_req in requests_set:
                     active_reqs_set.add(curr_req)
@@ -71,7 +70,9 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
-    def update_snapshot(self, network_spectrum_dict: dict, request_number: int, path_list: list = None):
+    def update_snapshot(
+        self, network_spectrum_dict: dict, request_number: int, path_list: list = None
+    ):
         """
         Finds the total number of occupied slots and guard bands currently allocated in the network or a specific path.
 
@@ -80,41 +81,69 @@ class SimStats:
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
-        occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(network_spectrum_dict=network_spectrum_dict,
-                                                                           path_list=path_list)
+        occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(
+            network_spectrum_dict=network_spectrum_dict, path_list=path_list
+        )
         link_usage = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
         blocking_prob = self.blocked_requests / request_number
         bit_rate_block_prob = self.bit_rate_blocked / self.bit_rate_request
 
-        self.stats_props.snapshots_dict[request_number]['occupied_slots'].append(occupied_slots)
-        self.stats_props.snapshots_dict[request_number]['guard_slots'].append(guard_slots)
-        self.stats_props.snapshots_dict[request_number]['active_requests'].append(active_reqs)
-        self.stats_props.snapshots_dict[request_number]["blocking_prob"].append(blocking_prob)
-        self.stats_props.snapshots_dict[request_number]['num_segments'].append(self.current_transponders)
-        self.stats_props.snapshots_dict[request_number]["bit_rate_blocking_prob"].append(bit_rate_block_prob)
-        self.stats_props.snapshots_dict[request_number]['link_usage'] = link_usage
+        self.stats_props.snapshots_dict[request_number]["occupied_slots"].append(
+            occupied_slots
+        )
+        self.stats_props.snapshots_dict[request_number]["guard_slots"].append(
+            guard_slots
+        )
+        self.stats_props.snapshots_dict[request_number]["active_requests"].append(
+            active_reqs
+        )
+        self.stats_props.snapshots_dict[request_number]["blocking_prob"].append(
+            blocking_prob
+        )
+        self.stats_props.snapshots_dict[request_number]["num_segments"].append(
+            self.current_transponders
+        )
+        self.stats_props.snapshots_dict[request_number][
+            "bit_rate_blocking_prob"
+        ].append(bit_rate_block_prob)
+        self.stats_props.snapshots_dict[request_number]["link_usage"] = link_usage
 
     def _init_snapshots(self):
-        for req_num in range(0, self.engine_props['num_requests'] + 1, self.engine_props['snapshot_step']):
+        for req_num in range(
+            0, self.engine_props["num_requests"] + 1, self.engine_props["snapshot_step"]
+        ):
             self.stats_props.snapshots_dict[req_num] = dict()
             for key in SNAP_KEYS_LIST:
                 self.stats_props.snapshots_dict[req_num][key] = list()
 
     def _init_mods_weights_bws(self):
-        for bandwidth, obj in self.engine_props['mod_per_bw'].items():
+        for bandwidth, obj in self.engine_props["mod_per_bw"].items():
             self.stats_props.modulations_used_dict[bandwidth] = dict()
             self.stats_props.weights_dict[bandwidth] = dict()
             for modulation in obj.keys():
                 self.stats_props.weights_dict[bandwidth][modulation] = list()
                 self.stats_props.modulations_used_dict[bandwidth][modulation] = 0
-                if modulation not in self.stats_props.modulations_used_dict or isinstance(
-                        self.stats_props.modulations_used_dict[modulation]['length']['overall'], dict):
+                if (
+                    modulation not in self.stats_props.modulations_used_dict
+                    or isinstance(
+                        self.stats_props.modulations_used_dict[modulation]["length"][
+                            "overall"
+                        ],
+                        dict,
+                    )
+                ):
                     self.stats_props.modulations_used_dict[modulation] = dict()
-                    self.stats_props.modulations_used_dict[modulation]['length'] = dict()
-                    self.stats_props.modulations_used_dict[modulation]['length']['overall'] = list()
-                    for band in self.engine_props['band_list']:
+                    self.stats_props.modulations_used_dict[modulation]["length"] = (
+                        dict()
+                    )
+                    self.stats_props.modulations_used_dict[modulation]["length"][
+                        "overall"
+                    ] = list()
+                    for band in self.engine_props["band_list"]:
                         self.stats_props.modulations_used_dict[modulation][band] = 0
-                        self.stats_props.modulations_used_dict[modulation]['length'][band] = list()
+                        self.stats_props.modulations_used_dict[modulation]["length"][
+                            band
+                        ] = list()
 
             self.stats_props.bandwidth_blocking_dict[bandwidth] = 0
 
@@ -122,28 +151,41 @@ class SimStats:
         for stat_key, data_type in vars(self.stats_props).items():
             if not isinstance(data_type, dict):
                 continue
-            if stat_key in ('modulations_used_dict', 'weights_dict', 'bandwidth_blocking_dict'):
+            if stat_key in (
+                "modulations_used_dict",
+                "weights_dict",
+                "bandwidth_blocking_dict",
+            ):
                 self._init_mods_weights_bws()
-            elif stat_key == 'snapshots_dict':
-                if self.engine_props['save_snapshots']:
+            elif stat_key == "snapshots_dict":
+                if self.engine_props["save_snapshots"]:
                     self._init_snapshots()
-            elif stat_key == 'cores_dict':
-                self.stats_props.cores_dict = {core: 0 for core in range(self.engine_props['cores_per_link'])}
-            elif stat_key == 'block_reasons_dict':
-                self.stats_props.block_reasons_dict = {'distance': 0, 'congestion': 0, 'xt_threshold': 0}
-            elif stat_key == 'link_usage_dict':
+            elif stat_key == "cores_dict":
+                self.stats_props.cores_dict = dict.fromkeys(
+                    range(self.engine_props["cores_per_link"]), 0
+                )
+            elif stat_key == "block_reasons_dict":
+                self.stats_props.block_reasons_dict = {
+                    "distance": 0,
+                    "congestion": 0,
+                    "xt_threshold": 0,
+                }
+            elif stat_key == "link_usage_dict":
                 self.stats_props.link_usage_dict = dict()
-            elif stat_key != 'iter_stats':
-                raise ValueError('Dictionary statistic was not reset in props.')
+            elif stat_key != "iter_stats":
+                raise ValueError("Dictionary statistic was not reset in props.")
 
     def _init_stat_lists(self):
         for stat_key in vars(self.stats_props).keys():
             data_type = getattr(self.stats_props, stat_key)
             if isinstance(data_type, list):
                 # Only reset sim_block_list when we encounter a new traffic volume
-                if self.iteration != 0 and stat_key in ['simulation_blocking_list', 'simulation_bitrate_blocking_list']:
+                if self.iteration != 0 and stat_key in [
+                    "simulation_blocking_list",
+                    "simulation_bitrate_blocking_list",
+                ]:
                     continue
-                if stat_key == 'path_index_list':
+                if stat_key == "path_index_list":
                     continue
                 setattr(self.stats_props, stat_key, list())
 
@@ -161,7 +203,7 @@ class SimStats:
         self.bit_rate_request = 0
         self.total_transponders = 0
 
-        k_paths = self.engine_props.get('k_paths')
+        k_paths = self.engine_props.get("k_paths")
         self.stats_props.path_index_list = [0] * k_paths
 
     def calculate_blocking_statistics(self):
@@ -170,13 +212,16 @@ class SimStats:
 
         :return: None
         """
-        if self.engine_props['num_requests'] == 0:
+        if self.engine_props["num_requests"] == 0:
             blocking_prob = 0
             bit_rate_blocking_prob = 0
         else:
-            blocking_prob = self.blocked_requests / self.engine_props['num_requests']
-            bit_rate_blocking_prob = (self.bit_rate_blocked / self.bit_rate_request
-                                      if self.bit_rate_request > 0 else 0)
+            blocking_prob = self.blocked_requests / self.engine_props["num_requests"]
+            bit_rate_blocking_prob = (
+                self.bit_rate_blocked / self.bit_rate_request
+                if self.bit_rate_request > 0
+                else 0
+            )
 
         self.stats_props.simulation_blocking_list.append(blocking_prob)
         self.stats_props.simulation_bitrate_blocking_list.append(bit_rate_blocking_prob)
@@ -184,30 +229,36 @@ class SimStats:
     def _handle_iter_lists(self, sdn_data: SDNProps):
         for stat_key in sdn_data.stat_key_list:
             curr_sdn_data = sdn_data.get_data(key=stat_key)
-            if stat_key == 'crosstalk_list':
+            if stat_key == "crosstalk_list":
                 # (drl_path_agents) fixme
                 if curr_sdn_data == [None]:
                     break
             for i, data in enumerate(curr_sdn_data):
-                if stat_key == 'core_list':
+                if stat_key == "core_list":
                     self.stats_props.cores_dict[data] += 1
-                elif stat_key == 'modulation_list':
+                elif stat_key == "modulation_list":
                     bandwidth = sdn_data.bandwidth_list[i]
                     band = sdn_data.band_list[i]
                     self.stats_props.modulations_used_dict[bandwidth][data] += 1
                     self.stats_props.modulations_used_dict[data][band] += 1
-                    self.stats_props.modulations_used_dict[data]['length'][band].append(sdn_data.path_weight)
-                    self.stats_props.modulations_used_dict[data]['length']['overall'].append(sdn_data.path_weight)
-                elif stat_key == 'start_slot_list':
+                    self.stats_props.modulations_used_dict[data]["length"][band].append(
+                        sdn_data.path_weight
+                    )
+                    self.stats_props.modulations_used_dict[data]["length"][
+                        "overall"
+                    ].append(sdn_data.path_weight)
+                elif stat_key == "start_slot_list":
                     self.stats_props.start_slot_list.append(int(data))
-                elif stat_key == 'end_slot_list':
+                elif stat_key == "end_slot_list":
                     self.stats_props.end_slot_list.append(int(data))
-                elif stat_key == 'modulation_list':
+                elif stat_key == "modulation_list":
                     self.stats_props.modulation_list.append(int(data))
-                elif stat_key == 'bandwidth_list':
+                elif stat_key == "bandwidth_list":
                     self.stats_props.bandwidth_list.append(int(data))
 
-    def iter_update(self, req_data: dict, sdn_data: SDNProps, network_spectrum_dict: dict):
+    def iter_update(
+        self, req_data: dict, sdn_data: SDNProps, network_spectrum_dict: dict
+    ):
         """
         Continuously updates the statistical data for each request allocated/blocked in the current iteration.
 
@@ -221,12 +272,14 @@ class SimStats:
             self.bit_rate_blocked += int(sdn_data.bandwidth)
             self.bit_rate_request += int(sdn_data.bandwidth)
             self.stats_props.block_reasons_dict[sdn_data.block_reason] += 1
-            self.stats_props.bandwidth_blocking_dict[req_data['bandwidth']] += 1
+            self.stats_props.bandwidth_blocking_dict[req_data["bandwidth"]] += 1
         else:
             num_hops = len(sdn_data.path_list) - 1
             self.stats_props.hops_list.append(num_hops)
 
-            path_len = find_path_len(path_list=sdn_data.path_list, topology=self.topology)
+            path_len = find_path_len(
+                path_list=sdn_data.path_list, topology=self.topology
+            )
             self.stats_props.lengths_list.append(round(float(path_len), 2))
 
             self._handle_iter_lists(sdn_data=sdn_data)
@@ -237,8 +290,12 @@ class SimStats:
             self.stats_props.path_index_list[sdn_data.path_index] += 1
 
             self.bit_rate_request += int(sdn_data.bandwidth)
-            self.stats_props.weights_dict[bandwidth][mod_format].append(round(float(sdn_data.path_weight), 2))
-            self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
+            self.stats_props.weights_dict[bandwidth][mod_format].append(
+                round(float(sdn_data.path_weight), 2)
+            )
+            self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(
+                network_spectrum_dict
+            )
 
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
@@ -256,27 +313,48 @@ class SimStats:
 
                 # Modulation was never used
                 if len(data_list) == 0:
-                    mod_obj[modulation] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                    mod_obj[modulation] = {
+                        "mean": None,
+                        "std": None,
+                        "min": None,
+                        "max": None,
+                    }
                 elif len(data_list) == 1:
-                    mod_obj[modulation] = {'mean': mean(data_list), 'std': 0.0,
-                                           'min': min(data_list), 'max': max(data_list)}
+                    mod_obj[modulation] = {
+                        "mean": mean(data_list),
+                        "std": 0.0,
+                        "min": min(data_list),
+                        "max": max(data_list),
+                    }
                 else:
-                    mod_obj[modulation] = {'mean': mean(data_list), 'std': stdev(data_list),
-                                           'min': min(data_list), 'max': max(data_list)}
-                for key, value in self.stats_props.modulations_used_dict[modulation]['length'].items():
+                    mod_obj[modulation] = {
+                        "mean": mean(data_list),
+                        "std": stdev(data_list),
+                        "min": min(data_list),
+                        "max": max(data_list),
+                    }
+                for key, value in self.stats_props.modulations_used_dict[modulation][
+                    "length"
+                ].items():
                     if not isinstance(value, list):
                         continue
                     if len(value) == 0:
-                        self.stats_props.modulations_used_dict[modulation]['length'][key] = {'mean': None, 'std': None,
-                                                                                      'min': None, 'max': None}
+                        self.stats_props.modulations_used_dict[modulation]["length"][
+                            key
+                        ] = {"mean": None, "std": None, "min": None, "max": None}
                     else:
                         if len(value) == 1:
                             deviation = 0.0
                         else:
                             deviation = stdev(value)
-                        self.stats_props.modulations_used_dict[modulation]['length'][key] = {
-                            'mean': round(float(mean(value)), 2), 'std': round(float(deviation), 2),
-                            'min': round(float(min(value)), 2), 'max': round(float(max(value)), 2)}
+                        self.stats_props.modulations_used_dict[modulation]["length"][
+                            key
+                        ] = {
+                            "mean": round(float(mean(value)), 2),
+                            "std": round(float(deviation), 2),
+                            "min": round(float(min(value)), 2),
+                            "max": round(float(max(value)), 2),
+                        }
 
     def finalize_iteration_statistics(self):
         """
@@ -284,20 +362,29 @@ class SimStats:
 
         :return: None
         """
-        if self.engine_props['num_requests'] == self.blocked_requests:
+        if self.engine_props["num_requests"] == self.blocked_requests:
             self.stats_props.transponders_list.append(0)
         else:
-            trans_mean = self.total_transponders / float(self.engine_props['num_requests'] - self.blocked_requests)
+            trans_mean = self.total_transponders / float(
+                self.engine_props["num_requests"] - self.blocked_requests
+            )
             self.stats_props.transponders_list.append(trans_mean)
 
         if self.blocked_requests > 0:
             # Check if already normalized (values are between 0 and 1)
             current_values = list(self.stats_props.block_reasons_dict.values())
-            is_already_normalized = all(isinstance(v, float) and 0 <= v <= 1 for v in current_values if v > 0)
+            is_already_normalized = all(
+                isinstance(v, float) and 0 <= v <= 1 for v in current_values if v > 0
+            )
 
             if not is_already_normalized:
-                for block_type, num_times in self.stats_props.block_reasons_dict.items():
-                    self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_requests)
+                for (
+                    block_type,
+                    num_times,
+                ) in self.stats_props.block_reasons_dict.items():
+                    self.stats_props.block_reasons_dict[block_type] = num_times / float(
+                        self.blocked_requests
+                    )
 
         self._get_iter_means()
 
@@ -309,35 +396,50 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props.simulation_blocking_list)
-        self.bit_rate_block_mean = mean(self.stats_props.simulation_bitrate_blocking_list)
+        self.bit_rate_block_mean = mean(
+            self.stats_props.simulation_bitrate_blocking_list
+        )
         if len(self.stats_props.simulation_blocking_list) <= 1:
             return False
 
         self.block_variance = variance(self.stats_props.simulation_blocking_list)
-        self.bit_rate_block_variance = variance(self.stats_props.simulation_bitrate_blocking_list)
+        self.bit_rate_block_variance = variance(
+            self.stats_props.simulation_bitrate_blocking_list
+        )
 
         if self.block_mean == 0.0:
             return False
 
         try:
             # Using 1.96 for 95% confidence level (1.645 for 90%)
-            block_ci_rate = 1.96 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.simulation_blocking_list)))
+            block_ci_rate = 1.96 * (
+                math.sqrt(self.block_variance)
+                / math.sqrt(len(self.stats_props.simulation_blocking_list))
+            )
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
             # Bit rate blocking confidence interval calculation
             bit_rate_block_ci = 1.96 * (
-                    math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list)))
+                math.sqrt(self.bit_rate_block_variance)
+                / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
+            )
             self.bit_rate_block_ci = bit_rate_block_ci
-            bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
+            bit_rate_block_ci_percent = (
+                (2 * bit_rate_block_ci) / self.bit_rate_block_mean
+            ) * 100
             self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
         except ZeroDivisionError:
             return False
 
         # CI percent threshold should be configurable (tracked in core/TODO.md)
         if block_ci_percent <= 5:
-            logger.info("Confidence interval of %.2f%% reached. %d, ending for Erlang: %s",
-                        block_ci_percent, self.iteration + 1, self.engine_props['erlang'])
+            logger.info(
+                "Confidence interval of %.2f%% reached. %d, ending for Erlang: %s",
+                block_ci_percent,
+                self.iteration + 1,
+                self.engine_props["erlang"],
+            )
             return True
 
         return False
@@ -350,15 +452,15 @@ class SimStats:
         :rtype: dict
         """
         return {
-            'block_mean': self.block_mean,
-            'block_variance': self.block_variance,
-            'block_ci': self.block_ci,
-            'block_ci_percent': self.block_ci_percent,
-            'bit_rate_block_mean': self.bit_rate_block_mean,
-            'bit_rate_block_variance': self.bit_rate_block_variance,
-            'bit_rate_block_ci': self.bit_rate_block_ci,
-            'bit_rate_block_ci_percent': self.bit_rate_block_ci_percent,
-            'iteration': self.iteration
+            "block_mean": self.block_mean,
+            "block_variance": self.block_variance,
+            "block_ci": self.block_ci,
+            "block_ci_percent": self.block_ci_percent,
+            "bit_rate_block_mean": self.bit_rate_block_mean,
+            "bit_rate_block_variance": self.bit_rate_block_variance,
+            "bit_rate_block_ci": self.bit_rate_block_ci,
+            "bit_rate_block_ci_percent": self.bit_rate_block_ci_percent,
+            "iteration": self.iteration,
         }
 
     # Backward compatibility methods
@@ -368,26 +470,27 @@ class SimStats:
         """
         return self.finalize_iteration_statistics()
 
-    def save_stats(self, base_fp: str = 'data'):
+    def save_stats(self, base_fp: str = "data"):
         """
         Backward compatibility method for saving statistics.
-        
+
         :param base_fp: Base file path for saving
         """
         # Import here to avoid circular imports
-        from fusion.core.persistence import StatsPersistence  # pylint: disable=import-outside-toplevel
+        from fusion.core.persistence import (  # pylint: disable=import-outside-toplevel
+            StatsPersistence,
+        )
 
         # Ensure iteration is set to 0 if not initialized (for backward compatibility)
         if self.iteration is None:
             self.iteration = 0
 
         persistence = StatsPersistence(
-            engine_props=self.engine_props,
-            sim_info=self.sim_info
+            engine_props=self.engine_props, sim_info=self.sim_info
         )
 
         # Prepare save dict with iter_stats structure
-        save_dict = {'iter_stats': {}}
+        save_dict = {"iter_stats": {}}
 
         # Get blocking statistics
         blocking_stats = self.get_blocking_statistics()
@@ -397,5 +500,5 @@ class SimStats:
             stats_dict=save_dict,
             stats_props=self.stats_props,
             blocking_stats=blocking_stats,
-            base_file_path=base_fp
+            base_file_path=base_fp,
         )

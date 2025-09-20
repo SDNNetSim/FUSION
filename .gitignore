@@ -23,6 +23,16 @@ data/excel
 
 logs/*
 
+# Development tool reports and analysis
+reports/analysis/*
+reports/diagrams/*
+reports/profiling/*
+reports/coverage/*
+# Keep directory structure and documentation
+!reports/.gitignore
+!reports/README.md
+!reports/*/.gitkeep
+
 ini/run_ini/*
 bash_scripts/slurm/*
 

@@ -1,6 +1,5 @@
-from pathlib import Path
 from itertools import cycle
-from typing import Optional, Union
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,22 +8,24 @@ import seaborn as sns
 
 
 def plot_blocking_probabilities(
-        blocking_data: dict,
-        title: str = "Blocking Probability",
-        save_path: Optional[Union[str, Path]] = None,
-        selected_algos: Optional[list[str]] = None
+    blocking_data: dict,
+    title: str = "Blocking Probability",
+    save_path: str | Path | None = None,
+    selected_algos: list[str] | None = None,
 ):
     """
     Plot blocking probability curves with shaded std and CI in legend.
     """
-    plt.style.use("seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default")
+    plt.style.use(
+        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
+    )
     _, ax = plt.subplots(figsize=(10, 6), dpi=300)
 
     if selected_algos:
         blocking_data = {k: v for k, v in blocking_data.items() if k in selected_algos}
 
     color_map = plt.cm.get_cmap("tab10")
-    markers = cycle(['o', 's', 'D', '^', 'v', '*', 'X', 'P', '<', '>'])
+    markers = cycle(["o", "s", "D", "^", "v", "*", "X", "P", "<", ">"])
     colors = cycle(color_map.colors)
 
     for algo in sorted(blocking_data.keys()):
@@ -44,26 +45,42 @@ def plot_blocking_probabilities(
         if not erlangs:
             continue
 
-        zipped = sorted(zip(erlangs, means, stds, cis), key=lambda x: x[0])
-        erlangs, means, stds, cis = map(np.array, zip(*zipped))
+        zipped = sorted(
+            zip(erlangs, means, stds, cis, strict=False), key=lambda x: x[0]
+        )
+        erlangs, means, stds, cis = map(np.array, zip(*zipped, strict=False))
 
         color = next(colors)
         marker = next(markers)
         overall_ci = np.mean(cis) if len(cis) > 1 else cis[0]
         label = f"{algo} ±{overall_ci:.4f}"
 
-        ax.plot(erlangs, means, label=label, color=color, linewidth=2, marker=marker, markersize=5)
+        ax.plot(
+            erlangs,
+            means,
+            label=label,
+            color=color,
+            linewidth=2,
+            marker=marker,
+            markersize=5,
+        )
 
     ax.set_xlabel("Erlang Values", fontsize=14, fontweight="bold")
     ax.set_ylabel("Blocking Probability", fontsize=14, fontweight="bold")
     ax.set_title(title, fontsize=16, fontweight="bold")
     ax.set_yscale("log")
-    ax.set_ylim(10 ** -3.5, 10 ** -0.7)
+    ax.set_ylim(10**-3.5, 10**-0.7)
     ax.set_xlim(550, 1100)
     ax.tick_params(labelsize=12)
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
-    ax.legend(title="Algorithm (95% ± CI)", loc="upper left", bbox_to_anchor=(1.05, 1), fontsize=11, title_fontsize=12)
+    ax.legend(
+        title="Algorithm (95% ± CI)",
+        loc="upper left",
+        bbox_to_anchor=(1.05, 1),
+        fontsize=11,
+        title_fontsize=12,
+    )
     plt.tight_layout(rect=[0, 0, 0.85, 1])
 
     if save_path:
@@ -76,27 +93,40 @@ def plot_blocking_probabilities(
 
 
 def plot_effect_heatmaps(
-        processed: dict,
-        title: Optional[str] = None,
-        save_path: Optional[Union[str, Path]] = None
+    processed: dict,
+    title: str | None = None,
+    save_path: str | Path | None = None,
 ):
     """
     Plot heat maps based on various metrics like distance, transponders, or number of hops on average.
     """
     save_path = Path(save_path) if save_path else None
 
-    excluded = {"k_shortest_path_1", "k_shortest_path_4", "k_shortest_path_inf", "cong_aware"}
+    excluded = {
+        "k_shortest_path_1",
+        "k_shortest_path_4",
+        "k_shortest_path_inf",
+        "cong_aware",
+    }
     rl_algorithms = sorted([algo for algo in processed if algo not in excluded])
-    traffic_volumes = sorted({tv for algo in processed.values() for tv in algo}, key=float)
+    traffic_volumes = sorted(
+        {tv for algo in processed.values() for tv in algo}, key=float
+    )
 
     baselines = ["vs_cong_aware", "vs_k_shortest_path_4"]
     baseline_titles = {
         "vs_cong_aware": "Cohen's d vs Congestion-Aware Heuristic",
-        "vs_k_shortest_path_4": "Cohen's d vs K-Shortest Path (k=4)"
+        "vs_k_shortest_path_4": "Cohen's d vs K-Shortest Path (k=4)",
     }
 
-    d_maps = {b: pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=float) for b in baselines}
-    d_annots = {b: pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=str) for b in baselines}
+    d_maps = {
+        b: pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=float)
+        for b in baselines
+    }
+    d_annots = {
+        b: pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=str)
+        for b in baselines
+    }
     ci_map = pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=float)
     ci_annot = pd.DataFrame(index=rl_algorithms, columns=traffic_volumes, dtype=str)
 
@@ -114,7 +144,9 @@ def plot_effect_heatmaps(
                 ci_map.loc[algo, tv] = ci_width
                 ci_annot.loc[algo, tv] = f"±{ci_width:.2f}"
 
-    plt.style.use("seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default")
+    plt.style.use(
+        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
+    )
 
     def render_heatmap(data_map, annot_map, title_suffix, cmap, center=None):
         _, ax = plt.subplots(figsize=(18, 6), dpi=300)
@@ -129,18 +161,24 @@ def plot_effect_heatmaps(
             linewidths=0.5,
             linecolor="gray",
             annot_kws={"fontsize": 9, "weight": "bold"},
-            square=False
+            square=False,
         )
         full_title = f"{title + ': ' if title else ''}{title_suffix}"
         ax.set_title(full_title, fontsize=13, weight="bold", pad=10)
         ax.set_xlabel("Traffic Volume (Erlang)", fontsize=11, weight="bold")
         ax.set_ylabel("RL Algorithm", fontsize=11, weight="bold")
-        ax.tick_params(axis='x', labelsize=8, rotation=40)
-        ax.tick_params(axis='y', labelsize=9)
+        ax.tick_params(axis="x", labelsize=8, rotation=40)
+        ax.tick_params(axis="y", labelsize=9)
         plt.tight_layout()
 
         if save_path:
-            suffix = title_suffix.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("'", "")
+            suffix = (
+                title_suffix.lower()
+                .replace(" ", "_")
+                .replace("(", "")
+                .replace(")", "")
+                .replace("'", "")
+            )
             full_path = save_path.with_stem(save_path.stem + f"_{suffix}")
             plt.savefig(full_path, bbox_inches="tight")
             print(f"[heatmap] ✅ Saved {full_path}")
@@ -154,12 +192,12 @@ def plot_effect_heatmaps(
             d_annots[b],
             baseline_titles[b],
             cmap=sns.diverging_palette(145, 15, s=90, l=60, as_cmap=True),
-            center=0
+            center=0,
         )
 
     render_heatmap(
         ci_map,
         ci_annot,
         "Blocking Probability CI Width ±95%",
-        cmap=sns.color_palette("YlGnBu", as_cmap=True)
+        cmap=sns.color_palette("YlGnBu", as_cmap=True),
     )

@@ -1,6 +1,7 @@
 import unittest
 from unittest import mock
-from fusion.cli.main_parser import build_parser, get_train_args, get_gui_args
+
+from fusion.cli.main_parser import build_parser, get_gui_args, get_train_args
 
 
 class TestMainParser(unittest.TestCase):
@@ -14,9 +15,12 @@ class TestMainParser(unittest.TestCase):
         """
         test_args = [
             "run_sim",
-            "--config_path", "tests/fixtures/valid_config.ini",
-            "--run_id", "test123",
-            "--network", "NSFNet"
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "test123",
+            "--network",
+            "NSFNet",
         ]
         parser = build_parser()
         args = parser.parse_args(test_args)
@@ -30,12 +34,18 @@ class TestMainParser(unittest.TestCase):
         """
         test_args = [
             "run_sim",
-            "--config_path", "tests/fixtures/valid_config.ini",
-            "--run_id", "test123",
-            "--network", "NSFNet",
-            "--route_method", "k_shortest_path",
-            "--allocation_method", "first_fit",
-            "--num_requests", "500"
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "test123",
+            "--network",
+            "NSFNet",
+            "--route_method",
+            "k_shortest_path",
+            "--allocation_method",
+            "first_fit",
+            "--num_requests",
+            "500",
         ]
         parser = build_parser()
         args = parser.parse_args(test_args)
@@ -48,10 +58,14 @@ class TestMainParser(unittest.TestCase):
         Test basic get-train command with minimal args.
         """
         test_args = [
-            "--config_path", "tests/fixtures/valid_config.ini",
-            "--run_id", "train123",
-            "--network", "NSFNet",
-            "--agent_type", "rl"
+            "--config_path",
+            "tests/fixtures/valid_config.ini",
+            "--run_id",
+            "train123",
+            "--network",
+            "NSFNet",
+            "--agent_type",
+            "rl",
         ]
         with mock.patch("sys.argv", ["prog"] + test_args):
             args = get_train_args()
@@ -64,15 +78,12 @@ class TestMainParser(unittest.TestCase):
         """
         Test basic get-gui command with minimal args.
         """
-        test_args = [
-            "--config_path", "ini/run_ini/config.ini",
-            "--run_id", "gui123"
-        ]
+        test_args = ["--config_path", "ini/run_ini/config.ini", "--run_id", "gui123"]
         with mock.patch("sys.argv", ["prog"] + test_args):
             args = get_gui_args()
             self.assertEqual(args.config_path, "ini/run_ini/config.ini")
             self.assertEqual(args.run_id, "gui123")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

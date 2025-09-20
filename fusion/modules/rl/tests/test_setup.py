@@ -65,8 +65,9 @@ class TestPrintInfo(TestCase):
 
     def test_invalid_algorithms_raise(self):
         """No RL algorithms → ValueError."""
-        sim = dict(path_algorithm="none", core_algorithm="none",
-                   spectrum_algorithm=None)
+        sim = dict(
+            path_algorithm="none", core_algorithm="none", spectrum_algorithm=None
+        )
         with self.assertRaises(su.ModelSetupError):
             su.print_info(sim)
 
@@ -95,11 +96,11 @@ class TestSetupHelper(TestCase):
         self.save_patcher = mock.patch.object(su, "save_input")
         self.start_patcher = mock.patch.object(su, "get_start_time")
         for p in (
-                self.engine_patcher,
-                self.routing_patcher,
-                self.create_patcher,
-                self.save_patcher,
-                self.start_patcher,
+            self.engine_patcher,
+            self.routing_patcher,
+            self.create_patcher,
+            self.save_patcher,
+            self.start_patcher,
         ):
             p.start()
             self.addCleanup(p.stop)

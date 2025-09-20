@@ -1,15 +1,15 @@
 # pylint: disable=duplicate-code
 # TODO: (version 5.5-6) Address all duplicate code if you can
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_memory_usage(
-        memory_usage_data: dict,
-        title: str = "Memory Usage by Traffic Volume",
-        save_path: str | None = None,  # pylint: disable=unsupported-binary-operation
-        log_y: bool = False,
+    memory_usage_data: dict,
+    title: str = "Memory Usage by Traffic Volume",
+    save_path: str | None = None,  # pylint: disable=unsupported-binary-operation
+    log_y: bool = False,
 ):
     """
     Grouped bar-chart of average peak memory (MB).
@@ -80,9 +80,7 @@ def plot_memory_usage(
         )
 
     tick_labels = (
-        ["overall"]
-        if only_overall
-        else [str(int(tv)) for tv in traffic_labels]
+        ["overall"] if only_overall else [str(int(tv)) for tv in traffic_labels]
     )
     plt.xticks(
         x + bar_w * (len(algos) / 2 - 0.5),

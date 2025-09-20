@@ -1,5 +1,5 @@
-import torch
 import networkx as nx
+import torch
 
 
 def convert_networkx_topo(graph: nx.Graph, as_directed: bool = True):

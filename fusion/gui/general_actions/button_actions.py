@@ -1,21 +1,24 @@
 # pylint: disable=c-extension-no-member
 # pylint: disable=no-name-in-module
-import os
 import multiprocessing
-from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
-from PyQt5 import QtWidgets, QtGui
+import os
+
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import QEasingCurve, QPropertyAnimation
+
 from fusion.gui.general_dialogs.settings import SettingsDialog
 
 # We import the simulation runner's run() function.
 from fusion.sim.network_simulator import run as run_sim
 
+# TODO Implement Pause Resume logic for pause_simulation function
 
-#TODO Implement Pause Resume logic for pause_simulation function
 
 class ButtonHelpers:
     """
     Contains methods related to setting up the buttons and their potential options.
     """
+
     def __init__(self):
         self.progress_anim = None
         self.simulation_thread = None
@@ -26,10 +29,12 @@ class ButtonHelpers:
         self.stop_button = None
         self.settings_button = None
         self.simulation_process = None
-        self.media_dir = 'media'
+        self.media_dir = "media"
         self.simulation_config = None  # To be set by MainWindow
         self.shared_progress_dict = None  # To be set by MainWindow
-        self.stop_flag = multiprocessing.Event()  # Shared flag for stopping the simulation
+        self.stop_flag = (
+            multiprocessing.Event()
+        )  # Shared flag for stopping the simulation
 
     def output_hints(self, message: str):
         """
@@ -42,7 +47,7 @@ class ButtonHelpers:
         Animates the progress bar smoothly from its current value to new_value.
         """
         # Stop any currently running animation.
-        if hasattr(self, 'progress_anim') and self.progress_anim is not None:
+        if hasattr(self, "progress_anim") and self.progress_anim is not None:
             self.progress_anim.stop()
         # Create a new animation for the progress bar's "value" property.
         self.progress_anim = QPropertyAnimation(self.progress_bar, b"value")
@@ -78,7 +83,7 @@ class ButtonHelpers:
         sim_process = multiprocessing.Process(
             target=run_sim,
             args=(self.simulation_config,),
-            kwargs={'stop_flag': self.stop_flag},
+            kwargs={"stop_flag": self.stop_flag},
         )
         sim_process.start()
         self.simulation_process = sim_process
@@ -119,8 +124,10 @@ class ButtonHelpers:
         """
         self.start_button = QtWidgets.QAction()
         resource_name = "light-green-play-button.png"
-        self.media_dir = os.path.join('fusion', 'gui', 'media')
-        self.start_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.media_dir = os.path.join("fusion", "gui", "media")
+        self.start_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name))
+        )
         self.start_button.setText("Start")
         self.start_button.triggered.connect(self.start_simulation)
 
@@ -130,7 +137,9 @@ class ButtonHelpers:
         """
         self.pause_button = QtWidgets.QAction()
         resource_name = "pause.png"
-        self.pause_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.pause_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name))
+        )
         self.pause_button.setText("Pause")
         self.pause_button.triggered.connect(self.pause_simulation)
 
@@ -140,7 +149,9 @@ class ButtonHelpers:
         """
         self.stop_button = QtWidgets.QAction()
         resource_name = "light-red-stop-button.png"
-        self.stop_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.stop_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name))
+        )
         self.stop_button.setText("Stop")
         self.stop_button.triggered.connect(self.stop_simulation)
 
@@ -161,7 +172,9 @@ class ButtonHelpers:
         """
         self.settings_button = QtWidgets.QToolButton()
         resource_name = "gear.png"
-        self.settings_button.setIcon(QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name)))
+        self.settings_button.setIcon(
+            QtGui.QIcon(os.path.join(os.getcwd(), self.media_dir, resource_name))
+        )
         self.settings_button.setText("Settings")
         self.settings_button.setStyleSheet("background-color: transparent;")
         self.settings_button.clicked.connect(self.open_settings)

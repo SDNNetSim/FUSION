@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
+
 from fusion.modules.rl.utils import hyperparams as hp
 
 
@@ -54,8 +55,9 @@ def _mock_trial():
 class TestLinearDecay(TestCase):
     """Linear epsilon / alpha decay."""
 
-    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table",
-                return_value=(None, None))
+    @mock.patch(
+        "fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None)
+    )
     def test_linear_decay_updates_values(self, _):
         """_linear_eps / _linear_alpha compute expected value."""
         cfg = hp.HyperparamConfig(_engine_props(), _rl_props(), is_path=True)
@@ -70,29 +72,31 @@ class TestLinearDecay(TestCase):
 class TestExponentialDecay(TestCase):
     """Exponential epsilon / alpha decay."""
 
-    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table",
-                return_value=(None, None))
+    @mock.patch(
+        "fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None)
+    )
     def test_exp_decay(self, _):
         """exp decay = start * rate**iter."""
-        props = _engine_props() | {"alpha_update": "exp_decay",
-                                   "epsilon_update": "exp_decay"}
+        props = _engine_props() | {
+            "alpha_update": "exp_decay",
+            "epsilon_update": "exp_decay",
+        }
         cfg = hp.HyperparamConfig(props, _rl_props(), is_path=True)
         cfg.iteration = 3
         cfg._exp_eps()  # pylint: disable=protected-access
         cfg._exp_alpha()  # pylint: disable=protected-access
 
         rate = props["decay_rate"]
-        self.assertAlmostEqual(cfg.current_epsilon,
-                               props["epsilon_start"] * rate ** 3)
-        self.assertAlmostEqual(cfg.current_alpha,
-                               props["alpha_start"] * rate ** 3)
+        self.assertAlmostEqual(cfg.current_epsilon, props["epsilon_start"] * rate**3)
+        self.assertAlmostEqual(cfg.current_alpha, props["alpha_start"] * rate**3)
 
 
 class TestRewardBased(TestCase):
     """Reward-based update reduces params when reward diff grows."""
 
-    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table",
-                return_value=(None, None))
+    @mock.patch(
+        "fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None)
+    )
     def test_reward_based_updates(self, _):
         """Greater diff → smaller epsilon/alpha."""
         cfg = hp.HyperparamConfig(_engine_props(), _rl_props(), True)
@@ -130,10 +134,13 @@ class TestHyperparamSuggest(TestCase):
     def test_bandit_ucb_path(self):
         """Conf_param suggested only for UCB."""
         trial = _mock_trial()
-        sim = {"path_algorithm": "ucb_bandit",
-               "epsilon_update": "linear_decay",
-               "alpha_update": "linear_decay",
-               "num_requests": 10, "max_iters": 3}
+        sim = {
+            "path_algorithm": "ucb_bandit",
+            "epsilon_update": "linear_decay",
+            "alpha_update": "linear_decay",
+            "num_requests": 10,
+            "max_iters": 3,
+        }
         hps = hp.get_optuna_hyperparams(sim, trial)
         self.assertIn("conf_param", hps)
         self.assertIsNone(hps["epsilon_start"])  # UCB sets epsilon None
@@ -141,17 +148,19 @@ class TestHyperparamSuggest(TestCase):
     def test_q_learning_includes_discount(self):
         """discount_factor returned for q_learning."""
         trial = _mock_trial()
-        sim = {"path_algorithm": "q_learning",
-               "epsilon_update": "exp_decay",
-               "alpha_update": "exp_decay",
-               "num_requests": 5, "max_iters": 2}
+        sim = {
+            "path_algorithm": "q_learning",
+            "epsilon_update": "exp_decay",
+            "alpha_update": "exp_decay",
+            "num_requests": 5,
+            "max_iters": 2,
+        }
         hps = hp.get_optuna_hyperparams(sim, trial)
         self.assertIn("discount_factor", hps)
 
     def test_unknown_drl_algo_raises(self):
         """_drl_hyperparams NotImplementedError for bad algo."""
         trial = _mock_trial()
-        sim = {"path_algorithm": "badalgo",
-               "num_requests": 2, "max_iters": 1}
+        sim = {"path_algorithm": "badalgo", "num_requests": 2, "max_iters": 1}
         with self.assertRaises(hp.HyperparameterError):
             hp._drl_hyperparams(sim, trial)  # pylint: disable=protected-access

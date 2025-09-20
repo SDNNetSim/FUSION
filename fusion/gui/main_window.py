@@ -1,16 +1,18 @@
 # pylint: disable=c-extension-no-member
 # pylint: disable=no-name-in-module
 
-import sys
 import multiprocessing
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileSystemModel, QTabWidget, QPlainTextEdit
-from fusion.gui.general_actions.menu_actions import MenuHelpers
-from fusion.gui.general_actions.general_actions import ActionHelpers
+import sys
+
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QFileSystemModel, QPlainTextEdit, QTabWidget
+
 from fusion.gui.general_actions.button_actions import ButtonHelpers
+from fusion.gui.general_actions.general_actions import ActionHelpers
+from fusion.gui.general_actions.menu_actions import MenuHelpers
 from fusion.gui.global_widgets.highlighter import PythonHighlighter
-from fusion.gui.view_directory.directory_tree_view import DirectoryTreeView
 from fusion.gui.gui_args.style_args import STYLE_SHEET
+from fusion.gui.view_directory.directory_tree_view import DirectoryTreeView
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -77,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Checks the log queue for new messages and appends them to bottom pane.
         """
-        if hasattr(self, 'log_queue'):
+        if hasattr(self, "log_queue"):
             while not self.log_queue.empty():
                 message = self.log_queue.get()
                 self.bottom_pane.appendPlainText(message)
@@ -97,9 +99,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.first_info_layout = QtWidgets.QVBoxLayout(self.first_info_pane)
         self.directory_tree_obj = DirectoryTreeView(self.file_model)
         self.directory_tree_obj.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.directory_tree_obj.customContextMenuRequested.connect(self.directory_tree_obj.handle_context_menu)
-        self.directory_tree_obj.setRootIndex(self.file_model.index(self.project_directory))
-        self.directory_tree_obj.item_double_clicked_sig.connect(self.on_tree_item_dclicked)
+        self.directory_tree_obj.customContextMenuRequested.connect(
+            self.directory_tree_obj.handle_context_menu
+        )
+        self.directory_tree_obj.setRootIndex(
+            self.file_model.index(self.project_directory)
+        )
+        self.directory_tree_obj.item_double_clicked_sig.connect(
+            self.on_tree_item_dclicked
+        )
         self.directory_tree_obj.setStyleSheet("font-size: 12pt;")
         self.directory_tree_obj.setHeaderHidden(True)
         self.directory_tree_obj.setColumnHidden(1, True)
@@ -116,7 +124,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.highlighter = PythonHighlighter(self.file_editor.document())
 
         self.mw_topology_view_area = QtWidgets.QScrollArea()
-        init_topology_data = QtWidgets.QLabel("Nothing to display", self.mw_topology_view_area)
+        init_topology_data = QtWidgets.QLabel(
+            "Nothing to display", self.mw_topology_view_area
+        )
         init_topology_data.setStyleSheet("font-size: 11pt")
         init_topology_data.setAlignment(QtCore.Qt.AlignCenter)
         self.mw_topology_view_area.setWidget(init_topology_data)
@@ -144,8 +154,10 @@ class MainWindow(QtWidgets.QMainWindow):
         file_path = self.file_model.filePath(index)
         if QtCore.QFileInfo(file_path).isFile():
             file_index = self.tab_widget.indexOf(self.file_editor)
-            self.tab_widget.setTabText(file_index, QtCore.QFileInfo(file_path).fileName())
-            with open(file_path, 'r', encoding='utf-8') as file:
+            self.tab_widget.setTabText(
+                file_index, QtCore.QFileInfo(file_path).fileName()
+            )
+            with open(file_path, encoding="utf-8") as file:
                 content = file.read()
                 self.file_editor.setPlainText(content)
             self.current_file_path = file_path
@@ -155,8 +167,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Saves a file edited.
         """
-        if hasattr(self, 'current_file_path') and self.current_file_path:
-            with open(self.current_file_path, 'w', encoding='utf-8') as file:
+        if hasattr(self, "current_file_path") and self.current_file_path:
+            with open(self.current_file_path, "w", encoding="utf-8") as file:
                 file.write(self.file_editor.toPlainText())
 
     def init_menu_bar(self):
@@ -173,7 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ac_help_obj.menu_bar_obj = self.menu_bar
         self.ac_help_obj.create_topology_action()
         self.ac_help_obj.create_save_action()
-        exit_action = QtWidgets.QAction('Exit', self)
+        exit_action = QtWidgets.QAction("Exit", self)
         exit_action.triggered.connect(self.close)
         self.menu_help_obj.file_menu_obj.addAction(exit_action)
         self.ac_help_obj.create_settings_action()
@@ -183,10 +195,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Initialize the toolbar.
         """
-        self.tool_bar = self.addToolBar('Main Toolbar')
+        self.tool_bar = self.addToolBar("Main Toolbar")
         self.tool_bar.setMovable(False)
         self.tool_bar.setIconSize(QtCore.QSize(15, 15))
-        save_action = QtWidgets.QAction('Save', self)
+        save_action = QtWidgets.QAction("Save", self)
         save_action.triggered.connect(self.save_file)
         self.tool_bar.addAction(save_action)
         self.button_help_obj.bottom_right_pane = self.bottom_pane
@@ -207,7 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Initialize the status bar.
         """
         self.status_bar = self.statusBar()
-        self.status_bar.showMessage('Active')
+        self.status_bar.showMessage("Active")
         self.status_bar.addWidget(self.progress_bar)
         self.progress_bar.setRange(0, 1000)  # Set range to match simulation values
         self.progress_bar.setVisible(False)
@@ -233,7 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
         That fraction is turned into a 0..1000 scale for the progress bar.
         """
         # If we haven't set up the queue yet, nothing to do.
-        if not hasattr(self, 'progress_queue'):
+        if not hasattr(self, "progress_queue"):
             return
 
         # Drain the queue fully
@@ -246,15 +258,15 @@ class MainWindow(QtWidgets.QMainWindow):
         total_done = sum(self.progress_values.values())
 
         # If for some reason global_work_units is zero, guard to avoid division by zero
-        if getattr(self, 'global_work_units', 0) == 0:
+        if getattr(self, "global_work_units", 0) == 0:
             fraction = 0.0
         else:
             fraction = total_done / self.global_work_units
 
         global_progress = int(fraction * 1000)
 
-        #print(f"poll_progress => progress_values: {dict(self.progress_values)}")
-        #print(f"poll_progress => total_done={total_done}, fraction={fraction:.3f}, global_progress={global_progress}")
+        # print(f"poll_progress => progress_values: {dict(self.progress_values)}")
+        # print(f"poll_progress => total_done={total_done}, fraction={fraction:.3f}, global_progress={global_progress}")
 
         # Animate the progress bar to the new global_progress
         self.button_help_obj.update_progress(global_progress)
@@ -280,21 +292,24 @@ class MainWindow(QtWidgets.QMainWindow):
         # Compute how many total iteration units exist across ALL processes.
         # Each process might run multiple Erlang volumes, each with a certain number of iterations.
         total_work_units = 0
-        for key, conf in self.simulation_config.items(): # pylint: disable=unused-variable
+        for (
+            key,
+            conf,
+        ) in self.simulation_config.items():  # pylint: disable=unused-variable
             # Unified access to Erlang start/stop/step
-            if 'erlangs' in conf:
-                erlangs = conf['erlangs']
+            if "erlangs" in conf:
+                erlangs = conf["erlangs"]
             else:
                 erlangs = {
-                    'start': conf['erlang_start'],
-                    'stop': conf['erlang_stop'],
-                    'step': conf['erlang_step']
+                    "start": conf["erlang_start"],
+                    "stop": conf["erlang_stop"],
+                    "step": conf["erlang_step"],
                 }
 
-            start, stop, step = erlangs['start'], erlangs['stop'], erlangs['step']
+            start, stop, step = erlangs["start"], erlangs["stop"], erlangs["step"]
             count_erlangs = len(range(start, stop, step))
-            max_iters = conf['max_iters']
-            total_work_units += (count_erlangs * max_iters)
+            max_iters = conf["max_iters"]
+            total_work_units += count_erlangs * max_iters
 
         # Store that globally in the GUI, used by poll_progress()
         self.global_work_units = total_work_units
@@ -302,8 +317,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Insert the queues into each process config.
         # They will push logs & partial iteration counts to these queues.
         for key, conf in self.simulation_config.items():
-            conf['progress_queue'] = self.progress_queue
-            conf['log_queue'] = self.log_queue
+            conf["progress_queue"] = self.progress_queue
+            conf["log_queue"] = self.log_queue
 
         # Also store them on the button helpers if needed.
         if self.button_help_obj is not None:
@@ -312,7 +327,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.button_help_obj.progress_queue = self.progress_queue
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()

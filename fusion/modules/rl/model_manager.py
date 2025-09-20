@@ -3,11 +3,15 @@ import os
 import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
 
-from fusion.modules.rl.utils.general_utils import determine_model_type
 from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
-from fusion.modules.rl.errors import ModelLoadError, RLConfigurationError, AlgorithmNotFoundError
+from fusion.modules.rl.errors import (
+    AlgorithmNotFoundError,
+    ModelLoadError,
+    RLConfigurationError,
+)
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN
+from fusion.modules.rl.utils.general_utils import determine_model_type
 from fusion.sim.utils import parse_yaml_file
 from fusion.utils.logging_config import get_logger
 
@@ -43,8 +47,9 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
     if yaml_dict is None:
         logger.debug("Current working directory: %s", os.getcwd())
 
-        yml = os.path.join("fusion", "configs", "hyperparams",
-                           f"{algorithm}_{sim_dict['network']}.yml")
+        yml = os.path.join(
+            "fusion", "configs", "hyperparams", f"{algorithm}_{sim_dict['network']}.yml"
+        )
         yaml_dict = parse_yaml_file(yml)
         env_name = next(iter(yaml_dict))
         parameters = yaml_dict[env_name]
@@ -61,7 +66,7 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
         parameters["policy_kwargs"] = policy_kwargs
         policy_kwargs.update(
             features_extractor_class=CachedPathGNN,
-            features_extractor_kwargs=dict(cached_embedding=cached)
+            features_extractor_kwargs=dict(cached_embedding=cached),
         )
         parameters["policy_kwargs"] = policy_kwargs
         logger.info("Using CachedPathGNN from %s", cache_file_path)
@@ -81,10 +86,11 @@ def get_trained_model(env: object, sim_dict: dict):
     model_type = determine_model_type(sim_dict=sim_dict)
     algorithm_info = sim_dict.get(model_type)
 
-    if '_' not in algorithm_info:
+    if "_" not in algorithm_info:
         raise RLConfigurationError(
-            f"Algorithm info '{algorithm_info}' must include both algorithm and agent type (e.g., 'ppo_path').")
-    algorithm, agent_type = algorithm_info.split('_', 1)
+            f"Algorithm info '{algorithm_info}' must include both algorithm and agent type (e.g., 'ppo_path')."
+        )
+    algorithm, agent_type = algorithm_info.split("_", 1)
 
     if algorithm not in ALGORITHM_REGISTRY:
         raise AlgorithmNotFoundError(
@@ -93,7 +99,9 @@ def get_trained_model(env: object, sim_dict: dict):
         )
 
     model_key = f"{agent_type}_model"
-    model_path = os.path.join('logs', sim_dict[model_key], f"{algorithm_info}_model.zip")
+    model_path = os.path.join(
+        "logs", sim_dict[model_key], f"{algorithm_info}_model.zip"
+    )
 
     if not os.path.exists(model_path):
         raise ModelLoadError(
@@ -102,7 +110,7 @@ def get_trained_model(env: object, sim_dict: dict):
         )
 
     try:
-        model = ALGORITHM_REGISTRY[algorithm]['load'](model_path, env=env)
+        model = ALGORITHM_REGISTRY[algorithm]["load"](model_path, env=env)
     except Exception as exc:
         raise ModelLoadError(
             f"Failed to load model from '{model_path}': {exc}"
@@ -120,17 +128,18 @@ def save_model(sim_dict: dict, env: object, model):
     :param model: The trained model to be saved.
     """
     model_type = determine_model_type(sim_dict=sim_dict)
-    if '_' not in model_type:
+    if "_" not in model_type:
         raise RLConfigurationError(
-            f"Algorithm info '{model_type}' must include both algorithm and agent type (e.g., 'ppo_path').")
+            f"Algorithm info '{model_type}' must include both algorithm and agent type (e.g., 'ppo_path')."
+        )
 
     algorithm = sim_dict.get(model_type)
     save_fp = os.path.join(
-        'logs',
+        "logs",
         algorithm,
-        env.modified_props['network'],
-        env.modified_props['date'],
-        env.modified_props['sim_start'],
-        f"{algorithm}_model.zip"
+        env.modified_props["network"],
+        env.modified_props["date"],
+        env.modified_props["sim_start"],
+        f"{algorithm}_model.zip",
     )
     model.save(save_fp)

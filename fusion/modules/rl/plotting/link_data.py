@@ -1,5 +1,5 @@
-from pathlib import Path
 import math
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -20,10 +20,10 @@ def plot_link_usage(final_result, save_path=None, title=None):
 
             # Build graph from usage_dict
             for link_str, usage in usage_dict.items():
-                u, v = link_str.split('-')
+                u, v = link_str.split("-")
                 graph.add_edge(u, v, usage=usage)
 
-            usage_values = [graph[u][v].get('usage', 0) for u, v in graph.edges()]
+            usage_values = [graph[u][v].get("usage", 0) for u, v in graph.edges()]
             max_usage = max(usage_values) if usage_values else 1
             edge_colors = [(1.0, 0.5, 0.0, usage / max_usage) for usage in usage_values]
             edge_widths = [1 + 4 * (usage / max_usage) for usage in usage_values]
@@ -32,34 +32,42 @@ def plot_link_usage(final_result, save_path=None, title=None):
             fig, ax = plt.subplots(figsize=(10, 7))
 
             nx.draw(
-                graph, pos, ax=ax,
+                graph,
+                pos,
+                ax=ax,
                 with_labels=True,
-                node_color='lightblue',
+                node_color="lightblue",
                 edge_color=edge_colors,
-                width=edge_widths
+                width=edge_widths,
             )
             nx.draw_networkx_edge_labels(
-                graph, pos, ax=ax,
-                edge_labels={(u, v): graph[u][v].get('usage', 0) for u, v in graph.edges()},
-                font_color='gray'
+                graph,
+                pos,
+                ax=ax,
+                edge_labels={
+                    (u, v): graph[u][v].get("usage", 0) for u, v in graph.edges()
+                },
+                font_color="gray",
             )
 
             final_title = f"{title or 'Link Usage'} – {algo} – {tv} Erlang"
             print(final_title)
 
-            ax.set_title(final_title, fontsize=16, fontweight='bold')
-            ax.axis('off')
+            ax.set_title(final_title, fontsize=16, fontweight="bold")
+            ax.axis("off")
 
             plt.subplots_adjust(top=0.88)  # Leave space for title
             if save_path:
                 path = Path(save_path)
                 filename = f"{path.stem}_{algo}_{tv}{path.suffix}"
                 output_path = path.with_name(filename)
-                plt.savefig(output_path, bbox_inches='tight')
+                plt.savefig(output_path, bbox_inches="tight")
                 print(f"[plot_link_usage] ✅ Saved: {output_path}")
                 plt.close(fig)
             else:
-                print(f"[plot_link_usage] (no save path) – Showing: {algo}, Erlang {tv}")
+                print(
+                    f"[plot_link_usage] (no save path) – Showing: {algo}, Erlang {tv}"
+                )
                 plt.show()
                 plt.close(fig)
 
@@ -75,12 +83,14 @@ def plot_link_throughput(final_result, save_path=None, title=None):
             graph = nx.Graph()
 
             for link_str, throughput in throughput_dict.items():
-                u, v = link_str.split('-')
+                u, v = link_str.split("-")
                 graph.add_edge(u, v, throughput=throughput)
 
             throughput_values = [graph[u][v]["throughput"] for u, v in graph.edges()]
             max_throughput = max(throughput_values) if throughput_values else 1
-            edge_colors = [(1.0, 0.5, 0.0, v / max_throughput) for v in throughput_values]
+            edge_colors = [
+                (1.0, 0.5, 0.0, v / max_throughput) for v in throughput_values
+            ]
             edge_widths = [1 + 4 * (v / max_throughput) for v in throughput_values]
 
             pos = nx.spring_layout(graph, seed=42)
@@ -88,41 +98,49 @@ def plot_link_throughput(final_result, save_path=None, title=None):
             fig, ax = plt.subplots(figsize=(10, 7))
 
             nx.draw(
-                graph, pos, ax=ax,
+                graph,
+                pos,
+                ax=ax,
                 with_labels=True,
-                node_color='lightblue',
+                node_color="lightblue",
                 edge_color=edge_colors,
-                width=edge_widths
+                width=edge_widths,
             )
 
             draw_rotated_edge_labels(
-                graph, pos, ax,
+                graph,
+                pos,
+                ax,
                 attr="throughput",
                 offset=0.02,
                 fmt="{:.2f}",
                 fontsize=8,
-                color="gray"
+                color="gray",
             )
 
             final_title = f"{title or 'Link Throughput'} – {algo} – {tv} Erlang"
-            ax.set_title(final_title, fontsize=16, fontweight='bold')
-            ax.axis('off')
+            ax.set_title(final_title, fontsize=16, fontweight="bold")
+            ax.axis("off")
             plt.subplots_adjust(top=0.88)
 
             if save_path:
                 path = Path(save_path)
                 filename = f"{path.stem}_{algo}_{tv}{path.suffix}"
                 output_path = path.with_name(filename)
-                plt.savefig(output_path, bbox_inches='tight')
+                plt.savefig(output_path, bbox_inches="tight")
                 print(f"[plot_link_throughput] ✅ Saved: {output_path}")
                 plt.close(fig)
             else:
-                print(f"[plot_link_throughput] (no save path) – Showing: {algo}, Erlang {tv}")
+                print(
+                    f"[plot_link_throughput] (no save path) – Showing: {algo}, Erlang {tv}"
+                )
                 plt.show()
                 plt.close(fig)
 
 
-def draw_rotated_edge_labels(graph, pos, ax, attr="throughput", offset=0.05, fmt="{:.2f}", **text_kwargs):
+def draw_rotated_edge_labels(
+    graph, pos, ax, attr="throughput", offset=0.05, fmt="{:.2f}", **text_kwargs
+):
     """
     Draws edge labels rotated to follow the edge direction and offset perpendicularly from the edge center.
 
@@ -135,7 +153,7 @@ def draw_rotated_edge_labels(graph, pos, ax, attr="throughput", offset=0.05, fmt
         fmt: format string or callable for label value
         text_kwargs: forwarded to ax.text (e.g., fontsize, color)
     """
-    for (u, v) in graph.edges():
+    for u, v in graph.edges():
         if attr not in graph[u][v]:
             continue
 
@@ -163,10 +181,12 @@ def draw_rotated_edge_labels(graph, pos, ax, attr="throughput", offset=0.05, fmt
         label = fmt.format(value) if isinstance(fmt, str) else fmt(value)
 
         ax.text(
-            xo, yo, label,
+            xo,
+            yo,
+            label,
             rotation=angle,
-            rotation_mode='anchor',
-            horizontalalignment='center',
-            verticalalignment='center',
-            **text_kwargs
+            rotation_mode="anchor",
+            horizontalalignment="center",
+            verticalalignment="center",
+            **text_kwargs,
         )

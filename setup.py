@@ -6,35 +6,39 @@ This package provides simulation capabilities for Software Defined Elastic Optic
 with artificial intelligence integration for network optimization.
 """
 
-from setuptools import setup, find_packages
 import os
+
+from setuptools import find_packages, setup
+
 
 # Read the README file for long description
 def read_readme():
-    readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
+    readme_path = os.path.join(os.path.dirname(__file__), "README.md")
     if os.path.exists(readme_path):
-        with open(readme_path, 'r', encoding='utf-8') as f:
+        with open(readme_path, encoding="utf-8") as f:
             return f.read()
     return "FUSION - Flexible Unified System for Intelligent Optical Networking"
 
+
 # Read requirements from requirements.txt
 def read_requirements():
-    requirements_path = os.path.join(os.path.dirname(__file__), 'requirements.txt')
+    requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
     requirements = []
-    
+
     if os.path.exists(requirements_path):
-        with open(requirements_path, 'r', encoding='utf-8') as f:
+        with open(requirements_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 # Skip empty lines, comments, and pip-specific options
-                if line and not line.startswith('#') and not line.startswith('--'):
+                if line and not line.startswith("#") and not line.startswith("--"):
                     # Handle version constraints
-                    if '~=' in line:
+                    if "~=" in line:
                         # Convert ~= to >= for setuptools compatibility
-                        line = line.replace('~=', '>=')
+                        line = line.replace("~=", ">=")
                     requirements.append(line)
-    
+
     return requirements
+
 
 setup(
     name="fusion-optical-networks",
@@ -45,7 +49,7 @@ setup(
     long_description=read_readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/fusion-dev/FUSION",
-    packages=find_packages(exclude=['tests*', 'docs*', 'tools*', 'venv*']),
+    packages=find_packages(exclude=["tests*", "docs*", "tools*", "venv*"]),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -78,8 +82,30 @@ setup(
     ],
     extras_require={
         "dev": [
+            # Testing
             "pytest>=8.3.4",
+            "pytest-cov>=4.0.0",
+            # Code Quality
+            "black>=23.0.0",
+            "ruff>=0.1.0",
+            "mypy>=1.0.0",
+            "isort>=5.12.0",
+            # Legacy tools (maintained for compatibility)
             "pylint>=3.0.3",
+            # Pre-commit hooks
+            "pre-commit>=3.5.0",
+            "conventional-pre-commit>=3.2.0",
+            # Code analysis
+            "vulture>=2.10",
+            "pydeps>=1.12.0",
+            "bandit>=1.7.5",
+            # Performance analysis
+            "py-spy>=0.3.14",
+            "memory-profiler>=0.61.0",
+            "snakeviz>=2.2.0",
+            # Visualization
+            "graphviz>=0.20.1",
+            # Documentation
             "sphinx>=7.2.6",
             "sphinx_rtd_theme>=2.0.0",
         ],
@@ -91,7 +117,7 @@ setup(
         "pyg": [
             "torch-geometric>=2.6.1",
             "torch-scatter",
-            "torch-sparse", 
+            "torch-sparse",
             "torch-cluster",
             "torch-spline-conv",
         ],

@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
-from fusion.modules.rl.utils.sim_env import SimEnvUtils, SimEnvObs
+from fusion.modules.rl.utils.sim_env import SimEnvObs, SimEnvUtils
 
 
 # ------------------------------------------------------------------ #
@@ -89,10 +89,8 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
 class TestCheckTerminated(TestCase):
     """SimEnvUtils.check_terminated end-of-episode flow."""
 
-    @mock.patch("fusion.modules.rl.utils.sim_env.VALID_PATH_ALGORITHMS",
-                ["q_learning"])
-    @mock.patch("fusion.modules.rl.utils.sim_env.os.path.join",
-                return_value="/tmp")
+    @mock.patch("fusion.modules.rl.utils.sim_env.VALID_PATH_ALGORITHMS", ["q_learning"])
+    @mock.patch("fusion.modules.rl.utils.sim_env.os.path.join", return_value="/tmp")
     def test_increments_iter_and_calls_end(self, _):
         """Returns True, increments iteration, calls agent end_iter."""
         senv = _make_sim_env()

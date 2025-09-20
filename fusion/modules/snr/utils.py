@@ -6,7 +6,9 @@ except ImportError:
     np = None
 
 
-def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str):
+def get_loaded_files(
+    core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str
+):
     """
     Fetch the appropriate modulation format and GSNR files based on core_num and cores_per_link.
 
@@ -18,21 +20,23 @@ def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict
     :rtype: tuple
     """
     if core_num == 0:
-        key = 'multi_fiber'
+        key = "multi_fiber"
     else:
         key = (core_num, cores_per_link)
 
-    base_path = os.path.join('data', 'pre_calc', network)
+    base_path = os.path.join("data", "pre_calc", network)
     file_mapping = file_mapping_dict[network]
 
     if key in file_mapping:
-        mf_path = os.path.join(base_path, 'modulations', file_mapping[key]['mf'])
-        gsnr_path = os.path.join(base_path, 'snr', file_mapping[key]['gsnr'])
+        mf_path = os.path.join(base_path, "modulations", file_mapping[key]["mf"])
+        gsnr_path = os.path.join(base_path, "snr", file_mapping[key]["gsnr"])
         return (
             np.load(mf_path, allow_pickle=True),
             np.load(gsnr_path, allow_pickle=True),
         )
-    raise ValueError(f"No matching file found for core_num={core_num}, cores_per_link={cores_per_link}")
+    raise ValueError(
+        f"No matching file found for core_num={core_num}, cores_per_link={cores_per_link}"
+    )
 
 
 def get_slot_index(current_band, start_slot, engine_props):
@@ -46,9 +50,9 @@ def get_slot_index(current_band, start_slot, engine_props):
     :rtype: int
     """
     band_offset = {
-        'l': 0,
-        'c': engine_props['l_band'],
-        's': engine_props['l_band'] + engine_props['c_band'],
+        "l": 0,
+        "c": engine_props["l_band"],
+        "s": engine_props["l_band"] + engine_props["c_band"],
     }
     if current_band not in band_offset:
         raise ValueError(f"Unexpected band: {current_band}")
@@ -67,9 +71,10 @@ def compute_response(mod_format, snr_props, spectrum_props, sdn_props):
     :rtype: bool
     """
     is_valid_modulation = (
-            snr_props.modulation_format_mapping_dict[mod_format] == spectrum_props.modulation
+        snr_props.modulation_format_mapping_dict[mod_format]
+        == spectrum_props.modulation
     )
-    meets_bw_requirements = (
-            snr_props.bandwidth_mapping_dict[spectrum_props.modulation] >= int(sdn_props.bandwidth)
-    )
+    meets_bw_requirements = snr_props.bandwidth_mapping_dict[
+        spectrum_props.modulation
+    ] >= int(sdn_props.bandwidth)
     return mod_format != 0 and is_valid_modulation and meets_bw_requirements

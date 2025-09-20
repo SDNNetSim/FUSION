@@ -3,19 +3,18 @@
 # pylint: disable=no-member
 # pylint: disable=super-with-arguments
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class DirectoryTreeView(QtWidgets.QTreeView):
     """
     Sets up a new directory tree view.
     """
+
     item_double_clicked_sig = QtCore.pyqtSignal(QtCore.QModelIndex)
 
     def __init__(
-        self,
-        file_model: QtWidgets.QFileSystemModel,
-        parent: QtWidgets.QWidget = None
+        self, file_model: QtWidgets.QFileSystemModel, parent: QtWidgets.QWidget = None
     ):
         super().__init__(parent)
         self.setSelectionBehavior(QtWidgets.QTreeView.SelectRows)
@@ -29,9 +28,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         self.is_cut_operation = False
 
     def copy_item(
-        self,
-        source_index: QtCore.QModelIndex,
-        is_cut_operation: bool = False
+        self, source_index: QtCore.QModelIndex, is_cut_operation: bool = False
     ):
         """
         Implements the copy/cut operations in the directory tree view.
@@ -45,11 +42,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         self.is_directory = QtCore.QFileInfo(self.copied_path).isDir()
         self.is_cut_operation = is_cut_operation
 
-    def _copy_directory(
-        self,
-        source_dir: str,
-        destination_dir: str
-    ):
+    def _copy_directory(self, source_dir: str, destination_dir: str):
         """
         Copies a directory recursively
 
@@ -60,25 +53,29 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         destination_obj = QtCore.QDir(destination_dir)
 
         destination_path = destination_obj.filePath(
-            QtCore.QFileInfo(source_dir).fileName())
+            QtCore.QFileInfo(source_dir).fileName()
+        )
         if not destination_obj.exists(destination_path):
             destination_obj.mkpath(destination_path)
 
         for file_name in source_obj.entryList(QtCore.QDir.Files):
-            QtCore.QFile.copy(source_obj.absoluteFilePath(file_name),
-                              QtCore.QDir(destination_path).filePath(file_name))
+            QtCore.QFile.copy(
+                source_obj.absoluteFilePath(file_name),
+                QtCore.QDir(destination_path).filePath(file_name),
+            )
 
         for subdir in source_obj.entryList(
-                QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot):
-            self._copy_directory(source_obj.absoluteFilePath(subdir), QtCore.QDir(destination_path).filePath(subdir))
+            QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot
+        ):
+            self._copy_directory(
+                source_obj.absoluteFilePath(subdir),
+                QtCore.QDir(destination_path).filePath(subdir),
+            )
 
         if self.is_cut_operation:
             self.delete_directory(source_dir)
 
-    def paste_item(
-        self,
-        destination_index: QtCore.QModelIndex
-    ):
+    def paste_item(self, destination_index: QtCore.QModelIndex):
         """
         Pastes a file/folder at destination_index.
 
@@ -88,29 +85,26 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         if self.copied_path:
             destination_dir = self.model.filePath(destination_index)
             if not QtCore.QFileInfo(destination_dir).isDir():
-                destination_dir = QtCore.QFileInfo(
-                    destination_dir).absolutePath()
+                destination_dir = QtCore.QFileInfo(destination_dir).absolutePath()
 
             if self.is_directory:
                 self._copy_directory(self.copied_path, destination_dir)
             else:
                 file_name = QtCore.QFileInfo(self.copied_path).fileName()
-                if QtCore.QFile.copy(self.copied_path,
-                                     QtCore.QDir(destination_dir).filePath(
-                                         file_name)):
+                if QtCore.QFile.copy(
+                    self.copied_path, QtCore.QDir(destination_dir).filePath(file_name)
+                ):
                     pass  # basically do nothing
                 else:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Failed to paste the file")
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", "Failed to paste the file"
+                    )
 
             if self.is_cut_operation:
                 self._delete()
             self.refresh_view()
 
-    def delete_item(
-        self,
-        target_index: QtCore.QModelIndex
-    ):
+    def delete_item(self, target_index: QtCore.QModelIndex):
         """
         Delete an item from the tree.
 
@@ -120,15 +114,21 @@ class DirectoryTreeView(QtWidgets.QTreeView):
         is_directory = QtCore.QFileInfo(path).isDir()
 
         if is_directory:
-            reply = QtWidgets.QMessageBox.question(self, "Delete Directory",
-                                                   f"Are you sure you want to delete the directory '{path}' and all its contents?",
-                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                   QtWidgets.QMessageBox.No)
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Delete Directory",
+                f"Are you sure you want to delete the directory '{path}' and all its contents?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No,
+            )
         else:
-            reply = QtWidgets.QMessageBox.question(self, "Delete File",
-                                                   f"Are you sure you want to delete the file '{path}'?",
-                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                   QtWidgets.QMessageBox.No)
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Delete File",
+                f"Are you sure you want to delete the file '{path}'?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No,
+            )
 
         if reply == QtWidgets.QMessageBox.Yes:
             if is_directory:
@@ -147,10 +147,7 @@ class DirectoryTreeView(QtWidgets.QTreeView):
             QtCore.QFile.remove(self.copied_path)
         self.refresh_view()  # Refresh the model to reflect changes
 
-    def handle_context_menu(
-        self,
-        position: QtCore.QModelIndex
-    ):
+    def handle_context_menu(self, position: QtCore.QModelIndex):
         """
         Callback function to handle contextEvent signal. The context menu
         created by this function is rooted at position.

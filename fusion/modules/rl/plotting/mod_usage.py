@@ -1,8 +1,8 @@
 import math
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
 
 BASE_FONT_SIZE = 11
@@ -10,9 +10,7 @@ TICK_FONT_SIZE = 8
 TITLE_FONT_SIZE = 14
 SUBPLOT_TITLE_SZ = 9
 MOD_ORDER = ["QPSK", "16-QAM", "64-QAM"]
-MOD_COLORS = {"QPSK": "tab:blue",
-              "16-QAM": "tab:orange",
-              "64-QAM": "tab:green"}
+MOD_COLORS = {"QPSK": "tab:blue", "16-QAM": "tab:orange", "64-QAM": "tab:green"}
 
 
 def _auto_bar_width(bws: list[float]) -> float:
@@ -35,8 +33,7 @@ def _apply_axes_style(ax):
     ax.tick_params(axis="both", labelsize=TICK_FONT_SIZE, width=0.8, length=3)
 
 
-def plot_modulation_usage(data, save_path=None,
-                          title="Modulations per Bandwidth"):
+def plot_modulation_usage(data, save_path=None, title="Modulations per Bandwidth"):
     """
     Normalized stacked bar chart: each bandwidth group sums to 1.0.
 
@@ -47,18 +44,18 @@ def plot_modulation_usage(data, save_path=None,
     save_path : str or Path, optional
         If set, saves each figure per traffic volume.
     """
-    plt.rcParams.update({
-        "font.size": BASE_FONT_SIZE,
-        "axes.labelweight": "bold",
-        "axes.titlesize": SUBPLOT_TITLE_SZ,
-        "axes.titleweight": "regular",
-        "legend.fontsize": BASE_FONT_SIZE - 1,
-    })
+    plt.rcParams.update(
+        {
+            "font.size": BASE_FONT_SIZE,
+            "axes.labelweight": "bold",
+            "axes.titlesize": SUBPLOT_TITLE_SZ,
+            "axes.titleweight": "regular",
+            "legend.fontsize": BASE_FONT_SIZE - 1,
+        }
+    )
 
     plt.style.use(
-        "seaborn-whitegrid"
-        if "seaborn-whitegrid" in plt.style.available
-        else "default"
+        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
     )
 
     all_tvs = sorted({float(tv) for algo in data.values() for tv in algo})
@@ -66,11 +63,9 @@ def plot_modulation_usage(data, save_path=None,
 
     for tv in all_tvs:
         tv_str = str(tv)
-        bws = sorted({
-            float(bw)
-            for algo in all_algos
-            for bw in data[algo].get(tv_str, {})
-        })
+        bws = sorted(
+            {float(bw) for algo in all_algos for bw in data[algo].get(tv_str, {})}
+        )
         if not bws:
             continue
 
@@ -82,9 +77,11 @@ def plot_modulation_usage(data, save_path=None,
         fig_h = 3.0 * n_rows
 
         fig, axes = plt.subplots(
-            n_rows, n_cols,
+            n_rows,
+            n_cols,
             figsize=(fig_w, fig_h),
-            sharey=True, dpi=300,
+            sharey=True,
+            dpi=300,
         )
         axes = axes.flatten()
 
@@ -129,12 +126,11 @@ def plot_modulation_usage(data, save_path=None,
         for ax in axes[n_algos:]:
             fig.delaxes(ax)
 
-        fig.suptitle(f"{title} – {tv} Er",
-                     fontsize=TITLE_FONT_SIZE, fontweight="bold", y=0.98)
+        fig.suptitle(
+            f"{title} – {tv} Er", fontsize=TITLE_FONT_SIZE, fontweight="bold", y=0.98
+        )
 
-        mod_handles = [
-            mpatches.Patch(color=MOD_COLORS[m], label=m) for m in MOD_ORDER
-        ]
+        mod_handles = [mpatches.Patch(color=MOD_COLORS[m], label=m) for m in MOD_ORDER]
         leg = fig.legend(
             handles=mod_handles,
             title="Modulation",

@@ -6,12 +6,12 @@ CLI modules to reduce duplication and maintain consistency.
 """
 
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 
-def create_entry_point_wrapper(main_func: Callable[[], int],
-                              _legacy_name: str,
-                              _entry_point_description: str) -> tuple[Callable[[], int], Callable[[], None]]:
+def create_entry_point_wrapper(
+    main_func: Callable[[], int], _legacy_name: str, _entry_point_description: str
+) -> tuple[Callable[[], int], Callable[[], None]]:
     """
     Create standardized entry point wrapper functions.
 
@@ -62,6 +62,8 @@ def create_main_wrapper(main_func: Callable[[], int]) -> Callable[[], None]:
     :return: Wrapper function that calls sys.exit
     :rtype: Callable[[], None]
     """
+
     def wrapper() -> None:
         sys.exit(main_func())
+
     return wrapper

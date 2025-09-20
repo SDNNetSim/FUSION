@@ -2,26 +2,44 @@
 
 # pylint: disable=too-many-public-methods, no-value-for-parameter, no-name-in-module
 
-import unittest
-import os
 import copy
-from unittest.mock import patch, mock_open, MagicMock
+import os
+import unittest
+from unittest.mock import MagicMock, mock_open, patch
 
 import networkx as nx
 import numpy as np
 
 from fusion.sim.utils import (
-    get_path_mod, find_max_path_len, sort_dict_keys, sort_nested_dict_vals,
-    find_path_len, find_path_cong, find_free_slots,
-    find_free_channels, find_taken_channels, snake_to_title, int_to_string,
-    dict_to_list, list_to_title, calc_matrix_stats, combine_and_one_hot,
-    get_start_time, find_core_cong, find_core_frag_cong, min_max_scale,
-    get_super_channels, get_hfrag, classify_cong, parse_yaml_file,
-    save_study_results, modify_multiple_json_values
+    calc_matrix_stats,
+    classify_cong,
+    combine_and_one_hot,
+    dict_to_list,
+    find_core_cong,
+    find_core_frag_cong,
+    find_free_channels,
+    find_free_slots,
+    find_max_path_len,
+    find_path_cong,
+    find_path_len,
+    find_taken_channels,
+    get_hfrag,
+    get_path_mod,
+    get_start_time,
+    get_super_channels,
+    int_to_string,
+    list_to_title,
+    min_max_scale,
+    modify_multiple_json_values,
+    parse_yaml_file,
+    save_study_results,
+    snake_to_title,
+    sort_dict_keys,
+    sort_nested_dict_vals,
 )
 
-
 # NOTE: These functions are no longer supported. get_arrival_rates,run_simulation_for_arrival_rates,
+
 
 class TestSimHelpers(unittest.TestCase):
     """Unit tests for sim_helpers functions."""
@@ -29,9 +47,9 @@ class TestSimHelpers(unittest.TestCase):
     def setUp(self):
         """Set up test data for the unit tests."""
         self.mods_dict = {
-            'QPSK': {'max_length': 2000},
-            '16-QAM': {'max_length': 1000},
-            '64-QAM': {'max_length': 500}
+            "QPSK": {"max_length": 2000},
+            "16-QAM": {"max_length": 1000},
+            "64-QAM": {"max_length": 500},
         }
 
         self.topology = nx.Graph()
@@ -41,22 +59,18 @@ class TestSimHelpers(unittest.TestCase):
         self.topology.add_edge(3, 4, length=15)
 
         self.net_spec_dict = {
-            ('A', 'B'): {
-                'cores_matrix': {
-                    'c': np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])
-                }
+            ("A", "B"): {
+                "cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}
             },
-            ('D', 'E'): {
-                'cores_matrix': {
-                    'c': np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])
-                }
-            }
+            ("D", "E"): {
+                "cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}
+            },
         }
 
     def test_valid_path_length(self):
         """Test valid path length for modulation format selection."""
         path_len = 800
-        expected_mod = '16-QAM'
+        expected_mod = "16-QAM"
         chosen_mod = get_path_mod(self.mods_dict, path_len)
         self.assertEqual(chosen_mod, expected_mod)
 
@@ -76,22 +90,22 @@ class TestSimHelpers(unittest.TestCase):
     def test_sort_nested_dict_vals(self):
         """Test sorting a dictionary by a nested key."""
         original_dict = {
-            'item1': {'nested_key': 10},
-            'item2': {'nested_key': 5},
-            'item3': {'nested_key': 15}
+            "item1": {"nested_key": 10},
+            "item2": {"nested_key": 5},
+            "item3": {"nested_key": 15},
         }
         expected_sorted_dict = {
-            'item2': {'nested_key': 5},
-            'item1': {'nested_key': 10},
-            'item3': {'nested_key': 15}
+            "item2": {"nested_key": 5},
+            "item1": {"nested_key": 10},
+            "item3": {"nested_key": 15},
         }
-        sorted_dict = sort_nested_dict_vals(original_dict, 'nested_key')
+        sorted_dict = sort_nested_dict_vals(original_dict, "nested_key")
         self.assertEqual(sorted_dict, expected_sorted_dict)
 
     def test_sort_dict_keys(self):
         """Test sorting a dictionary by its keys in descending order."""
-        dictionary = {'3': 'c', '1': 'a', '2': 'b'}
-        expected_sorted_dict = {'3': 'c', '2': 'b', '1': 'a'}
+        dictionary = {"3": "c", "1": "a", "2": "b"}
+        expected_sorted_dict = {"3": "c", "2": "b", "1": "a"}
         sorted_dict = sort_dict_keys(dictionary)
         self.assertEqual(sorted_dict, expected_sorted_dict)
 
@@ -105,8 +119,8 @@ class TestSimHelpers(unittest.TestCase):
     def test_find_path_cong(self):
         """Test finding the average congestion of a path."""
         net_spec_dict = {
-            (1, 2): {'cores_matrix': {'c': np.array([[0, 1, 1], [1, 1, 0]])}},
-            (2, 3): {'cores_matrix': {'c': np.array([[1, 0, 0], [0, 0, 1]])}}
+            (1, 2): {"cores_matrix": {"c": np.array([[0, 1, 1], [1, 1, 0]])}},
+            (2, 3): {"cores_matrix": {"c": np.array([[1, 0, 0], [0, 0, 1]])}},
         }
         path_list = [1, 2, 3]
         expected_avg_cong = ((4 / 6) + (2 / 6)) / 2
@@ -118,8 +132,8 @@ class TestSimHelpers(unittest.TestCase):
     def test_find_core_cong(self):
         """Test finding congestion on a specific core along a path."""
         net_spec_dict = {
-            (1, 2): {'cores_matrix': {'c': np.array([[0, 1, 1], [1, 1, 0]])}},
-            (2, 3): {'cores_matrix': {'c': np.array([[1, 0, 0], [0, 0, 1]])}}
+            (1, 2): {"cores_matrix": {"c": np.array([[0, 1, 1], [1, 1, 0]])}},
+            (2, 3): {"cores_matrix": {"c": np.array([[1, 0, 0], [0, 0, 1]])}},
         }
         path_list = [1, 2, 3]
         core_index = 0
@@ -130,12 +144,12 @@ class TestSimHelpers(unittest.TestCase):
     def test_find_core_frag_cong(self):
         """Test finding fragmentation and congestion on a core."""
         net_spec_dict = {
-            (1, 2): {'cores_matrix': {'c': [np.zeros(256), np.zeros(256)]}},
-            (2, 3): {'cores_matrix': {'c': [np.zeros(256), np.zeros(256)]}}
+            (1, 2): {"cores_matrix": {"c": [np.zeros(256), np.zeros(256)]}},
+            (2, 3): {"cores_matrix": {"c": [np.zeros(256), np.zeros(256)]}},
         }
         path_list = [1, 2, 3]
         core = 0
-        band = 'c'
+        band = "c"
 
         frag_resp, cong_resp = find_core_frag_cong(net_spec_dict, path_list, core, band)
 
@@ -144,22 +158,22 @@ class TestSimHelpers(unittest.TestCase):
 
     def test_find_free_slots(self):
         """Test finding free slots for each core on a link."""
-        result1 = find_free_slots(self.net_spec_dict, ('A', 'B'))
-        expected_result1 = {'c': {0: np.array([0, 2, 3]), 1: np.array([0, 1, 3])}}
-        for core, slots_list in expected_result1['c'].items():
-            self.assertTrue(np.array_equal(result1['c'][core], slots_list))
+        result1 = find_free_slots(self.net_spec_dict, ("A", "B"))
+        expected_result1 = {"c": {0: np.array([0, 2, 3]), 1: np.array([0, 1, 3])}}
+        for core, slots_list in expected_result1["c"].items():
+            self.assertTrue(np.array_equal(result1["c"][core], slots_list))
 
     def test_find_free_channels(self):
         """Test finding free channels for a given link."""
         slots_needed = 2
-        result1 = find_free_channels(self.net_spec_dict, slots_needed, ('A', 'B'))
-        expected_result1 = {'c': {0: [[2, 3]], 1: [[0, 1]]}}
+        result1 = find_free_channels(self.net_spec_dict, slots_needed, ("A", "B"))
+        expected_result1 = {"c": {0: [[2, 3]], 1: [[0, 1]]}}
         self.assertEqual(result1, expected_result1)
 
     def test_find_taken_channels(self):
         """Test finding taken channels for a given link."""
-        result1 = find_taken_channels(copy.deepcopy(self.net_spec_dict), ('D', 'E'))
-        expected_result1 = {'c': {0: [[1, 1]], 1: []}}
+        result1 = find_taken_channels(copy.deepcopy(self.net_spec_dict), ("D", "E"))
+        expected_result1 = {"c": {0: [[1, 1]], 1: []}}
         self.assertEqual(result1, expected_result1)
 
     def test_snake_to_title(self):
@@ -177,11 +191,11 @@ class TestSimHelpers(unittest.TestCase):
     def test_dict_to_list(self):
         """Test creating a list from a dictionary based on a nested key."""
         data_dict = {
-            'item1': {'value': 10},
-            'item2': {'value': 20},
-            'item3': {'value': 30}
+            "item1": {"value": 10},
+            "item2": {"value": 20},
+            "item3": {"value": 30},
         }
-        nested_key = 'value'
+        nested_key = "value"
         result = dict_to_list(data_dict, nested_key)
         self.assertTrue(np.array_equal(result, [10, 20, 30]))
 
@@ -196,16 +210,12 @@ class TestSimHelpers(unittest.TestCase):
 
     def test_calc_matrix_stats(self):
         """Test calculating min, max, and average of matrix columns."""
-        input_dict = {
-            '0': [1.0, 5.0, 3.0],
-            '1': [2.0, 4.0, 8.0],
-            '2': [0.0, 3.0, 5.0]
-        }
+        input_dict = {"0": [1.0, 5.0, 3.0], "1": [2.0, 4.0, 8.0], "2": [0.0, 3.0, 5.0]}
 
         expected_output = {
-            'min': [0, 3, 3],
-            'max': [2, 5, 8],
-            'average': [1.0, 4.0, 5.333333333333333]
+            "min": [0, 3, 3],
+            "max": [2, 5, 8],
+            "average": [1.0, 4.0, 5.333333333333333],
         }
 
         result = calc_matrix_stats(input_dict)
@@ -224,18 +234,18 @@ class TestSimHelpers(unittest.TestCase):
 
     def test_get_start_time(self):
         """Test getting the start time of a simulation."""
-        sim_dict = {'s1': {'network': 'dummyNet', 'date': None, 'sim_start': None}}
+        sim_dict = {"s1": {"network": "dummyNet", "date": None, "sim_start": None}}
 
         get_start_time(sim_dict)
 
         # Check that date is set to current date (format: MMDD)
-        self.assertIsNotNone(sim_dict['s1']['date'])
-        self.assertEqual(len(sim_dict['s1']['date']), 4)
-        self.assertTrue(sim_dict['s1']['date'].isdigit())
+        self.assertIsNotNone(sim_dict["s1"]["date"])
+        self.assertEqual(len(sim_dict["s1"]["date"]), 4)
+        self.assertTrue(sim_dict["s1"]["date"].isdigit())
 
         # Check that sim_start is set and has the correct format (HH_MM_SS_microseconds)
-        self.assertIsNotNone(sim_dict['s1']['sim_start'])
-        sim_start_parts = sim_dict['s1']['sim_start'].split('_')
+        self.assertIsNotNone(sim_dict["s1"]["sim_start"])
+        sim_start_parts = sim_dict["s1"]["sim_start"].split("_")
         self.assertEqual(len(sim_start_parts), 4)  # H_M_S_microseconds
         self.assertTrue(all(part.isdigit() for part in sim_start_parts))
 
@@ -262,20 +272,21 @@ class TestSimHelpers(unittest.TestCase):
         """Test calculating Shannon entropy fragmentation scores."""
         path_list = [1, 2, 3]
         core_num = 0
-        band = 'c'
+        band = "c"
         slots_needed = 3
         spectral_slots = 8
 
         # Updated net_spec_dict to ensure the arrays are correctly formed
         net_spec_dict = {
-            (1, 2): {'cores_matrix': {'c': np.zeros((1, spectral_slots))}},
-            (2, 3): {'cores_matrix': {'c': np.zeros((1, spectral_slots))}}
+            (1, 2): {"cores_matrix": {"c": np.zeros((1, spectral_slots))}},
+            (2, 3): {"cores_matrix": {"c": np.zeros((1, spectral_slots))}},
         }
 
         # Adjusted expected values to match the actual function's logic
         expected_sc_index_mat = np.array([[0, 3], [1, 4], [2, 5], [3, 6], [4, 7]])
-        expected_resp_frag_arr = np.array([1.386, -np.inf, -np.inf, -np.inf, 1.386,
-                                           np.inf, np.inf, np.inf])
+        expected_resp_frag_arr = np.array(
+            [1.386, -np.inf, -np.inf, -np.inf, 1.386, np.inf, np.inf, np.inf]
+        )
 
         # Call the function
         sc_index_mat, resp_frag_arr = get_hfrag(
@@ -299,8 +310,8 @@ class TestSimHelpers(unittest.TestCase):
         cong_index = classify_cong(curr_cong, cong_cutoff)
         self.assertEqual(cong_index, expected_cong_index)
 
-    @patch('builtins.open', new_callable=mock_open, read_data="key: value")
-    @patch('fusion.sim.utils.yaml.safe_load')
+    @patch("builtins.open", new_callable=mock_open, read_data="key: value")
+    @patch("fusion.sim.utils.yaml.safe_load")
     def test_parse_yaml_file(self, mock_yaml_load, mock_open_file):
         """Test parsing a YAML file."""
         mock_yaml_load.return_value = {"key": "value"}
@@ -309,71 +320,83 @@ class TestSimHelpers(unittest.TestCase):
         result = parse_yaml_file(yaml_file)
         self.assertEqual(result, {"key": "value"})
 
-        mock_open_file.assert_called_once_with(yaml_file, "r", encoding='utf-8')
+        mock_open_file.assert_called_once_with(yaml_file, "r", encoding="utf-8")
         mock_yaml_load.assert_called_once()
 
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.makedirs')
-    @patch('pickle.dump')
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.makedirs")
+    @patch("pickle.dump")
     def test_save_study_results(self, mock_pickle_dump, mock_makedirs, mock_open_file):
         """Test saving the study results."""
 
         class MockEnv:  # pylint: disable=too-few-public-methods
-            """ Mock an environment. """
+            """Mock an environment."""
 
             def __init__(self):
                 self.engine_obj = MagicMock()
                 self.engine_obj.engine_props = {
-                    'network': 'test_network',
-                    'date': '2025-01-01',
-                    'sim_start': '12:00:00',
-                    'path_algorithm': 'q_learning'
+                    "network": "test_network",
+                    "date": "2025-01-01",
+                    "sim_start": "12:00:00",
+                    "path_algorithm": "q_learning",
                 }
 
         env = MockEnv()
         study = MagicMock()
-        best_params = {'param1': 0.5, 'param2': 10}
+        best_params = {"param1": 0.5, "param2": 10}
         best_reward = 100.0
-        start_time = '2025-01-01 12:00:00'
-        study_name = 'test_study'
+        start_time = "2025-01-01 12:00:00"
+        study_name = "test_study"
 
         save_study_results(study, env, study_name, best_params, best_reward, start_time)
         mock_makedirs.assert_called_once_with(
-            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01', '12:00:00'),
-            exist_ok=True
+            os.path.join(
+                "logs", "q_learning", "test_network", "2025-01-01", "12:00:00"
+            ),
+            exist_ok=True,
         )
         mock_pickle_dump.assert_called_once()
         mock_open_file.assert_any_call(
-            os.path.join('logs', 'q_learning', 'test_network', '2025-01-01',
-                         '12:00:00', 'best_hyperparams.txt'),
-            'w',
-            encoding='utf-8'
+            os.path.join(
+                "logs",
+                "q_learning",
+                "test_network",
+                "2025-01-01",
+                "12:00:00",
+                "best_hyperparams.txt",
+            ),
+            "w",
+            encoding="utf-8",
         )
 
-    @patch('json.load', return_value={'key1': 'value1', 'key2': 'value2'})
-    @patch('json.dump')
-    @patch('builtins.open', new_callable=mock_open)
+    @patch("json.load", return_value={"key1": "value1", "key2": "value2"})
+    @patch("json.dump")
+    @patch("builtins.open", new_callable=mock_open)
     # pylint: disable=unused-argument
-    def test_modify_multiple_json_values(self, mock_open_file, mock_json_dump, mock_json_load):
+    def test_modify_multiple_json_values(
+        self, mock_open_file, mock_json_dump, mock_json_load
+    ):
         """Test modifying multiple JSON values."""
-        file_path = 'test_dir'
-        update_list = [('key1', 'new_value1'), ('key2', 'new_value2')]
+        file_path = "test_dir"
+        update_list = [("key1", "new_value1"), ("key2", "new_value2")]
 
         mock_file_handle = mock_open_file.return_value.__enter__.return_value
 
         modify_multiple_json_values(1, file_path, update_list)
 
         # Ensure the file was read correctly
-        mock_open_file.assert_any_call(os.path.join(file_path, 'sim_input_s1.json'), 'r',
-                                       encoding='utf-8')
+        mock_open_file.assert_any_call(
+            os.path.join(file_path, "sim_input_s1.json"), "r", encoding="utf-8"
+        )
         # Ensure the file was written correctly to s2.json
-        mock_open_file.assert_any_call(os.path.join(file_path, 'sim_input_s2.json'), 'w',
-                                       encoding='utf-8')
+        mock_open_file.assert_any_call(
+            os.path.join(file_path, "sim_input_s2.json"), "w", encoding="utf-8"
+        )
         # Ensure data was written with correct structure
         mock_json_dump.assert_called_once_with(
-            {'key1': 'new_value1', 'key2': 'new_value2'}, mock_file_handle, indent=4
+            {"key1": "new_value1", "key2": "new_value2"}, mock_file_handle, indent=4
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 # Standard library imports
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List, Union
+from typing import Any
 
 # Third-party imports
 import numpy as np
@@ -21,7 +21,9 @@ def _collect_baseline_data(merged_data: dict, baseline_algorithms: list[str]) ->
     baseline_values = defaultdict(dict)
     for baseline_algo in baseline_algorithms:
         for traffic_volume, values in merged_data[baseline_algo].items():
-            baseline_values[baseline_algo][traffic_volume] = np.array(values, dtype=float)
+            baseline_values[baseline_algo][traffic_volume] = np.array(
+                values, dtype=float
+            )
     return baseline_values
 
 
@@ -38,14 +40,22 @@ def _calculate_statistics(values: np.ndarray) -> dict:
     }
 
 
-def _compute_effect_sizes(algorithm_values: np.ndarray, baseline_values: np.ndarray, baseline_name: str) -> dict:
+def _compute_effect_sizes(
+    algorithm_values: np.ndarray, baseline_values: np.ndarray, baseline_name: str
+) -> dict:
     """Compute statistical comparisons vs baseline algorithm."""
     if len(baseline_values) <= 1 or len(algorithm_values) <= 1:
         return {}
 
     _, p_value = ttest_ind(algorithm_values, baseline_values, equal_var=False)
-    pooled_std = np.sqrt((np.var(algorithm_values, ddof=1) + np.var(baseline_values, ddof=1)) / 2)
-    cohens_d = (np.mean(algorithm_values) - np.mean(baseline_values)) / pooled_std if pooled_std else 0.0
+    pooled_std = np.sqrt(
+        (np.var(algorithm_values, ddof=1) + np.var(baseline_values, ddof=1)) / 2
+    )
+    cohens_d = (
+        (np.mean(algorithm_values) - np.mean(baseline_values)) / pooled_std
+        if pooled_std
+        else 0.0
+    )
     mean_difference = np.mean(algorithm_values) - np.mean(baseline_values)
 
     return {
@@ -53,30 +63,40 @@ def _compute_effect_sizes(algorithm_values: np.ndarray, baseline_values: np.ndar
             "p": float(p_value),
             "d": float(cohens_d),
             "mean_diff": float(mean_difference),
-            "significant": p_value < 0.05
+            "significant": p_value < 0.05,
         }
     }
 
 
-def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
+def process_blocking(raw_runs: dict[str, Any], runid_to_algo: dict[str, str]) -> dict:
     """
     Process blocking probability results into mean, std, CI and optionally effect sizes.
     """
     merged_data = defaultdict(lambda: defaultdict(list))
-    baseline_algorithms = ["k_shortest_path_1", "k_shortest_path_4", "cong_aware", "k_shortest_path_inf"]
+    baseline_algorithms = [
+        "k_shortest_path_1",
+        "k_shortest_path_4",
+        "cong_aware",
+        "k_shortest_path_inf",
+    ]
 
     # Collect data from all runs
     for run_id, data in raw_runs.items():
         algorithm = runid_to_algo.get(run_id, "unknown")
         for traffic_volume, info_vector in data.items():
             if isinstance(info_vector, dict):
-                last_key = next(reversed(info_vector['iter_stats']))
-                last_entry = info_vector['iter_stats'][last_key]
+                last_key = next(reversed(info_vector["iter_stats"]))
+                last_entry = info_vector["iter_stats"][last_key]
                 if algorithm in baseline_algorithms:
-                    blocking_list = last_entry['sim_block_list']
+                    blocking_list = last_entry["sim_block_list"]
                     merged_data[algorithm][str(traffic_volume)] = blocking_list
-                elif info_vector.get('blocking_mean') is None and 'iter_stats' in info_vector:
-                    merged_data[algorithm][str(traffic_volume)].append(_mean_last(last_entry['sim_block_list']))
+                elif (
+                    info_vector.get("blocking_mean") is None
+                    and "iter_stats" in info_vector
+                ):
+                    merged_data[algorithm][str(traffic_volume)].append(
+                        _mean_last(last_entry["sim_block_list"])
+                    )
                 else:
                     raise NotImplementedError
             elif isinstance(info_vector, (float, int)):
@@ -96,23 +116,32 @@ def process_blocking(raw_runs: Dict[str, Any], runid_to_algo: dict[str, str]) ->
             # Add comparisons to baselines for non-baseline algorithms
             if algorithm not in baseline_algorithms:
                 for baseline_algo in baseline_algorithms:
-                    baseline_vals = np.array(baseline_values.get(baseline_algo, {}).get(traffic_volume, []), dtype=float)
-                    effect_size_stats = _compute_effect_sizes(values_array, baseline_vals, baseline_algo)
+                    baseline_vals = np.array(
+                        baseline_values.get(baseline_algo, {}).get(traffic_volume, []),
+                        dtype=float,
+                    )
+                    effect_size_stats = _compute_effect_sizes(
+                        values_array, baseline_vals, baseline_algo
+                    )
                     statistics_block.update(effect_size_stats)
 
             processed[algorithm][traffic_volume] = statistics_block
 
             # Debug logging
-            print(f"[SEED-DBG] {algorithm} Erlang={traffic_volume} seeds={len(values_array)} "
-                  f"mean={statistics_block['mean']:.4g} ±std={statistics_block['std']:.4g} ±CI={statistics_block['ci']:.4g}")
+            print(
+                f"[SEED-DBG] {algorithm} Erlang={traffic_volume} seeds={len(values_array)} "
+                f"mean={statistics_block['mean']:.4g} ±std={statistics_block['std']:.4g} ±CI={statistics_block['ci']:.4g}"
+            )
 
     return processed
 
 
-def _add(collector: Dict[str, Dict[str, List[float]]],
-         algorithm: str,
-         traffic_volume: str,
-         value: Union[float, List[float], np.ndarray]) -> None:
+def _add(
+    collector: dict[str, dict[str, list[float]]],
+    algorithm: str,
+    traffic_volume: str,
+    value: float | list[float] | np.ndarray,
+) -> None:
     """Append one or many numeric values to collector[algorithm][traffic_volume].
 
     :param collector: Nested dictionary to store values
@@ -131,8 +160,7 @@ def _add(collector: Dict[str, Dict[str, List[float]]],
 
 
 def process_memory_usage(
-        raw_runs: Dict[str, Any],
-        runid_to_algo: dict[str, str]
+    raw_runs: dict[str, Any], runid_to_algo: dict[str, str]
 ) -> dict:
     """
     Aggregate memory usage (MB).
@@ -145,7 +173,7 @@ def process_memory_usage(
     for run_id, data in raw_runs.items():
         algorithm = runid_to_algo.get(run_id, "unknown")
         traffic_volume = next(iter(data))
-        merged_data[algorithm][traffic_volume] = {'overall': data.get('overall', -1.0)}
+        merged_data[algorithm][traffic_volume] = {"overall": data.get("overall", -1.0)}
 
     return merged_data
 
@@ -153,7 +181,7 @@ def process_memory_usage(
 def _stamp_to_dt(timestamp_string: str) -> datetime:
     """
     Convert timestamp string like '0429_21_14_39_491949' to a datetime object.
-    
+
     :param timestamp_string: Formatted timestamp string
     :type timestamp_string: str
     :return: Corresponding datetime object
@@ -171,16 +199,16 @@ def _stamp_to_dt(timestamp_string: str) -> datetime:
             hour=int(hour),
             minute=int(minute),
             second=int(second),
-            microsecond=milliseconds * 1000 + microseconds
+            microsecond=milliseconds * 1000 + microseconds,
         )
     except (ValueError, IndexError) as exc:
         raise ValueError(f"Invalid timestamp format: {timestamp_string}") from exc
 
 
 def process_sim_times(
-        raw_runs: Dict[str, Any],
-        runid_to_algo: dict[str, str],
-        context: Optional[dict] = None,
+    raw_runs: dict[str, Any],
+    runid_to_algo: dict[str, str],
+    context: dict | None = None,
 ) -> dict:
     """
     Compute wall-clock durations or fallback to reported simulation times.
@@ -205,12 +233,17 @@ def process_sim_times(
                 if end_time < start_time:
                     end_time += timedelta(days=1)
 
-                merged_data[algorithm][str(traffic_volume)].append((end_time - start_time).total_seconds())
+                merged_data[algorithm][str(traffic_volume)].append(
+                    (end_time - start_time).total_seconds()
+                )
         else:
             for traffic_volume, seconds in data.items():
                 merged_data[algorithm][str(traffic_volume)].append(float(seconds))
 
     return {
-        algorithm: {traffic_volume: float(np.mean(values)) for traffic_volume, values in traffic_volume_dict.items()}
+        algorithm: {
+            traffic_volume: float(np.mean(values))
+            for traffic_volume, values in traffic_volume_dict.items()
+        }
         for algorithm, traffic_volume_dict in merged_data.items()
     }

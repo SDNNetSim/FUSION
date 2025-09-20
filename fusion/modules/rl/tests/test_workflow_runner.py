@@ -12,11 +12,12 @@ are missing so that unit-tests which only touch the lightweight helpers
 (`_setup_callbacks`, `_update_episode_stats`, …) can import the module
 without pulling PyTorch, Optuna or psutil onto the CI image.
 """
+
 from __future__ import annotations
 
 import os
 import types
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -28,11 +29,11 @@ try:
 except ModuleNotFoundError:  # pragma: no cover – stub out the bare minimum
     optuna = types.ModuleType("optuna")  # type: ignore
 
-
     class _TrialStub:  # pylint: disable=too-few-public-methods
         """
         Trial stub for optuna.Trial
         """
+
         def report(self, *_a, **_kw):
             """
             Mock report.
@@ -45,10 +46,8 @@ except ModuleNotFoundError:  # pragma: no cover – stub out the bare minimum
             """
             return False
 
-
     class _TrialPrunedStub(Exception):  # pylint: disable=too-few-public-methods
         """Stub raised when Optuna would prune a trial."""
-
 
     optuna.Trial = _TrialStub  # type: ignore[attr-defined]
     optuna.TrialPruned = _TrialPrunedStub  # type: ignore[attr-defined]
@@ -61,14 +60,12 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     psutil = types.ModuleType("psutil")  # type: ignore
 
-
     class _ProcessStub:  # pylint: disable=too-few-public-methods
         def memory_info(self):
             """
             Mock memory info.
             """
             return types.SimpleNamespace(rss=0)
-
 
     psutil.Process = _ProcessStub  # type: ignore[attr-defined]
 
@@ -77,16 +74,7 @@ except ModuleNotFoundError:  # pragma: no cover
 # training code don’t drag the full RL stack into the interpreter.
 # ----------------------------------------------------------------------
 if TYPE_CHECKING:  # for static type-checkers only
-    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
-    from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
     from fusion.modules.rl.model_manager import get_model, save_model
-    from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
-    from fusion.modules.rl.utils.general_utils import save_arr
-    from fusion.modules.rl.args.general_args import (
-        VALID_PATH_ALGORITHMS,
-        VALID_CORE_ALGORITHMS,
-        VALID_DRL_ALGORITHMS,
-    )
 
 
 # ======================================================================
@@ -103,18 +91,18 @@ def _setup_callbacks(callback_list, sim_dict: dict[str, Any]):
 
 
 def _update_episode_stats(
-        obs,
-        reward: float,
-        terminated: bool,
-        truncated: bool,
-        episodic_reward: float,
-        episodic_rew_arr: np.ndarray,
-        completed_episodes: int,
-        completed_trials: int,
-        env,
-        sim_dict: dict[str, Any],
-        rewards_matrix: np.ndarray,
-        trial: optuna.Trial | None = None,
+    obs,
+    reward: float,
+    terminated: bool,
+    truncated: bool,
+    episodic_reward: float,
+    episodic_rew_arr: np.ndarray,
+    completed_episodes: int,
+    completed_trials: int,
+    env,
+    sim_dict: dict[str, Any],
+    rewards_matrix: np.ndarray,
+    trial: optuna.Trial | None = None,
 ):
     """
     Book-keeping that happens at the *end of every step*.
@@ -144,10 +132,7 @@ def _update_episode_stats(
         if trial.should_prune():
             raise optuna.TrialPruned()  # type: ignore[misc]
 
-    print(
-        f"{completed_episodes} episodes completed "
-        f"out of {sim_dict['max_iters']}."
-    )
+    print(f"{completed_episodes} episodes completed out of {sim_dict['max_iters']}.")
 
     # Trial boundary ----------------------------------------------------
     if completed_episodes == sim_dict["max_iters"]:
@@ -158,10 +143,7 @@ def _update_episode_stats(
         episodic_rew_arr = np.array([])
         completed_trials += 1
         completed_episodes = 0
-        print(
-            f"{completed_trials} trials completed "
-            f"out of {sim_dict['n_trials']}."
-        )
+        print(f"{completed_trials} trials completed out of {sim_dict['n_trials']}.")
 
     # Always reset env at the end of an episode
     obs, _ = env.reset(seed=completed_trials)
@@ -195,11 +177,11 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict | None = None
 
 
 def _train_drl_trial(
-        env,
-        sim_dict,
-        callback_list,
-        completed_trials: int,
-        rewards_matrix: np.ndarray,
+    env,
+    sim_dict,
+    callback_list,
+    completed_trials: int,
+    rewards_matrix: np.ndarray,
 ):
     """
     Run a full DRL training trial (all episodes) and return new obs / counters.
@@ -225,13 +207,13 @@ def _train_drl_trial(
 
 
 def run_iters(
-        env: object,
-        sim_dict: dict,
-        is_training: bool,
-        drl_agent: bool,
-        model=None,
-        callback_list: list | None = None,
-        trial: optuna.Trial | None = None,
+    env: object,
+    sim_dict: dict,
+    is_training: bool,
+    drl_agent: bool,
+    model=None,
+    callback_list: list | None = None,
+    trial: optuna.Trial | None = None,
 ):
     """
     Execute the environment loop for *n_trials × max_iters* episodes.
@@ -300,27 +282,27 @@ def run_iters(
 # Public high-level helpers (run / run_optuna_study) – unchanged API
 # ----------------------------------------------------------------------
 def run(
-        env: object,
-        sim_dict: dict,
-        callback_list: list | None = None,
-        trial: optuna.Trial | None = None,
+    env: object,
+    sim_dict: dict,
+    callback_list: list | None = None,
+    trial: optuna.Trial | None = None,
 ):
     """
     High-level wrapper that dispatches to either training or testing.
     """
-    from fusion.modules.rl.utils.setup import print_info
     from fusion.modules.rl.args.general_args import (
-        VALID_PATH_ALGORITHMS,
         VALID_CORE_ALGORITHMS,
         VALID_DRL_ALGORITHMS,
+        VALID_PATH_ALGORITHMS,
     )
+    from fusion.modules.rl.utils.setup import print_info
 
     print_info(sim_dict=sim_dict)
 
     if sim_dict["is_training"]:
         if (
-                sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS
-                or sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS
+            sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS
+            or sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS
         ):
             return run_iters(
                 env=env,
@@ -341,20 +323,23 @@ def run_optuna_study(sim_dict: dict, callback_list):
     """
     Launch an Optuna study for hyper-parameter optimisation.
     """
-    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
-    from fusion.modules.rl.utils.setup import setup_rl_sim
-    from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
-    from fusion.sim.utils import (
-        modify_multiple_json_values,
-        update_dict_from_list,
-        get_erlang_vals,
-        run_simulation_for_erlangs,
-        save_study_results,
-    )
     from optuna.pruners import HyperbandPruner
 
+    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+    from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
+    from fusion.modules.rl.utils.setup import setup_rl_sim
+    from fusion.sim.utils import (
+        get_erlang_vals,
+        modify_multiple_json_values,
+        run_simulation_for_erlangs,
+        save_study_results,
+        update_dict_from_list,
+    )
+
     def objective(tr: optuna.Trial):  # noqa: ANN001
-        env = SimEnv(render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim())
+        env = SimEnv(
+            render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim()
+        )
         for cb in callback_list.callbacks:
             cb.sim_dict = env.sim_dict
             cb.max_iters = sim_dict["max_iters"]
@@ -364,10 +349,18 @@ def run_optuna_study(sim_dict: dict, callback_list):
         update_list = [(p, v) for p, v in hyperparam_dict.items() if p in sim_dict]
 
         file_path = os.path.join(
-            "data", "input", sim_dict["network"], sim_dict["date"], sim_dict["sim_start"]
+            "data",
+            "input",
+            sim_dict["network"],
+            sim_dict["date"],
+            sim_dict["sim_start"],
         )
-        modify_multiple_json_values(trial_num=tr.number, file_path=file_path, update_list=update_list)
-        env.sim_dict = update_dict_from_list(input_dict=env.sim_dict, updates_list=update_list)
+        modify_multiple_json_values(
+            trial_num=tr.number, file_path=file_path, update_list=update_list
+        )
+        env.sim_dict = update_dict_from_list(
+            input_dict=env.sim_dict, updates_list=update_list
+        )
 
         erl_list = get_erlang_vals(sim_dict=sim_dict)
         mean_reward = run_simulation_for_erlangs(

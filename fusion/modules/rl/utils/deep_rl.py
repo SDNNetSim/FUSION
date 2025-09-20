@@ -1,7 +1,7 @@
 from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS
-from fusion.modules.rl.utils.general_utils import determine_model_type
 from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
 from fusion.modules.rl.utils.errors import ConfigurationError, ModelSetupError
+from fusion.modules.rl.utils.general_utils import determine_model_type
 
 
 # NOTE: Current implementation is limited to 's1' simulation thread
@@ -16,24 +16,24 @@ def get_algorithm_instance(sim_dict: dict, rl_props: object, engine_props: objec
     """
     model_type = determine_model_type(sim_dict=sim_dict)
 
-    if '_' not in model_type:
+    if "_" not in model_type:
         raise ConfigurationError(
             "Algorithm configuration must include both algorithm and agent type (e.g., 'ppo_path'). "
             f"Received model_type: '{model_type}'. "
             "Please check your simulation configuration."
         )
 
-    if 's1' in sim_dict:
-        algorithm = sim_dict['s1'].get(model_type)
+    if "s1" in sim_dict:
+        algorithm = sim_dict["s1"].get(model_type)
     else:
         algorithm = sim_dict.get(model_type)
 
     # Non-DRL case, skip
     if algorithm in VALID_PATH_ALGORITHMS and algorithm not in ALGORITHM_REGISTRY:
-        engine_props.engine_props['is_drl_agent'] = False
+        engine_props.engine_props["is_drl_agent"] = False
         return None
 
-    engine_props.engine_props['is_drl_agent'] = True
+    engine_props.engine_props["is_drl_agent"] = True
     if algorithm not in ALGORITHM_REGISTRY:
         raise ModelSetupError(
             f"Algorithm '{algorithm}' is not registered in the algorithm registry. "
@@ -41,7 +41,7 @@ def get_algorithm_instance(sim_dict: dict, rl_props: object, engine_props: objec
             "Please verify your algorithm configuration or register the algorithm."
         )
 
-    algorithm_class = ALGORITHM_REGISTRY[algorithm]['class']
+    algorithm_class = ALGORITHM_REGISTRY[algorithm]["class"]
     return algorithm_class(rl_props=rl_props, engine_props=engine_props)
 
 
@@ -55,7 +55,9 @@ def get_obs_space(sim_dict: dict, rl_props: object, engine_props: object):
 
     :return: Observation space as defined by the algorithm.
     """
-    algorithm_instance = get_algorithm_instance(sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props)
+    algorithm_instance = get_algorithm_instance(
+        sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props
+    )
     if algorithm_instance is None:
         return None
 
@@ -72,7 +74,9 @@ def get_action_space(sim_dict: dict, rl_props: object, engine_props: object):
 
     :return: Action space as defined by the algorithm.
     """
-    algorithm_instance = get_algorithm_instance(sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props)
+    algorithm_instance = get_algorithm_instance(
+        sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props
+    )
     if algorithm_instance is None:
         return None
 

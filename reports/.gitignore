@@ -1,0 +1,26 @@
+# Development tool outputs and reports
+# This directory contains generated analysis artifacts
+
+# Dependency analysis
+*.png
+*.svg
+*.json
+*.txt
+
+# Profiling results
+*.prof
+*.svg
+profile_*
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+
+# Temporary analysis files
+*.tmp
+*.cache
+
+# Keep directory structure but ignore contents
+!.gitignore
+!README.md

@@ -1,9 +1,9 @@
 """Advantage Actor-Critic (A2C) algorithm implementation."""
 
-from fusion.modules.rl.algorithms.base_drl import BaseDRLAlgorithm
-
 # Import spaces at module level for test compatibility
-from fusion.modules.rl.algorithms.base_drl import spaces  # pylint: disable=unused-import
+from fusion.modules.rl.algorithms.base_drl import (  # pylint: disable=unused-import
+    BaseDRLAlgorithm,
+)
 
 
 class A2C(BaseDRLAlgorithm):

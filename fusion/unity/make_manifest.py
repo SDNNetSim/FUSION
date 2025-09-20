@@ -7,7 +7,7 @@ import itertools
 import json
 import pathlib
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 try:
     import yaml  # type: ignore
@@ -15,7 +15,10 @@ except ModuleNotFoundError:
     yaml = None  # pylint: disable=invalid-name
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from fusion.configs.schema import SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT  # pylint: disable=wrong-import-position
+from fusion.configs.schema import (  # pylint: disable=wrong-import-position
+    OPTIONAL_OPTIONS_DICT,
+    SIM_REQUIRED_OPTIONS_DICT,
+)
 
 # Build parameter types from config setup
 _PARAM_TYPES: dict[str, type] = {}
@@ -25,9 +28,7 @@ for options_dict in [SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT]:
             _PARAM_TYPES[option_name] = option_type
 _BOOL_STRS = {"true", "yes", "1"}
 
-_RESOURCE_KEYS = {
-    "partition", "time", "mem", "cpus", "gpus", "nodes"
-}
+_RESOURCE_KEYS = {"partition", "time", "mem", "cpus", "gpus", "nodes"}
 
 
 def _str_to_bool(value: str) -> bool:
@@ -66,13 +67,20 @@ def _encode(val: Any) -> str:
 
 
 def _is_rl(alg: str) -> str:
-    rl_algs = {"ppo", "qr_dqn", "a2c", "dqn", "epsilon_greedy_bandit",
-               "ucb_bandit", "q_learning"}
+    rl_algs = {
+        "ppo",
+        "qr_dqn",
+        "a2c",
+        "dqn",
+        "epsilon_greedy_bandit",
+        "ucb_bandit",
+        "q_learning",
+    }
     return "yes" if alg in rl_algs else "no"
 
 
 # ------------------------------- new --------------------------------------- #
-def _validate_resource_keys(resources: Dict[str, Any]) -> None:
+def _validate_resource_keys(resources: dict[str, Any]) -> None:
     """Warn the user if they mistype a resource key."""
     for key in resources:
         if key not in _RESOURCE_KEYS:
@@ -82,14 +90,14 @@ def _validate_resource_keys(resources: Dict[str, Any]) -> None:
             )
 
 
-def _validate_keys(mapping: Dict[str, Any], ctx: str) -> None:
+def _validate_keys(mapping: dict[str, Any], ctx: str) -> None:
     for key in mapping:
         if key in _PARAM_TYPES or key in _RESOURCE_KEYS:
             continue
         sys.exit(f"Unknown parameter '{key}' in {ctx}. Must exist in config options.")
 
 
-def _read_spec(path: pathlib.Path) -> Dict[str, Any]:
+def _read_spec(path: pathlib.Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() in {".yml", ".yaml"}:
         if yaml is None:
@@ -98,7 +106,7 @@ def _read_spec(path: pathlib.Path) -> Dict[str, Any]:
     return json.loads(text)
 
 
-def _to_list(v: Any, *, ctx: str) -> List[Any]:
+def _to_list(v: Any, *, ctx: str) -> list[Any]:
     if isinstance(v, list):
         if ctx == "common" and len(v) > 1:
             sys.exit(f"Only single values allowed in grid.common but got list {v}")
@@ -106,7 +114,7 @@ def _to_list(v: Any, *, ctx: str) -> List[Any]:
     return [v]
 
 
-def _fetch(grid: Dict[str, Any], common: Dict[str, Any], key: str) -> List[Any]:
+def _fetch(grid: dict[str, Any], common: dict[str, Any], key: str) -> list[Any]:
     if key in grid:
         return _to_list(grid[key], ctx="grid")
     if key in common:
@@ -114,7 +122,9 @@ def _fetch(grid: Dict[str, Any], common: Dict[str, Any], key: str) -> List[Any]:
     sys.exit(f"Grid spec missing required key '{key}' (searched grid and grid.common)")
 
 
-def _expand_grid(grid: Dict[str, Any], starting_rid: int) -> tuple[List[Dict[str, Any]], int]:
+def _expand_grid(
+    grid: dict[str, Any], starting_rid: int
+) -> tuple[list[dict[str, Any]], int]:
     for bad in {"repeat", "er_step"} & grid.keys():
         sys.exit(f"Key '{bad}' is deprecated; remove it.")
 
@@ -128,25 +138,30 @@ def _expand_grid(grid: Dict[str, Any], starting_rid: int) -> tuple[List[Dict[str
     obs = _fetch(grid, common, "obs_space")
 
     rid = starting_rid
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for alg, t0, kp, curr_obs in itertools.product(algs, traf, kps, obs):
-        rows.append({
-            "run_id": f"{rid:05}",
-            "path_algorithm": alg,
-            "erlang_start": t0,
-            "erlang_stop": t0 + 50,
-            "k_paths": kp,
-            "obs_space": curr_obs,
-            "is_rl": _is_rl(alg),
-            **{k: _cast(k, v) for k, v in common.items()
-               if k not in {"path_algorithm", "erlang_start", "k_paths"}},
-        })
+        rows.append(
+            {
+                "run_id": f"{rid:05}",
+                "path_algorithm": alg,
+                "erlang_start": t0,
+                "erlang_stop": t0 + 50,
+                "k_paths": kp,
+                "obs_space": curr_obs,
+                "is_rl": _is_rl(alg),
+                **{
+                    k: _cast(k, v)
+                    for k, v in common.items()
+                    if k not in {"path_algorithm", "erlang_start", "k_paths"}
+                },
+            }
+        )
         rid += 1
     return rows, rid
 
 
-def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def _explicit(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     for idx, job in enumerate(jobs):
         _validate_keys(job, ctx=f"jobs[{idx}]")
         base = {
@@ -164,8 +179,8 @@ def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return rows
 
 
-def _write_csv(path: pathlib.Path, rows: List[Dict[str, Any]]) -> None:
-    cols: List[str] = []
+def _write_csv(path: pathlib.Path, rows: list[dict[str, Any]]) -> None:
+    cols: list[str] = []
     seen = set()
     for row in rows:
         for k in row:
@@ -204,11 +219,13 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     spec_path = _resolve_spec_path(sys.argv[1])
     spec = _read_spec(spec_path)
 
-    resources: Dict[str, Any] = spec.get("resources", {})
+    resources: dict[str, Any] = spec.get("resources", {})
     _validate_resource_keys(resources)
 
     if sum(k in spec for k in ("grid", "grids", "jobs")) > 1:
-        sys.exit("Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple.")
+        sys.exit(
+            "Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple."
+        )
 
     global_rid = 0
     rows = []
@@ -230,10 +247,12 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
             r.update(resources)
 
     now = dt.datetime.now()
-    base_dir = pathlib.Path("experiments") / now.strftime("%m%d") / now.strftime("%H%M%S")
+    base_dir = (
+        pathlib.Path("experiments") / now.strftime("%m%d") / now.strftime("%H%M%S")
+    )
 
     # Group rows by network
-    network_groups: Dict[str, List[Dict[str, Any]]] = {}
+    network_groups: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         net = row.get("network")
         if not net:
@@ -251,7 +270,9 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
             "num_rows": len(group_rows),
             "resources": resources,
         }
-        (net_dir / "manifest_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        (net_dir / "manifest_meta.json").write_text(
+            json.dumps(meta, indent=2), encoding="utf-8"
+        )
 
     print(f"Wrote {len(network_groups)} manifests (one per network).")
     print(f"Base experiments dir → {base_dir}")

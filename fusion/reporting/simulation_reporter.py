@@ -7,7 +7,7 @@ separating presentation logic from data collection.
 
 import logging
 from statistics import mean
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fusion.utils.logging_config import get_logger
 
@@ -19,7 +19,7 @@ class SimulationReporter:
     formats, including console output, log files, and structured reports.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None, verbose: bool = True):
+    def __init__(self, logger: logging.Logger | None = None, verbose: bool = True):
         """Initialize the simulation reporter.
 
         :param logger: Logger instance to use (creates one if not provided)
@@ -31,12 +31,12 @@ class SimulationReporter:
         self.verbose = verbose
 
     def report_iteration_stats(
-            self,
-            iteration: int,
-            max_iterations: int,
-            erlang: float,
-            blocking_list: List[float],
-            print_flag: bool = True
+        self,
+        iteration: int,
+        max_iterations: int,
+        erlang: float,
+        blocking_list: list[float],
+        print_flag: bool = True,
     ) -> None:
         """Report statistics for a completed iteration.
 
@@ -81,13 +81,10 @@ class SimulationReporter:
             # For non-verbose, only log every 10th iteration
             if iteration_num % 10 == 0 or iteration_num == max_iterations:
                 self.logger.info(
-                    "Progress: %d/%d - %s",
-                    iteration_num,
-                    max_iterations,
-                    stats_message
+                    "Progress: %d/%d - %s", iteration_num, max_iterations, stats_message
                 )
 
-    def report_simulation_start(self, simulation_info_dict: Dict[str, Any]) -> None:
+    def report_simulation_start(self, simulation_info_dict: dict[str, Any]) -> None:
         """Report the start of a simulation run.
 
         :param simulation_info_dict: Dictionary containing simulation parameters
@@ -103,10 +100,10 @@ class SimulationReporter:
         self.logger.info("=" * 60)
 
     def report_simulation_complete(
-            self,
-            erlang: float,
-            iterations_completed: int,
-            confidence_interval: Optional[float] = None
+        self,
+        erlang: float,
+        iterations_completed: int,
+        confidence_interval: float | None = None,
     ) -> None:
         """Report the completion of a simulation run.
 
@@ -128,12 +125,12 @@ class SimulationReporter:
             )
 
     def report_blocking_statistics(
-            self,
-            blocked_requests: int,
-            total_requests: int,
-            bit_rate_blocked: float,
-            bit_rate_total: float,
-            blocking_reasons_dict: Dict[str, float]
+        self,
+        blocked_requests: int,
+        total_requests: int,
+        bit_rate_blocked: float,
+        bit_rate_total: float,
+        blocking_reasons_dict: dict[str, float],
     ) -> None:
         """Report detailed blocking statistics.
 
@@ -160,7 +157,9 @@ class SimulationReporter:
         self.logger.info("BLOCKING STATISTICS")
         self.logger.info("-" * 40)
         self.logger.info("Request blocking probability: %.4f", blocking_probability)
-        self.logger.info("Bit-rate blocking probability: %.4f", bit_rate_blocking_probability)
+        self.logger.info(
+            "Bit-rate blocking probability: %.4f", bit_rate_blocking_probability
+        )
 
         if blocking_reasons_dict and any(v > 0 for v in blocking_reasons_dict.values()):
             self.logger.info("\nBlocking reasons:")
@@ -178,7 +177,9 @@ class SimulationReporter:
         """
         self.logger.info(f"Saving results to: {save_path}")
 
-    def report_error(self, error_message: str, exception: Optional[Exception] = None) -> None:
+    def report_error(
+        self, error_message: str, exception: Exception | None = None
+    ) -> None:
         """Report an error during simulation.
 
         :param error_message: Error message to log
@@ -187,7 +188,9 @@ class SimulationReporter:
         :type exception: Optional[Exception]
         """
         if exception:
-            self.logger.error(f"{error_message}: {type(exception).__name__}: {str(exception)}")
+            self.logger.error(
+                f"{error_message}: {type(exception).__name__}: {str(exception)}"
+            )
         else:
             self.logger.error(error_message)
 
@@ -199,7 +202,7 @@ class SimulationReporter:
         """
         self.logger.warning(warning_message)
 
-    def create_summary_report(self, statistics_dict: Dict[str, Any]) -> str:
+    def create_summary_report(self, statistics_dict: dict[str, Any]) -> str:
         """Create a formatted summary report from simulation statistics.
 
         :param statistics_dict: Dictionary containing all simulation statistics
@@ -220,7 +223,7 @@ class SimulationReporter:
             f"Bit-rate Blocking Variance: {statistics_dict.get('bit_rate_blocking_variance', 'N/A')}",
             f"Bit-rate Confidence Interval: {statistics_dict.get('ci_percent_bit_rate_block', 'N/A')}%",
             "",
-            "=" * 60
+            "=" * 60,
         ]
 
         return "\n".join(report_lines)

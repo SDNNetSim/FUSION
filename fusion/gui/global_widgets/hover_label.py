@@ -2,13 +2,16 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=super-with-arguments
 
-from PyQt5 import QtWidgets as qtw, QtCore as qtc, QtGui as qtg
+from PyQt5 import QtCore as qtc
+from PyQt5 import QtGui as qtg
+from PyQt5 import QtWidgets as qtw
 
 
 class HoverLabel(qtw.QLabel):
     """
     Handles all labels for hover actions.
     """
+
     hover_changed = qtc.pyqtSignal(bool)
 
     def __init__(self, parent=None):

@@ -41,17 +41,19 @@ class QProps:
         self.epsilon_end = None  # Ending value of epsilon to be linearly decayed
         self.epsilon_list = []  # A list of every value at each time step
 
-        self.is_training = None  # Flag to determine whether to load an already trained agent
+        self.is_training = (
+            None  # Flag to determine whether to load an already trained agent
+        )
 
         # Rewards for the core and path q-learning agents
         self.rewards_dict = {
-            'routes_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}},
-            'cores_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+            "routes_dict": {"average": [], "min": [], "max": [], "rewards": {}},
+            "cores_dict": {"average": [], "min": [], "max": [], "rewards": {}},
         }
         # Temporal difference (TD) errors for the core and path agents
         self.errors_dict = {
-            'routes_dict': {'average': [], 'min': [], 'max': [], 'errors': {}},
-            'cores_dict': {'average': [], 'min': [], 'max': [], 'errors': {}}
+            "routes_dict": {"average": [], "min": [], "max": [], "errors": {}},
+            "cores_dict": {"average": [], "min": [], "max": [], "errors": {}},
         }
         # Total sum of rewards for each episode (episode as a key, sum of rewards as a value)
         self.sum_rewards_dict = {}
@@ -64,9 +66,23 @@ class QProps:
 
         # All important parameters to be saved in a QL simulation run
         self.save_params_dict = {
-            'q_params_list': ['rewards_dict', 'errors_dict', 'epsilon_list', 'sum_rewards_dict', 'sum_errors_dict'],
-            'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'alpha_start', 'alpha_end',
-                                   'gamma', 'epsilon_update', 'alpha_update']
+            "q_params_list": [
+                "rewards_dict",
+                "errors_dict",
+                "epsilon_list",
+                "sum_rewards_dict",
+                "sum_errors_dict",
+            ],
+            "engine_params_list": [
+                "epsilon_start",
+                "epsilon_end",
+                "max_iters",
+                "alpha_start",
+                "alpha_end",
+                "gamma",
+                "epsilon_update",
+                "alpha_update",
+            ],
         }
 
     def get_data(self, key: str) -> Any:
@@ -105,7 +121,7 @@ class BanditProps:  # pylint: disable=too-few-public-methods
 class PPOProps:  # pylint: disable=too-few-public-methods
     """
     Properties object for PPO algorithm.
-    
+
     Currently not implemented. Will be added when PPO-specific
     properties are needed beyond the base DRL functionality.
     """

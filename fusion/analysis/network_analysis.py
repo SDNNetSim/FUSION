@@ -5,7 +5,7 @@ Provides functions for analyzing network topology, link usage,
 and other network-related metrics.
 """
 
-from typing import Dict, Set, Any
+from typing import Any
 
 import numpy as np
 
@@ -26,7 +26,9 @@ class NetworkAnalyzer:
         """Initialize the network analyzer."""
 
     @staticmethod
-    def get_link_usage_summary(network_spectrum_dict: Dict) -> Dict[str, Dict[str, Any]]:
+    def get_link_usage_summary(
+        network_spectrum_dict: dict,
+    ) -> dict[str, dict[str, Any]]:
         """
         Generate a summary of link usage across the network.
 
@@ -36,7 +38,7 @@ class NetworkAnalyzer:
         :return: Dictionary mapping link identifiers to usage statistics
         """
         usage_summary_dict = {}
-        processed_links: Set[str] = set()
+        processed_links: set[str] = set()
 
         for (src, dst), link_data in network_spectrum_dict.items():
             # Create a canonical link representation (smaller node first)
@@ -48,16 +50,18 @@ class NetworkAnalyzer:
 
             processed_links.add(link_key)
             usage_summary_dict[link_key] = {
-                "usage_count": link_data.get('usage_count', 0),
-                "throughput": link_data.get('throughput', 0),
-                "link_num": link_data.get('link_num'),
+                "usage_count": link_data.get("usage_count", 0),
+                "throughput": link_data.get("throughput", 0),
+                "link_num": link_data.get("link_num"),
             }
 
         logger.debug("Processed %d unique links", len(usage_summary_dict))
         return usage_summary_dict
 
     @staticmethod
-    def analyze_network_congestion(network_spectrum_dict: Dict, path_list: list = None) -> Dict[str, Any]:
+    def analyze_network_congestion(
+        network_spectrum_dict: dict, path_list: list = None
+    ) -> dict[str, Any]:
         """
         Analyze network congestion levels.
 
@@ -78,7 +82,7 @@ class NetworkAnalyzer:
             link_data = network_spectrum_dict[link]
             links_analyzed += 1
 
-            for core in link_data['cores_matrix']:
+            for core in link_data["cores_matrix"]:
                 requests_set = set(core[core > 0])
                 active_requests.update(requests_set)
 
@@ -86,16 +90,20 @@ class NetworkAnalyzer:
                 total_guard_slots += len(np.where(core < 0)[0])
 
         return {
-            'total_occupied_slots': total_occupied_slots,
-            'total_guard_slots': total_guard_slots,
-            'active_requests': len(active_requests),
-            'links_analyzed': links_analyzed,
-            'avg_occupied_per_link': total_occupied_slots / links_analyzed if links_analyzed > 0 else 0,
-            'avg_guard_per_link': total_guard_slots / links_analyzed if links_analyzed > 0 else 0
+            "total_occupied_slots": total_occupied_slots,
+            "total_guard_slots": total_guard_slots,
+            "active_requests": len(active_requests),
+            "links_analyzed": links_analyzed,
+            "avg_occupied_per_link": (
+                total_occupied_slots / links_analyzed if links_analyzed > 0 else 0
+            ),
+            "avg_guard_per_link": (
+                total_guard_slots / links_analyzed if links_analyzed > 0 else 0
+            ),
         }
 
     @staticmethod
-    def get_network_utilization_stats(network_spectrum_dict: Dict) -> Dict[str, float]:
+    def get_network_utilization_stats(network_spectrum_dict: dict) -> dict[str, float]:
         """
         Calculate network-wide utilization statistics.
 
@@ -116,7 +124,7 @@ class NetworkAnalyzer:
                 continue
             processed_links.add(link_key)
 
-            cores_matrix = link_data.get('cores_matrix', [])
+            cores_matrix = link_data.get("cores_matrix", [])
 
             for core in cores_matrix:
                 core_total = len(core)
@@ -131,17 +139,25 @@ class NetworkAnalyzer:
         overall_utilization = occupied_slots / total_slots if total_slots > 0 else 0.0
 
         return {
-            'overall_utilization': overall_utilization,
-            'average_link_utilization': np.mean(utilization_per_link) if utilization_per_link else 0.0,
-            'max_link_utilization': np.max(utilization_per_link) if utilization_per_link else 0.0,
-            'min_link_utilization': np.min(utilization_per_link) if utilization_per_link else 0.0,
-            'total_slots': total_slots,
-            'occupied_slots': occupied_slots,
-            'links_processed': len(processed_links)
+            "overall_utilization": overall_utilization,
+            "average_link_utilization": (
+                np.mean(utilization_per_link) if utilization_per_link else 0.0
+            ),
+            "max_link_utilization": (
+                np.max(utilization_per_link) if utilization_per_link else 0.0
+            ),
+            "min_link_utilization": (
+                np.min(utilization_per_link) if utilization_per_link else 0.0
+            ),
+            "total_slots": total_slots,
+            "occupied_slots": occupied_slots,
+            "links_processed": len(processed_links),
         }
 
     @staticmethod
-    def identify_bottleneck_links(network_spectrum_dict: Dict, threshold: float = 0.8) -> list:
+    def identify_bottleneck_links(
+        network_spectrum_dict: dict, threshold: float = 0.8
+    ) -> list:
         """
         Identify links that are above a utilization threshold.
 
@@ -159,7 +175,7 @@ class NetworkAnalyzer:
                 continue
             processed_links.add(link_key)
 
-            cores_matrix = link_data.get('cores_matrix', [])
+            cores_matrix = link_data.get("cores_matrix", [])
             link_utilization = 0.0
 
             for core in cores_matrix:
@@ -168,15 +184,21 @@ class NetworkAnalyzer:
                     link_utilization = max(link_utilization, core_utilization)
 
             if link_utilization >= threshold:
-                bottleneck_links.append({
-                    'link_key': link_key,
-                    'utilization': link_utilization,
-                    'usage_count': link_data.get('usage_count', 0),
-                    'throughput': link_data.get('throughput', 0)
-                })
+                bottleneck_links.append(
+                    {
+                        "link_key": link_key,
+                        "utilization": link_utilization,
+                        "usage_count": link_data.get("usage_count", 0),
+                        "throughput": link_data.get("throughput", 0),
+                    }
+                )
 
         # Sort by utilization (highest first)
-        bottleneck_links.sort(key=lambda x: x['utilization'], reverse=True)
+        bottleneck_links.sort(key=lambda x: x["utilization"], reverse=True)
 
-        logger.info("Identified %d bottleneck links above %.1%% utilization", len(bottleneck_links), threshold * 100)
+        logger.info(
+            "Identified %d bottleneck links above %.1%% utilization",
+            len(bottleneck_links),
+            threshold * 100,
+        )
         return bottleneck_links

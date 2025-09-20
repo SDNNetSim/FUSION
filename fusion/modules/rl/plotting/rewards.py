@@ -5,14 +5,14 @@ import numpy as np
 
 
 def plot_rewards_mean_var(
-        rewards_data: dict,
-        title: str = "Averaged Rewards",
-        save_path: str | None = None
+    rewards_data: dict, title: str = "Averaged Rewards", save_path: str | None = None
 ):
     """
     Plot mean and variance of rewards.
     """
-    plt.style.use('seaborn-whitegrid' if 'seaborn-whitegrid' in plt.style.available else 'default')
+    plt.style.use(
+        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
+    )
 
     for algo, tv_dict in rewards_data.items():
         plt.figure(figsize=(10, 6), dpi=300)
@@ -37,7 +37,7 @@ def plot_rewards_mean_var(
             ep_labels = rewards.get("episodes")
             if ep_labels:
                 episodes = list(range(len(ep_labels)))  # numeric ticks
-                plt.xticks(episodes, ep_labels, rotation=45, ha='right')
+                plt.xticks(episodes, ep_labels, rotation=45, ha="right")
             else:
                 episodes = range(len(rewards_arr))
 
@@ -50,7 +50,9 @@ def plot_rewards_mean_var(
             final_ci = rewards.get("overall_ci", 0.0)
             label = f"{tv} ±{final_ci:.4f}"
 
-            plt.plot(episodes, rewards_arr, color=color, linewidth=2, marker='o', label=label)
+            plt.plot(
+                episodes, rewards_arr, color=color, linewidth=2, marker="o", label=label
+            )
             plt.fill_between(
                 episodes,
                 rewards_arr - ci_arr,
@@ -62,17 +64,17 @@ def plot_rewards_mean_var(
         y_range = vmax - vmin
         plt.ylim(vmin - 0.05 * y_range, vmax + 0.05 * y_range)
 
-        plt.xlabel("Episode", fontsize=14, fontweight='bold')
-        plt.ylabel("Mean Reward", fontsize=14, fontweight='bold')
-        plt.title(f"{title}: {algo}", fontsize=16, fontweight='bold')
+        plt.xlabel("Episode", fontsize=14, fontweight="bold")
+        plt.ylabel("Mean Reward", fontsize=14, fontweight="bold")
+        plt.title(f"{title}: {algo}", fontsize=16, fontweight="bold")
 
-        plt.grid(True, linestyle='--', linewidth=0.5)
+        plt.grid(True, linestyle="--", linewidth=0.5)
         plt.legend(
             title="Traffic (CI)",
             bbox_to_anchor=(1.05, 1),
-            loc='upper left',
+            loc="upper left",
             fontsize=12,
-            title_fontsize=12
+            title_fontsize=12,
         )
         plt.tight_layout(rect=[0, 0, 0.85, 1])
 

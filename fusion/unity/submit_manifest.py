@@ -6,9 +6,7 @@ import subprocess
 import sys
 
 # Keep this list in-sync with _RESOURCE_KEYS in make_manifest.py
-RESOURCE_KEYS = {
-    "partition", "time", "mem", "cpus", "gpus", "nodes"
-}
+RESOURCE_KEYS = {"partition", "time", "mem", "cpus", "gpus", "nodes"}
 
 
 def parse_cli() -> argparse.Namespace:
@@ -18,8 +16,9 @@ def parse_cli() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("exp", help="experiment directory under ./experiments")
     p.add_argument("script", help="bash script to run (e.g., run_rl_sim.sh)")
-    p.add_argument("--rows", type=int,
-                   help="number of jobs (defaults to line-count of manifest)")
+    p.add_argument(
+        "--rows", type=int, help="number of jobs (defaults to line-count of manifest)"
+    )
     return p.parse_args()
 
 
@@ -96,12 +95,12 @@ def main() -> None:
         f"--job-name={env['JOB_NAME']}",
     ]
 
-    if env['PARTITION'] == "gpu" or env['PARTITION'] == "cpu":
+    if env["PARTITION"] == "gpu" or env["PARTITION"] == "cpu":
         cmd.append("--qos=long")
 
     cmd.append(str(script_path))
 
-    print(f'[DEBUG] Command submitted: {cmd}')
+    print(f"[DEBUG] Command submitted: {cmd}")
 
     result = subprocess.run(cmd, env={**os.environ, **env}, check=False)
     if result.returncode != 0:

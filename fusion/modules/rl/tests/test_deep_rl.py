@@ -33,10 +33,12 @@ def _engine():
 
 def _patch_globals(valid_list=None, registry=None):
     """Patch VALID_PATH_ALGORITHMS and ALGORITHM_REGISTRY."""
-    vp = mock.patch.object(drl, "VALID_PATH_ALGORITHMS",
-                           valid_list if valid_list is not None else [])
-    rg = mock.patch.object(drl, "ALGORITHM_REGISTRY",
-                           registry if registry is not None else {})
+    vp = mock.patch.object(
+        drl, "VALID_PATH_ALGORITHMS", valid_list if valid_list is not None else []
+    )
+    rg = mock.patch.object(
+        drl, "ALGORITHM_REGISTRY", registry if registry is not None else {}
+    )
     return vp, rg
 
 
@@ -46,17 +48,20 @@ class TestGetAlgorithmInstance(TestCase):
 
     def test_missing_underscore_raises(self):
         """ValueError when model_type has no underscore."""
-        with mock.patch.object(drl, "determine_model_type",
-                               return_value="ppo"), self.assertRaises(
-            drl.ConfigurationError
+        with (
+            mock.patch.object(drl, "determine_model_type", return_value="ppo"),
+            self.assertRaises(drl.ConfigurationError),
         ):
             drl.get_algorithm_instance({}, None, _engine())
 
     def test_non_drl_algorithm_returns_none_and_flags(self):
         """Non-DRL path returns None and sets flag false."""
         vp, rg = _patch_globals(valid_list=["ksp"], registry={})
-        with vp, rg, mock.patch.object(drl, "determine_model_type",
-                                       return_value="ksp_path"):
+        with (
+            vp,
+            rg,
+            mock.patch.object(drl, "determine_model_type", return_value="ksp_path"),
+        ):
             sim = {"ksp_path": "ksp"}
             eng = _engine()
             algo = drl.get_algorithm_instance(sim, None, eng)
@@ -66,8 +71,11 @@ class TestGetAlgorithmInstance(TestCase):
     def test_unregistered_algorithm_raises(self):
         """NotImplementedError when algo unknown."""
         vp, rg = _patch_globals(valid_list=[], registry={})
-        with vp, rg, mock.patch.object(drl, "determine_model_type",
-                                       return_value="ppo_path"):
+        with (
+            vp,
+            rg,
+            mock.patch.object(drl, "determine_model_type", return_value="ppo_path"),
+        ):
             sim = {"ppo_path": "ppo"}
             with self.assertRaises(drl.ModelSetupError):
                 drl.get_algorithm_instance(sim, None, _engine())
@@ -76,8 +84,11 @@ class TestGetAlgorithmInstance(TestCase):
         """Returns algo instance and sets flag true."""
         registry = {"ppo": {"class": _DummyAlgo}}
         vp, rg = _patch_globals(valid_list=[], registry=registry)
-        with vp, rg, mock.patch.object(drl, "determine_model_type",
-                                       return_value="ppo_path"):
+        with (
+            vp,
+            rg,
+            mock.patch.object(drl, "determine_model_type", return_value="ppo_path"),
+        ):
             sim = {"ppo_path": "ppo"}
             eng = _engine()
             algo = drl.get_algorithm_instance(sim, "rl", eng)
@@ -95,8 +106,11 @@ class TestObsActSpaces(TestCase):
     def test_get_obs_space_delegates(self):
         """Returns obs_space from algorithm."""
         vp, rg = self.patches
-        with vp, rg, mock.patch.object(drl, "determine_model_type",
-                                       return_value="ppo_path"):
+        with (
+            vp,
+            rg,
+            mock.patch.object(drl, "determine_model_type", return_value="ppo_path"),
+        ):
             sim = {"ppo_path": "ppo"}
             obs = drl.get_obs_space(sim, "rl", _engine())
         self.assertEqual(obs, "obs_space")
@@ -104,8 +118,11 @@ class TestObsActSpaces(TestCase):
     def test_get_action_space_delegates(self):
         """Returns act_space from algorithm."""
         vp, rg = self.patches
-        with vp, rg, mock.patch.object(drl, "determine_model_type",
-                                       return_value="ppo_path"):
+        with (
+            vp,
+            rg,
+            mock.patch.object(drl, "determine_model_type", return_value="ppo_path"),
+        ):
             sim = {"ppo_path": "ppo"}
             act = drl.get_action_space(sim, "rl", _engine())
         self.assertEqual(act, "act_space")
@@ -113,8 +130,11 @@ class TestObsActSpaces(TestCase):
     def test_none_when_non_drl(self):
         """Both space funcs return None for non-DRL algo."""
         vp, rg = _patch_globals(valid_list=["ksp"], registry={})
-        with vp, rg, mock.patch.object(drl, "determine_model_type",
-                                       return_value="ksp_path"):
+        with (
+            vp,
+            rg,
+            mock.patch.object(drl, "determine_model_type", return_value="ksp_path"),
+        ):
             sim = {"ksp_path": "ksp"}
             self.assertIsNone(drl.get_obs_space(sim, None, _engine()))
             self.assertIsNone(drl.get_action_space(sim, None, _engine()))

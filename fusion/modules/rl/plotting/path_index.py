@@ -14,19 +14,21 @@ def plot_path_index(path_index_data, title="Path Index Usage", save_path=None):
 
     # Get all algorithms and Erlangs
     algos = sorted(path_index_data.keys())
-    erlangs = sorted({
-        float(tv) for algo_dict in path_index_data.values()
-        for tv in algo_dict
-    })
+    erlangs = sorted(
+        {float(tv) for algo_dict in path_index_data.values() for tv in algo_dict}
+    )
 
     for tv in erlangs:
         tv_str = str(tv)
 
         # Gather all used path indices for this Erlang
-        all_path_indices = sorted({
-            idx for algo in algos
-            for idx in path_index_data[algo].get(tv_str, {}).keys()
-        })
+        all_path_indices = sorted(
+            {
+                idx
+                for algo in algos
+                for idx in path_index_data[algo].get(tv_str, {}).keys()
+            }
+        )
         if not all_path_indices:
             print(f"[plot_path_index_by_erlang] Skipping Erlang {tv} (no data)")
             continue
@@ -35,7 +37,7 @@ def plot_path_index(path_index_data, title="Path Index Usage", save_path=None):
         bar_w = 0.8 / len(algos)
 
         _, ax = plt.subplots(figsize=(10, 6), dpi=300)
-        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
         for i, algo in enumerate(algos):
             algo_counts = [
@@ -48,24 +50,30 @@ def plot_path_index(path_index_data, title="Path Index Usage", save_path=None):
                 bar_w,
                 label=algo,
                 color=colors[i % len(colors)],
-                edgecolor='black',
-                linewidth=0.6
+                edgecolor="black",
+                linewidth=0.6,
             )
         # Final formatting
         ax.set_xticks(x + bar_w * (len(algos) / 2 - 0.5))
         ax.set_xticklabels([str(idx) for idx in all_path_indices], fontsize=11)
-        ax.set_xlabel("Path Index", fontsize=13, fontweight='bold')
-        ax.set_ylabel("Number of Requests Routed", fontsize=13, fontweight='bold')
-        ax.set_title(f"{title} – Erlang {int(tv)}", fontsize=15, fontweight='bold')
-        ax.grid(axis='y', linestyle='--', alpha=0.7)
-        ax.legend(title="Algorithm", fontsize=10, title_fontsize=11, bbox_to_anchor=(1.05, 1), loc="upper left")
+        ax.set_xlabel("Path Index", fontsize=13, fontweight="bold")
+        ax.set_ylabel("Number of Requests Routed", fontsize=13, fontweight="bold")
+        ax.set_title(f"{title} – Erlang {int(tv)}", fontsize=15, fontweight="bold")
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
+        ax.legend(
+            title="Algorithm",
+            fontsize=10,
+            title_fontsize=11,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+        )
         plt.tight_layout(rect=[0, 0, 0.85, 1])
 
         if save_path:
             path = Path(save_path)
             filename = f"{path.stem}_erlang_{int(tv)}{path.suffix}"
             output_path = path.with_name(filename)
-            plt.savefig(output_path, bbox_inches='tight')
+            plt.savefig(output_path, bbox_inches="tight")
             print(f"[plot_path_index_by_erlang] ✅ Saved: {output_path}")
             plt.close()
         else:

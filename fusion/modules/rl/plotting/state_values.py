@@ -1,12 +1,11 @@
 # pylint: disable=unsupported-binary-operation
 
 import math
-
+from collections import defaultdict
 from pathlib import Path
 
-from collections import defaultdict
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.patches import Patch
 
 
@@ -72,7 +71,7 @@ def generate_pairwise_legend_labels(path_colors, seen_pairs):
         pair = tuple(sorted((a_idx, b_idx)))
         unique_pairs.add(pair)
 
-    for (a_idx, b_idx) in sorted(unique_pairs):
+    for a_idx, b_idx in sorted(unique_pairs):
         c_a = np.array(path_colors[a_idx % len(path_colors)])
         c_b = np.array(path_colors[b_idx % len(path_colors)])
         blend = np.clip(0.5 * (c_a + c_b), 0, 1)
@@ -123,7 +122,7 @@ def _finalize_figure(fig, handles, title_pos=0.95):
         ncol=len(handles),
         fontsize=10,
         title_fontsize=11,
-        bbox_to_anchor=(0.5, title_pos)
+        bbox_to_anchor=(0.5, title_pos),
     )
     fig.tight_layout(rect=[0, 0, 1, title_pos - 0.04])
 
@@ -170,7 +169,7 @@ def _finalize_figure(fig, handles, title_pos=0.95):
         ncol=len(handles),
         fontsize=10,
         title_fontsize=11,
-        bbox_to_anchor=(0.5, title_pos)
+        bbox_to_anchor=(0.5, title_pos),
     )
     fig.tight_layout(rect=[0, 0, 1, title_pos - 0.04])
 
@@ -188,28 +187,36 @@ def _save_or_show(fig, algo, save_path, label):
 
 
 def plot_best_path_matrix(
-        averaged_state_values_by_volume: dict,
-        title: str = "State-Value Heat-maps",
-        save_path: str | None = None,
-        path_colors: list[tuple] | None = None,
+    averaged_state_values_by_volume: dict,
+    title: str = "State-Value Heat-maps",
+    save_path: str | None = None,
+    path_colors: list[tuple] | None = None,
 ):
     """
     Plots the best path as a histogram.
     """
     if path_colors is None:
         path_colors = [
-            (1, 0, 0), (0, 1, 0), (0, 0, 1),
-            (1, 1, 0), (1, 0, 1), (0, 1, 1),
+            (1, 0, 0),
+            (0, 1, 0),
+            (0, 0, 1),
+            (1, 1, 0),
+            (1, 0, 1),
+            (0, 1, 1),
             (0.5, 0.5, 0.5),
         ]
 
-    plt.style.use("seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default")
+    plt.style.use(
+        "seaborn-whitegrid" if "seaborn-whitegrid" in plt.style.available else "default"
+    )
     created_figs = []
     negative_factor = 0.5
     best_path_data = defaultdict(lambda: defaultdict(dict))
 
     for algo, vol_dict in averaged_state_values_by_volume.items():
-        _figs, best_data = _plot_algo_heatmaps(algo, vol_dict, title, path_colors, negative_factor, save_path)
+        _figs, best_data = _plot_algo_heatmaps(
+            algo, vol_dict, title, path_colors, negative_factor, save_path
+        )
         created_figs.extend(_figs)
         best_path_data[algo] = best_data
 
@@ -221,7 +228,9 @@ def _plot_algo_heatmaps(algo, vol_dict, title, path_colors, negative_factor, sav
     t_labels = sorted(vol_dict.keys(), key=float)
     ncols = min(3, len(t_labels))
     nrows = math.ceil(len(t_labels) / ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(5.5 * ncols, 4.8 * nrows), dpi=150, squeeze=False)
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=(5.5 * ncols, 4.8 * nrows), dpi=150, squeeze=False
+    )
     fig.suptitle(f"{title}: {algo}", fontsize=18, fontweight="bold")
 
     best_path_data = {}
@@ -231,7 +240,9 @@ def _plot_algo_heatmaps(algo, vol_dict, title, path_colors, negative_factor, sav
         pair_dict = vol_dict[t_label]
         nodes = {n for (s, d) in pair_dict for n in (s, d)}
         n_nodes = max(nodes) + 1 if nodes else 1
-        colour, best_map = _compute_colour_matrix(pair_dict, n_nodes, path_colors, negative_factor)
+        colour, best_map = _compute_colour_matrix(
+            pair_dict, n_nodes, path_colors, negative_factor
+        )
         best_path_data[t_label] = best_map
         ax.imshow(colour, origin="upper")
         ax.set_title(f"Traffic = {t_label}", fontsize=12, fontweight="bold")
@@ -241,9 +252,21 @@ def _plot_algo_heatmaps(algo, vol_dict, title, path_colors, negative_factor, sav
         r, c = divmod(j, ncols)
         axes[r][c].axis("off")
 
-    max_path_idx = max((int(np.argmax(vals)) for v in vol_dict.values() for vals in v.values() if vals), default=0)
+    max_path_idx = max(
+        (
+            int(np.argmax(vals))
+            for v in vol_dict.values()
+            for vals in v.values()
+            if vals
+        ),
+        default=0,
+    )
     handles = [
-        Patch(facecolor=path_colors[i % len(path_colors)], edgecolor="black", label=f"Path {i + 1}")
+        Patch(
+            facecolor=path_colors[i % len(path_colors)],
+            edgecolor="black",
+            label=f"Path {i + 1}",
+        )
         for i in range(max_path_idx + 1)
     ]
     _finalize_figure(fig, handles)
@@ -264,16 +287,24 @@ def _plot_diff_matrices(best_path_data, path_colors, save_path):
             print(f"❌ Skipping missing pair: {algo_a} vs {algo_b}")
             continue
 
-        traffic_levels = sorted(set(best_path_data[algo_a]) & set(best_path_data[algo_b]), key=float)
+        traffic_levels = sorted(
+            set(best_path_data[algo_a]) & set(best_path_data[algo_b]), key=float
+        )
         if not traffic_levels:
             print(f"⚠️ No shared traffic levels between {algo_a} and {algo_b}")
             continue
 
         ncols = min(3, len(traffic_levels))
         nrows = math.ceil(len(traffic_levels) / ncols)
-        fig, axes = plt.subplots(nrows, ncols, figsize=(5.5 * ncols, 4.8 * nrows), dpi=150)
+        fig, axes = plt.subplots(
+            nrows, ncols, figsize=(5.5 * ncols, 4.8 * nrows), dpi=150
+        )
         axes = axes.reshape(nrows, ncols)
-        fig.suptitle(f"Best Path Differences: {algo_a} vs. {algo_b}", fontsize=18, fontweight="bold")
+        fig.suptitle(
+            f"Best Path Differences: {algo_a} vs. {algo_b}",
+            fontsize=18,
+            fontweight="bold",
+        )
         seen_pairs = set()
 
         for idx, traffic in enumerate(traffic_levels):
@@ -314,7 +345,7 @@ def _plot_diff_matrices(best_path_data, path_colors, save_path):
             ncol=3,
             fontsize=10,
             title_fontsize=11,
-            bbox_to_anchor=(0.5, 0.97)
+            bbox_to_anchor=(0.5, 0.97),
         )
         _save_or_show(fig, f"{algo_a}_vs_{algo_b}", save_path, "diff_plot")
         plt.close(fig)

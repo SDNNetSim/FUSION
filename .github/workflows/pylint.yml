@@ -1,4 +1,4 @@
-name: Pylint
+name: Pylint (Legacy)
 
 on:
   pull_request:
@@ -16,6 +16,9 @@ on:
   push:
     branches:
       - main
+
+# Note: This is a legacy workflow.
+# Modern code quality checks are in quality.yml which uses ruff + mypy + pylint together
 
 jobs:
 

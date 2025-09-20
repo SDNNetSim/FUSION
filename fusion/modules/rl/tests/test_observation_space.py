@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
+
 from fusion.modules.rl.utils import observation_space as obs_mod
 
 
@@ -18,8 +19,10 @@ def _rl_props():
 def _engine_obj(key="obs_1"):
     return SimpleNamespace(
         engine_props={
-            "mod_per_bw": {"100": {"QPSK": {"slots_needed": 4}},
-                           "100G": {"QPSK": {"slots_needed": 4}}},
+            "mod_per_bw": {
+                "100": {"QPSK": {"slots_needed": 4}},
+                "100G": {"QPSK": {"slots_needed": 4}},
+            },
             "topology": "dummy_topo",
             "obs_space": key,
         }

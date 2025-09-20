@@ -4,10 +4,11 @@ import networkx as nx
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5 import QtCore as qtc
+
 from fusion.gui.view_topology.topology_dialog import NodeInfoDialog
 
-
 # TODO: Move actions involving topology setup here.
+
 
 class TopologyCanvas(FigureCanvas):
     """
@@ -31,7 +32,9 @@ class TopologyCanvas(FigureCanvas):
         """
         self.axes.clear()
         nx.draw(
-            graph, pos, ax=self.axes,
+            graph,
+            pos,
+            ax=self.axes,
             with_labels=True,
             node_size=400,  # Increased node size
             font_size=10,  # Increased font size for node labels
@@ -50,7 +53,7 @@ class TopologyCanvas(FigureCanvas):
         """
         self.scatter = scatter
         scatter.set_picker(True)
-        self.mpl_connect('button_press_event', self.on_pick)
+        self.mpl_connect("button_press_event", self.on_pick)
 
     def on_pick(self, event):
         """
@@ -62,7 +65,7 @@ class TopologyCanvas(FigureCanvas):
         if event.button == 1:
             contains, index = self.scatter.contains(event)
             if contains:
-                ind = index['ind'][0]
+                ind = index["ind"][0]
                 node = list(self.G.nodes())[ind]
                 info = "Additional Info: ..."  # Replace with actual node information
                 dialog = NodeInfoDialog(node, info, self.parent())

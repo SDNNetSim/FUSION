@@ -6,7 +6,7 @@ user interface. It handles GUI dependency validation, display configuration,
 and provides helpful error messages for common setup issues.
 """
 
-from fusion.cli.constants import SUCCESS_EXIT_CODE, ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE
+from fusion.cli.constants import ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, SUCCESS_EXIT_CODE
 from fusion.cli.main_parser import create_gui_argument_parser
 from fusion.cli.utils import create_entry_point_wrapper
 from fusion.gui.runner import launch_gui_pipeline
@@ -15,7 +15,7 @@ from fusion.gui.runner import launch_gui_pipeline
 def main() -> int:
     """
     Main entry point for launching the FUSION GUI interface.
-    
+
     Parses command line arguments and delegates GUI launch operations
     to the appropriate GUI pipeline module. Handles user interruptions
     and errors gracefully with appropriate exit codes and user feedback.
@@ -51,7 +51,7 @@ def main() -> int:
 launch_gui_main, run_gui_main = create_entry_point_wrapper(
     main,
     "GUI",
-    "Convenience function that handles the sys.exit call for the main GUI entry point. Provides a clean separation between the main logic and process exit handling."
+    "Convenience function that handles the sys.exit call for the main GUI entry point. Provides a clean separation between the main logic and process exit handling.",
 )
 
 

@@ -2,11 +2,12 @@
 Test summary for FUSION interface architecture.
 """
 
+
 def test_summary():
     """Print a summary of the interface architecture testing."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("FUSION INTERFACE ARCHITECTURE - TEST SUMMARY")
-    print("="*60)
+    print("=" * 60)
 
     print("\n✅ TESTS PASSING (37 total):")
     print("  • Interface Compliance Tests: 5 tests")
@@ -52,10 +53,10 @@ def test_summary():
     print("  • Type safety with full type hints")
     print("  • Polymorphism verified through testing")
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("STATUS: Interface architecture successfully implemented!")
     print("All core tests passing without external dependencies.")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":

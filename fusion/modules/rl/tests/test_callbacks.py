@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 
 import numpy as np
+
 from fusion.modules.rl.utils import callbacks as cb
 
 
@@ -79,9 +80,7 @@ class TestEpisodicRewardCallback(TestCase):
 
     @mock.patch("fusion.modules.rl.utils.callbacks.create_directory")
     @mock.patch("fusion.modules.rl.utils.callbacks.np.save")
-    def test_first_call_creates_matrix_and_accumulates(
-            self, mock_save, mock_dir
-    ):
+    def test_first_call_creates_matrix_and_accumulates(self, mock_save, mock_dir):
         """First step allocates rewards_matrix and records reward."""
         self.cb.locals = {"rewards": [2.0], "dones": [False]}
         self.assertTrue(self.cb._on_step())  # pylint: disable=protected-access

@@ -1,7 +1,7 @@
+import ast
+import json
 import os
 import re
-import json
-import ast
 from collections import defaultdict
 
 import numpy as np
@@ -13,7 +13,7 @@ def _extract_traffic_label(sim_time_path):
         if os.path.isdir(item_path):
             for f in os.listdir(item_path):
                 if f.endswith("erlang.json"):
-                    return f.split('_')[0]
+                    return f.split("_")[0]
     return ""
 
 
@@ -27,7 +27,9 @@ def load_memory_usage(simulation_times, base_logs_dir, base_dir, network, date):
         memory_usage_data[algorithm] = {}
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            mem_file = os.path.join(base_logs_dir, alg_snake, network, date, sim_time, "memory_usage.npy")
+            mem_file = os.path.join(
+                base_logs_dir, alg_snake, network, date, sim_time, "memory_usage.npy"
+            )
             sim_time_path = os.path.join(base_dir, sim_time)
 
             traffic_label = _extract_traffic_label(sim_time_path)
@@ -47,7 +49,7 @@ def _extract_traffic_label_from_filename(fname: str, fallback: str) -> str:
     Try to parse something like 'e400.0' (the traffic volume) from the filename.
     If it fails, just use the fallback.
     """
-    match = re.search(r'e(\d+(?:\.\d+)?)', fname)
+    match = re.search(r"e(\d+(?:\.\d+)?)", fname)
     if match:
         return match.group(1)
     return fallback
@@ -73,14 +75,17 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
                 continue
             dir_label = _extract_traffic_label(logs_dir) or sim_time
             json_files = [
-                fname for fname in os.listdir(logs_dir)
+                fname
+                for fname in os.listdir(logs_dir)
                 if fname.startswith("state_vals") and fname.endswith(".json")
             ]
             for json_file in json_files:
                 file_path = os.path.join(logs_dir, json_file)
-                traffic_label = _extract_traffic_label_from_filename(json_file, dir_label)
+                traffic_label = _extract_traffic_label_from_filename(
+                    json_file, dir_label
+                )
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, encoding="utf-8") as f:
                         data = json.load(f)
                 except (OSError, json.JSONDecodeError):
                     continue
@@ -115,7 +120,9 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
     Load all per-episode, per-trial reward files for each algorithm.
     Includes files that may or may not have "_iter_" in their filenames.
     """
-    pattern = re.compile(r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)(?:_iter_(\d+))?\.npy$")
+    pattern = re.compile(
+        r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)(?:_iter_(\d+))?\.npy$"
+    )
     all_rewards_data = {}
 
     for algorithm, sim_time_lists in simulation_times.items():
@@ -126,7 +133,9 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
 
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            rewards_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
+            rewards_dir = os.path.join(
+                base_logs_dir, alg_snake, network, date, sim_time
+            )
             if not os.path.exists(rewards_dir):
                 print(f"Warning: Directory does not exist: {rewards_dir}")
                 continue
@@ -148,7 +157,9 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
                 rewards_array = np.load(file_path)
                 if trial_index not in all_rewards_data[algorithm][traffic_label]:
                     all_rewards_data[algorithm][traffic_label][trial_index] = {}
-                all_rewards_data[algorithm][traffic_label][trial_index][episode_index] = rewards_array
+                all_rewards_data[algorithm][traffic_label][trial_index][
+                    episode_index
+                ] = rewards_array
 
     return all_rewards_data
 
@@ -166,7 +177,7 @@ def _process_baseline(sim_time_path: str):
         for filename in os.listdir(sim_run_path):
             if not filename.endswith(".json"):
                 continue
-            parts = filename.split('.')
+            parts = filename.split(".")
             if len(parts) < 3:
                 continue
             try:
@@ -176,18 +187,18 @@ def _process_baseline(sim_time_path: str):
 
             file_path = os.path.join(sim_run_path, filename)
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError) as exc:
                 print(f"Error reading {file_path}: {exc}")
                 continue
 
-            if not data or 'iter_stats' not in data:
+            if not data or "iter_stats" not in data:
                 print(f"No data in file: {file_path}")
                 continue
 
-            last_iter = list(data['iter_stats'].keys())[-1]
-            last_iter_data = data['iter_stats'][last_iter]
+            last_iter = list(data["iter_stats"].keys())[-1]
+            last_iter_data = data["iter_stats"][last_iter]
             blocking = last_iter_data.get("sim_block_list")
             if blocking is not None:
                 run_data[tv].append(blocking)
@@ -197,7 +208,9 @@ def _process_baseline(sim_time_path: str):
             if not lists:
                 continue
             arr = np.array(lists)
-            avg_run_data[str(tv)] = lists[0] if arr.shape[0] == 1 else np.mean(arr, axis=0).tolist()
+            avg_run_data[str(tv)] = (
+                lists[0] if arr.shape[0] == 1 else np.mean(arr, axis=0).tolist()
+            )
         baseline_data[sim_run] = avg_run_data
     return baseline_data
 
@@ -214,7 +227,7 @@ def _process_sim_time(sim_time_path: str):
         for filename in os.listdir(sim_run_path):
             if not filename.endswith(".json"):
                 continue
-            parts = filename.split('.')
+            parts = filename.split(".")
             if len(parts) < 3:
                 continue
             try:
@@ -224,18 +237,18 @@ def _process_sim_time(sim_time_path: str):
 
             file_path = os.path.join(sim_run_path, filename)
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError) as exc:
                 print(f"Error reading {file_path}: {exc}")
                 continue
 
-            if not data or 'iter_stats' not in data:
+            if not data or "iter_stats" not in data:
                 print(f"No data in file: {file_path}")
                 continue
 
-            last_iter = list(data['iter_stats'].keys())[-1]
-            last_iter_data = data['iter_stats'][last_iter]
+            last_iter = list(data["iter_stats"].keys())[-1]
+            last_iter_data = data["iter_stats"][last_iter]
             blocking = last_iter_data.get("sim_block_list")
             if blocking is None:
                 continue
@@ -250,7 +263,7 @@ def _process_sim_time(sim_time_path: str):
         padded_runs = []
         for run_data in lists_of_runs:
             pad_size = max_length - len(run_data)
-            padded_run_data = run_data + [float('nan')] * pad_size
+            padded_run_data = run_data + [float("nan")] * pad_size
             padded_runs.append(padded_run_data)
 
         arr = np.array(padded_runs, dtype=float)
@@ -285,7 +298,9 @@ def load_blocking_data(simulation_times, base_dir, baseline_time):
         alg_result = defaultdict(list)
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            data = _process_single_sim_time(sim_time, base_dir, baseline_time=baseline_time)
+            data = _process_single_sim_time(
+                sim_time, base_dir, baseline_time=baseline_time
+            )
             if data is None:
                 continue
 

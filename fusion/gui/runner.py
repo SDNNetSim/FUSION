@@ -3,8 +3,11 @@
 # pylint: disable=broad-exception-caught
 
 import multiprocessing
+
 from PyQt5 import QtWidgets
+
 from fusion.gui.main_window import MainWindow  # local import keeps CLI lightweight
+
 
 def _as_dict(config_like):
     """Accept a ConfigManager or a plain dict; return a dict."""
@@ -12,6 +15,7 @@ def _as_dict(config_like):
         return config_like.as_dict()
     except AttributeError:
         return config_like or {}
+
 
 def launch_gui(config_like):
     """
@@ -39,20 +43,24 @@ def launch_gui(config_like):
                 first_key = next(iter(cfg))
                 sim_conf = cfg[first_key]
 
-                if 'erlangs' in sim_conf:
-                    erlangs = sim_conf['erlangs']
-                    erlang_start = erlangs['start']
-                    erlang_stop = erlangs['stop']
-                    erlang_step = erlangs['step']
+                if "erlangs" in sim_conf:
+                    erlangs = sim_conf["erlangs"]
+                    erlang_start = erlangs["start"]
+                    erlang_stop = erlangs["stop"]
+                    erlang_step = erlangs["step"]
                 else:
-                    erlang_start = sim_conf['erlang_start']
-                    erlang_stop = sim_conf['erlang_stop']
-                    erlang_step = sim_conf['erlang_step']
+                    erlang_start = sim_conf["erlang_start"]
+                    erlang_stop = sim_conf["erlang_stop"]
+                    erlang_step = sim_conf["erlang_step"]
 
-                total_erlangs = len(range(int(erlang_start), int(erlang_stop), int(erlang_step)))
+                total_erlangs = len(
+                    range(int(erlang_start), int(erlang_stop), int(erlang_step))
+                )
 
                 manager = multiprocessing.Manager()
-                shared_progress_dict = manager.dict({i: 0 for i in range(total_erlangs)})
+                shared_progress_dict = manager.dict(
+                    dict.fromkeys(range(total_erlangs), 0)
+                )
                 window.set_shared_progress_dict(shared_progress_dict)
             except Exception:
                 # Keep GUI resilient even if config is partial/malformed
@@ -69,11 +77,13 @@ def launch_gui(config_like):
 def launch_gui_pipeline(args):
     """
     Pipeline function for launching GUI from CLI.
-    
+
     Args:
         args: Parsed command line arguments
     """
-    from fusion.cli.config_setup import load_and_validate_config  # pylint: disable=import-outside-toplevel
+    from fusion.cli.config_setup import (  # pylint: disable=import-outside-toplevel
+        load_and_validate_config,
+    )
 
     # Convert args to config dictionary
     config_dict = load_and_validate_config(args)

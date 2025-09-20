@@ -11,9 +11,6 @@ This package consolidates what was previously split across plot_stats.py and var
 plot helper functions scattered throughout the codebase.
 """
 
-from .properties import PlotProps, PlotArgs
+from .properties import PlotArgs, PlotProps
 
-__all__ = [
-    'PlotProps',
-    'PlotArgs'
-]
+__all__ = ["PlotProps", "PlotArgs"]

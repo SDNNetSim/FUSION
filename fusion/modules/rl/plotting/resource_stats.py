@@ -1,11 +1,11 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from matplotlib.colors import BoundaryNorm, ListedColormap
 
-from matplotlib.colors import ListedColormap, BoundaryNorm
 
 def get_resource_usage_colormap_and_norm():
     """
@@ -14,13 +14,13 @@ def get_resource_usage_colormap_and_norm():
     """
     # Use colors in order of buckets from best to worst
     colors = [
-        "mediumseagreen",      # Large Benefit (≤ -20)
-        "palegreen",           # Moderate Benefit (≤ -10)
-        "honeydew",            # Small Benefit (≤ -5)
-        "lightyellow",         # Negligible (< 5)
-        "moccasin",            # Small Disadvantage (< 10)
-        "lightsalmon",         # Moderate Disadvantage (< 20)
-        "lightcoral",          # Large Disadvantage (≥ 20)
+        "mediumseagreen",  # Large Benefit (≤ -20)
+        "palegreen",  # Moderate Benefit (≤ -10)
+        "honeydew",  # Small Benefit (≤ -5)
+        "lightyellow",  # Negligible (< 5)
+        "moccasin",  # Small Disadvantage (< 10)
+        "lightsalmon",  # Moderate Disadvantage (< 20)
+        "lightcoral",  # Large Disadvantage (≥ 20)
     ]
 
     # Edges matching _bucket logic exactly
@@ -33,10 +33,9 @@ def get_resource_usage_colormap_and_norm():
 
 
 def plot_resource_percent_delta_heatmaps(
-        processed_dict: dict,
-        save_path: Path | None = None,  # pylint: disable=unsupported-binary-operation
-        title_prefix: str = "Resource Usage %Δ vs Baseline",
-
+    processed_dict: dict,
+    save_path: Path | None = None,  # pylint: disable=unsupported-binary-operation
+    title_prefix: str = "Resource Usage %Δ vs Baseline",
 ):
     """
     Generate three separate heatmaps for percentage deltas in:
@@ -65,7 +64,13 @@ def plot_resource_percent_delta_heatmaps(
     }
 
     def get_algos(d):
-        return sorted([a for a in d.keys() if a not in {"cong_aware", "k_shortest_path_4", "k_shortest_path_1"}])
+        return sorted(
+            [
+                a
+                for a in d.keys()
+                if a not in {"cong_aware", "k_shortest_path_4", "k_shortest_path_1"}
+            ]
+        )
 
     def get_erlangs(d):
         return sorted({float(e) for a in d for e in d[a]})
@@ -82,12 +87,18 @@ def plot_resource_percent_delta_heatmaps(
                     try:
                         algo_val = metric_dict[algo][erlang]["mean"]
                         base_val = metric_dict[bl_key][erlang]["mean"]
-                        pct_delta = 100.0 * (algo_val - base_val) / base_val if base_val else np.nan
+                        pct_delta = (
+                            100.0 * (algo_val - base_val) / base_val
+                            if base_val
+                            else np.nan
+                        )
                         data.at[algo, erlang] = pct_delta
                     except KeyError:
                         data.at[algo, erlang] = np.nan
 
-            _, ax = plt.subplots(figsize=(len(erlangs) * 0.9 + 3, len(algos) * 0.45 + 1.5), dpi=300)
+            _, ax = plt.subplots(
+                figsize=(len(erlangs) * 0.9 + 3, len(algos) * 0.45 + 1.5), dpi=300
+            )
             cmap, norm = get_resource_usage_colormap_and_norm()
             sns.heatmap(
                 data,
@@ -98,19 +109,27 @@ def plot_resource_percent_delta_heatmaps(
                 linewidths=0.5,
                 linecolor="gray",
                 cbar_kws={"label": "Avg % Δ vs BL"},
-                ax=ax
+                ax=ax,
             )
 
-            ax.set_title(f"{title_prefix} – {metric_name} vs {bl_label}", fontsize=14, fontweight="bold")
+            ax.set_title(
+                f"{title_prefix} – {metric_name} vs {bl_label}",
+                fontsize=14,
+                fontweight="bold",
+            )
             ax.set_xlabel("Erlang Traffic", fontsize=12, fontweight="bold")
             ax.set_ylabel("Algorithm", fontsize=12, fontweight="bold")
-            ax.tick_params(axis='x', labelrotation=45)
+            ax.tick_params(axis="x", labelrotation=45)
             ax.tick_params(labelsize=10)
 
             plt.tight_layout()
             if save_path:
                 fname = f"{metric_name.lower().replace(' ', '_')}_vs_{bl_key}.png"
-                out_path = save_path.parent / fname if isinstance(save_path, Path) else Path(save_path) / fname
+                out_path = (
+                    save_path.parent / fname
+                    if isinstance(save_path, Path)
+                    else Path(save_path) / fname
+                )
                 plt.savefig(out_path, bbox_inches="tight")
                 print(f"[plot_resource] ✅ Saved {out_path}")
                 plt.close()

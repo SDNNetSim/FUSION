@@ -4,38 +4,40 @@ Cached Path GNN feature extractor for efficient inference.
 This module provides a cached version of the Path GNN feature extractor
 that pre-computes embeddings for static graphs to improve inference speed.
 """
-from typing import Dict
+
 import torch
 from gymnasium import spaces
-from torch_geometric.nn import GATv2Conv, SAGEConv, GraphConv
+from torch_geometric.nn import GATv2Conv, GraphConv, SAGEConv
 
-from fusion.modules.rl.feat_extrs.base_feature_extractor import BaseGraphFeatureExtractor
+from fusion.modules.rl.feat_extrs.base_feature_extractor import (
+    BaseGraphFeatureExtractor,
+)
 from fusion.modules.rl.feat_extrs.constants import (
     DEFAULT_EMBEDDING_DIMENSION,
     DEFAULT_GNN_TYPE,
     DEFAULT_NUM_LAYERS,
-    EDGE_EMBEDDING_SCALE_FACTOR
+    EDGE_EMBEDDING_SCALE_FACTOR,
 )
 
 
 class PathGNNEncoder(torch.nn.Module):
     """
     GNN encoder for pre-computing graph embeddings.
-    
+
     This encoder processes static graph structures to generate embeddings
     that can be cached and reused during inference.
     """
 
     def __init__(
-            self,
-            obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
-            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
-            gnn_type: str = DEFAULT_GNN_TYPE,
-            layers: int = DEFAULT_NUM_LAYERS
+        self,
+        obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
+        emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
+        gnn_type: str = DEFAULT_GNN_TYPE,
+        layers: int = DEFAULT_NUM_LAYERS,
     ):
         """
         Initialize the Path GNN encoder.
-        
+
         :param obs_space: Observation space containing graph structure
         :type obs_space: spaces.Dict
         :param emb_dim: Embedding dimension for each layer
@@ -52,7 +54,7 @@ class PathGNNEncoder(torch.nn.Module):
         convolution_mapping = {
             "gat": GATv2Conv,
             "sage": SAGEConv,
-            "graphconv": GraphConv
+            "graphconv": GraphConv,
         }
 
         if gnn_type not in convolution_mapping:
@@ -65,26 +67,27 @@ class PathGNNEncoder(torch.nn.Module):
         input_dimension = obs_space["x"].shape[1]
 
         # Build convolution layers
-        self.convolution_layers = torch.nn.ModuleList([
-            convolution_class(
-                input_dimension if layer_idx == 0 else emb_dim,
-                emb_dim
-            )
-            for layer_idx in range(layers)
-        ])
+        self.convolution_layers = torch.nn.ModuleList(
+            [
+                convolution_class(
+                    input_dimension if layer_idx == 0 else emb_dim, emb_dim
+                )
+                for layer_idx in range(layers)
+            ]
+        )
 
         # Readout layer
         self.readout_layer = torch.nn.Linear(emb_dim, emb_dim)
 
     def forward(
-            self,
-            node_features: torch.Tensor,
-            edge_index: torch.Tensor,
-            path_masks: torch.Tensor
+        self,
+        node_features: torch.Tensor,
+        edge_index: torch.Tensor,
+        path_masks: torch.Tensor,
     ) -> torch.Tensor:
         """
         Forward propagation through the encoder.
-        
+
         :param node_features: Node feature tensor [num_nodes, feature_dim]
         :type node_features: torch.Tensor
         :param edge_index: Edge connectivity [2, num_edges]
@@ -97,16 +100,13 @@ class PathGNNEncoder(torch.nn.Module):
         # Process through convolution layers
         node_embeddings = node_features
         for convolution_layer in self.convolution_layers:
-            node_embeddings = convolution_layer(
-                node_embeddings, edge_index
-            ).relu()
+            node_embeddings = convolution_layer(node_embeddings, edge_index).relu()
 
         # Compute edge embeddings
         source_indices, destination_indices = edge_index
         edge_embeddings = (
-                                  node_embeddings[source_indices] +
-                                  node_embeddings[destination_indices]
-                          ) * EDGE_EMBEDDING_SCALE_FACTOR
+            node_embeddings[source_indices] + node_embeddings[destination_indices]
+        ) * EDGE_EMBEDDING_SCALE_FACTOR
 
         # Aggregate path embeddings
         path_embeddings = path_masks @ edge_embeddings
@@ -118,20 +118,20 @@ class PathGNNEncoder(torch.nn.Module):
 class CachedPathGNN(BaseGraphFeatureExtractor):
     """
     Cached GNN feature extractor for efficient inference.
-    
+
     This extractor uses pre-computed embeddings instead of processing
     the graph at each forward pass, significantly improving inference speed
     for static graph structures.
     """
 
     def __init__(
-            self,
-            obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
-            cached_embedding: torch.Tensor
+        self,
+        obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
+        cached_embedding: torch.Tensor,
     ):
         """
         Initialize the cached Path GNN feature extractor.
-        
+
         :param obs_space: Observation space (used for compatibility)
         :type obs_space: spaces.Dict
         :param cached_embedding: Pre-computed embedding tensor
@@ -142,10 +142,10 @@ class CachedPathGNN(BaseGraphFeatureExtractor):
         # Register cached embedding as a buffer (not updated during training)
         self.register_buffer("cached_embedding", cached_embedding)
 
-    def forward(self, observation: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, observation: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Return the cached embedding, handling batch dimensions appropriately.
-        
+
         :param observation: Graph observation (only used to determine batch size)
         :type observation: Dict[str, torch.Tensor]
         :return: Cached embeddings repeated for the batch

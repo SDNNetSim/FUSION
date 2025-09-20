@@ -9,16 +9,15 @@ import copy
 import json
 import os
 import time
-from typing import Dict
 
-from fusion.io.structure import create_network
 from fusion.io.generate import create_bw_info, create_pt
+from fusion.io.structure import create_network
 from fusion.utils.os import create_directory, find_project_root
 
 PROJECT_ROOT = find_project_root()
 
 
-def create_input(base_fp: str, engine_props: Dict) -> Dict:
+def create_input(base_fp: str, engine_props: dict) -> dict:
     """
     Create input data to run simulations.
 
@@ -35,45 +34,59 @@ def create_input(base_fp: str, engine_props: Dict) -> Dict:
     :raises RuntimeError: If bandwidth info file is empty or invalid after multiple attempts
     """
     bw_info_dict = create_bw_info(
-        mod_assumption=engine_props['mod_assumption'],
-        mod_assumptions_path=engine_props['mod_assumption_path']
+        mod_assumption=engine_props["mod_assumption"],
+        mod_assumptions_path=engine_props["mod_assumption_path"],
     )
     bw_file = f"bw_info_{engine_props['thread_num']}.json"
-    save_input(base_fp=base_fp, properties=engine_props, file_name=bw_file, data_dict=bw_info_dict)
+    save_input(
+        base_fp=base_fp,
+        properties=engine_props,
+        file_name=bw_file,
+        data_dict=bw_info_dict,
+    )
 
-    save_path = os.path.join(PROJECT_ROOT, base_fp, 'input', engine_props['network'],
-                             engine_props['date'], engine_props['sim_start'], bw_file)
+    save_path = os.path.join(
+        PROJECT_ROOT,
+        base_fp,
+        "input",
+        engine_props["network"],
+        engine_props["date"],
+        engine_props["sim_start"],
+        bw_file,
+    )
 
     # Retry loop to ensure file is ready, used for Unity cluster runs
     max_attempts = 50
     for _ in range(max_attempts):
         try:
             if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
-                with open(save_path, 'r', encoding='utf-8') as file_object:
-                    engine_props['mod_per_bw'] = json.load(file_object)
+                with open(save_path, encoding="utf-8") as file_object:
+                    engine_props["mod_per_bw"] = json.load(file_object)
                 break
         except json.JSONDecodeError:
             pass
         time.sleep(0.5)
     else:
-        raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
+        raise RuntimeError(
+            f"File {save_path} is empty or invalid after multiple attempts"
+        )
 
     network_dict, core_nodes_list = create_network(
         base_fp=os.path.join(PROJECT_ROOT, base_fp),
-        const_weight=engine_props['const_link_weight'],
-        net_name=engine_props['network'],
-        is_only_core_node=engine_props['is_only_core_node']
+        const_weight=engine_props["const_link_weight"],
+        net_name=engine_props["network"],
+        is_only_core_node=engine_props["is_only_core_node"],
     )
-    engine_props['topology_info'] = create_pt(
-        cores_per_link=engine_props['cores_per_link'],
-        network_spectrum_dict=network_dict
+    engine_props["topology_info"] = create_pt(
+        cores_per_link=engine_props["cores_per_link"],
+        network_spectrum_dict=network_dict,
     )
-    engine_props['core_nodes'] = core_nodes_list
+    engine_props["core_nodes"] = core_nodes_list
 
     return engine_props
 
 
-def save_input(base_fp: str, properties: Dict, file_name: str, data_dict: Dict) -> None:
+def save_input(base_fp: str, properties: dict, file_name: str, data_dict: dict) -> None:
     """
     Save simulation input data to file.
 
@@ -90,17 +103,23 @@ def save_input(base_fp: str, properties: Dict, file_name: str, data_dict: Dict) 
     :type data_dict: Dict
     """
     base_dir = os.path.join(PROJECT_ROOT, base_fp)
-    path = os.path.join(base_dir, 'input', properties['network'], properties['date'], properties['sim_start'])
+    path = os.path.join(
+        base_dir,
+        "input",
+        properties["network"],
+        properties["date"],
+        properties["sim_start"],
+    )
     create_directory(path)
-    create_directory(os.path.join(PROJECT_ROOT, 'data', 'output'))
+    create_directory(os.path.join(PROJECT_ROOT, "data", "output"))
 
     save_path = os.path.join(path, file_name)
 
     save_dict = copy.deepcopy(data_dict)
-    save_dict.pop('topology', None)
-    save_dict.pop('callback', None)
+    save_dict.pop("topology", None)
+    save_dict.pop("callback", None)
 
-    with open(save_path, 'w', encoding='utf-8') as file_path:
+    with open(save_path, "w", encoding="utf-8") as file_path:
         json.dump(save_dict, file_path, indent=4)
         file_path.flush()
         os.fsync(file_path.fileno())

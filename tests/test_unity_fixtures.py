@@ -9,5 +9,5 @@ COMMON_RESOURCES = {
     "mem": "32G",
     "cpus": "8",
     "gpus": "1",
-    "nodes": "1"
+    "nodes": "1",
 }

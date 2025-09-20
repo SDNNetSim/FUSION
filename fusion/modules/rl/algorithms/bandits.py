@@ -1,15 +1,15 @@
-import os
 import json
-from typing import Dict, Any, Tuple
+import os
+from typing import Any
 
 import numpy as np
 
-from fusion.utils.os import create_directory
 from fusion.modules.rl.algorithms.algorithm_props import BanditProps
 from fusion.modules.rl.algorithms.persistence import BanditModelPersistence
+from fusion.utils.os import create_directory
 
 
-def load_model(train_fp: str) -> Dict[str, Any]:
+def load_model(train_fp: str) -> dict[str, Any]:
     """
     Loads a pre-trained bandit model.
 
@@ -17,8 +17,8 @@ def load_model(train_fp: str) -> Dict[str, Any]:
     :return: The state-value functions V(s, a)
     :rtype: dict
     """
-    train_fp = os.path.join('logs', train_fp)
-    with open(train_fp, 'r', encoding='utf-8') as file_obj:
+    train_fp = os.path.join("logs", train_fp)
+    with open(train_fp, encoding="utf-8") as file_obj:
         state_vals_dict = json.load(file_obj)
 
     return state_vals_dict
@@ -33,10 +33,18 @@ def _get_base_fp(is_path: bool, erlang: float, cores_per_link: int) -> str:
     return base_fp
 
 
-def _save_model(state_values_dict: Dict[str, Any], erlang: float, cores_per_link: int, save_dir: str, is_path: bool,
-                trial: int) -> None:
+def _save_model(
+    state_values_dict: dict[str, Any],
+    erlang: float,
+    cores_per_link: int,
+    save_dir: str,
+    is_path: bool,
+    trial: int,
+) -> None:
     """Delegate to BanditModelPersistence to avoid code duplication."""
-    BanditModelPersistence.save_model(state_values_dict, erlang, cores_per_link, save_dir, is_path, trial)
+    BanditModelPersistence.save_model(
+        state_values_dict, erlang, cores_per_link, save_dir, is_path, trial
+    )
 
 
 def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None:
@@ -48,32 +56,46 @@ def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None
     :param trial: Current trial number.
     :param self: The object to be saved.
     """
-    max_iters = self.engine_props['max_iters']
+    max_iters = self.engine_props["max_iters"]
     rewards_matrix = self.props.rewards_matrix
 
-    if (iteration % self.engine_props['save_step'] == 0 or iteration == max_iters - 1) and \
-            len(self.props.rewards_matrix[iteration]) == self.engine_props['num_requests']:
+    if (
+        iteration % self.engine_props["save_step"] == 0 or iteration == max_iters - 1
+    ) and len(self.props.rewards_matrix[iteration]) == self.engine_props[
+        "num_requests"
+    ]:
         rewards_matrix = np.array(rewards_matrix)
         rewards_arr = rewards_matrix.mean(axis=0)
 
-        date_time = os.path.join(self.engine_props['network'], self.engine_props['date'],
-                                 self.engine_props['sim_start'])
-        save_dir = os.path.join('logs', algorithm, date_time)
+        date_time = os.path.join(
+            self.engine_props["network"],
+            self.engine_props["date"],
+            self.engine_props["sim_start"],
+        )
+        save_dir = os.path.join("logs", algorithm, date_time)
         create_directory(directory_path=save_dir)
 
-        erlang = self.engine_props['erlang']
-        cores_per_link = self.engine_props['cores_per_link']
-        base_fp = _get_base_fp(is_path=self.is_path, erlang=erlang, cores_per_link=cores_per_link)
+        erlang = self.engine_props["erlang"]
+        cores_per_link = self.engine_props["cores_per_link"]
+        base_fp = _get_base_fp(
+            is_path=self.is_path, erlang=erlang, cores_per_link=cores_per_link
+        )
 
-        rewards_fp = f'rewards_{base_fp}_t{trial + 1}_iter_{iteration}.npy'
+        rewards_fp = f"rewards_{base_fp}_t{trial + 1}_iter_{iteration}.npy"
         save_fp = os.path.join(os.getcwd(), save_dir, rewards_fp)
         np.save(save_fp, rewards_arr)
 
-        BanditModelPersistence.save_model(state_values_dict=self.values, erlang=erlang, cores_per_link=cores_per_link,
-                                          save_dir=save_dir, is_path=self.is_path, trial=trial)
+        BanditModelPersistence.save_model(
+            state_values_dict=self.values,
+            erlang=erlang,
+            cores_per_link=cores_per_link,
+            save_dir=save_dir,
+            is_path=self.is_path,
+            trial=trial,
+        )
 
 
-def get_q_table(self: object) -> Tuple[Dict, Dict]:
+def get_q_table(self: object) -> tuple[dict, dict]:
     """
     Constructs the q-table.
 
@@ -92,15 +114,20 @@ def get_q_table(self: object) -> Tuple[Dict, Dict]:
                 self.counts[(source, destination)] = np.zeros(self.n_arms)
                 self.values[(source, destination)] = np.zeros(self.n_arms)
             else:
-                for path_index in range(self.engine_props['k_paths']):
-                    self.counts[(source, destination, path_index)] = np.zeros(self.n_arms)
-                    self.values[(source, destination, path_index)] = np.zeros(self.n_arms)
+                for path_index in range(self.engine_props["k_paths"]):
+                    self.counts[(source, destination, path_index)] = np.zeros(
+                        self.n_arms
+                    )
+                    self.values[(source, destination, path_index)] = np.zeros(
+                        self.n_arms
+                    )
 
     return self.counts, self.values
 
 
-def _update_bandit(self: object, iteration: int, reward: float, arm: int, algorithm: str,
-                   trial: int) -> None:
+def _update_bandit(
+    self: object, iteration: int, reward: float, arm: int, algorithm: str, trial: int
+) -> None:
     if self.is_path:
         pair = (self.source, self.dest)
     else:
@@ -137,13 +164,15 @@ class EpsilonGreedyBandit:
         self.path_index = None  # Index of the last chosen path
 
         if is_path:
-            self.n_arms = engine_props['k_paths']
+            self.n_arms = engine_props["k_paths"]
         else:
-            self.n_arms = engine_props['cores_per_link']
+            self.n_arms = engine_props["cores_per_link"]
 
         self.epsilon = None
         self.num_nodes = rl_props.num_nodes
-        self.counts, self.values = get_q_table(self=self)  # Amount of times an action has been taken and every V(s,a)
+        self.counts, self.values = get_q_table(
+            self=self
+        )  # Amount of times an action has been taken and every V(s,a)
 
     def _get_action(self, state_action_pair: tuple):
         if np.random.rand() < self.epsilon:
@@ -194,8 +223,14 @@ class EpsilonGreedyBandit:
         :param trial: Current trial number
         :type trial: int
         """
-        _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy_bandit',
-                       trial=trial)
+        _update_bandit(
+            self=self,
+            iteration=iteration,
+            reward=reward,
+            arm=arm,
+            algorithm="epsilon_greedy_bandit",
+            trial=trial,
+        )
 
 
 class UCBBandit:
@@ -217,9 +252,9 @@ class UCBBandit:
         self.num_nodes = rl_props.num_nodes
 
         if is_path:
-            self.n_arms = engine_props['k_paths']
+            self.n_arms = engine_props["k_paths"]
         else:
-            self.n_arms = engine_props['cores_per_link']
+            self.n_arms = engine_props["cores_per_link"]
 
         self.counts, self.values = get_q_table(self=self)
 
@@ -227,10 +262,11 @@ class UCBBandit:
         if 0 in self.counts[state_action_pair]:
             return np.argmin(self.counts[state_action_pair])
 
-        conf_param = self.engine_props['conf_param']
+        conf_param = self.engine_props["conf_param"]
         total_counts = sum(self.counts[state_action_pair])
-        ucb_values = self.values[state_action_pair] + \
-                     np.sqrt(conf_param * np.log(total_counts) / self.counts[state_action_pair])
+        ucb_values = self.values[state_action_pair] + np.sqrt(
+            conf_param * np.log(total_counts) / self.counts[state_action_pair]
+        )
         return np.argmax(ucb_values)
 
     def select_path_arm(self, source: int, dest: int):
@@ -274,5 +310,11 @@ class UCBBandit:
         :param iteration: Current episode or iteration.
         :param trial: Current trial number.
         """
-        _update_bandit(iteration=iteration, arm=arm, reward=reward, self=self, algorithm='ucb_bandit',
-                       trial=trial)
+        _update_bandit(
+            iteration=iteration,
+            arm=arm,
+            reward=reward,
+            self=self,
+            algorithm="ucb_bandit",
+            trial=trial,
+        )

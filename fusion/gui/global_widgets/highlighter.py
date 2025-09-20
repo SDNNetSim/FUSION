@@ -1,7 +1,8 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=c-extension-no-member
 
-from PyQt5 import QtCore as qtc, QtGui as qtg
+from PyQt5 import QtCore as qtc
+from PyQt5 import QtGui as qtg
 
 
 class PythonHighlighter(qtg.QSyntaxHighlighter):  # pylint: disable=too-few-public-methods
@@ -17,18 +18,35 @@ class PythonHighlighter(qtg.QSyntaxHighlighter):  # pylint: disable=too-few-publ
         keyword_format.setForeground(qtg.QColor("blue"))
         keyword_format.setFontWeight(qtg.QFont.Bold)
         keywords = [
-            "\\bclass\\b", "\\bdef\\b", "\\bif\\b", "\\belse\\b", "\\belif\\b",
-            "\\bwhile\\b", "\\bfor\\b", "\\btry\\b", "\\bexcept\\b", "\\bfinally\\b",
-            "\\bwith\\b", "\\bas\\b", "\\bimport\\b", "\\bfrom\\b", "\\breturn\\b",
-            "\\bpass\\b", "\\bbreak\\b", "\\bcontinue\\b", "\\braise\\b"
+            "\\bclass\\b",
+            "\\bdef\\b",
+            "\\bif\\b",
+            "\\belse\\b",
+            "\\belif\\b",
+            "\\bwhile\\b",
+            "\\bfor\\b",
+            "\\btry\\b",
+            "\\bexcept\\b",
+            "\\bfinally\\b",
+            "\\bwith\\b",
+            "\\bas\\b",
+            "\\bimport\\b",
+            "\\bfrom\\b",
+            "\\breturn\\b",
+            "\\bpass\\b",
+            "\\bbreak\\b",
+            "\\bcontinue\\b",
+            "\\braise\\b",
         ]
-        self.highlighting_rules = [(qtc.QRegExp(pattern), keyword_format) for pattern in keywords]
+        self.highlighting_rules = [
+            (qtc.QRegExp(pattern), keyword_format) for pattern in keywords
+        ]
 
         # Define the formatting for strings
         string_format = qtg.QTextCharFormat()
         string_format.setForeground(qtg.QColor("green"))
-        self.highlighting_rules.append((qtc.QRegExp("\".*\""), string_format))
-        self.highlighting_rules.append((qtc.QRegExp("\'.*\'"), string_format))
+        self.highlighting_rules.append((qtc.QRegExp('".*"'), string_format))
+        self.highlighting_rules.append((qtc.QRegExp("'.*'"), string_format))
 
         # Define the formatting for comments
         comment_format = qtg.QTextCharFormat()

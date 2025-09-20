@@ -15,16 +15,32 @@ class PlotProps:  # pylint: disable=too-few-public-methods
     def __init__(self):
         self.sims_info_dict = None  # Contains all necessary information for each simulation run to be plotted
         self.plot_dict = None  # Contains only information related to plotting for each simulation run
-        self.output_dir = os.path.join('..', '..', 'data', 'output')  # The base output directory when saving graphs
-        self.input_dir = os.path.join('..', '..', 'data',
-                                      'input')  # The base input directory when reading simulation input
+        self.output_dir = os.path.join(
+            "..", "..", "data", "output"
+        )  # The base output directory when saving graphs
+        self.input_dir = os.path.join(
+            "..", "..", "data", "input"
+        )  # The base input directory when reading simulation input
         self.erlang_dict = None  # Has the information for one simulation run for each every Erlang value under it
         self.num_requests = None  # The number of requests used for each iteration for the simulation run
-        self.num_cores = None  # Number of cores used for each iteration for the simulation run
+        self.num_cores = (
+            None  # Number of cores used for each iteration for the simulation run
+        )
 
-        self.color_list = ['#024de3', '#00b300', 'orange', '#6804cc', '#e30220']  # Colors used for lines
-        self.style_list = ['solid', 'dashed', 'dotted', 'dashdot']  # Styles used for lines
-        self.marker_list = ['o', '^', 's', 'x']  # Marker styles used for lines
+        self.color_list = [
+            "#024de3",
+            "#00b300",
+            "orange",
+            "#6804cc",
+            "#e30220",
+        ]  # Colors used for lines
+        self.style_list = [
+            "solid",
+            "dashed",
+            "dotted",
+            "dashdot",
+        ]  # Styles used for lines
+        self.marker_list = ["o", "^", "s", "x"]  # Marker styles used for lines
         self.x_tick_list = [50, 100, 200, 300, 400, 500, 600, 700]  # X-tick labels
         self.title_names = None  # Important names used for titles in plots (one string)
 
@@ -54,7 +70,9 @@ class PlotArgs:
         self.cores_per_link = None  # Number of cores per link
         # TODO: (drl_path_agents) Does not support all bands, check on this
         self.c_band = None  # Spectral slots per core for the c-band
-        self.learn_rate = None  # For artificial intelligence (AI), learning rate used if any
+        self.learn_rate = (
+            None  # For artificial intelligence (AI), learning rate used if any
+        )
         self.discount_factor = None  # For AI, discount factor used if any
 
         self.block_per_iter = []  # Blocking probability per iteration of one simulation configuration
@@ -69,7 +87,7 @@ class PlotArgs:
         try:
             return getattr(self, key)
         except AttributeError as exc:
-            raise KeyError(f'{key} not found') from exc
+            raise KeyError(f"{key} not found") from exc
 
     def __delitem__(self, key):
         try:
@@ -81,7 +99,13 @@ class PlotArgs:
         return hasattr(self, key)
 
     @staticmethod
-    def update_info_dict(plot_props: PlotProps, input_dict: dict, info_item_list: list, time: str, sim_num: str):
+    def update_info_dict(
+        plot_props: PlotProps,
+        input_dict: dict,
+        info_item_list: list,
+        time: str,
+        sim_num: str,
+    ):
         """
         Updates various items in the plot dictionary.
 

@@ -94,6 +94,31 @@ pip install -r requirements.txt
 
 ---
 
+## 🚀 Development Quick Start
+
+**New developer?** Get productive in 5 minutes:
+
+```bash
+# Install development tools
+pip install -r requirements-dev.txt
+
+# Setup automated quality checks
+make setup-hooks
+
+# Format, lint, test, and analyze - all in one command
+make check-all
+```
+
+**Daily workflow:**
+- `make format` - Auto-format code before commits
+- `make lint-new` - Fast linting with ruff + mypy
+- `make test-new` - Run tests with coverage
+- `make check-all` - Full quality check before PRs
+
+**Need help?** See [DEVELOPMENT_QUICKSTART.md](DEVELOPMENT_QUICKSTART.md) for detailed setup instructions.
+
+---
+
 ## Generating the Documentation
 
 After installing the dependencies, you can generate the Sphinx documentation.
@@ -144,9 +169,9 @@ This project is brought to you by the efforts of **Arash Rezaee**, **Ryan McCann
 
 If you use FUSION in your research, please cite the following paper:
 
-R. McCann, A. Rezaee, and V. M. Vokkarane,  
-"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"  
-*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.  
+R. McCann, A. Rezaee, and V. M. Vokkarane,
+"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"
+*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.
 DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
 ### 📄 BibTeX
@@ -154,8 +179,8 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
 ```bibtex
 @INPROCEEDINGS{10898199,
   author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
-  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
-  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)},
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking},
   year={2024},
   pages={1-6},
   doi={10.1109/ANTS63515.2024.10898199}
@@ -166,45 +191,54 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
 
 ## 🛠️ Development & Contributing
 
-### PR Validation
+### Modern Development Stack
 
-Before submitting a pull request, validate your changes locally to ensure they pass all CI/CD checks:
+FUSION uses a comprehensive modern development stack for high code quality:
 
+**Core Tools:**
+- **black**: Automatic code formatting
+- **ruff**: Fast linting and code analysis
+- **mypy**: Type checking for safety
+- **pytest**: Testing with coverage reporting
+- **pre-commit**: Automated quality gates
+
+**Development Commands:**
 ```bash
-# Quick validation (recommended during development)
-make quick-validate
+# Essential daily commands
+make format      # Auto-format code (black + isort)
+make lint-new    # Fast linting (ruff + mypy)
+make test-new    # Run tests with coverage
+make check-all   # Complete quality check
 
-# Complete validation (before submitting PR)
-make validate
-
-# Individual checks
-make lint            # Code style and quality
-make test            # Unit tests
-make cross-platform  # Cross-platform compatibility
+# Analysis and profiling
+make analyze     # Generate dependency and architecture reports
+make profile     # Performance profiling
 ```
 
-**Alternative methods:**
+**Getting Started:**
+1. Install tools: `pip install -r requirements-dev.txt`
+2. Setup hooks: `make setup-hooks`
+3. Verify setup: `make help`
+
+See [DEVELOPMENT_QUICKSTART.md](DEVELOPMENT_QUICKSTART.md) for complete onboarding guide and [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) for detailed development documentation.
+
+### Legacy Validation (Maintained)
+
+For compatibility, the original validation tools are still available:
+
 ```bash
-# Python script (full-featured)
-python tools/validate_pr.py --quick
-
-# Shell script (simple)
-./tools/validate_pr.sh quick
+# Legacy validation commands
+make quick-validate  # Quick checks
+make validate       # Complete validation
+make lint           # Legacy pylint
+make test           # Legacy testing
 ```
-
-For detailed information, see [tools/VALIDATION.md](tools/VALIDATION.md).
-
-### What Gets Validated
-- Python syntax and imports
-- Code style (pylint)
-- Unit tests (pytest)
-- Configuration file validation
-- Cross-platform compatibility
 
 ### Development Workflow
-1. Make your changes
-2. Run `make quick-validate` during development
-3. Run `make validate` before committing
-4. Submit your PR - CI/CD should pass ✅
+1. **Setup**: Install dev tools and setup pre-commit hooks
+2. **Code**: Use `make format` and `make lint-new` during development
+3. **Test**: Ensure `make test-new` passes
+4. **Submit**: Run `make check-all` before PRs
+5. **CI/CD**: Automated checks ensure quality
 
-The validation tools mirror our GitHub Actions workflows, so passing locally means passing in CI/CD.
+**Quality Standards:** All code must maintain >80% test coverage and pass automated formatting, linting, and type checking.

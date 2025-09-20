@@ -19,16 +19,20 @@ if __name__ == "__main__":
 def main():
     """
     Creates and caches GNN embeddings for the specified network configuration.
-    
+
     :raises CacheError: If caching operation fails
     """
     # Import here to avoid issues when this module is imported as a library
-    from fusion.modules.rl.utils.gym_envs import create_environment  # pylint: disable=import-outside-toplevel
-    from fusion.utils.logging_config import get_logger  # pylint: disable=import-outside-toplevel
+    from fusion.modules.rl.utils.gym_envs import (  # pylint: disable=import-outside-toplevel
+        create_environment,
+    )
+    from fusion.utils.logging_config import (  # pylint: disable=import-outside-toplevel
+        get_logger,
+    )
 
     logger = get_logger(__name__)
 
-    config_path = 'ini/run_ini/config.ini'
+    config_path = "ini/run_ini/config.ini"
     root = Path(__file__).resolve().parents[2]
     try:
         env, sim_dict, _ = create_environment(config_path=str(root / config_path))
@@ -45,12 +49,16 @@ def main():
         return
 
     try:
-        enc = PathGNNEncoder(
-            env.observation_space,
-            emb_dim=env.engine_obj.engine_props["emb_dim"],
-            gnn_type=env.engine_obj.engine_props["gnn_type"],
-            layers=env.engine_obj.engine_props["layers"],
-        ).to(sim_dict.get("device", "cpu")).eval()
+        enc = (
+            PathGNNEncoder(
+                env.observation_space,
+                emb_dim=env.engine_obj.engine_props["emb_dim"],
+                gnn_type=env.engine_obj.engine_props["gnn_type"],
+                layers=env.engine_obj.engine_props["layers"],
+            )
+            .to(sim_dict.get("device", "cpu"))
+            .eval()
+        )
 
         device = torch.device(sim_dict.get("device", "cpu"))
 

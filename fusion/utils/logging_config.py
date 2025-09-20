@@ -9,13 +9,15 @@ import logging.handlers
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
 
 from fusion.utils.os import find_project_root
 
 # Default log format
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-DETAILED_FORMAT = "%(asctime)s - %(name)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s"
+DETAILED_FORMAT = (
+    "%(asctime)s - %(name)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s"
+)
 
 # Log levels mapping
 LOG_LEVELS = {
@@ -23,30 +25,30 @@ LOG_LEVELS = {
     "INFO": logging.INFO,
     "WARNING": logging.WARNING,
     "ERROR": logging.ERROR,
-    "CRITICAL": logging.CRITICAL
+    "CRITICAL": logging.CRITICAL,
 }
 
 # Global logger cache
-_loggers: Dict[str, logging.Logger] = {}
+_loggers: dict[str, logging.Logger] = {}
 
 
 def setup_logger(
-        name: str,
-        level: str = "INFO",
-        log_file: Optional[str] = None,
-        log_dir: Optional[str] = None,
-        console: bool = True,
-        file_mode: str = "a",
-        max_bytes: int = 10485760,  # 10MB
-        backup_count: int = 5,
-        format_string: Optional[str] = None
+    name: str,
+    level: str = "INFO",
+    log_file: str | None = None,
+    log_dir: str | None = None,
+    console: bool = True,
+    file_mode: str = "a",
+    max_bytes: int = 10485760,  # 10MB
+    backup_count: int = 5,
+    format_string: str | None = None,
 ) -> logging.Logger:
     """
     Set up a standardized logger for FUSION modules.
-    
+
     Creates a logger with optional file and console handlers. File handlers
     use rotation to prevent unbounded growth.
-    
+
     :param name: Logger name (typically __name__ of the calling module)
     :param level: Logging level as string (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     :param log_file: Optional log file name (created in log_dir)
@@ -96,10 +98,7 @@ def setup_logger(
 
         # Use rotating file handler
         file_handler = logging.handlers.RotatingFileHandler(
-            log_path,
-            mode=file_mode,
-            maxBytes=max_bytes,
-            backupCount=backup_count
+            log_path, mode=file_mode, maxBytes=max_bytes, backupCount=backup_count
         )
         file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)
@@ -114,10 +113,10 @@ def setup_logger(
 def get_logger(name: str) -> logging.Logger:
     """
     Get an existing logger or create a basic one.
-    
+
     This is a convenience function for modules that need a logger but don't
     require special configuration.
-    
+
     :param name: Logger name (typically __name__)
     :return: Logger instance
     """
@@ -128,17 +127,17 @@ def get_logger(name: str) -> logging.Logger:
 
 
 def configure_simulation_logging(
-        sim_name: str,
-        erlang: float,
-        thread_num: Optional[int] = None,
-        log_level: str = "INFO"
+    sim_name: str,
+    erlang: float,
+    thread_num: int | None = None,
+    log_level: str = "INFO",
 ) -> logging.Logger:
     """
     Configure logging specifically for simulation runs.
-    
+
     Creates a logger with both console and file output, with the file name
     based on simulation parameters.
-    
+
     :param sim_name: Name of the simulation
     :param erlang: Erlang value being simulated
     :param thread_num: Optional thread number for parallel runs
@@ -159,16 +158,16 @@ def configure_simulation_logging(
         name=logger_name,
         level=log_level,
         log_file=log_file,
-        format_string=DETAILED_FORMAT
+        format_string=DETAILED_FORMAT,
     )
 
 
 def log_function_call(logger: logging.Logger):
     """
     Decorator to log function calls with arguments and return values.
-    
+
     Useful for debugging complex function flows.
-    
+
     :param logger: Logger instance to use
     """
 
@@ -199,15 +198,15 @@ def log_function_call(logger: logging.Logger):
 class LoggerAdapter(logging.LoggerAdapter):
     """
     Custom logger adapter for adding contextual information.
-    
+
     Useful for adding consistent context (like request IDs, user IDs, etc.)
     to all log messages from a specific component.
     """
 
-    def __init__(self, logger: logging.Logger, extra: Dict[str, Any]):
+    def __init__(self, logger: logging.Logger, extra: dict[str, Any]):
         """
         Initialize adapter with extra context.
-        
+
         :param logger: Base logger
         :param extra: Dictionary of extra context to add to all messages
         """

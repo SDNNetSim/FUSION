@@ -18,7 +18,7 @@ from gymnasium.envs.registration import register
 def copy_yml_file(algorithm: str) -> None:
     """
     Copy algorithm configuration file to RLZoo3 hyperparameters directory.
-    
+
     This function copies YAML configuration files from the local sb3_scripts
     directory to the RLZoo3 installation, enabling custom algorithm training
     with proper hyperparameter configurations.
@@ -34,8 +34,8 @@ def copy_yml_file(algorithm: str) -> None:
         # Copies sb3_scripts/yml/PPO.yml to RLZoo3 hyperparams directory
     """
     # Note: Preserving exact hard-coded paths as required for SB3 integration
-    source_file = f'sb3_scripts/yml/{algorithm}.yml'
-    destination_file = f'venvs/unity_venv/venv/lib/python3.11/site-packages/rl_zoo3/hyperparams/{algorithm}.yml'
+    source_file = f"sb3_scripts/yml/{algorithm}.yml"
+    destination_file = f"venvs/unity_venv/venv/lib/python3.11/site-packages/rl_zoo3/hyperparams/{algorithm}.yml"
 
     try:
         shutil.copy(source_file, destination_file)
@@ -73,14 +73,20 @@ def main() -> None:
         $ python register_env.py --algo PPO --env-name SimEnv
     """
     parser = argparse.ArgumentParser(
-        description='Register custom Gymnasium environment with StableBaselines3',
+        description="Register custom Gymnasium environment with StableBaselines3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='Example: python register_env.py --algo PPO --env-name SimEnv'
+        epilog="Example: python register_env.py --algo PPO --env-name SimEnv",
     )
-    parser.add_argument('--algo', required=True,
-                       help='Algorithm name for configuration file (e.g., PPO, DQN)')
-    parser.add_argument('--env-name', required=True,
-                       help='Environment class name to register (e.g., SimEnv)')
+    parser.add_argument(
+        "--algo",
+        required=True,
+        help="Algorithm name for configuration file (e.g., PPO, DQN)",
+    )
+    parser.add_argument(
+        "--env-name",
+        required=True,
+        help="Environment class name to register (e.g., SimEnv)",
+    )
     args = parser.parse_args()
 
     try:
@@ -88,21 +94,23 @@ def main() -> None:
         # CRITICAL: Preserving exact entry point string for SB3 compatibility
         register(
             id=args.env_name,
-            entry_point=f'reinforcement_learning.gymnasium_envs.general_sim_env:{args.env_name}',
+            entry_point=f"reinforcement_learning.gymnasium_envs.general_sim_env:{args.env_name}",
         )
 
-        print('\n=== Registered Environments with Gymnasium ===\n')
+        print("\n=== Registered Environments with Gymnasium ===\n")
         gymnasium.pprint_registry()
-        print('\n')
+        print("\n")
 
         # Copy algorithm configuration to RLZoo3
         copy_yml_file(algorithm=args.algo)
 
-        print(f"Successfully registered environment '{args.env_name}' with algorithm '{args.algo}'")
+        print(
+            f"Successfully registered environment '{args.env_name}' with algorithm '{args.algo}'"
+        )
 
     except Exception as exc:
         raise RuntimeError(f"Failed to register environment: {exc}") from exc
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

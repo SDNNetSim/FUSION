@@ -12,7 +12,7 @@ The file is import-safe in environments where PyTorch is **missing or stubbed**
 from __future__ import annotations
 
 import types
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # ----------------------------------------------------------------------
 # Optional -- PyTorch
@@ -86,9 +86,11 @@ class CachedPathGNN(BaseFeaturesExtractor):
         # Register as buffer *if* PyTorch is really there, otherwise
         # just store the raw object.  Either way the attribute exists.
         if hasattr(torch, "as_tensor"):  # Real torch
-            tensor = (cached_embedding
-                      if isinstance(cached_embedding, torch.Tensor)  # type: ignore[attr-defined]
-                      else torch.as_tensor(cached_embedding))  # type: ignore[arg-type]
+            tensor = (
+                cached_embedding
+                if isinstance(cached_embedding, torch.Tensor)  # type: ignore[attr-defined]
+                else torch.as_tensor(cached_embedding)
+            )  # type: ignore[arg-type]
             self.register_buffer("cached_embedding", tensor)  # type: ignore[attr-defined]
         else:  # Stub torch → keep plain
             self.cached_embedding = cached_embedding  # type: ignore
@@ -107,9 +109,11 @@ class CachedPathGNN(BaseFeaturesExtractor):
         if masks is not None and hasattr(masks, "shape"):
             batch_size = masks.shape[0]
 
-        flat = (self.cached_embedding.reshape(-1)  # type: ignore[attr-defined]
-                if hasattr(self.cached_embedding, "reshape")
-                else self.cached_embedding)
+        flat = (
+            self.cached_embedding.reshape(-1)  # type: ignore[attr-defined]
+            if hasattr(self.cached_embedding, "reshape")
+            else self.cached_embedding
+        )
 
         if batch_size == 1:
             return flat if not hasattr(torch, "stack") else flat.unsqueeze(0)  # type: ignore[attr-defined]

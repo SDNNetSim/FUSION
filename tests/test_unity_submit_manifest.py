@@ -4,20 +4,20 @@ Unit tests for fusion.unity.submit_manifest module.
 Tests the functionality for submitting job manifests to SLURM cluster,
 including argument parsing, environment setup, and command building.
 """
+
 import csv
 import pathlib
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from fusion.unity.submit_manifest import (
+    RESOURCE_KEYS,
+    build_env,
     parse_cli,
     read_first_row,
-    build_env,
-    RESOURCE_KEYS,
 )
-
-from .test_data import TEST_RESOURCES
+from tests.test_unity_fixtures import COMMON_RESOURCES
 
 
 class TestSubmitManifest(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestSubmitManifest(unittest.TestCase):
                 "path_algorithm": "ppo",
                 "erlang_start": "100",
                 "network": "test_network",
-                **TEST_RESOURCES
+                **COMMON_RESOURCES,
             },
             {
                 "run_id": "00002",
@@ -43,35 +43,37 @@ class TestSubmitManifest(unittest.TestCase):
                 "mem": "16G",
                 "cpus": "4",
                 "gpus": "1",
-                "nodes": "1"
-            }
+                "nodes": "1",
+            },
         ]
 
     def create_test_manifest(self) -> pathlib.Path:
         """Create a temporary manifest file for testing."""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
             fieldnames = self.test_manifest_data[0].keys()
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(self.test_manifest_data)
             return pathlib.Path(f.name)
 
-    @patch('sys.argv', ['submit_manifest.py', 'test_exp', 'run_rl_sim.sh'])
+    @patch("sys.argv", ["submit_manifest.py", "test_exp", "run_rl_sim.sh"])
     def test_parse_cli_basic(self):
         """Test parse_cli with basic arguments."""
         args = parse_cli()
 
-        self.assertEqual(args.exp, 'test_exp')
-        self.assertEqual(args.script, 'run_rl_sim.sh')
+        self.assertEqual(args.exp, "test_exp")
+        self.assertEqual(args.script, "run_rl_sim.sh")
         self.assertIsNone(args.rows)
 
-    @patch('sys.argv', ['submit_manifest.py', 'test_exp', 'run_rl_sim.sh', '--rows', '10'])
+    @patch(
+        "sys.argv", ["submit_manifest.py", "test_exp", "run_rl_sim.sh", "--rows", "10"]
+    )
     def test_parse_cli_with_rows(self):
         """Test parse_cli with rows argument."""
         args = parse_cli()
 
-        self.assertEqual(args.exp, 'test_exp')
-        self.assertEqual(args.script, 'run_rl_sim.sh')
+        self.assertEqual(args.exp, "test_exp")
+        self.assertEqual(args.script, "run_rl_sim.sh")
         self.assertEqual(args.rows, 10)
 
     def test_read_first_row(self):
@@ -90,7 +92,7 @@ class TestSubmitManifest(unittest.TestCase):
 
     def test_read_first_row_empty_manifest(self):
         """Test read_first_row with empty manifest file."""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
             # Write just the header
             f.write("run_id,algorithm\n")
             manifest_path = pathlib.Path(f.name)
@@ -152,7 +154,7 @@ class TestSubmitManifest(unittest.TestCase):
             "run_id": "00001",
             "path_algorithm": "ppo",
             "erlang_start": "100",
-            "network": "test_network"
+            "network": "test_network",
         }
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
@@ -186,9 +188,9 @@ class TestSubmitManifest(unittest.TestCase):
         expected_keys = {"partition", "time", "mem", "cpus", "gpus", "nodes"}
         self.assertEqual(RESOURCE_KEYS, expected_keys)
 
-    @patch('pathlib.Path.exists')
-    @patch('fusion.unity.submit_manifest.read_first_row')
-    @patch('subprocess.run')
+    @patch("pathlib.Path.exists")
+    @patch("fusion.unity.submit_manifest.read_first_row")
+    @patch("subprocess.run")
     def test_main_integration(self, mock_subprocess, mock_read_first_row, mock_exists):
         """Test main function integration (mocked external calls)."""
         # Mock file system checks
@@ -204,5 +206,5 @@ class TestSubmitManifest(unittest.TestCase):
         # This is a placeholder for integration testing structure
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

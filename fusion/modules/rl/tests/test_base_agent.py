@@ -13,9 +13,7 @@ class TestBaseAgent(TestCase):
     # ------- global patching ------------------------------------------
     def setUp(self):
         """Patch HyperparamConfig for all tests."""
-        patcher = mock.patch(
-            "fusion.modules.rl.agents.base_agent.HyperparamConfig"
-        )
+        patcher = mock.patch("fusion.modules.rl.agents.base_agent.HyperparamConfig")
         self._mock_hpc = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -65,7 +63,7 @@ class TestBaseAgent(TestCase):
         """Allocated+dynamic delegates to dynamic reward."""
         agent = self._new_agent()
         with mock.patch.object(
-                agent, "calculate_dynamic_reward", return_value=7.7
+            agent, "calculate_dynamic_reward", return_value=7.7
         ) as dyn_reward:
             self.assertEqual(agent.get_reward(True, True, 3, 4), 7.7)
             dyn_reward.assert_called_once_with(3, 4)
@@ -81,7 +79,7 @@ class TestBaseAgent(TestCase):
         """Blocked+dynamic delegates to dynamic penalty."""
         agent = self._new_agent()
         with mock.patch.object(
-                agent, "calculate_dynamic_penalty", return_value=-9.9
+            agent, "calculate_dynamic_penalty", return_value=-9.9
         ) as dyn_pen:
             self.assertEqual(agent.get_reward(False, True, 5, 6), -9.9)
             dyn_pen.assert_called_once_with(5, 6)
@@ -105,14 +103,15 @@ class TestBaseAgent(TestCase):
             agent.setup_env(is_path=False)
 
     # ------- load_model -----------------------------------------------
-    @mock.patch("fusion.modules.rl.agents.base_agent.np.load",
-                return_value="dummy_matrix")
-    @mock.patch("fusion.modules.rl.agents.base_agent.os.path.join",
-                return_value="joined/path.npy")
+    @mock.patch(
+        "fusion.modules.rl.agents.base_agent.np.load", return_value="dummy_matrix"
+    )
+    @mock.patch(
+        "fusion.modules.rl.agents.base_agent.os.path.join",
+        return_value="joined/path.npy",
+    )
     @mock.patch("fusion.modules.rl.agents.base_agent.QLearning")
-    def test_load_model_sets_matrix(
-            self, mock_qlearn, mock_join, mock_npload
-    ):
+    def test_load_model_sets_matrix(self, mock_qlearn, mock_join, mock_npload):
         """load_model reads file and assigns cores_matrix."""
         alg_instance = mock_qlearn.return_value
         alg_instance.props = mock.MagicMock()
@@ -126,11 +125,8 @@ class TestBaseAgent(TestCase):
             is_path=False,
         )
 
-        mock_join.assert_called_once_with(
-            "logs", "my_run", "core_e60_c4.npy"
-        )
-        mock_npload.assert_called_once_with("joined/path.npy",
-                                            allow_pickle=True)
+        mock_join.assert_called_once_with("logs", "my_run", "core_e60_c4.npy")
+        mock_npload.assert_called_once_with("joined/path.npy", allow_pickle=True)
         self.assertEqual(alg_instance.props.cores_matrix, "dummy_matrix")
 
 

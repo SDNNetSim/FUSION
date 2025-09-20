@@ -9,8 +9,8 @@ CLI and configuration system.
 from pathlib import Path
 from typing import Any
 
-from fusion.modules.rl.utils.gym_envs import create_environment
 from fusion.modules.rl import workflow_runner
+from fusion.modules.rl.utils.gym_envs import create_environment
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -19,11 +19,11 @@ logger = get_logger(__name__)
 def train_rl_agent(config: Any) -> None:
     """
     Launch RL training using legacy workflow via new CLI and config system.
-    
+
     This function bridges the new configuration system with the existing
     RL training workflow, maintaining compatibility while providing improved
     configuration management.
-    
+
     :param config: Configuration object containing training parameters
     :type config: Any
     """
@@ -54,7 +54,7 @@ def run_training_pipeline(args: Any) -> None:
 
         def __init__(self, args: Any) -> None:
             """Initialize with command line arguments.
-            
+
             :param args: Command line arguments
             :type args: Any
             """
@@ -62,7 +62,7 @@ def run_training_pipeline(args: Any) -> None:
 
         def get_args(self) -> Any:
             """Return the arguments.
-            
+
             :return: Command line arguments
             :rtype: Any
             """

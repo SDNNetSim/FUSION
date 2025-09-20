@@ -1,14 +1,14 @@
 # TODO: (version 5.5-6) Consider having a function like this in a shared plotting module
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_sim_times(
-        sim_times_data: dict,
-        title: str = "Simulation Time by Traffic Volume",
-        save_path: str | None = None,  # pylint: disable=unsupported-binary-operation
-        log_y: bool = False,
+    sim_times_data: dict,
+    title: str = "Simulation Time by Traffic Volume",
+    save_path: str | None = None,  # pylint: disable=unsupported-binary-operation
+    log_y: bool = False,
 ):
     """
     Draws a grouped bar-chart of mean simulation time per traffic volume.
@@ -40,17 +40,22 @@ def plot_sim_times(
     else:
         plt.style.use("default")
 
-    traffic_labels = sorted({
-        float(tv) for algo_data in sim_times_data.values()
-        for tv in algo_data.keys()
-        if int(float(tv)) % 100 == 0
-    })
+    traffic_labels = sorted(
+        {
+            float(tv)
+            for algo_data in sim_times_data.values()
+            for tv in algo_data.keys()
+            if int(float(tv)) % 100 == 0
+        }
+    )
     algos = sorted(sim_times_data.keys())
 
-    means = np.array([
-        [sim_times_data[algo].get(str(tv), 0.0) for algo in algos]
-        for tv in traffic_labels
-    ])  # shape: (#traffic_volumes, #algorithms)
+    means = np.array(
+        [
+            [sim_times_data[algo].get(str(tv), 0.0) for algo in algos]
+            for tv in traffic_labels
+        ]
+    )  # shape: (#traffic_volumes, #algorithms)
 
     x = np.arange(len(traffic_labels))
     bar_w = 0.8 / len(algos)
@@ -70,7 +75,7 @@ def plot_sim_times(
             alpha=0.9,
             hatch=hatch_style,
             edgecolor="black",
-            linewidth=0.7
+            linewidth=0.7,
         )
 
     plt.xticks(

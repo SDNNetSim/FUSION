@@ -13,7 +13,7 @@ import pickle
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 def log_message(message: str, log_queue: Any) -> None:
     """
     Log a message to queue or logger.
-    
+
     :param message: Message to log
     :type message: str
     :param log_queue: Queue for message logging (None to use logger)
@@ -38,38 +38,39 @@ def log_message(message: str, log_queue: Any) -> None:
     else:
         logger.info(message)
 
-def update_matrices(info_dict: Dict[str, Any]) -> Dict[str, List]:
+
+def update_matrices(info_dict: dict[str, Any]) -> dict[str, list]:
     """
     Update network resource matrices from info dictionary.
-    
+
     :param info_dict: Dictionary containing simulation information
     :type info_dict: Dict[str, Any]
     :return: Dictionary containing updated matrices
     :rtype: Dict[str, List]
     """
     resp = {
-        'times_matrix': [],
-        'sims_matrix': [],
-        'networks_matrix': [],
-        'dates_matrix': [],
-        'algorithms_matrix': [],
+        "times_matrix": [],
+        "sims_matrix": [],
+        "networks_matrix": [],
+        "dates_matrix": [],
+        "algorithms_matrix": [],
     }
     for curr_time, obj in info_dict.items():
-        resp['times_matrix'].append([curr_time])
-        resp['sims_matrix'].append(obj['sim_list'])
-        resp['networks_matrix'].append(obj['network_list'])
-        resp['dates_matrix'].append(obj['dates_list'])
+        resp["times_matrix"].append([curr_time])
+        resp["sims_matrix"].append(obj["sim_list"])
+        resp["networks_matrix"].append(obj["network_list"])
+        resp["dates_matrix"].append(obj["dates_list"])
 
         # TODO: Patched this for the 'test_plot_helpers' test temporarily
         try:
-            resp['algorithms_matrix'].append(obj['algorithm_list'])
+            resp["algorithms_matrix"].append(obj["algorithm_list"])
         except KeyError:
-            resp['dates_matrix'].append(obj['dates_list'])
+            resp["dates_matrix"].append(obj["dates_list"])
 
     return resp
 
 
-def get_path_mod(mods_dict: Dict[str, Dict], path_len: float) -> Union[str, bool]:
+def get_path_mod(mods_dict: dict[str, dict], path_len: float) -> str | bool:
     """
     Choose a modulation format that will allocate a network request.
 
@@ -79,12 +80,16 @@ def get_path_mod(mods_dict: Dict[str, Dict], path_len: float) -> Union[str, bool
     :rtype: str
     """
     # Pycharm auto-formats it like this for comparisons...I'd rather this look weird than look at PyCharm warnings
-    if mods_dict['QPSK']['max_length'] >= path_len > mods_dict['16-QAM']['max_length']:
-        resp = 'QPSK'
-    elif mods_dict['16-QAM']['max_length'] >= path_len > mods_dict['64-QAM']['max_length']:
-        resp = '16-QAM'
-    elif mods_dict['64-QAM']['max_length'] >= path_len:
-        resp = '64-QAM'
+    if mods_dict["QPSK"]["max_length"] >= path_len > mods_dict["16-QAM"]["max_length"]:
+        resp = "QPSK"
+    elif (
+        mods_dict["16-QAM"]["max_length"]
+        >= path_len
+        > mods_dict["64-QAM"]["max_length"]
+    ):
+        resp = "16-QAM"
+    elif mods_dict["64-QAM"]["max_length"] >= path_len:
+        resp = "64-QAM"
     else:
         return False
 
@@ -108,7 +113,9 @@ def find_max_path_len(source: int, destination: int, topology: nx.Graph) -> floa
     return resp
 
 
-def sort_nested_dict_vals(original_dict: Dict[str, Any], nested_key: str) -> Dict[str, Any]:
+def sort_nested_dict_vals(
+    original_dict: dict[str, Any], nested_key: str
+) -> dict[str, Any]:
     """
     Sort a dictionary by a value which belongs to a nested key.
 
@@ -122,7 +129,7 @@ def sort_nested_dict_vals(original_dict: Dict[str, Any], nested_key: str) -> Dic
     return sorted_dict
 
 
-def sort_dict_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
+def sort_dict_keys(dictionary: dict[str, Any]) -> dict[str, Any]:
     """
     Sort a dictionary by keys in descending order.
 
@@ -136,7 +143,7 @@ def sort_dict_keys(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     return sorted_dict
 
 
-def find_path_len(path_list: List[int], topology: nx.Graph) -> float:
+def find_path_len(path_list: list[int], topology: nx.Graph) -> float:
     """
     Finds the length of a path in a physical topology.
 
@@ -146,13 +153,15 @@ def find_path_len(path_list: List[int], topology: nx.Graph) -> float:
     """
     path_len = 0
     for i in range(len(path_list) - 1):
-        path_len += topology[path_list[i]][path_list[i + 1]]['length']
+        path_len += topology[path_list[i]][path_list[i + 1]]["length"]
 
     return path_len
 
 
 # TODO: (version 5.5-6) Defaulting to 'c' band
-def find_path_cong(path_list: List[int], network_spectrum_dict: Dict, band: str = 'c') -> Tuple[float, float]:
+def find_path_cong(
+    path_list: list[int], network_spectrum_dict: dict, band: str = "c"
+) -> tuple[float, float]:
     """
     Computes average path congestion and scaled available capacity, accounting for multiple cores per link.
 
@@ -165,9 +174,9 @@ def find_path_cong(path_list: List[int], network_spectrum_dict: Dict, band: str 
     links_cong_list = []
     total_slots_available = 0.0
 
-    for src, dest in zip(path_list, path_list[1:]):
+    for src, dest in zip(path_list, path_list[1:], strict=False):
         src_dest = (src, dest)
-        cores_matrix = network_spectrum_dict[src_dest]['cores_matrix']
+        cores_matrix = network_spectrum_dict[src_dest]["cores_matrix"]
         band_cores_matrix = cores_matrix[band]
 
         num_cores = len(band_cores_matrix)
@@ -191,7 +200,9 @@ def find_path_cong(path_list: List[int], network_spectrum_dict: Dict, band: str 
 
 
 # TODO: (version 5.5-6) Defaults to 'c' band
-def find_path_frag(path_list: List[int], network_spectrum_dict: Dict, band: str = 'c') -> float:
+def find_path_frag(
+    path_list: list[int], network_spectrum_dict: dict, band: str = "c"
+) -> float:
     """
     Computes the average fragmentation ratio along a path.
 
@@ -202,9 +213,9 @@ def find_path_frag(path_list: List[int], network_spectrum_dict: Dict, band: str 
     """
     frag_ratios_list = []
 
-    for src, dest in zip(path_list, path_list[1:]):
+    for src, dest in zip(path_list, path_list[1:], strict=False):
         src_dest = (src, dest)
-        cores_matrix = network_spectrum_dict[src_dest]['cores_matrix']
+        cores_matrix = network_spectrum_dict[src_dest]["cores_matrix"]
         cores = cores_matrix[band]
 
         for core in cores:
@@ -236,7 +247,9 @@ def find_path_frag(path_list: List[int], network_spectrum_dict: Dict, band: str 
     return float(np.mean(frag_ratios_list)) if frag_ratios_list else 1.0
 
 
-def find_core_cong(core_index: int, network_spectrum_dict: Dict, path_list: List[int]) -> float:
+def find_core_cong(
+    core_index: int, network_spectrum_dict: dict, path_list: list[int]
+) -> float:
     """
     Finds the current percentage of congestion on a core along a path.
 
@@ -247,15 +260,17 @@ def find_core_cong(core_index: int, network_spectrum_dict: Dict, path_list: List
     :rtype: float
     """
     links_cong_list = list()
-    for src, dest in zip(path_list, path_list[1:]):
+    for src, dest in zip(path_list, path_list[1:], strict=False):
         src_dest = (src, dest)
-        cores_matrix = network_spectrum_dict[src_dest]['cores_matrix']
+        cores_matrix = network_spectrum_dict[src_dest]["cores_matrix"]
         total_slots = 0
         slots_taken = 0
         for band in cores_matrix:
             # Every core will have the same number of spectral slots
             total_slots += len(cores_matrix[band][0])
-            core_slots_taken = float(len(np.where(cores_matrix[band][core_index] != 0.0)[0]))
+            core_slots_taken = float(
+                len(np.where(cores_matrix[band][core_index] != 0.0)[0])
+            )
             slots_taken += core_slots_taken
 
         links_cong_list.append(slots_taken / total_slots)
@@ -264,7 +279,9 @@ def find_core_cong(core_index: int, network_spectrum_dict: Dict, path_list: List
     return average_core_cong
 
 
-def find_core_frag_cong(net_spec_db: Dict, path: List[int], core: int, band: str) -> Tuple[float, float]:
+def find_core_frag_cong(
+    net_spec_db: dict, path: list[int], core: int, band: str
+) -> tuple[float, float]:
     """
     Finds the congestion and fragmentation scores for a specific request.
 
@@ -277,12 +294,12 @@ def find_core_frag_cong(net_spec_db: Dict, path: List[int], core: int, band: str
     """
     frag_resp = 0.0
     cong_resp = 0.0
-    for src, dest in zip(path, path[1:]):
+    for src, dest in zip(path, path[1:], strict=False):
         src_dest = (src, dest)
-        core_arr = net_spec_db[src_dest]['cores_matrix'][band][core]
+        core_arr = net_spec_db[src_dest]["cores_matrix"][band][core]
 
         if len(core_arr) != 256:
-            raise NotImplementedError('Only works for 256 spectral slots.')
+            raise NotImplementedError("Only works for 256 spectral slots.")
 
         cong_resp += len(np.where(core_arr != 0)[0])
 
@@ -308,7 +325,7 @@ def find_core_frag_cong(net_spec_db: Dict, path: List[int], core: int, band: str
     return frag_resp, cong_resp
 
 
-def get_channel_overlaps(free_channels_dict: Dict, free_slots_dict: Dict) -> Dict:
+def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dict:
     """
     Find the number of overlapping and non-overlapping channels between adjacent cores.
 
@@ -319,14 +336,14 @@ def get_channel_overlaps(free_channels_dict: Dict, free_slots_dict: Dict) -> Dic
     """
     resp_dict = dict()
     for link in free_channels_dict.keys():  # pylint: disable=too-many-nested-blocks
-        resp_dict.update({link: {'overlapped_dict': {}, 'non_over_dict': {}}})
+        resp_dict.update({link: {"overlapped_dict": {}, "non_over_dict": {}}})
         for band, free_channels in free_channels_dict[link].items():
             num_cores = int(len(free_channels.keys()))
-            resp_dict[link]['overlapped_dict'][band] = dict()
-            resp_dict[link]['non_over_dict'][band] = dict()
+            resp_dict[link]["overlapped_dict"][band] = dict()
+            resp_dict[link]["non_over_dict"][band] = dict()
             for core_num, channels_list in free_channels.items():
-                resp_dict[link]['overlapped_dict'][band][core_num] = list()
-                resp_dict[link]['non_over_dict'][band][core_num] = list()
+                resp_dict[link]["overlapped_dict"][band][core_num] = list()
+                resp_dict[link]["non_over_dict"][band][core_num] = list()
 
                 for curr_channel in channels_list:
                     for sub_core, slots_dict in free_slots_dict[link][band].items():
@@ -340,22 +357,39 @@ def get_channel_overlaps(free_channels_dict: Dict, free_slots_dict: Dict) -> Dic
                             first_neighbor = 5 if core_num == 0 else core_num - 1
                             second_neighbor = 0 if core_num == 5 else core_num + 1
 
-                            result_arr = np.isin(curr_channel, free_slots_dict[link][band][first_neighbor])
-                            result_arr = np.append(result_arr,
-                                                   np.isin(curr_channel, free_slots_dict[link][band][second_neighbor]))
-                            result_arr = np.append(result_arr,
-                                                   np.isin(curr_channel, free_slots_dict[link][band][num_cores - 1]))
+                            result_arr = np.isin(
+                                curr_channel,
+                                free_slots_dict[link][band][first_neighbor],
+                            )
+                            result_arr = np.append(
+                                result_arr,
+                                np.isin(
+                                    curr_channel,
+                                    free_slots_dict[link][band][second_neighbor],
+                                ),
+                            )
+                            result_arr = np.append(
+                                result_arr,
+                                np.isin(
+                                    curr_channel,
+                                    free_slots_dict[link][band][num_cores - 1],
+                                ),
+                            )
 
                         if result_arr is False:
-                            resp_dict[link]['overlapped_dict'][band][core_num].append(curr_channel)
+                            resp_dict[link]["overlapped_dict"][band][core_num].append(
+                                curr_channel
+                            )
                             break
 
-                    resp_dict[link]['non_over_dict'][band][core_num].append(curr_channel)
+                    resp_dict[link]["non_over_dict"][band][core_num].append(
+                        curr_channel
+                    )
 
     return resp_dict
 
 
-def find_free_slots(network_spectrum_dict: Dict, link_tuple: Tuple[int, int]) -> Dict:
+def find_free_slots(network_spectrum_dict: dict, link_tuple: tuple[int, int]) -> dict:
     """
     Find every unallocated spectral slot for a given link.
 
@@ -365,18 +399,22 @@ def find_free_slots(network_spectrum_dict: Dict, link_tuple: Tuple[int, int]) ->
     :rtype: dict
     """
     resp_dict = {}
-    for band in network_spectrum_dict[link_tuple]['cores_matrix'].keys():
+    for band in network_spectrum_dict[link_tuple]["cores_matrix"].keys():
         resp_dict[band] = dict()
 
-        num_cores = len(network_spectrum_dict[link_tuple]['cores_matrix'][band])
+        num_cores = len(network_spectrum_dict[link_tuple]["cores_matrix"][band])
         for core_num in range(num_cores):  # pylint: disable=consider-using-enumerate
-            free_slots_list = np.where(network_spectrum_dict[link_tuple]['cores_matrix'][band][core_num] == 0)[0]
+            free_slots_list = np.where(
+                network_spectrum_dict[link_tuple]["cores_matrix"][band][core_num] == 0
+            )[0]
             resp_dict[band].update({core_num: free_slots_list})
 
     return resp_dict
 
 
-def find_free_channels(network_spectrum_dict: Dict, slots_needed: int, link_tuple: Tuple[int, int]) -> Dict:
+def find_free_channels(
+    network_spectrum_dict: dict, slots_needed: int, link_tuple: tuple[int, int]
+) -> dict:
     """
     Finds the free super-channels on a given link.
 
@@ -387,8 +425,10 @@ def find_free_channels(network_spectrum_dict: Dict, slots_needed: int, link_tupl
     :rtype: dict
     """
     resp_dict = {}
-    for band in network_spectrum_dict[link_tuple]['cores_matrix'].keys():
-        cores_matrix = copy.deepcopy(network_spectrum_dict[link_tuple]['cores_matrix'][band])
+    for band in network_spectrum_dict[link_tuple]["cores_matrix"].keys():
+        cores_matrix = copy.deepcopy(
+            network_spectrum_dict[link_tuple]["cores_matrix"][band]
+        )
         resp_dict.update({band: {}})
         for core_num, link_list in enumerate(cores_matrix):
             indexes = np.where(link_list == 0)[0]
@@ -414,7 +454,9 @@ def find_free_channels(network_spectrum_dict: Dict, slots_needed: int, link_tupl
     return resp_dict
 
 
-def find_taken_channels(network_spectrum_dict: Dict, link_tuple: Tuple[int, int]) -> Dict:
+def find_taken_channels(
+    network_spectrum_dict: dict, link_tuple: tuple[int, int]
+) -> dict:
     """
     Finds the taken super-channels on a given link.
 
@@ -424,9 +466,11 @@ def find_taken_channels(network_spectrum_dict: Dict, link_tuple: Tuple[int, int]
     :rtype: dict
     """
     resp_dict = {}
-    for band in network_spectrum_dict[link_tuple]['cores_matrix'].keys():
+    for band in network_spectrum_dict[link_tuple]["cores_matrix"].keys():
         resp_dict.update({band: {}})
-        cores_matrix = copy.deepcopy(network_spectrum_dict[link_tuple]['cores_matrix'][band])
+        cores_matrix = copy.deepcopy(
+            network_spectrum_dict[link_tuple]["cores_matrix"][band]
+        )
         for core_num, link_list in enumerate(cores_matrix):
             channels_list = []
             curr_channel_list = []
@@ -454,8 +498,8 @@ def snake_to_title(snake_str: str):
     :return: Another string in title case.
     :rtype: str
     """
-    words_list = snake_str.split('_')
-    title_str = ' '.join(word.capitalize() for word in words_list)
+    words_list = snake_str.split("_")
+    title_str = " ".join(word.capitalize() for word in words_list)
     return title_str
 
 
@@ -467,10 +511,15 @@ def int_to_string(number: int):
     :return: The original number as a string.
     :rtype: str
     """
-    return '{:,}'.format(number)  # pylint: disable=consider-using-f-string
+    return f"{number:,}"  # pylint: disable=consider-using-f-string
 
 
-def dict_to_list(data_dict: Dict, nested_key: str, path_list: List[str] = None, find_mean: bool = False) -> Union[List, float]:
+def dict_to_list(
+    data_dict: dict,
+    nested_key: str,
+    path_list: list[str] = None,
+    find_mean: bool = False,
+) -> list | float:
     """
     Creates a list from a dictionary taken values from a specified key.
 
@@ -498,7 +547,7 @@ def dict_to_list(data_dict: Dict, nested_key: str, path_list: List[str] = None, 
     return np.array(extracted_list)
 
 
-def list_to_title(input_list: List[Tuple[str, Any]]) -> str:
+def list_to_title(input_list: list[tuple[str, Any]]) -> str:
     """
     Converts a list to a title case.
 
@@ -520,7 +569,7 @@ def list_to_title(input_list: List[Tuple[str, Any]]) -> str:
     return unique_list[0]
 
 
-def calc_matrix_stats(input_dict: Dict[str, List]) -> Dict[str, List]:
+def calc_matrix_stats(input_dict: dict[str, list]) -> dict[str, list]:
     """
     Creates a matrix based on dict values and takes the min, max, and average of columns.
     :param input_dict: The input dict with values as lists.
@@ -530,14 +579,14 @@ def calc_matrix_stats(input_dict: Dict[str, List]) -> Dict[str, List]:
     resp_dict = dict()
     tmp_matrix = np.array([])
     for episode, curr_list in input_dict.items():
-        if episode == '0':
+        if episode == "0":
             tmp_matrix = np.array([curr_list])
         else:
             tmp_matrix = np.vstack((tmp_matrix, curr_list))
 
-    resp_dict['min'] = tmp_matrix.min(axis=0, initial=np.inf).tolist()
-    resp_dict['max'] = tmp_matrix.max(axis=0, initial=np.inf * -1.0).tolist()
-    resp_dict['average'] = tmp_matrix.mean(axis=0).tolist()
+    resp_dict["min"] = tmp_matrix.min(axis=0, initial=np.inf).tolist()
+    resp_dict["max"] = tmp_matrix.max(axis=0, initial=np.inf * -1.0).tolist()
+    resp_dict["average"] = tmp_matrix.mean(axis=0).tolist()
 
     return resp_dict
 
@@ -560,7 +609,7 @@ def combine_and_one_hot(arr1: np.ndarray, arr2: np.ndarray) -> np.ndarray:
     return result
 
 
-def get_start_time(sim_dict: Dict[str, Any]) -> Dict[str, Any]:
+def get_start_time(sim_dict: dict[str, Any]) -> dict[str, Any]:
     """
     Gets a unique start time for a simulation, ensuring it does not already exist.
     :param sim_dict: Holds the simulation parameters.
@@ -570,18 +619,18 @@ def get_start_time(sim_dict: Dict[str, Any]) -> Dict[str, Any]:
         time.sleep(0.1)
 
         sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-        tmp_list = sim_start.split('_')
+        tmp_list = sim_start.split("_")
         date = tmp_list[0]
-        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
+        time_string = f"{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}"
 
         full_path = base_path / date / time_string
         if not full_path.exists():
             break
 
-        logger.warning('Duplicate start times, picking a new start!')
+        logger.warning("Duplicate start times, picking a new start!")
 
-    sim_dict['s1']['date'] = date
-    sim_dict['s1']['sim_start'] = time_string
+    sim_dict["s1"]["date"] = date
+    sim_dict["s1"]["sim_start"] = time_string
 
     return sim_dict
 
@@ -637,11 +686,20 @@ def _get_hfrag_score(sc_index_mat: np.ndarray, spectral_slots: int) -> float:
         return np.inf
 
     channel_len = len(sc_index_mat[0])
-    resp_score = big_n * (channel_len / spectral_slots) * np.log((channel_len / spectral_slots))
+    resp_score = (
+        big_n * (channel_len / spectral_slots) * np.log(channel_len / spectral_slots)
+    )
     return resp_score
 
 
-def get_hfrag(path_list: List[int], core_num: int, band: str, slots_needed: int, spectral_slots: int, network_spectrum_dict: Dict) -> Tuple[np.ndarray, np.ndarray]:
+def get_hfrag(
+    path_list: list[int],
+    core_num: int,
+    band: str,
+    slots_needed: int,
+    spectral_slots: int,
+    network_spectrum_dict: dict,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Gets the shannon entropy fragmentation scores for allocating a request.
 
@@ -659,19 +717,27 @@ def get_hfrag(path_list: List[int], core_num: int, band: str, slots_needed: int,
     if core_num is None:
         core_num = 0
 
-    for source, dest in zip(path_list, path_list[1:]):
-        core_arr = network_spectrum_dict[(source, dest)]['cores_matrix'][band][core_num]
+    for source, dest in zip(path_list, path_list[1:], strict=False):
+        core_arr = network_spectrum_dict[(source, dest)]["cores_matrix"][band][core_num]
         path_alloc_arr = combine_and_one_hot(path_alloc_arr, core_arr)
 
-    sc_index_mat = get_super_channels(input_arr=path_alloc_arr, slots_needed=slots_needed)
-    hfrag_before = _get_hfrag_score(sc_index_mat=sc_index_mat, spectral_slots=spectral_slots)
+    sc_index_mat = get_super_channels(
+        input_arr=path_alloc_arr, slots_needed=slots_needed
+    )
+    hfrag_before = _get_hfrag_score(
+        sc_index_mat=sc_index_mat, spectral_slots=spectral_slots
+    )
     for super_channel in sc_index_mat:
         mock_alloc_arr = copy.deepcopy(path_alloc_arr)
         for index in super_channel:
             mock_alloc_arr[index] = 1
 
-        tmp_sc_mat = get_super_channels(input_arr=mock_alloc_arr, slots_needed=slots_needed)
-        hfrag_after = _get_hfrag_score(sc_index_mat=tmp_sc_mat, spectral_slots=spectral_slots)
+        tmp_sc_mat = get_super_channels(
+            input_arr=mock_alloc_arr, slots_needed=slots_needed
+        )
+        hfrag_after = _get_hfrag_score(
+            sc_index_mat=tmp_sc_mat, spectral_slots=spectral_slots
+        )
         delta_hfrag = hfrag_before - hfrag_after
         start_index = super_channel[0]
         resp_frag_arr[start_index] = np.round(delta_hfrag, 3)
@@ -707,7 +773,7 @@ def parse_yaml_file(yaml_file: str):
     :return: The YAML data as an object.
     :rtype: object
     """
-    with open(yaml_file, "r", encoding='utf-8') as file_obj:
+    with open(yaml_file, encoding="utf-8") as file_obj:
         try:
             yaml_data = yaml.safe_load(file_obj)
             return yaml_data
@@ -715,7 +781,7 @@ def parse_yaml_file(yaml_file: str):
             return exc
 
 
-def get_erlang_vals(sim_dict: Dict[str, Any]) -> List[int]:
+def get_erlang_vals(sim_dict: dict[str, Any]) -> list[int]:
     """
     Generate a list of arrival rates based on the configuration dictionary.
 
@@ -723,14 +789,21 @@ def get_erlang_vals(sim_dict: Dict[str, Any]) -> List[int]:
     :return: A list of arrival rates generated from the configuration.
     :rtype: list
     """
-    start = int(sim_dict['erlang_start'])
-    stop = int(sim_dict['erlang_stop'])
-    step = int(sim_dict['erlang_step'])
+    start = int(sim_dict["erlang_start"])
+    stop = int(sim_dict["erlang_stop"])
+    step = int(sim_dict["erlang_step"])
 
     return list(range(start, stop, step))
 
 
-def run_simulation_for_erlangs(env: Any, erlang_list: List[float], sim_dict: Dict[str, Any], run_func: Any, callback_list: Any, trial: Any) -> float:
+def run_simulation_for_erlangs(
+    env: Any,
+    erlang_list: list[float],
+    sim_dict: dict[str, Any],
+    run_func: Any,
+    callback_list: Any,
+    trial: Any,
+) -> float:
     """
     Run the simulation for each arrival rate in the given list.
 
@@ -743,16 +816,27 @@ def run_simulation_for_erlangs(env: Any, erlang_list: List[float], sim_dict: Dic
     """
     total_rewards = []
     for erlang in erlang_list:
-        env.engine_obj.engine_props['erlang'] = erlang
-        env.engine_obj.engine_props['arrival_rate'] = sim_dict['cores_per_link'] * erlang
-        env.engine_obj.engine_props['arrival_rate'] /= sim_dict['holding_time']
-        sum_returns = run_func(env=env, sim_dict=env.sim_dict, callback_list=callback_list, trial=trial)
+        env.engine_obj.engine_props["erlang"] = erlang
+        env.engine_obj.engine_props["arrival_rate"] = (
+            sim_dict["cores_per_link"] * erlang
+        )
+        env.engine_obj.engine_props["arrival_rate"] /= sim_dict["holding_time"]
+        sum_returns = run_func(
+            env=env, sim_dict=env.sim_dict, callback_list=callback_list, trial=trial
+        )
         total_rewards.append(sum_returns)
 
     return np.mean(total_rewards)
 
 
-def save_study_results(study: Any, env: Any, study_name: str, best_params: Dict[str, Any], best_reward: float, best_sim_start: int) -> None:
+def save_study_results(
+    study: Any,
+    env: Any,
+    study_name: str,
+    best_params: dict[str, Any],
+    best_reward: float,
+    best_sim_start: int,
+) -> None:
     """
     Save the results of the study, including the best hyperparameters and the best reward value.
 
@@ -763,17 +847,22 @@ def save_study_results(study: Any, env: Any, study_name: str, best_params: Dict[
     :param best_reward: The best reward value from the study.
     :param best_sim_start: The start time of the best simulation.
     """
-    date_time = os.path.join(env.engine_obj.engine_props['network'], env.engine_obj.engine_props['date'],
-                             env.engine_obj.engine_props['sim_start'])
-    save_dir = os.path.join('logs', env.engine_obj.engine_props['path_algorithm'], date_time)
+    date_time = os.path.join(
+        env.engine_obj.engine_props["network"],
+        env.engine_obj.engine_props["date"],
+        env.engine_obj.engine_props["sim_start"],
+    )
+    save_dir = os.path.join(
+        "logs", env.engine_obj.engine_props["path_algorithm"], date_time
+    )
     os.makedirs(save_dir, exist_ok=True)
 
     save_fp = os.path.join(save_dir, study_name)
-    with open(save_fp, 'wb') as file_path:
+    with open(save_fp, "wb") as file_path:
         pickle.dump(study, file_path)
 
-    save_fp = os.path.join(save_dir, 'best_hyperparams.txt')
-    with open(save_fp, 'w', encoding='utf-8') as file_path:
+    save_fp = os.path.join(save_dir, "best_hyperparams.txt")
+    with open(save_fp, "w", encoding="utf-8") as file_path:
         file_path.write("Best Hyperparameters:\n")
         for key, value in best_params.items():
             file_path.write(f"{key}: {value}\n")
@@ -782,7 +871,9 @@ def save_study_results(study: Any, env: Any, study_name: str, best_params: Dict[
 
 
 # TODO: (version 5.5-6) Only support for one process
-def modify_multiple_json_values(trial_num: int, file_path: str, update_list: List[Tuple[str, Any]]) -> None:
+def modify_multiple_json_values(
+    trial_num: int, file_path: str, update_list: list[tuple[str, Any]]
+) -> None:
     """
     Opens a JSON file, modifies multiple key-value pairs in a dictionary, and saves it back to the file.
 
@@ -791,8 +882,8 @@ def modify_multiple_json_values(trial_num: int, file_path: str, update_list: Lis
     :param update_list: A list of tuples containing keys and their new values to be updated.
                         Example: [('key1', 'new_value1'), ('key2', 'new_value2')]
     """
-    open_fp = os.path.join(file_path, 'sim_input_s1.json')
-    with open(open_fp, 'r', encoding='utf-8') as json_file:
+    open_fp = os.path.join(file_path, "sim_input_s1.json")
+    with open(open_fp, encoding="utf-8") as json_file:
         data = json.load(json_file)
 
     for key, new_value in update_list:
@@ -801,12 +892,14 @@ def modify_multiple_json_values(trial_num: int, file_path: str, update_list: Lis
         else:
             raise KeyError(f"Key '{key}' not found in the JSON file.")
 
-    save_fp = os.path.join(file_path, f'sim_input_s{trial_num + 1}.json')
-    with open(save_fp, 'w', encoding='utf-8') as json_file:
+    save_fp = os.path.join(file_path, f"sim_input_s{trial_num + 1}.json")
+    with open(save_fp, "w", encoding="utf-8") as json_file:
         json.dump(data, json_file, indent=4)
 
 
-def update_dict_from_list(input_dict: Dict[str, Any], updates_list: List[Tuple[str, Any]]) -> Dict[str, Any]:
+def update_dict_from_list(
+    input_dict: dict[str, Any], updates_list: list[tuple[str, Any]]
+) -> dict[str, Any]:
     """
     Updates the input dictionary with values from the updates list. The keys are derived from the tuples in the list.
 

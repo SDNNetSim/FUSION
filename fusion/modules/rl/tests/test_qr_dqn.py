@@ -22,16 +22,12 @@ class TestQrDQN(TestCase):
         return qr_dqn.QrDQN(rl_props, TestQrDQN._mk_engine(k_paths))
 
     # ---------------------- get_obs_space -----------------------------
-    @mock.patch(
-        "fusion.modules.rl.algorithms.qr_dqn.spaces.Dict"
-    )
+    @mock.patch("fusion.modules.rl.algorithms.qr_dqn.spaces.Dict")
     @mock.patch(
         "fusion.modules.rl.algorithms.base_drl.get_observation_space",
         return_value={"x": 1},
     )
-    def test_get_obs_space_wraps_dict(
-            self, mock_get_obs, mock_dict_space
-    ):
+    def test_get_obs_space_wraps_dict(self, mock_get_obs, mock_dict_space):
         """get_obs_space returns gym Dict from helper output."""
         agent = self._mk_agent()
         result = agent.get_obs_space()
@@ -43,9 +39,7 @@ class TestQrDQN(TestCase):
         self.assertIs(result, mock_dict_space.return_value)
 
     # ------------------- get_action_space -----------------------------
-    @mock.patch(
-        "fusion.modules.rl.algorithms.qr_dqn.spaces.Discrete"
-    )
+    @mock.patch("fusion.modules.rl.algorithms.qr_dqn.spaces.Discrete")
     def test_get_action_space_uses_k_paths(self, mock_discrete):
         """get_action_space returns Discrete(k_paths)."""
         agent = self._mk_agent(k_paths=5)

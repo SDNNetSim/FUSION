@@ -2,7 +2,9 @@
 
 import unittest
 from unittest.mock import MagicMock
+
 import numpy as np
+
 from fusion.core.snr_measurements import SnrMeasurements
 
 
@@ -12,55 +14,49 @@ class TestSnrMeasurements(unittest.TestCase):
     def setUp(self):
         """Set up necessary parameters and objects for the tests."""
         self.engine_props = {
-            'bw_per_slot': 12.5,
-            'input_power': 0.001,
-            'topology_info': {
-                'links': {
+            "bw_per_slot": 12.5,
+            "input_power": 0.001,
+            "topology_info": {
+                "links": {
                     0: {
-                        'fiber': {
-                            'attenuation': 0.2,
-                            'dispersion': 16.7,
-                            'non_linearity': 1.3e-3
+                        "fiber": {
+                            "attenuation": 0.2,
+                            "dispersion": 16.7,
+                            "non_linearity": 1.3e-3,
                         },
-                        'length': 100,
-                        'span_length': 80
+                        "length": 100,
+                        "span_length": 80,
                     }
                 }
             },
-            'c_band': 40,
-            'egn_model': False,
-            'xt_noise': False,
-            'phi': {'QPSK': 0.5},
-            'snr_type': 'snr_calc_nli',
-            'requested_xt': {'QPSK': -20}
+            "c_band": 40,
+            "egn_model": False,
+            "xt_noise": False,
+            "phi": {"QPSK": 0.5},
+            "snr_type": "snr_calc_nli",
+            "requested_xt": {"QPSK": -20},
         }
 
         self.sdn_props = MagicMock()
         self.sdn_props.network_spectrum_dict = {
-            ('A', 'B'): {
-                'cores_matrix': {'c': np.zeros((7, 40))},
-                'link_num': 0
-            },
-            ('B', 'C'): {
-                'cores_matrix': {'c': np.zeros((7, 40))},
-                'link_num': 0
-            }
+            ("A", "B"): {"cores_matrix": {"c": np.zeros((7, 40))}, "link_num": 0},
+            ("B", "C"): {"cores_matrix": {"c": np.zeros((7, 40))}, "link_num": 0},
         }
 
-        self.route_props = {'connection_index': 0}
+        self.route_props = {"connection_index": 0}
         self.spectrum_props = MagicMock()
-        self.spectrum_props.path_list = ['A', 'B', 'C']
+        self.spectrum_props.path_list = ["A", "B", "C"]
         self.spectrum_props.start_slot = 10
         self.spectrum_props.end_slot = 15
         self.spectrum_props.core_number = 0
-        self.spectrum_props.current_band = 'c'
-        self.spectrum_props.modulation = 'QPSK'
+        self.spectrum_props.current_band = "c"
+        self.spectrum_props.modulation = "QPSK"
 
         self.snr_measurements = SnrMeasurements(
             engine_props_dict=self.engine_props,
             sdn_props=self.sdn_props,
             spectrum_props=self.spectrum_props,
-            route_props=self.route_props
+            route_props=self.route_props,
         )
 
     def test_calculate_sci_psd(self):
@@ -68,8 +64,8 @@ class TestSnrMeasurements(unittest.TestCase):
         self.snr_measurements.snr_props.center_psd = 1e-3
         self.snr_measurements.snr_props.bandwidth = 1e-9
         self.snr_measurements.snr_props.link_dictionary = {
-            'dispersion': 16.7,
-            'attenuation': 0.2
+            "dispersion": 16.7,
+            "attenuation": 0.2,
         }
 
         sci_psd = self.snr_measurements._calculate_sci_psd()
@@ -87,11 +83,14 @@ class TestSnrMeasurements(unittest.TestCase):
 
         # Initialize center_frequency to avoid NoneType error
         self.snr_measurements.snr_props.center_frequency = (
-                self.spectrum_props.start_slot * self.engine_props['bw_per_slot'] * 10 ** 9
+            self.spectrum_props.start_slot * self.engine_props["bw_per_slot"] * 10**9
         )
 
         new_xci = self.snr_measurements._update_link_xci(
-            request_id=req_id, current_link=current_link, slot_index=slot_index, current_xci=current_xci
+            request_id=req_id,
+            current_link=current_link,
+            slot_index=slot_index,
+            current_xci=current_xci,
         )
         expected_xci = 1.428e-27  # Update with actual expected value
 
@@ -104,7 +103,7 @@ class TestSnrMeasurements(unittest.TestCase):
 
         # Set number_of_slots to the correct value before calling check_xt
         self.snr_measurements.number_of_slots = (
-                self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
+            self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         )
 
         # Call check_xt and test the response
@@ -115,5 +114,5 @@ class TestSnrMeasurements(unittest.TestCase):
         self.assertAlmostEqual(cross_talk, expected_cross_talk, places=10)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

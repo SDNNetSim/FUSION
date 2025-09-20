@@ -1,6 +1,6 @@
 # pylint: disable=c-extension-no-member
 # pylint: disable=duplicate-code
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtCore, QtWidgets
 
 
 class NodeInfoDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-methods
@@ -13,7 +13,9 @@ class NodeInfoDialog(QtWidgets.QDialog):  # pylint: disable=too-few-public-metho
         self.setWindowTitle(f"Node Information - {node}")
         self.setGeometry(100, 100, 300, 200)
         self.setWindowModality(QtCore.Qt.ApplicationModal)  # Make the dialog modal
-        self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)  # Ensure the dialog stays on top
+        self.setWindowFlag(
+            QtCore.Qt.WindowStaysOnTopHint
+        )  # Ensure the dialog stays on top
 
         layout = QtWidgets.QVBoxLayout()
 
