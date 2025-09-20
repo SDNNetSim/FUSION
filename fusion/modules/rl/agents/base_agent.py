@@ -1,7 +1,9 @@
 import os
+from typing import Optional
 import numpy as np
 
 from fusion.modules.rl.utils.hyperparams import HyperparamConfig
+from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 from fusion.modules.rl.algorithms.q_learning import QLearning
 from fusion.modules.rl.algorithms.bandits import EpsilonGreedyBandit, UCBBandit
@@ -16,7 +18,7 @@ class BaseAgent:
     A base agent to be used for path, core, and spectrum agents.
     """
 
-    def __init__(self, algorithm: str, rl_props: object, rl_help_obj: object):
+    def __init__(self, algorithm: str, rl_props: object, rl_help_obj: object) -> None:
         """
         Common initializer for all agents.
         """
@@ -29,7 +31,7 @@ class BaseAgent:
         self.reward_penalty_list = None
         self.hyperparam_obj = None
 
-    def setup_env(self, is_path: bool):
+    def setup_env(self, is_path: bool) -> None:
         """
         Sets up the environment for both core or path agents, depending on the algorithm.
         """
@@ -52,7 +54,10 @@ class BaseAgent:
         elif self.algorithm == 'qr_dqn':
             self.algorithm_obj = QrDQN(rl_props=self.rl_props, engine_obj=self.engine_props)
         else:
-            raise NotImplementedError
+            raise AlgorithmNotFoundError(
+                f"Algorithm '{self.algorithm}' is not supported. "
+                f"Supported algorithms: q_learning, epsilon_greedy_bandit, ucb_bandit, ppo, a2c, dqn, qr_dqn"
+            )
 
     def calculate_dynamic_penalty(self, core_index: float, req_id: float) -> float:
         """
@@ -69,7 +74,7 @@ class BaseAgent:
                           self.engine_props['num_requests']) ** self.engine_props['core_beta']
         return core_decay * request_weight
 
-    def get_reward(self, was_allocated: bool, dynamic: bool, core_index: float, req_id: float):
+    def get_reward(self, was_allocated: bool, dynamic: bool, core_index: Optional[float], req_id: Optional[float]) -> float:
         """
         Generalized reward calculation for both path and core agents.
         """
@@ -84,7 +89,7 @@ class BaseAgent:
 
         return self.engine_props['penalty']
 
-    def load_model(self, model_path: str, file_prefix: str, **kwargs):
+    def load_model(self, model_path: str, file_prefix: str, **kwargs) -> None:
         """
         Loads a previously-trained model for either a core or path agent.
         """

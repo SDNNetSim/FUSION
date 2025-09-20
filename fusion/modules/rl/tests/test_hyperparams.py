@@ -63,8 +63,8 @@ class TestLinearDecay(TestCase):
         cfg._linear_eps()  # pylint: disable=protected-access
         cfg._linear_alpha()  # pylint: disable=protected-access
 
-        self.assertAlmostEqual(cfg.curr_epsilon, 0.5)  # halfway
-        self.assertAlmostEqual(cfg.curr_alpha, 0.25)
+        self.assertAlmostEqual(cfg.current_epsilon, 0.5)  # halfway
+        self.assertAlmostEqual(cfg.current_alpha, 0.25)
 
 
 class TestExponentialDecay(TestCase):
@@ -82,9 +82,9 @@ class TestExponentialDecay(TestCase):
         cfg._exp_alpha()  # pylint: disable=protected-access
 
         rate = props["decay_rate"]
-        self.assertAlmostEqual(cfg.curr_epsilon,
+        self.assertAlmostEqual(cfg.current_epsilon,
                                props["epsilon_start"] * rate ** 3)
-        self.assertAlmostEqual(cfg.curr_alpha,
+        self.assertAlmostEqual(cfg.current_alpha,
                                props["alpha_start"] * rate ** 3)
 
 
@@ -97,12 +97,12 @@ class TestRewardBased(TestCase):
         """Greater diff → smaller epsilon/alpha."""
         cfg = hp.HyperparamConfig(_engine_props(), _rl_props(), True)
         cfg.reward_list = [0.5, 0.1]
-        cfg.curr_reward = 1.0
+        cfg.current_reward = 1.0
         cfg._reward_based_eps()  # pylint: disable=protected-access
         cfg._reward_based_alpha()  # pylint: disable=protected-access
 
-        self.assertLess(cfg.curr_epsilon, cfg.epsilon_start)
-        self.assertLess(cfg.curr_alpha, cfg.alpha_start)
+        self.assertLess(cfg.current_epsilon, cfg.epsilon_start)
+        self.assertLess(cfg.current_alpha, cfg.alpha_start)
 
 
 class TestStateBased(TestCase):
@@ -120,8 +120,8 @@ class TestStateBased(TestCase):
         cfg._state_based_alpha()  # pylint: disable=protected-access
 
         self.assertEqual(counts[(0, 1)][1], 2)  # incremented twice
-        self.assertLess(cfg.curr_epsilon, cfg.epsilon_start)
-        self.assertLess(cfg.curr_alpha, 1)
+        self.assertLess(cfg.current_epsilon, cfg.epsilon_start)
+        self.assertLess(cfg.current_alpha, 1)
 
 
 class TestHyperparamSuggest(TestCase):
@@ -153,5 +153,5 @@ class TestHyperparamSuggest(TestCase):
         trial = _mock_trial()
         sim = {"path_algorithm": "badalgo",
                "num_requests": 2, "max_iters": 1}
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(hp.HyperparameterError):
             hp._drl_hyperparams(sim, trial)  # pylint: disable=protected-access

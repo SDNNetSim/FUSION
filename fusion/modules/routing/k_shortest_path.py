@@ -26,8 +26,8 @@ class KShortestPath(AbstractRoutingAlgorithm):
             sdn_props: Object containing SDN controller properties
         """
         super().__init__(engine_props, sdn_props)
-        self.k = engine_props.get('k_paths', 3)
-        self.weight = engine_props.get('routing_weight', 'length')
+        self.k_paths_count = engine_props.get('k_paths', 3)
+        self.routing_weight = engine_props.get('routing_weight', 'length')
         self._path_count = 0
         self._total_hops = 0
 
@@ -74,7 +74,7 @@ class KShortestPath(AbstractRoutingAlgorithm):
         self.route_props.path_index_list = []
         self.route_props.connection_index = None
 
-        paths = self.get_paths(source, destination, k=self.k)
+        paths = self.get_paths(source, destination, k=self.k_paths_count)
 
         if not paths:
             return None
@@ -84,37 +84,37 @@ class KShortestPath(AbstractRoutingAlgorithm):
 
         for path in paths:
             # Calculate path length
-            path_len = find_path_len(path_list=path, topology=topology)
+            path_length = find_path_len(path_list=path, topology=topology)
 
             # Get modulation formats
-            chosen_bw = getattr(self.sdn_props, 'bandwidth', None)
-            if chosen_bw and not self.engine_props.get('pre_calc_mod_selection', False):
+            chosen_bandwidth = getattr(self.sdn_props, 'bandwidth', None)
+            if chosen_bandwidth and not self.engine_props.get('pre_calc_mod_selection', False):
                 # Use mod_per_bw if available
-                if 'mod_per_bw' in self.engine_props and chosen_bw in self.engine_props['mod_per_bw']:
-                    mod_formats_list = [get_path_mod(
-                        mods_dict=self.engine_props['mod_per_bw'][chosen_bw],
-                        path_len=path_len
+                if 'mod_per_bw' in self.engine_props and chosen_bandwidth in self.engine_props['mod_per_bw']:
+                    modulation_formats_list = [get_path_mod(
+                        mods_dict=self.engine_props['mod_per_bw'][chosen_bandwidth],
+                        path_len=path_length
                     )]
                 else:
                     # Fallback to mod_formats
-                    mod_formats = getattr(self.sdn_props, 'mod_formats', {})
-                    mod_format = get_path_mod(mod_formats, path_len)
-                    mod_formats_list = [mod_format]
+                    modulation_formats = getattr(self.sdn_props, 'mod_formats', {})
+                    modulation_format = get_path_mod(modulation_formats, path_length)
+                    modulation_formats_list = [modulation_format]
             else:
                 # Use all modulation formats sorted by max_length
                 if hasattr(self.sdn_props, 'modulation_formats_dict'):
-                    mod_formats_dict = sort_nested_dict_vals(
+                    modulation_formats_dict = sort_nested_dict_vals(
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key='max_length'
                     )
-                    mod_formats_list = list(mod_formats_dict.keys())[::-1]
+                    modulation_formats_list = list(modulation_formats_dict.keys())[::-1]
                 else:
                     # Fallback to simple list
-                    mod_formats_list = ['QPSK']
+                    modulation_formats_list = ['QPSK']
 
             self.route_props.paths_matrix.append(path)
-            self.route_props.modulation_formats_matrix.append(mod_formats_list)
-            self.route_props.weights_list.append(path_len)
+            self.route_props.modulation_formats_matrix.append(modulation_formats_list)
+            self.route_props.weights_list.append(path_length)
 
         # Return the first (shortest) path
         selected_path = paths[0] if paths else None
@@ -140,10 +140,10 @@ class KShortestPath(AbstractRoutingAlgorithm):
         topology = self.engine_props.get('topology', self.sdn_props.topology)
 
         try:
-            if self.weight:
+            if self.routing_weight:
                 # Use specified weight for path calculation
                 paths_generator = nx.shortest_simple_paths(
-                    topology, source, destination, weight=self.weight
+                    topology, source, destination, weight=self.routing_weight
                 )
             else:
                 # Use hop count (unweighted)
@@ -151,13 +151,13 @@ class KShortestPath(AbstractRoutingAlgorithm):
                     topology, source, destination
                 )
 
-            paths = []
-            for i, path in enumerate(paths_generator):
-                if i >= k:
+            paths_list = []
+            for path_index, path in enumerate(paths_generator):
+                if path_index >= k:
                     break
-                paths.append(list(path))
+                paths_list.append(list(path))
 
-            return paths
+            return paths_list
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
@@ -183,8 +183,8 @@ class KShortestPath(AbstractRoutingAlgorithm):
             'algorithm': self.algorithm_name,
             'paths_computed': self._path_count,
             'average_hop_count': avg_hops,
-            'k_value': self.k,
-            'weight_metric': self.weight or 'hop_count'
+            'k_value': self.k_paths_count,
+            'weight_metric': self.routing_weight or 'hop_count'
         }
 
     def reset(self) -> None:

@@ -1,8 +1,10 @@
-# TODO: (version 5.5-6) Decide what to do with 'device' argument in every function
+# NOTE: The 'device' parameter is maintained for API compatibility but may be deprecated
+# in future versions as device selection is handled through YAML configuration
 # pylint: disable=unused-argument
 
 import os
 import copy
+import ast
 
 from stable_baselines3 import PPO, A2C, DQN
 from sb3_contrib import QRDQN
@@ -24,6 +26,7 @@ from fusion.modules.rl.feat_extrs.path_gnn_cached import (
 )
 
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
+from fusion.modules.rl.utils.errors import ModelSetupError, FeatureExtractorError, ConfigurationError
 
 
 def setup_feature_extractor(env: object):
@@ -72,7 +75,11 @@ def setup_feature_extractor(env: object):
         extr_class = GraphTransformerExtractor
         feat_kwargs['heads'] = engine_props['heads']
     else:
-        raise NotImplementedError
+        raise FeatureExtractorError(
+            f"Unsupported feature extractor type: '{feat_extr}'. "
+            f"Supported types are: 'path_gnn', 'graphormer'. "
+            f"Please check your configuration and ensure a valid feature extractor is specified."
+        )
 
     return extr_class, feat_kwargs
 
@@ -83,7 +90,17 @@ def get_drl_dicts(env, yaml_path):
     """
     yaml_dict = parse_yaml_file(yaml_path)
     env_name = list(yaml_dict.keys())[0]
-    kwargs_dict = eval(yaml_dict[env_name]['policy_kwargs'])  # pylint: disable=eval-used
+
+    # Safely parse policy_kwargs using ast.literal_eval instead of eval()
+    policy_kwargs_str = yaml_dict[env_name]['policy_kwargs']
+    try:
+        kwargs_dict = ast.literal_eval(policy_kwargs_str)
+    except (ValueError, SyntaxError) as e:
+        raise ConfigurationError(
+            f"Failed to parse policy_kwargs from YAML file '{yaml_path}'. "
+            f"Expected a valid Python literal expression, got: {policy_kwargs_str}. "
+            f"Error: {e}"
+        ) from e
 
     if 'graph' in env.engine_obj.engine_props['obs_space']:
         kwargs_dict['features_extractor_class'], kwargs_dict['features_extractor_kwargs'] = setup_feature_extractor(
@@ -103,6 +120,29 @@ def setup_rl_sim(config_path: str = None):
     return config.get()  # returns sim_dict['s1']
 
 
+def _get_common_model_parameters(yaml_dict: dict, env_name: str, kwargs_dict: dict, env: object):
+    """
+    Extract common parameters used across different model types.
+    
+    :param yaml_dict: Configuration dictionary from YAML file
+    :param env_name: Environment name key
+    :param kwargs_dict: Policy kwargs dictionary
+    :param env: Custom environment
+    :return: Dictionary of common parameters
+    :rtype: dict
+    """
+    return {
+        'policy': yaml_dict[env_name]['policy'],
+        'env': env,
+        'learning_rate': yaml_dict[env_name]['learning_rate'],
+        'gamma': yaml_dict[env_name]['gamma'],
+        'policy_kwargs': kwargs_dict,
+        'verbose': yaml_dict[env_name].get('verbose'),
+        'device': yaml_dict[env_name].get('device', 'cpu'),
+        '_init_setup_model': yaml_dict[env_name].get('_init_setup_model')
+    }
+
+
 def setup_ppo(env: object, device: str):
     """
     Setups up the StableBaselines3 PPO model.
@@ -116,35 +156,33 @@ def setup_ppo(env: object, device: str):
     yaml_path = os.path.join('sb3_scripts', 'yml', f'ppo_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
-    model = PPO(
-        policy=yaml_dict[env_name]['policy'],
-        env=env,
-        learning_rate=yaml_dict[env_name]['learning_rate'],
-        n_steps=yaml_dict[env_name]['n_steps'],
-        batch_size=yaml_dict[env_name]['batch_size'],
-        n_epochs=yaml_dict[env_name]['n_epochs'],
-        gamma=yaml_dict[env_name]['gamma'],
-        gae_lambda=yaml_dict[env_name]['gae_lambda'],
-        clip_range=yaml_dict[env_name]['clip_range'],
-        clip_range_vf=yaml_dict[env_name].get('clip_range_vf'),
-        normalize_advantage=yaml_dict[env_name].get('normalize_advantage'),
-        ent_coef=yaml_dict[env_name]['ent_coef'],
-        vf_coef=yaml_dict[env_name]['vf_coef'],
-        max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
-        use_sde=yaml_dict[env_name].get('use_sde', False),
-        sde_sample_freq=yaml_dict[env_name].get('sde_sample_freq'),
-        rollout_buffer_class=yaml_dict[env_name].get('rollout_buffer_class'),
-        rollout_buffer_kwargs=yaml_dict[env_name].get('rollout_buffer_kwargs'),
-        target_kl=yaml_dict[env_name].get('target_kl'),
-        stats_window_size=yaml_dict[env_name].get('stats_window_size'),
-        tensorboard_log=yaml_dict[env_name].get('tensorboard_log'),
-        policy_kwargs=kwargs_dict,
-        verbose=yaml_dict[env_name].get('verbose'),
-        device=yaml_dict[env_name].get('device', 'cpu'),
-        _init_setup_model=yaml_dict[env_name].get('_init_setup_model')
-    )
+    # Get common parameters
+    common_params = _get_common_model_parameters(yaml_dict, env_name, kwargs_dict, env)
 
-    return model
+    # Add PPO-specific parameters
+    ppo_params = {
+        'n_steps': yaml_dict[env_name]['n_steps'],
+        'batch_size': yaml_dict[env_name]['batch_size'],
+        'n_epochs': yaml_dict[env_name]['n_epochs'],
+        'gae_lambda': yaml_dict[env_name]['gae_lambda'],
+        'clip_range': yaml_dict[env_name]['clip_range'],
+        'clip_range_vf': yaml_dict[env_name].get('clip_range_vf'),
+        'normalize_advantage': yaml_dict[env_name].get('normalize_advantage'),
+        'ent_coef': yaml_dict[env_name]['ent_coef'],
+        'vf_coef': yaml_dict[env_name]['vf_coef'],
+        'max_grad_norm': yaml_dict[env_name]['max_grad_norm'],
+        'use_sde': yaml_dict[env_name].get('use_sde', False),
+        'sde_sample_freq': yaml_dict[env_name].get('sde_sample_freq'),
+        'rollout_buffer_class': yaml_dict[env_name].get('rollout_buffer_class'),
+        'rollout_buffer_kwargs': yaml_dict[env_name].get('rollout_buffer_kwargs'),
+        'target_kl': yaml_dict[env_name].get('target_kl'),
+        'stats_window_size': yaml_dict[env_name].get('stats_window_size'),
+        'tensorboard_log': yaml_dict[env_name].get('tensorboard_log')
+    }
+
+    # Combine parameters and create model
+    all_params = {**common_params, **ppo_params}
+    return PPO(**all_params)
 
 
 def setup_a2c(env: object, device: str):
@@ -160,31 +198,32 @@ def setup_a2c(env: object, device: str):
     yaml_path = os.path.join('sb3_scripts', 'yml', f'a2c_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
-    model = A2C(
-        policy=yaml_dict[env_name]['policy'],
-        env=env,
-        learning_rate=yaml_dict[env_name]['learning_rate'],
-        n_steps=yaml_dict[env_name]['n_steps'],
-        gamma=yaml_dict[env_name]['gamma'],
-        gae_lambda=yaml_dict[env_name]['gae_lambda'],
-        ent_coef=yaml_dict[env_name]['ent_coef'],
-        vf_coef=yaml_dict[env_name]['vf_coef'],
-        max_grad_norm=yaml_dict[env_name]['max_grad_norm'],
-        rms_prop_eps=yaml_dict[env_name].get('rms_prop_eps'),
-        use_rms_prop=yaml_dict[env_name].get('use_rms_prop'),
-        use_sde=yaml_dict[env_name]['use_sde'],
-        sde_sample_freq=yaml_dict[env_name]['sde_sample_freq'],
-        rollout_buffer_class=yaml_dict[env_name].get('rollout_buffer_class'),
-        rollout_buffer_kwargs=yaml_dict[env_name].get('rollout_buffer_kwargs'),
-        stats_window_size=yaml_dict[env_name]['stats_window_size'],
-        tensorboard_log=yaml_dict[env_name]['tensorboard_log'],
-        verbose=yaml_dict[env_name]['verbose'],
-        policy_kwargs=kwargs_dict,
-        device=yaml_dict[env_name].get('device', 'cpu'),
-        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True)
-    )
+    # Get common parameters
+    common_params = _get_common_model_parameters(yaml_dict, env_name, kwargs_dict, env)
 
-    return model
+    # Add A2C-specific parameters
+    a2c_params = {
+        'n_steps': yaml_dict[env_name]['n_steps'],
+        'gae_lambda': yaml_dict[env_name]['gae_lambda'],
+        'ent_coef': yaml_dict[env_name]['ent_coef'],
+        'vf_coef': yaml_dict[env_name]['vf_coef'],
+        'max_grad_norm': yaml_dict[env_name]['max_grad_norm'],
+        'rms_prop_eps': yaml_dict[env_name].get('rms_prop_eps'),
+        'use_rms_prop': yaml_dict[env_name].get('use_rms_prop'),
+        'use_sde': yaml_dict[env_name]['use_sde'],
+        'sde_sample_freq': yaml_dict[env_name]['sde_sample_freq'],
+        'rollout_buffer_class': yaml_dict[env_name].get('rollout_buffer_class'),
+        'rollout_buffer_kwargs': yaml_dict[env_name].get('rollout_buffer_kwargs'),
+        'stats_window_size': yaml_dict[env_name]['stats_window_size'],
+        'tensorboard_log': yaml_dict[env_name]['tensorboard_log']
+    }
+
+    # Override default _init_setup_model for A2C
+    common_params['_init_setup_model'] = yaml_dict[env_name].get('_init_setup_model', True)
+
+    # Combine parameters and create model
+    all_params = {**common_params, **a2c_params}
+    return A2C(**all_params)
 
 
 def setup_dqn(env: object, device: str):
@@ -197,36 +236,39 @@ def setup_dqn(env: object, device: str):
     :rtype: object
     """
     network = env.engine_obj.engine_props['network']
-    # TODO: This is connected to the TODO in model manager regarding the "consistency" of passing yaml file
+    # NOTE: YAML path handling should be standardized across all DRL algorithms
+    # Currently different algorithms use different path structures for configuration files
     yaml_path = os.path.join('fusion', 'configs', 'hyperparams', f'dqn_{network}.yml')
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
-    model = DQN(
-        env=env,
-        policy=yaml_dict[env_name]['policy'],
-        learning_rate=yaml_dict[env_name]['learning_rate'],
-        buffer_size=yaml_dict[env_name]['buffer_size'],
-        learning_starts=yaml_dict[env_name]['learning_starts'],
-        batch_size=yaml_dict[env_name]['batch_size'],
-        tau=yaml_dict[env_name].get('tau'),
-        gamma=yaml_dict[env_name]['gamma'],
-        train_freq=yaml_dict[env_name]['train_freq'],
-        gradient_steps=yaml_dict[env_name]['gradient_steps'],
-        target_update_interval=yaml_dict[env_name]['target_update_interval'],
-        exploration_initial_eps=yaml_dict[env_name].get('exploration_initial_eps', 1.0),
-        exploration_fraction=yaml_dict[env_name]['exploration_fraction'],
-        exploration_final_eps=yaml_dict[env_name]['exploration_final_eps'],
-        max_grad_norm=yaml_dict[env_name].get('max_grad_norm'),
-        replay_buffer_class=yaml_dict[env_name].get('replay_buffer_class', None),
-        replay_buffer_kwargs=yaml_dict[env_name].get('replay_buffer_kwargs', None),
-        optimize_memory_usage=yaml_dict[env_name].get('optimize_memory_usage', False),
-        policy_kwargs=kwargs_dict,
-        verbose=yaml_dict[env_name].get('verbose', 1),
-        device=yaml_dict[env_name].get('device', 'cpu'),
-        _init_setup_model=yaml_dict[env_name].get('_init_setup_model', True),
-    )
+    # Get common parameters (but reorder env parameter for DQN)
+    common_params = _get_common_model_parameters(yaml_dict, env_name, kwargs_dict, env)
 
-    return model
+    # Add DQN-specific parameters
+    dqn_params = {
+        'buffer_size': yaml_dict[env_name]['buffer_size'],
+        'learning_starts': yaml_dict[env_name]['learning_starts'],
+        'batch_size': yaml_dict[env_name]['batch_size'],
+        'tau': yaml_dict[env_name].get('tau'),
+        'train_freq': yaml_dict[env_name]['train_freq'],
+        'gradient_steps': yaml_dict[env_name]['gradient_steps'],
+        'target_update_interval': yaml_dict[env_name]['target_update_interval'],
+        'exploration_initial_eps': yaml_dict[env_name].get('exploration_initial_eps', 1.0),
+        'exploration_fraction': yaml_dict[env_name]['exploration_fraction'],
+        'exploration_final_eps': yaml_dict[env_name]['exploration_final_eps'],
+        'max_grad_norm': yaml_dict[env_name].get('max_grad_norm'),
+        'replay_buffer_class': yaml_dict[env_name].get('replay_buffer_class', None),
+        'replay_buffer_kwargs': yaml_dict[env_name].get('replay_buffer_kwargs', None),
+        'optimize_memory_usage': yaml_dict[env_name].get('optimize_memory_usage', False)
+    }
+
+    # Override defaults for DQN
+    common_params['verbose'] = yaml_dict[env_name].get('verbose', 1)
+    common_params['_init_setup_model'] = yaml_dict[env_name].get('_init_setup_model', True)
+
+    # Combine parameters and create model
+    all_params = {**common_params, **dqn_params}
+    return DQN(**all_params)
 
 
 def setup_qr_dqn(env: object, device: str):
@@ -283,11 +325,19 @@ def print_info(sim_dict: dict):
         print(f'Beginning training process for the CORE AGENT using the '
               f'{sim_dict["core_algorithm"].title()} algorithm.')
     elif sim_dict['spectrum_algorithm']:
-        raise NotImplementedError
+        raise ModelSetupError(
+            "Spectrum algorithm setup is not yet implemented. "
+            "This feature requires additional development for spectrum-based RL agents."
+        )
     else:
-        raise ValueError(f'Invalid algorithm received or all algorithms are not reinforcement learning. '
-                         f'Expected: q_learning, dqn, ppo, a2c, Got: {sim_dict["path_algorithm"]}, '
-                         f'{sim_dict["core_algorithm"]}, {sim_dict["spectrum_algorithm"]}')
+        raise ModelSetupError(
+            f"Invalid algorithm configuration or non-RL algorithms detected. "
+            f"Expected RL algorithms (q_learning, dqn, ppo, a2c), but got: "
+            f"path_algorithm={sim_dict.get('path_algorithm')}, "
+            f"core_algorithm={sim_dict.get('core_algorithm')}, "
+            f"spectrum_algorithm={sim_dict.get('spectrum_algorithm')}. "
+            f"Please verify your configuration contains valid RL algorithm settings."
+        )
 
 
 class SetupHelper:
@@ -335,9 +385,16 @@ class SetupHelper:
             self.sim_env.core_agent.engine_props = self.sim_env.engine_obj.engine_props
             self.sim_env.core_agent.setup_env(is_path=False)
 
-    # TODO: Options to have select AI agents (drl_path_agents)
+    # NOTE: Future enhancement should support selective loading of specific AI agents
+    # based on configuration to optimize memory usage and initialization time
     def load_models(self):
         """
         Loads pretrained models for RL agents and configures agent properties.
+        
+        :raises ModelSetupError: This functionality is not yet implemented
         """
-        raise NotImplementedError
+        raise ModelSetupError(
+            "Model loading functionality is not yet implemented. "
+            "This feature requires additional development to support "
+            "loading and configuring pretrained RL models."
+        )

@@ -6,19 +6,24 @@ from fusion.modules.rl.args.observation_args import OBS_DICT
 from fusion.modules.rl.utils.topology import convert_networkx_topo
 
 
-def get_observation_space(rl_props: object, engine_obj: object):
+def get_observation_space(rl_props: object, engine_props: object):
     """
     Gets any given observation space for DRL algorithms.
+    
+    :param rl_props: RL properties object containing configuration
+    :param engine_props: Engine properties object containing simulation settings
+    :return: Dictionary defining the observation space for the environment
+    :rtype: dict
     """
     include_graph = False
     bw_set = {d["bandwidth"] for d in rl_props.arrival_list}
     num_set = {int(s) for s in bw_set}
     max_bw = str(max(num_set))
-    mod_per_bw_dict = engine_obj.engine_props['mod_per_bw']
+    mod_per_bw_dict = engine_props.engine_props['mod_per_bw']
     max_slots = mod_per_bw_dict[max_bw]['QPSK']['slots_needed']
     max_paths = rl_props.k_paths
 
-    obs_key = engine_obj.engine_props.get('obs_space', 'obs_1')
+    obs_key = engine_props.engine_props.get('obs_space', 'obs_1')
     if 'graph' in obs_key:
         include_graph = True
         obs_key = obs_key.replace('_graph', '')
@@ -44,7 +49,7 @@ def get_observation_space(rl_props: object, engine_obj: object):
         if feature in obs_features
     }
 
-    ei, ea, xf, _ = convert_networkx_topo(engine_obj.engine_props['topology'], as_directed=True)
+    ei, ea, xf, _ = convert_networkx_topo(engine_props.engine_props['topology'], as_directed=True)
     num_nodes, num_edges = xf.shape[0], ei.shape[1]
     if include_graph:
         obs_space_dict.update({

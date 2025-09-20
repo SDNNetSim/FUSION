@@ -3,6 +3,7 @@ import numpy as np
 from fusion.modules.rl.args.general_args import VALID_DRL_ALGORITHMS
 from fusion.modules.rl.args.general_args import EPISODIC_STRATEGIES
 from fusion.modules.rl.agents.base_agent import BaseAgent
+from fusion.modules.rl.errors import AgentError, InvalidActionError, RouteSelectionError
 
 
 class PathAgent(BaseAgent):
@@ -10,19 +11,19 @@ class PathAgent(BaseAgent):
     A class that handles everything related to path assignment in reinforcement learning simulations.
     """
 
-    def __init__(self, path_algorithm: str, rl_props: object, rl_help_obj: object):
+    def __init__(self, path_algorithm: str, rl_props: object, rl_help_obj: object) -> None:
         super().__init__(path_algorithm, rl_props, rl_help_obj)
 
         self.iteration = None
         self.hyperparam_obj = None
         self.reward_penalty_list = None
         self.level_index = None
-        self.cong_list = None
+        self.congestion_list = None
 
         self.state_action_pair = None
         self.action_index = None
 
-    def end_iter(self):
+    def end_iter(self) -> None:
         """
         Ends an iteration for the path agent.
         """
@@ -34,7 +35,7 @@ class PathAgent(BaseAgent):
             if 'ucb' not in self.engine_props['path_algorithm']:
                 self.hyperparam_obj.update_eps()
 
-    def _handle_hyperparams(self):
+    def _handle_hyperparams(self) -> None:
         if not self.hyperparam_obj.fully_episodic:
             self.state_action_pair = (self.rl_props.source, self.rl_props.destination)
             self.action_index = self.rl_props.chosen_path_index
@@ -62,20 +63,23 @@ class PathAgent(BaseAgent):
             return
 
         if self.hyperparam_obj.iteration >= self.engine_props['max_iters']:
-            raise ValueError
+            raise AgentError(
+                f"Iteration {self.hyperparam_obj.iteration} exceeds maximum allowed iterations "
+                f"{self.engine_props['max_iters']}. Check iteration management logic."
+            )
 
         reward = self.get_reward(was_allocated=was_allocated, dynamic=self.engine_props['dynamic_reward'],
                                  core_index=None, req_id=None)
         self.reward_penalty_list[self.hyperparam_obj.iteration] += reward
-        self.hyperparam_obj.curr_reward = reward
+        self.hyperparam_obj.current_reward = reward
         self.iteration = iteration
-        self.algorithm_obj.learn_rate = self.hyperparam_obj.curr_alpha
+        self.algorithm_obj.learn_rate = self.hyperparam_obj.current_alpha
 
         self._handle_hyperparams()
 
         self.algorithm_obj.iteration = iteration
         if self.algorithm == 'q_learning':
-            self.algorithm_obj.learn_rate = self.hyperparam_obj.curr_alpha
+            self.algorithm_obj.learn_rate = self.hyperparam_obj.current_alpha
             self.algorithm_obj.update_q_matrix(reward=reward, level_index=self.level_index, network_spectrum_dict=network_spectrum_dict,
                                                flag='path', trial=trial, iteration=iteration)
         elif self.algorithm == 'epsilon_greedy_bandit':
@@ -85,53 +89,62 @@ class PathAgent(BaseAgent):
             self.algorithm_obj.update(reward=reward, arm=self.rl_props.chosen_path_index, iteration=iteration,
                                       trial=trial)
         else:
-            raise NotImplementedError
+            raise InvalidActionError(
+                f"Algorithm '{self.algorithm}' is not supported for agent updates. "
+                f"Supported algorithms: q_learning, epsilon_greedy_bandit, ucb_bandit, or DRL algorithms."
+            )
 
-    def __ql_route(self, random_float: float):
-        if random_float < self.hyperparam_obj.curr_epsilon:
+    def __ql_route(self, random_float: float) -> None:
+        if random_float < self.hyperparam_obj.current_epsilon:
             self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)
             # The level will always be the last index
-            self.level_index = self.cong_list[self.rl_props.chosen_path_index][-1]
+            self.level_index = self.congestion_list[self.rl_props.chosen_path_index][-1]
 
             if self.rl_props.chosen_path_index == 1 and self.rl_props.k_paths == 1:
                 self.rl_props.chosen_path_index = 0
             self.rl_props.chosen_path_list = self.rl_props.paths_list[self.rl_props.chosen_path_index]
         else:
             self.rl_props.chosen_path_index, self.rl_props.chosen_path_list = self.algorithm_obj.get_max_curr_q(
-                cong_list=self.cong_list, matrix_flag="routes_matrix")
-            self.level_index = self.cong_list[self.rl_props.chosen_path_index][-1]
+                cong_list=self.congestion_list, matrix_flag="routes_matrix")
+            self.level_index = self.congestion_list[self.rl_props.chosen_path_index][-1]
 
-    def _ql_route(self):
+    def _ql_route(self) -> None:
         random_float = float(np.round(np.random.uniform(0, 1), decimals=1))
         routes_matrix = self.algorithm_obj.props.routes_matrix[self.rl_props.source, self.rl_props.destination]['path']
         self.rl_props.paths_list = routes_matrix
 
-        self.cong_list = self.rl_help_obj.classify_paths(paths_list=self.rl_props.paths_list)
+        self.congestion_list = self.rl_help_obj.classify_paths(paths_list=self.rl_props.paths_list)
         if self.rl_props.paths_list.ndim != 1:
             self.rl_props.paths_list = self.rl_props.paths_list[:, 0]
 
         self.__ql_route(random_float=random_float)
 
         if len(self.rl_props.chosen_path_list) == 0:
-            raise ValueError('The chosen path can not be None')
+            raise RouteSelectionError(
+                f"Failed to select a valid path for source {self.rl_props.source} to destination {self.rl_props.destination}. "
+                f"Available paths: {len(self.rl_props.paths_list)}. Check path availability and routing logic."
+            )
 
-    def _bandit_route(self, route_obj: object):
+    def _bandit_route(self, route_obj: object) -> None:
         paths_list = route_obj.route_props.paths_matrix
         source = paths_list[0][0]
         dest = paths_list[0][-1]
 
-        self.algorithm_obj.epsilon = self.hyperparam_obj.curr_epsilon
+        self.algorithm_obj.epsilon = self.hyperparam_obj.current_epsilon
         self.rl_props.chosen_path_index = self.algorithm_obj.select_path_arm(source=int(source), dest=int(dest))
         self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[self.rl_props.chosen_path_index]
 
-    def _drl_route(self, route_obj: object, action: int):
+    def _drl_route(self, route_obj: object, action: int) -> None:
         if self.algorithm in ('ppo', 'a2c', 'dqn', 'qr_dqn'):
             self.rl_props.chosen_path_index = action
             self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[action]
         else:
-            raise NotImplementedError
+            raise InvalidActionError(
+                f"Algorithm '{self.algorithm}' is not supported for DRL routing. "
+                f"Supported DRL algorithms: ppo, a2c, dqn, qr_dqn"
+            )
 
-    def get_route(self, **kwargs):
+    def get_route(self, **kwargs) -> None:
         """
         Assign a route for the current request.
         """
@@ -142,4 +155,7 @@ class PathAgent(BaseAgent):
         elif self.algorithm in ('ppo', 'a2c', 'dqn', 'qr_dqn'):
             self._drl_route(route_obj=kwargs['route_obj'], action=kwargs['action'])
         else:
-            raise NotImplementedError
+            raise InvalidActionError(
+                f"Algorithm '{self.algorithm}' is not supported for routing. "
+                f"Supported algorithms: q_learning, epsilon_greedy_bandit, thompson_sampling_bandit, ucb_bandit, ppo, a2c, dqn, qr_dqn"
+            )

@@ -4,6 +4,7 @@
 from unittest import TestCase, mock
 
 from fusion.modules.rl.agents import base_agent
+from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 
 class TestBaseAgent(TestCase):
@@ -98,9 +99,9 @@ class TestBaseAgent(TestCase):
         self.assertIs(agent.algorithm_obj, mock_qlearn.return_value)
 
     def test_setup_env_bad_algorithm_raises(self):
-        """Unknown algorithm raises NotImplementedError."""
+        """Unknown algorithm raises AlgorithmNotFoundError."""
         agent = self._new_agent("unknown_algo")
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AlgorithmNotFoundError):
             agent.setup_env(is_path=False)
 
     # ------- load_model -----------------------------------------------

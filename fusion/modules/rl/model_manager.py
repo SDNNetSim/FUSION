@@ -5,10 +5,13 @@ import torch.nn as nn  # pylint: disable=consider-using-from-import
 
 from fusion.modules.rl.utils.general_utils import determine_model_type
 from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
-
+from fusion.modules.rl.errors import ModelLoadError, RLConfigurationError, AlgorithmNotFoundError
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN
 from fusion.sim.utils import parse_yaml_file
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def _parse_policy_kwargs(string: str) -> dict:
@@ -20,8 +23,11 @@ def _parse_policy_kwargs(string: str) -> dict:
     safe_globals = {"__builtins__": None, "dict": dict, "nn": nn}
     try:
         return eval(string, safe_globals, {})  # pylint: disable=eval-used
-    except Exception as exc:  # noqa: BLE001
-        raise ValueError(f"Bad policy_kwargs string: {string!r}") from exc
+    except (SyntaxError, NameError, TypeError) as exc:
+        raise RLConfigurationError(
+            f"Failed to parse policy_kwargs string: {string!r}. "
+            f"Ensure it contains valid Python syntax with only 'dict' and 'nn' references."
+        ) from exc
 
 
 def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
@@ -35,33 +41,33 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
     # TODO: Ensure this is consistent acoss the board (other cli, files, etc.)
     #   We might want to find a better way to do this
     if yaml_dict is None:
-        print('\n\n', os.getcwd(), '\n\n')
+        logger.debug("Current working directory: %s", os.getcwd())
 
         yml = os.path.join("fusion", "configs", "hyperparams",
                            f"{algorithm}_{sim_dict['network']}.yml")
         yaml_dict = parse_yaml_file(yml)
         env_name = next(iter(yaml_dict))
-        param = yaml_dict[env_name]
+        parameters = yaml_dict[env_name]
     else:
-        param = yaml_dict
-    cache_fp = CACHE_DIR / f"{sim_dict['network']}.pt"
-    if os.path.exists(cache_fp):
-        cached = torch.load(cache_fp)
-        pk_raw = param.get("policy_kwargs", {})
-        if isinstance(pk_raw, str):
-            pk = _parse_policy_kwargs(pk_raw)
+        parameters = yaml_dict
+    cache_file_path = CACHE_DIR / f"{sim_dict['network']}.pt"
+    if os.path.exists(cache_file_path):
+        cached = torch.load(cache_file_path)
+        policy_kwargs_raw = parameters.get("policy_kwargs", {})
+        if isinstance(policy_kwargs_raw, str):
+            policy_kwargs = _parse_policy_kwargs(policy_kwargs_raw)
         else:
-            pk = pk_raw
-        param["policy_kwargs"] = pk
-        pk.update(
+            policy_kwargs = policy_kwargs_raw
+        parameters["policy_kwargs"] = policy_kwargs
+        policy_kwargs.update(
             features_extractor_class=CachedPathGNN,
             features_extractor_kwargs=dict(cached_embedding=cached)
         )
-        param["policy_kwargs"] = pk
-        print("✅ Using CachedPathGNN from", cache_fp)
+        parameters["policy_kwargs"] = policy_kwargs
+        logger.info("Using CachedPathGNN from %s", cache_file_path)
 
     model = ALGORITHM_REGISTRY[algorithm]["setup"](env=env, device=device)
-    return model, param
+    return model, parameters
 
 
 def get_trained_model(env: object, sim_dict: dict):
@@ -76,16 +82,31 @@ def get_trained_model(env: object, sim_dict: dict):
     algorithm_info = sim_dict.get(model_type)
 
     if '_' not in algorithm_info:
-        raise ValueError(
+        raise RLConfigurationError(
             f"Algorithm info '{algorithm_info}' must include both algorithm and agent type (e.g., 'ppo_path').")
     algorithm, agent_type = algorithm_info.split('_', 1)
 
     if algorithm not in ALGORITHM_REGISTRY:
-        raise NotImplementedError(f"Algorithm '{algorithm}' is not supported for loading.")
+        raise AlgorithmNotFoundError(
+            f"Algorithm '{algorithm}' is not registered. "
+            f"Available algorithms: {list(ALGORITHM_REGISTRY.keys())}"
+        )
 
     model_key = f"{agent_type}_model"
     model_path = os.path.join('logs', sim_dict[model_key], f"{algorithm_info}_model.zip")
-    model = ALGORITHM_REGISTRY[algorithm]['load'](model_path, env=env)
+
+    if not os.path.exists(model_path):
+        raise ModelLoadError(
+            f"Model file not found at '{model_path}'. "
+            f"Please ensure the model has been trained and saved."
+        )
+
+    try:
+        model = ALGORITHM_REGISTRY[algorithm]['load'](model_path, env=env)
+    except Exception as exc:
+        raise ModelLoadError(
+            f"Failed to load model from '{model_path}': {exc}"
+        ) from exc
 
     return model
 
@@ -100,7 +121,7 @@ def save_model(sim_dict: dict, env: object, model):
     """
     model_type = determine_model_type(sim_dict=sim_dict)
     if '_' not in model_type:
-        raise ValueError(
+        raise RLConfigurationError(
             f"Algorithm info '{model_type}' must include both algorithm and agent type (e.g., 'ppo_path').")
 
     algorithm = sim_dict.get(model_type)
