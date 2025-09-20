@@ -552,6 +552,162 @@ logger.info("Error occurred")  # Too vague, wrong level
 - [ ] Variable names are descriptive and complete
 - [ ] All name changes verified across codebase
 
+## Bash Script Coding Standards
+
+### File Organization
+- Store bash scripts in dedicated directories (`bash_scripts/`, `scripts/`)
+- Use descriptive filenames that indicate the script's purpose
+- Include `.sh` extension for all bash scripts
+- Group related scripts together (e.g., cluster management, environment setup)
+
+### Script Structure
+```bash
+#!/bin/bash
+
+# Script description: What this script does and when to use it
+# Usage: ./script_name.sh <param1> <param2>
+# Example: ./script_name.sh /path/to/file "argument"
+
+# Exit on any error
+set -e
+
+# Function definitions
+function_name() {
+    local param1="$1"
+    local param2="$2"
+    # Function body
+}
+
+# Main script logic
+main() {
+    # Script implementation
+}
+
+# Call main function if script is executed directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
+```
+
+### Header Requirements
+Every bash script MUST include:
+- Shebang line: `#!/bin/bash`
+- Purpose description comment
+- Usage instructions with examples
+- Parameter descriptions for complex scripts
+
+### Variable Naming
+- Use `UPPER_CASE` for environment variables and constants
+- Use `snake_case` for local variables
+- Use `readonly` for constants when appropriate
+- Quote all variable references: `"$variable"`
+
+```bash
+# Good
+readonly SCRIPT_DIR="$(dirname "$0")"
+user_name="$1"
+target_directory="$2"
+
+# Avoid
+SCRIPTDIR=$(dirname $0)  # No quotes, inconsistent case
+userName=$1              # camelCase not preferred
+```
+
+### Error Handling
+- Use `set -e` to exit on errors
+- Check for required parameters
+- Validate file/directory existence before operations
+- Provide helpful error messages
+
+```bash
+# Good error handling
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 <username> <partition>" >&2
+    exit 1
+fi
+
+if [[ ! -f "$config_file" ]]; then
+    echo "Error: Configuration file not found: $config_file" >&2
+    exit 1
+fi
+```
+
+### Function Guidelines
+- Use functions for reusable code blocks
+- Use `local` for function variables
+- Return meaningful exit codes
+- Document complex functions
+
+```bash
+# Good function structure
+validate_input() {
+    local input="$1"
+    local context="$2"
+    
+    if [[ -z "$input" ]]; then
+        echo "Error: Empty $context provided" >&2
+        return 1
+    fi
+    
+    return 0
+}
+```
+
+### Command Execution
+- Use full paths for commands when possible
+- Check command availability with `command -v`
+- Handle command failures gracefully
+- Quote arguments that may contain spaces
+
+```bash
+# Good
+if ! command -v python3 &>/dev/null; then
+    echo "Error: python3 not found" >&2
+    exit 1
+fi
+
+python3 -m venv "$target_directory/venv"
+```
+
+### Output and Logging
+- Use `echo` for informational messages
+- Use `echo ... >&2` for error messages
+- Include timestamps for long-running operations
+- Use consistent formatting for status messages
+
+```bash
+# Good output formatting
+echo "🔧 Creating virtual environment..."
+echo "✅ Virtual environment created successfully"
+echo "❌ Error: Operation failed" >&2
+```
+
+### Security Best Practices
+- Validate all input parameters
+- Use `readonly` for sensitive variables
+- Avoid executing user-provided strings
+- Use proper file permissions (755 for executables)
+
+### SLURM Integration Standards
+For cluster-related scripts:
+- Use environment variables for SLURM parameters
+- Include job array handling when applicable
+- Implement proper resource management
+- Log job progress and completion status
+
+```bash
+# SLURM script standards
+echo "🌟 Starting SLURM Job ${SLURM_ARRAY_TASK_ID}"
+echo "Manifest: ${MANIFEST}"
+echo "Job Directory: ${JOB_DIR}"
+```
+
+### Testing and Validation
+- Include dry-run options where applicable
+- Test scripts with various input combinations
+- Validate script behavior in different environments
+- Document any environment-specific requirements
+
 ---
 
 *This document should be updated as the codebase evolves and new patterns emerge.*

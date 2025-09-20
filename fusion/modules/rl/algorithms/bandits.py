@@ -1,13 +1,15 @@
 import os
 import json
+from typing import Dict, Any, Tuple
 
 import numpy as np
 
 from fusion.utils.os import create_dir
 from fusion.modules.rl.algorithms.algorithm_props import BanditProps
+from fusion.modules.rl.algorithms.persistence import BanditModelPersistence
 
 
-def load_model(train_fp: str):
+def load_model(train_fp: str) -> Dict[str, Any]:
     """
     Loads a pre-trained bandit model.
 
@@ -22,7 +24,7 @@ def load_model(train_fp: str):
     return state_vals_dict
 
 
-def _get_base_fp(is_path: bool, erlang: float, cores_per_link: int):
+def _get_base_fp(is_path: bool, erlang: float, cores_per_link: int) -> str:
     if is_path:
         base_fp = f"e{erlang}_routes_c{cores_per_link}"
     else:
@@ -31,23 +33,13 @@ def _get_base_fp(is_path: bool, erlang: float, cores_per_link: int):
     return base_fp
 
 
-def _save_model(state_values_dict: dict, erlang: float, cores_per_link: int, save_dir: str, is_path: bool,
-                trial: int):
-    if state_values_dict is None:
-        return
-    # Convert tuples to strings and arrays to lists for JSON format
-    state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
-
-    if is_path:
-        state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}_t{trial + 1}.json"
-    else:
-        raise NotImplementedError
-    save_fp = os.path.join(os.getcwd(), save_dir, state_vals_fp)
-    with open(save_fp, 'w', encoding='utf-8') as file_obj:
-        json.dump(state_values_dict, file_obj)
+def _save_model(state_values_dict: Dict[str, Any], erlang: float, cores_per_link: int, save_dir: str, is_path: bool,
+                trial: int) -> None:
+    """Delegate to BanditModelPersistence to avoid code duplication."""
+    BanditModelPersistence.save_model(state_values_dict, erlang, cores_per_link, save_dir, is_path, trial)
 
 
-def save_model(iteration: int, algorithm: str, self: object, trial: int):
+def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None:
     """
     Saves a trained bandit model.
 
@@ -77,11 +69,11 @@ def save_model(iteration: int, algorithm: str, self: object, trial: int):
         save_fp = os.path.join(os.getcwd(), save_dir, rewards_fp)
         np.save(save_fp, rewards_arr)
 
-        _save_model(state_values_dict=self.values, erlang=erlang, cores_per_link=cores_per_link,
-                    save_dir=save_dir, is_path=self.is_path, trial=trial)
+        BanditModelPersistence.save_model(state_values_dict=self.values, erlang=erlang, cores_per_link=cores_per_link,
+                                          save_dir=save_dir, is_path=self.is_path, trial=trial)
 
 
-def get_q_table(self: object):
+def get_q_table(self: object) -> Tuple[Dict, Dict]:
     """
     Constructs the q-table.
 
@@ -108,7 +100,7 @@ def get_q_table(self: object):
 
 
 def _update_bandit(self: object, iteration: int, reward: float, arm: int, algorithm: str,
-                   trial: int):
+                   trial: int) -> None:
     if self.is_path:
         pair = (self.source, self.dest)
     else:
@@ -193,10 +185,14 @@ class EpsilonGreedyBandit:
         """
         Make updates to the bandit after each time step or episode.
 
-        :param arm: The arm selected.
-        :param reward: Reward received from R(s, a).
-        :param iteration: Current episode or iteration.:
-        :param trial: Current trial number.
+        :param arm: The arm selected
+        :type arm: int
+        :param reward: Reward received from R(s, a)
+        :type reward: int
+        :param iteration: Current episode or iteration
+        :type iteration: int
+        :param trial: Current trial number
+        :type trial: int
         """
         _update_bandit(self=self, iteration=iteration, reward=reward, arm=arm, algorithm='epsilon_greedy_bandit',
                        trial=trial)

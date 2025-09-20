@@ -1,5 +1,18 @@
+"""
+Remote cluster results fetching and synchronization module.
+
+This module provides functionality for fetching simulation results from remote
+cluster storage, including path manipulation, file synchronization, and manifest
+parsing for the FUSION unity cluster management system.
+
+The module handles:
+- Converting between output and input directory paths
+- Synchronizing directories and files via rsync
+- Parsing simulation metadata and indices
+- Managing cluster result downloads with proper organization
+"""
+
 import json
-import logging
 import pathlib
 import subprocess
 from time import sleep
@@ -7,144 +20,380 @@ from typing import Iterator, Optional
 
 import yaml
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
-def twin_input_path(abs_path: pathlib.PurePosixPath) -> pathlib.PurePosixPath:
-    """Convert an *output* path to its corresponding *input* path (strip seed)."""
-    parts = list(abs_path.parts)
-    parts[parts.index("output")] = "input"
-    return pathlib.PurePosixPath(*parts[:-1])  # drop seed folder (s1, s2, ...)
-
-
-def last_n_parts(p: pathlib.PurePosixPath, n: int) -> pathlib.PurePosixPath:
+def convert_output_path_to_input_path(absolute_output_path: pathlib.PurePosixPath) -> pathlib.PurePosixPath:
     """
-    Return the last n parts of the path.
+    Convert an output directory path to its corresponding input directory path.
+    
+    This function transforms paths by replacing 'output' with 'input' and removing
+    the seed folder (e.g., s1, s2, etc.) from the end of the path.
+    
+    :param absolute_output_path: The absolute path to an output directory
+    :type absolute_output_path: pathlib.PurePosixPath
+    :return: The corresponding input directory path with seed folder removed
+    :rtype: pathlib.PurePosixPath
+    :raises ValueError: If 'output' is not found in the path
+    
+    Example:
+        >>> output_path = pathlib.PurePosixPath("/data/output/topology1/experiment/s1")
+        >>> input_path = convert_output_path_to_input_path(output_path)
+        >>> print(input_path)
+        /data/input/topology1/experiment
     """
-    return pathlib.PurePosixPath(*p.parts[-n:])
+    path_parts_list = list(absolute_output_path.parts)
+
+    if "output" not in path_parts_list:
+        raise ValueError(f"Path does not contain 'output' directory: {absolute_output_path}")
+
+    path_parts_list[path_parts_list.index("output")] = "input"
+    return pathlib.PurePosixPath(*path_parts_list[:-1])  # Remove seed folder
 
 
-def topology_from_output(out_path: pathlib.PurePosixPath) -> str:
+def get_last_path_segments(path: pathlib.PurePosixPath, segment_count: int) -> pathlib.PurePosixPath:
     """
-    Return the topology from an output path.
+    Extract the last n segments from a path.
+    
+    :param path: The path to extract segments from
+    :type path: pathlib.PurePosixPath
+    :param segment_count: Number of segments to extract from the end
+    :type segment_count: int
+    :return: Path containing only the last n segments
+    :rtype: pathlib.PurePosixPath
+    
+    Example:
+        >>> path = pathlib.PurePosixPath("/data/output/topology1/experiment/s1")
+        >>> result = get_last_path_segments(path, 3)
+        >>> print(result)
+        topology1/experiment/s1
     """
-    parts = list(out_path.parts)
-    return parts[parts.index("output") + 1]
+    if segment_count <= 0:
+        return pathlib.PurePosixPath()
+
+    return pathlib.PurePosixPath(*path.parts[-segment_count:])
 
 
-def _run(cmd: list[str], dry: bool) -> None:
+def extract_topology_from_output_path(output_directory_path: pathlib.PurePosixPath) -> str:
+    """
+    Extract the topology name from an output directory path.
+    
+    The topology is expected to be the directory immediately following 'output'
+    in the path structure.
+    
+    :param output_directory_path: Path to the output directory
+    :type output_directory_path: pathlib.PurePosixPath
+    :return: Name of the topology
+    :rtype: str
+    :raises ValueError: If 'output' is not found in the path or if there's no topology after 'output'
+    
+    Example:
+        >>> output_path = pathlib.PurePosixPath("/data/output/topology1/experiment/s1")
+        >>> topology = extract_topology_from_output_path(output_path)
+        >>> print(topology)
+        topology1
+    """
+    path_parts_list = list(output_directory_path.parts)
+
+    if "output" not in path_parts_list:
+        raise ValueError(f"Path does not contain 'output' directory: {output_directory_path}")
+
+    output_index = path_parts_list.index("output")
+    if output_index + 1 >= len(path_parts_list):
+        raise ValueError(f"No topology directory found after 'output' in path: {output_directory_path}")
+
+    return path_parts_list[output_index + 1]
+
+
+def _execute_command_with_delay(command_list: list[str], is_dry_run: bool) -> None:
+    """
+    Execute a shell command with a delay, optionally as a dry run.
+    
+    :param command_list: List of command parts to execute
+    :type command_list: list[str]
+    :param is_dry_run: If True, only log the command without executing
+    :type is_dry_run: bool
+    :raises subprocess.CalledProcessError: If command execution fails
+    """
     sleep(3.0)
-    if dry:
-        logging.info("[dry‑run] %s", " ".join(cmd))
+    if is_dry_run:
+        logger.info("[dry‑run] %s", " ".join(command_list))
     else:
-        subprocess.run(cmd, check=True)
+        logger.debug("Executing command: %s", " ".join(command_list))
+        subprocess.run(command_list, check=True)
 
 
-def rsync_dir(remote_root: str, abs_path: pathlib.PurePosixPath,
-              dest_root: pathlib.Path, dry: bool) -> None:
-    """Sync an entire directory (abs_path) into dest_root/rel_path."""
-    rel = last_n_parts(abs_path, 4)  # keep last 4 segments
-    local_dir = dest_root / rel
-    local_dir.parent.mkdir(parents=True, exist_ok=True)
+def synchronize_remote_directory(remote_root_path: str, absolute_directory_path: pathlib.PurePosixPath,
+                                 destination_root_path: pathlib.Path, is_dry_run: bool) -> None:
+    """
+    Synchronize an entire remote directory to local filesystem using rsync.
+    
+    The directory is synchronized into dest_root/rel_path where rel_path
+    consists of the last 4 segments of the absolute path.
+    
+    :param remote_root_path: Root path of the remote filesystem
+    :type remote_root_path: str
+    :param absolute_directory_path: Absolute path to the directory to sync
+    :type absolute_directory_path: pathlib.PurePosixPath
+    :param destination_root_path: Local root directory for synchronized files
+    :type destination_root_path: pathlib.Path
+    :param is_dry_run: If True, only log operations without executing
+    :type is_dry_run: bool
+    
+    Example:
+        >>> remote_root = "user@cluster:/work/"
+        >>> remote_path = pathlib.PurePosixPath("/work/data/output/topology1/exp1")
+        >>> local_root = pathlib.Path("/local/data")
+        >>> synchronize_remote_directory(remote_root, remote_path, local_root, False)
+    """
+    relative_path = get_last_path_segments(absolute_directory_path, 4)
+    local_target_directory = destination_root_path / relative_path
+    local_target_directory.parent.mkdir(parents=True, exist_ok=True)
+
+    rsync_command = [
+        "rsync", "-avP", "--compress",
+        f"{remote_root_path}{absolute_directory_path}/",
+        str(local_target_directory)
+    ]
 
     try:
-        _run(["rsync", "-avP", "--compress", f"{remote_root}{abs_path}/", str(local_dir)], dry)
-    except subprocess.CalledProcessError as e:
-        logging.error(e)
+        _execute_command_with_delay(rsync_command, is_dry_run)
+        logger.info("Successfully synchronized directory: %s", absolute_directory_path)
+    except subprocess.CalledProcessError as error:
+        logger.error("Failed to synchronize directory %s: %s", absolute_directory_path, error)
 
 
-def rsync_file(remote_root: str, remote_path: pathlib.PurePosixPath,
-               local_path: pathlib.Path, dry: bool) -> None:
+def synchronize_remote_file(remote_root_path: str, remote_file_path: pathlib.PurePosixPath,
+                            local_file_path: pathlib.Path, is_dry_run: bool) -> None:
     """
-    Sync an entire file (remote_path) into local_path/rel_path.
+    Synchronize a single remote file to local filesystem using rsync.
+    
+    :param remote_root_path: Root path of the remote filesystem
+    :type remote_root_path: str
+    :param remote_file_path: Path to the remote file to synchronize
+    :type remote_file_path: pathlib.PurePosixPath
+    :param local_file_path: Local path where the file should be saved
+    :type local_file_path: pathlib.Path
+    :param is_dry_run: If True, only log operations without executing
+    :type is_dry_run: bool
     """
-    local_path.parent.mkdir(parents=True, exist_ok=True)
-    _run(["rsync", "-avP", "--compress", f"{remote_root}{remote_path}", str(local_path)], dry)
+    local_file_path.parent.mkdir(parents=True, exist_ok=True)
 
+    rsync_command = [
+        "rsync", "-avP", "--compress",
+        f"{remote_root_path}{remote_file_path}",
+        str(local_file_path)
+    ]
 
-def rsync_logs(remote_logs_root: str, path_alg: str, topology: str,
-               date_ts: pathlib.PurePosixPath, dest_root: pathlib.Path,
-               dry: bool) -> None:
-    """
-    Rsync logs download.
-    """
-    remote = pathlib.PurePosixPath(path_alg) / topology / date_ts
-    local = dest_root / path_alg / topology / date_ts
-    local.mkdir(parents=True, exist_ok=True)
     try:
-        _run(["rsync", "-avP", "--compress", f"{remote_logs_root}{remote}/", str(local)], dry)
-    except subprocess.CalledProcessError as err:
-        logging.warning("Logs not found: %s (%s)", remote, err)
+        _execute_command_with_delay(rsync_command, is_dry_run)
+        logger.info("Successfully synchronized file: %s", remote_file_path)
+    except subprocess.CalledProcessError as error:
+        logger.error("Failed to synchronize file %s: %s", remote_file_path, error)
 
 
-def read_path_algorithm(input_dir: pathlib.Path) -> Optional[str]:
+def synchronize_simulation_logs(remote_logs_root_path: str, path_algorithm_name: str,
+                                topology_name: str, date_timestamp_path: pathlib.PurePosixPath,
+                                destination_root_path: pathlib.Path, is_dry_run: bool) -> None:
     """
-    Read a path algorithm from the input directory.
+    Synchronize simulation log files from remote cluster storage.
+    
+    Downloads logs for a specific algorithm, topology, and timestamp combination.
+    Logs are organized in the directory structure: path_algorithm/topology/timestamp/
+    
+    :param remote_logs_root_path: Root path for log files on remote system
+    :type remote_logs_root_path: str
+    :param path_algorithm_name: Name of the path algorithm used in simulation
+    :type path_algorithm_name: str
+    :param topology_name: Name of the network topology
+    :type topology_name: str
+    :param date_timestamp_path: Date/timestamp path segments for the simulation
+    :type date_timestamp_path: pathlib.PurePosixPath
+    :param destination_root_path: Local root directory for log files
+    :type destination_root_path: pathlib.Path
+    :param is_dry_run: If True, only log operations without executing
+    :type is_dry_run: bool
     """
-    for f in input_dir.glob("sim_input_s*.json"):
+    remote_logs_path = pathlib.PurePosixPath(path_algorithm_name) / topology_name / date_timestamp_path
+    local_logs_path = destination_root_path / path_algorithm_name / topology_name / date_timestamp_path
+    local_logs_path.mkdir(parents=True, exist_ok=True)
+
+    rsync_command = [
+        "rsync", "-avP", "--compress",
+        f"{remote_logs_root_path}{remote_logs_path}/",
+        str(local_logs_path)
+    ]
+
+    try:
+        _execute_command_with_delay(rsync_command, is_dry_run)
+        logger.info("Successfully synchronized logs for %s/%s", path_algorithm_name, topology_name)
+    except subprocess.CalledProcessError as error:
+        logger.warning("Logs not found for %s/%s at %s: %s",
+                       path_algorithm_name, topology_name, remote_logs_path, error)
+
+
+def extract_path_algorithm_from_input_directory(input_directory_path: pathlib.Path) -> Optional[str]:
+    """
+    Extract the path algorithm name from simulation input files.
+    
+    Searches for simulation input JSON files (sim_input_s*.json) in the given
+    directory and extracts the 'path_algorithm' field from the first valid file found.
+    
+    :param input_directory_path: Directory containing simulation input files
+    :type input_directory_path: pathlib.Path
+    :return: Name of the path algorithm, or None if not found
+    :rtype: Optional[str]
+    
+    Example:
+        >>> input_dir = pathlib.Path("/data/input/topology1/experiment")
+        >>> algorithm = extract_path_algorithm_from_input_directory(input_dir)
+        >>> print(algorithm)
+        'shortest_path'
+    """
+    for simulation_input_file in input_directory_path.glob("sim_input_s*.json"):
         try:
-            with f.open(encoding="utf-8") as fh:
-                return json.load(fh).get("path_algorithm")
-        except (json.JSONDecodeError, OSError):
+            with simulation_input_file.open(encoding="utf-8") as file_handle:
+                simulation_data = json.load(file_handle)
+                path_algorithm = simulation_data.get("path_algorithm")
+                if path_algorithm:
+                    logger.debug("Found path algorithm '%s' in %s", path_algorithm, simulation_input_file)
+                    return path_algorithm
+        except (json.JSONDecodeError, OSError) as error:
+            logger.debug("Failed to read path algorithm from %s: %s", simulation_input_file, error)
             continue
+
+    logger.warning("No valid path algorithm found in directory: %s", input_directory_path)
     return None
 
 
-def iter_index(index_file: pathlib.Path) -> Iterator[pathlib.PurePosixPath]:
+def iterate_runs_index_file(index_file_path: pathlib.Path) -> Iterator[pathlib.PurePosixPath]:
     """
-    Iter index function.
+    Iterate over entries in a runs index file.
+    
+    Each line in the index file should contain a JSON object with a 'path' field
+    pointing to a simulation output directory.
+    
+    :param index_file_path: Path to the runs index file
+    :type index_file_path: pathlib.Path
+    :return: Iterator yielding paths from the index file
+    :rtype: Iterator[pathlib.PurePosixPath]
+    :raises json.JSONDecodeError: If a line contains invalid JSON
+    :raises FileNotFoundError: If the index file doesn't exist
+    
+    Example:
+        >>> index_file = pathlib.Path("runs_index.json")
+        >>> for output_path in iterate_runs_index_file(index_file):
+        ...     print(f"Processing: {output_path}")
     """
-    with index_file.open(encoding="utf-8") as fh:
-        for line in fh:
-            if line := line.strip():
-                yield pathlib.PurePosixPath(json.loads(line)["path"])
+    logger.debug("Reading runs index from: %s", index_file_path)
+
+    with index_file_path.open(encoding="utf-8") as file_handle:
+        for line_number, line in enumerate(file_handle, 1):
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                index_entry = json.loads(line)
+                output_path = pathlib.PurePosixPath(index_entry["path"])
+                yield output_path
+            except (json.JSONDecodeError, KeyError) as error:
+                logger.error("Invalid index entry at line %d: %s (Error: %s)",
+                             line_number, line, error)
+                continue
 
 
 def main() -> None:
     """
-    Controls the script.
+    Main entry point for the fetch results script.
+    
+    Controls the overall workflow of fetching simulation results from remote
+    cluster storage based on configuration settings. Handles index processing,
+    directory synchronization, and log file management.
+    
+    :raises FileNotFoundError: If configuration file is not found
+    :raises yaml.YAMLError: If configuration file is invalid
     """
-    cfg = yaml.safe_load(pathlib.Path("configs/config.yml").read_text(encoding="utf-8"))
-    meta_root, data_root, logs_root = cfg["metadata_root"], cfg["data_root"], cfg["logs_root"]
-    dest = pathlib.Path(cfg["dest"]).expanduser()
+    logger.info("Starting results fetch process")
 
-    # Normalise destination – ensure we have exactly one /data layer
-    data_dest = dest if dest.name == "data" else dest / "data"
+    try:
+        configuration_file_path = pathlib.Path("configs/config.yml")
+        configuration_data = yaml.safe_load(configuration_file_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        logger.error("Configuration file not found: configs/config.yml")
+        raise
+    except yaml.YAMLError as error:
+        logger.error("Invalid configuration file format: %s", error)
+        raise
 
-    exp_rel = pathlib.PurePosixPath(cfg["experiment"])
-    dry = cfg.get("dry_run", False)
+    metadata_root_path = configuration_data["metadata_root"]
+    data_root_path = configuration_data["data_root"]
+    logs_root_path = configuration_data["logs_root"]
+    destination_directory = pathlib.Path(configuration_data["dest"]).expanduser()
 
-    tmp = pathlib.Path(".tmp_config")
-    tmp.mkdir(exist_ok=True)
-    rsync_file(meta_root, exp_rel / "runs_index.json", tmp / "runs_index.json", dry)
+    # Normalize destination – ensure we have exactly one /data layer
+    data_destination_directory = (destination_directory if destination_directory.name == "data"
+                                  else destination_directory / "data")
 
-    index = tmp / "runs_index.json"
-    fetched = set()
+    experiment_relative_path = pathlib.PurePosixPath(configuration_data["experiment"])
+    is_dry_run = configuration_data.get("dry_run", False)
 
-    for out_p in iter_index(index):
-        # Failed job, no output directory
-        if out_p.name == '':
-            print(f'[DEBUG] Skipping {out_p} due to empty directory (failed job).')
+    # Set up temporary directory for metadata
+    temporary_directory = pathlib.Path(".tmp_config")
+    temporary_directory.mkdir(exist_ok=True)
+
+    # Download runs index file
+    runs_index_remote_path = experiment_relative_path / "runs_index.json"
+    runs_index_local_path = temporary_directory / "runs_index.json"
+
+    logger.info("Downloading runs index file")
+    synchronize_remote_file(metadata_root_path, runs_index_remote_path,
+                            runs_index_local_path, is_dry_run)
+
+    processed_run_directories_set = set()
+
+    logger.info("Processing runs from index file")
+    for output_directory_path in iterate_runs_index_file(runs_index_local_path):
+        # Skip failed jobs with empty directory names
+        if output_directory_path.name == '':
+            logger.debug('Skipping failed job with empty directory: %s', output_directory_path)
             continue
 
-        parent_run_dir = out_p.parent
-        if parent_run_dir in fetched:
+        parent_run_directory = output_directory_path.parent
+        if parent_run_directory in processed_run_directories_set:
+            logger.debug('Skipping already processed run directory: %s', parent_run_directory)
             continue
-        fetched.add(parent_run_dir)
+        processed_run_directories_set.add(parent_run_directory)
 
-        rsync_dir(data_root, parent_run_dir, data_dest, dry)
-        in_p = twin_input_path(out_p)
-        rsync_dir(data_root, in_p, data_dest, dry)
+        # Synchronize output and input directories
+        logger.info("Synchronizing run directory: %s", parent_run_directory)
+        synchronize_remote_directory(data_root_path, parent_run_directory,
+                                     data_destination_directory, is_dry_run)
 
-        local_in = pathlib.Path('cluster_results') / in_p
-        path_alg = read_path_algorithm(local_in)
-        if not path_alg:
-            logging.warning("No path_algorithm in %s", local_in)
+        input_directory_path = convert_output_path_to_input_path(output_directory_path)
+        synchronize_remote_directory(data_root_path, input_directory_path,
+                                     data_destination_directory, is_dry_run)
+
+        # Extract algorithm information and sync logs
+        local_input_directory = pathlib.Path('cluster_results') / input_directory_path
+        path_algorithm = extract_path_algorithm_from_input_directory(local_input_directory)
+
+        if not path_algorithm:
+            logger.warning("No path algorithm found in input directory: %s", local_input_directory)
             continue
 
-        topo = topology_from_output(out_p)
-        date_ts = last_n_parts(in_p, 2)
-        rsync_logs(logs_root, path_alg, topo, date_ts, dest / "logs", dry)
+        topology_name = extract_topology_from_output_path(output_directory_path)
+        date_timestamp_segments = get_last_path_segments(input_directory_path, 2)
+
+        logger.info("Synchronizing logs for algorithm '%s' and topology '%s'",
+                    path_algorithm, topology_name)
+        synchronize_simulation_logs(logs_root_path, path_algorithm, topology_name,
+                                    date_timestamp_segments, destination_directory / "logs",
+                                    is_dry_run)
+
+    logger.info("Results fetch process completed successfully")
 
 
 if __name__ == "__main__":

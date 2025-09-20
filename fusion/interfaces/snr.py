@@ -4,7 +4,7 @@ Abstract base class for SNR measurement algorithms in FUSION.
 # pylint: disable=duplicate-code
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 class AbstractSNRMeasurer(ABC):

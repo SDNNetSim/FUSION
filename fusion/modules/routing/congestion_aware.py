@@ -106,74 +106,117 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         All k paths are stored in route_props.*, sorted by score so the
         downstream allocator will try the most promising path first.
         """
-        # -------- 0 | gather k shortest-length paths -------------------------
-        # α can be set per-experiment in your YAML / JSON config
-        alpha = float(self.engine_props.get("ca_alpha", 0.3))  # default 0.3
-        k = int(self.engine_props.get("k_paths", 1))  # default to 1 if not set
+        candidate_paths_data = self._gather_candidate_paths()
+        if not candidate_paths_data:
+            self.route_props.blocked = True
+            return
+
+        scored_paths = self._calculate_path_scores(candidate_paths_data)
+        self._populate_route_properties(scored_paths)
+
+    def _gather_candidate_paths(self) -> Dict[str, List[Any]]:
+        """Gather k shortest-length candidate paths with their metrics.
+        
+        Returns:
+            Dictionary containing candidate paths, lengths, and congestion values
+        """
+        k_paths = int(self.engine_props.get("k_paths", 1))
 
         topology = self.engine_props.get('topology', self.sdn_props.topology)
-        paths_iter = nx.shortest_simple_paths(
+        paths_iterator = nx.shortest_simple_paths(
             G=topology,
             source=self.sdn_props.source,
             target=self.sdn_props.destination,
             weight="length",
         )
 
-        cand_paths, path_lens, path_congs = [], [], []
-        for idx, path in enumerate(paths_iter):
-            if idx >= k:
+        candidate_paths, path_lengths, path_congestions = [], [], []
+        for path_index, path in enumerate(paths_iterator):
+            if path_index >= k_paths:
                 break
-            cand_paths.append(path)
+            candidate_paths.append(path)
 
-            # length (same helper you already use elsewhere)
-            plen = find_path_len(path_list=path, topology=topology)
-            path_lens.append(plen)
+            path_length = find_path_len(path_list=path, topology=topology)
+            path_lengths.append(path_length)
 
-            # mean congestion feature — exactly what the RL agent sees
-            mean_cong, _ = find_path_cong(path_list=path,
-                                          network_spectrum_dict=self.sdn_props.network_spectrum_dict)
-            path_congs.append(mean_cong)
+            mean_congestion, _ = find_path_cong(
+                path_list=path,
+                network_spectrum_dict=self.sdn_props.network_spectrum_dict
+            )
+            path_congestions.append(mean_congestion)
 
-        if not cand_paths:  # safety guard
-            self.route_props.blocked = True  # consistent with other funcs
-            return
+        return {
+            'paths': candidate_paths,
+            'lengths': path_lengths,
+            'congestions': path_congestions
+        }
 
-        # -------- 1 | compute scores & sort paths ----------------------------
-        path_lens = np.asarray(path_lens, dtype=float)
-        path_congs = np.asarray(path_congs, dtype=float)
+    def _calculate_path_scores(self, candidate_paths_data: Dict[str, List[Any]]) -> List[tuple]:
+        """Calculate congestion-aware scores for candidate paths.
+        
+        Args:
+            candidate_paths_data: Dictionary with paths, lengths, and congestions
+            
+        Returns:
+            List of tuples (path, length, score) sorted by score
+        """
+        alpha = float(self.engine_props.get("ca_alpha", 0.3))
 
-        max_len = path_lens.max() if path_lens.max() > 0 else 1.0
-        hop_norm = path_lens / max_len
-        scores = alpha * path_congs + (1.0 - alpha) * hop_norm
+        path_lengths_array = np.asarray(candidate_paths_data['lengths'], dtype=float)
+        path_congestions_array = np.asarray(candidate_paths_data['congestions'], dtype=float)
 
-        # sort indices by score ascending
-        order = scores.argsort()
+        max_length = path_lengths_array.max() if path_lengths_array.max() > 0 else 1.0
+        normalized_hop_counts = path_lengths_array / max_length
+        scores = alpha * path_congestions_array + (1.0 - alpha) * normalized_hop_counts
 
-        # -------- 2 | populate route_props in that order ---------------------
-        chosen_bw = self.sdn_props.bandwidth
-        for idx in order:
-            p = cand_paths[idx]
-            plen = path_lens[idx]
-            sc = float(scores[idx])
+        # Create list of (path, length, score) tuples sorted by score
+        scored_paths = []
+        for idx in scores.argsort():
+            scored_paths.append((
+                candidate_paths_data['paths'][idx],
+                candidate_paths_data['lengths'][idx],
+                float(scores[idx])
+            ))
 
-            # modulation list (mirrors logic in find_k_shortest)
-            if not self.engine_props.get("pre_calc_mod_selection", False):
-                mod_list = [
-                    get_path_mod(
-                        mods_dict=self.engine_props["mod_per_bw"][chosen_bw],
-                        path_len=plen,
-                    )
-                ]
-            else:
-                mods_sorted = sort_nested_dict_vals(
-                    original_dict=self.sdn_props.mod_formats_dict,
-                    nested_key="max_length",
-                )
-                mod_list = list(mods_sorted.keys())
+        return scored_paths
 
-            self.route_props.paths_matrix.append(p)
-            self.route_props.modulation_formats_matrix.append(mod_list)
-            self.route_props.weights_list.append(sc)
+    def _populate_route_properties(self, scored_paths: List[tuple]) -> None:
+        """Populate route properties with scored paths in order.
+        
+        Args:
+            scored_paths: List of (path, length, score) tuples sorted by score
+        """
+        chosen_bandwidth = self.sdn_props.bandwidth
+
+        for path, path_length, score in scored_paths:
+            modulation_list = self._get_modulation_formats(path_length, chosen_bandwidth)
+
+            self.route_props.paths_matrix.append(path)
+            self.route_props.modulation_formats_matrix.append(modulation_list)
+            self.route_props.weights_list.append(score)
+
+    def _get_modulation_formats(self, path_length: float, chosen_bandwidth: Any) -> List[str]:
+        """Get appropriate modulation formats for the given path length.
+        
+        Args:
+            path_length: Length of the path
+            chosen_bandwidth: Selected bandwidth for the connection
+            
+        Returns:
+            List of modulation format strings
+        """
+        if not self.engine_props.get("pre_calc_mod_selection", False):
+            modulation_format = get_path_mod(
+                mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
+                path_len=path_length,
+            )
+            return [modulation_format]
+
+        modulation_formats_sorted = sort_nested_dict_vals(
+            original_dict=self.sdn_props.mod_formats_dict,
+            nested_key="max_length",
+        )
+        return list(modulation_formats_sorted.keys())
 
     def _find_least_congested_path(self) -> Optional[List[Any]]:
         """Find the least congested path using the original algorithm logic."""

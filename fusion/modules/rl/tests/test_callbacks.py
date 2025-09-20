@@ -96,14 +96,15 @@ class TestEpisodicRewardCallback(TestCase):
         """Episode end saves trial rewards and resets counters."""
         self.cb.rewards_matrix = np.zeros((2, 3))
         self.cb.locals = {"rewards": [1.0], "dones": [True]}
-        self.cb.iter = 0
-        self.cb.curr_step = 0
+        self.cb.iteration = 0
+        self.cb.current_step = 0
+        self.cb.current_episode_reward = 0  # Initialize current episode reward
 
         self.cb._on_step()  # pylint: disable=protected-access
 
         self.assertEqual(self.cb.episode_rewards.tolist(), [1.0])
-        self.assertEqual(self.cb.iter, 1)
-        self.assertEqual(self.cb.curr_step, 0)
+        self.assertEqual(self.cb.iteration, 1)
+        self.assertEqual(self.cb.current_step, 0)
         mock_save.assert_called_once()
 
 
@@ -122,17 +123,17 @@ class TestLearnRateEntCallback(TestCase):
         self.lr_cb.locals = {"dones": [True]}
         self.assertTrue(self.lr_cb._on_step())  # pylint: disable=protected-access
 
-        self.assertAlmostEqual(self.lr_cb.current_ent, 0.25)  # expected entropy
-        self.assertAlmostEqual(self.lr_cb.current_lr, 0.00075)
+        self.assertAlmostEqual(self.lr_cb.current_entropy, 0.25)  # expected entropy
+        self.assertAlmostEqual(self.lr_cb.current_learning_rate, 0.00075)
         self.assertAlmostEqual(self.lr_cb.model.ent_coef, 0.25)
         self.assertAlmostEqual(self.lr_cb.model.learning_rate, 0.00075)
 
     def test_subsequent_done_decays_and_updates(self):
         """Later episodes decay ent_coef and adjust lr linearly."""
         # Pretend first episode already ran
-        self.lr_cb.current_ent = 0.4
-        self.lr_cb.current_lr = 0.0009
-        self.lr_cb.iter = 1
+        self.lr_cb.current_entropy = 0.4
+        self.lr_cb.current_learning_rate = 0.0009
+        self.lr_cb.iteration = 1
 
         self.lr_cb.locals = {"dones": [True]}
         self.lr_cb._on_step()  # pylint: disable=protected-access

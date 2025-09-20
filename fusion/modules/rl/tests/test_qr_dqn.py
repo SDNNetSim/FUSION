@@ -26,7 +26,7 @@ class TestQrDQN(TestCase):
         "fusion.modules.rl.algorithms.qr_dqn.spaces.Dict"
     )
     @mock.patch(
-        "fusion.modules.rl.algorithms.qr_dqn.get_observation_space",
+        "fusion.modules.rl.algorithms.base_drl.get_observation_space",
         return_value={"x": 1},
     )
     def test_get_obs_space_wraps_dict(
@@ -37,7 +37,7 @@ class TestQrDQN(TestCase):
         result = agent.get_obs_space()
 
         mock_get_obs.assert_called_once_with(
-            rl_props=agent.rl_props, engine_obj=agent.engine_obj
+            rl_props=agent.rl_props, engine_props=agent.engine_obj
         )
         mock_dict_space.assert_called_once_with({"x": 1})
         self.assertIs(result, mock_dict_space.return_value)

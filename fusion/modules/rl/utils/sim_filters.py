@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 from fusion.sim.utils import update_matrices
 
 
-# TODO: (version 5.5-6) These can probably be in the shared filter or plotting module
+# NOTE: Consider moving these filter functions to a shared utilities module
+# for reuse across different components (plotting, analysis, etc.)
 
 
 def _not_filters(filter_dict: Dict[str, List[List[Any]]], file_dict: Dict[str, Any]) -> bool:
@@ -15,7 +16,10 @@ def _not_filters(filter_dict: Dict[str, List[List[Any]]], file_dict: Dict[str, A
     Each entry in 'not_filter_list' is expected to be a list where all elements except
     the last represent a key path and the last element is the value to reject.
 
-    Returns False immediately if any "not" filter is triggered.
+    :param filter_dict: Dictionary containing filter configurations
+    :param file_dict: Dictionary to apply filters against
+    :return: False if any "not" filter is triggered, True otherwise
+    :rtype: bool
     """
     for flags_list in filter_dict.get('not_filter_list', []):
         keys_list = flags_list[:-1]

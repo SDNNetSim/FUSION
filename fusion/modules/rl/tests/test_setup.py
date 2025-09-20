@@ -67,7 +67,7 @@ class TestPrintInfo(TestCase):
         """No RL algorithms → ValueError."""
         sim = dict(path_algorithm="none", core_algorithm="none",
                    spectrum_algorithm=None)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(su.ModelSetupError):
             su.print_info(sim)
 
 

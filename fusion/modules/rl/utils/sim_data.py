@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import ast
 from collections import defaultdict
 
 import numpy as np
@@ -85,8 +86,10 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
                     continue
                 for link_str, path_vals in data.items():
                     try:
-                        link_tuple = eval(link_str)  # pylint: disable=eval-used
-                    except (SyntaxError, NameError):
+                        # Safely parse link string using ast.literal_eval instead of eval()
+                        link_tuple = ast.literal_eval(link_str)
+                    except (ValueError, SyntaxError):
+                        # Skip invalid link strings that can't be parsed as tuples
                         continue
                     for p_idx, val in enumerate(path_vals):
                         traffic_data[traffic_label][link_tuple][p_idx].append(val)

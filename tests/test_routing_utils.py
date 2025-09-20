@@ -162,7 +162,7 @@ class TestRoutingHelpers(unittest.TestCase):
             }
 
             # Call the function under test
-            nli_worst = self.helpers.find_worst_nli(num_span=num_span)
+            nli_worst = self.helpers.find_worst_nli(span_count=num_span)
 
             # Expected NLI value (mocked based on previous calculation)
             expected_nli_worst = 2.19e-10

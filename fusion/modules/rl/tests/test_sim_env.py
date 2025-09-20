@@ -51,7 +51,7 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
         path_index=None,
         core_num=None,
         rl_props=rl_props,
-        engine_obj=engine_obj,
+        engine_props=engine_obj,  # CoreUtilHelpers expects engine_props
     )
 
     sim_dict = dict(
@@ -65,6 +65,7 @@ def _make_sim_env(path_algo="q_learning", is_drl=True):
     return SimpleNamespace(
         rl_props=rl_props,
         engine_obj=engine_obj,
+        engine_props=engine_obj,  # Some classes expect engine_props instead of engine_obj
         path_agent=path_agent,
         core_agent=None,
         route_obj=SimpleNamespace(
