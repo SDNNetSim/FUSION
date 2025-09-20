@@ -145,11 +145,11 @@ class TestSaveModel(TestCase):
     @mock.patch("fusion.modules.rl.algorithms.q_learning.json.dump")
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("fusion.modules.rl.algorithms.q_learning.np.save")
-    @mock.patch("fusion.modules.rl.algorithms.q_learning.create_dir")
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.create_directory")
     def test_save_model_writes_files(
             self, mock_dir, mock_npsave, mock_open_fn, mock_dump
     ):
-        """save_model calls create_dir, np.save, and json.dump."""
+        """save_model calls create_directory, np.save, and json.dump."""
         agent = _new_agent()
         agent.iteration = 0
         agent.rewards_stats_dict = {"average": np.array([1.0])}

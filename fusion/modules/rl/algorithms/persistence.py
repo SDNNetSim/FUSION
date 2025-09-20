@@ -5,7 +5,7 @@ import json
 from typing import Dict, Any
 import numpy as np
 
-from fusion.utils.os import create_dir  # pylint: disable=unused-import
+from fusion.utils.os import create_directory  # pylint: disable=unused-import
 from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 

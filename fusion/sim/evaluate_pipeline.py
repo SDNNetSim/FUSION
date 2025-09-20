@@ -12,7 +12,7 @@ import numpy as np
 
 from fusion.sim.batch_runner import BatchRunner
 from fusion.sim.utils import log_message as _log_message
-from fusion.utils.os import create_dir
+from fusion.utils.os import create_directory
 
 
 def log_message(message):
@@ -173,7 +173,7 @@ class EvaluationPipeline:
         :type output_dir: str
         """
         output_path = Path(output_dir)
-        create_dir(str(output_path))
+        create_directory(str(output_path))
 
         log_message(f"Generating evaluation report in {output_dir}")
 

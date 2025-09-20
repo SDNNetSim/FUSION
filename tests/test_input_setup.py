@@ -75,9 +75,9 @@ class TestSetupHelpers(unittest.TestCase):
         self.assertEqual(result['topology_info'], self.pt_info)
 
     @patch('os.fsync')  # <-- Add this line
-    @patch('fusion.sim.input_setup.create_dir')
+    @patch('fusion.sim.input_setup.create_directory')
     @patch('builtins.open', new_callable=mock_open)
-    def test_save_input(self, mock_open_file, mock_create_dir, mock_fsync):  # pylint: disable=unused-argument
+    def test_save_input(self, mock_open_file, mock_create_directory, mock_fsync):  # pylint: disable=unused-argument
         """ Tests save input. """
         # Test data
         data_dict = {'key': 'value'}
@@ -87,7 +87,7 @@ class TestSetupHelpers(unittest.TestCase):
         save_input(self.base_fp, self.engine_props, file_name, data_dict)
 
         # Assertions
-        mock_create_dir.assert_any_call(os.path.join(self.base_fp, 'input', self.engine_props['network'],
+        mock_create_directory.assert_any_call(os.path.join(self.base_fp, 'input', self.engine_props['network'],
                                                      self.engine_props['date'], self.engine_props['sim_start']))
 
         mock_open_file.assert_called_once_with(os.path.join(self.base_fp, 'input', self.engine_props['network'],
