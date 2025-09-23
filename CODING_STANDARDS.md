@@ -11,16 +11,26 @@
 - **Classes**: `PascalCase`
 - **Private**: Prefix with `_`
 
-### 1.2 Data Type Suffixes
-Use for complex collections when unclear:
-```python
-# ✅ Use suffixes for clarity
-user_settings_dict: Dict[str, Any] = {}
-active_connections_set: Set[str] = set()
-pending_requests_list: List[Request] = []
+### 1.2 Data Type Suffixes (Deprecated)
+**Note**: Type suffixes like `_dict`, `_list`, `_set` are now discouraged. Modern Python type hints make the type clear without redundant suffixes.
 
-# ❌ Don't use for obvious types
-count: int = 0  # Not count_int
+```python
+# ✅ Modern approach - let type hints show the type
+user_settings: dict[str, Any] = {}
+active_connections: set[str] = set()
+pending_requests: list[Request] = []
+
+# ❌ Avoid redundant type suffixes
+user_settings_dict: dict[str, Any] = {}  # Redundant
+active_connections_set: set[str] = set()  # Redundant
+pending_requests_list: list[Request] = []  # Redundant
+```
+
+**Exception**: Use suffixes only when you have multiple representations of the same data:
+```python
+# OK when differentiating between formats
+user_data_json: str = '{"name": "John"}'
+user_data_dict: dict = {"name": "John"}
 ```
 
 ### 1.3 Variable Best Practices
@@ -45,8 +55,8 @@ Use these standardized names consistently across the codebase:
 - `network_topology` (not `topology`, `network_topo`)
 
 **Data Structures**:
-- `request_list` (not `requests`, `req_list`)
-- `connection_dict` (not `connections`, `conn_dict`)
+- `requests` (not `request_list`, `req_list`)
+- `connections` (not `connection_dict`, `conn_dict`)
 - `stats_collector` (not `statistics`, `stats`)
 
 **File/Path Related**:
@@ -451,10 +461,7 @@ fi
 ## 10. Code Quality Tools
 
 ### 10.1 Pre-commit Tools
-- **black**: Code formatting
-- **isort**: Import sorting
-- **flake8**: Linting (→ ruff)
-- **pylint**: Advanced linting
+- **ruff**: Code formatting and linting (replaces black, isort, flake8)
 - **mypy**: Type checking
 - **pytest**: Testing
 - **pydeps**: Dependencies
@@ -475,7 +482,7 @@ fi
 ### Naming ✓
 - [ ] Functions: verb phrases (`load_config`)
 - [ ] Variables: noun phrases (`config_path`)
-- [ ] Suffixes for complex types (`settings_dict`)
+- [ ] Avoid redundant type suffixes (use `settings` not `settings_dict`)
 - [ ] Constants: `SCREAMING_SNAKE_CASE`
 - [ ] Classes: `PascalCase`
 

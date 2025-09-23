@@ -1,4 +1,4 @@
-name: Commit Message Validation
+name: Latest Commit Message Validation
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   validate_commit_messages:
-    name: Validate Commit Messages
+    name: Validate Latest Commit Message
     runs-on: ubuntu-latest
 
     steps:
@@ -31,22 +31,17 @@ jobs:
 
       - name: Debug commit information
         run: |
-          echo "=== DEBUG: Current branch and commit info ==="
-          echo "Current branch: $(git branch --show-current)"
-          echo "HEAD commit: $(git rev-parse HEAD)"
-          echo "HEAD commit message:"
-          git log --format="%B" -n 1 HEAD
-          echo "=== All commits in this PR ==="
+          echo "=== DEBUG: Commit info ==="
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "Base: ${{ github.event.pull_request.base.sha }}"
-            echo "Head: ${{ github.event.pull_request.head.sha }}"
-            echo "Commits in PR:"
-            git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
-            echo "=== Individual commit messages ==="
-            git log --format="%H: %s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+            echo "PR event - checking latest commit only"
+            echo "Latest commit: ${{ github.event.pull_request.head.sha }}"
+            echo "Latest commit message:"
+            git log --format="%B" -n 1 ${{ github.event.pull_request.head.sha }}
           else
-            echo "Push event - checking last commit"
-            git log --oneline -1
+            echo "Push event - checking pushed commit"
+            echo "HEAD commit: $(git rev-parse HEAD)"
+            echo "HEAD commit message:"
+            git log --format="%B" -n 1 HEAD
           fi
           echo "=== End Debug ==="
 
@@ -100,23 +95,19 @@ jobs:
           
           # Get commits to validate
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "Validating PR commits from ${{ github.event.pull_request.base.sha }} to ${{ github.event.pull_request.head.sha }}"
+            echo "Validating latest commit in PR: ${{ github.event.pull_request.head.sha }}"
             echo ""
             
-            failed_commits=()
-            total_commits=0
+            # Only validate the latest commit (HEAD of the PR branch)
+            commit_sha="${{ github.event.pull_request.head.sha }}"
+            commit_msg=$(git log --format="%s" -n 1 "$commit_sha")
             
-            # Get all commit SHAs and messages in the PR
-            while IFS='|' read -r sha msg; do
-              total_commits=$((total_commits + 1))
-              if ! validate_commit "$sha" "$msg"; then
-                failed_commits+=("$sha")
-              fi
-            done < <(git log --format="%H|%s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+            echo "Latest commit: $commit_sha"
+            echo "Message: '$commit_msg'"
+            echo ""
             
-            # Show summary
-            if [ ${#failed_commits[@]} -eq 0 ]; then
-              echo "✅ All $total_commits commit messages are valid!"
+            if validate_commit "$commit_sha" "$commit_msg"; then
+              echo "✅ Latest commit message is valid!"
             else
               echo ""
               echo "📋 Required Format: <type>(scope): <description>"
@@ -148,6 +139,10 @@ jobs:
               echo "  fix(routing): resolve path calculation bug"
               echo "  refactor(gui): CLI integration for entry point"
               echo "  docs: update installation guide with new requirements"
+              echo ""
+              echo "💡 Tip: Only the latest commit in your PR is checked."
+              echo "    Use 'git commit --amend' to fix the message, or"
+              echo "    'git rebase -i' to edit older commits if needed."
               echo ""
               exit 1
             fi

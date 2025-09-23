@@ -69,31 +69,38 @@ setup(
         "PyQt5>=5.15.10",
         "seaborn>=0.13.2",
         "torch>=2.2.2",
-        "stable-baselines3>=2.2.1",
-        "gymnasium>=0.29.1",
-        "pylint>=3.0.3",
-        "pytest>=8.3.4",
         "PyYAML>=6.0.1",
         "requests>=2.32.0",
     ],
     extras_require={
         "dev": [
             "pytest>=8.3.4",
-            "pylint>=3.0.3",
+            "ruff>=0.1.0",
+            "mypy>=1.0.0",
+            "vulture>=2.7.0",
+            "bandit>=1.7.0",
             "sphinx>=7.2.6",
             "sphinx_rtd_theme>=2.0.0",
         ],
         "rl": [
             "stable-baselines3>=2.2.1",
             "rl_zoo3>=2.2.1",
+            "gymnasium>=0.29.1",
             "optuna>=3.6.1",
         ],
         "pyg": [
+            # Note: PyTorch Geometric packages require special installation
+            # Use install.sh script for automatic installation
             "torch-geometric>=2.6.1",
-            "torch-scatter",
-            "torch-sparse", 
-            "torch-cluster",
-            "torch-spline-conv",
+            # torch-scatter, torch-sparse, torch-cluster, torch-spline-conv
+            # are installed separately with platform-specific flags
+        ],
+        "all": [
+            "stable-baselines3>=2.2.1",
+            "rl_zoo3>=2.2.1", 
+            "gymnasium>=0.29.1",
+            "optuna>=3.6.1",
+            "torch-geometric>=2.6.1",
         ],
     },
     entry_points={

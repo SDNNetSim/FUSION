@@ -23,12 +23,13 @@ We need your insight and creativity! The true strength of open-source lies in co
 
 ## Installation Instructions
 
-To get started with FUSION, first clone the repository and create a Python 3.11 virtual environment:
+FUSION offers multiple installation methods. Choose the one that best fits your needs:
+
+### 🚀 Automatic Installation (Recommended)
+
+For the easiest setup experience, use our automated installation script:
 
 ```bash
-# Navigate to your desired directory
-cd /your/desired/path
-
 # Clone the repository
 git clone git@github.com:SDNNetSim/FUSION.git
 cd FUSION
@@ -36,61 +37,63 @@ cd FUSION
 # Create and activate a Python 3.11 virtual environment
 python3.11 -m venv venv
 source venv/bin/activate
+
+# Run automated installation
+./install.sh
 ```
 
-Next, follow the specific instructions for your operating system.
+The script automatically:
+- ✅ Detects your platform (macOS, Linux, Windows)
+- ✅ Handles PyTorch Geometric compilation issues
+- ✅ Installs all dependencies in the correct order
+- ✅ Sets up development tools
+- ✅ Verifies the installation
 
----
+### 📦 Package Installation
 
-### macOS Installation
-
-Installation on macOS is a multi-step process that requires compiling packages from source. Please follow these steps carefully.
-
-**Step 1: Install Prerequisites**
-
-Ensure you have Apple’s Command Line Tools installed:
-
-```bash
-xcode-select --install
-```
-
-**Step 2: Install PyTorch**
+For a more controlled installation using Python packaging:
 
 ```bash
-pip install torch==2.2.2
-```
+# Clone and create venv (same as above)
+git clone git@github.com:SDNNetSim/FUSION.git
+cd FUSION
+python3.11 -m venv venv
+source venv/bin/activate
 
-**Step 3: Install PyTorch Geometric (PyG) Packages**
+# Install core package
+pip install -e .
 
-These packages require special flags to compile correctly on macOS:
+# Install optional components as needed:
+pip install -e .[dev]        # Development tools (ruff, mypy, pytest)
+pip install -e .[rl]         # Reinforcement learning (stable-baselines3)
+pip install -e .[all]        # Everything except PyTorch Geometric
 
-```bash
+# PyTorch Geometric requires manual installation:
+# macOS (Apple Silicon):
+MACOSX_DEPLOYMENT_TARGET=11.0 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# macOS (Intel):
 MACOSX_DEPLOYMENT_TARGET=10.15 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# Linux/Windows:
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# Finally install PyTorch Geometric:
+pip install torch-geometric==2.6.1
 ```
 
-**Step 4: Install Remaining Dependencies**
+### 🐍 Legacy Requirements Installation
+
+If you prefer using requirements files:
 
 ```bash
-pip install -r requirements.txt
-```
-
----
-
-### Linux & Windows Installation
-
-Installation on Linux and Windows is more straightforward.
-
-**Step 1: Install PyTorch**
-
-```bash
+# Core dependencies
 pip install torch==2.2.2
-```
-
-**Step 2: Install All Other Dependencies**
-
-```bash
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
+
+**⚠️ Note**: This method may fail on PyTorch Geometric packages. Use the automatic installer instead.
 
 ---
 

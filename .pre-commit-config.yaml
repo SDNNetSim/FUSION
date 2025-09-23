@@ -1,17 +1,4 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: 25.9.0
-    hooks:
-      - id: black
-        language_version: python3.11
-        args: [--line-length=88]
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--line-length=88"]
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.13.1
     hooks:
@@ -26,15 +13,6 @@ repos:
         additional_dependencies: [types-PyYAML, types-requests, types-setuptools]
         args: [--ignore-missing-imports]
 
-  # Keep pylint for advanced checks
-  - repo: local
-    hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint
-        language: python
-        types: [python]
-        args: [--score=no, --reports=no]
 
   # Dead code detection
   - repo: local

@@ -10,16 +10,30 @@
 
 ## 🎯 1-Minute Setup
 
+Choose your installation method:
+
+### Option A: Automated (Recommended)
 ```bash
-# Install all development tools
-pip install -r requirements-dev.txt
-
-# Setup pre-commit hooks (prevents bad commits)
-make setup-hooks
-
-# Verify installation
-make help
+# Install everything automatically
+./install.sh
 ```
+
+### Option B: Make command
+```bash
+# Install all dependencies
+make install
+
+# Or just development tools
+make install-dev
+```
+
+### Option C: Manual pip
+```bash
+# Install core package and dev tools
+pip install -e .[dev]
+```
+
+The automated installer handles PyTorch Geometric issues automatically!
 
 ## 📝 Daily Development Workflow
 
@@ -28,7 +42,7 @@ make help
 # Auto-format all code before committing
 make format
 ```
-**What it does**: Fixes code style with black + isort automatically
+**What it does**: Fixes code style with ruff automatically
 
 ### Step 2: Check for Issues
 ```bash
@@ -66,8 +80,7 @@ make check-all
 
 Pre-commit hooks run automatically when you commit:
 
-- ✅ **Code formatting** (black, isort)
-- ✅ **Linting** (ruff)
+- ✅ **Code formatting and linting** (ruff)
 - ✅ **Type checking** (mypy)
 - ✅ **Security scanning** (bandit)
 - ✅ **Commit message validation** (conventional commits)
@@ -160,8 +173,7 @@ pytest tests/test_specific.py -v
 - **CI/CD integration**: Check `.github/workflows/quality.yml`
 
 ### Understanding the Tools
-- **Black**: Code formatter (opinionated, consistent)
-- **Ruff**: Modern linter (fast, replaces many tools)
+- **Ruff**: Modern formatter and linter (fast, replaces black, isort, flake8)
 - **MyPy**: Type checker (catches type-related bugs)
 - **Pytest**: Test runner (with coverage reporting)
 - **Pre-commit**: Git hooks (automated quality checks)
