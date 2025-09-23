@@ -1,7 +1,6 @@
 """Configuration constants for the FUSION CLI."""
 
 import os
-from typing import List
 
 # Project paths
 PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -16,4 +15,4 @@ DEFAULT_THREAD_NAME: str = 's1'
 THREAD_SECTION_PATTERN: str = r'^s\d'
 
 # Parameters that accept dictionary values in configuration
-DICT_PARAM_OPTIONS_LIST: List[str] = ['request_distribution', 'requested_xt', 'phi']
+DICT_PARAM_OPTIONS: list[str] = ['request_distribution', 'requested_xt', 'phi']

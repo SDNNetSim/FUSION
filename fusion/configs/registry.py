@@ -3,7 +3,7 @@
 import glob
 import os
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from .config import ConfigManager
 from .errors import ConfigError, ConfigFileNotFoundError
@@ -11,16 +11,20 @@ from .validate import SchemaValidator
 
 
 class ConfigRegistry:
-    """Registry for managing configuration templates and presets.
-    
+    """
+    Registry for managing configuration templates and presets.
+
     This class provides a centralized registry for configuration templates,
     predefined profiles, and utilities for creating custom configurations.
     It supports template loading, validation, and profile-based configuration.
     """
 
-    def __init__(self, templates_dir: Optional[str] = None, schemas_dir: Optional[str] = None):
-        """Initialize configuration registry.
-        
+    def __init__(
+        self, templates_dir: str | None = None, schemas_dir: str | None = None
+    ):
+        """
+        Initialize configuration registry.
+
         :param templates_dir: Directory containing configuration templates,
                              defaults to 'templates' subdirectory
         :type templates_dir: Optional[str]
@@ -28,10 +32,14 @@ class ConfigRegistry:
                            defaults to 'schemas' subdirectory
         :type schemas_dir: Optional[str]
         """
-        self.templates_dir = templates_dir or os.path.join(os.path.dirname(__file__), 'templates')
-        self.schemas_dir = schemas_dir or os.path.join(os.path.dirname(__file__), 'schemas')
+        self.templates_dir = templates_dir or os.path.join(
+            os.path.dirname(__file__), 'templates'
+        )
+        self.schemas_dir = schemas_dir or os.path.join(
+            os.path.dirname(__file__), 'schemas'
+        )
         self.validator = SchemaValidator(self.schemas_dir)
-        self._templates_dict: Dict[str, str] = {}
+        self._templates: dict[str, str] = {}
         self._load_templates()
 
     def _load_templates(self) -> None:
@@ -42,35 +50,38 @@ class ConfigRegistry:
         template_pattern = os.path.join(self.templates_dir, '*.ini')
         for template_path in glob.glob(template_pattern):
             template_name = Path(template_path).stem
-            self._templates_dict[template_name] = template_path
+            self._templates[template_name] = template_path
 
-    def list_templates(self) -> List[str]:
-        """Get list of available configuration templates.
-        
+    def list_templates(self) -> list[str]:
+        """
+        Get list of available configuration templates.
+
         :return: List of available template names
         :rtype: List[str]
         """
-        return list(self._templates_dict.keys())
+        return list(self._templates.keys())
 
-    def get_template_path(self, template_name: str) -> Optional[str]:
-        """Get path to a specific template.
-        
+    def get_template_path(self, template_name: str) -> str | None:
+        """
+        Get path to a specific template.
+
         :param template_name: Name of the template to find
         :type template_name: str
         :return: Path to template file, or None if not found
         :rtype: Optional[str]
         """
-        return self._templates_dict.get(template_name)
+        return self._templates.get(template_name)
 
     def load_template(self, template_name: str) -> ConfigManager:
-        """Load a configuration template.
-        
+        """
+        Load a configuration template.
+
         :param template_name: Name of the template to load
         :type template_name: str
         :return: ConfigManager instance with loaded template
         :rtype: ConfigManager
         :raises ConfigError: If template is not found
-        
+
         Example:
             >>> registry = ConfigRegistry()
             >>> config = registry.load_template('default')
@@ -84,10 +95,12 @@ class ConfigRegistry:
 
         return ConfigManager(template_path, self.schemas_dir)
 
-    def create_custom_config(self, base_template: str = 'default',
-                             overrides: Optional[Dict[str, Any]] = None) -> ConfigManager:
-        """Create a custom configuration based on a template with overrides.
-        
+    def create_custom_config(
+        self, base_template: str = 'default', overrides: dict[str, Any] | None = None
+    ) -> ConfigManager:
+        """
+        Create a custom configuration based on a template with overrides.
+
         :param base_template: Name of base template to use, defaults to 'default'
         :type base_template: str
         :param overrides: Dictionary of configuration overrides in
@@ -96,7 +109,7 @@ class ConfigRegistry:
         :return: ConfigManager instance with custom configuration
         :rtype: ConfigManager
         :raises ConfigError: If base template is not found
-        
+
         Example:
             >>> registry = ConfigRegistry()
             >>> config = registry.create_custom_config(
@@ -119,9 +132,10 @@ class ConfigRegistry:
 
         return config_manager
 
-    def validate_config(self, config_path: str) -> List[str]:
-        """Validate a configuration file.
-        
+    def validate_config(self, config_path: str) -> list[str]:
+        """
+        Validate a configuration file.
+
         :param config_path: Path to configuration file to validate
         :type config_path: str
         :return: List of validation errors (empty if valid)
@@ -130,12 +144,15 @@ class ConfigRegistry:
         try:
             ConfigManager(config_path, self.schemas_dir)
             return []
-        except (ConfigError, ConfigFileNotFoundError, ValueError, FileNotFoundError) as e:
+        except (
+            ConfigError, ConfigFileNotFoundError, ValueError, FileNotFoundError
+        ) as e:
             return [str(e)]
 
-    def get_config_profiles(self) -> Dict[str, Dict[str, Any]]:
-        """Get predefined configuration profiles for different use cases.
-        
+    def get_config_profiles(self) -> dict[str, dict[str, Any]]:
+        """
+        Get predefined configuration profiles for different use cases.
+
         :return: Dictionary mapping profile names to their configurations
         :rtype: Dict[str, Dict[str, Any]]
         """
@@ -187,10 +204,12 @@ class ConfigRegistry:
             }
         }
 
-    def create_profile_config(self, profile_name: str,
-                              additional_overrides: Optional[Dict[str, Any]] = None) -> ConfigManager:
-        """Create configuration based on a predefined profile.
-        
+    def create_profile_config(
+        self, profile_name: str, additional_overrides: dict[str, Any] | None = None
+    ) -> ConfigManager:
+        """
+        Create configuration based on a predefined profile.
+
         :param profile_name: Name of the profile to use
         :type profile_name: str
         :param additional_overrides: Additional overrides to apply on top of profile
@@ -198,7 +217,7 @@ class ConfigRegistry:
         :return: ConfigManager instance with profile configuration
         :rtype: ConfigManager
         :raises ConfigError: If profile is not found
-        
+
         Example:
             >>> registry = ConfigRegistry()
             >>> config = registry.create_profile_config(
@@ -206,26 +225,28 @@ class ConfigRegistry:
             ...     {'num_requests': 100}
             ... )
         """
-        profiles_dict = self.get_config_profiles()
-        if profile_name not in profiles_dict:
+        profiles = self.get_config_profiles()
+        if profile_name not in profiles:
             raise ConfigError(
                 f"Profile '{profile_name}' not found. "
-                f"Available profiles: {', '.join(profiles_dict.keys())}"
+                f"Available profiles: {', '.join(profiles.keys())}"
             )
 
-        profile_dict = profiles_dict[profile_name]
-        overrides_dict = profile_dict['overrides'].copy()
+        profile = profiles[profile_name]
+        overrides = profile['overrides'].copy()
 
         # Merge additional overrides
         if additional_overrides:
-            overrides_dict.update(additional_overrides)
+            overrides.update(additional_overrides)
 
-        return self.create_custom_config(profile_dict['template'], overrides_dict)
+        return self.create_custom_config(profile['template'], overrides)
 
-    def export_config_template(self, config_manager: ConfigManager,
-                               template_name: str, description: str = "") -> str:
-        """Export a configuration as a new template.
-        
+    def export_config_template(
+        self, config_manager: ConfigManager, template_name: str, description: str = ""
+    ) -> str:
+        """
+        Export a configuration as a new template.
+
         :param config_manager: ConfigManager instance to export
         :type config_manager: ConfigManager
         :param template_name: Name for the new template file

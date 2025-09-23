@@ -3,7 +3,7 @@
 import ast
 from typing import Dict, Any, Optional, Union, Callable
 
-from fusion.configs.constants import DICT_PARAM_OPTIONS_LIST
+from fusion.configs.constants import DICT_PARAM_OPTIONS
 from fusion.configs.errors import ConfigTypeConversionError
 
 
@@ -88,6 +88,6 @@ def convert_dict_params_if_needed(value: Any, option: str) -> Any:
     Returns:
         Converted value if it was a dict param, otherwise original value
     """
-    if option in DICT_PARAM_OPTIONS_LIST and isinstance(value, str):
+    if option in DICT_PARAM_OPTIONS and isinstance(value, str):
         return convert_string_to_dict(value)
     return value
