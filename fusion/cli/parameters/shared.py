@@ -116,7 +116,9 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_plot_format_args(parser: argparse.ArgumentParser | argparse._ArgumentGroup) -> None:
+def add_plot_format_args(
+    parser: argparse.ArgumentParser | argparse._ArgumentGroup
+) -> None:
     """
     Add common plot format arguments to the parser.
 
@@ -131,7 +133,6 @@ def add_plot_format_args(parser: argparse.ArgumentParser | argparse._ArgumentGro
     parser.add_argument(
         "--plot_format",
         type=str,
-        choices=["png", "pdf", "svg", "eps"],
         default="png",
         help="Output format for generated plots"
     )

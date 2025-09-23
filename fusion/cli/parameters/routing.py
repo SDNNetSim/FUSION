@@ -24,7 +24,6 @@ def add_routing_args(parser: argparse.ArgumentParser) -> None:
     routing_group.add_argument(
         "--route_method",
         type=str,
-        choices=["shortest_path", "k_shortest_path"],
         help="Routing algorithm method"
     )
     routing_group.add_argument(
@@ -51,7 +50,6 @@ def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
     spectrum_group.add_argument(
         "--allocation_method",
         type=str,
-        choices=["first_fit", "best_fit", "last_fit"],
         help="Spectrum allocation method"
     )
     spectrum_group.add_argument(

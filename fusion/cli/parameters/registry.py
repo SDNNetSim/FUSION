@@ -48,8 +48,7 @@ class ArgumentRegistry:
     """
     Registry for managing CLI argument groups and parser construction.
 
-    Implements the centralized argument registry system following the FUSION
-    architecture plan. Provides unified interface for argument group management,
+    Provides unified interface for argument group management,
     parser construction, and subcommand registration.
 
     The registry supports both focused argument groups for granular control
