@@ -1,31 +1,39 @@
-"""
-Configuration setup module for the FUSION simulator CLI.
-"""
+"""Configuration setup module for the FUSION simulator CLI."""
 
 import os
 import re
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any
 
-from fusion.utils.os import create_directory
-from fusion.configs.errors import (
-    ConfigError, ConfigFileNotFoundError, ConfigParseError,
-    MissingRequiredOptionError, ConfigTypeConversionError
-)
 from fusion.configs.constants import (
-    DEFAULT_CONFIG_PATH, DEFAULT_THREAD_NAME,
-    THREAD_SECTION_PATTERN, REQUIRED_SECTION, CONFIG_DIR_PATH
+    CONFIG_DIR_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_THREAD_NAME,
+    REQUIRED_SECTION,
+    THREAD_SECTION_PATTERN,
 )
-from fusion.configs.schema import SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT
+from fusion.configs.errors import (
+    ConfigError,
+    ConfigFileNotFoundError,
+    ConfigParseError,
+    ConfigTypeConversionError,
+    MissingRequiredOptionError,
+)
+from fusion.configs.schema import OPTIONAL_OPTIONS_DICT, SIM_REQUIRED_OPTIONS_DICT
 from fusion.utils.config import (
-    apply_cli_override, safe_type_convert, convert_dict_params_if_needed
+    apply_cli_override,
+    convert_dict_params_if_needed,
+    safe_type_convert,
 )
+from fusion.utils.logging_config import get_logger
+from fusion.utils.os import create_directory
+
+logger = get_logger(__name__)
 
 
 def normalize_config_path(config_path: str) -> str:
-    """
-    Normalize the config file path.
+    """Normalize the config file path.
 
     :param config_path: Path to config file (relative or absolute)
     :type config_path: str
@@ -36,7 +44,7 @@ def normalize_config_path(config_path: str) -> str:
     config_path = os.path.expanduser(config_path)
     if not os.path.isabs(config_path):
         project_root = Path(__file__).resolve().parents[2]
-        config_path = project_root / config_path
+        config_path = str(project_root / config_path)
 
     config_path = os.path.abspath(config_path)
 
@@ -46,9 +54,8 @@ def normalize_config_path(config_path: str) -> str:
     return config_path
 
 
-def setup_config_from_cli(args: Any) -> Dict[str, Any]:
-    """
-    Setup the config from command line input.
+def setup_config_from_cli(args: Any) -> dict[str, Any]:
+    """Set up configuration from command line input.
 
     :param args: Parsed command line arguments
     :type args: Any
@@ -61,18 +68,23 @@ def setup_config_from_cli(args: Any) -> Dict[str, Any]:
     try:
         config_data = load_config(config_path, args_dict)
         return config_data
-    except (ConfigFileNotFoundError, ConfigParseError, MissingRequiredOptionError, ConfigTypeConversionError) as e:
-        print(f"[ERROR] Configuration error: {e}")
+    except (
+        ConfigFileNotFoundError,
+        ConfigParseError,
+        MissingRequiredOptionError,
+        ConfigTypeConversionError,
+    ) as e:
+        logger.error(f"Configuration error: {e}")
         return {}
     except (OSError, ValueError, TypeError) as e:
-        print(f"[ERROR] Unexpected error loading config: {e}")
+        logger.error(f"Unexpected error loading config: {e}")
         return {}
 
 
-def _process_required_options(config: ConfigParser, config_dict: Dict[str, Any],
-                              required_dict: Dict[str, Dict[str, Any]],
-                              optional_dict: Dict[str, Dict[str, Any]],
-                              args_dict: Dict[str, Any]) -> None:
+def _process_required_options(config: ConfigParser, config_dict: dict[str, Any],
+                              required_dict: dict[str, dict[str, Any]],
+                              optional_dict: dict[str, dict[str, Any]],
+                              args_dict: dict[str, Any]) -> None:
     for category, options_dict in required_dict.items():
         for option, type_obj in options_dict.items():
             if not config.has_option(category, option):
@@ -83,13 +95,17 @@ def _process_required_options(config: ConfigParser, config_dict: Dict[str, Any],
             config_value = config[category][option]
             # Convert the config value to the appropriate type
             try:
-                config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(config_value, type_obj, option)
+                config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(
+                    config_value, type_obj, option
+                )
                 type_converter = type_obj
             except ConfigTypeConversionError:
                 # Try fallback to optional_dict if available
                 if category in optional_dict and option in optional_dict[category]:
                     type_converter = optional_dict[category][option]
-                    config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(config_value, type_converter, option)
+                    config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(
+                        config_value, type_converter, option
+                    )
                 else:
                     raise
 
@@ -100,13 +116,15 @@ def _process_required_options(config: ConfigParser, config_dict: Dict[str, Any],
 
             # Apply CLI override if provided
             cli_value = args_dict.get(option)
-            final_value = apply_cli_override(config_dict[DEFAULT_THREAD_NAME][option], cli_value, type_converter)
+            final_value = apply_cli_override(
+                config_dict[DEFAULT_THREAD_NAME][option], cli_value, type_converter
+            )
             config_dict[DEFAULT_THREAD_NAME][option] = final_value
 
 
-def _process_optional_options(config: ConfigParser, config_dict: Dict[str, Any],
-                              optional_dict: Dict[str, Dict[str, Any]],
-                              args_dict: Dict[str, Any]) -> None:
+def _process_optional_options(config: ConfigParser, config_dict: dict[str, Any],
+                              optional_dict: dict[str, dict[str, Any]],
+                              args_dict: dict[str, Any]) -> None:
     for category, options_dict in optional_dict.items():
         for option, type_obj in options_dict.items():
             if option not in config[category]:
@@ -116,11 +134,15 @@ def _process_optional_options(config: ConfigParser, config_dict: Dict[str, Any],
                     config_value = config[category][option]
                     converted_value = safe_type_convert(config_value, type_obj, option)
 
-                    converted_value = convert_dict_params_if_needed(converted_value, option)
+                    converted_value = convert_dict_params_if_needed(
+                        converted_value, option
+                    )
 
                     # Apply CLI override
                     cli_value = args_dict.get(option)
-                    config_dict[DEFAULT_THREAD_NAME][option] = apply_cli_override(converted_value, cli_value, type_obj)
+                    config_dict[DEFAULT_THREAD_NAME][option] = apply_cli_override(
+                        converted_value, cli_value, type_obj
+                    )
                 except ConfigTypeConversionError:
                     # Skip options that can't be converted - they're optional
                     continue
@@ -144,7 +166,7 @@ def _read_config_file(config_path: str) -> ConfigParser:
     return config
 
 
-def _resolve_config_path(config_path: Optional[str]) -> str:
+def _resolve_config_path(config_path: str | None) -> str:
     if config_path is None:
         config_path = DEFAULT_CONFIG_PATH
     else:
@@ -156,9 +178,10 @@ def _resolve_config_path(config_path: Optional[str]) -> str:
     return config_path
 
 
-def load_config(config_path: Optional[str], args_dict: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """
-    Load an existing config from a config file.
+def load_config(
+    config_path: str | None, args_dict: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Load an existing config from a config file.
 
     This function handles the complete configuration loading process:
     1. Resolves and validates the config file path
@@ -181,13 +204,19 @@ def load_config(config_path: Optional[str], args_dict: Optional[Dict[str, Any]] 
     if args_dict is None:
         args_dict = {}
 
-    config_dict = {DEFAULT_THREAD_NAME: dict()}
+    config_dict: dict[str, Any] = {DEFAULT_THREAD_NAME: {}}
 
     try:
         resolved_path = _resolve_config_path(config_path)
         config = _read_config_file(resolved_path)
         _validate_config_structure(config)
-        _process_required_options(config, config_dict, SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT, args_dict)
+        _process_required_options(
+            config,
+            config_dict,
+            SIM_REQUIRED_OPTIONS_DICT,
+            OPTIONAL_OPTIONS_DICT,
+            args_dict,
+        )
         _process_optional_options(config, config_dict, OPTIONAL_OPTIONS_DICT, args_dict)
 
         thread_sections = [s for s in config.sections() if s != REQUIRED_SECTION]
@@ -203,18 +232,27 @@ def load_config(config_path: Optional[str], args_dict: Optional[Dict[str, Any]] 
 
         return config_dict or {}
 
-    except (ConfigFileNotFoundError, ConfigParseError, MissingRequiredOptionError, ConfigTypeConversionError) as error:
-        print(f"[ERROR] Configuration error: {error}")
+    except (
+        ConfigFileNotFoundError,
+        ConfigParseError,
+        MissingRequiredOptionError,
+        ConfigTypeConversionError,
+    ) as error:
+        logger.error(f"Configuration error: {error}")
         return {}
     except (OSError, ValueError, TypeError) as error:
-        print(f"[ERROR] Unexpected error loading config: {error}")
+        logger.error(f"Unexpected error loading config: {error}")
         return {}
 
 
-def _setup_threads(config: ConfigParser, config_dict: Dict[str, Any], section_list: List[str],
-                   types_dict: Dict[str, Dict[str, Any]],
-                   optional_dict: Dict[str, Dict[str, Any]],
-                   args_dict: Dict[str, Any]) -> Dict[str, Any]:
+def _setup_threads(
+    config: ConfigParser,
+    config_dict: dict[str, Any],
+    section_list: list[str],
+    types_dict: dict[str, dict[str, Any]],
+    optional_dict: dict[str, dict[str, Any]],
+    args_dict: dict[str, Any],
+) -> dict[str, Any]:
     for new_thread in section_list:
         if not re.match(THREAD_SECTION_PATTERN, new_thread):
             continue
@@ -222,11 +260,16 @@ def _setup_threads(config: ConfigParser, config_dict: Dict[str, Any], section_li
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
 
         for key, value in config.items(new_thread):
-            category = _find_category(types_dict, key) or _find_category(optional_dict, key)
+            category = _find_category(types_dict, key) or _find_category(
+                optional_dict, key
+            )
             if category is None:
                 continue
 
-            type_obj = types_dict.get(category, {}).get(key) or optional_dict.get(category, {}).get(key)
+            type_obj = (
+                types_dict.get(category, {}).get(key)
+                or optional_dict.get(category, {}).get(key)
+            )
             if type_obj is None:
                 continue
 
@@ -235,7 +278,9 @@ def _setup_threads(config: ConfigParser, config_dict: Dict[str, Any], section_li
 
                 # Apply CLI override
                 cli_value = args_dict.get(key)
-                config_dict[new_thread][key] = apply_cli_override(converted_value, cli_value, type_obj)
+                config_dict[new_thread][key] = apply_cli_override(
+                    converted_value, cli_value, type_obj
+                )
             except ConfigTypeConversionError:
                 # Skip options that can't be converted in threads
                 continue
@@ -243,21 +288,24 @@ def _setup_threads(config: ConfigParser, config_dict: Dict[str, Any], section_li
     return config_dict
 
 
-def _copy_dict_vals(dest_key: str, dictionary: Dict[str, Any]) -> Dict[str, Any]:
+def _copy_dict_vals(
+    dest_key: str, dictionary: dict[str, Any]
+) -> dict[str, Any]:
     dictionary[dest_key] = dict(dictionary[DEFAULT_THREAD_NAME].items())
     return dictionary
 
 
-def _find_category(category_dict: Dict[str, Dict[str, Any]], target_key: str) -> Optional[str]:
+def _find_category(
+    category_dict: dict[str, dict[str, Any]], target_key: str
+) -> str | None:
     for category, subdict in category_dict.items():
         if target_key in subdict:
             return category
     return None
 
 
-def load_and_validate_config(args: Any) -> Dict[str, Any]:
-    """
-    Load and validate configuration from CLI arguments.
+def load_and_validate_config(args: Any) -> dict[str, Any]:
+    """Load and validate configuration from CLI arguments.
 
     :param args: Parsed command line arguments
     :type args: Any
@@ -269,17 +317,15 @@ def load_and_validate_config(args: Any) -> Dict[str, Any]:
 
 
 class ConfigManager:
-    """
-    Centralized configuration management for FUSION simulator.
-    
+    """Centralized configuration management for FUSION simulator.
+
     Provides a unified interface for accessing configuration from both
     INI files and command-line arguments, with proper validation and
     error handling. Supports multi-threaded configuration sections.
     """
 
-    def __init__(self, config_dict: Dict[str, Any], args: Any) -> None:
-        """
-        Initialize ConfigManager with configuration dictionary and arguments.
+    def __init__(self, config_dict: dict[str, Any], args: Any) -> None:
+        """Initialize ConfigManager with configuration dictionary and arguments.
 
         :param config_dict: Parsed configuration dictionary
         :type config_dict: Dict[str, Any]
@@ -298,8 +344,7 @@ class ConfigManager:
 
     @classmethod
     def from_args(cls, args: Any) -> 'ConfigManager':
-        """
-        Load arguments from command line input.
+        """Load arguments from command line input.
 
         :param args: Parsed command line arguments
         :type args: Any
@@ -317,9 +362,10 @@ class ConfigManager:
             raise ConfigError(f"Failed to create ConfigManager: {e}") from e
 
     @classmethod
-    def from_file(cls, config_path: str, args_dict: Optional[Dict[str, Any]] = None) -> 'ConfigManager':
-        """
-        Create ConfigManager from config file path.
+    def from_file(
+        cls, config_path: str, args_dict: dict[str, Any] | None = None
+    ) -> 'ConfigManager':
+        """Create ConfigManager from config file path.
 
         :param config_path: Path to configuration file
         :type config_path: str
@@ -330,32 +376,32 @@ class ConfigManager:
         """
         config_dict = load_config(config_path, args_dict)
         # Create a simple namespace object for args if none provided
-        args = type('Args', (), args_dict or {})()
+        args = type("Args", (), args_dict or {})()
         return cls(config_dict, args)
 
-    def as_dict(self) -> Dict[str, Any]:
-        """
-        Get config as dict.
+    def as_dict(self) -> dict[str, Any]:
+        """Get config as dict.
 
         :return: Configuration dictionary
         :rtype: Dict[str, Any]
         """
         return self._config
 
-    def get(self, thread: str = DEFAULT_THREAD_NAME) -> Dict[str, Any]:
-        """
-        Return a single config thread.
+    def get(self, thread: str = DEFAULT_THREAD_NAME) -> dict[str, Any]:
+        """Return a single config thread.
 
         :param thread: Thread identifier, defaults to 's1'
         :type thread: str
         :return: Configuration for specified thread
         :rtype: Dict[str, Any]
         """
-        return self._config.get(thread, {})
+        result = self._config.get(thread, {})
+        return result if result is not None else {}
 
-    def get_value(self, key: str, thread: str = DEFAULT_THREAD_NAME, default: Any = None) -> Any:
-        """
-        Get a specific configuration value.
+    def get_value(
+        self, key: str, thread: str = DEFAULT_THREAD_NAME, default: Any = None
+    ) -> Any:
+        """Get a specific configuration value.
 
         :param key: Configuration key
         :type key: str
@@ -370,8 +416,7 @@ class ConfigManager:
         return thread_config.get(key, default)
 
     def has_thread(self, thread: str) -> bool:
-        """
-        Check if a thread exists in configuration.
+        """Check if a thread exists in configuration.
 
         :param thread: Thread identifier
         :type thread: str
@@ -380,9 +425,8 @@ class ConfigManager:
         """
         return thread in self._config
 
-    def get_threads(self) -> List[str]:
-        """
-        Get list of all configured threads.
+    def get_threads(self) -> list[str]:
+        """Get list of all configured threads.
 
         :return: List of thread identifiers
         :rtype: List[str]
@@ -390,8 +434,7 @@ class ConfigManager:
         return list(self._config.keys())
 
     def get_args(self) -> Any:
-        """
-        Get args.
+        """Get args.
 
         :return: Command line arguments
         :rtype: Any
@@ -400,5 +443,6 @@ class ConfigManager:
 
 
 if __name__ == '__main__':
-    dummy_args = {'run_id': 'debug_test'}
-    print(load_config('ini/run_ini/config.ini', dummy_args))
+    dummy_args: dict[str, Any] = {'run_id': 'debug_test'}
+    result = load_config('ini/run_ini/config.ini', dummy_args)
+    logger.info(f"Debug config load result: {result}")
