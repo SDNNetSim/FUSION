@@ -9,7 +9,7 @@ import csv
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any
 
 
 class BaseExporter(ABC):
@@ -45,7 +45,7 @@ class CSVExporter(BaseExporter):
         """String representation of CSVExporter."""
         return "CSVExporter"
 
-    def export(self, data: List[Dict], output_path: Path) -> None:
+    def export(self, data: list[dict], output_path: Path) -> None:
         """Export list of dictionaries as CSV."""
         if not data:
             return
@@ -53,10 +53,10 @@ class CSVExporter(BaseExporter):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Get all unique keys from all dictionaries
-        fieldnames = set()
+        fieldnames_set: set[str] = set()
         for row in data:
-            fieldnames.update(row.keys())
-        fieldnames = sorted(fieldnames)
+            fieldnames_set.update(row.keys())
+        fieldnames = sorted(fieldnames_set)
 
         with output_path.open('w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -67,7 +67,7 @@ class CSVExporter(BaseExporter):
 class ExporterRegistry:
     """Registry for data exporters."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._exporters = {
             'json': JSONExporter(),
             'csv': CSVExporter(),
@@ -81,10 +81,11 @@ class ExporterRegistry:
         """Get an exporter by format name."""
         if format_name not in self._exporters:
             raise ValueError(f"Unknown export format: {format_name}")
-        return self._exporters[format_name]
+        exporter: BaseExporter = self._exporters[format_name]
+        return exporter
 
     @property
-    def supported_formats(self) -> List[str]:
+    def supported_formats(self) -> list[str]:
         """Get list of supported export formats."""
         return list(self._exporters.keys())
 
@@ -92,25 +93,25 @@ class ExporterRegistry:
 class SimulationDataExporter:
     """Main data export interface for simulation data."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.registry = ExporterRegistry()
 
-    def export_topology(self, topology_data: Dict, output_path: Union[str, Path],
+    def export_topology(self, topology_data: dict, output_path: str | Path,
                         output_format: str = 'json') -> None:
         """Export network topology data."""
         output_path = Path(output_path)
         exporter = self.registry.get_exporter(output_format)
         exporter.export(topology_data, output_path)
 
-    def export_results(self, results_data: Dict, output_path: Union[str, Path],
+    def export_results(self, results_data: dict, output_path: str | Path,
                        output_format: str = 'json') -> None:
         """Export simulation results data."""
         output_path = Path(output_path)
         exporter = self.registry.get_exporter(output_format)
         exporter.export(results_data, output_path)
 
-    def export_metrics(self, metrics_data: Union[Dict, List[Dict]],
-                       output_path: Union[str, Path], output_format: str = 'csv') -> None:
+    def export_metrics(self, metrics_data: dict | list[dict],
+                       output_path: str | Path, output_format: str = 'csv') -> None:
         """Export simulation metrics data."""
         output_path = Path(output_path)
         exporter = self.registry.get_exporter(output_format)

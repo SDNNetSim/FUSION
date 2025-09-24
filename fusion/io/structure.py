@@ -1,10 +1,15 @@
 from pathlib import Path
-from typing import Dict, List, Tuple
+
+from fusion.utils.os import find_project_root
 
 
-def assign_link_lengths(network_fp: Path, node_pairs_dict: Dict[str, str], constant_weight: bool = False) -> Dict[Tuple[str, str], float]:
+def assign_link_lengths(
+    network_fp: Path,
+    node_pairs_dict: dict[str, str],
+    constant_weight: bool = False
+) -> dict[tuple[str, str], float]:
     """Assign length to each link in a given topology.
-    
+
     :param network_fp: Path to the network topology file
     :type network_fp: Path
     :param node_pairs_dict: Dictionary mapping node names to alternative names
@@ -31,9 +36,9 @@ def assign_link_lengths(network_fp: Path, node_pairs_dict: Dict[str, str], const
     return link_lengths_dict
 
 
-def assign_core_nodes(core_nodes_fp: Path) -> List[str]:
+def assign_core_nodes(core_nodes_fp: Path) -> list[str]:
     """Determine which nodes are core nodes in the network.
-    
+
     :param core_nodes_fp: Path to the core nodes file
     :type core_nodes_fp: Path
     :return: List of core node identifiers
@@ -46,11 +51,16 @@ def assign_core_nodes(core_nodes_fp: Path) -> List[str]:
     return core_nodes_list
 
 
-def create_network(net_name: str, base_fp: str = None, const_weight: bool = False, is_only_core_node: bool = False) -> Tuple[Dict[Tuple[str, str], float], List[str]]:
+def create_network(
+    net_name: str,
+    base_fp: str | None = None,
+    const_weight: bool = False,
+    is_only_core_node: bool = False
+) -> tuple[dict[tuple[str, str], float], list[str]]:
     """Build a physical network structure from topology files.
-    
+
     Resolves all paths safely using project-root-relative logic.
-    
+
     :param net_name: Name of the network topology to load
     :type net_name: str
     :param base_fp: Base file path for topology files
@@ -66,7 +76,7 @@ def create_network(net_name: str, base_fp: str = None, const_weight: bool = Fals
     core_nodes_list = []
 
     # Resolve base_fp to absolute path
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = Path(find_project_root())
     if base_fp is None:
         base_path = project_root / "data/raw"
     else:
