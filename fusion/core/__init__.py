@@ -9,20 +9,44 @@ This package provides the fundamental building blocks for optical network simula
 - Routing, spectrum assignment, and SNR measurement components
 """
 
-from .properties import (
-    RoutingProps,
-    SpectrumProps,
-    SNRProps,
-    SDNProps,
-    StatsProps,
-    SNAP_KEYS_LIST
-)
+# Core simulation components
+# Metrics and persistence
+from .metrics import SimStats
+from .ml_metrics import MLMetricsCollector
+from .persistence import StatsPersistence
 
+# Core data properties
+from .properties import (
+    SNAP_KEYS_LIST,
+    RoutingProps,
+    SDNProps,
+    SNRProps,
+    SpectrumProps,
+    StatsProps,
+)
+from .routing import Routing
+from .sdn_controller import SDNController
+from .simulation import SimulationEngine
+from .snr_measurements import SnrMeasurements
+from .spectrum_assignment import SpectrumAssignment
+
+# Public API - explicitly define what's exported
 __all__ = [
-    'RoutingProps',
-    'SpectrumProps',
-    'SNRProps',
-    'SDNProps',
-    'StatsProps',
-    'SNAP_KEYS_LIST'
+    # Core simulation components
+    "SimulationEngine",
+    "SDNController",
+    "Routing",
+    "SpectrumAssignment",
+    "SnrMeasurements",
+    # Metrics and persistence
+    "SimStats",
+    "MLMetricsCollector",
+    "StatsPersistence",
+    # Core data properties
+    "RoutingProps",
+    "SpectrumProps",
+    "SNRProps",
+    "SDNProps",
+    "StatsProps",
+    "SNAP_KEYS_LIST",
 ]
