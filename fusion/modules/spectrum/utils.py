@@ -29,10 +29,10 @@ class SpectrumHelpers:
         self.spectrum_props = spectrum_props
         self.sdn_props = sdn_props
 
-        self.start_index = None
-        self.end_index = None
-        self.core_number = None
-        self.current_band = None
+        self.start_index: int | None = None
+        self.end_index: int | None = None
+        self.core_number: int | None = None
+        self.current_band: str | None = None
 
     def _check_free_spectrum(self, link_tuple: tuple, rev_link_tuple: tuple) -> bool:
         """Check if spectrum slots are free on both forward and reverse links.
