@@ -43,12 +43,12 @@ class SDNController:
         self.spectrum_obj = SpectrumAssignment(
             engine_props=self.engine_props,
             sdn_props=self.sdn_props,
-            route_props=self.route_obj.route_props
+            route_props=self.route_obj.route_props,
         )
         self.slicing_manager = LightPathSlicingManager(
             engine_props=self.engine_props,
             sdn_props=self.sdn_props,
-            spectrum_obj=self.spectrum_obj
+            spectrum_obj=self.spectrum_obj,
         )
 
     def release(self) -> None:
@@ -64,14 +64,13 @@ class SDNController:
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
-            for band in self.engine_props['band_list']:
-                for core_num in range(self.engine_props['cores_per_link']):
+            for band in self.engine_props["band_list"]:
+                for core_num in range(self.engine_props["cores_per_link"]):
                     if self.sdn_props.network_spectrum_dict is None:
                         continue
-                    core_array = (
-                        self.sdn_props.network_spectrum_dict[(source, dest)]
-                        ['cores_matrix'][band][core_num]
-                    )
+                    core_array = self.sdn_props.network_spectrum_dict[(source, dest)][
+                        "cores_matrix"
+                    ][band][core_num]
                     request_id_indices = np.where(
                         core_array == self.sdn_props.request_id
                     )
@@ -82,24 +81,28 @@ class SDNController:
                     )
 
                     for request_index in request_id_indices[0]:
-                        self.sdn_props.network_spectrum_dict[
-                            (source, dest)
-                        ]['cores_matrix'][band][core_num][request_index] = 0
-                        self.sdn_props.network_spectrum_dict[
-                            (dest, source)
-                        ]['cores_matrix'][band][core_num][request_index] = 0
+                        self.sdn_props.network_spectrum_dict[(source, dest)][
+                            "cores_matrix"
+                        ][band][core_num][request_index] = 0
+                        self.sdn_props.network_spectrum_dict[(dest, source)][
+                            "cores_matrix"
+                        ][band][core_num][request_index] = 0
                     for guard_band_index in guard_band_indices[0]:
-                        self.sdn_props.network_spectrum_dict[
-                            (source, dest)
-                        ]['cores_matrix'][band][core_num][guard_band_index] = 0
-                        self.sdn_props.network_spectrum_dict[
-                            (dest, source)
-                        ]['cores_matrix'][band][core_num][guard_band_index] = 0
+                        self.sdn_props.network_spectrum_dict[(source, dest)][
+                            "cores_matrix"
+                        ][band][core_num][guard_band_index] = 0
+                        self.sdn_props.network_spectrum_dict[(dest, source)][
+                            "cores_matrix"
+                        ][band][core_num][guard_band_index] = 0
 
         try:
-            if (self.sdn_props.depart is None or self.sdn_props.arrive is None or
-                self.sdn_props.bandwidth is None or self.sdn_props.path_list is None or
-                self.sdn_props.network_spectrum_dict is None):
+            if (
+                self.sdn_props.depart is None
+                or self.sdn_props.arrive is None
+                or self.sdn_props.bandwidth is None
+                or self.sdn_props.path_list is None
+                or self.sdn_props.network_spectrum_dict is None
+            ):
                 logger.warning("Missing data for throughput calculation")
                 return
 
@@ -110,21 +113,26 @@ class SDNController:
             for source, dest in zip(
                 self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
             ):
-                self.sdn_props.network_spectrum_dict[
-                    (source, dest)
-                ]['throughput'] += data_transferred
-                self.sdn_props.network_spectrum_dict[
-                    (dest, source)
-                ]['throughput'] += data_transferred
+                self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += (
+                    data_transferred
+                )
+                self.sdn_props.network_spectrum_dict[(dest, source)]["throughput"] += (
+                    data_transferred
+                )
         except (TypeError, ValueError) as e:
             logger.warning(
                 "Throughput update skipped due to missing or invalid "
-                "timing/bandwidth: %s", e
+                "timing/bandwidth: %s",
+                e,
             )
 
     def _allocate_guard_band(
-        self, band: str, core_matrix: dict[str, Any],
-        reverse_core_matrix: dict[str, Any], core_num: int, end_slot: int
+        self,
+        band: str,
+        core_matrix: dict[str, Any],
+        reverse_core_matrix: dict[str, Any],
+        core_num: int,
+        end_slot: int,
     ) -> None:
         """
         Allocate guard band slots for spectrum isolation.
@@ -162,12 +170,14 @@ class SDNController:
         :raises BufferError: If attempting to allocate already taken spectrum
         :raises ValueError: If no spectrum is detected during allocation
         """
-        if (self.spectrum_obj.spectrum_props.start_slot is None or
-            self.spectrum_obj.spectrum_props.end_slot is None or
-            self.spectrum_obj.spectrum_props.core_number is None or
-            self.spectrum_obj.spectrum_props.current_band is None or
-            self.sdn_props.path_list is None or
-            self.sdn_props.network_spectrum_dict is None):
+        if (
+            self.spectrum_obj.spectrum_props.start_slot is None
+            or self.spectrum_obj.spectrum_props.end_slot is None
+            or self.spectrum_obj.spectrum_props.core_number is None
+            or self.spectrum_obj.spectrum_props.current_band is None
+            or self.sdn_props.path_list is None
+            or self.sdn_props.network_spectrum_dict is None
+        ):
             raise ValueError("Missing required spectrum or path information")
 
         start_slot = self.spectrum_obj.spectrum_props.start_slot
@@ -175,7 +185,7 @@ class SDNController:
         core_num = self.spectrum_obj.spectrum_props.core_number
         band = self.spectrum_obj.spectrum_props.current_band
 
-        if self.engine_props['guard_slots'] != 0:
+        if self.engine_props["guard_slots"] != 0:
             end_slot = end_slot - 1
         else:
             end_slot = end_slot + 1
@@ -191,42 +201,40 @@ class SDNController:
             ]
 
             spectrum_slots_set = set(
-                link_dict['cores_matrix'][band][core_num][start_slot:end_slot]
+                link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
             )
             reverse_spectrum_slots_set = set(
-                reverse_link_dict['cores_matrix'][band][core_num][start_slot:end_slot]
+                reverse_link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
             )
 
             if spectrum_slots_set == {} or reverse_spectrum_slots_set == {}:
-                raise ValueError('Nothing detected on the spectrum when allocating.')
+                raise ValueError("Nothing detected on the spectrum when allocating.")
 
             if spectrum_slots_set != {0.0} or reverse_spectrum_slots_set != {0.0}:
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
             if link_tuple in self.sdn_props.network_spectrum_dict:
-                self.sdn_props.network_spectrum_dict[link_tuple]['usage_count'] += 1
-            self.sdn_props.network_spectrum_dict[
-                (link_tuple[1], link_tuple[0])
-            ]['usage_count'] += 1
+                self.sdn_props.network_spectrum_dict[link_tuple]["usage_count"] += 1
+            self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])][
+                "usage_count"
+            ] += 1
 
-            core_matrix = link_dict['cores_matrix']
-            reverse_core_matrix = reverse_link_dict['cores_matrix']
+            core_matrix = link_dict["cores_matrix"]
+            reverse_core_matrix = reverse_link_dict["cores_matrix"]
             if self.sdn_props.request_id is None:
                 raise ValueError("Request ID is None")
-            core_matrix[band][core_num][start_slot:end_slot] = (
-                self.sdn_props.request_id
-            )
+            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
             reverse_core_matrix[band][core_num][start_slot:end_slot] = (
                 self.sdn_props.request_id
             )
 
-            if self.engine_props['guard_slots']:
+            if self.engine_props["guard_slots"]:
                 self._allocate_guard_band(
                     band=band,
                     core_matrix=core_matrix,
                     reverse_core_matrix=reverse_core_matrix,
                     core_num=core_num,
-                    end_slot=end_slot
+                    end_slot=end_slot,
                 )
 
     def _update_request_statistics(self, bandwidth: float | None) -> None:
@@ -239,26 +247,35 @@ class SDNController:
         if bandwidth is not None:
             self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
-            spectrum_key = stat_key.split('_', maxsplit=1)[0]
-            if spectrum_key == 'crosstalk':
-                spectrum_key = 'crosstalk_cost'
-            elif spectrum_key == 'core':
-                spectrum_key = 'core_number'
-            elif spectrum_key == 'band':
-                spectrum_key = 'current_band'
-            elif spectrum_key == 'start':
-                spectrum_key = 'start_slot'
-            elif spectrum_key == 'end':
-                spectrum_key = 'end_slot'
+            spectrum_key = stat_key.split("_", maxsplit=1)[0]
+            if spectrum_key == "crosstalk":
+                spectrum_key = "crosstalk_cost"
+            elif spectrum_key == "core":
+                spectrum_key = "core_number"
+            elif spectrum_key == "band":
+                spectrum_key = "current_band"
+            elif spectrum_key == "start":
+                spectrum_key = "start_slot"
+            elif spectrum_key == "end":
+                spectrum_key = "end_slot"
 
             self.sdn_props.update_params(
-                key=stat_key, spectrum_key=spectrum_key,
-                spectrum_obj=self.spectrum_obj.spectrum_props
+                key=stat_key,
+                spectrum_key=spectrum_key,
+                spectrum_obj=self.spectrum_obj.spectrum_props,
             )
 
+    # Backward compatibility alias for tests
+    def _update_req_stats(self, bandwidth: float | None = None) -> None:
+        """Legacy method name for _update_request_statistics."""
+        self._update_request_statistics(bandwidth)
+
     def _handle_slicing_request(
-        self, path_list: list[Any], path_index: int,
-        forced_segments: int, force_slicing: bool
+        self,
+        path_list: list[Any],
+        path_index: int,
+        forced_segments: int,
+        force_slicing: bool,
     ) -> bool:
         """
         Handle slicing request using the dedicated slicing manager.
@@ -274,28 +291,41 @@ class SDNController:
         :return: True if slicing was successful
         :rtype: bool
         """
-        if self.engine_props['dynamic_lps']:
+        if self.engine_props["dynamic_lps"]:
             return self.slicing_manager.handle_dynamic_slicing_direct(
-                path_list=path_list, path_index=path_index,
-                forced_segments=forced_segments, sdn_controller=self
+                path_list=path_list,
+                path_index=path_index,
+                forced_segments=forced_segments,
+                sdn_controller=self,
             )
         return self.slicing_manager.handle_static_slicing_direct(
             path_list=path_list, forced_segments=forced_segments, sdn_controller=self
         )
 
-    def _handle_congestion(self, remaining_bandwidth: int) -> None:
+    def _handle_congestion(
+        self, remaining_bandwidth: int = None, remaining_bw: int = None
+    ) -> None:
         """
         Handle allocation failure due to network congestion.
 
         :param remaining_bandwidth: Remaining bandwidth that could not be allocated
         :type remaining_bandwidth: int
+        :param remaining_bw: Legacy parameter name for remaining_bandwidth
+        :type remaining_bw: int
         """
+        # Handle backward compatibility
+        if remaining_bw is not None:
+            remaining_bandwidth = remaining_bw
+
+        if remaining_bandwidth is None:
+            raise ValueError("Must provide remaining_bandwidth")
         self.sdn_props.was_routed = False
-        self.sdn_props.block_reason = 'congestion'
+        self.sdn_props.block_reason = "congestion"
         self.sdn_props.number_of_transponders = 1
 
-        if (self.sdn_props.bandwidth is not None and
-            remaining_bandwidth != int(self.sdn_props.bandwidth)):
+        if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(
+            self.sdn_props.bandwidth
+        ):
             self.release()
 
         self.sdn_props.is_sliced = False
@@ -306,8 +336,7 @@ class SDNController:
         self.sdn_props.reset_params()
 
     def _setup_routing(
-        self, force_route_matrix: list[Any] | None,
-        force_mod_format: str | None
+        self, force_route_matrix: list[Any] | None, force_mod_format: str | None
     ) -> tuple[list[Any], float]:
         """
         Setup routing for the request.
@@ -351,18 +380,23 @@ class SDNController:
             input_df = get_ml_obs(
                 request_dict=request_dict,
                 engine_properties=self.engine_props,
-                sdn_properties=self.sdn_props
+                sdn_properties=self.sdn_props,
             )
             prediction = ml_model.predict(input_df)[0]
             return float(prediction)
         return -1.0
 
     def _process_single_path(
-        self, path_list: list[Any], path_index: int,
-        mod_format_list: list[str], forced_segments: float,
-        force_slicing: bool, segment_slicing: bool,
-        forced_index: int | None, force_core: int | None,
-        forced_band: str | None
+        self,
+        path_list: list[Any],
+        path_index: int,
+        mod_format_list: list[str],
+        forced_segments: float,
+        force_slicing: bool,
+        segment_slicing: bool,
+        forced_index: int | None,
+        force_core: int | None,
+        forced_band: str | None,
     ) -> bool:
         """
         Process allocation for a single path.
@@ -408,15 +442,18 @@ class SDNController:
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
 
             if self.spectrum_obj.spectrum_props.is_free is not True:
-                self.sdn_props.block_reason = 'congestion'
+                self.sdn_props.block_reason = "congestion"
                 return False
             self._update_request_statistics(bandwidth=self.sdn_props.bandwidth)
 
         return True
 
     def _finalize_successful_allocation(
-        self, path_index: int, route_time: float,
-        force_slicing: bool, segment_slicing: bool
+        self,
+        path_index: int,
+        route_time: float,
+        force_slicing: bool,
+        segment_slicing: bool,
     ) -> None:
         """
         Finalize a successful allocation.
@@ -432,9 +469,7 @@ class SDNController:
         """
         self.sdn_props.was_routed = True
         self.sdn_props.route_time = route_time
-        self.sdn_props.path_weight = (
-            self.route_obj.route_props.weights_list[path_index]
-        )
+        self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
         self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
         if not segment_slicing and not force_slicing:
@@ -442,11 +477,16 @@ class SDNController:
             self.allocate()
 
     def handle_event(
-        self, request_dict: dict[str, Any], request_type: str,
-        force_slicing: bool = False, force_route_matrix: list[Any] | None = None,
-        forced_index: int | None = None, force_core: int | None = None,
-        ml_model: Any | None = None, force_mod_format: str | None = None,
-        forced_band: str | None = None
+        self,
+        request_dict: dict[str, Any],
+        request_type: str,
+        force_slicing: bool = False,
+        force_route_matrix: list[Any] | None = None,
+        forced_index: int | None = None,
+        force_core: int | None = None,
+        ml_model: Any | None = None,
+        force_mod_format: str | None = None,
+        forced_band: str | None = None,
     ) -> None:
         """
         Handle any event that occurs in the simulation.
@@ -494,43 +534,45 @@ class SDNController:
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     mod_format_list = (
-                        self.route_obj.route_props.modulation_formats_matrix[
-                            path_index
-                        ]
+                        self.route_obj.route_props.modulation_formats_matrix[path_index]
                     )
 
                     # Process the path
                     success = self._process_single_path(
-                        path_list, path_index, mod_format_list,
-                        forced_segments, force_slicing, segment_slicing,
-                        forced_index, force_core, forced_band
+                        path_list,
+                        path_index,
+                        mod_format_list,
+                        forced_segments,
+                        force_slicing,
+                        segment_slicing,
+                        forced_index,
+                        force_core,
+                        forced_band,
                     )
 
                     if success:
                         self._finalize_successful_allocation(
-                            path_index, route_time,
-                            force_slicing, segment_slicing
+                            path_index, route_time, force_slicing, segment_slicing
                         )
                         return
 
             # Try segment slicing if not already tried
             if (
-                self.engine_props['max_segments'] > 1
-                and self.sdn_props.bandwidth != '25'
+                self.engine_props["max_segments"] > 1
+                and self.sdn_props.bandwidth != "25"
                 and not segment_slicing
             ):
                 segment_slicing = True
                 continue
 
             # All paths exhausted
-            self.sdn_props.block_reason = 'distance'
+            self.sdn_props.block_reason = "distance"
             self.sdn_props.was_routed = False
             return
 
     # Backward compatibility methods for tests
     def _allocate_slicing(
-        self, num_segments: int, mod_format: str,
-        path_list: list[Any], bandwidth: str
+        self, num_segments: int, mod_format: str, path_list: list[Any], bandwidth: str
     ) -> None:
         """
         Backward compatibility wrapper for allocate_slicing method.
@@ -545,14 +587,15 @@ class SDNController:
         :type bandwidth: str
         """
         self.slicing_manager.allocate_slicing_direct(
-            num_segments=num_segments, mod_format=mod_format,
-            path_list=path_list, bandwidth=bandwidth,
-            sdn_controller=self
+            num_segments=num_segments,
+            mod_format=mod_format,
+            path_list=path_list,
+            bandwidth=bandwidth,
+            sdn_controller=self,
         )
 
     def _handle_dynamic_slicing(
-        self, path_list: list[Any], path_index: int,
-        forced_segments: int
+        self, path_list: list[Any], path_index: int, forced_segments: int
     ) -> None:
         """
         Backward compatibility wrapper for handle_dynamic_slicing method.
@@ -565,6 +608,8 @@ class SDNController:
         :type forced_segments: int
         """
         self.slicing_manager.handle_dynamic_slicing_direct(
-            path_list=path_list, path_index=path_index,
-            forced_segments=forced_segments, sdn_controller=self
+            path_list=path_list,
+            path_index=path_index,
+            forced_segments=forced_segments,
+            sdn_controller=self,
         )

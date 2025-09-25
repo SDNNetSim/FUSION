@@ -21,7 +21,7 @@ from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.modules.ml import load_model
 from fusion.reporting.simulation_reporter import SimulationReporter
-from fusion.sim.utils import log_message
+from fusion.sim.utils.simulation import log_message
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -47,9 +47,9 @@ class SimulationEngine:
         self.iteration = 0
         self.topology = nx.Graph()
         self.sim_info = os.path.join(
-            self.engine_props['network'],
-            self.engine_props['date'],
-            self.engine_props['sim_start']
+            self.engine_props["network"],
+            self.engine_props["date"],
+            self.engine_props["sim_start"],
         )
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
@@ -64,12 +64,12 @@ class SimulationEngine:
         # Initialize ML metrics collector if needed
         self.ml_metrics: MLMetricsCollector | None = (
             MLMetricsCollector(engine_props=self.engine_props, sim_info=self.sim_info)
-            if engine_props.get('output_train_data', False)
+            if engine_props.get("output_train_data", False)
             else None
         )
 
         self.ml_model = None
-        self.stop_flag = engine_props.get('stop_flag')
+        self.stop_flag = engine_props.get("stop_flag")
 
     def update_arrival_params(self, current_time: float) -> None:
         """
@@ -85,32 +85,37 @@ class SimulationEngine:
         self.stats_obj.iter_update(
             req_data=self.reqs_dict[current_time],
             sdn_data=sdn_props,
-            network_spectrum_dict=self.network_spectrum_dict
+            network_spectrum_dict=self.network_spectrum_dict,
         )
         if sdn_props.was_routed:
             if sdn_props.number_of_transponders is not None:
                 self.stats_obj.current_transponders = sdn_props.number_of_transponders
 
-            self.reqs_status_dict.update({self.reqs_dict[current_time]['req_id']: {
-                "mod_format": sdn_props.modulation_list,
-                "path": sdn_props.path_list,
-                "is_sliced": sdn_props.is_sliced,
-                "was_routed": sdn_props.was_routed,
-                "core_list": sdn_props.core_list,
-                "band": sdn_props.band_list,
-                "start_slot_list": sdn_props.start_slot_list,
-                "end_slot_list": sdn_props.end_slot_list,
-                "bandwidth_list": sdn_props.bandwidth_list,
-                "snr_cost": sdn_props.crosstalk_list,
-            }})
+            self.reqs_status_dict.update(
+                {
+                    self.reqs_dict[current_time]["req_id"]: {
+                        "mod_format": sdn_props.modulation_list,
+                        "path": sdn_props.path_list,
+                        "is_sliced": sdn_props.is_sliced,
+                        "was_routed": sdn_props.was_routed,
+                        "core_list": sdn_props.core_list,
+                        "band": sdn_props.band_list,
+                        "start_slot_list": sdn_props.start_slot_list,
+                        "end_slot_list": sdn_props.end_slot_list,
+                        "bandwidth_list": sdn_props.bandwidth_list,
+                        "snr_cost": sdn_props.crosstalk_list,
+                    }
+                }
+            )
 
     def handle_arrival(
-        self, current_time: float,
+        self,
+        current_time: float,
         force_route_matrix: list[Any] | None = None,
         force_core: int | None = None,
         force_slicing: bool = False,
         forced_index: int | None = None,
-        force_mod_format: str | None = None
+        force_mod_format: str | None = None,
     ) -> None:
         """
         Update the SDN controller to handle an arrival request.
@@ -132,21 +137,26 @@ class SimulationEngine:
             return
 
         for request_key, request_value in self.reqs_dict[current_time].items():
-            if request_key == 'mod_formats':
-                request_key = 'modulation_formats_dict'
-            elif request_key == 'req_id':
-                request_key = 'request_id'
+            if request_key == "mod_formats":
+                request_key = "modulation_formats_dict"
+            elif request_key == "req_id":
+                request_key = "request_id"
             self.sdn_obj.sdn_props.update_params(
-                key=request_key, spectrum_key=None,
-                spectrum_obj=None, value=request_value
+                key=request_key,
+                spectrum_key=None,
+                spectrum_obj=None,
+                value=request_value,
             )
 
         self.sdn_obj.handle_event(
-            self.reqs_dict[current_time], request_type='arrival',
+            self.reqs_dict[current_time],
+            request_type="arrival",
             force_route_matrix=force_route_matrix,
-            force_slicing=force_slicing, forced_index=forced_index,
-            force_core=force_core, ml_model=self.ml_model,
-            force_mod_format=force_mod_format
+            force_slicing=force_slicing,
+            forced_index=forced_index,
+            force_core=force_core,
+            ml_model=self.ml_model,
+            force_mod_format=force_mod_format,
         )
         if self.sdn_obj.sdn_props.network_spectrum_dict is not None:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
@@ -163,24 +173,27 @@ class SimulationEngine:
             return
 
         for request_key, request_value in self.reqs_dict[current_time].items():
-            if request_key == 'mod_formats':
-                request_key = 'modulation_formats_dict'
-            elif request_key == 'req_id':
-                request_key = 'request_id'
+            if request_key == "mod_formats":
+                request_key = "modulation_formats_dict"
+            elif request_key == "req_id":
+                request_key = "request_id"
             self.sdn_obj.sdn_props.update_params(
-                key=request_key, spectrum_key=None,
-                spectrum_obj=None, value=request_value
+                key=request_key,
+                spectrum_key=None,
+                spectrum_obj=None,
+                value=request_value,
             )
 
-        if (self.reqs_dict is not None and current_time in self.reqs_dict and
-            self.reqs_dict[current_time]['req_id'] in self.reqs_status_dict):
-            self.sdn_obj.sdn_props.path_list = (
-                self.reqs_status_dict[
-                    self.reqs_dict[current_time]['req_id']
-                ]['path']
-            )
+        if (
+            self.reqs_dict is not None
+            and current_time in self.reqs_dict
+            and self.reqs_dict[current_time]["req_id"] in self.reqs_status_dict
+        ):
+            self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[
+                self.reqs_dict[current_time]["req_id"]
+            ]["path"]
             self.sdn_obj.handle_event(
-                self.reqs_dict[current_time], request_type='release'
+                self.reqs_dict[current_time], request_type="release"
             )
             sdn_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
             if sdn_spectrum_dict is not None:
@@ -190,44 +203,44 @@ class SimulationEngine:
     def create_topology(self) -> None:
         """Create the physical topology of the simulation."""
         self.network_spectrum_dict = {}
-        self.topology.add_nodes_from(self.engine_props['topology_info']['nodes'])
+        self.topology.add_nodes_from(self.engine_props["topology_info"]["nodes"])
 
-        self.engine_props['band_list'] = []
-        for band in ['c', 'l', 's', 'o', 'e']:
+        self.engine_props["band_list"] = []
+        for band in ["c", "l", "s", "o", "e"]:
             try:
-                if self.engine_props[f'{band}_band']:
-                    self.engine_props['band_list'].append(band)
+                if self.engine_props[f"{band}_band"]:
+                    self.engine_props["band_list"].append(band)
             except KeyError:
                 continue
 
-        for link_num, link_data in self.engine_props['topology_info']['links'].items():
-            source = link_data['source']
-            dest = link_data['destination']
+        for link_num, link_data in self.engine_props["topology_info"]["links"].items():
+            source = link_data["source"]
+            dest = link_data["destination"]
 
             cores_matrix: dict[str, np.ndarray] = {}
-            for band in self.engine_props['band_list']:
-                band_slots = self.engine_props[f'{band}_band']
+            for band in self.engine_props["band_list"]:
+                band_slots = self.engine_props[f"{band}_band"]
                 cores_matrix[band] = np.zeros(
-                    (link_data['fiber']['num_cores'], band_slots)
+                    (link_data["fiber"]["num_cores"], band_slots)
                 )
 
             self.network_spectrum_dict[(source, dest)] = {
-                'cores_matrix': cores_matrix,
-                'link_num': int(link_num),
-                'usage_count': 0,
-                'throughput': 0
+                "cores_matrix": cores_matrix,
+                "link_num": int(link_num),
+                "usage_count": 0,
+                "throughput": 0,
             }
             self.network_spectrum_dict[(dest, source)] = {
-                'cores_matrix': cores_matrix,
-                'link_num': int(link_num),
-                'usage_count': 0,
-                'throughput': 0
+                "cores_matrix": cores_matrix,
+                "link_num": int(link_num),
+                "usage_count": 0,
+                "throughput": 0,
             }
             self.topology.add_edge(
-                source, dest, length=link_data['length'], nli_cost=None
+                source, dest, length=link_data["length"], nli_cost=None
             )
 
-        self.engine_props['topology'] = self.topology
+        self.engine_props["topology"] = self.topology
         self.stats_obj.topology = self.topology
         self.sdn_obj.sdn_props.network_spectrum_dict = self.network_spectrum_dict
         self.sdn_obj.sdn_props.topology = self.topology
@@ -261,40 +274,39 @@ class SimulationEngine:
             self.handle_arrival(current_time=current_time)
 
             if (
-                self.engine_props['save_snapshots']
-                and request_number % self.engine_props['snapshot_step'] == 0
+                self.engine_props["save_snapshots"]
+                and request_number % self.engine_props["snapshot_step"] == 0
             ):
                 self.stats_obj.update_snapshot(
                     network_spectrum_dict=self.network_spectrum_dict,
-                    request_number=request_number
+                    request_number=request_number,
                 )
 
-            if self.engine_props['output_train_data']:
+            if self.engine_props["output_train_data"]:
                 was_routed = self.sdn_obj.sdn_props.was_routed
                 if was_routed:
-                    if (self.reqs_dict is not None and current_time in self.reqs_dict):
+                    if self.reqs_dict is not None and current_time in self.reqs_dict:
                         request_info_dict = self.reqs_status_dict[
-                            self.reqs_dict[current_time]['req_id']
+                            self.reqs_dict[current_time]["req_id"]
                         ]
                         if self.ml_metrics:
                             self.ml_metrics.update_train_data(
                                 old_request_info_dict=old_request_info_dict,
                                 request_info_dict=request_info_dict,
                                 network_spectrum_dict=old_network_spectrum_dict,
-                                current_transponders=self.stats_obj.current_transponders
+                                current_transponders=self.stats_obj.current_transponders,
                             )
 
         elif request_type == "release":
             self.handle_release(current_time=current_time)
         else:
             raise NotImplementedError(
-                f'Request type unrecognized. Expected arrival or release, '
-                f'got: {request_type}'
+                f"Request type unrecognized. Expected arrival or release, "
+                f"got: {request_type}"
             )
 
     def end_iter(
-        self, iteration: int, print_flag: bool = True,
-        base_file_path: str | None = None
+        self, iteration: int, print_flag: bool = True, base_file_path: str | None = None
     ) -> bool:
         """
         Update iteration statistics.
@@ -312,37 +324,40 @@ class SimulationEngine:
         self.stats_obj.finalize_iteration_statistics()
         # Some form of ML/RL is being used, ignore confidence intervals
         # for training and testing
-        if not self.engine_props['is_training']:
+        if not self.engine_props["is_training"]:
             resp = bool(self.stats_obj.calculate_confidence_interval())
         else:
             resp = False
         if (
-            (iteration + 1) % self.engine_props['print_step'] == 0
+            (iteration + 1) % self.engine_props["print_step"] == 0
             or iteration == 0
-            or (iteration + 1) == self.engine_props['max_iters']
+            or (iteration + 1) == self.engine_props["max_iters"]
         ):
             # Use the reporter for output instead of metrics class
-            if hasattr(self, 'reporter'):
+            if hasattr(self, "reporter"):
                 self.reporter.report_iteration_stats(
                     iteration=iteration,
-                    max_iterations=self.engine_props['max_iters'],
-                    erlang=self.engine_props['erlang'],
+                    max_iterations=self.engine_props["max_iters"],
+                    erlang=self.engine_props["erlang"],
                     blocking_list=self.stats_obj.stats_props.simulation_blocking_list,
-                    print_flag=print_flag
+                    print_flag=print_flag,
                 )
 
         if (
-            (iteration + 1) % self.engine_props['save_step'] == 0
+            (iteration + 1) % self.engine_props["save_step"] == 0
             or iteration == 0
-            or (iteration + 1) == self.engine_props['max_iters']
+            or (iteration + 1) == self.engine_props["max_iters"]
         ):
-            self._save_all_stats(base_file_path or 'data')
+            self._save_all_stats(base_file_path or "data")
 
         return resp
 
     def init_iter(
-        self, iteration: int, seed: int | None = None,
-        print_flag: bool = True, trial: int | None = None
+        self,
+        iteration: int,
+        seed: int | None = None,
+        print_flag: bool = True,
+        trial: int | None = None,
     ) -> None:
         """
         Initialize an iteration.
@@ -357,7 +372,7 @@ class SimulationEngine:
         :type trial: Optional[int]
         """
         if trial is not None:
-            self.engine_props['thread_num'] = f's{trial + 1}'
+            self.engine_props["thread_num"] = f"s{trial + 1}"
 
         self.iteration = iteration
 
@@ -365,8 +380,8 @@ class SimulationEngine:
         self.stats_obj.init_iter_stats()
 
         for link_key in self.network_spectrum_dict:
-            self.network_spectrum_dict[link_key]['usage_count'] = 0
-            self.network_spectrum_dict[link_key]['throughput'] = 0
+            self.network_spectrum_dict[link_key]["usage_count"] = 0
+            self.network_spectrum_dict[link_key]["throughput"] = 0
 
         # To prevent incomplete saves
         try:
@@ -379,10 +394,11 @@ class SimulationEngine:
         if iteration == 0 and print_flag:
             logger.info(
                 "Simulation started for Erlang: %s simulation number: %s",
-                self.engine_props['erlang'], self.engine_props['thread_num']
+                self.engine_props["erlang"],
+                self.engine_props["thread_num"],
             )
 
-            if self.engine_props['deploy_model']:
+            if self.engine_props["deploy_model"]:
                 self.ml_model = load_model(engine_properties=self.engine_props)
 
         # You can pass a list of seeds, a constant seed, or default to iteration number
@@ -414,15 +430,15 @@ class SimulationEngine:
             if self._should_stop_simulation(simulation_context):
                 break
 
-            simulation_context['done_units'] = self._run_single_iteration(
+            simulation_context["done_units"] = self._run_single_iteration(
                 iteration, seed, simulation_context
             )
 
-            if simulation_context['end_iter']:
+            if simulation_context["end_iter"]:
                 break
 
         self._log_simulation_complete(simulation_context)
-        return int(simulation_context['done_units'])
+        return int(simulation_context["done_units"])
 
     def _setup_simulation_context(self) -> dict[str, Any]:
         """
@@ -434,16 +450,16 @@ class SimulationEngine:
         self.create_topology()
 
         return {
-            'log_queue': self.engine_props.get('log_queue'),
-            'max_iters': self.engine_props["max_iters"],
-            'progress_queue': self.engine_props.get('progress_queue'),
-            'thread_num': self.engine_props.get('thread_num', 'unknown'),
-            'my_iteration_units': self.engine_props.get(
-                'my_iteration_units', self.engine_props["max_iters"]
+            "log_queue": self.engine_props.get("log_queue"),
+            "max_iters": self.engine_props["max_iters"],
+            "progress_queue": self.engine_props.get("progress_queue"),
+            "thread_num": self.engine_props.get("thread_num", "unknown"),
+            "my_iteration_units": self.engine_props.get(
+                "my_iteration_units", self.engine_props["max_iters"]
             ),
-            'done_offset': self.engine_props.get('done_offset', 0),
-            'done_units': self.engine_props.get('done_offset', 0),
-            'end_iter': False
+            "done_offset": self.engine_props.get("done_offset", 0),
+            "done_units": self.engine_props.get("done_offset", 0),
+            "end_iter": False,
         }
 
     def _log_simulation_start(self, context: dict[str, Any]) -> None:
@@ -460,7 +476,7 @@ class SimulationEngine:
                 f"my_iteration_units={context['my_iteration_units']}, "
                 f"erlang={self.engine_props['erlang']}\n"
             ),
-            log_queue=context['log_queue']
+            log_queue=context["log_queue"],
         )
 
     def _should_stop_simulation(self, context: dict[str, Any]) -> bool:
@@ -478,14 +494,13 @@ class SimulationEngine:
                     f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
                     f"simulation number: {context['thread_num']}.\n"
                 ),
-                log_queue=context['log_queue']
+                log_queue=context["log_queue"],
             )
             return True
         return False
 
     def _run_single_iteration(
-        self, iteration: int, seed: int | None,
-        context: dict[str, Any]
+        self, iteration: int, seed: int | None, context: dict[str, Any]
     ) -> int:
         """
         Execute a single simulation iteration.
@@ -502,13 +517,13 @@ class SimulationEngine:
         self.init_iter(iteration=iteration, seed=seed)
         self._process_all_requests()
 
-        context['end_iter'] = self.end_iter(iteration=iteration)
-        context['done_units'] += 1
+        context["end_iter"] = self.end_iter(iteration=iteration)
+        context["done_units"] += 1
 
         self._update_progress(iteration, context)
         time.sleep(0.2)
 
-        return int(context['done_units'])
+        return int(context["done_units"])
 
     def _process_all_requests(self) -> None:
         """Process all requests for the current iteration."""
@@ -520,13 +535,14 @@ class SimulationEngine:
                 current_time=current_time, request_number=request_number
             )
 
-            if (self.reqs_dict is not None and current_time in self.reqs_dict and
-                self.reqs_dict[current_time]['request_type'] == 'arrival'):
+            if (
+                self.reqs_dict is not None
+                and current_time in self.reqs_dict
+                and self.reqs_dict[current_time]["request_type"] == "arrival"
+            ):
                 request_number += 1
 
-    def _update_progress(
-        self, iteration: int, context: dict[str, Any]
-    ) -> None:
+    def _update_progress(self, iteration: int, context: dict[str, Any]) -> None:
         """
         Update progress tracking and logging.
 
@@ -535,9 +551,9 @@ class SimulationEngine:
         :param context: Simulation context dictionary
         :type context: Dict[str, Any]
         """
-        if context['progress_queue']:
-            context['progress_queue'].put(
-                (context['thread_num'], context['done_units'])
+        if context["progress_queue"]:
+            context["progress_queue"].put(
+                (context["thread_num"], context["done_units"])
             )
 
         log_message(
@@ -545,7 +561,7 @@ class SimulationEngine:
                 f"CHILD={context['thread_num']} iteration={iteration}, "
                 f"done_units={context['done_units']}\n"
             ),
-            log_queue=context['log_queue']
+            log_queue=context["log_queue"],
         )
 
     def _log_simulation_complete(self, context: dict[str, Any]) -> None:
@@ -560,10 +576,10 @@ class SimulationEngine:
                 f"Simulation finished for Erlang: {self.engine_props['erlang']} "
                 f"finished for simulation number: {context['thread_num']}.\n"
             ),
-            log_queue=context['log_queue']
+            log_queue=context["log_queue"],
         )
 
-    def _save_all_stats(self, base_file_path: str = 'data') -> None:
+    def _save_all_stats(self, base_file_path: str = "data") -> None:
         """
         Save all statistics using the persistence module.
 
@@ -571,7 +587,7 @@ class SimulationEngine:
         :type base_file_path: str
         """
         # Create save dictionary with iteration stats
-        save_dict: dict[str, Any] = {'iter_stats': {}}
+        save_dict: dict[str, Any] = {"iter_stats": {}}
 
         # Get blocking statistics from metrics
         blocking_stats = self.stats_obj.get_blocking_statistics()
@@ -581,15 +597,15 @@ class SimulationEngine:
             stats_dict=save_dict,
             stats_props=self.stats_obj.stats_props,
             blocking_stats=blocking_stats,
-            base_file_path=base_file_path
+            base_file_path=base_file_path,
         )
 
         # Save ML training data if available
         if self.ml_metrics:
             self.ml_metrics.save_train_data(
                 iteration=self.stats_obj.iteration or 0,
-                max_iterations=self.engine_props['max_iters'],
-                base_file_path=base_file_path
+                max_iterations=self.engine_props["max_iters"],
+                base_file_path=base_file_path,
             )
 
     def _signal_save_handler(self, signum: int, frame: Any) -> None:  # pylint: disable=unused-argument

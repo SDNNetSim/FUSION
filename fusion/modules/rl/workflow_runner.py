@@ -1,22 +1,28 @@
 import os
 
-import optuna
-from optuna.pruners import HyperbandPruner
 import numpy as np
-
+import optuna
 import psutil
+from optuna.pruners import HyperbandPruner
 
-from fusion.sim.utils import modify_multiple_json_values, update_dict_from_list
-from fusion.sim.utils import get_erlang_vals, run_simulation_for_erlangs, save_study_results
-from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
-from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
-from fusion.modules.rl.model_manager import get_model, save_model
-
-from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
-from fusion.modules.rl.utils.general_utils import save_arr
-
-from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS, VALID_CORE_ALGORITHMS, VALID_DRL_ALGORITHMS
+from fusion.modules.rl.args.general_args import (
+    VALID_CORE_ALGORITHMS,
+    VALID_DRL_ALGORITHMS,
+    VALID_PATH_ALGORITHMS,
+)
 from fusion.modules.rl.errors import TrainingError
+from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+from fusion.modules.rl.model_manager import get_model, save_model
+from fusion.modules.rl.utils.general_utils import save_arr
+from fusion.modules.rl.utils.hyperparams import get_optuna_hyperparams
+from fusion.modules.rl.utils.setup import print_info, setup_rl_sim
+from fusion.sim.utils.data import update_dict_from_list
+from fusion.sim.utils.io import modify_multiple_json_values
+from fusion.sim.utils.simulation import (
+    get_erlang_values,
+    run_simulation_for_erlangs,
+    save_study_results,
+)
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -24,13 +30,19 @@ logger = get_logger(__name__)
 
 # TODO moved to TODO.md: Support for picking up where you left off (testing)
 
+
 def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
     """
     Trains a deep reinforcement learning model with StableBaselines3.
     """
-    model, yaml_dict = get_model(sim_dict=sim_dict, device=sim_dict['device'], env=env, yaml_dict=yaml_dict)
-    model.learn(total_timesteps=yaml_dict['n_timesteps'], log_interval=sim_dict['print_step'],
-                callback=sim_dict['callback'])
+    model, yaml_dict = get_model(
+        sim_dict=sim_dict, device=sim_dict["device"], env=env, yaml_dict=yaml_dict
+    )
+    model.learn(
+        total_timesteps=yaml_dict["n_timesteps"],
+        log_interval=sim_dict["print_step"],
+        callback=sim_dict["callback"],
+    )
 
     save_model(sim_dict=sim_dict, env=env, model=model)
 
@@ -39,7 +51,7 @@ def _setup_callbacks(callback_list, sim_dict):
     """Initialise callback attributes that depend on the simulation settings."""
     if callback_list:
         for callback in callback_list.callbacks:
-            callback.max_iters = sim_dict['max_iters']
+            callback.max_iters = sim_dict["max_iters"]
             callback.sim_dict = sim_dict
 
 
@@ -58,78 +70,116 @@ def _train_drl_trial(env, sim_dict, callback_list, completed_trials, rewards_mat
     for callback in callback_list.callbacks:
         callback.trial += 1
 
-    callback_list.callbacks[1].current_entropy = sim_dict['epsilon_start']
-    callback_list.callbacks[1].current_learning_rate = sim_dict['alpha_start']
+    callback_list.callbacks[1].current_entropy = sim_dict["epsilon_start"]
+    callback_list.callbacks[1].current_learning_rate = sim_dict["alpha_start"]
     callback_list.callbacks[1].iter = 0
     env.iteration = 0
 
-    logger.info("%d trials completed out of %d.", completed_trials, sim_dict['n_trials'])
+    logger.info(
+        "%d trials completed out of %d.", completed_trials, sim_dict["n_trials"]
+    )
     observation, _ = env.reset(seed=completed_trials)
     return observation, completed_trials
 
 
-def _update_episode_stats(observation, reward, terminated, truncated, episodic_reward,
-                          episodic_reward_array, completed_episodes, completed_trials,
-                          env, sim_dict, rewards_matrix, trial):
+def _update_episode_stats(
+    observation,
+    reward,
+    terminated,
+    truncated,
+    episodic_reward,
+    episodic_reward_array,
+    completed_episodes,
+    completed_trials,
+    env,
+    sim_dict,
+    rewards_matrix,
+    trial,
+):
     """
     Consolidates the bookkeeping that happens whenever an episode ends.
     Returns the updated state so the caller’s loop stays perfectly in sync.
     """
     episodic_reward += reward
     if not (terminated or truncated):
-        return observation, episodic_reward, episodic_reward_array, completed_episodes, completed_trials
+        return (
+            observation,
+            episodic_reward,
+            episodic_reward_array,
+            completed_episodes,
+            completed_trials,
+        )
 
     episodic_reward_array = np.append(episodic_reward_array, episodic_reward)
     episodic_reward = 0
     completed_episodes += 1
 
     if trial is not None:
-        current_mean_reward = np.mean(episodic_reward_array) if episodic_reward_array.size else 0
+        current_mean_reward = (
+            np.mean(episodic_reward_array) if episodic_reward_array.size else 0
+        )
         trial.report(current_mean_reward, completed_episodes)
         if trial.should_prune():
             raise optuna.TrialPruned()
 
-    logger.info("%d episodes completed out of %d.", completed_episodes, sim_dict['max_iters'])
+    logger.info(
+        "%d episodes completed out of %d.", completed_episodes, sim_dict["max_iters"]
+    )
 
-    if completed_episodes == sim_dict['max_iters']:
+    if completed_episodes == sim_dict["max_iters"]:
         env.iteration = 0
         env.trial += 1
         rewards_matrix[completed_trials] = episodic_reward_array
         episodic_reward_array = np.array([])
         completed_trials += 1
         completed_episodes = 0
-        logger.info("%d trials completed out of %d.", completed_trials, sim_dict['n_trials'])
+        logger.info(
+            "%d trials completed out of %d.", completed_trials, sim_dict["n_trials"]
+        )
 
     # Only reset if we haven't completed all trials yet
-    if completed_trials < sim_dict['n_trials']:
+    if completed_trials < sim_dict["n_trials"]:
         observation, _ = env.reset(seed=completed_trials)
 
-    return observation, episodic_reward, episodic_reward_array, completed_episodes, completed_trials
+    return (
+        observation,
+        episodic_reward,
+        episodic_reward_array,
+        completed_episodes,
+        completed_trials,
+    )
 
 
 def _initialize_training_state(sim_dict: dict):
     """
     Initialize the training state variables and data structures.
-    
+
     :param sim_dict: Simulation configuration dictionary
     :return: Tuple of initialized state variables
     """
     completed_episodes = 0
     completed_trials = 0
     episodic_reward = 0
-    rewards_matrix = np.zeros((sim_dict['n_trials'], sim_dict['max_iters']))
+    rewards_matrix = np.zeros((sim_dict["n_trials"], sim_dict["max_iters"]))
     episodic_reward_array = np.array([])
     memory_usage_list = []
     process = psutil.Process()
 
-    return (completed_episodes, completed_trials, episodic_reward,
-            rewards_matrix, episodic_reward_array, memory_usage_list, process)
+    return (
+        completed_episodes,
+        completed_trials,
+        episodic_reward,
+        rewards_matrix,
+        episodic_reward_array,
+        memory_usage_list,
+        process,
+    )
 
 
 def _process_episode_step(env: object, is_training: bool, model=None, observation=None):
     """
     Process a single episode step based on training/testing mode.
-    
+
     :param env: The reinforcement learning environment
     :param is_training: Whether in training mode
     :param model: The trained model (for testing mode)
@@ -145,11 +195,15 @@ def _process_episode_step(env: object, is_training: bool, model=None, observatio
     return observation, reward, terminated, truncated
 
 
-def _handle_training_completion(is_training: bool, rewards_matrix: np.ndarray,
-                                memory_usage_list: list, sim_dict: dict):
+def _handle_training_completion(
+    is_training: bool,
+    rewards_matrix: np.ndarray,
+    memory_usage_list: list,
+    sim_dict: dict,
+):
     """
     Handle the completion of training, saving results and calculating metrics.
-    
+
     :param is_training: Whether in training mode
     :param rewards_matrix: Matrix of rewards per trial/episode
     :param memory_usage_list: List of memory usage measurements
@@ -163,15 +217,24 @@ def _handle_training_completion(is_training: bool, rewards_matrix: np.ndarray,
         save_arr(memory_usage_list, sim_dict, "memory_usage.npy")
         return sum_reward
 
-    raise TrainingError("Testing mode is not yet implemented. Please use training mode.")
+    raise TrainingError(
+        "Testing mode is not yet implemented. Please use training mode."
+    )
 
 
-def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool,
-              model=None, callback_list: list = None, trial=None):
+def run_iters(
+    env: object,
+    sim_dict: dict,
+    is_training: bool,
+    drl_agent: bool,
+    model=None,
+    callback_list: list = None,
+    trial=None,
+):
     """
     Runs the specified number of episodes/trials in the reinforcement learning
     environment.
-    
+
     :param env: The reinforcement learning environment
     :param sim_dict: Simulation configuration dictionary
     :param is_training: Whether in training mode
@@ -182,13 +245,20 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool,
     :return: Sum of rewards
     """
     # Initialize training state
-    (completed_episodes, completed_trials, episodic_reward, rewards_matrix,
-     episodic_reward_array, memory_usage_list, process) = _initialize_training_state(sim_dict)
+    (
+        completed_episodes,
+        completed_trials,
+        episodic_reward,
+        rewards_matrix,
+        episodic_reward_array,
+        memory_usage_list,
+        process,
+    ) = _initialize_training_state(sim_dict)
 
     _setup_callbacks(callback_list, sim_dict)
     observation, _ = env.reset(seed=completed_trials)
 
-    while completed_trials < sim_dict['n_trials']:
+    while completed_trials < sim_dict["n_trials"]:
         memory_usage_list.append(process.memory_info().rss / (1024 * 1024))
 
         if is_training and drl_agent:
@@ -203,15 +273,30 @@ def run_iters(env: object, sim_dict: dict, is_training: bool, drl_agent: bool,
         )
 
         # Update episode statistics
-        observation, episodic_reward, episodic_reward_array, completed_episodes, completed_trials = \
-            _update_episode_stats(
-                observation, reward, terminated, truncated,
-                episodic_reward, episodic_reward_array,
-                completed_episodes, completed_trials,
-                env, sim_dict, rewards_matrix, trial
-            )
+        (
+            observation,
+            episodic_reward,
+            episodic_reward_array,
+            completed_episodes,
+            completed_trials,
+        ) = _update_episode_stats(
+            observation,
+            reward,
+            terminated,
+            truncated,
+            episodic_reward,
+            episodic_reward_array,
+            completed_episodes,
+            completed_trials,
+            env,
+            sim_dict,
+            rewards_matrix,
+            trial,
+        )
 
-    return _handle_training_completion(is_training, rewards_matrix, memory_usage_list, sim_dict)
+    return _handle_training_completion(
+        is_training, rewards_matrix, memory_usage_list, sim_dict
+    )
 
 
 def run_testing():
@@ -221,7 +306,9 @@ def run_testing():
     :param env: The reinforcement learning environment.
     :param sim_dict: A dictionary containing simulation-specific parameters (e.g., model type, paths).
     """
-    raise TrainingError("Testing functionality is not yet implemented. Please use training mode.")
+    raise TrainingError(
+        "Testing functionality is not yet implemented. Please use training mode."
+    )
 
 
 def run(env: object, sim_dict: dict, callback_list: list = None, trial=None):
@@ -236,19 +323,29 @@ def run(env: object, sim_dict: dict, callback_list: list = None, trial=None):
     """
     print_info(sim_dict=sim_dict)
 
-    if sim_dict['is_training']:
+    if sim_dict["is_training"]:
         # Print info function should already error check valid input, no need to raise an error here
-        if sim_dict['path_algorithm'] in VALID_PATH_ALGORITHMS or sim_dict['core_algorithm'] in VALID_CORE_ALGORITHMS:
-            sum_returns = run_iters(env=env, sim_dict=sim_dict, is_training=True,
-                                    drl_agent=sim_dict['path_algorithm'] in VALID_DRL_ALGORITHMS,
-                                    callback_list=callback_list, trial=trial)
+        if (
+            sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS
+            or sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS
+        ):
+            sum_returns = run_iters(
+                env=env,
+                sim_dict=sim_dict,
+                is_training=True,
+                drl_agent=sim_dict["path_algorithm"] in VALID_DRL_ALGORITHMS,
+                callback_list=callback_list,
+                trial=trial,
+            )
         else:
             raise TrainingError(
                 f"Invalid algorithm configuration. Path algorithm: {sim_dict.get('path_algorithm')}, "
                 f"Core algorithm: {sim_dict.get('core_algorithm')}"
             )
     else:
-        raise TrainingError("Testing mode is not yet implemented. Please set 'is_training' to True.")
+        raise TrainingError(
+            "Testing mode is not yet implemented. Please set 'is_training' to True."
+        )
 
     return sum_returns
 
@@ -263,43 +360,60 @@ def run_optuna_study(sim_dict, callback_list):
 
     # Define the Optuna objective function
     def objective(trial: optuna.Trial):
-        env = SimEnv(render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim())
+        env = SimEnv(
+            render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim()
+        )
 
         for callback_obj in callback_list.callbacks:
             callback_obj.sim_dict = env.sim_dict
-            callback_obj.max_iters = sim_dict['max_iters']
-        env.sim_dict['callback'] = callback_list.callbacks
+            callback_obj.max_iters = sim_dict["max_iters"]
+        env.sim_dict["callback"] = callback_list.callbacks
 
         hyperparam_dict = get_optuna_hyperparams(sim_dict=sim_dict, trial=trial)
-        update_list = [(param, value) for param, value in hyperparam_dict.items() if param in sim_dict]
+        update_list = [
+            (param, value)
+            for param, value in hyperparam_dict.items()
+            if param in sim_dict
+        ]
 
-        modify_multiple_json_values(trial_num=trial.number, file_path=file_path, update_list=update_list)
-        env.sim_dict = update_dict_from_list(input_dict=env.sim_dict, updates_list=update_list)
-        erlang_list = get_erlang_vals(sim_dict=sim_dict)
+        modify_multiple_json_values(
+            trial_num=trial.number, file_path=file_path, update_list=update_list
+        )
+        env.sim_dict = update_dict_from_list(
+            input_dict=env.sim_dict, updates_list=update_list
+        )
+        erlang_list = get_erlang_values(sim_dict=sim_dict)
 
-        mean_reward = run_simulation_for_erlangs(env=env, erlang_list=erlang_list, sim_dict=sim_dict, run_func=run,
-                                                 callback_list=callback_list, trial=trial)
-        mean_reward = mean_reward / sim_dict['max_iters']
+        mean_reward = run_simulation_for_erlangs(
+            env=env,
+            erlang_list=erlang_list,
+            sim_dict=sim_dict,
+            run_func=run,
+            callback_list=callback_list,
+            trial=trial,
+        )
+        mean_reward = mean_reward / sim_dict["max_iters"]
         if "callback" in env.sim_dict:
             del env.sim_dict["callback"]
             del env.callback
 
-        trial.set_user_attr("sim_start_time", sim_dict['sim_start'])
+        trial.set_user_attr("sim_start_time", sim_dict["sim_start"])
         trial.set_user_attr("env", env)
 
         return mean_reward
 
     # Run the optimization
     study_name = "hyperparam_study.pkl"
-    file_path = os.path.join('data', 'input', sim_dict['network'], sim_dict['date'],
-                             sim_dict['sim_start'])
-    pruner = HyperbandPruner(
-        min_resource=20,
-        max_resource=sim_dict['max_iters'],
-        reduction_factor=3
+    file_path = os.path.join(
+        "data", "input", sim_dict["network"], sim_dict["date"], sim_dict["sim_start"]
     )
-    study = optuna.create_study(direction='maximize', study_name=study_name, pruner=pruner)
-    n_trials = sim_dict['optuna_trials']
+    pruner = HyperbandPruner(
+        min_resource=20, max_resource=sim_dict["max_iters"], reduction_factor=3
+    )
+    study = optuna.create_study(
+        direction="maximize", study_name=study_name, pruner=pruner
+    )
+    n_trials = sim_dict["optuna_trials"]
     study.optimize(objective, n_trials=n_trials)
 
     # Save study results

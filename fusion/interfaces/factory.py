@@ -8,8 +8,7 @@ from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.interfaces.snr import AbstractSNRMeasurer
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 
-# Import registries
-from fusion.modules.routing.registry import create_algorithm as create_routing_algorithm
+# Import registries (avoid circular imports by importing inside functions)
 from fusion.modules.snr.registry import create_snr_algorithm
 from fusion.modules.spectrum.registry import create_spectrum_algorithm
 
@@ -35,6 +34,10 @@ class AlgorithmFactory:
         :raises ValueError: If algorithm name is not found
         """
         try:
+            from fusion.modules.routing.registry import (
+                create_algorithm as create_routing_algorithm,
+            )
+
             return create_routing_algorithm(name, engine_props, sdn_props)
         except KeyError as e:
             available = [

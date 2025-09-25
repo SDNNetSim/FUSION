@@ -6,21 +6,21 @@ FUSION simulations, maintaining backward compatibility while redirecting
 to the modern batch runner implementation.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fusion.sim.batch_runner import run_batch_simulation
 
 
-def run_simulation(config_dict: Dict[str, Any]) -> Optional[Dict]:
+def run_simulation(config_dict: dict[str, Any]) -> dict | None:
     """
     Legacy entry point maintained for backward compatibility.
-    
+
     New code should use run_batch_simulation directly from batch_runner module.
-    
+
     :param config_dict: Configuration dictionary for simulation
-    :type config_dict: Dict[str, Any]
+    :type config_dict: dict[str, Any]
     :return: First simulation result for compatibility, None if no results
-    :rtype: Optional[Dict]
+    :rtype: dict | None
     """
     # Use the new batch runner with single-threaded execution
     results = run_batch_simulation(config_dict, parallel=False)
@@ -29,10 +29,10 @@ def run_simulation(config_dict: Dict[str, Any]) -> Optional[Dict]:
     return results[0] if results else None
 
 
-def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> List[Dict]:  # pylint: disable=unused-argument
+def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> list[dict]:  # pylint: disable=unused-argument
     """
     Pipeline function for running simulations from CLI.
-    
+
     Now uses the new batch_runner orchestrator for improved performance
     and reliability.
 
@@ -41,18 +41,22 @@ def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> List[Dict]:  # 
     :param stop_flag: Optional threading stop flag for cancellation
     :type stop_flag: Any
     :return: List of simulation results
-    :rtype: List[Dict]
+    :rtype: list[dict]
     """
-    from fusion.cli.config_setup import load_and_validate_config  # pylint: disable=import-outside-toplevel
+    from fusion.cli.config_setup import (
+        load_and_validate_config,  # pylint: disable=import-outside-toplevel
+    )
 
     # Convert args to config dictionary
     config_dict = load_and_validate_config(args)
 
     # Determine if parallel execution is requested
-    parallel = args.parallel if hasattr(args, 'parallel') else False
-    num_processes = args.num_processes if hasattr(args, 'num_processes') else None
+    parallel = args.parallel if hasattr(args, "parallel") else False
+    num_processes = args.num_processes if hasattr(args, "num_processes") else None
 
     # Run using the new batch runner
-    results = run_batch_simulation(config_dict, parallel=parallel, num_processes=num_processes)
+    results = run_batch_simulation(
+        config_dict, parallel=parallel, num_processes=num_processes
+    )
 
     return results

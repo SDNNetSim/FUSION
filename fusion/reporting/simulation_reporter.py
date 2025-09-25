@@ -13,14 +13,16 @@ from fusion.utils.logging_config import get_logger
 
 
 class SimulationReporter:
-    """Handle reporting and output formatting for simulation statistics.
+    """
+    Handle reporting and output formatting for simulation statistics.
 
     This class is responsible for presenting simulation results in various
     formats, including console output, log files, and structured reports.
     """
 
     def __init__(self, logger: logging.Logger | None = None, verbose: bool = True):
-        """Initialize the simulation reporter.
+        """
+        Initialize the simulation reporter.
 
         :param logger: Logger instance to use (creates one if not provided)
         :type logger: logging.Logger | None
@@ -38,7 +40,8 @@ class SimulationReporter:
         blocking_list: list[float],
         print_flag: bool = True,
     ) -> None:
-        """Report statistics for a completed iteration.
+        """
+        Report statistics for a completed iteration.
 
         This method replaces the print_iter_stats method from SimStats,
         providing proper logging and formatting.
@@ -85,7 +88,8 @@ class SimulationReporter:
                 )
 
     def report_simulation_start(self, simulation_info_dict: dict[str, Any]) -> None:
-        """Report the start of a simulation run.
+        """
+        Report the start of a simulation run.
 
         :param simulation_info_dict: Dictionary containing simulation parameters
         :type simulation_info_dict: dict[str, Any]
@@ -105,7 +109,8 @@ class SimulationReporter:
         iterations_completed: int,
         confidence_interval: float | None = None,
     ) -> None:
-        """Report the completion of a simulation run.
+        """
+        Report the completion of a simulation run.
 
         :param erlang: Erlang value that was simulated
         :type erlang: float
@@ -133,7 +138,8 @@ class SimulationReporter:
         bit_rate_total: float,
         blocking_reasons_dict: dict[str, float],
     ) -> None:
-        """Report detailed blocking statistics.
+        """
+        Report detailed blocking statistics.
 
         :param blocked_requests: Number of blocked requests
         :type blocked_requests: int
@@ -172,7 +178,8 @@ class SimulationReporter:
         self.logger.info("-" * 40)
 
     def report_save_location(self, save_path: str) -> None:
-        """Report where simulation results are being saved.
+        """
+        Report where simulation results are being saved.
 
         :param save_path: Path where results are saved
         :type save_path: str
@@ -182,7 +189,8 @@ class SimulationReporter:
     def report_error(
         self, error_message: str, exception: Exception | None = None
     ) -> None:
-        """Report an error during simulation.
+        """
+        Report an error during simulation.
 
         :param error_message: Error message to log
         :type error_message: str
@@ -197,7 +205,8 @@ class SimulationReporter:
             self.logger.error(error_message)
 
     def report_warning(self, warning_message: str) -> None:
-        """Report a warning during simulation.
+        """
+        Report a warning during simulation.
 
         :param warning_message: Warning message to log
         :type warning_message: str
@@ -205,7 +214,8 @@ class SimulationReporter:
         self.logger.warning(warning_message)
 
     def create_summary_report(self, statistics_dict: dict[str, Any]) -> str:
-        """Create a formatted summary report from simulation statistics.
+        """
+        Create a formatted summary report from simulation statistics.
 
         :param statistics_dict: Dictionary containing all simulation statistics
         :type statistics_dict: dict[str, Any]
