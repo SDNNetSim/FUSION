@@ -1,3 +1,11 @@
+"""
+Manifest generation module for Unity cluster simulations.
+
+This module generates job manifests from specification files, handling parameter
+grids, explicit job definitions, and resource allocation for SLURM submission.
+Supports both YAML and JSON specification formats.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -5,43 +13,73 @@ import csv
 import datetime as dt
 import itertools
 import json
-import pathlib
 import sys
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any
 
 try:
-    import yaml  # type: ignore
+    import yaml
 except ModuleNotFoundError:
-    yaml = None  # pylint: disable=invalid-name
+    yaml = None  # type: ignore[assignment]
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from fusion.configs.schema import SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT  # pylint: disable=wrong-import-position
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from fusion.configs.schema import OPTIONAL_OPTIONS_DICT, SIM_REQUIRED_OPTIONS_DICT
+from fusion.unity.constants import (
+    BOOL_TRUE_VALUES,
+    EXPERIMENTS_DIR,
+    RESOURCE_KEYS,
+    RL_ALGORITHMS,
+)
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Build parameter types from config setup
 _PARAM_TYPES: dict[str, type] = {}
 for options_dict in [SIM_REQUIRED_OPTIONS_DICT, OPTIONAL_OPTIONS_DICT]:
-    for category, options in options_dict.items():
+    for _category, options in options_dict.items():
         for option_name, option_type in options.items():
-            _PARAM_TYPES[option_name] = option_type
-_BOOL_STRS = {"true", "yes", "1"}
-
-_RESOURCE_KEYS = {
-    "partition", "time", "mem", "cpus", "gpus", "nodes"
-}
+            _PARAM_TYPES[option_name] = option_type  # type: ignore[assignment]
 
 
 def _str_to_bool(value: str) -> bool:
-    return value.lower() in _BOOL_STRS
+    """
+    Convert string to boolean value.
+
+    :param value: String value to convert
+    :type value: str
+    :return: Boolean representation of the string
+    :rtype: bool
+    """
+    return value.lower() in BOOL_TRUE_VALUES
 
 
 def _parse_literal(val: str) -> Any:
+    """
+    Parse a string as a Python literal.
+
+    :param val: String to parse as literal
+    :type val: str
+    :return: Parsed value or original string if parsing fails
+    :rtype: Any
+    """
     try:
         return ast.literal_eval(val)
-    except Exception:  # pylint: disable=broad-exception-caught
+    except (ValueError, SyntaxError):
         return val
 
 
 def _cast(key: str, value: Any) -> Any:
+    """
+    Cast a configuration value to its appropriate type.
+
+    :param key: Configuration key name
+    :type key: str
+    :param value: Value to cast
+    :type value: Any
+    :return: Cast value or original value if casting fails
+    :rtype: Any
+    """
     typ = _PARAM_TYPES.get(key)
     if typ is None:
         return value
@@ -56,6 +94,14 @@ def _cast(key: str, value: Any) -> Any:
 
 
 def _encode(val: Any) -> str:
+    """
+    Encode a value to its string representation for CSV output.
+
+    :param val: Value to encode
+    :type val: Any
+    :return: String representation of the value
+    :rtype: str
+    """
     if isinstance(val, bool):
         return "true" if val else "false"
     if isinstance(val, (list, dict)):
@@ -66,39 +112,85 @@ def _encode(val: Any) -> str:
 
 
 def _is_rl(alg: str) -> str:
-    rl_algs = {"ppo", "qr_dqn", "a2c", "dqn", "epsilon_greedy_bandit",
-               "ucb_bandit", "q_learning"}
+    """
+    Check if an algorithm is a reinforcement learning algorithm.
+
+    :param alg: Algorithm name to check
+    :type alg: str
+    :return: 'yes' if RL algorithm, 'no' otherwise
+    :rtype: str
+    """
+    rl_algs = RL_ALGORITHMS
     return "yes" if alg in rl_algs else "no"
 
 
 # ------------------------------- new --------------------------------------- #
-def _validate_resource_keys(resources: Dict[str, Any]) -> None:
-    """Warn the user if they mistype a resource key."""
+def _validate_resource_keys(resources: dict[str, Any]) -> None:
+    """
+    Validate that all resource keys are recognized.
+
+    :param resources: Dictionary of resource configurations
+    :type resources: dict[str, Any]
+    :raises SystemExit: If an unknown resource key is found
+    """
     for key in resources:
-        if key not in _RESOURCE_KEYS:
+        if key not in RESOURCE_KEYS:
             sys.exit(
                 f"Unknown resource key '{key}'. Allowed keys: "
-                f"{', '.join(sorted(_RESOURCE_KEYS))}"
+                f"{', '.join(sorted(RESOURCE_KEYS))}"
             )
 
 
-def _validate_keys(mapping: Dict[str, Any], ctx: str) -> None:
+def _validate_keys(mapping: dict[str, Any], ctx: str) -> None:
+    """
+    Validate that all keys in mapping are recognized parameters.
+
+    :param mapping: Dictionary to validate
+    :type mapping: dict[str, Any]
+    :param ctx: Context string for error messages
+    :type ctx: str
+    :raises SystemExit: If an unknown parameter key is found
+    """
     for key in mapping:
-        if key in _PARAM_TYPES or key in _RESOURCE_KEYS:
+        if key in _PARAM_TYPES or key in RESOURCE_KEYS:
             continue
         sys.exit(f"Unknown parameter '{key}' in {ctx}. Must exist in config options.")
 
 
-def _read_spec(path: pathlib.Path) -> Dict[str, Any]:
+def _read_spec(path: Path) -> dict[str, Any]:
+    """
+    Read and parse a specification file (YAML or JSON).
+
+    :param path: Path to the specification file
+    :type path: Path
+    :return: Parsed specification data
+    :rtype: dict[str, Any]
+    :raises SystemExit: If PyYAML is not installed for YAML files
+    :raises json.JSONDecodeError: If JSON parsing fails
+    :raises yaml.YAMLError: If YAML parsing fails
+    """
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() in {".yml", ".yaml"}:
         if yaml is None:
             sys.exit("PyYAML not installed; install it or use a JSON spec file")
-        return yaml.safe_load(text)
-    return json.loads(text)
+        result = yaml.safe_load(text)
+        return dict(result) if isinstance(result, dict) else {}
+    result = json.loads(text)
+    return dict(result) if isinstance(result, dict) else {}
 
 
-def _to_list(v: Any, *, ctx: str) -> List[Any]:
+def _to_list(v: Any, *, ctx: str) -> list[Any]:
+    """
+    Convert a value to a list, with validation for common context.
+
+    :param v: Value to convert to list
+    :type v: Any
+    :param ctx: Context for validation ('common' or 'grid')
+    :type ctx: str
+    :return: List representation of the value
+    :rtype: list[Any]
+    :raises SystemExit: If multiple values provided in 'common' context
+    """
     if isinstance(v, list):
         if ctx == "common" and len(v) > 1:
             sys.exit(f"Only single values allowed in grid.common but got list {v}")
@@ -106,7 +198,20 @@ def _to_list(v: Any, *, ctx: str) -> List[Any]:
     return [v]
 
 
-def _fetch(grid: Dict[str, Any], common: Dict[str, Any], key: str) -> List[Any]:
+def _fetch(grid: dict[str, Any], common: dict[str, Any], key: str) -> list[Any]:
+    """
+    Fetch a parameter value from grid or common configuration.
+
+    :param grid: Grid-specific configuration
+    :type grid: dict[str, Any]
+    :param common: Common configuration shared across grid
+    :type common: dict[str, Any]
+    :param key: Parameter key to fetch
+    :type key: str
+    :return: List of values for the parameter
+    :rtype: list[Any]
+    :raises SystemExit: If required key is not found
+    """
     if key in grid:
         return _to_list(grid[key], ctx="grid")
     if key in common:
@@ -114,7 +219,20 @@ def _fetch(grid: Dict[str, Any], common: Dict[str, Any], key: str) -> List[Any]:
     sys.exit(f"Grid spec missing required key '{key}' (searched grid and grid.common)")
 
 
-def _expand_grid(grid: Dict[str, Any], starting_rid: int) -> tuple[List[Dict[str, Any]], int]:
+def _expand_grid(
+    grid: dict[str, Any], starting_rid: int
+) -> tuple[list[dict[str, Any]], int]:
+    """
+    Expand a grid specification into individual job configurations.
+
+    :param grid: Grid specification with parameter combinations
+    :type grid: dict[str, Any]
+    :param starting_rid: Starting run ID for job numbering
+    :type starting_rid: int
+    :return: Tuple of (job rows, next available run ID)
+    :rtype: tuple[list[dict[str, Any]], int]
+    :raises SystemExit: If deprecated keys are found
+    """
     for bad in {"repeat", "er_step"} & grid.keys():
         sys.exit(f"Key '{bad}' is deprecated; remove it.")
 
@@ -128,25 +246,38 @@ def _expand_grid(grid: Dict[str, Any], starting_rid: int) -> tuple[List[Dict[str
     obs = _fetch(grid, common, "obs_space")
 
     rid = starting_rid
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for alg, t0, kp, curr_obs in itertools.product(algs, traf, kps, obs):
-        rows.append({
-            "run_id": f"{rid:05}",
-            "path_algorithm": alg,
-            "erlang_start": t0,
-            "erlang_stop": t0 + 50,
-            "k_paths": kp,
-            "obs_space": curr_obs,
-            "is_rl": _is_rl(alg),
-            **{k: _cast(k, v) for k, v in common.items()
-               if k not in {"path_algorithm", "erlang_start", "k_paths"}},
-        })
+        rows.append(
+            {
+                "run_id": f"{rid:05}",
+                "path_algorithm": alg,
+                "erlang_start": t0,
+                "erlang_stop": t0 + 50,
+                "k_paths": kp,
+                "obs_space": curr_obs,
+                "is_rl": _is_rl(alg),
+                **{
+                    k: _cast(k, v)
+                    for k, v in common.items()
+                    if k not in {"path_algorithm", "erlang_start", "k_paths"}
+                },
+            }
+        )
         rid += 1
     return rows, rid
 
 
-def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def _explicit(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Process explicit job specifications into job configurations.
+
+    :param jobs: List of explicit job specifications
+    :type jobs: list[dict[str, Any]]
+    :return: Processed job configurations
+    :rtype: list[dict[str, Any]]
+    """
+    rows: list[dict[str, Any]] = []
     for idx, job in enumerate(jobs):
         _validate_keys(job, ctx=f"jobs[{idx}]")
         base = {
@@ -164,8 +295,16 @@ def _explicit(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return rows
 
 
-def _write_csv(path: pathlib.Path, rows: List[Dict[str, Any]]) -> None:
-    cols: List[str] = []
+def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    """
+    Write job configurations to a CSV manifest file.
+
+    :param path: Path where CSV file should be written
+    :type path: Path
+    :param rows: Job configuration data to write
+    :type rows: list[dict[str, Any]]
+    """
+    cols: list[str] = []
     seen = set()
     for row in rows:
         for k in row:
@@ -182,11 +321,20 @@ def _write_csv(path: pathlib.Path, rows: List[Dict[str, Any]]) -> None:
             writer.writerow({c: _encode(row.get(c, "")) for c in cols})
 
 
-def _resolve_spec_path(arg: str) -> pathlib.Path:
-    p = pathlib.Path(arg)
+def _resolve_spec_path(arg: str) -> Path:
+    """
+    Resolve a specification file path, checking current and specs/ directory.
+
+    :param arg: Specification name or path argument
+    :type arg: str
+    :return: Resolved path to the specification file
+    :rtype: Path
+    :raises SystemExit: If specification file is not found
+    """
+    p = Path(arg)
     if p.exists():
         return p
-    specs_dir = pathlib.Path(__file__).resolve().parent / "specs"
+    specs_dir = Path(__file__).resolve().parent / "specs"
     for ext in ("", ".yml", ".yaml", ".json"):
         trial = specs_dir / (arg + ext)
         if trial.exists():
@@ -196,7 +344,13 @@ def _resolve_spec_path(arg: str) -> pathlib.Path:
 
 def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     """
-    Controls the script.
+    Main entry point for the manifest generation script.
+
+    Parses command line arguments, reads specification files, and generates
+    job manifests for cluster submission. Supports both grid-based parameter
+    sweeps and explicit job definitions.
+
+    :raises SystemExit: If invalid arguments or specification format
     """
     if len(sys.argv) != 2:
         sys.exit("Usage: make_manifest.py <spec_name_or_path>")
@@ -204,11 +358,13 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     spec_path = _resolve_spec_path(sys.argv[1])
     spec = _read_spec(spec_path)
 
-    resources: Dict[str, Any] = spec.get("resources", {})
+    resources: dict[str, Any] = spec.get("resources", {})
     _validate_resource_keys(resources)
 
     if sum(k in spec for k in ("grid", "grids", "jobs")) > 1:
-        sys.exit("Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple.")
+        sys.exit(
+            "Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple."
+        )
 
     global_rid = 0
     rows = []
@@ -230,10 +386,10 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
             r.update(resources)
 
     now = dt.datetime.now()
-    base_dir = pathlib.Path("experiments") / now.strftime("%m%d") / now.strftime("%H%M%S")
+    base_dir = Path(EXPERIMENTS_DIR) / now.strftime("%m%d") / now.strftime("%H%M%S")
 
     # Group rows by network
-    network_groups: Dict[str, List[Dict[str, Any]]] = {}
+    network_groups: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         net = row.get("network")
         if not net:
@@ -251,7 +407,8 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
             "num_rows": len(group_rows),
             "resources": resources,
         }
-        (net_dir / "manifest_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        meta_file = net_dir / "manifest_meta.json"
+        meta_file.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
     print(f"Wrote {len(network_groups)} manifests (one per network).")
     print(f"Base experiments dir → {base_dir}")
