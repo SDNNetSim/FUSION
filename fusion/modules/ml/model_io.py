@@ -5,11 +5,11 @@ This module handles saving and loading of trained models, including
 versioning and metadata management.
 """
 
-import os
 import json
+import os
 import pickle
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Any
 
 import joblib
 import numpy as np
@@ -30,22 +30,22 @@ try:
 except ImportError:
     HAS_PMML = False
 
-from fusion.utils.os import create_directory
 from fusion.utils.logging_config import get_logger
+from fusion.utils.os import create_directory
 
 logger = get_logger(__name__)
 
 
 def save_model(
-        simulation_dict: Dict[str, Any],
+        simulation_dict: dict[str, Any],
         model: Any,
         algorithm: str,
         erlang: str,
-        metadata: Dict[str, Any] = None
+        metadata: dict[str, Any] | None = None
 ) -> str:
     """
     Save a trained machine learning model with metadata.
-    
+
     :param simulation_dict: Dictionary containing simulation parameters
     :type simulation_dict: Dict[str, Any]
     :param model: Trained model object
@@ -58,7 +58,7 @@ def save_model(
     :type metadata: Dict[str, Any]
     :return: Path where model was saved
     :rtype: str
-    
+
     Example:
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> model = RandomForestClassifier()
@@ -96,16 +96,16 @@ def save_model(
     return model_path
 
 
-def load_model(engine_properties: Dict[str, Any]) -> Any:
+def load_model(engine_properties: dict[str, Any]) -> Any:
     """
     Load a trained machine learning model.
-    
+
     :param engine_properties: Properties from engine including model path info
     :type engine_properties: Dict[str, Any]
     :return: Loaded model object
     :rtype: Any
     :raises FileNotFoundError: If model file doesn't exist
-    
+
     Example:
         >>> engine_props = {
         ...     'ml_model': 'random_forest',
@@ -125,22 +125,24 @@ def load_model(engine_properties: Dict[str, Any]) -> Any:
         raise FileNotFoundError(f"Model file not found: {model_filepath}")
 
     model = joblib.load(filename=model_filepath)
-    logger.info("Loaded %s model from: %s", engine_properties['ml_model'], model_filepath)
+    logger.info(
+        "Loaded %s model from: %s", engine_properties['ml_model'], model_filepath
+    )
 
     return model
 
 
 def load_model_with_metadata(
-        engine_properties: Dict[str, Any]
-) -> Tuple[Any, Dict[str, Any]]:
+        engine_properties: dict[str, Any]
+) -> tuple[Any, dict[str, Any]]:
     """
     Load a model along with its metadata.
-    
+
     :param engine_properties: Properties from engine
     :type engine_properties: Dict[str, Any]
     :return: Tuple of (model, metadata)
     :rtype: Tuple[Any, Dict[str, Any]]
-    
+
     Example:
         >>> model, metadata = load_model_with_metadata(engine_props)
         >>> print(f"Model trained on: {metadata.get('saved_at')}")
@@ -158,7 +160,7 @@ def load_model_with_metadata(
 
     metadata = {}
     if os.path.exists(metadata_filepath):
-        with open(metadata_filepath, 'r', encoding='utf-8') as f:
+        with open(metadata_filepath, encoding='utf-8') as f:
             metadata = json.load(f)
         logger.debug("Loaded model metadata")
     else:
@@ -168,16 +170,16 @@ def load_model_with_metadata(
 
 
 def save_model_ensemble(
-        models: list,
-        simulation_dict: Dict[str, Any],
+        models: list[Any],
+        simulation_dict: dict[str, Any],
         ensemble_name: str,
         erlang: str
 ) -> str:
     """
     Save an ensemble of models.
-    
+
     :param models: List of model objects
-    :type models: list
+    :type models: List[Any]
     :param simulation_dict: Simulation parameters
     :type simulation_dict: Dict[str, Any]
     :param ensemble_name: Name for the ensemble
@@ -186,12 +188,14 @@ def save_model_ensemble(
     :type erlang: str
     :return: Path where ensemble was saved
     :rtype: str
-    
+
     Example:
         >>> models = [model1, model2, model3]
         >>> path = save_model_ensemble(models, sim_dict, "voting_ensemble", "1000")
     """
-    base_filepath = os.path.join('logs', ensemble_name, simulation_dict['train_file_path'])
+    base_filepath = os.path.join(
+        'logs', ensemble_name, simulation_dict['train_file_path']
+    )
     create_directory(directory_path=base_filepath)
 
     ensemble_data = {
@@ -212,11 +216,11 @@ def export_model_for_deployment(
         model: Any,
         export_path: str,
         model_format: str = 'onnx',
-        input_sample: np.ndarray = None
+        input_sample: np.ndarray | None = None
 ) -> str:
     """
     Export model to deployment-friendly format.
-    
+
     :param model: Trained model
     :type model: Any
     :param export_path: Path for exported model
@@ -228,10 +232,12 @@ def export_model_for_deployment(
     :return: Path to exported model
     :rtype: str
     :raises ValueError: If format not supported
-    
+
     Example:
         >>> sample = np.array([[1, 2, 3, 4]])
-        >>> export_path = export_model_for_deployment(model, "model.onnx", "onnx", sample)
+        >>> export_path = export_model_for_deployment(
+        ...     model, "model.onnx", "onnx", sample
+        ... )
     """
     if model_format == 'onnx':
         if not HAS_ONNX:
@@ -244,7 +250,10 @@ def export_model_for_deployment(
 
             onnx_model = convert_sklearn(
                 model,
-                initial_types=[('input', skl2onnx.common.data_types.FloatTensorType(input_sample.shape))]
+                initial_types=[(
+                    'input',
+                    skl2onnx.common.data_types.FloatTensorType(input_sample.shape)
+                )]
             )
 
             with open(export_path, "wb") as f:
@@ -260,14 +269,19 @@ def export_model_for_deployment(
 
     elif model_format == 'pmml':
         if not HAS_PMML:
-            logger.error("sklearn2pmml not installed. Install with: pip install sklearn2pmml")
+            logger.error(
+                "sklearn2pmml not installed. Install with: pip install sklearn2pmml"
+            )
             raise ImportError("sklearn2pmml not installed")
 
         try:
             sklearn2pmml(model, export_path)
-        except Exception:
-            logger.error("sklearn2pmml not installed. Install with: pip install sklearn2pmml")
-            raise
+        except (ImportError, AttributeError) as e:
+            logger.error(
+                "sklearn2pmml not installed or incompatible. "
+                "Install with: pip install sklearn2pmml"
+            )
+            raise ImportError("sklearn2pmml not available") from e
     else:
         raise ValueError(f"Export format '{model_format}' not supported")
 
@@ -277,18 +291,18 @@ def export_model_for_deployment(
 
 def check_model_compatibility(
         model_path: str,
-        expected_features: list
-) -> Dict[str, Any]:
+        expected_features: list[str]
+) -> dict[str, Any]:
     """
     Check if saved model is compatible with current feature set.
-    
+
     :param model_path: Path to model file
     :type model_path: str
     :param expected_features: List of expected feature names
-    :type expected_features: list
+    :type expected_features: List[str]
     :return: Compatibility report
     :rtype: Dict[str, Any]
-    
+
     Example:
         >>> features = ['path_length', 'bandwidth', 'congestion']
         >>> report = check_model_compatibility("model.joblib", features)
@@ -327,7 +341,7 @@ def check_model_compatibility(
 
         return report
 
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except (FileNotFoundError, EOFError, ValueError, AttributeError) as e:
         logger.error("Error checking model compatibility: %s", e)
         return {
             'compatible': False,

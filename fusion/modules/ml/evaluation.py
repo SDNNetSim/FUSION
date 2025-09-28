@@ -5,19 +5,26 @@ This module provides comprehensive evaluation metrics and analysis tools
 for assessing model performance.
 """
 
-from typing import Dict, Any, List
 import time
 from collections import Counter
+from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, classification_report, roc_auc_score,
-    mean_squared_error, mean_absolute_error, r2_score
-)
-from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.base import clone
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import cross_validate, train_test_split
 
 from fusion.utils.logging_config import get_logger
 
@@ -27,11 +34,11 @@ logger = get_logger(__name__)
 def evaluate_classifier(
         true_labels: np.ndarray,
         predictions: np.ndarray,
-        class_names: List[str] = None
-) -> Dict[str, Any]:
+        class_names: list[str] | None = None
+) -> dict[str, Any]:
     """
     Comprehensive evaluation of classification model performance.
-    
+
     :param true_labels: Ground truth labels
     :type true_labels: np.ndarray
     :param predictions: Model predictions
@@ -40,7 +47,7 @@ def evaluate_classifier(
     :type class_names: List[str]
     :return: Dictionary containing various metrics
     :rtype: Dict[str, Any]
-    
+
     Example:
         >>> y_true = np.array([0, 1, 0, 1, 1])
         >>> y_pred = np.array([0, 1, 1, 1, 0])
@@ -88,7 +95,7 @@ def evaluate_classifier(
         unique_classes = np.unique(true_labels)
         if len(unique_classes) == 2:
             metrics['roc_auc'] = roc_auc_score(true_labels, predictions)
-    except Exception:  # pylint: disable=broad-exception-caught
+    except (ValueError, TypeError):
         pass  # AUC not applicable for this case
 
     logger.info("Model evaluation - Accuracy: %.4f, F1-Score: %.4f",
@@ -100,17 +107,17 @@ def evaluate_classifier(
 def evaluate_regressor(
         true_values: np.ndarray,
         predictions: np.ndarray
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Comprehensive evaluation of regression model performance.
-    
+
     :param true_values: Ground truth values
     :type true_values: np.ndarray
     :param predictions: Model predictions
     :type predictions: np.ndarray
     :return: Dictionary containing regression metrics
     :rtype: Dict[str, float]
-    
+
     Example:
         >>> y_true = np.array([1.0, 2.0, 3.0, 4.0])
         >>> y_pred = np.array([1.1, 2.2, 2.9, 3.8])
@@ -124,7 +131,9 @@ def evaluate_regressor(
         'r2': r2_score(true_values, predictions),
         'mape': _calculate_mape(true_values, predictions),
         'max_error': np.max(np.abs(true_values - predictions)),
-        'explained_variance': 1 - np.var(true_values - predictions) / np.var(true_values)
+        'explained_variance': (
+            1 - np.var(true_values - predictions) / np.var(true_values)
+        )
     }
 
     logger.info("Model evaluation - RMSE: %.4f, R²: %.4f",
@@ -136,7 +145,7 @@ def evaluate_regressor(
 def _calculate_per_class_accuracy(
         true_labels: np.ndarray,
         predictions: np.ndarray
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Calculate accuracy for each class separately."""
     per_class_accuracy = {}
 
@@ -155,7 +164,9 @@ def _calculate_mape(true_values: np.ndarray, predictions: np.ndarray) -> float:
     if not any(mask):
         return float('inf')
 
-    mape = np.mean(np.abs((true_values[mask] - predictions[mask]) / true_values[mask])) * 100
+    mape = np.mean(
+        np.abs((true_values[mask] - predictions[mask]) / true_values[mask])
+    ) * 100
     return float(mape)
 
 
@@ -164,11 +175,11 @@ def cross_validate_model(
         features: pd.DataFrame,
         labels: pd.Series,
         cv_folds: int = 5,
-        scoring_metrics: List[str] = None
-) -> Dict[str, Any]:
+        scoring_metrics: list[str] | None = None
+) -> dict[str, Any]:
     """
     Perform cross-validation and return detailed results.
-    
+
     :param model: Model to evaluate
     :type model: Any
     :param features: Feature matrix
@@ -181,7 +192,7 @@ def cross_validate_model(
     :type scoring_metrics: List[str]
     :return: Cross-validation results
     :rtype: Dict[str, Any]
-    
+
     Example:
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> model = RandomForestClassifier()
@@ -189,7 +200,9 @@ def cross_validate_model(
         >>> print(f"Mean accuracy: {results['accuracy']['mean']:.4f}")
     """
     if scoring_metrics is None:
-        scoring_metrics = ['accuracy', 'precision_weighted', 'recall_weighted', 'f1_weighted']
+        scoring_metrics = [
+            'accuracy', 'precision_weighted', 'recall_weighted', 'f1_weighted'
+        ]
 
     cv_results = cross_validate(
         model,
@@ -238,10 +251,10 @@ def evaluate_model_stability(
         labels: pd.Series,
         n_iterations: int = 10,
         test_size: float = 0.3
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Evaluate model stability across multiple train/test splits.
-    
+
     :param model: Model to evaluate
     :type model: Any
     :param features: Feature matrix
@@ -254,12 +267,12 @@ def evaluate_model_stability(
     :type test_size: float
     :return: Stability analysis results
     :rtype: Dict[str, Any]
-    
+
     Example:
         >>> stability = evaluate_model_stability(model, X, y, n_iterations=20)
         >>> print(f"Accuracy variance: {stability['accuracy']['variance']:.6f}")
     """
-    metrics_over_iterations = {
+    metrics_over_iterations: dict[str, list[float]] = {
         'accuracy': [],
         'precision': [],
         'recall': [],
@@ -303,14 +316,17 @@ def evaluate_model_stability(
             'min': np.min(values),
             'max': np.max(values),
             'range': np.max(values) - np.min(values),
-            'cv': np.std(values) / np.mean(values) if np.mean(values) > 0 else float('inf')
+            'cv': (
+                np.std(values) / np.mean(values) if np.mean(values) > 0
+                else float('inf')
+            )
         }
 
     return stability_results
 
 
 def compare_models(
-        models: Dict[str, Any],
+        models: dict[str, Any],
         features: pd.DataFrame,
         labels: pd.Series,
         test_size: float = 0.3,
@@ -318,7 +334,7 @@ def compare_models(
 ) -> pd.DataFrame:
     """
     Compare multiple models on the same dataset.
-    
+
     :param models: Dictionary of model_name: model pairs
     :type models: Dict[str, Any]
     :param features: Feature matrix
@@ -331,7 +347,7 @@ def compare_models(
     :type random_state: int
     :return: DataFrame with comparison results
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> models = {
         ...     'RF': RandomForestClassifier(),
@@ -385,10 +401,10 @@ def analyze_prediction_errors(
         true_labels: np.ndarray,
         predictions: np.ndarray,
         features: pd.DataFrame = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Analyze prediction errors to identify patterns.
-    
+
     :param true_labels: Ground truth labels
     :type true_labels: np.ndarray
     :param predictions: Model predictions
@@ -397,7 +413,7 @@ def analyze_prediction_errors(
     :type features: pd.DataFrame
     :return: Error analysis results
     :rtype: Dict[str, Any]
-    
+
     Example:
         >>> analysis = analyze_prediction_errors(y_true, y_pred, X_test)
         >>> print(f"Most confused pair: {analysis['most_confused_pair']}")
@@ -417,7 +433,7 @@ def analyze_prediction_errors(
         error_pred = predictions[error_mask]
 
         # Find most common misclassification
-        confusion_pairs = list(zip(error_true, error_pred))
+        confusion_pairs = list(zip(error_true, error_pred, strict=False))
         pair_counts = Counter(confusion_pairs)
 
         if pair_counts:

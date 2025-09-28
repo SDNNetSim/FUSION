@@ -4,30 +4,30 @@ Feature engineering utilities for machine learning module.
 This module handles feature extraction and creation from raw network data.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 
 from fusion.modules.ml.constants import EXPECTED_ML_COLUMNS
-from fusion.sim.utils import find_path_len, find_core_cong
+from fusion.sim.utils import find_core_congestion, find_path_len
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
 def extract_ml_features(
-        request_dict: Dict[str, Any],
-        engine_properties: Dict[str, Any],
+        request_dict: dict[str, Any],
+        engine_properties: dict[str, Any],
         sdn_properties: object
 ) -> pd.DataFrame:
     """
     Extract machine learning features from a network request.
-    
+
     Creates features including path length, congestion metrics, and
     bandwidth requirements formatted for ML model consumption.
-    
+
     :param request_dict: Dictionary containing request information
     :type request_dict: Dict[str, Any]
     :param engine_properties: Engine configuration properties
@@ -36,7 +36,7 @@ def extract_ml_features(
     :type sdn_properties: object
     :return: DataFrame with extracted features
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> request = {'bandwidth': 100, 'mod_formats': {'QPSK': {'max_length': 2000}}}
         >>> features = extract_ml_features(request, engine_props, sdn_props)
@@ -45,7 +45,7 @@ def extract_ml_features(
     """
     # Calculate path metrics
     path_length_km = find_path_len(
-        path_list=sdn_properties.path_list,
+        path_list=getattr(sdn_properties, 'path_list', []),
         topology=engine_properties['topology']
     )
 
@@ -74,12 +74,12 @@ def extract_ml_features(
 
 
 def _calculate_congestion_metrics(
-        engine_properties: Dict[str, Any],
+        engine_properties: dict[str, Any],
         sdn_properties: object
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Calculate congestion metrics across all cores.
-    
+
     :param engine_properties: Engine configuration properties
     :type engine_properties: Dict[str, Any]
     :param sdn_properties: SDN controller properties object
@@ -90,10 +90,10 @@ def _calculate_congestion_metrics(
     congestion_array = np.array([])
 
     for core_number in range(engine_properties['cores_per_link']):
-        current_congestion = find_core_cong(
+        current_congestion = find_core_congestion(
             core_index=core_number,
-            network_spectrum_dict=sdn_properties.network_spectrum_dict,
-            path_list=sdn_properties.path_list
+            network_spectrum=getattr(sdn_properties, 'network_spectrum', {}),
+            path_list=getattr(sdn_properties, 'path_list', [])
         )
         congestion_array = np.append(congestion_array, current_congestion)
 
@@ -111,15 +111,15 @@ def _calculate_congestion_metrics(
 
 
 def _format_features_for_prediction(
-        feature_dict: Dict[str, Any],
-        engine_properties: Dict[str, Any],
+        feature_dict: dict[str, Any],
+        engine_properties: dict[str, Any],
         sdn_properties: object
 ) -> pd.DataFrame:
     """
     Format raw features into the structure expected by ML models.
-    
+
     Handles one-hot encoding and ensures all expected columns are present.
-    
+
     :param feature_dict: Dictionary of raw features
     :type feature_dict: Dict[str, Any]
     :param engine_properties: Engine configuration properties
@@ -144,7 +144,7 @@ def _format_features_for_prediction(
     for bandwidth, percentage in engine_properties['request_distribution'].items():
         if percentage > 0:
             column_name = f'old_bandwidth_{bandwidth}'
-            if (bandwidth != sdn_properties.bandwidth and
+            if (bandwidth != getattr(sdn_properties, 'bandwidth', None) and
                     column_name not in features_df.columns):
                 features_df[column_name] = 0
 
@@ -156,18 +156,18 @@ def _format_features_for_prediction(
 
 def create_interaction_features(
         features: pd.DataFrame,
-        interactions: list = None
+        interactions: list[tuple[str, str]] | None = None
 ) -> pd.DataFrame:
     """
     Create interaction features between existing features.
-    
+
     :param features: Original features DataFrame
     :type features: pd.DataFrame
     :param interactions: List of tuples specifying interactions
-    :type interactions: list
+    :type interactions: List[Tuple[str, str]]
     :return: DataFrame with interaction features added
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> features = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
         >>> interactions = [('A', 'B')]
@@ -202,7 +202,7 @@ def create_polynomial_features(
 ) -> pd.DataFrame:
     """
     Create polynomial features up to specified degree.
-    
+
     :param features: Original features DataFrame
     :type features: pd.DataFrame
     :param degree: Maximum polynomial degree
@@ -211,7 +211,7 @@ def create_polynomial_features(
     :type include_bias: bool
     :return: DataFrame with polynomial features
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> features = pd.DataFrame({'x': [1, 2, 3]})
         >>> poly_features = create_polynomial_features(features, degree=2)
@@ -229,28 +229,31 @@ def create_polynomial_features(
         index=features.index
     )
 
-    logger.info("Created polynomial features: %d -> %d features", features.shape[1], poly_features.shape[1])
+    logger.info(
+        "Created polynomial features: %d -> %d features",
+        features.shape[1], poly_features.shape[1]
+    )
 
     return poly_features
 
 
 def engineer_network_features(
-        request_dict: Dict[str, Any],
-        network_state: Dict[str, Any]
-) -> Dict[str, float]:
+        request_dict: dict[str, Any],
+        network_state: dict[str, Any]
+) -> dict[str, float]:
     """
     Engineer advanced network-specific features.
-    
+
     Creates features that capture network topology and state characteristics
     relevant for routing and spectrum assignment decisions.
-    
+
     :param request_dict: Request information
     :type request_dict: Dict[str, Any]
     :param network_state: Current network state information
     :type network_state: Dict[str, Any]
     :return: Dictionary of engineered features
     :rtype: Dict[str, float]
-    
+
     Example:
         >>> request = {'source': 'A', 'destination': 'B', 'bandwidth': 100}
         >>> state = {'link_utilization': {...}, 'active_paths': [...]}
@@ -260,27 +263,35 @@ def engineer_network_features(
 
     # Path diversity features
     if 'alternative_paths' in network_state:
-        engineered_features['path_diversity'] = len(network_state['alternative_paths'])
-        engineered_features['avg_alternative_length'] = np.mean([
+        engineered_features['path_diversity'] = float(
+            len(network_state['alternative_paths'])
+        )
+        engineered_features['avg_alternative_length'] = float(np.mean([
             len(path) for path in network_state['alternative_paths']
-        ]) if network_state['alternative_paths'] else 0.0
+        ])) if network_state['alternative_paths'] else 0.0
 
     # Bottleneck features
     if 'link_utilization' in network_state:
         utilization_values = list(network_state['link_utilization'].values())
-        engineered_features['max_link_utilization'] = max(utilization_values) if utilization_values else 0.0
-        engineered_features['utilization_variance'] = np.var(utilization_values) if len(utilization_values) > 1 else 0.0
+        engineered_features['max_link_utilization'] = float(
+            max(utilization_values) if utilization_values else 0.0
+        )
+        engineered_features['utilization_variance'] = float(
+            np.var(utilization_values) if len(utilization_values) > 1 else 0.0
+        )
 
     # Temporal features (if available)
     if 'time_of_day' in network_state:
         hour = network_state['time_of_day']
         engineered_features['is_peak_hour'] = float(8 <= hour <= 18)
-        engineered_features['hour_sin'] = np.sin(2 * np.pi * hour / 24)
-        engineered_features['hour_cos'] = np.cos(2 * np.pi * hour / 24)
+        engineered_features['hour_sin'] = float(np.sin(2 * np.pi * hour / 24))
+        engineered_features['hour_cos'] = float(np.cos(2 * np.pi * hour / 24))
 
     # Request-specific features
     if 'bandwidth' in request_dict:
-        engineered_features['bandwidth_category'] = _categorize_bandwidth(request_dict['bandwidth'])
+        engineered_features['bandwidth_category'] = _categorize_bandwidth(
+            request_dict['bandwidth']
+        )
 
     return engineered_features
 
@@ -288,7 +299,7 @@ def engineer_network_features(
 def _categorize_bandwidth(bandwidth: float) -> float:
     """
     Categorize bandwidth into predefined levels.
-    
+
     :param bandwidth: Bandwidth value in Gbps
     :type bandwidth: float
     :return: Category as float (0-3)

@@ -5,10 +5,10 @@ This module handles data preparation, transformation, and balancing
 for machine learning models.
 """
 
-from typing import Dict, Any, Tuple
+from typing import Any
 
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from fusion.modules.ml.constants import EXPECTED_ML_COLUMNS
 from fusion.modules.ml.visualization import plot_data_distributions
@@ -18,15 +18,15 @@ logger = get_logger(__name__)
 
 
 def process_training_data(
-        simulation_dict: Dict[str, Any],
+        simulation_dict: dict[str, Any],
         input_dataframe: pd.DataFrame,
         erlang: float
 ) -> pd.DataFrame:
     """
     Process raw data for machine learning model training.
-    
+
     Performs one-hot encoding and type conversions as needed.
-    
+
     :param simulation_dict: Dictionary containing simulation parameters
     :type simulation_dict: Dict[str, Any]
     :param input_dataframe: Raw input DataFrame
@@ -35,7 +35,7 @@ def process_training_data(
     :type erlang: float
     :return: Processed DataFrame ready for training
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> sim_dict = {'train_file_path': 'experiment_001'}
         >>> raw_data = pd.DataFrame({'bandwidth': [50, 100], 'path_length': [10, 20]})
@@ -56,7 +56,10 @@ def process_training_data(
         if processed_dataframe[column].dtype == bool:
             processed_dataframe[column] = processed_dataframe[column].astype(int)
 
-    logger.info("Processed %d samples with %d features", len(processed_dataframe), len(processed_dataframe.columns))
+    logger.info(
+        "Processed %d samples with %d features",
+        len(processed_dataframe), len(processed_dataframe.columns)
+    )
 
     return processed_dataframe
 
@@ -65,13 +68,13 @@ def balance_training_data(
         input_dataframe: pd.DataFrame,
         balance_per_slice: bool,
         erlang: float,
-        simulation_dict: Dict[str, Any]
+        simulation_dict: dict[str, Any]
 ) -> pd.DataFrame:
     """
     Balance training data to ensure representative sampling.
-    
+
     Can balance equally across all classes or use weighted sampling.
-    
+
     :param input_dataframe: Input DataFrame to balance
     :type input_dataframe: pd.DataFrame
     :param balance_per_slice: If True, balance equally across segments
@@ -82,7 +85,7 @@ def balance_training_data(
     :type simulation_dict: Dict[str, Any]
     :return: Balanced DataFrame
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> data = pd.DataFrame({'num_segments': [1, 1, 2, 2, 4, 4, 8, 8]})
         >>> balanced = balance_training_data(data, True, 1000.0, sim_dict)
@@ -139,7 +142,7 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
     }
 
     segment_dataframes = {}
-    for segments, weight in segment_weights.items():
+    for segments, _weight in segment_weights.items():
         segment_df = dataframe[dataframe['num_segments'] == segments]
         if len(segment_df) > 0:
             segment_dataframes[segments] = segment_df
@@ -161,7 +164,9 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
                     random_state=42
                 )
                 sampled_dataframes.append(sampled_df)
-                logger.debug("Sampled %d instances for %d segments", sample_size, segments)
+                logger.debug(
+                    "Sampled %d instances for %d segments", sample_size, segments
+                )
 
     # Combine and shuffle
     balanced_dataframe = pd.concat(sampled_dataframes).sample(frac=1, random_state=42)
@@ -173,15 +178,15 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 def prepare_prediction_features(
-        raw_features: Dict[str, Any],
-        engine_properties: Dict[str, Any],
+        raw_features: dict[str, Any],
+        engine_properties: dict[str, Any],
         sdn_properties: object
 ) -> pd.DataFrame:
     """
     Prepare features for model prediction from raw request data.
-    
+
     Transforms raw features into the format expected by trained models.
-    
+
     :param raw_features: Dictionary of raw feature values
     :type raw_features: Dict[str, Any]
     :param engine_properties: Engine configuration properties
@@ -190,7 +195,7 @@ def prepare_prediction_features(
     :type sdn_properties: object
     :return: DataFrame with properly formatted features
     :rtype: pd.DataFrame
-    
+
     Example:
         >>> features = {'bandwidth': 100, 'path_length': 15, 'congestion': 0.3}
         >>> prepared = prepare_prediction_features(features, engine_props, sdn_props)
@@ -210,11 +215,15 @@ def prepare_prediction_features(
     for bandwidth, percentage in engine_properties['request_distribution'].items():
         if percentage > 0:
             column_name = f'old_bandwidth_{bandwidth}'
-            if bandwidth != sdn_properties.bandwidth and column_name not in processed_dataframe.columns:
+            if (bandwidth != getattr(sdn_properties, 'bandwidth', None) and
+                    column_name not in processed_dataframe.columns):
                 processed_dataframe[column_name] = 0
 
     # Only include columns that exist
-    available_columns = [col for col in EXPECTED_ML_COLUMNS if col in processed_dataframe.columns]
+    available_columns = [
+        col for col in EXPECTED_ML_COLUMNS
+        if col in processed_dataframe.columns
+    ]
     processed_dataframe = processed_dataframe.reindex(columns=available_columns)
 
     return processed_dataframe
@@ -223,10 +232,10 @@ def prepare_prediction_features(
 def split_features_labels(
         dataframe: pd.DataFrame,
         target_column: str
-) -> Tuple[pd.DataFrame, pd.Series]:
+) -> tuple[pd.DataFrame, pd.Series]:
     """
     Split DataFrame into features and labels.
-    
+
     :param dataframe: Complete DataFrame with features and target
     :type dataframe: pd.DataFrame
     :param target_column: Name of the target column
@@ -234,7 +243,7 @@ def split_features_labels(
     :return: Tuple of (features, labels)
     :rtype: Tuple[pd.DataFrame, pd.Series]
     :raises KeyError: If target column not found
-    
+
     Example:
         >>> data = pd.DataFrame({'feature1': [1, 2], 'target': [0, 1]})
         >>> X, y = split_features_labels(data, 'target')
@@ -251,10 +260,10 @@ def split_features_labels(
 def normalize_features(
         features: pd.DataFrame,
         normalization_type: str = 'standard'
-) -> Tuple[pd.DataFrame, Any]:
+) -> tuple[pd.DataFrame, Any]:
     """
     Normalize features using specified method.
-    
+
     :param features: Feature DataFrame to normalize
     :type features: pd.DataFrame
     :param normalization_type: Type of normalization ('standard' or 'minmax')
@@ -262,7 +271,7 @@ def normalize_features(
     :return: Tuple of (normalized features, scaler object)
     :rtype: Tuple[pd.DataFrame, Any]
     :raises ValueError: If normalization type not supported
-    
+
     Example:
         >>> X = pd.DataFrame({'feature1': [1, 2, 3], 'feature2': [10, 20, 30]})
         >>> X_norm, scaler = normalize_features(X, 'standard')
@@ -272,7 +281,10 @@ def normalize_features(
     elif normalization_type == 'minmax':
         scaler = MinMaxScaler()
     else:
-        raise ValueError(f"Normalization type '{normalization_type}' not supported. Use 'standard' or 'minmax'")
+        raise ValueError(
+            f"Normalization type '{normalization_type}' not supported. "
+            "Use 'standard' or 'minmax'"
+        )
 
     # Fit and transform
     normalized_array = scaler.fit_transform(features)
