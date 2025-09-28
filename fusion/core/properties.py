@@ -33,8 +33,8 @@ class RoutingProps:
 
     def __init__(self) -> None:
         """Initialize routing properties with default values."""
-        # Path computation properties
-        self.paths_matrix: list[list[int]] = []
+        # Path computation properties - can contain path lists or path data dicts
+        self.paths_matrix: list[Any] = []
         self.modulation_formats_matrix: list[list[str]] = []
         self.weights_list: list[float] = []
         self.path_index_list: list[int] = []

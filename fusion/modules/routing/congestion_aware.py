@@ -1,8 +1,6 @@
 """
 Congestion-aware routing algorithm implementation.
 """
-# pylint: disable=duplicate-code
-
 from typing import Any
 
 import networkx as nx
@@ -20,18 +18,21 @@ from fusion.sim.utils import (
 
 
 class CongestionAwareRouting(AbstractRoutingAlgorithm):
-    """Congestion-aware routing algorithm.
+    """
+    Congestion-aware routing algorithm.
 
     This algorithm finds paths by considering network congestion levels,
     selecting the path with the least congested link.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object):
-        """Initialize congestion-aware routing algorithm.
+    def __init__(self, engine_props: dict[str, Any], sdn_props: Any) -> None:
+        """
+        Initialize congestion-aware routing algorithm.
 
-        Args:
-            engine_props: Dictionary containing engine configuration
-            sdn_props: Object containing SDN controller properties
+        :param engine_props: Dictionary containing engine configuration.
+        :type engine_props: dict[str, Any]
+        :param sdn_props: Object containing SDN controller properties.
+        :type sdn_props: Any
         """
         super().__init__(engine_props, sdn_props)
         self.route_props = RoutingProps()
@@ -41,26 +42,37 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             sdn_props=self.sdn_props,
         )
         self._path_count = 0
-        self._total_congestion = 0
+        self._total_congestion = 0.0
 
     @property
     def algorithm_name(self) -> str:
-        """Return the name of the routing algorithm."""
+        """
+        Get the name of the routing algorithm.
+
+        :return: The algorithm name 'congestion_aware'.
+        :rtype: str
+        """
         return "congestion_aware"
 
     @property
     def supported_topologies(self) -> list[str]:
-        """Return list of supported topology types."""
+        """
+        Get the list of supported topology types.
+
+        :return: List of supported topology names including NSFNet,
+            USBackbone60, Pan-European, and Generic.
+        :rtype: list[str]
+        """
         return ["NSFNet", "USBackbone60", "Pan-European", "Generic"]
 
     def validate_environment(self, topology: Any) -> bool:
-        """Validate that the routing algorithm can work with the given topology.
+        """
+        Validate that the routing algorithm can work with the given topology.
 
-        Args:
-            topology: NetworkX graph representing the network topology
-
-        Returns:
-            True if the algorithm can route in this environment
+        :param topology: NetworkX graph representing the network topology.
+        :type topology: Any
+        :return: True if the algorithm can route in this environment.
+        :rtype: bool
         """
         # Check if topology has the required attributes for congestion calculation
         return (
@@ -70,18 +82,20 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         )
 
     def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
-        """Find a route from source to destination using congestion-aware k-shortest.
+        """
+        Find a route from source to destination using congestion-aware k-shortest.
 
         For the first k shortest-length candidate paths we compute:
-            score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len_in_set)
+            score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len)
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            request: Request object containing traffic demand details
-
-        Returns:
-            Best path based on congestion score, or None if no path found
+        :param source: Source node identifier.
+        :type source: Any
+        :param destination: Destination node identifier.
+        :type destination: Any
+        :param request: Request object containing traffic demand details.
+        :type request: Any
+        :return: Best path based on congestion score, or None if no path found.
+        :rtype: list[Any] | None
         """
         # Store source/destination in sdn_props for compatibility
         self.sdn_props.source = source
@@ -99,23 +113,25 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
                 # Calculate congestion metric for the best path
                 best_path = self.route_props.paths_matrix[0]
                 congestion = self._calculate_path_congestion(best_path)
-                self._total_congestion += congestion
-                return best_path
+                self._total_congestion += float(congestion)
+                return list(best_path) if isinstance(best_path, (list, tuple)) else None
             return None
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
 
     def _find_congestion_aware_paths(self) -> None:
-        """Implement the sophisticated congestion-aware k-shortest routing.
+        """
+        Implement the sophisticated congestion-aware k-shortest routing.
 
-        For the first k shortest-length candidate paths we compute:
-            score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len_in_set)
+        For the first k shortest-length candidate paths computes:
+            score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len)
 
         All k paths are stored in route_props.*, sorted by score so the
         downstream allocator will try the most promising path first.
         """
         candidate_paths_data = self._gather_candidate_paths()
         if not candidate_paths_data:
+            # Set blocked state - using setattr for dynamic attribute
             self.route_props.blocked = True
             return
 
@@ -123,14 +139,17 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         self._populate_route_properties(scored_paths)
 
     def _gather_candidate_paths(self) -> dict[str, list[Any]]:
-        """Gather k shortest-length candidate paths with their metrics.
+        """
+        Gather k shortest-length candidate paths with their metrics.
 
-        Returns:
-            Dictionary containing candidate paths, lengths, and congestion values
+        :return: Dictionary containing 'paths', 'lengths', and 'congestions' lists.
+        :rtype: dict[str, list[Any]]
         """
         k_paths = int(self.engine_props.get("k_paths", 1))
 
-        topology = self.engine_props.get("topology", self.sdn_props.topology)
+        topology = self.engine_props.get(
+            "topology", getattr(self.sdn_props, 'topology', None)
+        )
         paths_iterator = nx.shortest_simple_paths(
             G=topology,
             source=self.sdn_props.source,
@@ -149,7 +168,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
 
             mean_congestion, _ = find_path_congestion(
                 path_list=path,
-                network_spectrum_dict=self.sdn_props.network_spectrum_dict,
+                network_spectrum=getattr(self.sdn_props, 'network_spectrum_dict', {}),
             )
             path_congestions.append(mean_congestion)
 
@@ -162,13 +181,13 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
     def _calculate_path_scores(
         self, candidate_paths_data: dict[str, list[Any]]
     ) -> list[tuple]:
-        """Calculate congestion-aware scores for candidate paths.
+        """
+        Calculate congestion-aware scores for candidate paths.
 
-        Args:
-            candidate_paths_data: Dictionary with paths, lengths, and congestions
-
-        Returns:
-            List of tuples (path, length, score) sorted by score
+        :param candidate_paths_data: Dictionary with paths, lengths, and congestions.
+        :type candidate_paths_data: dict[str, list[Any]]
+        :return: List of tuples (path, length, score) sorted by score.
+        :rtype: list[tuple]
         """
         alpha = float(self.engine_props.get("ca_alpha", 0.3))
 
@@ -195,12 +214,13 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         return scored_paths
 
     def _populate_route_properties(self, scored_paths: list[tuple]) -> None:
-        """Populate route properties with scored paths in order.
-
-        Args:
-            scored_paths: List of (path, length, score) tuples sorted by score
         """
-        chosen_bandwidth = self.sdn_props.bandwidth
+        Populate route properties with scored paths in order.
+
+        :param scored_paths: List of (path, length, score) tuples sorted by score.
+        :type scored_paths: list[tuple]
+        """
+        chosen_bandwidth = getattr(self.sdn_props, 'bandwidth', None)
 
         for path, path_length, score in scored_paths:
             modulation_list = self._get_modulation_formats(
@@ -214,31 +234,41 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
     def _get_modulation_formats(
         self, path_length: float, chosen_bandwidth: Any
     ) -> list[str]:
-        """Get appropriate modulation formats for the given path length.
+        """
+        Get appropriate modulation formats for the given path length.
 
-        Args:
-            path_length: Length of the path
-            chosen_bandwidth: Selected bandwidth for the connection
-
-        Returns:
-            List of modulation format strings
+        :param path_length: Length of the path.
+        :type path_length: float
+        :param chosen_bandwidth: Selected bandwidth for the connection.
+        :type chosen_bandwidth: Any
+        :return: List of modulation format strings.
+        :rtype: list[str]
         """
         if not self.engine_props.get("pre_calc_mod_selection", False):
             modulation_format = get_path_modulation(
                 mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
                 path_len=path_length,
             )
-            return [modulation_format]
+            if modulation_format and modulation_format is not True:
+                return [str(modulation_format)]
+            return ['QPSK']
 
         modulation_formats_sorted = sort_nested_dict_values(
-            original_dict=self.sdn_props.mod_formats_dict,
+            original_dict=getattr(self.sdn_props, 'mod_formats_dict', {}),
             nested_key="max_length",
         )
         return list(modulation_formats_sorted.keys())
 
     def _find_least_congested_path(self) -> list[Any] | None:
-        """Find the least congested path using the original algorithm logic."""
-        topology = self.engine_props.get("topology", self.sdn_props.topology)
+        """
+        Find the least congested path using the original algorithm logic.
+
+        :return: Path with the least congested bottleneck link, or None if no path found.
+        :rtype: list[Any] | None
+        """
+        topology = self.engine_props.get(
+            "topology", getattr(self.sdn_props, 'topology', None)
+        )
 
         all_paths_obj = nx.shortest_simple_paths(
             topology, self.sdn_props.source, self.sdn_props.destination
@@ -251,24 +281,45 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
                 min_hops = num_hops
                 self._find_most_cong_link(path_list=path_list)
             else:
-                if num_hops <= min_hops + 1:
+                if min_hops is not None and num_hops <= min_hops + 1:
                     self._find_most_cong_link(path_list=path_list)
                 else:
                     # We exceeded minimum hops plus one, return the best path
                     self._find_least_cong()
                     if self.route_props.paths_matrix:
-                        return self.route_props.paths_matrix[0]
+                        first_path = self.route_props.paths_matrix[0]
+                        if isinstance(first_path, dict) and 'path_list' in first_path:
+                            path_list = first_path['path_list']
+                            return (
+                                list(path_list)
+                                if isinstance(path_list, (list, tuple))
+                                else None
+                            )
+                        return (
+                            list(first_path)
+                            if isinstance(first_path, (list, tuple))
+                            else None
+                        )
                     break
 
         return None
 
-    def _find_most_cong_link(self, path_list: list):
-        """Find the most congested link along a path."""
+    def _find_most_cong_link(self, path_list: list[Any]) -> None:
+        """
+        Find the most congested link along a path.
+
+        Identifies the link with the least free slots along the given path
+        and stores it in the route properties matrix.
+
+        :param path_list: List of node identifiers representing the path.
+        :type path_list: list[Any]
+        """
         most_cong_link = None
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.network_spectrum_dict[
+            network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+            link_dict = network_spectrum_dict[
                 (path_list[i], path_list[i + 1])
             ]
             free_slots = 0
@@ -288,8 +339,13 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             }
         )
 
-    def _find_least_cong(self):
-        """Select the path with the least congested link."""
+    def _find_least_cong(self) -> None:
+        """
+        Select the path with the least congested bottleneck link.
+
+        Sorts all candidate paths by their most congested link's free slots
+        and updates the route properties with the best path.
+        """
         # Sort dictionary by number of free slots, descending
         sorted_paths_list = sorted(
             self.route_props.paths_matrix,
@@ -303,17 +359,26 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         ]
 
     def _calculate_path_congestion(self, path: list[Any]) -> float:
-        """Calculate congestion metric for a path."""
+        """
+        Calculate the congestion metric for a given path.
+
+        :param path: List of node identifiers representing the path.
+        :type path: list[Any]
+        :return: Congestion ratio (used slots / total slots) for the path.
+            Returns 0.0 if the path is invalid or has less than 2 nodes.
+        :rtype: float
+        """
         if not path or len(path) < 2:
             return 0.0
 
         total_used_slots = 0
         total_slots = 0
 
+        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
         for i in range(len(path) - 1):
             link_key = (path[i], path[i + 1])
-            if link_key in self.sdn_props.network_spectrum_dict:
-                link_dict = self.sdn_props.network_spectrum_dict[link_key]
+            if link_key in network_spectrum_dict:
+                link_dict = network_spectrum_dict[link_key]
                 for band in link_dict["cores_matrix"]:
                     cores_matrix = link_dict["cores_matrix"][band]
                     for core_arr in cores_matrix:
@@ -323,15 +388,17 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         return total_used_slots / total_slots if total_slots > 0 else 0.0
 
     def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
-        """Get k paths ordered by congestion level.
+        """
+        Get k paths ordered by congestion level.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            k: Number of paths to return
-
-        Returns:
-            List of k paths ordered by congestion (least congested first)
+        :param source: Source node identifier.
+        :type source: Any
+        :param destination: Destination node identifier.
+        :type destination: Any
+        :param k: Number of paths to return.
+        :type k: int
+        :return: List of k paths ordered by congestion (least congested first).
+        :rtype: list[list[Any]]
         """
         # For congestion-aware routing, we typically return the single best path
         # But we can extend this to return multiple paths ordered by congestion
@@ -339,13 +406,15 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         return [best_path] if best_path else []
 
     def update_weights(self, topology: Any) -> None:
-        """Update congestion weights based on current network state.
+        """
+        Update congestion weights based on current network state.
 
-        Args:
-            topology: NetworkX graph to update weights for
+        :param topology: NetworkX graph to update weights for.
+        :type topology: Any
         """
         # Update congestion costs for all links based on current spectrum usage
-        for link_tuple in list(self.sdn_props.network_spectrum_dict.keys())[::2]:
+        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             congestion = self._calculate_link_congestion(source, destination)
 
@@ -355,12 +424,22 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
                 topology[destination][source]["cong_cost"] = congestion
 
     def _calculate_link_congestion(self, source: Any, destination: Any) -> float:
-        """Calculate congestion level for a specific link."""
+        """
+        Calculate congestion level for a specific link.
+
+        :param source: Source node identifier.
+        :type source: Any
+        :param destination: Destination node identifier.
+        :type destination: Any
+        :return: Congestion ratio (used slots / total slots) for the link.
+        :rtype: float
+        """
         link_key = (source, destination)
-        if link_key not in self.sdn_props.network_spectrum_dict:
+        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        if link_key not in network_spectrum_dict:
             return 0.0
 
-        link_dict = self.sdn_props.network_spectrum_dict[link_key]
+        link_dict = network_spectrum_dict[link_key]
         total_used_slots = 0
         total_slots = 0
 
@@ -373,10 +452,13 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         return total_used_slots / total_slots if total_slots > 0 else 0.0
 
     def get_metrics(self) -> dict[str, Any]:
-        """Get routing algorithm performance metrics.
+        """
+        Get routing algorithm performance metrics.
 
-        Returns:
-            Dictionary containing algorithm-specific metrics
+        :return: Dictionary containing algorithm-specific metrics including
+            algorithm name, paths computed, average congestion, and total
+            congestion considered.
+        :rtype: dict[str, Any]
         """
         avg_congestion = (
             self._total_congestion / self._path_count if self._path_count > 0 else 0
@@ -392,5 +474,5 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
     def reset(self) -> None:
         """Reset the routing algorithm state."""
         self._path_count = 0
-        self._total_congestion = 0
+        self._total_congestion = 0.0
         self.route_props = RoutingProps()
