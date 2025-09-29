@@ -5,6 +5,7 @@
 import ast
 import copy
 import os
+from typing import Any
 
 import torch
 from sb3_contrib import QRDQN
@@ -31,7 +32,9 @@ from fusion.sim.utils.io import parse_yaml_file
 from fusion.sim.utils.simulation import get_start_time
 
 
-def setup_feature_extractor(env: object):
+def setup_feature_extractor(
+    env: Any,
+) -> tuple[type[CachedPathGNN] | type[GraphTransformerExtractor], dict[str, Any]]:
     """
     Sets up a custom feature extractor.
     """
@@ -41,6 +44,8 @@ def setup_feature_extractor(env: object):
         "emb_dim": engine_props["emb_dim"],
         "layers": engine_props["layers"],
     }
+
+    extr_class: type[CachedPathGNN] | type[GraphTransformerExtractor]
 
     if feat_extr == "path_gnn":
         # where the cache will live
@@ -81,13 +86,16 @@ def setup_feature_extractor(env: object):
         raise FeatureExtractorError(
             f"Unsupported feature extractor type: '{feat_extr}'. "
             f"Supported types are: 'path_gnn', 'graphormer'. "
-            f"Please check your configuration and ensure a valid feature extractor is specified."
+            f"Please check your configuration and ensure a valid feature "
+            f"extractor is specified."
         )
 
     return extr_class, feat_kwargs
 
 
-def get_drl_dicts(env, yaml_path):
+def get_drl_dicts(
+    env: Any, yaml_path: str
+) -> tuple[dict[str, Any], dict[str, Any], str]:
     """
     Gets dictionaries related to DRL algorithms.
     """
@@ -114,7 +122,7 @@ def get_drl_dicts(env, yaml_path):
     return yaml_dict, kwargs_dict, env_name
 
 
-def setup_rl_sim(config_path: str = None):
+def setup_rl_sim(config_path: str | None = None) -> dict[str, Any]:
     """
     Loads config and args using the new CLI-based ConfigManager.
     """
@@ -126,8 +134,8 @@ def setup_rl_sim(config_path: str = None):
 
 
 def _get_common_model_parameters(
-    yaml_dict: dict, env_name: str, kwargs_dict: dict, env: object
-):
+    yaml_dict: dict[str, Any], env_name: str, kwargs_dict: dict[str, Any], env: Any
+) -> dict[str, Any]:
     """
     Extract common parameters used across different model types.
 
@@ -150,7 +158,7 @@ def _get_common_model_parameters(
     }
 
 
-def setup_ppo(env: object, device: str):
+def setup_ppo(env: Any, device: str) -> PPO:
     """
     Setups up the StableBaselines3 PPO model.
 
@@ -192,7 +200,7 @@ def setup_ppo(env: object, device: str):
     return PPO(**all_params)
 
 
-def setup_a2c(env: object, device: str):
+def setup_a2c(env: Any, device: str) -> A2C:
     """
     Setups up the StableBaselines3 A2C model.
 
@@ -235,7 +243,7 @@ def setup_a2c(env: object, device: str):
     return A2C(**all_params)
 
 
-def setup_dqn(env: object, device: str):
+def setup_dqn(env: Any, device: str) -> DQN:
     """
     Sets up the StableBaselines3 DQN model.
 
@@ -246,7 +254,8 @@ def setup_dqn(env: object, device: str):
     """
     network = env.engine_obj.engine_props["network"]
     # NOTE: YAML path handling should be standardized across all DRL algorithms
-    # Currently different algorithms use different path structures for configuration files
+    # Currently different algorithms use different path structures for
+    # configuration files
     yaml_path = os.path.join("fusion", "configs", "hyperparams", f"dqn_{network}.yml")
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
@@ -286,7 +295,7 @@ def setup_dqn(env: object, device: str):
     return DQN(**all_params)
 
 
-def setup_qr_dqn(env: object, device: str):
+def setup_qr_dqn(env: Any, device: str) -> QRDQN:
     """
     Sets up the SB3-Contrib QRDQN model (distributional DQN with dueling support).
 
@@ -300,7 +309,7 @@ def setup_qr_dqn(env: object, device: str):
     yaml_dict, kwargs_dict, env_name = get_drl_dicts(env=env, yaml_path=yaml_path)
 
     model = QRDQN(
-        env=env,
+        env=env,  # type: ignore[arg-type]
         device=yaml_dict[env_name].get("device", "cpu"),
         policy=yaml_dict[env_name]["policy"],
         learning_rate=yaml_dict[env_name]["learning_rate"],
@@ -327,7 +336,7 @@ def setup_qr_dqn(env: object, device: str):
     return model
 
 
-def print_info(sim_dict: dict):
+def print_info(sim_dict: dict[str, Any]) -> None:
     """
     Prints relevant RL simulation information.
 
@@ -364,15 +373,16 @@ class SetupHelper:
     A helper class to handle setup-related tasks for the SimEnv environment.
     """
 
-    def __init__(self, sim_env: object):
+    def __init__(self, sim_env: Any):
         """
         Constructor for RLSetupHelper.
 
-        :param sim_env: Reference to the parent SimEnv instance, to update relevant attributes directly.
+        :param sim_env: Reference to the parent SimEnv instance, to update
+        relevant attributes directly.
         """
         self.sim_env = sim_env
 
-    def create_input(self):
+    def create_input(self) -> None:
         """
         Creates input for RL agents based on the simulation configuration.
         """
@@ -400,7 +410,7 @@ class SetupHelper:
             data_dict=self.sim_env.modified_props,
         )
 
-    def init_envs(self):
+    def init_envs(self) -> None:
         """
         Sets up environments for RL agents based on the simulation configuration.
         """
@@ -420,7 +430,7 @@ class SetupHelper:
 
     # NOTE: Future enhancement should support selective loading of specific AI agents
     # based on configuration to optimize memory usage and initialization time
-    def load_models(self):
+    def load_models(self) -> None:
         """
         Loads pretrained models for RL agents and configures agent properties.
 

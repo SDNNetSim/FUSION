@@ -1,8 +1,9 @@
 import os
+from typing import Any
 
 import numpy as np
 
-from fusion.core.properties import SDNProps
+from fusion.core.properties import RoutingProps, SDNProps
 from fusion.core.spectrum_assignment import SpectrumAssignment
 from fusion.modules.rl.utils.errors import ConfigurationError, RLUtilsError
 from fusion.sim.utils.network import (
@@ -19,7 +20,7 @@ class CoreUtilHelpers:
     Contains methods to assist with reinforcement learning simulations.
     """
 
-    def __init__(self, rl_props: object, engine_props: object, route_obj: object):
+    def __init__(self, rl_props: Any, engine_props: Any, route_obj: Any):
         self.rl_props = rl_props
 
         self.engine_props = engine_props
@@ -29,11 +30,11 @@ class CoreUtilHelpers:
 
         self.core_number = None
         self.super_channel = None
-        self.super_channel_indexes = list()
+        self.super_channel_indexes: list[list[int]] = []
         self.modulation_format = None
         self._last_processed_index = 0
 
-    def update_snapshots(self):
+    def update_snapshots(self) -> None:
         """
         Updates snapshot saves for the simulation.
         """
@@ -49,70 +50,80 @@ class CoreUtilHelpers:
                 request_number=arrival_count + 1,
             )
 
-    def get_super_channels(self, slots_needed: int, num_channels: int):
+    def get_super_channels(
+        self, slots_needed: int, num_channels: int
+    ) -> tuple[np.ndarray, bool]:
         """
-        Gets the available 'J' super-channels for the agent to choose from along with a fragmentation score.
+        Gets the available 'J' super-channels for the agent to choose from
+        along with a fragmentation score.
 
         :param slots_needed: Slots needed by the current request.
         :param num_channels: Number of channels needed by the current request.
         :return: A matrix of super-channels with their fragmentation score.
         :rtype: list
         """
-        # NOTE: Currently hardcoded to use 'c' band - should be configurable for different spectral bands
+        # NOTE: Currently hardcoded to use 'c' band - should be configurable
+        # for different spectral bands
         path_list = self.rl_props.chosen_path_list[0]
         super_channel_index_matrix, horizontal_fragmentation_array = (
             get_shannon_entropy_fragmentation(
                 path_list=path_list,
                 network_spectrum=self.engine_props.network_spectrum_dict,
                 spectral_slots=self.rl_props.spectral_slots,
-                core_num=self.core_number,
+                core_num=self.core_number if self.core_number is not None else 0,
                 slots_needed=slots_needed,
                 band="c",
             )
         )
 
-        self.super_channel_indexes = super_channel_index_matrix[:num_channels]
+        self.super_channel_indexes = super_channel_index_matrix[:num_channels].tolist()
         # There were not enough super-channels, do not penalize the agent
         no_penalty = len(self.super_channel_indexes) == 0
 
-        response_fragmentation_matrix = list()
+        response_fragmentation_matrix: list[float] = []
         for channel in self.super_channel_indexes:
             start_index = channel[0]
             response_fragmentation_matrix.append(
                 horizontal_fragmentation_array[start_index]
             )
 
-        response_fragmentation_matrix = np.where(
-            np.isinf(response_fragmentation_matrix),
+        response_fragmentation_matrix_np = np.array(response_fragmentation_matrix)
+        response_fragmentation_matrix_np = np.where(
+            np.isinf(response_fragmentation_matrix_np),
             100.0,
-            response_fragmentation_matrix,
+            response_fragmentation_matrix_np,
         )
         difference = self.rl_props.super_channel_space - len(
-            response_fragmentation_matrix
+            response_fragmentation_matrix_np
         )
 
         if len(
-            response_fragmentation_matrix
+            response_fragmentation_matrix_np
         ) < self.rl_props.super_channel_space or np.any(
-            np.isinf(response_fragmentation_matrix)
+            np.isinf(response_fragmentation_matrix_np)
         ):
             for _ in range(difference):
-                response_fragmentation_matrix = np.append(
-                    response_fragmentation_matrix, 100.0
+                response_fragmentation_matrix_np = np.append(
+                    response_fragmentation_matrix_np, 100.0
                 )
 
-        return response_fragmentation_matrix, no_penalty
+        return response_fragmentation_matrix_np, no_penalty
 
-    def classify_paths(self, paths_list: list):
+    def classify_paths(
+        self, paths_list: np.ndarray
+    ) -> list[tuple[int, list[Any], int]]:
         """
         Classify paths by their current congestion level.
 
         :param paths_list: A list of paths from source to destination.
-        :return: The index of the path, the path itself, and its congestion index for every path.
+        :return: The index of the path, the path itself, and its congestion
+            index for every path.
         :rtype: list
         """
-        information_list = list()
-        paths_list = paths_list[:, 0]
+        information_list = []
+        paths_list = (
+            paths_list[:, 0] if isinstance(paths_list, np.ndarray) else paths_list
+        )
         for path_index, current_path in enumerate(paths_list):
             current_congestion, _ = find_path_congestion(
                 path_list=current_path,
@@ -127,12 +138,15 @@ class CoreUtilHelpers:
 
         return information_list
 
-    def classify_cores(self, cores_list: list):
+    def classify_cores(
+        self, cores_list: list[Any]
+    ) -> list[tuple[int, Any, int]]:
         """
         Classify cores by their congestion level.
 
         :param cores_list: A list of cores.
-        :return: The core index, the core itself, and the congestion level of that core for every core.
+        :return: The core index, the core itself, and the congestion level
+            of that core for every core.
         :rtype: list
         :raises RLUtilsError: This functionality is not yet implemented
         """
@@ -142,7 +156,9 @@ class CoreUtilHelpers:
             "core-level congestion patterns."
         )
 
-    def update_route_props(self, bandwidth: str, chosen_path: list):
+    def update_route_props(
+        self, bandwidth: str, chosen_path: list[list[Any]]
+    ) -> None:
         """
         Updates the route properties.
 
@@ -161,7 +177,7 @@ class CoreUtilHelpers:
         self.route_obj.route_props.modulation_formats_matrix = [[modulation_format]]
         self.route_obj.route_props.weights_list.append(path_length)
 
-    def handle_releases(self):
+    def handle_releases(self) -> None:
         """
         Checks if a request or multiple requests need to be released.
         """
@@ -178,7 +194,7 @@ class CoreUtilHelpers:
             self.engine_props.handle_release(current_time=request_object["depart"])
             self._last_processed_index += 1
 
-    def allocate(self):
+    def allocate(self) -> None:
         """
         Attempts to allocate a request.
         """
@@ -213,8 +229,11 @@ class CoreUtilHelpers:
 
     @staticmethod
     def mock_handle_arrival(
-        engine_props: dict, sdn_props: dict, path_list: list, mod_format_list: list
-    ):
+        engine_props: dict[str, Any],
+        sdn_props: dict[str, Any],
+        path_list: list[Any],
+        mod_format_list: list[str],
+    ) -> bool:
         """
         Function to mock an arrival process or allocation in the network.
 
@@ -225,9 +244,14 @@ class CoreUtilHelpers:
         :return: If there are available spectral slots.
         :rtype: bool
         """
-        route_props = None
+        # Create dummy route_props and sdn_props objects for mock allocation
+        route_props = RoutingProps()
+        sdn_props_obj = SDNProps()
+        # Convert dict to SDNProps object
+        for key, value in sdn_props.items():
+            setattr(sdn_props_obj, key, value)
         spectrum_obj = SpectrumAssignment(
-            engine_props=engine_props, sdn_props=sdn_props, route_props=route_props
+            engine_props=engine_props, sdn_props=sdn_props_obj, route_props=route_props
         )
 
         spectrum_obj.spectrum_props.forced_index = None
@@ -240,7 +264,7 @@ class CoreUtilHelpers:
 
         return True
 
-    def update_mock_sdn(self, current_request: dict):
+    def update_mock_sdn(self, current_request: dict[str, Any]) -> SDNProps:
         """
         Updates the mock sdn dictionary to find select routes.
 
@@ -259,12 +283,12 @@ class CoreUtilHelpers:
             "mod_formats_dict": current_request["mod_formats"],
             "num_trans": 1.0,
             "block_reason": None,
-            "modulation_list": list(),
-            "crosstalk_list": list(),
+            "modulation_list": [],
+            "crosstalk_list": [],
             "is_sliced": False,
-            "core_list": list(),
-            "bandwidth_list": list(),
-            "path_weight": list(),
+            "core_list": [],
+            "bandwidth_list": [],
+            "path_weight": [],
         }
 
         for key, value in params.items():
@@ -272,14 +296,14 @@ class CoreUtilHelpers:
 
         return mock_sdn
 
-    def reset_reqs_dict(self, seed: int):
+    def reset_reqs_dict(self, seed: int) -> None:
         """
         Resets the request dictionary.
 
         :param seed: The random seed.
         """
         self._last_processed_index = 0
-        self.engine_props.reqs_status_dict = dict()
+        self.engine_props.reqs_status_dict = {}
         self.engine_props.generate_requests(seed=seed)
 
         for request_time in self.engine_props.reqs_dict:
@@ -300,7 +324,8 @@ def determine_model_type(sim_dict: dict) -> str:
     Determines the type of agent being used based on the provided simulation dictionary.
 
     :param sim_dict: A dictionary containing simulation configuration.
-    :return: A string representing the model type ('path_algorithm', 'core_algorithm', 'spectrum_algorithm').
+    :return: A string representing the model type ('path_algorithm',
+        'core_algorithm', 'spectrum_algorithm').
     """
     if "s1" in sim_dict:
         sim_dict = sim_dict["s1"]
@@ -319,7 +344,7 @@ def determine_model_type(sim_dict: dict) -> str:
     )
 
 
-def save_arr(arr: np.array, sim_dict: dict, file_name: str):
+def save_arr(arr: np.ndarray, sim_dict: dict[str, Any], file_name: str) -> None:
     """
     Save a numpy array to a specific file path constructed from simulation details.
     """

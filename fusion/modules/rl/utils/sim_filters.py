@@ -27,10 +27,12 @@ def _not_filters(
         check_value = flags_list[-1]
 
         # Traverse file_dict along the keys_list.
-        file_value = file_dict
+        file_value: dict[str, Any] | Any | None = file_dict
         for key in keys_list:
-            file_value = file_value.get(key)
-            if file_value is None:
+            if isinstance(file_value, dict):
+                file_value = file_value.get(key)
+            else:
+                file_value = None
                 break
 
         if file_value == check_value:
@@ -59,10 +61,12 @@ def _or_filters(
         keys_list = flags_list[:-1]
         check_value = flags_list[-1]
 
-        file_value = file_dict
+        file_value: dict[str, Any] | Any | None = file_dict
         for key in keys_list:
-            file_value = file_value.get(key)
-            if file_value is None:
+            if isinstance(file_value, dict):
+                file_value = file_value.get(key)
+            else:
+                file_value = None
                 break
 
         if file_value == check_value:
@@ -76,8 +80,9 @@ def _and_filters(
     """
     Apply "and" filters to the file dictionary.
 
-    Each entry in 'and_filter_list' is expected to be a list where all elements except
-    the last represent a key path and the last element is the value that must be matched.
+    Each entry in 'and_filter_list' is expected to be a list where all elements
+    except the last represent a key path and the last element is the value that
+    must be matched.
 
     Returns False immediately if any "and" filter is not satisfied.
     """
@@ -85,7 +90,7 @@ def _and_filters(
         keys_list = flags_list[:-1]
         check_value = flags_list[-1]
 
-        file_value = file_dict
+        file_value: dict[str, Any] | Any | None = file_dict
         for key in keys_list:
             if isinstance(file_value, dict):
                 file_value = file_value.get(key)
@@ -104,8 +109,8 @@ def _check_filters(
     """
     Check all filters on a file dictionary.
 
-    The file passes if it satisfies all "and" filters, at least one "or" filter (if provided),
-    and none of the "not" filters.
+    The file passes if it satisfies all "and" filters, at least one "or" filter
+    (if provided), and none of the "not" filters.
     """
     if not _and_filters(filter_dict, file_dict):
         return False
@@ -118,15 +123,18 @@ def find_times(
     dates_dict: dict[str, str], filter_dict: dict[str, list[list[Any]]]
 ) -> dict[str, list]:
     """
-    Searches output directories based on filters and retrieves simulation directory information.
+    Searches output directories based on filters and retrieves simulation
+    directory information.
 
-    :param dates_dict: Dictionary where keys are dates (e.g., '0227') and values are network names.
+    :param dates_dict: Dictionary where keys are dates (e.g., '0227') and
+        values are network names.
     :param filter_dict: Dictionary containing search filters with keys:
                         'not_filter_list', 'or_filter_list', and 'and_filter_list'.
-    :return: A dictionary with lists for simulation times, simulation numbers, networks, and dates.
+    :return: A dictionary with lists for simulation times, simulation numbers,
+        networks, and dates.
     """
-    resp = dict()
-    info_dict = {}
+    resp: dict[str, list[Any]] = {}
+    info_dict: dict[str, dict[str, list[str]]] = {}
 
     for date, network in dates_dict.items():
         times_path = os.path.join("..", "..", "data", "input", network, date)
@@ -166,7 +174,8 @@ def find_times(
                         "dates_list": [],
                         "algorithm_list": [],
                     }
-                # Assuming the simulation number is the third element separated by underscores.
+                # Assuming the simulation number is the third element separated by
+                # underscores.
                 sim = input_file.split("_")[2].split(".")[0]
                 algo_name = file_dict.get("path_algorithm", "Unknown Algorithm")
                 info_dict[curr_time]["sim_list"].append(sim)
