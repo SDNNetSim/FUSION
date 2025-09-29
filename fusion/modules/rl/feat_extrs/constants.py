@@ -7,8 +7,8 @@ the feature extraction components.
 from pathlib import Path
 
 # Directory for caching GNN embeddings
+# Note: Directory creation should be done when actually needed, not at import time
 CACHE_DIR: Path = Path(__file__).resolve().parents[3] / "gnn_cached"
-CACHE_DIR.mkdir(exist_ok=True)
 
 # Default values for feature extractors
 DEFAULT_EMBEDDING_DIMENSION: int = 64

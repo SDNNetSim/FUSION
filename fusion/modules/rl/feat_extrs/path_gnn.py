@@ -5,25 +5,25 @@ This module implements a GNN feature extractor that processes graph observations
 through multiple convolution layers to extract path-based features for
 reinforcement learning agents.
 """
-from typing import Dict, List
 import torch
-from torch_geometric.nn import GATv2Conv, SAGEConv, GraphConv
 from gymnasium import spaces
+from torch_geometric.nn import GATv2Conv, GraphConv, SAGEConv
 
-from fusion.modules.rl.feat_extrs.base_feature_extractor import BaseGraphFeatureExtractor
+from fusion.modules.rl.feat_extrs.base_feature_extractor import (
+    BaseGraphFeatureExtractor,
+)
 from fusion.modules.rl.feat_extrs.constants import (
+    DEFAULT_EMBEDDING_DIMENSION,
     DEFAULT_GNN_TYPE,
     DEFAULT_NUM_LAYERS,
-    DEFAULT_EMBEDDING_DIMENSION
 )
-
 
 # TODO: (version 5.5-6) Add params to optuna
 
 class PathGNN(BaseGraphFeatureExtractor):
     """
     Custom PathGNN feature extraction algorithm integrated with StableBaselines3.
-    
+
     This feature extractor processes graph-structured observations through
     multiple graph convolution layers to produce fixed-size feature vectors
     for downstream RL algorithms.
@@ -31,14 +31,14 @@ class PathGNN(BaseGraphFeatureExtractor):
 
     def __init__(
             self,
-            obs_space: spaces.Dict,  # Note: parameter name kept for backward compatibility
-            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Note: parameter name kept for backward compatibility
+            obs_space: spaces.Dict,  # Note: kept for backward compatibility
+            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
             gnn_type: str = DEFAULT_GNN_TYPE,
             layers: int = DEFAULT_NUM_LAYERS
     ):
         """
         Initialize the Path GNN feature extractor.
-        
+
         :param obs_space: Observation space containing graph components:
             - 'x': Node features [num_nodes, feature_dim]
             - 'edge_index': Edge connectivity [2, num_edges]
@@ -53,7 +53,9 @@ class PathGNN(BaseGraphFeatureExtractor):
         :raises ValueError: If gnn_type is not recognized
         """
         # Calculate output dimension based on number of paths and embedding dimension
-        num_paths = obs_space["path_masks"].shape[0]
+        path_masks_shape = obs_space["path_masks"].shape
+        assert path_masks_shape is not None and len(path_masks_shape) >= 2
+        num_paths = path_masks_shape[0]
         features_dimension = emb_dim * num_paths
         super().__init__(obs_space, features_dimension)
 
@@ -71,7 +73,9 @@ class PathGNN(BaseGraphFeatureExtractor):
             )
 
         selected_convolution_class = convolution_type_mapping[gnn_type]
-        input_dimension = obs_space["x"].shape[1]
+        x_shape = obs_space["x"].shape
+        assert x_shape is not None and len(x_shape) >= 2
+        input_dimension = x_shape[1]
 
         # Create convolution layers
         self.convolution_layers = torch.nn.ModuleList([
@@ -85,19 +89,21 @@ class PathGNN(BaseGraphFeatureExtractor):
         # Readout layer for final transformation
         self.readout_layer = torch.nn.Linear(emb_dim, emb_dim)
 
-    def forward(self, observation: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, observation: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Convert graph observation into fixed-size feature vector.
-        
+
         Processes the graph through convolution layers, computes edge embeddings,
         aggregates them according to path masks, and produces a flattened
         feature vector for each sample in the batch.
-        
+
         :param observation: Dictionary containing:
-            - 'x': Node features [batch_size, num_nodes, features] or [num_nodes, features]
+            - 'x': Node features
+                [batch_size, num_nodes, features] or [num_nodes, features]
             - 'edge_index': Edge indices [batch_size, 2, num_edges] or [2, num_edges]
-            - 'path_masks': Path masks [batch_size, num_paths, num_edges] or [num_paths, num_edges]
-        :type observation: Dict[str, torch.Tensor]
+            - 'path_masks': Path masks
+                [batch_size, num_paths, num_edges] or [num_paths, num_edges]
+        :type observation: dict[str, torch.Tensor]
         :return: Feature vector [batch_size, feature_dim] or [1, feature_dim]
         :rtype: torch.Tensor
         """
@@ -107,13 +113,14 @@ class PathGNN(BaseGraphFeatureExtractor):
         path_masks_list = observation["path_masks"]
 
         # Process batch dimensions
-        node_features_list, edge_index, path_masks_list, _ = \
+        node_features_list, edge_index, path_masks_list, _ = (
             self._process_batch_dimensions(
                 node_features_list, edge_index, path_masks_list
             )
+        )
 
         # Process each sample in the batch
-        batch_outputs: List[torch.Tensor] = []
+        batch_outputs: list[torch.Tensor] = []
         actual_batch_size = node_features_list.size(0)
 
         for batch_idx in range(actual_batch_size):
