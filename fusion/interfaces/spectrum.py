@@ -5,6 +5,8 @@ Abstract base class for spectrum assignment algorithms in FUSION.
 from abc import ABC, abstractmethod
 from typing import Any
 
+from fusion.core.properties import SDNProps
+
 
 class AbstractSpectrumAssigner(ABC):
     """
@@ -15,14 +17,14 @@ class AbstractSpectrumAssigner(ABC):
     to ensure compatibility with the FUSION simulation framework.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
+    def __init__(self, engine_props: dict, sdn_props: SDNProps, route_props: object):
         """
         Initialize the spectrum assignment algorithm.
 
         :param engine_props: Dictionary containing engine configuration and properties
         :type engine_props: dict
         :param sdn_props: Object containing SDN controller properties and network state
-        :type sdn_props: object
+        :type sdn_props: SDNProps
         :param route_props: Object containing routing properties and selected path
         :type route_props: object
         """

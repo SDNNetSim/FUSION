@@ -6,7 +6,7 @@ from typing import Any
 
 import networkx as nx
 
-from fusion.core.properties import RoutingProps
+from fusion.core.properties import RoutingProps, SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.sim.utils import (
@@ -25,7 +25,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
     selecting the path with the least amount of cross-talk.
     """
 
-    def __init__(self, engine_props: dict[str, Any], sdn_props: Any) -> None:
+    def __init__(self, engine_props: dict[str, Any], sdn_props: SDNProps) -> None:
         """
         Initialize XT-aware routing algorithm.
 

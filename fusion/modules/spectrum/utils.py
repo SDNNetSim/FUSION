@@ -98,6 +98,8 @@ class SpectrumHelpers:
         """
         self.spectrum_props.is_free = True
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for node in range(len(path_list) - 1):
             link_tuple = (
                 path_list[node],
@@ -145,6 +147,8 @@ class SpectrumHelpers:
         :return: True if request can be allocated, False otherwise
         :rtype: bool
         """
+        if self.spectrum_props.slots_needed is None:
+            raise ValueError("slots_needed must not be None")
         for super_channel in open_slots_matrix:
             if len(super_channel) >= (
                 self.spectrum_props.slots_needed + self.engine_props["guard_slots"]
@@ -171,6 +175,8 @@ class SpectrumHelpers:
                         break
                     self.spectrum_props.is_free = True
 
+                    if self.spectrum_props.path_list is None:
+                        raise ValueError("path_list must not be None")
                     if len(self.spectrum_props.path_list) > 2:
                         self.check_other_links()
 
@@ -228,6 +234,8 @@ class SpectrumHelpers:
         }
 
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for source_dest in zip(
             path_list,
             path_list[1:],

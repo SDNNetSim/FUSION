@@ -20,7 +20,8 @@ from fusion.configs.errors import ConfigTypeConversionError
 def str_to_bool(string: str) -> bool:
     """
     Convert string to boolean value.
-    
+
+
     :param string: Input string to convert
     :type string: str
     :return: Boolean value
@@ -32,7 +33,8 @@ def str_to_bool(string: str) -> bool:
 def convert_string_to_dict(value: str) -> str | dict[str, Any]:
     """
     Convert string representation of dictionary to actual dictionary.
-    
+
+
     :param value: String that may contain a dictionary literal
     :type value: str
     :return: Dictionary if conversion successful, original string otherwise
@@ -53,7 +55,8 @@ def apply_cli_override(
 ) -> Any:
     """
     Apply CLI argument override with proper handling of boolean store_true arguments.
-    
+
+
     :param configuration_value: Value from config file
     :type configuration_value: Any
     :param cli_argument_value: Value from CLI arguments (may be None)
@@ -84,7 +87,8 @@ def apply_cli_override(
 def safe_type_convert(value: str, type_converter: Callable, option_name: str) -> Any:
     """
     Safely convert value with proper error context.
-    
+
+
     :param value: String value to convert
     :type value: str
     :param type_converter: Function to perform conversion
@@ -107,7 +111,8 @@ def safe_type_convert(value: str, type_converter: Callable, option_name: str) ->
 def convert_dict_params_if_needed(value: Any, option: str) -> Any:
     """
     Convert dictionary parameters from string to dict if needed.
-    
+
+
     :param value: Configuration value
     :type value: Any
     :param option: Option name

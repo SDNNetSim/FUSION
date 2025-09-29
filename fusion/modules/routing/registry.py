@@ -69,7 +69,8 @@ class RoutingRegistry:
         :type name: str
         :param algorithm_class: Class that implements AbstractRoutingAlgorithm.
         :type algorithm_class: Any
-        :raises TypeError: If algorithm_class doesn't implement AbstractRoutingAlgorithm.
+        :raises TypeError: If algorithm_class doesn't implement
+            AbstractRoutingAlgorithm.
         :raises ValueError: If name is already registered.
         """
         if not issubclass(algorithm_class, AbstractRoutingAlgorithm):

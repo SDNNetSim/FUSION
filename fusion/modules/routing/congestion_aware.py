@@ -6,7 +6,7 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
-from fusion.core.properties import RoutingProps
+from fusion.core.properties import RoutingProps, SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.sim.utils import (
@@ -25,7 +25,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
     selecting the path with the least congested link.
     """
 
-    def __init__(self, engine_props: dict[str, Any], sdn_props: Any) -> None:
+    def __init__(self, engine_props: dict[str, Any], sdn_props: SDNProps) -> None:
         """
         Initialize congestion-aware routing algorithm.
 
@@ -131,8 +131,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         """
         candidate_paths_data = self._gather_candidate_paths()
         if not candidate_paths_data:
-            # Set blocked state - using setattr for dynamic attribute
-            self.route_props.blocked = True
+            # Set blocked state - using block_reason on sdn_props
+            self.sdn_props.block_reason = "congestion"
             return
 
         scored_paths = self._calculate_path_scores(candidate_paths_data)
@@ -263,7 +263,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         """
         Find the least congested path using the original algorithm logic.
 
-        :return: Path with the least congested bottleneck link, or None if no path found.
+        :return: Path with the least congested bottleneck link, or None if no path
+            found.
         :rtype: list[Any] | None
         """
         topology = self.engine_props.get(

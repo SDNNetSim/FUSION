@@ -176,6 +176,8 @@ class RoutingHelpers:
         :return: The worst possible NLI cost.
         :rtype: float
         """
+        if self.sdn_props.network_spectrum_dict is None:
+            return 0.0
         links_list = list(self.sdn_props.network_spectrum_dict.keys())
         sim_link_list = self._get_simulated_link()
 
@@ -296,6 +298,9 @@ class RoutingHelpers:
         :return: The calculated XT cost for the link.
         :rtype: float
         """
+        if self.sdn_props.network_spectrum_dict is None:
+            return 0.0
+
         xt_cost = 0.0
         free_slots = 0
 

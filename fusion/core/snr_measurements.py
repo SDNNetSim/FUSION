@@ -600,6 +600,11 @@ class SnrMeasurements:
         )
 
         # Compute slot index
+        if (
+            self.spectrum_props.current_band is None
+            or self.spectrum_props.start_slot is None
+        ):
+            raise ValueError("current_band and start_slot must not be None")
         slot_index = get_slot_index(
             self.spectrum_props.current_band,
             self.spectrum_props.start_slot,
@@ -641,6 +646,11 @@ class SnrMeasurements:
         )
 
         # Compute slot index
+        if (
+            self.spectrum_props.current_band is None
+            or self.spectrum_props.start_slot is None
+        ):
+            raise ValueError("current_band and start_slot must not be None")
         slot_index = get_slot_index(
             self.spectrum_props.current_band,
             self.spectrum_props.start_slot,
@@ -692,6 +702,8 @@ class SnrMeasurements:
 
         # Retrieve modulation format and supported bandwidth
         for open_slot in open_slots_list[:]:
+            if self.spectrum_props.current_band is None:
+                raise ValueError("current_band must not be None")
             slot_index = get_slot_index(
                 self.spectrum_props.current_band, open_slot, self.engine_props_dict
             )

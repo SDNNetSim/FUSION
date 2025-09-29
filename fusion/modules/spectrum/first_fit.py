@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from fusion.core.properties import SpectrumProps
+from fusion.core.properties import SDNProps, SpectrumProps
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 from fusion.modules.spectrum.utils import SpectrumHelpers
 
@@ -19,7 +19,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
     set of slots that can accommodate the request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
+    def __init__(self, engine_props: dict, sdn_props: SDNProps, route_props: object):
         """
         Initialize First Fit spectrum assignment algorithm.
 
@@ -182,6 +182,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
         free_slots = np.where(np.array(core_array) == 0)[0]
 
         slots_needed = self.spectrum_props.slots_needed
+        if slots_needed is None:
+            raise ValueError("slots_needed must not be None")
         if len(free_slots) < slots_needed:
             return False
 
@@ -213,12 +215,16 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
         """Find first fit spectrum assignment along the entire path."""
         # Check all links in the path for spectrum availability
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for i in range(len(path_list) - 1):
             source = path_list[i]
             dest = path_list[i + 1]
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -253,6 +259,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
         # Verify this assignment works for entire path
         start_slot = self.spectrum_props.start_slot
         end_slot = self.spectrum_props.end_slot
+        if start_slot is None or end_slot is None:
+            raise ValueError("start_slot and end_slot must not be None")
         return self._verify_path_assignment(start_slot, end_slot, core_num, band)
 
     def _verify_path_assignment(
@@ -260,6 +268,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
     ) -> bool:
         """Verify spectrum assignment is available along entire path."""
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for i in range(len(path_list) - 1):
             source = path_list[i]
             dest = path_list[i + 1]
@@ -289,6 +299,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -333,6 +345,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -354,6 +368,8 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -376,7 +392,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
-            if link_key in network_dict:
+            if network_dict is not None and link_key in network_dict:
                 link_dict = network_dict[link_key]
                 link_fragmentation = self._calculate_link_fragmentation(link_dict)
                 total_fragmentation += link_fragmentation

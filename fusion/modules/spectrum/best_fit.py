@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from fusion.core.properties import SpectrumProps
+from fusion.core.properties import SDNProps, SpectrumProps
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 from fusion.modules.spectrum.utils import SpectrumHelpers
 
@@ -21,7 +21,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
     set of slots that can accommodate the request, minimizing fragmentation.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
+    def __init__(self, engine_props: dict, sdn_props: SDNProps, route_props: object):
         """
         Initialize Best Fit spectrum assignment algorithm.
 
@@ -108,6 +108,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
         # Get all potential super channels
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for i in range(len(path_list) - 1):
             src = path_list[i]
             dest = path_list[i + 1]
@@ -124,6 +126,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
                     link_key = (src, dest)
                     network_dict = self.sdn_props.network_spectrum_dict
+                    if network_dict is None:
+                        continue
                     if link_key not in network_dict:
                         continue
 
@@ -143,6 +147,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
                     ]
 
                     slots_needed = self.spectrum_props.slots_needed
+                    if slots_needed is None:
+                        raise ValueError("slots_needed must not be None")
                     for channel_list in tmp_matrix:
                         if len(channel_list) >= slots_needed:
                             channels_list.append(
@@ -173,6 +179,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
                 # Check if this assignment works for multi-hop paths
                 path_list = self.spectrum_props.path_list
+                if path_list is None:
+                    raise ValueError("path_list must not be None")
                 if len(path_list) > 2:
                     self.spec_help_obj.start_index = start_index
                     self.spec_help_obj.end_index = end_index
@@ -199,6 +207,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -233,6 +243,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -254,6 +266,8 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -276,7 +290,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
-            if link_key in network_dict:
+            if network_dict is not None and link_key in network_dict:
                 link_dict = network_dict[link_key]
                 link_fragmentation = self._calculate_link_fragmentation(link_dict)
                 total_fragmentation += link_fragmentation

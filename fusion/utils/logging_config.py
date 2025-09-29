@@ -37,7 +37,8 @@ def _create_console_handler(
 ) -> logging.StreamHandler:
     """
     Create and configure console handler.
-    
+
+
     :param log_level: Logging level for the handler
     :type log_level: int
     :param formatter: Formatter for log messages
@@ -62,7 +63,8 @@ def _create_file_handler(
 ) -> logging.handlers.RotatingFileHandler:
     """
     Create and configure rotating file handler.
-    
+
+
     :param log_file: Name of the log file
     :type log_file: str
     :param log_dir: Directory for log files, defaults to logs/ in project root
@@ -270,7 +272,8 @@ class LoggerAdapter(logging.LoggerAdapter):
     def process(self, msg: Any, kwargs: Any) -> tuple[str, Any]:
         """
         Add extra context to log messages.
-        
+
+
         :param msg: The log message
         :type msg: Any
         :param kwargs: Additional keyword arguments

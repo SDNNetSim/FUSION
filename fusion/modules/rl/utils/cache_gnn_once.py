@@ -12,6 +12,7 @@ from pathlib import Path
 
 # Third-party imports
 import torch
+from gymnasium import spaces
 
 # Local imports
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
@@ -61,6 +62,12 @@ def main() -> None:
         return
 
     try:
+        # Ensure observation_space is a Dict space
+        if not isinstance(env.observation_space, spaces.Dict):
+            raise ValueError(
+                f"Expected Dict observation space, got {type(env.observation_space)}"
+            )
+
         enc = PathGNNEncoder(
             env.observation_space,
             emb_dim=env.engine_obj.engine_props["emb_dim"],

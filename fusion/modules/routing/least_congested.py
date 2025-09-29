@@ -10,7 +10,7 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
-from fusion.core.properties import RoutingProps
+from fusion.core.properties import RoutingProps, SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 
@@ -23,7 +23,7 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
     with the least congested bottleneck link (not the mean congestion).
     """
 
-    def __init__(self, engine_props: dict[str, Any], sdn_props: Any) -> None:
+    def __init__(self, engine_props: dict[str, Any], sdn_props: SDNProps) -> None:
         """
         Initialize least congested routing algorithm.
 

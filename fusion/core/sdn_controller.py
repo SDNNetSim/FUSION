@@ -303,7 +303,7 @@ class SDNController:
         )
 
     def _handle_congestion(
-        self, remaining_bandwidth: int = None, remaining_bw: int = None
+        self, remaining_bandwidth: int | None = None, remaining_bw: int | None = None
     ) -> None:
         """
         Handle allocation failure due to network congestion.

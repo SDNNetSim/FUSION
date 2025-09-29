@@ -5,8 +5,9 @@ This module provides a centralized registry for all spectrum assignment algorith
 implementations that follow the AbstractSpectrumAssigner interface.
 """
 
-from typing import Any
+from typing import Any, cast
 
+from fusion.core.properties import SDNProps
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 
 from .best_fit import BestFitSpectrum
@@ -30,8 +31,14 @@ class SpectrumRegistry:
 
         for algorithm_class in algorithms:
             # Create temporary instance to get algorithm name
-            temp_instance = algorithm_class({}, None, None)  # type: ignore[abstract]
-            self.register(temp_instance.algorithm_name, algorithm_class)
+            temp_sdn_props = SDNProps()  # Create temporary instance
+            temp_instance = algorithm_class(
+                {}, temp_sdn_props, None
+            )  # type: ignore[abstract]
+            self.register(
+                temp_instance.algorithm_name,
+                cast(type[AbstractSpectrumAssigner], algorithm_class)
+            )
 
     def register(
         self, name: str, algorithm_class: type[AbstractSpectrumAssigner]
@@ -71,7 +78,7 @@ class SpectrumRegistry:
         return self._algorithms[name]
 
     def create(
-        self, name: str, engine_props: dict, sdn_props: object, route_props: object
+        self, name: str, engine_props: dict, sdn_props: SDNProps, route_props: object
     ) -> AbstractSpectrumAssigner:
         """
         Create an instance of a spectrum assignment algorithm.
@@ -149,7 +156,7 @@ def get_spectrum_algorithm(name: str) -> type[AbstractSpectrumAssigner]:
 
 
 def create_spectrum_algorithm(
-    name: str, engine_props: dict, sdn_props: object, route_props: object
+    name: str, engine_props: dict, sdn_props: SDNProps, route_props: object
 ) -> AbstractSpectrumAssigner:
     """Create a spectrum algorithm instance from the global registry."""
     return _registry.create(name, engine_props, sdn_props, route_props)

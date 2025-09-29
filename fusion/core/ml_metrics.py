@@ -59,7 +59,7 @@ class MLMetricsCollector:
         for core_num in range(self.engine_props["cores_per_link"]):
             current_congestion = find_core_congestion(
                 core_index=core_num,
-                network_spectrum_dict=network_spectrum_dict,
+                network_spectrum=network_spectrum_dict,
                 path_list=path_list,
             )
             congestion_array = np.append(congestion_array, current_congestion)

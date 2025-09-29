@@ -6,7 +6,7 @@ configuration.
 """
 
 import os
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
@@ -26,14 +26,14 @@ from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def _parse_policy_kwargs(string: str) -> Dict[str, Any]:
+def _parse_policy_kwargs(string: str) -> dict[str, Any]:
     """
     Parse policy kwargs from string representation to dictionary.
-    
-    Converts strings like "dict(ortho_init=True, activation_fn=nn.ReLU, 
-    net_arch=dict(pi=[64]))" into actual Python dictionaries. Only 'dict' 
+
+    Converts strings like "dict(ortho_init=True, activation_fn=nn.ReLU,
+    net_arch=dict(pi=[64]))" into actual Python dictionaries. Only 'dict'
     and 'nn' references are allowed for security.
-    
+
     :param string: String representation of policy kwargs
     :type string: str
     :return: Parsed policy kwargs dictionary
@@ -42,27 +42,31 @@ def _parse_policy_kwargs(string: str) -> Dict[str, Any]:
     """
     safe_globals = {"__builtins__": None, "dict": dict, "nn": nn}
     try:
-        return eval(string, safe_globals, {})  # pylint: disable=eval-used
+        result = eval(string, safe_globals, {})  # pylint: disable=eval-used
+        if not isinstance(result, dict):
+            raise RLConfigurationError(f"Expected dict, got {type(result).__name__}")
+        return result
     except (SyntaxError, NameError, TypeError) as exc:
         raise RLConfigurationError(
             f"Failed to parse policy_kwargs string: {string!r}. "
-            f"Ensure it contains valid Python syntax with only 'dict' and 'nn' references."
+            "Ensure it contains valid Python syntax with only "
+            "'dict' and 'nn' references."
         ) from exc
 
 
 def get_model(
-    sim_dict: Dict[str, Any], 
-    device: str, 
-    env: Any, 
-    yaml_dict: Dict[str, Any] | None
-) -> Tuple[Any, Dict[str, Any]]:
+    sim_dict: dict[str, Any],
+    device: str,
+    env: Any,
+    yaml_dict: dict[str, Any] | None
+) -> tuple[Any, dict[str, Any]]:
     """
     Build and return a Stable-Baselines3 model with configuration.
-    
-    Automatically integrates CachedPathGNN feature extractor if a cache file 
-    exists for the specified network. Loads hyperparameters from YAML 
+
+    Automatically integrates CachedPathGNN feature extractor if a cache file
+    exists for the specified network. Loads hyperparameters from YAML
     configuration files.
-    
+
     :param sim_dict: Simulation configuration dictionary
     :type sim_dict: Dict[str, Any]
     :param device: Device for model computation (e.g., 'cpu', 'cuda')
@@ -101,23 +105,28 @@ def get_model(
         parameters["policy_kwargs"] = policy_kwargs
         policy_kwargs.update(
             features_extractor_class=CachedPathGNN,
-            features_extractor_kwargs=dict(cached_embedding=cached),
+            features_extractor_kwargs={"cached_embedding": cached},
         )
         parameters["policy_kwargs"] = policy_kwargs
         logger.info("Using CachedPathGNN from %s", cache_file_path)
 
-    model = ALGORITHM_REGISTRY[algorithm]["setup"](env=env, device=device)
+    setup_func = ALGORITHM_REGISTRY[algorithm]["setup"]
+    if setup_func is None:
+        raise RLConfigurationError(
+            f"Setup function not implemented for algorithm '{algorithm}'"
+        )
+    model = setup_func(env=env, device=device)
     return model, parameters
 
 
-def get_trained_model(env: Any, sim_dict: Dict[str, Any]) -> Any:
+def get_trained_model(env: Any, sim_dict: dict[str, Any]) -> Any:
     """
     Load a pre-trained reinforcement learning model from disk.
-    
+
     Loads a previously trained model based on the algorithm and agent type
     specified in the simulation dictionary. The model file must exist at
     the expected path.
-    
+
     :param env: The reinforcement learning environment
     :type env: Any
     :param sim_dict: Simulation configuration dictionary containing model info
@@ -131,9 +140,20 @@ def get_trained_model(env: Any, sim_dict: Dict[str, Any]) -> Any:
     model_type = determine_model_type(sim_dict=sim_dict)
     algorithm_info = sim_dict.get(model_type)
 
+    if algorithm_info is None:
+        raise RLConfigurationError(
+            f"No algorithm info found for model type '{model_type}'"
+        )
+
+    if not isinstance(algorithm_info, str):
+        raise RLConfigurationError(
+            f"Algorithm info must be a string, got {type(algorithm_info).__name__}"
+        )
+
     if "_" not in algorithm_info:
         raise RLConfigurationError(
-            f"Algorithm info '{algorithm_info}' must include both algorithm and agent type (e.g., 'ppo_path')."
+            f"Algorithm info '{algorithm_info}' must include both algorithm "
+            "and agent type (e.g., 'ppo_path')."
         )
     algorithm, agent_type = algorithm_info.split("_", 1)
 
@@ -155,7 +175,12 @@ def get_trained_model(env: Any, sim_dict: Dict[str, Any]) -> Any:
         )
 
     try:
-        model = ALGORITHM_REGISTRY[algorithm]["load"](model_path, env=env)
+        load_func = ALGORITHM_REGISTRY[algorithm]["load"]
+        if load_func is None:
+            raise ModelLoadError(
+                f"Model loading not implemented for algorithm '{algorithm}'"
+            )
+        model = load_func(model_path, env=env)
     except Exception as exc:
         raise ModelLoadError(
             f"Failed to load model from '{model_path}': {exc}"
@@ -164,14 +189,14 @@ def get_trained_model(env: Any, sim_dict: Dict[str, Any]) -> Any:
     return model
 
 
-def save_model(sim_dict: Dict[str, Any], env: Any, model: Any) -> None:
+def save_model(sim_dict: dict[str, Any], env: Any, model: Any) -> None:
     """
     Save a trained model to the appropriate directory structure.
-    
+
     Saves the model to a hierarchical directory structure based on the
     algorithm, network, date, and simulation start time. Creates the
     necessary directories if they don't exist.
-    
+
     :param sim_dict: Simulation configuration dictionary
     :type sim_dict: Dict[str, Any]
     :param env: The reinforcement learning environment
@@ -183,10 +208,18 @@ def save_model(sim_dict: Dict[str, Any], env: Any, model: Any) -> None:
     model_type = determine_model_type(sim_dict=sim_dict)
     if "_" not in model_type:
         raise RLConfigurationError(
-            f"Algorithm info '{model_type}' must include both algorithm and agent type (e.g., 'ppo_path')."
+            f"Algorithm info '{model_type}' must include both algorithm "
+            "and agent type (e.g., 'ppo_path')."
         )
 
     algorithm = sim_dict.get(model_type)
+    if algorithm is None:
+        raise RLConfigurationError(f"No algorithm found for model type '{model_type}'")
+    if not isinstance(algorithm, str):
+        raise RLConfigurationError(
+            f"Algorithm must be a string, got {type(algorithm).__name__}"
+        )
+
     save_fp = os.path.join(
         "logs",
         algorithm,

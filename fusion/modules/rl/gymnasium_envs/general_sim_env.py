@@ -68,14 +68,20 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.sim_dict = sim_dict[DEFAULT_SIMULATION_KEY]
         # Add super_channel_space attribute to rl_props if it doesn't exist
         if hasattr(self.rl_props, 'super_channel_space'):
-            self.rl_props.super_channel_space = self.sim_dict['super_channel_space']  # type: ignore[attr-defined]
+            self.rl_props.super_channel_space = self.sim_dict[
+                'super_channel_space'
+            ]  # type: ignore[attr-defined]
         else:
             # Dynamically add the attribute for compatibility
-            self.rl_props.super_channel_space = self.sim_dict['super_channel_space']  # type: ignore[attr-defined]
+            self.rl_props.super_channel_space = self.sim_dict[
+                'super_channel_space'
+            ]  # type: ignore[attr-defined]
 
         # Add arrival_count attribute to rl_props if it doesn't exist
         if not hasattr(self.rl_props, 'arrival_count'):
-            self.rl_props.arrival_count = DEFAULT_ARRIVAL_COUNT  # type: ignore[attr-defined]
+            self.rl_props.arrival_count = (
+                DEFAULT_ARRIVAL_COUNT  # type: ignore[attr-defined]
+            )
 
         self.iteration = DEFAULT_ITERATION
         self.trial: int | None = None
@@ -103,12 +109,20 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Used to get config variables into the observation space
         self.reset(options={"save_sim": DEFAULT_SAVE_SIMULATION})
-        self.observation_space = get_obs_space(
+
+        obs_space = get_obs_space(
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
         )
-        self.action_space = get_action_space(
+        if obs_space is None:
+            raise ValueError("Failed to create observation space")
+        self.observation_space = obs_space
+
+        action_space = get_action_space(
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
         )
+        if action_space is None:
+            raise ValueError("Failed to create action space")
+        self.action_space = action_space
 
     def reset(
         self, seed: int | None = None, options: dict[str, Any] | None = None
@@ -160,7 +174,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             # Fallback values if arrival_list is not properly initialized
             bandwidth = 0.0
             holding_time = 0.0
-        obs = self.step_helper.get_obs(bandwidth=bandwidth, holding_time=holding_time)
+        obs = self.step_helper.get_obs(
+            bandwidth=str(bandwidth), holding_time=holding_time
+        )
         info = self._get_info()
         return obs, info
 
@@ -201,7 +217,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         :type print_flag: bool
         """
         # Ensure arrival_count attribute exists
-        self.rl_props.arrival_count = DEFAULT_ARRIVAL_COUNT  # type: ignore[attr-defined]
+        self.rl_props.arrival_count = (
+            DEFAULT_ARRIVAL_COUNT  # type: ignore[attr-defined]
+        )
 
         # Ensure engine_obj is properly initialized before use
         if self.engine_obj is not None:
@@ -215,9 +233,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.rl_help_obj.topology = self.engine_obj.topology
             # Ensure num_nodes attribute exists
             if not hasattr(self.rl_props, 'num_nodes'):
-                self.rl_props.num_nodes = len(self.engine_obj.topology.nodes)  # type: ignore[attr-defined,assignment]
+                self.rl_props.num_nodes = len(
+                    self.engine_obj.topology.nodes
+                )  # type: ignore[attr-defined,assignment]
             else:
-                self.rl_props.num_nodes = len(self.engine_obj.topology.nodes)  # type: ignore[attr-defined,assignment]
+                self.rl_props.num_nodes = len(
+                    self.engine_obj.topology.nodes
+                )  # type: ignore[attr-defined,assignment]
         else:
             # Initialize with default values if engine_obj is None
             if not hasattr(self.rl_props, 'num_nodes'):
@@ -305,7 +327,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_props.arrival_count = current_count + 1  # type: ignore[attr-defined]
         terminated = self.step_helper.check_terminated()
         new_obs = self.step_helper.get_obs(
-            bandwidth=bandwidth, holding_time=holding_time
+            bandwidth=str(bandwidth), holding_time=holding_time
         )
         truncated = False
         info = self._get_info()

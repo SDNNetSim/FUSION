@@ -4,6 +4,7 @@ Factory classes for creating algorithm instances using interfaces.
 
 from typing import Any
 
+from fusion.core.properties import SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.interfaces.snr import AbstractSNRMeasurer
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
@@ -18,7 +19,7 @@ class AlgorithmFactory:
 
     @staticmethod
     def create_routing_algorithm(
-        name: str, engine_props: dict, sdn_props: object
+        name: str, engine_props: dict, sdn_props: SDNProps
     ) -> AbstractRoutingAlgorithm:
         """
         Create a routing algorithm instance.
@@ -28,7 +29,7 @@ class AlgorithmFactory:
         :param engine_props: Engine configuration properties
         :type engine_props: dict
         :param sdn_props: SDN controller properties
-        :type sdn_props: object
+        :type sdn_props: SDNProps
         :return: Configured routing algorithm instance
         :rtype: AbstractRoutingAlgorithm
         :raises ValueError: If algorithm name is not found
@@ -39,7 +40,7 @@ class AlgorithmFactory:
             )
 
             result = create_routing_algorithm(name, engine_props, sdn_props)
-            return result  # type: ignore[return-value]
+            return result  # type: ignore[no-any-return]
         except KeyError as e:
             available = [
                 "k_shortest_path",
@@ -54,7 +55,7 @@ class AlgorithmFactory:
 
     @staticmethod
     def create_spectrum_algorithm(
-        name: str, engine_props: dict, sdn_props: object, route_props: object
+        name: str, engine_props: dict, sdn_props: SDNProps, route_props: object
     ) -> AbstractSpectrumAssigner:
         """
         Create a spectrum assignment algorithm instance.
@@ -64,7 +65,7 @@ class AlgorithmFactory:
         :param engine_props: Engine configuration properties
         :type engine_props: dict
         :param sdn_props: SDN controller properties
-        :type sdn_props: object
+        :type sdn_props: SDNProps
         :param route_props: Routing properties
         :type route_props: object
         :return: Configured spectrum assignment algorithm instance

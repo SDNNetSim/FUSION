@@ -6,7 +6,7 @@ from typing import Any
 
 import networkx as nx
 
-from fusion.core.properties import RoutingProps
+from fusion.core.properties import RoutingProps, SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
 from fusion.sim.utils import (
@@ -24,7 +24,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
     selecting the path with the least fragmentation.
     """
 
-    def __init__(self, engine_props: dict[str, Any], sdn_props: Any) -> None:
+    def __init__(self, engine_props: dict[str, Any], sdn_props: SDNProps) -> None:
         """
         Initialize fragmentation-aware routing algorithm.
 

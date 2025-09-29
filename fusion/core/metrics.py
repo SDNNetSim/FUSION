@@ -372,7 +372,11 @@ class SimStats:
                 self.bit_rate_request += int(sdn_data.bandwidth)
                 bandwidth_key = str(bandwidth) if bandwidth is not None else None
                 weights_dict = self.stats_props.weights_dict
-                bw_weights = weights_dict.get(bandwidth_key, {})
+                bw_weights = (
+                    weights_dict.get(bandwidth_key, {})
+                    if bandwidth_key is not None
+                    else {}
+                )
                 if (
                     bandwidth_key
                     and bandwidth_key in weights_dict

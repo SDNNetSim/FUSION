@@ -442,12 +442,12 @@ class SpectrumAssignment:
             raise ValueError("Path list must be initialized with at least 2 nodes")
 
         forward_link_tuple = (
-            self.spectrum_props.path_list[0],
-            self.spectrum_props.path_list[1],
+            path_list[0],
+            path_list[1],
         )
         reverse_link_tuple = (
-            self.spectrum_props.path_list[1],
-            self.spectrum_props.path_list[0],
+            path_list[1],
+            path_list[0],
         )
         if self.sdn_props.network_spectrum_dict is None:
             raise ValueError("Network spectrum dict must be initialized")

@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from fusion.core.properties import SpectrumProps
+from fusion.core.properties import SDNProps, SpectrumProps
 from fusion.interfaces.spectrum import AbstractSpectrumAssigner
 from fusion.modules.spectrum.utils import SpectrumHelpers
 
@@ -19,7 +19,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
     available contiguous set of slots that can accommodate the request.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object, route_props: object):
+    def __init__(self, engine_props: dict, sdn_props: SDNProps, route_props: object):
         """
         Initialize Last Fit spectrum assignment algorithm.
 
@@ -129,12 +129,16 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
         # Check all links in the path for spectrum availability
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for i in range(len(path_list) - 1):
             source = path_list[i]
             dest = path_list[i + 1]
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                continue
             if link_key not in network_dict:
                 continue
 
@@ -211,6 +215,8 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
         free_slots = np.where(np.array(core_array) == 0)[0]
 
         slots_needed = self.spectrum_props.slots_needed
+        if slots_needed is None:
+            raise ValueError("slots_needed must not be None")
         if len(free_slots) < slots_needed:
             return None
 
@@ -243,6 +249,8 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
     ) -> bool:
         """Verify spectrum assignment is available along entire path."""
         path_list = self.spectrum_props.path_list
+        if path_list is None:
+            raise ValueError("path_list must not be None")
         for i in range(len(path_list) - 1):
             source = path_list[i]
             dest = path_list[i + 1]
@@ -263,6 +271,8 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -297,6 +307,8 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -318,6 +330,8 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
+            if network_dict is None:
+                return False
             if link_key not in network_dict:
                 return False
 
@@ -340,7 +354,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             link_key = (source, dest)
 
             network_dict = self.sdn_props.network_spectrum_dict
-            if link_key in network_dict:
+            if network_dict is not None and link_key in network_dict:
                 link_dict = network_dict[link_key]
                 link_fragmentation = self._calculate_link_fragmentation(link_dict)
                 total_fragmentation += link_fragmentation
