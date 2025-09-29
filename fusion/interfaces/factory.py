@@ -38,7 +38,8 @@ class AlgorithmFactory:
                 create_algorithm as create_routing_algorithm,
             )
 
-            return create_routing_algorithm(name, engine_props, sdn_props)
+            result = create_routing_algorithm(name, engine_props, sdn_props)
+            return result  # type: ignore[return-value]
         except KeyError as e:
             available = [
                 "k_shortest_path",

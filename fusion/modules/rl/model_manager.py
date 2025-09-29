@@ -1,4 +1,12 @@
+"""Model management utilities for reinforcement learning.
+
+This module provides functions for creating, loading, and saving RL models,
+including integration with cached feature extractors and hyperparameter
+configuration.
+"""
+
 import os
+from typing import Any, Dict, Tuple
 
 import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
@@ -18,11 +26,19 @@ from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def _parse_policy_kwargs(string: str) -> dict:
+def _parse_policy_kwargs(string: str) -> Dict[str, Any]:
     """
-    Turn strings like
-        "dict( ortho_init=True, activation_fn=nn.ReLU, net_arch=dict(pi=[64]) )"
-    into an actual Python dict.  Only `dict` and `nn` are allowed names.
+    Parse policy kwargs from string representation to dictionary.
+    
+    Converts strings like "dict(ortho_init=True, activation_fn=nn.ReLU, 
+    net_arch=dict(pi=[64]))" into actual Python dictionaries. Only 'dict' 
+    and 'nn' references are allowed for security.
+    
+    :param string: String representation of policy kwargs
+    :type string: str
+    :return: Parsed policy kwargs dictionary
+    :rtype: Dict[str, Any]
+    :raises RLConfigurationError: If parsing fails due to invalid syntax
     """
     safe_globals = {"__builtins__": None, "dict": dict, "nn": nn}
     try:
@@ -34,10 +50,29 @@ def _parse_policy_kwargs(string: str) -> dict:
         ) from exc
 
 
-def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
+def get_model(
+    sim_dict: Dict[str, Any], 
+    device: str, 
+    env: Any, 
+    yaml_dict: Dict[str, Any] | None
+) -> Tuple[Any, Dict[str, Any]]:
     """
-    Build/return the SB3 model.
-    Adds CachedPathGNN automatically if a cache file exists.
+    Build and return a Stable-Baselines3 model with configuration.
+    
+    Automatically integrates CachedPathGNN feature extractor if a cache file 
+    exists for the specified network. Loads hyperparameters from YAML 
+    configuration files.
+    
+    :param sim_dict: Simulation configuration dictionary
+    :type sim_dict: Dict[str, Any]
+    :param device: Device for model computation (e.g., 'cpu', 'cuda')
+    :type device: str
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param yaml_dict: Optional pre-loaded YAML configuration
+    :type yaml_dict: Dict[str, Any] | None
+    :return: Tuple of (model, parameters)
+    :rtype: Tuple[Any, Dict[str, Any]]
     """
     model_type = determine_model_type(sim_dict)
     algorithm = sim_dict[model_type]
@@ -75,13 +110,23 @@ def get_model(sim_dict: dict, device: str, env: object, yaml_dict: dict):
     return model, parameters
 
 
-def get_trained_model(env: object, sim_dict: dict):
+def get_trained_model(env: Any, sim_dict: Dict[str, Any]) -> Any:
     """
-    Loads a pre-trained reinforcement learning model from disk or initializes a new one.
-
-    :param env: The reinforcement learning environment.
-    :param sim_dict: A dictionary containing simulation-specific parameters, including the model type and path.
-    :return: The loaded or newly initialized RL model.
+    Load a pre-trained reinforcement learning model from disk.
+    
+    Loads a previously trained model based on the algorithm and agent type
+    specified in the simulation dictionary. The model file must exist at
+    the expected path.
+    
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param sim_dict: Simulation configuration dictionary containing model info
+    :type sim_dict: Dict[str, Any]
+    :return: The loaded RL model
+    :rtype: Any
+    :raises RLConfigurationError: If algorithm info format is invalid
+    :raises AlgorithmNotFoundError: If algorithm is not registered
+    :raises ModelLoadError: If model file doesn't exist or loading fails
     """
     model_type = determine_model_type(sim_dict=sim_dict)
     algorithm_info = sim_dict.get(model_type)
@@ -119,13 +164,21 @@ def get_trained_model(env: object, sim_dict: dict):
     return model
 
 
-def save_model(sim_dict: dict, env: object, model):
+def save_model(sim_dict: Dict[str, Any], env: Any, model: Any) -> None:
     """
-    Saves the trained model to the appropriate location based on the algorithm and agent type.
-
-    :param sim_dict: Simulation configuration dictionary.
-    :param env: The reinforcement learning environment.
-    :param model: The trained model to be saved.
+    Save a trained model to the appropriate directory structure.
+    
+    Saves the model to a hierarchical directory structure based on the
+    algorithm, network, date, and simulation start time. Creates the
+    necessary directories if they don't exist.
+    
+    :param sim_dict: Simulation configuration dictionary
+    :type sim_dict: Dict[str, Any]
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param model: The trained model to save
+    :type model: Any
+    :raises RLConfigurationError: If algorithm info format is invalid
     """
     model_type = determine_model_type(sim_dict=sim_dict)
     if "_" not in model_type:

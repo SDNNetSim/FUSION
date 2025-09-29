@@ -1,4 +1,5 @@
-"""Unity hyperparameter optimization utilities.
+"""
+Unity hyperparameter optimization utilities.
 
 This module provides functionality for parsing SLURM output files,
 collecting hyperparameter tuning results, and finding robust optimal

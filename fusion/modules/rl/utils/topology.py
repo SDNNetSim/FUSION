@@ -14,7 +14,8 @@ def convert_networkx_topo(
     :type graph: nx.Graph
     :param as_directed: Whether to treat the graph as directed
     :type as_directed: bool
-    :return: Tuple containing edge index tensor, edge attributes tensor, node features tensor, and node ID to index mapping
+    :return: Tuple containing edge index tensor, edge attributes tensor,
+        node features tensor, and node ID to index mapping
     :rtype: tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]
     """
     nodes = list(graph.nodes())
@@ -55,7 +56,8 @@ def load_topology_from_graph(
     :type graph: nx.Graph
     :param kwargs: Additional keyword arguments passed to convert_networkx_topo
     :type kwargs: Any
-    :return: Tuple containing edge index tensor, edge attributes tensor, node features tensor, and node ID to index mapping
+    :return: Tuple containing edge index tensor, edge attributes tensor,
+        node features tensor, and node ID to index mapping
     :rtype: tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]
     """
     return convert_networkx_topo(graph, **kwargs)

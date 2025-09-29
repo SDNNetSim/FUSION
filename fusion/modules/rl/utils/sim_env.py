@@ -344,7 +344,8 @@ class SimEnvObs:
 
         :param bandwidth: The bandwidth requirement for the current request
         :type bandwidth: str
-        :return: Tuple containing slots needed list, path lengths list, path congestion list, and available slots list
+        :return: Tuple containing slots needed list, path lengths list,
+            path congestion list, and available slots list
         :rtype: tuple[list[int], list[float], list[float], list[float]]
         """
         # NOTE: Consider moving routing object initialization to constructor

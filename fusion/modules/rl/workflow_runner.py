@@ -1,4 +1,12 @@
+"""
+Workflow runner for reinforcement learning training and testing.
+
+This module orchestrates the training and evaluation of RL agents, including
+support for hyperparameter optimization with Optuna and memory usage monitoring.
+"""
+
 import os
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import optuna
@@ -31,9 +39,23 @@ logger = get_logger(__name__)
 # TODO moved to TODO.md: Support for picking up where you left off (testing)
 
 
-def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
+def _run_drl_training(
+    env: Any, 
+    sim_dict: Dict[str, Any], 
+    yaml_dict: Optional[Dict[str, Any]] = None
+) -> None:
     """
-    Trains a deep reinforcement learning model with StableBaselines3.
+    Train a deep reinforcement learning model using Stable-Baselines3.
+    
+    Handles the complete training pipeline including model creation,
+    training execution, and model saving.
+    
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param sim_dict: Simulation configuration dictionary
+    :type sim_dict: Dict[str, Any]
+    :param yaml_dict: Optional hyperparameters dictionary
+    :type yaml_dict: Optional[Dict[str, Any]]
     """
     model, yaml_dict = get_model(
         sim_dict=sim_dict, device=sim_dict["device"], env=env, yaml_dict=yaml_dict
@@ -47,18 +69,49 @@ def _run_drl_training(env: object, sim_dict: dict, yaml_dict: dict = None):
     save_model(sim_dict=sim_dict, env=env, model=model)
 
 
-def _setup_callbacks(callback_list, sim_dict):
-    """Initialise callback attributes that depend on the simulation settings."""
+def _setup_callbacks(callback_list: Any, sim_dict: Dict[str, Any]) -> None:
+    """
+    Initialize callback attributes that depend on simulation settings.
+    
+    Sets up callback objects with simulation-specific parameters like
+    maximum iterations and simulation dictionary.
+    
+    :param callback_list: List of callback objects
+    :type callback_list: Any
+    :param sim_dict: Simulation configuration dictionary
+    :type sim_dict: Dict[str, Any]
+    """
     if callback_list:
         for callback in callback_list.callbacks:
             callback.max_iters = sim_dict["max_iters"]
             callback.sim_dict = sim_dict
 
 
-def _train_drl_trial(env, sim_dict, callback_list, completed_trials, rewards_matrix):
+def _train_drl_trial(
+    env: Any, 
+    sim_dict: Dict[str, Any], 
+    callback_list: Any, 
+    completed_trials: int, 
+    rewards_matrix: np.ndarray
+) -> Tuple[Any, int]:
     """
-    Runs one full DRL training trial (all episodes) and returns the new
-    observation and updated completed_trials counter.
+    Execute one complete DRL training trial.
+    
+    Runs a full training trial including all episodes, updates reward tracking,
+    and prepares for the next trial.
+    
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param sim_dict: Simulation configuration dictionary
+    :type sim_dict: Dict[str, Any]
+    :param callback_list: List of callback objects
+    :type callback_list: Any
+    :param completed_trials: Number of completed trials
+    :type completed_trials: int
+    :param rewards_matrix: Matrix to store episode rewards
+    :type rewards_matrix: np.ndarray
+    :return: New observation and updated completed trials count
+    :rtype: Tuple[Any, int]
     """
     _run_drl_training(env=env, sim_dict=sim_dict)
     rewards_matrix[completed_trials] = callback_list.callbacks[0].episode_rewards
@@ -83,22 +136,52 @@ def _train_drl_trial(env, sim_dict, callback_list, completed_trials, rewards_mat
 
 
 def _update_episode_stats(
-    observation,
-    reward,
-    terminated,
-    truncated,
-    episodic_reward,
-    episodic_reward_array,
-    completed_episodes,
-    completed_trials,
-    env,
-    sim_dict,
-    rewards_matrix,
-    trial,
-):
+    observation: Any,
+    reward: float,
+    terminated: bool,
+    truncated: bool,
+    episodic_reward: float,
+    episodic_reward_array: np.ndarray,
+    completed_episodes: int,
+    completed_trials: int,
+    env: Any,
+    sim_dict: Dict[str, Any],
+    rewards_matrix: np.ndarray,
+    trial: Optional[optuna.Trial],
+) -> Tuple[Any, float, np.ndarray, int, int]:
     """
     Consolidates the bookkeeping that happens whenever an episode ends.
-    Returns the updated state so the caller’s loop stays perfectly in sync.
+    
+    Updates episode statistics, handles episode completion logic, and manages
+    trial progression. Returns the updated state so the caller's loop stays
+    perfectly in sync.
+    
+    :param observation: Current environment observation
+    :type observation: Any
+    :param reward: Reward received from the last step
+    :type reward: float
+    :param terminated: Whether the episode terminated naturally
+    :type terminated: bool
+    :param truncated: Whether the episode was truncated
+    :type truncated: bool
+    :param episodic_reward: Cumulative reward for the current episode
+    :type episodic_reward: float
+    :param episodic_reward_array: Array of rewards for completed episodes
+    :type episodic_reward_array: np.ndarray
+    :param completed_episodes: Number of completed episodes in current trial
+    :type completed_episodes: int
+    :param completed_trials: Number of completed trials
+    :type completed_trials: int
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param sim_dict: Simulation configuration dictionary
+    :type sim_dict: Dict[str, Any]
+    :param rewards_matrix: Matrix storing rewards for all trials and episodes
+    :type rewards_matrix: np.ndarray
+    :param trial: Optional Optuna trial for hyperparameter optimization
+    :type trial: Optional[optuna.Trial]
+    :return: Updated observation, episodic reward, reward array, episode count, and trial count
+    :rtype: Tuple[Any, float, np.ndarray, int, int]
     """
     episodic_reward += reward
     if not (terminated or truncated):
@@ -150,12 +233,18 @@ def _update_episode_stats(
     )
 
 
-def _initialize_training_state(sim_dict: dict):
+def _initialize_training_state(sim_dict: Dict[str, Any]) -> Tuple[int, int, float, np.ndarray, np.ndarray, List[float], Any]:
     """
     Initialize the training state variables and data structures.
+    
+    Sets up all necessary variables for tracking training progress including
+    episode/trial counters, reward tracking matrices, and memory monitoring.
 
-    :param sim_dict: Simulation configuration dictionary
-    :return: Tuple of initialized state variables
+    :param sim_dict: Simulation configuration dictionary containing training parameters
+    :type sim_dict: Dict[str, Any]
+    :return: Tuple containing completed episodes, completed trials, episodic reward,
+             rewards matrix, episodic reward array, memory usage list, and process object
+    :rtype: Tuple[int, int, float, np.ndarray, np.ndarray, List[float], Any]
     """
     completed_episodes = 0
     completed_trials = 0
@@ -176,15 +265,28 @@ def _initialize_training_state(sim_dict: dict):
     )
 
 
-def _process_episode_step(env: object, is_training: bool, model=None, observation=None):
+def _process_episode_step(
+    env: Any, 
+    is_training: bool, 
+    model: Optional[Any] = None, 
+    observation: Optional[Any] = None
+) -> Tuple[Any, float, bool, bool]:
     """
     Process a single episode step based on training/testing mode.
+    
+    Executes one step in the environment, either using random actions for training
+    or model predictions for testing, and returns the resulting state information.
 
     :param env: The reinforcement learning environment
-    :param is_training: Whether in training mode
-    :param model: The trained model (for testing mode)
-    :param observation: Current observation
-    :return: Tuple of (observation, reward, terminated, truncated)
+    :type env: Any
+    :param is_training: Whether in training mode (uses random actions) or testing mode
+    :type is_training: bool
+    :param model: The trained model used for action prediction in testing mode
+    :type model: Optional[Any]
+    :param observation: Current observation from the environment
+    :type observation: Optional[Any]
+    :return: Tuple containing new observation, reward, termination flag, and truncation flag
+    :rtype: Tuple[Any, float, bool, bool]
     """
     if is_training:
         observation, reward, terminated, truncated, _ = env.step(0)
@@ -198,17 +300,25 @@ def _process_episode_step(env: object, is_training: bool, model=None, observatio
 def _handle_training_completion(
     is_training: bool,
     rewards_matrix: np.ndarray,
-    memory_usage_list: list,
-    sim_dict: dict,
-):
+    memory_usage_list: List[float],
+    sim_dict: Dict[str, Any],
+) -> float:
     """
     Handle the completion of training, saving results and calculating metrics.
+    
+    Processes training results by calculating mean rewards, saving performance data,
+    and returning the total reward sum for optimization purposes.
 
-    :param is_training: Whether in training mode
-    :param rewards_matrix: Matrix of rewards per trial/episode
-    :param memory_usage_list: List of memory usage measurements
-    :param sim_dict: Simulation configuration dictionary
-    :return: Sum of mean rewards per iteration
+    :param is_training: Whether in training mode (raises error if False)
+    :type is_training: bool
+    :param rewards_matrix: Matrix of rewards per trial and episode
+    :type rewards_matrix: np.ndarray
+    :param memory_usage_list: List of memory usage measurements during training
+    :type memory_usage_list: List[float]
+    :param sim_dict: Simulation configuration dictionary with file paths
+    :type sim_dict: Dict[str, Any]
+    :return: Sum of mean rewards per iteration across all trials
+    :rtype: float
     """
     if is_training:
         mean_per_iter = np.mean(rewards_matrix, axis=0)
@@ -223,26 +333,37 @@ def _handle_training_completion(
 
 
 def run_iters(
-    env: object,
-    sim_dict: dict,
+    env: Any,
+    sim_dict: Dict[str, Any],
     is_training: bool,
     drl_agent: bool,
-    model=None,
-    callback_list: list = None,
-    trial=None,
-):
+    model: Optional[Any] = None,
+    callback_list: Optional[Any] = None,
+    trial: Optional[optuna.Trial] = None,
+) -> float:
     """
-    Runs the specified number of episodes/trials in the reinforcement learning
-    environment.
+    Runs the specified number of episodes/trials in the reinforcement learning environment.
+    
+    Orchestrates the main training or testing loop, handling episode execution,
+    reward tracking, memory monitoring, and trial management for both DRL and
+    traditional RL algorithms.
 
     :param env: The reinforcement learning environment
-    :param sim_dict: Simulation configuration dictionary
-    :param is_training: Whether in training mode
-    :param drl_agent: Whether using deep RL agent
-    :param model: Pre-trained model (for testing mode)
-    :param callback_list: List of callbacks for monitoring
+    :type env: Any
+    :param sim_dict: Simulation configuration dictionary containing training parameters
+    :type sim_dict: Dict[str, Any]
+    :param is_training: Whether in training mode or testing mode
+    :type is_training: bool
+    :param drl_agent: Whether using deep reinforcement learning agent (SB3)
+    :type drl_agent: bool
+    :param model: Pre-trained model for testing mode or evaluation
+    :type model: Optional[Any]
+    :param callback_list: List of callbacks for monitoring training progress
+    :type callback_list: Optional[Any]
     :param trial: Optuna trial object for hyperparameter optimization
-    :return: Sum of rewards
+    :type trial: Optional[optuna.Trial]
+    :return: Sum of rewards across all iterations for optimization
+    :rtype: float
     """
     # Initialize training state
     (
@@ -299,27 +420,44 @@ def run_iters(
     )
 
 
-def run_testing():
+def run_testing() -> None:
     """
-    Runs pre-trained RL model evaluation in the environment for the number of episodes specified in `sim_dict`.
+    Runs pre-trained RL model evaluation in the environment for the number of episodes specified in sim_dict.
+    
+    This function is currently not implemented and raises a TrainingError when called.
+    Future implementation will handle loading and evaluating pre-trained models.
 
-    :param env: The reinforcement learning environment.
-    :param sim_dict: A dictionary containing simulation-specific parameters (e.g., model type, paths).
+    :raises TrainingError: Always raised as testing functionality is not yet implemented
+    :rtype: None
     """
     raise TrainingError(
         "Testing functionality is not yet implemented. Please use training mode."
     )
 
 
-def run(env: object, sim_dict: dict, callback_list: list = None, trial=None):
+def run(
+    env: Any, 
+    sim_dict: Dict[str, Any], 
+    callback_list: Optional[Any] = None, 
+    trial: Optional[optuna.Trial] = None
+) -> float:
     """
     Manages the execution of simulations for training or testing RL models.
 
     Delegates to either training or testing based on flags within the simulation configuration.
+    Validates algorithm configuration and orchestrates the appropriate training workflow.
 
-    :param env: The reinforcement learning environment.
-    :param sim_dict: The simulation configuration dictionary containing paths, algorithms, and statistical parameters.
-    :param callback_obj: The custom callback to monitor episodic rewards from SB3.
+    :param env: The reinforcement learning environment
+    :type env: Any
+    :param sim_dict: Simulation configuration dictionary containing paths, algorithms, and statistical parameters
+    :type sim_dict: Dict[str, Any]
+    :param callback_list: Custom callback list to monitor episodic rewards from SB3
+    :type callback_list: Optional[Any]
+    :param trial: Optuna trial object for hyperparameter optimization
+    :type trial: Optional[optuna.Trial]
+    :return: Sum of returns from the training process for optimization
+    :rtype: float
+    :raises TrainingError: If testing mode is used or invalid algorithm configuration
     """
     print_info(sim_dict=sim_dict)
 
@@ -350,12 +488,19 @@ def run(env: object, sim_dict: dict, callback_list: list = None, trial=None):
     return sum_returns
 
 
-def run_optuna_study(sim_dict, callback_list):
+def run_optuna_study(sim_dict: Dict[str, Any], callback_list: Any) -> None:
     """
     Runs Optuna study for hyperparameter optimization.
+    
+    Creates and executes an Optuna optimization study to find the best hyperparameters
+    for the reinforcement learning model. Uses Hyperband pruning to efficiently
+    eliminate poor-performing trials early.
 
-    :param env: The reinforcement learning environment.
-    :param sim_dict: The simulation configuration dictionary containing paths, algorithms, and statistical parameters.
+    :param sim_dict: Simulation configuration dictionary containing paths, algorithms, and statistical parameters
+    :type sim_dict: Dict[str, Any]
+    :param callback_list: Callback list for monitoring training progress during optimization
+    :type callback_list: Any
+    :rtype: None
     """
 
     # Define the Optuna objective function
