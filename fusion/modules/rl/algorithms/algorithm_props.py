@@ -2,6 +2,8 @@
 
 from typing import Any
 
+import numpy as np
+
 
 class RLProps:  # pylint: disable=too-few-public-methods
     """
@@ -14,19 +16,21 @@ class RLProps:  # pylint: disable=too-few-public-methods
         self.spectral_slots = None  # Numerical value of spectral slots on every core
         self.num_nodes = None  # Total nodes in the network topology
 
-        self.arrival_list = []  # Inter-arrival times for every request
-        self.depart_list = []  # Departure times for every request
+        self.arrival_list: list[float] = []  # Inter-arrival times for every request
+        self.depart_list: list[float] = []  # Departure times for every request
 
-        self.mock_sdn_dict = {}  # A virtual SDN dictionary
+        self.mock_sdn_dict: dict[Any, Any] = {}  # A virtual SDN dictionary
         self.source = None  # Source node for a single request
         self.destination = None  # Destination node for a single request
 
-        self.paths_list = []  # Potential paths from source to destination for a single request
-        self.path_index = None  # Index of the last path chosen in a reinforcement learning (RL) simulation
-        self.chosen_path_list = []  # The actual chosen path (including the nodes) for a single request
+        # Potential paths from source to destination
+        self.paths_list: list[list[int]] = []
+        self.path_index = None  # Index of the last path chosen in a RL simulation
+        # The actual chosen path (nodes) for a request
+        self.chosen_path_list: list[int] = []
         self.core_index = None  # Index of the last core chosen for a request
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RLProps({self.__dict__})"
 
 
@@ -39,34 +43,40 @@ class QProps:
         self.epsilon = None  # Current epsilon used at a certain point in time
         self.epsilon_start = None  # Starting value of epsilon
         self.epsilon_end = None  # Ending value of epsilon to be linearly decayed
-        self.epsilon_list = []  # A list of every value at each time step
+        self.epsilon_list: list[float] = []  # A list of every value at each time step
 
-        self.is_training = None  # Flag to determine whether to load an already trained agent
+        self.is_training = None  # Flag to determine whether to load a trained agent
 
         # Rewards for the core and path q-learning agents
-        self.rewards_dict = {
+        self.rewards_dict: dict[str, dict[str, Any]] = {
             'routes_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}},
             'cores_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}}
         }
         # Temporal difference (TD) errors for the core and path agents
-        self.errors_dict = {
+        self.errors_dict: dict[str, dict[str, Any]] = {
             'routes_dict': {'average': [], 'min': [], 'max': [], 'errors': {}},
             'cores_dict': {'average': [], 'min': [], 'max': [], 'errors': {}}
         }
-        # Total sum of rewards for each episode (episode as a key, sum of rewards as a value)
-        self.sum_rewards_dict = {}
+        # Total sum of rewards for each episode (episode as key, sum as value)
+        self.sum_rewards_dict: dict[int, float] = {}
         # Total sum of TD errors each episode
-        self.sum_errors_dict = {}
+        self.sum_errors_dict: dict[int, float] = {}
 
-        self.routes_matrix = None  # Main routing q-table used by the path agent
-        self.cores_matrix = None  # Main core q-table used by the core agent
-        self.num_nodes = None  # Total number of nodes in the topology
+        # Main routing q-table for path agent
+        self.routes_matrix: np.ndarray | None = None
+        self.cores_matrix: np.ndarray | None = None  # Main core q-table for core agent
+        self.num_nodes: int | None = None  # Total number of nodes in the topology
 
         # All important parameters to be saved in a QL simulation run
         self.save_params_dict = {
-            'q_params_list': ['rewards_dict', 'errors_dict', 'epsilon_list', 'sum_rewards_dict', 'sum_errors_dict'],
-            'engine_params_list': ['epsilon_start', 'epsilon_end', 'max_iters', 'alpha_start', 'alpha_end',
-                                   'gamma', 'epsilon_update', 'alpha_update']
+            'q_params_list': [
+                'rewards_dict', 'errors_dict', 'epsilon_list',
+                'sum_rewards_dict', 'sum_errors_dict'
+            ],
+            'engine_params_list': [
+                'epsilon_start', 'epsilon_end', 'max_iters', 'alpha_start',
+                'alpha_end', 'gamma', 'epsilon_update', 'alpha_update'
+            ]
         }
 
     def get_data(self, key: str) -> Any:
@@ -84,7 +94,7 @@ class QProps:
 
         raise AttributeError(f"'RLProps' object has no attribute '{key}'")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"QProps({self.__dict__})"
 
 
@@ -94,18 +104,20 @@ class BanditProps:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self) -> None:
-        self.rewards_matrix = []  # Total sum of rewards for each episode
-        self.counts_list = []  # Total number of counts for each action taken for every episode
-        self.state_values_list = []  # Every possible V(s)
+        # Total sum of rewards for each episode
+        self.rewards_matrix: list[list[float]] = []
+        # Total number of counts for each action taken for every episode
+        self.counts_list: list[Any] = []
+        self.state_values_list: list[Any] = []  # Every possible V(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"BanditProps({self.__dict__})"
 
 
 class PPOProps:  # pylint: disable=too-few-public-methods
     """
     Properties object for PPO algorithm.
-    
+
     Currently not implemented. Will be added when PPO-specific
     properties are needed beyond the base DRL functionality.
     """
