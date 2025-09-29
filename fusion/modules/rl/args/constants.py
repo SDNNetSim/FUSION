@@ -6,7 +6,6 @@ organized by category for better maintainability and discoverability.
 This file is intended for new code; existing code should continue using
 the individual files for backward compatibility.
 """
-from typing import List, Set, Tuple
 from enum import Enum
 
 
@@ -45,14 +44,14 @@ class ObservationFeature(Enum):
 
 # Algorithm categorizations
 # All traditional (non-deep) RL algorithms
-TRADITIONAL_RL_ALGORITHMS: Tuple[str, ...] = (
+TRADITIONAL_RL_ALGORITHMS: tuple[str, ...] = (
     AlgorithmType.Q_LEARNING.value,
     AlgorithmType.EPSILON_GREEDY_BANDIT.value,
     AlgorithmType.UCB_BANDIT.value,
 )
 
 # All deep reinforcement learning algorithms
-DEEP_RL_ALGORITHMS: Tuple[str, ...] = (
+DEEP_RL_ALGORITHMS: tuple[str, ...] = (
     AlgorithmType.PPO.value,
     AlgorithmType.A2C.value,
     AlgorithmType.DQN.value,
@@ -60,57 +59,73 @@ DEEP_RL_ALGORITHMS: Tuple[str, ...] = (
 )
 
 # Algorithms suitable for path selection
-PATH_SELECTION_ALGORITHMS: Tuple[str, ...] = TRADITIONAL_RL_ALGORITHMS + DEEP_RL_ALGORITHMS
+PATH_SELECTION_ALGORITHMS: tuple[str, ...] = (
+    TRADITIONAL_RL_ALGORITHMS + DEEP_RL_ALGORITHMS
+)
 
 # Algorithms suitable for core network decisions
-CORE_DECISION_ALGORITHMS: Tuple[str, ...] = TRADITIONAL_RL_ALGORITHMS
+CORE_DECISION_ALGORITHMS: tuple[str, ...] = TRADITIONAL_RL_ALGORITHMS
 
 
 # Observation space templates
 # Minimal observation spaces
-BASIC_ROUTING_OBSERVATION: List[str] = [
+BASIC_ROUTING_OBSERVATION: list[str] = [
     ObservationFeature.SOURCE.value,
     ObservationFeature.DESTINATION.value,
 ]
 
 # Standard observation spaces
-ROUTING_WITH_BANDWIDTH_OBSERVATION: List[str] = BASIC_ROUTING_OBSERVATION + [
-    ObservationFeature.REQUEST_BANDWIDTH.value,
-]
+ROUTING_WITH_BANDWIDTH_OBSERVATION: list[str] = (
+    BASIC_ROUTING_OBSERVATION + [
+        ObservationFeature.REQUEST_BANDWIDTH.value,
+    ]
+)
 
-ROUTING_WITH_TIME_OBSERVATION: List[str] = BASIC_ROUTING_OBSERVATION + [
-    ObservationFeature.HOLDING_TIME.value,
-]
+ROUTING_WITH_TIME_OBSERVATION: list[str] = (
+    BASIC_ROUTING_OBSERVATION + [
+        ObservationFeature.HOLDING_TIME.value,
+    ]
+)
 
-ROUTING_STANDARD_OBSERVATION: List[str] = BASIC_ROUTING_OBSERVATION + [
-    ObservationFeature.REQUEST_BANDWIDTH.value,
-    ObservationFeature.HOLDING_TIME.value,
-]
+ROUTING_STANDARD_OBSERVATION: list[str] = (
+    BASIC_ROUTING_OBSERVATION + [
+        ObservationFeature.REQUEST_BANDWIDTH.value,
+        ObservationFeature.HOLDING_TIME.value,
+    ]
+)
 
 # Extended observation spaces
-ROUTING_WITH_PATHS_OBSERVATION: List[str] = ROUTING_STANDARD_OBSERVATION + [
-    ObservationFeature.SLOTS_NEEDED.value,
-    ObservationFeature.PATH_LENGTHS.value,
-]
+ROUTING_WITH_PATHS_OBSERVATION: list[str] = (
+    ROUTING_STANDARD_OBSERVATION + [
+        ObservationFeature.SLOTS_NEEDED.value,
+        ObservationFeature.PATH_LENGTHS.value,
+    ]
+)
 
-ROUTING_WITH_CONGESTION_OBSERVATION: List[str] = ROUTING_WITH_PATHS_OBSERVATION + [
-    ObservationFeature.PATH_CONGESTION.value,
-]
+ROUTING_WITH_CONGESTION_OBSERVATION: list[str] = (
+    ROUTING_WITH_PATHS_OBSERVATION + [
+        ObservationFeature.PATH_CONGESTION.value,
+    ]
+)
 
-ROUTING_WITH_RESOURCES_OBSERVATION: List[str] = ROUTING_WITH_CONGESTION_OBSERVATION + [
-    ObservationFeature.AVAILABLE_SLOTS.value,
-]
+ROUTING_WITH_RESOURCES_OBSERVATION: list[str] = (
+    ROUTING_WITH_CONGESTION_OBSERVATION + [
+        ObservationFeature.AVAILABLE_SLOTS.value,
+    ]
+)
 
 # Complete observation space
-ROUTING_COMPLETE_OBSERVATION: List[str] = ROUTING_WITH_RESOURCES_OBSERVATION + [
-    ObservationFeature.IS_FEASIBLE.value,
-]
+ROUTING_COMPLETE_OBSERVATION: list[str] = (
+    ROUTING_WITH_RESOURCES_OBSERVATION + [
+        ObservationFeature.IS_FEASIBLE.value,
+    ]
+)
 
 
 # Validation sets
-VALID_FEATURES: Set[str] = {feature.value for feature in ObservationFeature}
-VALID_STRATEGIES: Set[str] = {strategy.value for strategy in EpisodicStrategy}
-VALID_ALGORITHMS: Set[str] = {algo.value for algo in AlgorithmType}
+VALID_FEATURES: set[str] = {feature.value for feature in ObservationFeature}
+VALID_STRATEGIES: set[str] = {strategy.value for strategy in EpisodicStrategy}
+VALID_ALGORITHMS: set[str] = {algo.value for algo in AlgorithmType}
 
 
 # Default configurations
