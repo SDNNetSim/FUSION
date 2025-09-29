@@ -1,4 +1,5 @@
-"""Pointer-based policy implementation for reinforcement learning.
+"""
+Pointer-based policy implementation for reinforcement learning.
 
 This module implements a pointer network-based policy that uses attention mechanisms
 for path selection in network routing scenarios.
