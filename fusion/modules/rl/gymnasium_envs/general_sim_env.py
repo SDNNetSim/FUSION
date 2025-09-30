@@ -110,19 +110,13 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # Used to get config variables into the observation space
         self.reset(options={"save_sim": DEFAULT_SAVE_SIMULATION})
 
-        obs_space = get_obs_space(
+        self.observation_space = get_obs_space(
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
         )
-        if obs_space is None:
-            raise ValueError("Failed to create observation space")
-        self.observation_space = obs_space
 
-        action_space = get_action_space(
+        self.action_space = get_action_space(
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
         )
-        if action_space is None:
-            raise ValueError("Failed to create action space")
-        self.action_space = action_space
 
     def reset(
         self, seed: int | None = None, options: dict[str, Any] | None = None
