@@ -10,12 +10,13 @@ import tempfile
 import unittest
 
 from fusion.unity.fetch_results import (
-    convert_output_path_to_input_path,
+    convert_output_to_input_path,
     get_last_path_segments,
-    extract_topology_from_output_path,
-    extract_path_algorithm_from_input_directory,
+    extract_topology_from_path,
+    extract_path_algorithm_from_input,
     iterate_runs_index_file,
 )
+from fusion.unity.errors import RemotePathError
 
 
 class TestFetchResults(unittest.TestCase):
@@ -26,15 +27,15 @@ class TestFetchResults(unittest.TestCase):
         output_path = pathlib.PurePosixPath("/data/output/topology1/experiment/s1")
         expected = pathlib.PurePosixPath("/data/input/topology1/experiment")
 
-        result = convert_output_path_to_input_path(output_path)
+        result = convert_output_to_input_path(output_path)
         self.assertEqual(result, expected)
 
     def test_convert_output_path_to_input_path_no_output_dir(self):
         """Test convert_output_path_to_input_path raises ValueError when 'output' not in path."""
         invalid_path = pathlib.PurePosixPath("/data/results/topology1/experiment/s1")
 
-        with self.assertRaises(ValueError):
-            convert_output_path_to_input_path(invalid_path)
+        with self.assertRaises(RemotePathError):
+            convert_output_to_input_path(invalid_path)
 
     def test_get_last_path_segments(self):
         """Test extraction of last n parts from path."""
@@ -55,15 +56,15 @@ class TestFetchResults(unittest.TestCase):
         """Test extraction of topology name from output path."""
         output_path = pathlib.PurePosixPath("/data/output/topology1/experiment/s1")
 
-        result = extract_topology_from_output_path(output_path)
+        result = extract_topology_from_path(output_path)
         self.assertEqual(result, "topology1")
 
     def test_extract_topology_from_output_path_no_output_dir(self):
         """Test extract_topology_from_output_path raises ValueError when 'output' not in path."""
         invalid_path = pathlib.PurePosixPath("/data/results/topology1/experiment/s1")
 
-        with self.assertRaises(ValueError):
-            extract_topology_from_output_path(invalid_path)
+        with self.assertRaises(RemotePathError):
+            extract_topology_from_path(invalid_path)
 
     def test_extract_path_algorithm_from_input_directory_success(self):
         """Test successful reading of path algorithm from JSON file."""
@@ -76,7 +77,7 @@ class TestFetchResults(unittest.TestCase):
             with test_file.open("w", encoding="utf-8") as f:
                 json.dump(test_data, f)
 
-            result = extract_path_algorithm_from_input_directory(input_dir)
+            result = extract_path_algorithm_from_input(input_dir)
             self.assertEqual(result, "shortest_path")
 
     def test_extract_path_algorithm_from_input_directory_no_files(self):
@@ -84,7 +85,7 @@ class TestFetchResults(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             input_dir = pathlib.Path(temp_dir)
 
-            result = extract_path_algorithm_from_input_directory(input_dir)
+            result = extract_path_algorithm_from_input(input_dir)
             self.assertIsNone(result)
 
     def test_extract_path_algorithm_from_input_directory_missing_key(self):
@@ -98,7 +99,7 @@ class TestFetchResults(unittest.TestCase):
             with test_file.open("w", encoding="utf-8") as f:
                 json.dump(test_data, f)
 
-            result = extract_path_algorithm_from_input_directory(input_dir)
+            result = extract_path_algorithm_from_input(input_dir)
             self.assertIsNone(result)
 
     def test_extract_path_algorithm_from_input_directory_invalid_json(self):
@@ -110,7 +111,7 @@ class TestFetchResults(unittest.TestCase):
             with test_file.open("w", encoding="utf-8") as f:
                 f.write("invalid json content")
 
-            result = extract_path_algorithm_from_input_directory(input_dir)
+            result = extract_path_algorithm_from_input(input_dir)
             self.assertIsNone(result)
 
     def test_iterate_runs_index_file(self):

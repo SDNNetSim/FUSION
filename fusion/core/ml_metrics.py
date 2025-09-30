@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from fusion.sim.utils import find_core_congestion, find_path_length
+from fusion.utils.network import find_core_congestion, find_path_length
 from fusion.utils.logging_config import get_logger
 from fusion.utils.os import find_project_root
 

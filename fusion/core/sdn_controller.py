@@ -258,6 +258,8 @@ class SDNController:
                 spectrum_key = "start_slot"
             elif spectrum_key == "end":
                 spectrum_key = "end_slot"
+            elif spectrum_key == "modulation":
+                spectrum_key = "modulation"
 
             self.sdn_props.update_params(
                 key=stat_key,

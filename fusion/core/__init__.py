@@ -25,10 +25,12 @@ from .properties import (
     StatsProps,
 )
 from .routing import Routing
-from .sdn_controller import SDNController
-from .simulation import SimulationEngine
 from .snr_measurements import SnrMeasurements
 from .spectrum_assignment import SpectrumAssignment
+
+# Import these after other core components to avoid circular imports
+from .sdn_controller import SDNController
+from .simulation import SimulationEngine
 
 # Public API - explicitly define what's exported
 __all__ = [

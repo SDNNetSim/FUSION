@@ -144,8 +144,13 @@ def get_q_table(self: object) -> tuple[dict, dict]:
     :return: The initial V(s, a) and N(s, a) values
     :rtype: tuple[dict, dict]
     """
-    _ensure_bandit_attributes(self)
+    # Validate essential attributes (not values/counts since we're creating them)
     bandit = cast(Any, self)
+    assert hasattr(bandit, 'engine_props'), "bandit must have engine_props"
+    assert hasattr(bandit, 'props'), "bandit must have props"
+    assert hasattr(bandit, 'is_path'), "bandit must have is_path"
+    assert hasattr(bandit, 'num_nodes'), "bandit must have num_nodes"
+    assert hasattr(bandit, 'n_arms'), "bandit must have n_arms"
 
     bandit.counts = {}
     bandit.values = {}

@@ -32,11 +32,11 @@ def _engine():
 
 
 def _patch_globals(valid_list=None, registry=None):
-    """Patch VALID_PATH_ALGORITHMS and ALGORITHM_REGISTRY."""
+    """Patch VALID_PATH_ALGORITHMS and get_algorithm_registry."""
     vp = mock.patch.object(drl, "VALID_PATH_ALGORITHMS",
                            valid_list if valid_list is not None else [])
-    rg = mock.patch.object(drl, "ALGORITHM_REGISTRY",
-                           registry if registry is not None else {})
+    rg = mock.patch.object(drl, "get_algorithm_registry",
+                           return_value=registry if registry is not None else {})
     return vp, rg
 
 

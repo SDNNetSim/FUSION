@@ -12,7 +12,7 @@ from typing import Any
 
 from fusion.core.simulation import SimulationEngine
 from fusion.sim.input_setup import create_input
-from fusion.sim.utils.simulation import log_message as _log_message
+from fusion.utils.logging_config import log_message as _log_message
 
 
 def log_message(message: str) -> None:

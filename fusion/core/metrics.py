@@ -6,7 +6,7 @@ import numpy as np
 
 from fusion.analysis.network_analysis import NetworkAnalyzer
 from fusion.core.properties import SNAP_KEYS_LIST, SDNProps, StatsProps
-from fusion.sim.utils import find_path_length
+from fusion.utils.network import find_path_length
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -143,22 +143,24 @@ class SimStats:
             self.stats_props.modulations_used_dict = {}
 
         for bandwidth, obj in self.engine_props["mod_per_bw"].items():
+            # Convert bandwidth to string to match tracking logic
+            bandwidth_key = str(bandwidth)
             # Ensure bandwidth keys exist as dicts
-            if bandwidth not in self.stats_props.modulations_used_dict:
-                self.stats_props.modulations_used_dict[bandwidth] = {}
-            if bandwidth not in self.stats_props.weights_dict:
-                self.stats_props.weights_dict[bandwidth] = {}
+            if bandwidth_key not in self.stats_props.modulations_used_dict:
+                self.stats_props.modulations_used_dict[bandwidth_key] = {}
+            if bandwidth_key not in self.stats_props.weights_dict:
+                self.stats_props.weights_dict[bandwidth_key] = {}
 
             for modulation in obj.keys():
                 # Initialize nested dict structure for weights
-                if bandwidth not in self.stats_props.weights_dict:
-                    self.stats_props.weights_dict[bandwidth] = {}
-                self.stats_props.weights_dict[bandwidth][modulation] = []
+                if bandwidth_key not in self.stats_props.weights_dict:
+                    self.stats_props.weights_dict[bandwidth_key] = {}
+                self.stats_props.weights_dict[bandwidth_key][modulation] = []
 
                 # Initialize nested dict structure for modulations_used
-                if bandwidth not in self.stats_props.modulations_used_dict:
-                    self.stats_props.modulations_used_dict[bandwidth] = {}
-                self.stats_props.modulations_used_dict[bandwidth][modulation] = 0
+                if bandwidth_key not in self.stats_props.modulations_used_dict:
+                    self.stats_props.modulations_used_dict[bandwidth_key] = {}
+                self.stats_props.modulations_used_dict[bandwidth_key][modulation] = 0
 
                 # Initialize modulation-specific tracking
                 mod_dict = self.stats_props.modulations_used_dict
@@ -183,7 +185,7 @@ class SimStats:
                             band
                         ] = []
 
-            self.stats_props.bandwidth_blocking_dict[bandwidth] = 0
+            self.stats_props.bandwidth_blocking_dict[bandwidth_key] = 0
 
     def _init_stat_dicts(self) -> None:
         for stat_key, data_type in vars(self.stats_props).items():
@@ -199,9 +201,9 @@ class SimStats:
                 if self.engine_props["save_snapshots"]:
                     self._init_snapshots()
             elif stat_key == "cores_dict":
-                self.stats_props.cores_dict = dict.fromkeys(
-                    range(self.engine_props["cores_per_link"]), 0
-                )
+                self.stats_props.cores_dict = {
+                    core: 0 for core in range(self.engine_props["cores_per_link"])
+                }
             elif stat_key == "block_reasons_dict":
                 self.stats_props.block_reasons_dict = {
                     "distance": 0,
@@ -289,10 +291,16 @@ class SimStats:
                     if bandwidth_key and isinstance(bw_dict, dict):
                         if data in bw_dict:
                             bw_dict[data] += 1
+                        else:
+                            # Initialize if not present
+                            bw_dict[data] = 1
                     data_mod_dict = mod_dict.get(data)
                     if isinstance(data_mod_dict, dict):
                         if band in data_mod_dict:
                             data_mod_dict[band] += 1
+                        else:
+                            # Initialize if not present
+                            data_mod_dict[band] = 1
                         length_dict = data_mod_dict.get("length")
                         has_length = "length" in data_mod_dict
                         if has_length and isinstance(length_dict, dict):
@@ -382,12 +390,17 @@ class SimStats:
                     and bandwidth_key in weights_dict
                     and isinstance(bw_weights, dict)
                     and mod_format
-                    and mod_format in bw_weights
                     and sdn_data.path_weight is not None
                 ):
-                    self.stats_props.weights_dict[bandwidth_key][mod_format].append(
-                        round(float(sdn_data.path_weight), 2)
-                    )
+                    if mod_format in bw_weights:
+                        self.stats_props.weights_dict[bandwidth_key][mod_format].append(
+                            round(float(sdn_data.path_weight), 2)
+                        )
+                    else:
+                        # Initialize if not present
+                        self.stats_props.weights_dict[bandwidth_key][mod_format] = [
+                            round(float(sdn_data.path_weight), 2)
+                        ]
             self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(
                 network_spectrum_dict
             )

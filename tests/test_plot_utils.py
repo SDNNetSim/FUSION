@@ -50,9 +50,9 @@ class TestPlotHelpers(unittest.TestCase):
                     "snapshots_dict": {
                         "1": {"active_requests": 10, "blocking_prob": 0.05, "occ_slots": 50}
                     },
-                    "lengths_mean": [100],
-                    "hops_mean": [3],
-                    "route_times_mean": [0.005],
+                    "lengths_mean": 100,
+                    "hops_mean": 3,
+                    "route_times_mean": 0.005,
                     "block_reasons_dict": {
                         "congestion": [0.1],
                         "distance": [1000]
@@ -126,11 +126,11 @@ class TestPlotHelpers(unittest.TestCase):
         self.plot_helpers._find_misc_stats()
 
         plot_args = self.plot_helpers.plot_props.plot_dict[self.plot_helpers.time][self.plot_helpers.sim_num]
-        self.assertEqual(plot_args.lengths_list, [100])
-        self.assertEqual(plot_args.hops_list, [3])
+        self.assertEqual(plot_args.lengths_list, [100.0])
+        self.assertEqual(plot_args.hops_list, [3.0])
         self.assertEqual(plot_args.times_list, [5.0])
         self.assertEqual(plot_args.cong_block_list, [0.1])
-        self.assertEqual(plot_args.dist_block_list, [1000])
+        self.assertEqual(plot_args.dist_block_list, [1000.0])
 
     @patch('os.listdir')
     @patch('os.path.isdir')

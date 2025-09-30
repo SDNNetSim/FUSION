@@ -11,7 +11,7 @@ from typing import Any
 import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
 
-from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
+from fusion.modules.rl.args.registry_args import get_algorithm_registry
 from fusion.modules.rl.errors import (
     AlgorithmNotFoundError,
     ModelLoadError,
@@ -110,7 +110,8 @@ def get_model(
         parameters["policy_kwargs"] = policy_kwargs
         logger.info("Using CachedPathGNN from %s", cache_file_path)
 
-    setup_func = ALGORITHM_REGISTRY[algorithm]["setup"]
+    algorithm_registry = get_algorithm_registry()
+    setup_func = algorithm_registry[algorithm]["setup"]
     if setup_func is None:
         raise RLConfigurationError(
             f"Setup function not implemented for algorithm '{algorithm}'"
@@ -157,10 +158,11 @@ def get_trained_model(env: Any, sim_dict: dict[str, Any]) -> Any:
         )
     algorithm, agent_type = algorithm_info.split("_", 1)
 
-    if algorithm not in ALGORITHM_REGISTRY:
+    algorithm_registry = get_algorithm_registry()
+    if algorithm not in algorithm_registry:
         raise AlgorithmNotFoundError(
             f"Algorithm '{algorithm}' is not registered. "
-            f"Available algorithms: {list(ALGORITHM_REGISTRY.keys())}"
+            f"Available algorithms: {list(algorithm_registry.keys())}"
         )
 
     model_key = f"{agent_type}_model"
@@ -175,7 +177,7 @@ def get_trained_model(env: Any, sim_dict: dict[str, Any]) -> Any:
         )
 
     try:
-        load_func = ALGORITHM_REGISTRY[algorithm]["load"]
+        load_func = algorithm_registry[algorithm]["load"]
         if load_func is None:
             raise ModelLoadError(
                 f"Model loading not implemented for algorithm '{algorithm}'"

@@ -46,7 +46,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
     def _find_misc_stats(self):
         lengths_list = dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean')
         hops_list = dict_to_list(self.erlang_dict['iter_stats'], 'hops_mean')
-        times_list = dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean') * 10 ** 3
+        times_list = np.array(dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean')) * 10 ** 3
 
         cong_list = dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict'])
         dist_list = dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict'])

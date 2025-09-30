@@ -21,7 +21,7 @@ from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.modules.ml import load_model
 from fusion.reporting.simulation_reporter import SimulationReporter
-from fusion.sim.utils.simulation import log_message
+from fusion.utils.logging_config import log_message
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)

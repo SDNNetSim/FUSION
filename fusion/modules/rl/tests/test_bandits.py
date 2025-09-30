@@ -89,6 +89,12 @@ class TestGetQTable(TestCase):
             is_path=True,
             n_arms=2,
             engine_props={"k_paths": 2},
+            props=SimpleNamespace(),
+            values={},
+            counts={},
+            source=0,
+            dest=1,
+            iteration=0,
         )
         counts, values = bandits.get_q_table(dummy)
         self.assertIn((0, 1), counts)
@@ -116,6 +122,8 @@ class TestUpdateBandit(TestCase):
             dest=1,
             path_index=None,
             engine_props=_mk_engine(),
+            num_nodes=2,
+            n_arms=3,
         )
         bandits._update_bandit(
             self=self_obj,
@@ -143,7 +151,11 @@ class TestEpsilonGreedy(TestCase):
         )
         bandit.epsilon = 0.1
         pair = (0, 1)
-        bandit.values[pair] = np.array([2.0, 1.0, 0.0])
+        # Ensure values dict has the required key
+        if pair not in bandit.values:
+            bandit.values[pair] = np.array([2.0, 1.0, 0.0])
+        else:
+            bandit.values[pair] = np.array([2.0, 1.0, 0.0])
         arm = bandit.select_path_arm(*pair)
         self.assertEqual(arm, 0)
 
@@ -157,6 +169,10 @@ class TestEpsilonGreedy(TestCase):
             rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True
         )
         bandit.epsilon = 1.0
+        # Ensure values dict is initialized properly
+        pair = (0, 1)
+        if pair not in bandit.values:
+            bandit.values[pair] = np.array([0.0, 0.0, 0.0])
         arm = bandit.select_path_arm(0, 1)
         self.assertEqual(arm, 2)
 
@@ -169,6 +185,12 @@ class TestUCB(TestCase):
         bandit = bandits.UCBBandit(
             rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True
         )
+        # Ensure counts and values dicts are initialized properly
+        pair = (0, 1)
+        if pair not in bandit.counts:
+            bandit.counts[pair] = np.array([0, 0, 0])
+        if pair not in bandit.values:
+            bandit.values[pair] = np.array([0.0, 0.0, 0.0])
         # All counts zero → argmin returns 0
         arm = bandit.select_path_arm(0, 1)
         self.assertEqual(arm, 0)
@@ -180,7 +202,14 @@ class TestUCB(TestCase):
             rl_props=_mk_rl(), engine_props=eng, is_path=True
         )
         pair = (0, 1)
-        bandit.counts[pair] = np.array([5, 1, 1])
-        bandit.values[pair] = np.array([0.2, 0.1, 0.0])
+        # Ensure the dicts are initialized first
+        if pair not in bandit.counts:
+            bandit.counts[pair] = np.array([5, 1, 1])
+        else:
+            bandit.counts[pair] = np.array([5, 1, 1])
+        if pair not in bandit.values:
+            bandit.values[pair] = np.array([0.2, 0.1, 0.0])
+        else:
+            bandit.values[pair] = np.array([0.2, 0.1, 0.0])
         arm = bandit.select_path_arm(*pair)
         self.assertEqual(arm, 1)

@@ -5,7 +5,7 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
-from fusion.sim.utils import find_free_channels, find_taken_channels
+from fusion.utils.spectrum import find_free_channels, find_taken_channels
 
 # Constants for routing calculations
 FULLY_CONGESTED_LINK_COST = 1000.0
