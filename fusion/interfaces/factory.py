@@ -145,14 +145,14 @@ class SimulationPipeline:
         """Create routing algorithm from configuration."""
         routing_name = self.config.get("routing_algorithm", "k_shortest_path")
         return AlgorithmFactory.create_routing_algorithm(
-            routing_name, self.engine_props, self.sdn_props
+            routing_name, self.engine_props, self.sdn_props  # type: ignore[arg-type]
         )
 
     def _create_spectrum_algorithm(self) -> AbstractSpectrumAssigner:
         """Create spectrum assignment algorithm from configuration."""
         spectrum_name = self.config.get("spectrum_algorithm", "first_fit")
         return AlgorithmFactory.create_spectrum_algorithm(
-            spectrum_name, self.engine_props, self.sdn_props, self.route_props
+            spectrum_name, self.engine_props, self.sdn_props, self.route_props  # type: ignore[arg-type]
         )
 
     def _create_snr_algorithm(self) -> AbstractSNRMeasurer:
