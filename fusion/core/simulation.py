@@ -21,8 +21,7 @@ from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.modules.ml import load_model
 from fusion.reporting.simulation_reporter import SimulationReporter
-from fusion.utils.logging_config import log_message
-from fusion.utils.logging_config import get_logger
+from fusion.utils.logging_config import get_logger, log_message
 
 logger = get_logger(__name__)
 
@@ -42,7 +41,7 @@ class SimulationEngine:
         self.engine_props = engine_props
         self.network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]] = {}
         self.reqs_dict: dict[float, dict[str, Any]] | None = None
-        self.reqs_status_dict: dict[str, dict[str, Any]] = {}
+        self.reqs_status_dict: dict[int, dict[str, Any]] = {}
 
         self.iteration = 0
         self.topology = nx.Graph()
