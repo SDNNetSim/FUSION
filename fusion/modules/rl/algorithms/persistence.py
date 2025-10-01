@@ -24,7 +24,7 @@ class BanditModelPersistence:
         """
         full_path = Path('logs') / train_fp
         with open(full_path, encoding='utf-8') as file_obj:
-            state_vals_dict = json.load(file_obj)
+            state_vals_dict: dict[str, Any] = json.load(file_obj)
         return state_vals_dict
 
     @staticmethod
