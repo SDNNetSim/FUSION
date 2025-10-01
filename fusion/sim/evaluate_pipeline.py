@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 
 from fusion.sim.batch_runner import BatchRunner
-from fusion.sim.utils.simulation import log_message as _log_message
+from fusion.utils.logging_config import log_message as _log_message
 from fusion.utils.os import create_directory
 
 

@@ -1,8 +1,9 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from stable_baselines3.common.callbacks import CallbackList
 
-from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+if TYPE_CHECKING:
+    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 from fusion.modules.rl.utils.callbacks import (
     EpisodicRewardCallback,
     LearnRateEntCallback,
@@ -12,7 +13,7 @@ from fusion.modules.rl.utils.setup import setup_rl_sim
 
 def create_environment(
     config_path: str | None = None
-) -> tuple[SimEnv, dict[str, Any], CallbackList]:
+) -> tuple["SimEnv", dict[str, Any], CallbackList]:
     """
     Creates the simulation environment and associated callback for RL.
 
@@ -21,6 +22,9 @@ def create_environment(
     :return: Tuple containing environment, simulation dictionary, and callback list
     :rtype: tuple[SimEnv, dict[str, Any], CallbackList]
     """
+    # Lazy import to avoid circular dependency
+    from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+    
     ep_call_obj = EpisodicRewardCallback(verbose=1)
     param_call_obj = LearnRateEntCallback(verbose=1)
     callback_list = CallbackList([ep_call_obj, param_call_obj])

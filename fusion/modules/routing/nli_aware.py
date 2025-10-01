@@ -9,7 +9,7 @@ import networkx as nx
 from fusion.core.properties import RoutingProps, SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.modules.routing.utils import RoutingHelpers
-from fusion.sim.utils import find_path_length, get_path_modulation
+from fusion.utils.network import find_path_length, get_path_modulation
 
 
 class NLIAwareRouting(AbstractRoutingAlgorithm):

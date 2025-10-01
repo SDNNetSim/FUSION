@@ -1,7 +1,7 @@
 from typing import Any
 
 from fusion.modules.rl.args.general_args import VALID_PATH_ALGORITHMS
-from fusion.modules.rl.args.registry_args import ALGORITHM_REGISTRY
+from fusion.modules.rl.args.registry_args import get_algorithm_registry
 from fusion.modules.rl.utils.errors import ConfigurationError, ModelSetupError
 from fusion.modules.rl.utils.general_utils import determine_model_type
 
@@ -39,20 +39,23 @@ def get_algorithm_instance(
     else:
         algorithm = sim_dict.get(model_type)
 
+    # Get the algorithm registry
+    algorithm_registry = get_algorithm_registry()
+    
     # Non-DRL case, skip
-    if algorithm in VALID_PATH_ALGORITHMS and algorithm not in ALGORITHM_REGISTRY:
+    if algorithm in VALID_PATH_ALGORITHMS and algorithm not in algorithm_registry:
         engine_props.engine_props['is_drl_agent'] = False
         return None
 
     engine_props.engine_props['is_drl_agent'] = True
-    if algorithm not in ALGORITHM_REGISTRY:
+    if algorithm not in algorithm_registry:
         raise ModelSetupError(
             f"Algorithm '{algorithm}' is not registered in the algorithm registry. "
-            f"Available algorithms: {list(ALGORITHM_REGISTRY.keys())}. "
+            f"Available algorithms: {list(algorithm_registry.keys())}. "
             "Please verify your algorithm configuration or register the algorithm."
         )
 
-    algorithm_class = ALGORITHM_REGISTRY[algorithm]['class']
+    algorithm_class = algorithm_registry[algorithm]['class']
     if algorithm_class is not None:
         return algorithm_class(rl_props=rl_props, engine_props=engine_props)
     return None

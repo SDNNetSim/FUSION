@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from fusion.sim.utils import find_free_channels, find_free_slots, get_channel_overlaps
+from fusion.utils.spectrum import find_free_channels, find_free_slots, get_channel_overlaps
 
 if TYPE_CHECKING:
     from fusion.core.properties import SpectrumProps

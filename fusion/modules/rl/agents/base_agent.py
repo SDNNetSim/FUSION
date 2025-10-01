@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -195,13 +196,13 @@ class BaseAgent:
         if self.algorithm == 'q_learning':
             # Construct model file path
             model_file = f"{file_prefix}_e{kwargs['erlang']}_c{kwargs['num_cores']}.npy"
-            full_path = Path('logs') / model_path / model_file
+            full_path = os.path.join('logs', model_path, model_file)
             if self.algorithm_obj is None:
                 raise ValueError(
                     "algorithm_obj must be initialized before loading model"
                 )
             # Type narrowing: for q_learning, algorithm_obj is QLearning
-            if isinstance(self.algorithm_obj, QLearning):
+            if hasattr(self.algorithm_obj, 'props'):
                 self.algorithm_obj.props.cores_matrix = np.load(
-                    str(full_path), allow_pickle=True
+                    full_path, allow_pickle=True
                 )

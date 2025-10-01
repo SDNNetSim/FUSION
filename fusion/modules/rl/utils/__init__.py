@@ -31,7 +31,8 @@ from fusion.modules.rl.utils.general_utils import (
     determine_model_type,
     save_arr,
 )
-from fusion.modules.rl.utils.gym_envs import create_environment
+# Removed create_environment import to avoid circular dependency with gymnasium_envs
+# Import directly: from fusion.modules.rl.utils.gym_envs import create_environment
 from fusion.modules.rl.utils.hyperparams import HyperparamConfig, get_optuna_hyperparams
 from fusion.modules.rl.utils.observation_space import (
     FragmentationTracker,
@@ -74,8 +75,8 @@ __all__ = [
     "CoreUtilHelpers",
     "determine_model_type",
     "save_arr",
-    # Environment creation
-    "create_environment",
+    # Environment creation - import directly from gym_envs to avoid circular import
+    # "create_environment",
     # Hyperparameters
     "HyperparamConfig",
     "get_optuna_hyperparams",

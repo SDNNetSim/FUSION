@@ -287,3 +287,23 @@ class LoggerAdapter(logging.LoggerAdapter):
             return f"[{extra_str}] {msg}", kwargs
         else:
             return str(msg), kwargs
+
+
+def log_message(message: str, log_queue: Any) -> None:
+    """
+    Log a message to queue or logger.
+
+    This utility function allows logging to either a queue (for multi-threaded
+    scenarios) or to the standard logger.
+
+    :param message: Message to log
+    :type message: str
+    :param log_queue: Queue for message logging (None to use logger)
+    :type log_queue: Any
+    """
+    if log_queue:
+        log_queue.put(message)
+    else:
+        # Use module logger if no queue provided
+        logger = get_logger(__name__)
+        logger.info(message)

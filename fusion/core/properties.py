@@ -293,7 +293,7 @@ class SDNProps:
         self.bandwidth_list: list[float] = []
         self.modulation_list: list[str] = []
         self.core_list: list[int] = []
-        self.band_list: list[int] = []
+        self.band_list: list[str] = []
         self.crosstalk_list: list[float] = []
         self.start_slot_list: list[int] = []
         self.end_slot_list: list[int] = []

@@ -14,9 +14,10 @@ from tests.test_unity_fixtures import COMMON_RESOURCES
 from fusion.unity.submit_manifest import (
     parse_cli,
     read_first_row,
-    build_env,
+    build_environment_variables,
     RESOURCE_KEYS,
 )
+from fusion.unity.errors import ManifestNotFoundError
 
 
 class TestSubmitManifest(unittest.TestCase):
@@ -95,7 +96,7 @@ class TestSubmitManifest(unittest.TestCase):
             manifest_path = pathlib.Path(f.name)
 
         try:
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(ManifestNotFoundError):
                 read_first_row(manifest_path)
         finally:
             manifest_path.unlink()
@@ -106,7 +107,7 @@ class TestSubmitManifest(unittest.TestCase):
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
 
-        env = build_env(first_row, 2, job_dir, exp)
+        env = build_environment_variables(first_row, 2, job_dir, exp)
 
         # Check mandatory metadata
         self.assertEqual(env["MANIFEST"], "unity/experiments/test_exp/manifest.csv")
@@ -129,7 +130,7 @@ class TestSubmitManifest(unittest.TestCase):
         job_dir = pathlib.Path("experiments/0315/142530")
         exp = "0315/142530"
 
-        env = build_env(first_row, 5, job_dir, exp)
+        env = build_environment_variables(first_row, 5, job_dir, exp)
 
         expected_job_name = "ppo_100_0315_142530"
         self.assertEqual(env["JOB_NAME"], expected_job_name)
@@ -141,7 +142,7 @@ class TestSubmitManifest(unittest.TestCase):
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
 
-        env = build_env(first_row, 2, job_dir, exp)
+        env = build_environment_variables(first_row, 2, job_dir, exp)
 
         self.assertEqual(env["NETWORK"], "")
 
@@ -156,7 +157,7 @@ class TestSubmitManifest(unittest.TestCase):
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
 
-        env = build_env(first_row, 1, job_dir, exp)
+        env = build_environment_variables(first_row, 1, job_dir, exp)
 
         # Missing resource keys should not be in environment
         for key in RESOURCE_KEYS:
@@ -170,7 +171,7 @@ class TestSubmitManifest(unittest.TestCase):
         job_dir = pathlib.Path("experiments/test_exp")
         exp = "test_exp"
 
-        env = build_env(first_row, 2, job_dir, exp)
+        env = build_environment_variables(first_row, 2, job_dir, exp)
 
         # Empty values should not be propagated
         self.assertNotIn("PARTITION", env)

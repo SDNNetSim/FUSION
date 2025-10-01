@@ -1,7 +1,8 @@
 from collections.abc import Generator
 from typing import Any
 
-from fusion.sim.utils import find_path_length, get_path_modulation, sort_dict_keys
+from fusion.utils.data import sort_dict_keys
+from fusion.utils.network import find_path_length, get_path_modulation
 from fusion.utils.logging_config import get_logger
 
 # Need to access SDN controller's protected methods
@@ -81,6 +82,7 @@ class LightPathSlicingManager:
         :return: True if slicing was successful, False otherwise
         :rtype: bool
         """
+        
         bandwidth_modulation_dict = sort_dict_keys(
             dictionary=self.engine_props["mod_per_bw"]
         )
@@ -149,6 +151,7 @@ class LightPathSlicingManager:
         :return: True if slicing was successful
         :rtype: bool
         """
+        
         bandwidth_modulation_dict = sort_dict_keys(
             dictionary=self.engine_props["mod_per_bw"]
         )

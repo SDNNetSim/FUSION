@@ -8,11 +8,8 @@ import networkx as nx
 
 from fusion.core.properties import RoutingProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
-from fusion.sim.utils import (
-    find_path_length,
-    get_path_modulation,
-    sort_nested_dict_values,
-)
+from fusion.utils.data import sort_nested_dict_values
+from fusion.utils.network import find_path_length, get_path_modulation
 
 
 class KShortestPath(AbstractRoutingAlgorithm):
@@ -125,20 +122,14 @@ class KShortestPath(AbstractRoutingAlgorithm):
                         mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
                         path_len=path_length,
                     )
-                    if modulation_format and modulation_format is not True:
-                        modulation_formats_list = [str(modulation_format)]
-                    else:
-                        modulation_formats_list = ["QPSK"]
+                    modulation_formats_list = [modulation_format]
                 else:
                     # Fallback to mod_formats
                     modulation_formats = getattr(self.sdn_props, "mod_formats", {})
                     modulation_format = get_path_modulation(
                         modulation_formats, path_length
                     )
-                    if modulation_format and modulation_format is not True:
-                        modulation_formats_list = [str(modulation_format)]
-                    else:
-                        modulation_formats_list = ["QPSK"]
+                    modulation_formats_list = [modulation_format]
             else:
                 # Use all modulation formats sorted by max_length
                 if hasattr(self.sdn_props, "modulation_formats_dict"):

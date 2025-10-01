@@ -15,11 +15,8 @@ import numpy as np
 from fusion.core.properties import RoutingProps
 from fusion.modules.routing.registry import RoutingRegistry
 from fusion.modules.routing.utils import RoutingHelpers
-from fusion.sim.utils import (
-    find_path_length,
-    get_path_modulation,
-    sort_nested_dict_values,
-)
+from fusion.utils.data import sort_nested_dict_values
+from fusion.utils.network import find_path_length, get_path_modulation
 from fusion.utils.logging_config import get_logger
 
 # Backward compatibility aliases for tests that patch these

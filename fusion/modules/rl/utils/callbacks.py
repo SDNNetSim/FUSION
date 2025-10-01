@@ -97,6 +97,21 @@ class EpisodicRewardCallback(BaseCallback):
 
         self.rewards_matrix_array: np.ndarray | None = None
 
+    @property
+    def episode_rewards(self) -> np.ndarray:
+        """Access episode rewards for backward compatibility with tests."""
+        return self.episode_rewards_array
+
+    @property
+    def rewards_matrix(self) -> np.ndarray | None:
+        """Access rewards matrix for backward compatibility with tests."""
+        return self.rewards_matrix_array
+
+    @rewards_matrix.setter
+    def rewards_matrix(self, value: np.ndarray | None) -> None:
+        """Set rewards matrix for backward compatibility with tests."""
+        self.rewards_matrix_array = value
+
     def _save_drl_trial_rewards(self) -> None:
         """
         Save the average rewards for the current DRL trial to a NumPy file.
