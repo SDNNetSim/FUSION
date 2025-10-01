@@ -81,8 +81,8 @@ class SpectrumProps:
         # Core assignment properties
         self.forced_core: int | None = None
         self.core_number: int | None = None
-        self.cores_matrix: list[list[int]] | None = None
-        self.reverse_cores_matrix: list[list[int]] | None = None
+        self.cores_matrix: dict[str, Any] | None = None
+        self.reverse_cores_matrix: dict[str, Any] | None = None
 
         # Spectrum assignment properties
         self.is_free: bool = False

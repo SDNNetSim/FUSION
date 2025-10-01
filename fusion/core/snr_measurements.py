@@ -106,6 +106,11 @@ class SnrMeasurements:
             np.where(request_id == current_link[self.spectrum_props.core_number])[0]
         )
         channel_bandwidth *= self.engine_props_dict["bw_per_slot"]
+
+        # If there's no channel bandwidth (empty link), return current xci
+        if channel_bandwidth == 0:
+            return current_xci
+
         channel_frequency = (
             (slot_index * self.engine_props_dict["bw_per_slot"])
             + (channel_bandwidth / 2)
