@@ -213,7 +213,11 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
             path_length = find_path_length(path_list=path_list, topology=topology)
 
             # Get modulation formats based on path length
-            if hasattr(self.sdn_props, "modulation_formats_dict") and self.sdn_props.modulation_formats_dict is not None:
+            has_mod_dict = hasattr(self.sdn_props, "modulation_formats_dict")
+            if (
+                has_mod_dict
+                and self.sdn_props.modulation_formats_dict is not None
+            ):
                 # Use sorted modulation formats
                 mod_formats_dict = sort_nested_dict_values(
                     original_dict=self.sdn_props.modulation_formats_dict,
