@@ -25,8 +25,7 @@ __all__ = ["generate_simulation_requests", "validate_request_distribution"]
 
 
 def validate_request_distribution(
-        request_distribution: dict[str, float],
-        number_of_requests: int
+    request_distribution: dict[str, float], number_of_requests: int
 ) -> bool:
     """
     Validate that request distribution can be properly allocated.
@@ -55,9 +54,7 @@ def validate_request_distribution(
     return total_allocated == number_of_requests
 
 
-def _select_random_node_pair(
-        nodes_list: list[str]
-) -> tuple[str, str]:
+def _select_random_node_pair(nodes_list: list[str]) -> tuple[str, str]:
     """
     Select a random source-destination pair from available nodes.
 
@@ -84,9 +81,7 @@ def _select_random_node_pair(
 
 
 def _generate_request_times(
-        arrival_rate: float,
-        holding_time: float,
-        current_time: float
+    arrival_rate: float, holding_time: float, current_time: float
 ) -> tuple[float, float]:
     """
     Generate arrival and departure times for a request.
@@ -113,14 +108,14 @@ def _generate_request_times(
 
 
 def _create_request_entry(
-        request_id: int,
-        source: str,
-        destination: str,
-        arrival_time: float,
-        departure_time: float,
-        request_type: str,
-        bandwidth: str,
-        modulation_formats: dict[str, Any]
+    request_id: int,
+    source: str,
+    destination: str,
+    arrival_time: float,
+    departure_time: float,
+    request_type: str,
+    bandwidth: str,
+    modulation_formats: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Create a single request dictionary entry.
@@ -160,8 +155,7 @@ def _create_request_entry(
 
 
 def generate_simulation_requests(
-        seed: int,
-        engine_properties: dict[str, Any]
+    seed: int, engine_properties: dict[str, Any]
 ) -> dict[float, dict[str, Any]]:
     """
     Generate requests for a single simulation run.
@@ -206,18 +200,20 @@ def generate_simulation_requests(
     request_id = 1
 
     # Determine available nodes for traffic generation
-    if engine_properties['is_only_core_node']:
-        nodes_list = list(engine_properties['topology_info']['nodes'].keys())
+    if engine_properties["is_only_core_node"]:
+        nodes_list = list(engine_properties["topology_info"]["nodes"].keys())
     else:
-        nodes_list = engine_properties['core_nodes']
+        nodes_list = engine_properties["core_nodes"]
 
     # Validate nodes list
     if not nodes_list:
-        if engine_properties['is_only_core_node']:
-            topology_keys = list(engine_properties.get('topology_info', {}).keys())
-            node_keys = list(
-                engine_properties.get('topology_info', {}).get('nodes', {}).keys()
-            ) if 'topology_info' in engine_properties else []
+        if engine_properties["is_only_core_node"]:
+            topology_keys = list(engine_properties.get("topology_info", {}).keys())
+            node_keys = (
+                list(engine_properties.get("topology_info", {}).get("nodes", {}).keys())
+                if "topology_info" in engine_properties
+                else []
+            )
             error_msg = (
                 f"No nodes found in topology_info. "
                 f"is_only_core_node={engine_properties['is_only_core_node']}, "
@@ -238,17 +234,16 @@ def generate_simulation_requests(
     # Calculate bandwidth allocation counts
     bandwidth_count_dict = {
         bandwidth: int(
-            engine_properties['request_distribution'][bandwidth] *
-            engine_properties['num_requests']
+            engine_properties["request_distribution"][bandwidth]
+            * engine_properties["num_requests"]
         )
-        for bandwidth in engine_properties['mod_per_bw']
+        for bandwidth in engine_properties["mod_per_bw"]
     }
-    bandwidth_list = list(engine_properties['mod_per_bw'].keys())
+    bandwidth_list = list(engine_properties["mod_per_bw"].keys())
 
     # Validate distribution
     if not validate_request_distribution(
-            engine_properties['request_distribution'],
-            engine_properties['num_requests']
+        engine_properties["request_distribution"], engine_properties["num_requests"]
     ):
         error_msg = (
             "The number of requests could not be distributed according to the "
@@ -259,14 +254,14 @@ def generate_simulation_requests(
         raise ValueError(error_msg)
 
     # Generate requests (both arrival and departure events)
-    total_events_needed = engine_properties['num_requests'] * 2
+    total_events_needed = engine_properties["num_requests"] * 2
 
     while len(requests_dict) < total_events_needed:
         # Generate timing for this request
         arrival_time, departure_time = _generate_request_times(
-            engine_properties['arrival_rate'],
-            engine_properties['holding_time'],
-            current_time
+            engine_properties["arrival_rate"],
+            engine_properties["holding_time"],
+            current_time,
         )
         current_time = arrival_time
 
@@ -277,7 +272,11 @@ def generate_simulation_requests(
         chosen_bandwidth = None
         while chosen_bandwidth is None:
             candidate_bandwidth = bandwidth_list[
-                int(generate_uniform_random_variable(scale_parameter=len(bandwidth_list)))
+                int(
+                    generate_uniform_random_variable(
+                        scale_parameter=len(bandwidth_list)
+                    )
+                )
             ]
             if bandwidth_count_dict[candidate_bandwidth] > 0:
                 bandwidth_count_dict[candidate_bandwidth] -= 1
@@ -294,7 +293,7 @@ def generate_simulation_requests(
                 departure_time=departure_time,
                 request_type=DEFAULT_REQUEST_TYPE_ARRIVAL,
                 bandwidth=chosen_bandwidth,
-                modulation_formats=engine_properties['mod_per_bw'][chosen_bandwidth]
+                modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
             )
 
             # Create departure event
@@ -306,23 +305,25 @@ def generate_simulation_requests(
                 departure_time=departure_time,
                 request_type=DEFAULT_REQUEST_TYPE_RELEASE,
                 bandwidth=chosen_bandwidth,
-                modulation_formats=engine_properties['mod_per_bw'][chosen_bandwidth]
+                modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
             )
 
             request_id += 1
             logger.debug(
                 "Generated request %s: %s -> %s (%s)",
-                request_id - 1, source, destination, chosen_bandwidth
+                request_id - 1,
+                source,
+                destination,
+                chosen_bandwidth,
             )
         else:
             # Time collision - return bandwidth to pool
             bandwidth_count_dict[chosen_bandwidth] += 1
             logger.debug(
-                "Time collision at %s or %s, retrying",
-                arrival_time, departure_time
+                "Time collision at %s or %s, retrying", arrival_time, departure_time
             )
 
-    logger.info("Generated %s requests", engine_properties['num_requests'])
+    logger.info("Generated %s requests", engine_properties["num_requests"])
     return requests_dict
 
 

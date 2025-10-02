@@ -1,13 +1,13 @@
 """Domain entities for the visualization system."""
 
 from fusion.visualization.domain.entities.data_source import (
+    DataFormat,
     DataSource,
     SourceType,
-    DataFormat,
 )
 from fusion.visualization.domain.entities.metric import (
-    MetricDefinition,
     AggregationStrategy,
+    MetricDefinition,
 )
 from fusion.visualization.domain.entities.plot import (
     Plot,

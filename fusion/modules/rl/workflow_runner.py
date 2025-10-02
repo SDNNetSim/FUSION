@@ -40,9 +40,7 @@ logger = get_logger(__name__)
 
 
 def _run_drl_training(
-    env: Any,
-    sim_dict: dict[str, Any],
-    yaml_dict: dict[str, Any] | None = None
+    env: Any, sim_dict: dict[str, Any], yaml_dict: dict[str, Any] | None = None
 ) -> None:
     """
     Train a deep reinforcement learning model using Stable-Baselines3.
@@ -92,7 +90,7 @@ def _train_drl_trial(
     sim_dict: dict[str, Any],
     callback_list: Any,
     completed_trials: int,
-    rewards_matrix: np.ndarray
+    rewards_matrix: np.ndarray,
 ) -> tuple[Any, int]:
     """
     Execute one complete DRL training trial.
@@ -235,7 +233,7 @@ def _update_episode_stats(
 
 
 def _initialize_training_state(
-    sim_dict: dict[str, Any]
+    sim_dict: dict[str, Any],
 ) -> tuple[int, int, float, np.ndarray, np.ndarray, list[float], Any]:
     """
     Initialize the training state variables and data structures.
@@ -273,7 +271,7 @@ def _process_episode_step(
     env: Any,
     is_training: bool,
     model: Any | None = None,
-    observation: Any | None = None
+    observation: Any | None = None,
 ) -> tuple[Any, float, bool, bool]:
     """
     Process a single episode step based on training/testing mode.
@@ -448,7 +446,7 @@ def run(
     env: Any,
     sim_dict: dict[str, Any],
     callback_list: Any | None = None,
-    trial: optuna.Trial | None = None
+    trial: optuna.Trial | None = None,
 ) -> float:
     """
     Manages the execution of simulations for training or testing RL models.

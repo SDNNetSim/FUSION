@@ -1,18 +1,20 @@
 """Metric entity for defining measurable quantities from simulations."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
 from enum import Enum
+from typing import Any
+
 import jsonpath_ng.ext as jp
 
-from fusion.visualization.domain.value_objects.metric_value import (
-    MetricValue,
-    DataType,
-)
 from fusion.visualization.domain.exceptions.domain_exceptions import (
     InvalidMetricPathError,
     MetricExtractionError,
+)
+from fusion.visualization.domain.value_objects.metric_value import (
+    DataType,
+    MetricValue,
 )
 
 
@@ -41,11 +43,11 @@ class MetricDefinition:
     name: str
     data_type: DataType
     source_path: str  # JSONPath expression
-    aggregation: Optional[AggregationStrategy] = None
-    unit: Optional[str] = None
+    aggregation: AggregationStrategy | None = None
+    unit: str | None = None
     description: str = ""
-    display_name: Optional[str] = None  # Human-readable name for display
-    metadata: Optional[Dict[str, Any]] = None
+    display_name: str | None = None  # Human-readable name for display
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         """Validate metric definition."""
@@ -54,7 +56,7 @@ class MetricDefinition:
         if not self.source_path:
             raise ValueError("Metric source_path cannot be empty")
         if self.metadata is None:
-            object.__setattr__(self, 'metadata', {})
+            object.__setattr__(self, "metadata", {})
 
         # Validate JSONPath expression
         try:
@@ -62,9 +64,9 @@ class MetricDefinition:
         except Exception as e:
             raise InvalidMetricPathError(
                 f"Invalid JSONPath expression '{self.source_path}': {e}"
-            )
+            ) from e
 
-    def extract_from(self, data: Dict[str, Any]) -> MetricValue:
+    def extract_from(self, data: dict[str, Any]) -> MetricValue:
         """
         Extract this metric from raw simulation data.
 
@@ -105,7 +107,7 @@ class MetricDefinition:
             raise MetricExtractionError(
                 f"Failed to extract metric '{self.name}' from path "
                 f"'{self.source_path}': {e}"
-            )
+            ) from e
 
     def __repr__(self) -> str:
         """Return detailed representation."""

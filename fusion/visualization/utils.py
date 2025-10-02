@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from statistics import mean
 
 import numpy as np
@@ -8,9 +8,12 @@ from fusion.sim.utils import dict_to_list, list_to_title, update_matrices
 from fusion.visualization.properties import PlotArgs, PlotProps
 
 
-# TODO: (version 5.5-6) RL no longer uses anything from here, although there is some overlap
-#   - The problem we need to address: How do we make large changes to the simulator without this module breaking?
-#   - A rough idea: decentralize plotting scripts unless absolutely needed, or have another unique decentralized way
+# TODO: (version 5.5-6) RL no longer uses anything from here,
+#   although there is some overlap
+#   - The problem we need to address: How do we make large changes to
+#     the simulator without this module breaking?
+#   - A rough idea: decentralize plotting scripts unless absolutely
+#     needed, or have another unique decentralized way
 class PlotHelpers:  # pylint: disable=too-few-public-methods
     """
     A class to assist with various tasks related when plotting statistics.
@@ -34,105 +37,214 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         if self.data_dict is None or self.time is None or self.erlang is None:
             return
         assert self.data_dict is not None  # Type narrowing
-        ai_fp = os.path.join('..', 'logs', 'ql', self.data_dict['network'], self.data_dict['date'], self.time)
+        ai_fp = os.path.join(
+            "..",
+            "logs",
+            "ql",
+            self.data_dict["network"],
+            self.data_dict["date"],
+            self.time,
+        )
         ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
 
         ai_dict = self._read_json_file(file_path=ai_fp)
         if ai_dict is not None:
-            assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
-            for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards_dict', 'sum_errors_dict'):
-                if ai_key in ('sum_rewards_dict', 'sum_errors_dict'):
-                    label_list = ai_key.split('_')
+            # Type narrowing
+            assert (
+                self.time is not None
+                and self.sim_num is not None
+                and self.plot_props.plot_dict is not None
+            )
+            for ai_key in (
+                "learn_rate",
+                "discount_factor",
+                "epsilon_start",
+                "sum_rewards_dict",
+                "sum_errors_dict",
+            ):
+                if ai_key in ("sum_rewards_dict", "sum_errors_dict"):
+                    label_list = ai_key.split("_")
                     label = f"{label_list[0]}_{label_list[1]}_list"
-                    getattr(self.plot_props.plot_dict[self.time][self.sim_num], label).append(list(ai_dict[ai_key].values()))
+                    getattr(
+                        self.plot_props.plot_dict[self.time][self.sim_num], label
+                    ).append(list(ai_dict[ai_key].values()))
                 else:
-                    setattr(self.plot_props.plot_dict[self.time][self.sim_num], ai_key, ai_dict[ai_key])
+                    setattr(
+                        self.plot_props.plot_dict[self.time][self.sim_num],
+                        ai_key,
+                        ai_dict[ai_key],
+                    )
 
     def _find_misc_stats(self) -> None:
         assert self.erlang_dict is not None  # Type narrowing
-        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
-        lengths_list = dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean')
-        hops_list = dict_to_list(self.erlang_dict['iter_stats'], 'hops_mean')
-        times_list_raw = dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean')
-        times_list = times_list_raw * 10 ** 3 if isinstance(times_list_raw, (int, float)) else [t * 10 ** 3 for t in times_list_raw]
+        # Type narrowing
+        assert (
+            self.time is not None
+            and self.sim_num is not None
+            and self.plot_props.plot_dict is not None
+        )
+        lengths_list = dict_to_list(self.erlang_dict["iter_stats"], "lengths_mean")
+        hops_list = dict_to_list(self.erlang_dict["iter_stats"], "hops_mean")
+        times_list_raw = dict_to_list(
+            self.erlang_dict["iter_stats"], "route_times_mean"
+        )
+        times_list = (
+            times_list_raw * 10**3
+            if isinstance(times_list_raw, (int, float))
+            else [t * 10**3 for t in times_list_raw]
+        )
 
-        cong_list = dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict'])
-        dist_list = dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict'])
+        cong_list = dict_to_list(
+            self.erlang_dict["iter_stats"], "congestion", ["block_reasons_dict"]
+        )
+        dist_list = dict_to_list(
+            self.erlang_dict["iter_stats"], "distance", ["block_reasons_dict"]
+        )
 
-        average_length = np.nanmean(lengths_list) if isinstance(lengths_list, list) and len(lengths_list) > 0 else 0
-        average_hop = np.nanmean(hops_list) if isinstance(hops_list, list) and len(hops_list) > 0 else 0
-        average_time = np.nanmean(times_list) if isinstance(times_list, list) and len(times_list) > 0 else 0
-        average_cong = np.nanmean(cong_list) if isinstance(cong_list, list) and len(cong_list) > 0 else 0
-        average_dist = np.nanmean(dist_list) if isinstance(dist_list, list) and len(dist_list) > 0 else 0
+        average_length = (
+            np.nanmean(lengths_list)
+            if isinstance(lengths_list, list) and len(lengths_list) > 0
+            else 0
+        )
+        average_hop = (
+            np.nanmean(hops_list)
+            if isinstance(hops_list, list) and len(hops_list) > 0
+            else 0
+        )
+        average_time = (
+            np.nanmean(times_list)
+            if isinstance(times_list, list) and len(times_list) > 0
+            else 0
+        )
+        average_cong = (
+            np.nanmean(cong_list)
+            if isinstance(cong_list, list) and len(cong_list) > 0
+            else 0
+        )
+        average_dist = (
+            np.nanmean(dist_list)
+            if isinstance(dist_list, list) and len(dist_list) > 0
+            else 0
+        )
 
-        self.plot_props.plot_dict[self.time][self.sim_num].lengths_list.append(average_length)
-        self.plot_props.plot_dict[self.time][self.sim_num].hops_list.append(average_hop)
-        self.plot_props.plot_dict[self.time][self.sim_num].times_list.append(average_time)
-        self.plot_props.plot_dict[self.time][self.sim_num].cong_block_list.append(average_cong)
-        self.plot_props.plot_dict[self.time][self.sim_num].dist_block_list.append(average_dist)
+        plot_dict_entry = self.plot_props.plot_dict[self.time][self.sim_num]
+        plot_dict_entry.lengths_list.append(average_length)
+        plot_dict_entry.hops_list.append(average_hop)
+        plot_dict_entry.times_list.append(average_time)
+        plot_dict_entry.cong_block_list.append(average_cong)
+        plot_dict_entry.dist_block_list.append(average_dist)
 
     @staticmethod
     def _dict_to_np_array(snap_val_list: list, key: str) -> np.ndarray:
-        result: np.ndarray = np.nan_to_num([np.nan if d.get(key) is None else d.get(key) for d in snap_val_list])
+        result: np.ndarray = np.nan_to_num(
+            [np.nan if d.get(key) is None else d.get(key) for d in snap_val_list]
+        )
         return result
 
     def _process_snapshots(self, snap_val_list: list) -> tuple:
-        active_req_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='active_requests')
-        block_req_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='blocking_prob')
-        occ_slot_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='occ_slots')
+        active_req_list = self._dict_to_np_array(
+            snap_val_list=snap_val_list, key="active_requests"
+        )
+        block_req_list = self._dict_to_np_array(
+            snap_val_list=snap_val_list, key="blocking_prob"
+        )
+        occ_slot_list = self._dict_to_np_array(
+            snap_val_list=snap_val_list, key="occ_slots"
+        )
 
         return active_req_list, block_req_list, occ_slot_list
 
     def _find_snapshot_usage(self) -> None:
         assert self.erlang_dict is not None  # Type narrowing
-        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
-        req_num_list, active_req_matrix, block_req_matrix, occ_slot_matrix = [], [], [], []
-        for _, stats_dict in self.erlang_dict['iter_stats'].items():
-            snapshots_dict = stats_dict['snapshots_dict']
+        # Type narrowing
+        assert (
+            self.time is not None
+            and self.sim_num is not None
+            and self.plot_props.plot_dict is not None
+        )
+        req_num_list, active_req_matrix, block_req_matrix, occ_slot_matrix = (
+            [],
+            [],
+            [],
+            [],
+        )
+        for _, stats_dict in self.erlang_dict["iter_stats"].items():
+            snapshots_dict = stats_dict["snapshots_dict"]
             req_num_list = [int(req_num) for req_num in snapshots_dict.keys()]
 
             snap_val_list = list(snapshots_dict.values())
-            active_req_list, block_req_list, occ_slot_list = self._process_snapshots(snap_val_list=snap_val_list)
+            active_req_list, block_req_list, occ_slot_list = self._process_snapshots(
+                snap_val_list=snap_val_list
+            )
             active_req_matrix.append(active_req_list)
             block_req_matrix.append(block_req_list)
             occ_slot_matrix.append(occ_slot_list)
 
-        self.plot_props.plot_dict[self.time][self.sim_num].req_num_list = req_num_list
-        self.plot_props.plot_dict[self.time][self.sim_num].active_req_matrix = np.mean(active_req_matrix, axis=0)
-        self.plot_props.plot_dict[self.time][self.sim_num].block_req_matrix = np.mean(block_req_matrix, axis=0)
-        self.plot_props.plot_dict[self.time][self.sim_num].occ_slot_matrix = np.mean(occ_slot_matrix, axis=0)
+        plot_dict_entry = self.plot_props.plot_dict[self.time][self.sim_num]
+        plot_dict_entry.req_num_list = req_num_list
+        plot_dict_entry.active_req_matrix = np.mean(active_req_matrix, axis=0)
+        plot_dict_entry.block_req_matrix = np.mean(block_req_matrix, axis=0)
+        plot_dict_entry.occ_slot_matrix = np.mean(occ_slot_matrix, axis=0)
 
     def _find_mod_info(self) -> None:
         assert self.erlang_dict is not None  # Type narrowing
-        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
-        mods_used_dict = self.erlang_dict['iter_stats']['0']['mods_used_dict']
+        # Type narrowing
+        assert (
+            self.time is not None
+            and self.sim_num is not None
+            and self.plot_props.plot_dict is not None
+        )
+        mods_used_dict = self.erlang_dict["iter_stats"]["0"]["mods_used_dict"]
         mods_used_dict = {k: v for k, v in mods_used_dict.items() if k.isdigit()}
         # fixme: Modulation stats got into mods used dict?
         for bandwidth, mod_dict in mods_used_dict.items():
             for modulation in mod_dict:
-                filters_list = ['mods_used_dict', bandwidth]
-                mod_usages = dict_to_list(data_dict=self.erlang_dict['iter_stats'], nested_key=modulation,
-                                          path_list=filters_list)
+                filters_list = ["mods_used_dict", bandwidth]
+                mod_usages = dict_to_list(
+                    data_dict=self.erlang_dict["iter_stats"],
+                    nested_key=modulation,
+                    path_list=filters_list,
+                )
 
-                modulations_dict = self.plot_props.plot_dict[self.time][self.sim_num].modulations_dict
+                modulations_dict = self.plot_props.plot_dict[self.time][
+                    self.sim_num
+                ].modulations_dict
                 modulations_dict.setdefault(bandwidth, {})
 
                 if isinstance(mod_usages, list):
-                    modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
+                    modulations_dict[bandwidth].setdefault(modulation, []).append(
+                        mean(mod_usages)
+                    )
                 else:
-                    modulations_dict[bandwidth].setdefault(modulation, []).append(mod_usages)
+                    modulations_dict[bandwidth].setdefault(modulation, []).append(
+                        mod_usages
+                    )
 
     def _find_sim_info(self, input_dict: dict) -> None:
         # TODO: (drl_path_agents) Does not support all bands/slots
-        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
-        info_item_list = ['holding_time', 'cores_per_link', 'c_band', 'network', 'num_requests',
-                          'cores_per_link', 'max_segments']
-        self.plot_props = self.plot_props.plot_dict[self.time][self.sim_num].update_info_dict(
+        assert (
+            self.time is not None
+            and self.sim_num is not None
+            and self.plot_props.plot_dict is not None
+        )  # Type narrowing
+        info_item_list = [
+            "holding_time",
+            "cores_per_link",
+            "c_band",
+            "network",
+            "num_requests",
+            "cores_per_link",
+            "max_segments",
+        ]
+        self.plot_props = self.plot_props.plot_dict[self.time][
+            self.sim_num
+        ].update_info_dict(
             plot_props=self.plot_props,
             input_dict=input_dict,
             info_item_list=info_item_list,
             time=self.time,
-            sim_num=self.sim_num)
+            sim_num=self.sim_num,
+        )
 
     def _update_plot_dict(self) -> None:
         assert self.time is not None and self.sim_num is not None  # Type narrowing
@@ -145,22 +257,30 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _read_json_file(file_path: str) -> dict | None:
-        with open(file_path, 'r', encoding='utf-8') as file_obj:
+        with open(file_path, encoding="utf-8") as file_obj:
             try:
                 result: dict = json.load(file_obj)
                 return result
             except json.JSONDecodeError:
-                print('JSON file did not finishing writing, skipping!')
+                print("JSON file did not finishing writing, skipping!")
                 return None
 
     def _read_input_output(self) -> tuple[dict | None, dict | None]:
-        assert self.data_dict is not None and self.time is not None and self.sim_num is not None  # Type narrowing
-        base_fp = os.path.join(self.data_dict['network'], self.data_dict['date'], self.time)
-        file_name = f'{self.erlang}_erlang.json'
-        output_fp = os.path.join(self.plot_props.output_dir, base_fp, self.sim_num, file_name)
+        assert (
+            self.data_dict is not None
+            and self.time is not None
+            and self.sim_num is not None
+        )  # Type narrowing
+        base_fp = os.path.join(
+            self.data_dict["network"], self.data_dict["date"], self.time
+        )
+        file_name = f"{self.erlang}_erlang.json"
+        output_fp = os.path.join(
+            self.plot_props.output_dir, base_fp, self.sim_num, file_name
+        )
         erlang_dict = self._read_json_file(file_path=output_fp)
 
-        file_name = f'sim_input_{self.sim_num}.json'
+        file_name = f"sim_input_{self.sim_num}.json"
         input_fp = os.path.join(self.plot_props.input_dir, base_fp, file_name)
         input_dict = self._read_json_file(file_path=input_fp)
 
@@ -171,7 +291,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         for time, data_dict in self.file_info.items():
             self.time = time
             self.data_dict = data_dict
-            for sim_num, erlang_list in self.data_dict['sim_dict'].items():
+            for sim_num, erlang_list in self.data_dict["sim_dict"].items():
                 self.sim_num = sim_num
                 self._update_plot_dict()
                 for erlang in erlang_list:
@@ -182,17 +302,27 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                         continue
 
                     assert self.plot_props.plot_dict is not None  # Type narrowing
-                    self.plot_props.plot_dict[time][sim_num].erlang_list.append(float(erlang))
+                    self.plot_props.plot_dict[time][sim_num].erlang_list.append(
+                        float(erlang)
+                    )
 
                     self.plot_props.erlang_dict = self.erlang_dict
-                    blocking_mean = self.plot_props.erlang_dict['blocking_mean']
-                    last_iter = list(self.erlang_dict['iter_stats'].keys())[-1]
+                    blocking_mean = self.plot_props.erlang_dict["blocking_mean"]
+                    last_iter = list(self.erlang_dict["iter_stats"].keys())[-1]
                     if blocking_mean is None:
-                        blocking_mean = mean(self.erlang_dict['iter_stats'][last_iter]['sim_block_list'])
+                        blocking_mean = mean(
+                            self.erlang_dict["iter_stats"][last_iter]["sim_block_list"]
+                        )
 
-                    block_per_iter = self.erlang_dict['iter_stats'][last_iter]['sim_block_list']
-                    self.plot_props.plot_dict[time][sim_num].block_per_iter.append(block_per_iter)
-                    self.plot_props.plot_dict[time][sim_num].blocking_list.append(blocking_mean)
+                    block_per_iter = self.erlang_dict["iter_stats"][last_iter][
+                        "sim_block_list"
+                    ]
+                    self.plot_props.plot_dict[time][sim_num].block_per_iter.append(
+                        block_per_iter
+                    )
+                    self.plot_props.plot_dict[time][sim_num].blocking_list.append(
+                        blocking_mean
+                    )
 
                     self._find_sim_info(input_dict=input_dict)
                     self._find_mod_info()
@@ -207,36 +337,54 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         """
         self.file_info = {}
         matrix_count = 0
-        networks_matrix = sims_info_dict['networks_matrix']
-        dates_matrix = sims_info_dict['dates_matrix']
-        times_matrix = sims_info_dict['times_matrix']
+        networks_matrix = sims_info_dict["networks_matrix"]
+        dates_matrix = sims_info_dict["dates_matrix"]
+        times_matrix = sims_info_dict["times_matrix"]
 
-        for network_list, dates_list, times_list in zip(networks_matrix, dates_matrix, times_matrix):
-            for network, date, time, in zip(network_list, dates_list, times_list):
-                self.file_info[time] = {'network': network, 'date': date, 'sim_dict': {}}
+        for network_list, dates_list, times_list in zip(
+            networks_matrix, dates_matrix, times_matrix, strict=False
+        ):
+            for (
+                network,
+                date,
+                time,
+            ) in zip(network_list, dates_list, times_list, strict=False):
+                self.file_info[time] = {
+                    "network": network,
+                    "date": date,
+                    "sim_dict": {},
+                }
                 curr_dir = os.path.join(self.plot_props.output_dir, network, date, time)
                 # Sort by sim number
                 try:
                     sim_dirs_list = os.listdir(curr_dir)
                 except FileNotFoundError:
-                    print(f'File: {curr_dir} was not found. Skipping!')
+                    print(f"File: {curr_dir} was not found. Skipping!")
                     continue
 
-                sim_dirs_list = [sim_dir for sim_dir in os.listdir(curr_dir) if 'train_data' not in sim_dir]
+                sim_dirs_list = [
+                    sim_dir
+                    for sim_dir in os.listdir(curr_dir)
+                    if "train_data" not in sim_dir
+                ]
                 sim_dirs_list = sorted(sim_dirs_list, key=lambda x: int(x[1:]))
 
                 for sim in sim_dirs_list:
                     # User selected to not run this simulation
-                    if sim not in sims_info_dict['sims_matrix'][matrix_count]:
+                    if sim not in sims_info_dict["sims_matrix"][matrix_count]:
                         continue
 
                     curr_fp = os.path.join(curr_dir, sim)
-                    self.file_info[time]['sim_dict'][sim] = []
+                    self.file_info[time]["sim_dict"][sim] = []
                     files_list = os.listdir(curr_fp)
-                    sorted_files_list = sorted(files_list, key=lambda x: float(x.split('_')[0]))
+                    sorted_files_list = sorted(
+                        files_list, key=lambda x: float(x.split("_")[0])
+                    )
 
                     for erlang_file in sorted_files_list:
-                        self.file_info[time]['sim_dict'][sim].append(erlang_file.split('_')[0])
+                        self.file_info[time]["sim_dict"][sim].append(
+                            erlang_file.split("_")[0]
+                        )
 
             matrix_count += 1
 
@@ -245,7 +393,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
 def _not_filters(filter_dict: dict, file_dict: dict) -> bool:
     keep_config = True
-    for flags_list in filter_dict['not_filter_list']:
+    for flags_list in filter_dict["not_filter_list"]:
         keys_list = flags_list[0:-1]
         check_value = flags_list[-1]
 
@@ -264,7 +412,7 @@ def _not_filters(filter_dict: dict, file_dict: dict) -> bool:
 
 def _or_filters(filter_dict: dict, file_dict: dict) -> bool:
     keep_config = True
-    for flags_list in filter_dict['or_filter_list']:
+    for flags_list in filter_dict["or_filter_list"]:
         keys_list = flags_list[0:-1]
         check_value = flags_list[-1]
 
@@ -283,7 +431,7 @@ def _or_filters(filter_dict: dict, file_dict: dict) -> bool:
 
 def _and_filters(filter_dict: dict, file_dict: dict) -> bool:
     keep_config = True
-    for flags_list in filter_dict['and_filter_list']:
+    for flags_list in filter_dict["and_filter_list"]:
         keys_list = flags_list[0:-1]
         check_value = flags_list[-1]
 
@@ -317,49 +465,64 @@ def _check_filters(file_dict: dict, filter_dict: dict) -> bool:
 
 def find_times(dates_dict: dict, filter_dict: dict) -> dict:
     """
-    Searches output directories based on filters and retrieves simulation directory information.
+    Searches output directories based on filters.
+
+    Retrieves simulation directory information.
 
     :param dates_dict: The date directory to search.
     :param filter_dict: A dictionary containing all search filters.
-    :return: A dictionary with all times, sim numbers, networks, and dates that matched the filter dict.
+    :return: A dictionary with all times, sim numbers, networks, and dates
+        that matched the filter dict.
     :rtype: dict
     """
     resp: dict[str, list] = {
-        'times_matrix': [],
-        'sims_matrix': [],
-        'networks_matrix': [],
-        'dates_matrix': [],
+        "times_matrix": [],
+        "sims_matrix": [],
+        "networks_matrix": [],
+        "dates_matrix": [],
     }
     info_dict: dict[str, dict[str, list]] = {}
     for date, network in dates_dict.items():
-        times_path = os.path.join('..', 'data', 'input', network, date)
-        times_list = [curr_dir for curr_dir in os.listdir(times_path)
-                      if os.path.isdir(os.path.join(times_path, curr_dir))]
+        times_path = os.path.join("..", "data", "input", network, date)
+        times_list = [
+            curr_dir
+            for curr_dir in os.listdir(times_path)
+            if os.path.isdir(os.path.join(times_path, curr_dir))
+        ]
 
         for curr_time in times_list:
             sims_path = os.path.join(times_path, curr_time)
-            input_file_list = [input_file for input_file in os.listdir(sims_path) if
-                               'sim' in input_file]
+            input_file_list = [
+                input_file
+                for input_file in os.listdir(sims_path)
+                if "sim" in input_file
+            ]
 
             for input_file in input_file_list:
                 file_path = os.path.join(sims_path, input_file)
-                with open(file_path, 'r', encoding='utf-8') as file_obj:
+                with open(file_path, encoding="utf-8") as file_obj:
                     try:
                         file_dict = json.load(file_obj)
                     except json.JSONDecodeError:
-                        print('Skipping file, it did not complete writing.')
+                        print("Skipping file, it did not complete writing.")
                         continue
 
-                keep_config = _check_filters(file_dict=file_dict, filter_dict=filter_dict)
+                keep_config = _check_filters(
+                    file_dict=file_dict, filter_dict=filter_dict
+                )
                 if keep_config:
                     if curr_time not in info_dict:
-                        info_dict[curr_time] = {'sim_list': [], 'network_list': [], 'dates_list': []}
+                        info_dict[curr_time] = {
+                            "sim_list": [],
+                            "network_list": [],
+                            "dates_list": [],
+                        }
 
-                    sim = input_file.split('_')[2]
-                    sim = sim.split('.')[0]
-                    info_dict[curr_time]['sim_list'].append(sim)
-                    info_dict[curr_time]['network_list'].append(network)
-                    info_dict[curr_time]['dates_list'].append(date)
+                    sim = input_file.split("_")[2]
+                    sim = sim.split(".")[0]
+                    info_dict[curr_time]["sim_list"].append(sim)
+                    info_dict[curr_time]["network_list"].append(network)
+                    info_dict[curr_time]["dates_list"].append(date)
 
     # Convert info dict to lists
     resp = update_matrices(info_dict=info_dict)

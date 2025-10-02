@@ -32,15 +32,10 @@ def engine_props() -> dict[str, Any]:
     :rtype: dict[str, Any]
     """
     topology = nx.Graph()
-    topology.add_edge('A', 'B', length=100.0)
-    topology.add_edge('B', 'C', length=150.0)
+    topology.add_edge("A", "B", length=100.0)
+    topology.add_edge("B", "C", length=150.0)
 
-    return {
-        'spectral_slots': 320,
-        'guard_slots': 1,
-        'topology': topology,
-        'beta': 0.5
-    }
+    return {"spectral_slots": 320, "guard_slots": 1, "topology": topology, "beta": 0.5}
 
 
 @pytest.fixture
@@ -53,18 +48,10 @@ def sdn_props() -> Mock:
     props = Mock()
     props.slots_needed = 10
     props.network_spectrum_dict = {
-        ('A', 'B'): {
-            'cores_matrix': {
-                'c': [
-                    np.zeros(320),
-                    np.zeros(320),
-                    np.zeros(320)
-                ],
-                'l': [
-                    np.zeros(320),
-                    np.zeros(320),
-                    np.zeros(320)
-                ]
+        ("A", "B"): {
+            "cores_matrix": {
+                "c": [np.zeros(320), np.zeros(320), np.zeros(320)],
+                "l": [np.zeros(320), np.zeros(320), np.zeros(320)],
             }
         }
     }
@@ -87,6 +74,7 @@ def routing_helpers(
     :rtype: Any
     """
     from fusion.modules.routing.utils import RoutingHelpers
+
     return RoutingHelpers(route_props, engine_props, sdn_props)
 
 
@@ -94,8 +82,11 @@ class TestRoutingHelpers:
     """Tests for RoutingHelpers class."""
 
     def test_init_stores_properties(
-        self, routing_helpers: Any, route_props: Mock,
-        engine_props: dict[str, Any], sdn_props: Mock
+        self,
+        routing_helpers: Any,
+        route_props: Mock,
+        engine_props: dict[str, Any],
+        sdn_props: Mock,
     ) -> None:
         """Test that initialization stores all properties correctly."""
         # Assert
@@ -103,15 +94,23 @@ class TestRoutingHelpers:
         assert routing_helpers.engine_props == engine_props
         assert routing_helpers.sdn_props == sdn_props
 
-    @pytest.mark.parametrize("slots_needed,center_index,expected_start,expected_end", [
-        (10, 160, 155, 165),
-        (11, 160, 155, 166),
-        (8, 100, 96, 104),
-        (1, 50, 50, 51),
-    ])
+    @pytest.mark.parametrize(
+        "slots_needed,center_index,expected_start,expected_end",
+        [
+            (10, 160, 155, 165),
+            (11, 160, 155, 166),
+            (8, 100, 96, 104),
+            (1, 50, 50, 51),
+        ],
+    )
     def test_get_indexes_with_various_slots_needed(
-        self, routing_helpers: Any, sdn_props: Mock,
-        slots_needed: int, center_index: int, expected_start: int, expected_end: int
+        self,
+        routing_helpers: Any,
+        sdn_props: Mock,
+        slots_needed: int,
+        center_index: int,
+        expected_start: int,
+        expected_end: int,
     ) -> None:
         """Test get indexes calculation with various slots_needed values.
 
@@ -159,9 +158,7 @@ class TestRoutingHelpers:
         if end_idx < len(simulated_link):
             assert np.any(simulated_link[end_idx:] != 0)
 
-    def test_find_channel_mci_calculates_correctly(
-        self, routing_helpers: Any
-    ) -> None:
+    def test_find_channel_mci_calculates_correctly(self, routing_helpers: Any) -> None:
         """Test multi-core interference calculation for a channel."""
         # Arrange
         channels_list = [(1, 10), (12, 8)]
@@ -177,15 +174,13 @@ class TestRoutingHelpers:
         assert isinstance(total_mci, float)
         assert total_mci > 0
 
-    def test_find_link_cost_with_free_channels(
-        self, routing_helpers: Any
-    ) -> None:
+    def test_find_link_cost_with_free_channels(self, routing_helpers: Any) -> None:
         """Test link cost calculation with available free channels."""
         from fusion.modules.routing.utils import FULLY_CONGESTED_LINK_COST
 
         # Arrange
-        free_channels_dict = {'c': {0: [(1, 10)]}}
-        taken_channels_dict = {'c': {0: [(11, 10)]}}
+        free_channels_dict = {"c": {0: [(1, 10)]}}
+        taken_channels_dict = {"c": {0: [(11, 10)]}}
         num_span = 2.0
 
         # Act
@@ -205,8 +200,8 @@ class TestRoutingHelpers:
         from fusion.modules.routing.utils import FULLY_CONGESTED_LINK_COST
 
         # Arrange
-        free_channels_dict: dict[str, dict[int, list[Any]]] = {'c': {0: []}}
-        taken_channels_dict = {'c': {0: [(1, 10), (11, 10)]}}
+        free_channels_dict: dict[str, dict[int, list[Any]]] = {"c": {0: []}}
+        taken_channels_dict = {"c": {0: [(1, 10), (11, 10)]}}
         num_span = 2.0
 
         # Act
@@ -223,12 +218,12 @@ class TestRoutingHelpers:
         """Test worst NLI calculation for network with spectrum data."""
         # Arrange
         sdn_props.network_spectrum_dict = {
-            ('A', 'B'): {
-                'cores_matrix': {
-                    'c': [
+            ("A", "B"): {
+                "cores_matrix": {
+                    "c": [
                         np.array([1, 1, -1, 0, 1, 1, 0, 0, 1, 0]),
                         np.array([0, 0, 1, 1, 0, 0, -1, 1, 0, 1]),
-                        np.array([1, 0, -1, 1, 1, 0, 1, -1, 1, 1])
+                        np.array([1, 0, -1, 1, 1, 0, 1, -1, 1, 1]),
                     ]
                 }
             }
@@ -237,10 +232,12 @@ class TestRoutingHelpers:
         span_count = 2.0
 
         # Act
-        with patch('fusion.utils.spectrum.find_free_channels') as mock_free, \
-             patch('fusion.utils.spectrum.find_taken_channels') as mock_taken:
-            mock_free.return_value = {'c': {0: [(1, 3)]}}
-            mock_taken.return_value = {'c': {0: [(5, 2)]}}
+        with (
+            patch("fusion.utils.spectrum.find_free_channels") as mock_free,
+            patch("fusion.utils.spectrum.find_taken_channels") as mock_taken,
+        ):
+            mock_free.return_value = {"c": {0: [(1, 3)]}}
+            mock_taken.return_value = {"c": {0: [(5, 2)]}}
 
             nli_worst = routing_helpers.find_worst_nli(span_count)
 
@@ -261,14 +258,17 @@ class TestRoutingHelpers:
         # Assert
         assert nli_worst == 0.0
 
-    @pytest.mark.parametrize("core_num,expected_neighbors", [
-        (0, {5, 6, 1}),
-        (1, {0, 6, 2}),
-        (2, {1, 6, 3}),
-        (3, {2, 6, 4}),
-        (4, {3, 6, 5}),
-        (5, {4, 6, 0}),
-    ])
+    @pytest.mark.parametrize(
+        "core_num,expected_neighbors",
+        [
+            (0, {5, 6, 1}),
+            (1, {0, 6, 2}),
+            (2, {1, 6, 3}),
+            (3, {2, 6, 4}),
+            (4, {3, 6, 5}),
+            (5, {4, 6, 0}),
+        ],
+    )
     def test_find_adjacent_cores_for_outer_cores(
         self, core_num: int, expected_neighbors: set[int]
     ) -> None:
@@ -292,41 +292,35 @@ class TestRoutingHelpers:
     ) -> None:
         """Test overlapped channels calculation for non-center core."""
         # Arrange
-        core_info_dict = {
-            'c': {i: np.zeros(10) for i in range(7)}
-        }
-        core_info_dict['c'][0][1] = 1
-        core_info_dict['c'][5][1] = 1
-        core_info_dict['c'][6][1] = 1
+        core_info_dict = {"c": {i: np.zeros(10) for i in range(7)}}
+        core_info_dict["c"][0][1] = 1
+        core_info_dict["c"][5][1] = 1
+        core_info_dict["c"][6][1] = 1
 
         # Act
         num_overlapped = routing_helpers._find_num_overlapped(
-            channel=1, core_num=0, core_info_dict=core_info_dict, band='c'
+            channel=1, core_num=0, core_info_dict=core_info_dict, band="c"
         )
 
         # Assert
         assert num_overlapped == 2 / 3
 
-    def test_find_num_overlapped_for_center_core(
-        self, routing_helpers: Any
-    ) -> None:
+    def test_find_num_overlapped_for_center_core(self, routing_helpers: Any) -> None:
         """Test overlapped channels calculation for center core."""
         from fusion.modules.routing.utils import CENTER_CORE_INDEX
 
         # Arrange
-        core_info_dict = {
-            'c': {i: np.zeros(10) for i in range(7)}
-        }
-        core_info_dict['c'][0][1] = 1
-        core_info_dict['c'][5][1] = 1
-        core_info_dict['c'][6][1] = 1
+        core_info_dict = {"c": {i: np.zeros(10) for i in range(7)}}
+        core_info_dict["c"][0][1] = 1
+        core_info_dict["c"][5][1] = 1
+        core_info_dict["c"][6][1] = 1
 
         # Act
         num_overlapped = routing_helpers._find_num_overlapped(
             channel=1,
             core_num=CENTER_CORE_INDEX,
             core_info_dict=core_info_dict,
-            band='c',
+            band="c",
         )
 
         # Assert
@@ -337,22 +331,14 @@ class TestRoutingHelpers:
     ) -> None:
         """Test crosstalk link cost calculation."""
         # Arrange
-        free_slots_dict = {
-            'c': {0: [1, 2, 3]},
-            'l': {1: [4, 5, 6]}
-        }
-        link_tuple = ('A', 'B')
+        free_slots_dict = {"c": {0: [1, 2, 3]}, "l": {1: [4, 5, 6]}}
+        link_tuple = ("A", "B")
         sdn_props.network_spectrum_dict = {
-            link_tuple: {
-                'cores_matrix': {
-                    'c': np.ones((7, 10)),
-                    'l': np.ones((7, 10))
-                }
-            }
+            link_tuple: {"cores_matrix": {"c": np.ones((7, 10)), "l": np.ones((7, 10))}}
         }
 
         # Act
-        with patch.object(routing_helpers, '_find_num_overlapped', return_value=0.5):
+        with patch.object(routing_helpers, "_find_num_overlapped", return_value=0.5):
             xt_cost = routing_helpers.find_xt_link_cost(free_slots_dict, link_tuple)
 
         # Assert
@@ -366,8 +352,8 @@ class TestRoutingHelpers:
         from fusion.modules.routing.utils import FULLY_CONGESTED_LINK_COST
 
         # Arrange
-        free_slots_dict: dict[str, dict[int, list[int]]] = {'c': {0: []}}
-        link_tuple = ('A', 'B')
+        free_slots_dict: dict[str, dict[int, list[int]]] = {"c": {0: []}}
+        link_tuple = ("A", "B")
 
         # Act
         xt_cost = routing_helpers.find_xt_link_cost(free_slots_dict, link_tuple)
@@ -381,8 +367,8 @@ class TestRoutingHelpers:
         """Test XT cost returns zero when network spectrum is None."""
         # Arrange
         sdn_props.network_spectrum_dict = None
-        free_slots_dict = {'c': {0: [1, 2, 3]}}
-        link_tuple = ('A', 'B')
+        free_slots_dict = {"c": {0: [1, 2, 3]}}
+        link_tuple = ("A", "B")
 
         # Act
         xt_cost = routing_helpers.find_xt_link_cost(free_slots_dict, link_tuple)
@@ -395,12 +381,12 @@ class TestRoutingHelpers:
     ) -> None:
         """Test NLI path calculation sums costs across all links."""
         # Arrange
-        path_list = ['A', 'B', 'C']
+        path_list = ["A", "B", "C"]
         route_props.span_length = 50.0
 
         # Act
         with patch.object(
-            routing_helpers, 'get_nli_cost', return_value=10.0
+            routing_helpers, "get_nli_cost", return_value=10.0
         ) as mock_get_nli:
             nli_cost = routing_helpers.get_nli_path(path_list)
 
@@ -413,7 +399,7 @@ class TestRoutingHelpers:
     ) -> None:
         """Test that maximum link length is correctly identified."""
         # Arrange
-        engine_props['topology'].add_edge('C', 'D', length=200.0)
+        engine_props["topology"].add_edge("C", "D", length=200.0)
 
         # Act
         routing_helpers.get_max_link_length()
@@ -430,20 +416,22 @@ class TestRoutingHelpers:
     ) -> None:
         """Test NLI cost calculation with beta weighting."""
         # Arrange
-        link_tuple = ('A', 'B')
+        link_tuple = ("A", "B")
         num_span = 2.0
         route_props.max_link_length = 100.0
-        engine_props['beta'] = 0.5
+        engine_props["beta"] = 0.5
 
         sdn_props.network_spectrum_dict = {
-            link_tuple: {'cores_matrix': {'c': np.zeros((7, 10))}}
+            link_tuple: {"cores_matrix": {"c": np.zeros((7, 10))}}
         }
         sdn_props.slots_needed = 3
 
         # Act
-        with patch('fusion.utils.spectrum.find_free_channels') as mock_free, \
-             patch('fusion.utils.spectrum.find_taken_channels') as mock_taken, \
-             patch.object(routing_helpers, '_find_link_cost', return_value=10.0):
+        with (
+            patch("fusion.utils.spectrum.find_free_channels") as mock_free,
+            patch("fusion.utils.spectrum.find_taken_channels") as mock_taken,
+            patch.object(routing_helpers, "_find_link_cost", return_value=10.0),
+        ):
             mock_free.return_value = {0: [1, 2, 3]}
             mock_taken.return_value = {0: [4, 5, 6]}
 
@@ -458,18 +446,20 @@ class TestRoutingHelpers:
     ) -> None:
         """Test get_nli_cost auto-calculates max link length if not set."""
         # Arrange
-        link_tuple = ('A', 'B')
+        link_tuple = ("A", "B")
         num_span = 2.0
         route_props.max_link_length = None
 
         sdn_props.network_spectrum_dict = {
-            link_tuple: {'cores_matrix': {'c': np.zeros((7, 10))}}
+            link_tuple: {"cores_matrix": {"c": np.zeros((7, 10))}}
         }
 
         # Act
-        with patch('fusion.utils.spectrum.find_free_channels'), \
-             patch('fusion.utils.spectrum.find_taken_channels'), \
-             patch.object(routing_helpers, '_find_link_cost', return_value=5.0):
+        with (
+            patch("fusion.utils.spectrum.find_free_channels"),
+            patch("fusion.utils.spectrum.find_taken_channels"),
+            patch.object(routing_helpers, "_find_link_cost", return_value=5.0),
+        ):
             routing_helpers.get_nli_cost(link_tuple, num_span)
 
         # Assert
@@ -491,7 +481,7 @@ class TestRoutingHelpersConstants:
         from fusion.modules.routing.utils import DEFAULT_BAND
 
         # Assert
-        assert DEFAULT_BAND == 'c'
+        assert DEFAULT_BAND == "c"
 
     def test_center_core_index_is_six(self) -> None:
         """Test that center core index is 6 for seven-core fiber."""

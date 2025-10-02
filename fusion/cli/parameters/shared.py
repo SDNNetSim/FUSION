@@ -19,16 +19,13 @@ def add_config_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     parser.add_argument(
-        "--config_path",
-        type=str,
-        required=True,
-        help="Path to INI configuration file"
+        "--config_path", type=str, required=True, help="Path to INI configuration file"
     )
     parser.add_argument(
         "--run_id",
         type=str,
         required=True,
-        help="Unique identifier for this simulation run"
+        help="Unique identifier for this simulation run",
     )
 
 
@@ -45,16 +42,9 @@ def add_debug_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Enable verbose output"
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug mode"
-    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
 
 def add_output_args(parser: argparse.ArgumentParser) -> None:
@@ -69,55 +59,35 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
     :return: None
     :rtype: None
     """
+    parser.add_argument("--output_dir", type=str, help="Directory to save output files")
     parser.add_argument(
-        "--output_dir",
-        type=str,
-        help="Directory to save output files"
+        "--save_results", action="store_true", help="Save simulation results to file"
     )
     parser.add_argument(
-        "--save_results",
-        action="store_true",
-        help="Save simulation results to file"
+        "--save_snapshots", action="store_true", help="Save simulation snapshots"
     )
     parser.add_argument(
-        "--save_snapshots",
-        action="store_true",
-        help="Save simulation snapshots"
+        "--snapshot_step", type=int, help="Step interval for saving snapshots"
     )
     parser.add_argument(
-        "--snapshot_step",
-        type=int,
-        help="Step interval for saving snapshots"
+        "--print_step", type=int, help="Step interval for printing progress"
     )
     parser.add_argument(
-        "--print_step",
-        type=int,
-        help="Step interval for printing progress"
-    )
-    parser.add_argument(
-        "--save_step",
-        type=int,
-        help="Step interval for saving results"
+        "--save_step", type=int, help="Step interval for saving results"
     )
     parser.add_argument(
         "--save_start_end_slots",
         action="store_true",
-        help="Save start and end slots information"
+        help="Save start and end slots information",
     )
+    parser.add_argument("--file_type", type=str, help="Output file format type")
     parser.add_argument(
-        "--file_type",
-        type=str,
-        help="Output file format type"
-    )
-    parser.add_argument(
-        "--filter_mods",
-        action="store_true",
-        help="Enable modulation filtering"
+        "--filter_mods", action="store_true", help="Enable modulation filtering"
     )
 
 
 def add_plot_format_args(
-    parser: argparse.ArgumentParser | argparse._ArgumentGroup
+    parser: argparse.ArgumentParser | argparse._ArgumentGroup,
 ) -> None:
     """
     Add common plot format arguments to the parser.
@@ -134,5 +104,5 @@ def add_plot_format_args(
         "--plot_format",
         type=str,
         default="png",
-        help="Output format for generated plots"
+        help="Output format for generated plots",
     )

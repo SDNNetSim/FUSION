@@ -57,9 +57,7 @@ class TestAgentInterfaceAbstractMethods:
         abstract_methods = {
             method
             for method in dir(AgentInterface)
-            if hasattr(
-                getattr(AgentInterface, method), "__isabstractmethod__"
-            )
+            if hasattr(getattr(AgentInterface, method), "__isabstractmethod__")
             and getattr(AgentInterface, method).__isabstractmethod__
         }
 
@@ -195,9 +193,7 @@ class TestConcreteAgentImplementation:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
@@ -280,6 +276,7 @@ class TestAgentInterfaceOptionalMethods:
 
     def test_reset_method_has_default_implementation(self) -> None:
         """Test that reset method has default implementation."""
+
         # Arrange
         class MinimalAgent(AgentInterface):
             @property
@@ -294,9 +291,7 @@ class TestAgentInterfaceOptionalMethods:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
@@ -352,6 +347,7 @@ class TestAgentInterfaceOptionalMethods:
 
     def test_on_episode_start_has_default_implementation(self) -> None:
         """Test that on_episode_start has default implementation."""
+
         # Arrange
         class MinimalAgent(AgentInterface):
             @property
@@ -366,9 +362,7 @@ class TestAgentInterfaceOptionalMethods:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
@@ -424,6 +418,7 @@ class TestAgentInterfaceOptionalMethods:
 
     def test_on_episode_end_has_default_implementation(self) -> None:
         """Test that on_episode_end has default implementation."""
+
         # Arrange
         class MinimalAgent(AgentInterface):
             @property
@@ -438,9 +433,7 @@ class TestAgentInterfaceOptionalMethods:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(

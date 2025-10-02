@@ -5,6 +5,7 @@ This module implements a GNN feature extractor that processes graph observations
 through multiple convolution layers to extract path-based features for
 reinforcement learning agents.
 """
+
 import torch
 from gymnasium import spaces
 from torch_geometric.nn import GATv2Conv, GraphConv, SAGEConv
@@ -20,6 +21,7 @@ from fusion.modules.rl.feat_extrs.constants import (
 
 # TODO: (version 5.5-6) Add params to optuna
 
+
 class PathGNN(BaseGraphFeatureExtractor):
     """
     Custom PathGNN feature extraction algorithm integrated with StableBaselines3.
@@ -30,11 +32,11 @@ class PathGNN(BaseGraphFeatureExtractor):
     """
 
     def __init__(
-            self,
-            obs_space: spaces.Dict,  # Note: kept for backward compatibility
-            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
-            gnn_type: str = DEFAULT_GNN_TYPE,
-            layers: int = DEFAULT_NUM_LAYERS
+        self,
+        obs_space: spaces.Dict,  # Note: kept for backward compatibility
+        emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
+        gnn_type: str = DEFAULT_GNN_TYPE,
+        layers: int = DEFAULT_NUM_LAYERS,
     ):
         """
         Initialize the Path GNN feature extractor.
@@ -63,7 +65,7 @@ class PathGNN(BaseGraphFeatureExtractor):
         convolution_type_mapping = {
             "gat": GATv2Conv,
             "sage": SAGEConv,
-            "graphconv": GraphConv
+            "graphconv": GraphConv,
         }
 
         if gnn_type not in convolution_type_mapping:
@@ -78,13 +80,14 @@ class PathGNN(BaseGraphFeatureExtractor):
         input_dimension = x_shape[1]
 
         # Create convolution layers
-        self.convolution_layers = torch.nn.ModuleList([
-            selected_convolution_class(
-                input_dimension if layer_idx == 0 else emb_dim,
-                emb_dim
-            )
-            for layer_idx in range(layers)
-        ])
+        self.convolution_layers = torch.nn.ModuleList(
+            [
+                selected_convolution_class(
+                    input_dimension if layer_idx == 0 else emb_dim, emb_dim
+                )
+                for layer_idx in range(layers)
+            ]
+        )
 
         # Readout layer for final transformation
         self.readout_layer = torch.nn.Linear(emb_dim, emb_dim)

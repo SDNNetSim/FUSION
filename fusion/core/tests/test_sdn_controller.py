@@ -153,9 +153,7 @@ class TestSDNController(unittest.TestCase):
             self.assertTrue(
                 np.all(core_matrix[:2] == self.controller.sdn_props.request_id)
             )
-            self.assertEqual(
-                core_matrix[2], self.controller.sdn_props.request_id * -1
-            )
+            self.assertEqual(core_matrix[2], self.controller.sdn_props.request_id * -1)
 
     def test_allocate_without_guard_slots_allocates_correctly(self) -> None:
         """Test spectrum allocation without guard slots."""
@@ -203,13 +201,9 @@ class TestSDNController(unittest.TestCase):
 
         for link in zip(path_list, path_list[1:], strict=False):
             link_tuple = (link[0], link[1])
-            self.assertEqual(
-                network_dict[link_tuple]["usage_count"], 1
-            )
+            self.assertEqual(network_dict[link_tuple]["usage_count"], 1)
             reverse_link = (link_tuple[1], link_tuple[0])
-            self.assertEqual(
-                network_dict[reverse_link]["usage_count"], 1
-            )
+            self.assertEqual(network_dict[reverse_link]["usage_count"], 1)
 
     def test_release_with_allocated_spectrum_deallocates_correctly(self) -> None:
         """Test spectrum release with previously allocated spectrum."""
@@ -362,16 +356,18 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.number_of_transponders = 0
         self.controller.spectrum_obj.spectrum_props.is_free = True
 
-        with patch(
-            "fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing",
-            return_value=("16QAM", 50),
-        ) as mock_get_spectrum, patch.object(
-            self.controller, "allocate"
-        ) as mock_allocate, patch.object(
-            self.controller, "_update_req_stats"
-        ) as mock_update_stats, patch(
-            "fusion.modules.spectrum.light_path_slicing.find_path_len", return_value=100
-        ) as mock_find_path_len:
+        with (
+            patch(
+                "fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing",
+                return_value=("16QAM", 50),
+            ) as mock_get_spectrum,
+            patch.object(self.controller, "allocate") as mock_allocate,
+            patch.object(self.controller, "_update_req_stats") as mock_update_stats,
+            patch(
+                "fusion.modules.spectrum.light_path_slicing.find_path_len",
+                return_value=100,
+            ) as mock_find_path_len,
+        ):
             self.controller._handle_dynamic_slicing(
                 path_list=["A", "B", "C"], path_index=0, forced_segments=1
             )
@@ -381,7 +377,7 @@ class TestSDNController(unittest.TestCase):
             mock_update_stats.assert_called_with(bandwidth="50")
             mock_find_path_len.assert_called_with(
                 path_list=["A", "B", "C"],
-                topology=self.controller.engine_props["topology"]
+                topology=self.controller.engine_props["topology"],
             )
 
             self.assertEqual(self.controller.sdn_props.number_of_transponders, 2)
@@ -402,14 +398,17 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.path_list = [0, 1, 2]
         self.controller.sdn_props.number_of_transponders = 0
 
-        with patch(
-            "fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing",
-            return_value=("16QAM", 50),
-        ) as mock_get_spectrum, patch.object(
-            self.controller, "allocate"
-        ) as mock_allocate, patch(
-            "fusion.modules.spectrum.light_path_slicing.find_path_len", return_value=100
-        ) as mock_find_path_len:
+        with (
+            patch(
+                "fusion.core.spectrum_assignment.SpectrumAssignment.get_spectrum_dynamic_slicing",
+                return_value=("16QAM", 50),
+            ) as mock_get_spectrum,
+            patch.object(self.controller, "allocate") as mock_allocate,
+            patch(
+                "fusion.modules.spectrum.light_path_slicing.find_path_len",
+                return_value=100,
+            ) as mock_find_path_len,
+        ):
             with patch.object(
                 self.controller,
                 "_handle_congestion",
@@ -427,7 +426,7 @@ class TestSDNController(unittest.TestCase):
                 mock_allocate.assert_not_called()
                 mock_find_path_len.assert_called_with(
                     path_list=["A", "B", "C"],
-                    topology=self.controller.engine_props["topology"]
+                    topology=self.controller.engine_props["topology"],
                 )
 
                 self.assertFalse(self.controller.sdn_props.was_routed)

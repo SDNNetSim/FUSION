@@ -2,24 +2,23 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+
 import pytest
 
-from fusion.visualization.infrastructure.repositories import (
-    JsonSimulationRepository,
-    FileMetadataRepository,
-)
-from fusion.visualization.infrastructure.adapters import DataAdapterRegistry
 from fusion.visualization.application.services import (
+    CacheService,
     PlotService,
     ValidationService,
-    CacheService,
 )
+from fusion.visualization.infrastructure.adapters import DataAdapterRegistry
 from fusion.visualization.infrastructure.processors import (
     BlockingProcessor,
-    MultiMetricProcessor,
 )
 from fusion.visualization.infrastructure.renderers import MatplotlibRenderer
+from fusion.visualization.infrastructure.repositories import (
+    FileMetadataRepository,
+    JsonSimulationRepository,
+)
 
 
 @pytest.fixture
@@ -80,7 +79,7 @@ def integration_data_dir(tmp_path: Path) -> Path:
         }
         data["blocking_mean"] = 0.02 + (erlang - 600) * 0.01
         file_path = run1_path / f"{erlang}_erlang.json"
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
 
     # Create metadata for run 1
@@ -92,7 +91,7 @@ def integration_data_dir(tmp_path: Path) -> Path:
         "date": date,
         "seed": 1,
     }
-    with open(run1_path.parent / "metadata.json", 'w') as f:
+    with open(run1_path.parent / "metadata.json", "w") as f:
         json.dump(metadata1, f, indent=2)
 
     # Run 2: DQN algorithm
@@ -126,7 +125,7 @@ def integration_data_dir(tmp_path: Path) -> Path:
             "sim_end_time": "0606_12_40_15_987654",
         }
         file_path = run2_path / f"{erlang}_erlang.json"
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
 
     # Create metadata for run 2
@@ -138,7 +137,7 @@ def integration_data_dir(tmp_path: Path) -> Path:
         "date": date,
         "seed": 2,
     }
-    with open(run2_path.parent / "metadata.json", 'w') as f:
+    with open(run2_path.parent / "metadata.json", "w") as f:
         json.dump(metadata2, f, indent=2)
 
     return tmp_path
@@ -197,7 +196,7 @@ def integration_data_dir_v2(tmp_path: Path) -> Path:
             },
         }
         file_path = run1_path / f"{erlang}_erlang.json"
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
 
     # Create metadata
@@ -209,7 +208,7 @@ def integration_data_dir_v2(tmp_path: Path) -> Path:
         "date": date,
         "seed": 3,
     }
-    with open(run1_path.parent / "metadata.json", 'w') as f:
+    with open(run1_path.parent / "metadata.json", "w") as f:
         json.dump(metadata, f, indent=2)
 
     return tmp_path

@@ -14,7 +14,7 @@ def _extract_traffic_label(sim_time_path: str) -> str:
         if os.path.isdir(item_path):
             for f in os.listdir(item_path):
                 if f.endswith("erlang.json"):
-                    return f.split('_')[0]
+                    return f.split("_")[0]
     return ""
 
 
@@ -56,7 +56,7 @@ def _extract_traffic_label_from_filename(fname: str, fallback: str) -> str:
     Try to parse something like 'e400.0' (the traffic volume) from the filename.
     If it fails, just use the fallback.
     """
-    match = re.search(r'e(\d+(?:\.\d+)?)', fname)
+    match = re.search(r"e(\d+(?:\.\d+)?)", fname)
     if match:
         return match.group(1)
     return fallback
@@ -90,7 +90,8 @@ def load_and_average_state_values(
                 continue
             dir_label = _extract_traffic_label(logs_dir) or sim_time
             json_files = [
-                fname for fname in os.listdir(logs_dir)
+                fname
+                for fname in os.listdir(logs_dir)
                 if fname.startswith("state_vals") and fname.endswith(".json")
             ]
             for json_file in json_files:
@@ -99,7 +100,7 @@ def load_and_average_state_values(
                     json_file, dir_label
                 )
                 try:
-                    with open(file_path, encoding='utf-8') as f:
+                    with open(file_path, encoding="utf-8") as f:
                         data = json.load(f)
                 except (OSError, json.JSONDecodeError):
                     continue
@@ -144,9 +145,7 @@ def load_all_rewards_files(
     pattern = re.compile(
         r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)(?:_iter_(\d+))?\.npy$"
     )
-    all_rewards_data: dict[
-        str, dict[str, dict[int, dict[int, np.ndarray]]]
-    ] = {}
+    all_rewards_data: dict[str, dict[str, dict[int, dict[int, np.ndarray]]]] = {}
 
     for algorithm, sim_time_lists in simulation_times.items():
         if algorithm.lower() == "baselines":
@@ -200,7 +199,7 @@ def _process_baseline(sim_time_path: str) -> dict[str, dict[str, list[float]]]:
         for filename in os.listdir(sim_run_path):
             if not filename.endswith(".json"):
                 continue
-            parts = filename.split('.')
+            parts = filename.split(".")
             if len(parts) < 3:
                 continue
             try:
@@ -210,18 +209,18 @@ def _process_baseline(sim_time_path: str) -> dict[str, dict[str, list[float]]]:
 
             file_path = os.path.join(sim_run_path, filename)
             try:
-                with open(file_path, encoding='utf-8') as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError) as exc:
                 print(f"Error reading {file_path}: {exc}")
                 continue
 
-            if not data or 'iter_stats' not in data:
+            if not data or "iter_stats" not in data:
                 print(f"No data in file: {file_path}")
                 continue
 
-            last_iter = list(data['iter_stats'].keys())[-1]
-            last_iter_data = data['iter_stats'][last_iter]
+            last_iter = list(data["iter_stats"].keys())[-1]
+            last_iter_data = data["iter_stats"][last_iter]
             blocking = last_iter_data.get("sim_block_list")
             if blocking is not None:
                 run_data[tv].append(blocking)
@@ -250,7 +249,7 @@ def _process_sim_time(sim_time_path: str) -> dict[str, list[float]]:
         for filename in os.listdir(sim_run_path):
             if not filename.endswith(".json"):
                 continue
-            parts = filename.split('.')
+            parts = filename.split(".")
             if len(parts) < 3:
                 continue
             try:
@@ -260,18 +259,18 @@ def _process_sim_time(sim_time_path: str) -> dict[str, list[float]]:
 
             file_path = os.path.join(sim_run_path, filename)
             try:
-                with open(file_path, encoding='utf-8') as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError) as exc:
                 print(f"Error reading {file_path}: {exc}")
                 continue
 
-            if not data or 'iter_stats' not in data:
+            if not data or "iter_stats" not in data:
                 print(f"No data in file: {file_path}")
                 continue
 
-            last_iter = list(data['iter_stats'].keys())[-1]
-            last_iter_data = data['iter_stats'][last_iter]
+            last_iter = list(data["iter_stats"].keys())[-1]
+            last_iter_data = data["iter_stats"][last_iter]
             blocking = last_iter_data.get("sim_block_list")
             if blocking is None:
                 continue
@@ -286,7 +285,7 @@ def _process_sim_time(sim_time_path: str) -> dict[str, list[float]]:
         padded_runs = []
         for run_data in lists_of_runs:
             pad_size = max_length - len(run_data)
-            padded_run_data = run_data + [float('nan')] * pad_size
+            padded_run_data = run_data + [float("nan")] * pad_size
             padded_runs.append(padded_run_data)
 
         arr = np.array(padded_runs, dtype=float)

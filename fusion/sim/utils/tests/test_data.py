@@ -1,6 +1,5 @@
 """Unit tests for fusion.sim.utils.data module."""
 
-
 from ..data import (
     calculate_matrix_statistics,
     dict_to_list,

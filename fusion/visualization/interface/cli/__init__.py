@@ -17,14 +17,14 @@ Usage:
     fusion viz info
 """
 
-from fusion.visualization.interface.cli.migrate_command import viz_cli
-from fusion.visualization.interface.cli.plot_command import plot_command
 from fusion.visualization.interface.cli.batch_command import batch_command
 from fusion.visualization.interface.cli.compare_command import compare_command
+from fusion.visualization.interface.cli.migrate_command import viz_cli
+from fusion.visualization.interface.cli.plot_command import plot_command
 
 __all__ = [
-    'viz_cli',
-    'plot_command',
-    'batch_command',
-    'compare_command',
+    "viz_cli",
+    "plot_command",
+    "batch_command",
+    "compare_command",
 ]

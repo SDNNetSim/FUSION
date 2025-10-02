@@ -5,9 +5,9 @@ Provides user-friendly command-line interface for migrating old configuration
 files to the new format.
 """
 
-import click
 from pathlib import Path
-from typing import Optional
+
+import click
 
 from fusion.visualization.migration import ConfigMigrator, MigrationResult
 
@@ -62,7 +62,7 @@ def viz_cli() -> None:
 )
 def migrate_config(
     input_path: Path,
-    output_path: Optional[Path],
+    output_path: Path | None,
     no_backup: bool,
     validate: bool,
     dry_run: bool,
@@ -97,7 +97,8 @@ def migrate_config(
     if dry_run:
         # Load and migrate without writing
         import yaml
-        with open(input_path, 'r') as f:
+
+        with open(input_path) as f:
             old_config = yaml.safe_load(f)
 
         new_config = migrator.migrate_config(old_config)
@@ -136,7 +137,7 @@ def migrate_config(
 
     # Show output path
     if result.success and not dry_run:
-        actual_output = output_path or input_path.with_suffix('.new.yml')
+        actual_output = output_path or input_path.with_suffix(".new.yml")
         click.echo(f"\n✨ Migration complete! New config saved to: {actual_output}")
 
         # Show next steps
@@ -145,7 +146,11 @@ def migrate_config(
         click.echo("  2. Test with: fusion viz validate --config <new-config>.yml")
         click.echo("  3. Update your scripts to use the new config")
         if not no_backup:
-            click.echo(f"  4. Once confirmed working, you can delete the backup: {input_path.with_suffix('.bak.yml')}")
+            backup_path = input_path.with_suffix(".bak.yml")
+            click.echo(
+                f"  4. Once confirmed working, you can delete the backup: "
+                f"{backup_path}"
+            )
     elif not result.success:
         click.echo(click.style("\n❌ Migration failed!", fg="red", bold=True))
         raise click.Abort()
@@ -186,12 +191,13 @@ def validate_config(config_path: Path, verbose: bool) -> None:
 
     # Load configuration
     import yaml
+
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
     except Exception as e:
         click.echo(click.style(f"❌ Failed to load config: {e}", fg="red", bold=True))
-        raise click.Abort()
+        raise click.Abort() from e
 
     # Validate
     migrator = ConfigMigrator()
@@ -261,7 +267,7 @@ def show_info() -> None:
     default=None,
     help="Filter by plugin name",
 )
-def list_plot_types(plugin: Optional[str]) -> None:
+def list_plot_types(plugin: str | None) -> None:
     """
     List available plot types.
 
@@ -304,18 +310,23 @@ def _display_migration_result(result: MigrationResult, verbose: bool = False) ->
             click.echo(f"  • {warning}")
 
     if result.errors:
-        click.echo(click.style(f"\n❌ {len(result.errors)} error(s):", fg="red", bold=True))
+        click.echo(
+            click.style(f"\n❌ {len(result.errors)} error(s):", fg="red", bold=True)
+        )
         for error in result.errors:
             click.echo(f"  • {error}")
 
     if verbose and result.new_config:
         click.echo("\n📄 New configuration preview:")
         import yaml
-        config_preview = yaml.dump(result.new_config, default_flow_style=False, sort_keys=False)
+
+        config_preview = yaml.dump(
+            result.new_config, default_flow_style=False, sort_keys=False
+        )
         # Show first 30 lines
-        lines = config_preview.split('\n')[:30]
+        lines = config_preview.split("\n")[:30]
         click.echo("  " + "\n  ".join(lines))
-        if len(config_preview.split('\n')) > 30:
+        if len(config_preview.split("\n")) > 30:
             click.echo("  ... (truncated)")
 
 

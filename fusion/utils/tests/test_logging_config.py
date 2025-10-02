@@ -99,8 +99,13 @@ class TestCreateFileHandler:
 
         # Act
         handler = _create_file_handler(
-            "test.log", log_dir, logging.INFO, logging.Formatter(DEFAULT_FORMAT),
-            "a", 1024, 10
+            "test.log",
+            log_dir,
+            logging.INFO,
+            logging.Formatter(DEFAULT_FORMAT),
+            "a",
+            1024,
+            10,
         )
 
         # Assert
@@ -114,6 +119,7 @@ class TestSetupLogger:
     def teardown_method(self) -> None:
         """Clean up logger cache after each test."""
         from fusion.utils import logging_config
+
         logging_config._loggers.clear()
 
     @patch("fusion.utils.logging_config._create_console_handler")
@@ -227,12 +233,11 @@ class TestGetLogger:
     def teardown_method(self) -> None:
         """Clean up logger cache after each test."""
         from fusion.utils import logging_config
+
         logging_config._loggers.clear()
 
     @patch("fusion.utils.logging_config.setup_logger")
-    def test_get_logger_with_new_name_calls_setup(
-        self, mock_setup: Mock
-    ) -> None:
+    def test_get_logger_with_new_name_calls_setup(self, mock_setup: Mock) -> None:
         """Test get_logger creates new logger if not cached."""
         # Arrange
         mock_logger = Mock()
@@ -263,6 +268,7 @@ class TestConfigureSimulationLogging:
     def teardown_method(self) -> None:
         """Clean up logger cache after each test."""
         from fusion.utils import logging_config
+
         logging_config._loggers.clear()
 
     @patch("fusion.utils.logging_config.datetime")
@@ -445,9 +451,7 @@ class TestLogMessage:
         mock_queue.put.assert_called_once_with(message)
 
     @patch("fusion.utils.logging_config.get_logger")
-    def test_log_message_without_queue_uses_logger(
-        self, mock_get_logger: Mock
-    ) -> None:
+    def test_log_message_without_queue_uses_logger(self, mock_get_logger: Mock) -> None:
         """Test log_message without queue uses logger."""
         # Arrange
         mock_logger = Mock()

@@ -1,17 +1,16 @@
 """Unit tests for domain services."""
 
-import pytest
 import numpy as np
-from typing import List, Any
+import pytest
 
+from fusion.visualization.domain.entities import AggregationStrategy
+from fusion.visualization.domain.exceptions import InsufficientDataError
 from fusion.visualization.domain.services import (
-    MetricAggregationService,
     DataValidationService,
+    MetricAggregationService,
     ValidationResult,
 )
-from fusion.visualization.domain.entities import AggregationStrategy
-from fusion.visualization.domain.value_objects import MetricValue, DataType
-from fusion.visualization.domain.exceptions import InsufficientDataError
+from fusion.visualization.domain.value_objects import DataType, MetricValue
 
 
 class TestMetricAggregationService:
@@ -22,12 +21,11 @@ class TestMetricAggregationService:
         """Create service instance."""
         return MetricAggregationService()
 
-    def test_aggregate_mean(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_mean(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should aggregate using mean."""
-        result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.MEAN
-        )
+        result = service.aggregate(sample_metric_values, AggregationStrategy.MEAN)
 
         assert result.data_type == DataType.FLOAT
         expected_mean = np.mean([0.045, 0.042, 0.048, 0.044, 0.046])
@@ -36,39 +34,39 @@ class TestMetricAggregationService:
         assert "std" in result.metadata
         assert result.metadata["n_samples"] == 5
 
-    def test_aggregate_median(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_median(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should aggregate using median."""
-        result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.MEDIAN
-        )
+        result = service.aggregate(sample_metric_values, AggregationStrategy.MEDIAN)
 
         assert result.value == 0.045  # Middle value
         assert result.metadata is not None
         assert result.metadata["n_samples"] == 5
 
-    def test_aggregate_last(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_last(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should return last value."""
-        result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.LAST
-        )
+        result = service.aggregate(sample_metric_values, AggregationStrategy.LAST)
 
         assert result.value == 0.046  # Last in list
 
-    def test_aggregate_last_k(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_last_k(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should aggregate last K values."""
         result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.LAST_K,
-            k=3
+            sample_metric_values, AggregationStrategy.LAST_K, k=3
         )
 
         # Should average last 3: [0.048, 0.044, 0.046]
         expected = np.mean([0.048, 0.044, 0.046])
         assert result.value == pytest.approx(expected)
 
-    def test_aggregate_last_k_insufficient_data(self, service: MetricAggregationService) -> None:
+    def test_aggregate_last_k_insufficient_data(
+        self, service: MetricAggregationService
+    ) -> None:
         """Should raise error when not enough data for LAST_K."""
         values = [
             MetricValue(value=0.1, data_type=DataType.FLOAT),
@@ -78,40 +76,39 @@ class TestMetricAggregationService:
         with pytest.raises(InsufficientDataError):
             service.aggregate(values, AggregationStrategy.LAST_K, k=5)
 
-    def test_aggregate_max(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_max(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should return maximum value."""
-        result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.MAX
-        )
+        result = service.aggregate(sample_metric_values, AggregationStrategy.MAX)
 
         assert result.value == 0.048
 
-    def test_aggregate_min(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_min(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should return minimum value."""
-        result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.MIN
-        )
+        result = service.aggregate(sample_metric_values, AggregationStrategy.MIN)
 
         assert result.value == 0.042
 
-    def test_aggregate_sum(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_sum(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should sum all values."""
-        result = service.aggregate(
-            sample_metric_values,
-            AggregationStrategy.SUM
-        )
+        result = service.aggregate(sample_metric_values, AggregationStrategy.SUM)
 
         expected = sum([0.045, 0.042, 0.048, 0.044, 0.046])
         assert result.value == pytest.approx(expected)
 
-    def test_aggregate_with_confidence_interval(self, service: MetricAggregationService, sample_metric_values: List[MetricValue]) -> None:
+    def test_aggregate_with_confidence_interval(
+        self, service: MetricAggregationService, sample_metric_values: list[MetricValue]
+    ) -> None:
         """Should compute confidence interval."""
         result = service.aggregate(
             sample_metric_values,
             AggregationStrategy.CONFIDENCE_INTERVAL,
-            confidence_level=0.95
+            confidence_level=0.95,
         )
 
         assert result.metadata is not None
@@ -128,22 +125,25 @@ class TestMetricAggregationService:
         ci_upper = result.metadata["ci_upper"]
         assert ci_lower < mean < ci_upper
 
-    def test_aggregate_confidence_interval_insufficient_data(self, service: MetricAggregationService) -> None:
+    def test_aggregate_confidence_interval_insufficient_data(
+        self, service: MetricAggregationService
+    ) -> None:
         """Should raise error for CI with < 2 values."""
         values = [MetricValue(value=0.1, data_type=DataType.FLOAT)]
 
         with pytest.raises(InsufficientDataError):
-            service.aggregate(
-                values,
-                AggregationStrategy.CONFIDENCE_INTERVAL
-            )
+            service.aggregate(values, AggregationStrategy.CONFIDENCE_INTERVAL)
 
-    def test_aggregate_empty_list_raises_error(self, service: MetricAggregationService) -> None:
+    def test_aggregate_empty_list_raises_error(
+        self, service: MetricAggregationService
+    ) -> None:
         """Should raise error for empty value list."""
         with pytest.raises(InsufficientDataError):
             service.aggregate([], AggregationStrategy.MEAN)
 
-    def test_compute_statistics(self, service: MetricAggregationService, sample_metric_values: list) -> None:
+    def test_compute_statistics(
+        self, service: MetricAggregationService, sample_metric_values: list
+    ) -> None:
         """Should compute comprehensive statistics."""
         stats = service.compute_statistics(sample_metric_values)
 
@@ -160,7 +160,9 @@ class TestMetricAggregationService:
         assert "q75" in stats
         assert "iqr" in stats
 
-    def test_compute_statistics_empty_list(self, service: MetricAggregationService) -> None:
+    def test_compute_statistics_empty_list(
+        self, service: MetricAggregationService
+    ) -> None:
         """Should return empty dict for empty list."""
         stats = service.compute_statistics([])
         assert stats == {}
@@ -200,22 +202,23 @@ class TestDataValidationService:
     def test_validate_required_fields(self, service: DataValidationService) -> None:
         """Should check for required fields."""
         data = {"field1": "value1"}
-        result = service.validate(
-            data,
-            required_fields=["field1", "field2", "field3"]
-        )
+        result = service.validate(data, required_fields=["field1", "field2", "field3"])
 
         assert not result.is_valid
         assert len(result.errors) == 2
         assert any("field2" in e for e in result.errors)
         assert any("field3" in e for e in result.errors)
 
-    def test_validate_simulation_data_valid(self, service: DataValidationService, sample_v1_data: dict) -> None:
+    def test_validate_simulation_data_valid(
+        self, service: DataValidationService, sample_v1_data: dict
+    ) -> None:
         """Should validate valid simulation data."""
         result = service.validate_simulation_data(sample_v1_data)
         assert result.is_valid
 
-    def test_validate_simulation_data_missing_common_fields(self, service: DataValidationService) -> None:
+    def test_validate_simulation_data_missing_common_fields(
+        self, service: DataValidationService
+    ) -> None:
         """Should warn about missing common fields."""
         data = {"custom_field": 123}
         result = service.validate_simulation_data(data)
@@ -224,7 +227,9 @@ class TestDataValidationService:
         assert len(result.warnings) > 0
         assert "common simulation fields" in result.warnings[0]
 
-    def test_validate_simulation_data_deprecated_fields(self, service: DataValidationService) -> None:
+    def test_validate_simulation_data_deprecated_fields(
+        self, service: DataValidationService
+    ) -> None:
         """Should warn about deprecated fields."""
         data = {
             "blocking_mean": 0.045,
@@ -236,12 +241,11 @@ class TestDataValidationService:
         # Should have warnings about deprecated fields
         assert any("deprecated" in w.lower() for w in result.warnings)
 
-    def test_validate_simulation_data_invalid_iter_stats(self, service: DataValidationService) -> None:
+    def test_validate_simulation_data_invalid_iter_stats(
+        self, service: DataValidationService
+    ) -> None:
         """Should error on invalid iter_stats structure."""
-        data = {
-            "blocking_mean": 0.045,
-            "iter_stats": "not a dict or list"
-        }
+        data = {"blocking_mean": 0.045, "iter_stats": "not a dict or list"}
         result = service.validate_simulation_data(data)
 
         assert not result.is_valid

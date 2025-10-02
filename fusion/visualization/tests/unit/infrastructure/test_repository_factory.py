@@ -1,18 +1,19 @@
 """Unit tests for RepositoryFactory."""
 
-import pytest
 from pathlib import Path
 
+import pytest
+
+from fusion.visualization.domain.repositories import (
+    MetadataRepository,
+    SimulationRepository,
+)
 from fusion.visualization.infrastructure.repositories import (
     RepositoryFactory,
-    get_default_factory,
     configure_default_factory,
-    get_simulation_repository,
+    get_default_factory,
     get_metadata_repository,
-)
-from fusion.visualization.domain.repositories import (
-    SimulationRepository,
-    MetadataRepository,
+    get_simulation_repository,
 )
 
 
@@ -54,7 +55,9 @@ class TestRepositoryFactory:
         assert repo is not None
         assert isinstance(repo, MetadataRepository)
 
-    def test_create_metadata_repository_singleton(self, factory: RepositoryFactory) -> None:
+    def test_create_metadata_repository_singleton(
+        self, factory: RepositoryFactory
+    ) -> None:
         """Should return same instance on repeated calls."""
         repo1 = factory.create_metadata_repository()
         repo2 = factory.create_metadata_repository()
@@ -68,14 +71,18 @@ class TestRepositoryFactory:
         assert repo is not None
         assert isinstance(repo, SimulationRepository)
 
-    def test_create_simulation_repository_singleton(self, factory: RepositoryFactory) -> None:
+    def test_create_simulation_repository_singleton(
+        self, factory: RepositoryFactory
+    ) -> None:
         """Should return same instance on repeated calls."""
         repo1 = factory.create_simulation_repository()
         repo2 = factory.create_simulation_repository()
 
         assert repo1 is repo2
 
-    def test_configure_resets_singletons(self, factory: RepositoryFactory, tmp_path: Path) -> None:
+    def test_configure_resets_singletons(
+        self, factory: RepositoryFactory, tmp_path: Path
+    ) -> None:
         """Should reset cached instances when reconfigured."""
         # Get initial instances
         repo1 = factory.create_simulation_repository()
@@ -95,7 +102,6 @@ class TestRepositoryFactory:
     def test_configure_partial_update(self, factory: RepositoryFactory) -> None:
         """Should allow partial configuration updates."""
         original_path = factory.base_path
-        original_ttl = factory.cache_ttl_seconds
 
         # Update only cache_ttl
         factory.configure(cache_ttl_seconds=7200)
@@ -106,7 +112,7 @@ class TestRepositoryFactory:
     def test_clear_all_caches(self, factory: RepositoryFactory, tmp_path: Path) -> None:
         """Should clear caches in all repositories."""
         # Create repositories and use them
-        sim_repo = factory.create_simulation_repository()
+        factory.create_simulation_repository()
         meta_repo = factory.create_metadata_repository()
 
         # Add some cached data
@@ -125,7 +131,7 @@ class TestRepositoryFactory:
     def test_get_cache_stats(self, factory: RepositoryFactory, tmp_path: Path) -> None:
         """Should return cache statistics from all repositories."""
         # Create repositories
-        sim_repo = factory.create_simulation_repository()
+        factory.create_simulation_repository()
         meta_repo = factory.create_metadata_repository()
 
         # Add some cached metadata

@@ -12,7 +12,7 @@ from fusion.modules.rl.utils.setup import setup_rl_sim
 
 
 def create_environment(
-    config_path: str | None = None
+    config_path: str | None = None,
 ) -> tuple["SimEnv", dict[str, Any], CallbackList]:
     """
     Creates the simulation environment and associated callback for RL.

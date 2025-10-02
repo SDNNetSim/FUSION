@@ -23,6 +23,7 @@ class TestBaseExporter:
 
     def test_str_returns_class_name(self) -> None:
         """Test that __str__ returns the class name."""
+
         # Arrange
         class ConcreteExporter(BaseExporter):
             def export(self, data: Any, output_path: Path) -> None:

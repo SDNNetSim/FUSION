@@ -4,6 +4,7 @@ Cached Path GNN feature extractor for efficient inference.
 This module provides a cached version of the Path GNN feature extractor
 that pre-computes embeddings for static graphs to improve inference speed.
 """
+
 import torch
 from gymnasium import spaces
 from torch_geometric.nn import GATv2Conv, GraphConv, SAGEConv
@@ -28,11 +29,11 @@ class PathGNNEncoder(torch.nn.Module):
     """
 
     def __init__(
-            self,
-            obs_space: spaces.Dict,  # Note: kept for backward compatibility
-            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
-            gnn_type: str = DEFAULT_GNN_TYPE,
-            layers: int = DEFAULT_NUM_LAYERS
+        self,
+        obs_space: spaces.Dict,  # Note: kept for backward compatibility
+        emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
+        gnn_type: str = DEFAULT_GNN_TYPE,
+        layers: int = DEFAULT_NUM_LAYERS,
     ):
         """
         Initialize the Path GNN encoder.
@@ -53,7 +54,7 @@ class PathGNNEncoder(torch.nn.Module):
         convolution_mapping = {
             "gat": GATv2Conv,
             "sage": SAGEConv,
-            "graphconv": GraphConv
+            "graphconv": GraphConv,
         }
 
         if gnn_type not in convolution_mapping:
@@ -69,22 +70,23 @@ class PathGNNEncoder(torch.nn.Module):
         input_dimension = x_shape[1]
 
         # Build convolution layers
-        self.convolution_layers = torch.nn.ModuleList([
-            convolution_class(
-                input_dimension if layer_idx == 0 else emb_dim,
-                emb_dim
-            )
-            for layer_idx in range(layers)
-        ])
+        self.convolution_layers = torch.nn.ModuleList(
+            [
+                convolution_class(
+                    input_dimension if layer_idx == 0 else emb_dim, emb_dim
+                )
+                for layer_idx in range(layers)
+            ]
+        )
 
         # Readout layer
         self.readout_layer = torch.nn.Linear(emb_dim, emb_dim)
 
     def forward(
-            self,
-            node_features: torch.Tensor,
-            edge_index: torch.Tensor,
-            path_masks: torch.Tensor
+        self,
+        node_features: torch.Tensor,
+        edge_index: torch.Tensor,
+        path_masks: torch.Tensor,
     ) -> torch.Tensor:
         """
         Forward propagation through the encoder.
@@ -101,15 +103,12 @@ class PathGNNEncoder(torch.nn.Module):
         # Process through convolution layers
         node_embeddings = node_features
         for convolution_layer in self.convolution_layers:
-            node_embeddings = convolution_layer(
-                node_embeddings, edge_index
-            ).relu()
+            node_embeddings = convolution_layer(node_embeddings, edge_index).relu()
 
         # Compute edge embeddings
         source_indices, destination_indices = edge_index
         edge_embeddings = (
-            node_embeddings[source_indices] +
-            node_embeddings[destination_indices]
+            node_embeddings[source_indices] + node_embeddings[destination_indices]
         ) * EDGE_EMBEDDING_SCALE_FACTOR
 
         # Aggregate path embeddings
@@ -130,9 +129,9 @@ class CachedPathGNN(BaseGraphFeatureExtractor):
     """
 
     def __init__(
-            self,
-            obs_space: spaces.Dict,  # Note: kept for backward compatibility
-            cached_embedding: torch.Tensor
+        self,
+        obs_space: spaces.Dict,  # Note: kept for backward compatibility
+        cached_embedding: torch.Tensor,
     ):
         """
         Initialize the cached Path GNN feature extractor.

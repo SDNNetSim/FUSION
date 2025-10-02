@@ -1,8 +1,10 @@
 """Canonical data model for internal representation."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 import numpy as np
 
 
@@ -11,14 +13,14 @@ class IterationData:
     """Data for a single iteration."""
 
     iteration: int
-    sim_block_list: Optional[List[float]] = None
-    hops_mean: Optional[float] = None
-    hops_list: Optional[List[float]] = None
-    lengths_mean: Optional[float] = None
-    lengths_list: Optional[List[float]] = None
-    snapshots_dict: Optional[Dict[str, Any]] = None
-    mods_used_dict: Optional[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    sim_block_list: list[float] | None = None
+    hops_mean: float | None = None
+    hops_list: list[float] | None = None
+    lengths_mean: float | None = None
+    lengths_list: list[float] | None = None
+    snapshots_dict: dict[str, Any] | None = None
+    mods_used_dict: dict[str, Any] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -32,32 +34,32 @@ class CanonicalData:
     """
 
     version: str
-    blocking_probability: Optional[float] = None
-    iterations: List[IterationData] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    blocking_probability: float | None = None
+    iterations: list[IterationData] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # RL-specific fields
-    rewards: Optional[List[float]] = None
-    td_errors: Optional[List[float]] = None
-    q_values: Optional[np.ndarray] = None
-    episode_lengths: Optional[List[int]] = None
+    rewards: list[float] | None = None
+    td_errors: list[float] | None = None
+    q_values: np.ndarray | None = None
+    episode_lengths: list[int] | None = None
 
     # Spectrum-specific fields
-    spectrum_usage: Optional[Dict[str, Any]] = None
+    spectrum_usage: dict[str, Any] | None = None
 
     # SNR-specific fields
-    snr_values: Optional[List[float]] = None
+    snr_values: list[float] | None = None
 
     # Network metrics
-    network_utilization: Optional[float] = None
-    link_utilization: Optional[Dict[str, float]] = None
+    network_utilization: float | None = None
+    link_utilization: dict[str, float] | None = None
 
     # Timing information
-    sim_start_time: Optional[str] = None
-    sim_end_time: Optional[str] = None
-    duration_seconds: Optional[float] = None
+    sim_start_time: str | None = None
+    sim_end_time: str | None = None
+    duration_seconds: float | None = None
 
-    def get_final_blocking_probability(self) -> Optional[float]:
+    def get_final_blocking_probability(self) -> float | None:
         """Get final blocking probability from iterations."""
         if self.blocking_probability is not None:
             return self.blocking_probability
@@ -67,7 +69,7 @@ class CanonicalData:
 
         return None
 
-    def get_last_k_iterations(self, k: int) -> List[IterationData]:
+    def get_last_k_iterations(self, k: int) -> list[IterationData]:
         """Get last K iterations."""
         if len(self.iterations) <= k:
             return self.iterations
@@ -83,7 +85,7 @@ class CanonicalData:
         Returns:
             The metric value
         """
-        parts = metric_path.split('.')
+        parts = metric_path.split(".")
 
         if parts[0] == "blocking":
             return self.get_final_blocking_probability()

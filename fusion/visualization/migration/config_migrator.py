@@ -5,11 +5,12 @@ This module provides tools to convert legacy YAML configurations to the
 new format, ensuring backward compatibility during the transition period.
 """
 
-import yaml
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 
 @dataclass
@@ -17,10 +18,10 @@ class MigrationResult:
     """Result of a configuration migration."""
 
     success: bool
-    new_config: Optional[Dict[str, Any]]
-    warnings: List[str]
-    errors: List[str]
-    deprecated_fields: List[str]
+    new_config: dict[str, Any] | None
+    warnings: list[str]
+    errors: list[str]
+    deprecated_fields: list[str]
 
     def __str__(self) -> str:
         """String representation of migration result."""
@@ -81,14 +82,14 @@ class ConfigMigrator:
 
     def __init__(self) -> None:
         """Initialize configuration migrator."""
-        self.warnings: List[str] = []
-        self.errors: List[str] = []
-        self.deprecated_fields: List[str] = []
+        self.warnings: list[str] = []
+        self.errors: list[str] = []
+        self.deprecated_fields: list[str] = []
 
     def migrate_file(
         self,
         old_config_path: Path,
-        new_config_path: Optional[Path] = None,
+        new_config_path: Path | None = None,
         backup: bool = True,
     ) -> MigrationResult:
         """
@@ -96,7 +97,8 @@ class ConfigMigrator:
 
         Args:
             old_config_path: Path to old configuration file
-            new_config_path: Path for new configuration (default: old_path with .new.yml suffix)
+            new_config_path: Path for new configuration
+                (default: old_path with .new.yml suffix)
             backup: Whether to create a backup of the old config
 
         Returns:
@@ -115,7 +117,7 @@ class ConfigMigrator:
 
         # Load old configuration
         try:
-            with open(old_config_path, 'r') as f:
+            with open(old_config_path) as f:
                 old_config = yaml.safe_load(f)
         except Exception as e:
             return MigrationResult(
@@ -131,20 +133,21 @@ class ConfigMigrator:
 
         # Determine output path
         if new_config_path is None:
-            new_config_path = old_config_path.with_suffix('.new.yml')
+            new_config_path = old_config_path.with_suffix(".new.yml")
         else:
             new_config_path = Path(new_config_path)
 
         # Create backup if requested
         if backup and old_config_path.exists():
-            backup_path = old_config_path.with_suffix('.bak.yml')
+            backup_path = old_config_path.with_suffix(".bak.yml")
             import shutil
+
             shutil.copy2(old_config_path, backup_path)
             self.warnings.append(f"Created backup at {backup_path}")
 
         # Write new configuration
         try:
-            with open(new_config_path, 'w') as f:
+            with open(new_config_path, "w") as f:
                 yaml.dump(new_config, f, default_flow_style=False, sort_keys=False)
         except Exception as e:
             return MigrationResult(
@@ -163,7 +166,7 @@ class ConfigMigrator:
             deprecated_fields=self.deprecated_fields,
         )
 
-    def migrate_config(self, old_config: Dict[str, Any]) -> Dict[str, Any]:
+    def migrate_config(self, old_config: dict[str, Any]) -> dict[str, Any]:
         """
         Migrate a configuration dictionary from old to new format.
 
@@ -177,7 +180,7 @@ class ConfigMigrator:
         self.errors = []
         self.deprecated_fields = []
 
-        new_config: Dict[str, Any] = {}
+        new_config: dict[str, Any] = {}
 
         # Migrate basic fields
         if "network" in old_config:
@@ -223,10 +226,8 @@ class ConfigMigrator:
         return new_config
 
     def _migrate_plots(
-        self,
-        plots: Any,
-        full_config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, plots: Any, full_config: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """
         Migrate plot configurations.
 
@@ -250,13 +251,13 @@ class ConfigMigrator:
                 if "algorithms" in full_config:
                     migrated_plot["algorithms"] = self._migrate_algorithms(
                         full_config["algorithms"],
-                        full_config.get("observation_spaces", [])
+                        full_config.get("observation_spaces", []),
                     )
                 elif "observation_spaces" in full_config:
                     # Old format: separate algorithm and obs_space
                     migrated_plot["algorithms"] = self._migrate_algorithms(
                         full_config.get("algorithms", []),
-                        full_config["observation_spaces"]
+                        full_config["observation_spaces"],
                     )
                     self.deprecated_fields.append("observation_spaces")
 
@@ -281,10 +282,8 @@ class ConfigMigrator:
         return migrated_plots
 
     def _migrate_single_plot(
-        self,
-        plot: Dict[str, Any],
-        full_config: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, plot: dict[str, Any], full_config: dict[str, Any]
+    ) -> dict[str, Any]:
         """Migrate a single plot configuration."""
         migrated = {}
 
@@ -298,18 +297,19 @@ class ConfigMigrator:
         if "algorithms" in plot:
             migrated["algorithms"] = self._migrate_algorithms(
                 plot["algorithms"],
-                plot.get("observation_spaces", full_config.get("observation_spaces", []))
+                plot.get(
+                    "observation_spaces", full_config.get("observation_spaces", [])
+                ),
             )
         elif "observation_spaces" in plot:
             migrated["algorithms"] = self._migrate_algorithms(
                 plot.get("algorithms", full_config.get("algorithms", [])),
-                plot["observation_spaces"]
+                plot["observation_spaces"],
             )
             self.deprecated_fields.append("observation_spaces")
         elif "algorithms" in full_config:
             migrated["algorithms"] = self._migrate_algorithms(
-                full_config["algorithms"],
-                full_config.get("observation_spaces", [])
+                full_config["algorithms"], full_config.get("observation_spaces", [])
             )
 
         # Copy other fields
@@ -332,10 +332,8 @@ class ConfigMigrator:
         return migrated
 
     def _migrate_algorithms(
-        self,
-        algorithms: List[str],
-        observation_spaces: List[str]
-    ) -> List[str]:
+        self, algorithms: list[str], observation_spaces: list[str]
+    ) -> list[str]:
         """
         Migrate algorithm specifications.
 
@@ -359,7 +357,7 @@ class ConfigMigrator:
 
         return migrated
 
-    def _migrate_defaults(self, old_config: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_defaults(self, old_config: dict[str, Any]) -> dict[str, Any]:
         """Migrate default settings."""
         defaults = {}
 
@@ -398,7 +396,7 @@ class ConfigMigrator:
 
         return defaults
 
-    def validate_config(self, config: Dict[str, Any]) -> List[str]:
+    def validate_config(self, config: dict[str, Any]) -> list[str]:
         """
         Validate a configuration dictionary.
 
@@ -442,7 +440,7 @@ class ConfigMigrator:
 
 def migrate_config_file(
     old_path: str,
-    new_path: Optional[str] = None,
+    new_path: str | None = None,
     backup: bool = True,
     verbose: bool = False,
 ) -> bool:

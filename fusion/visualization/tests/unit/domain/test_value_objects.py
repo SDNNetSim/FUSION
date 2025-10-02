@@ -1,19 +1,17 @@
 """Unit tests for domain value objects."""
 
-import pytest
-import numpy as np
 from uuid import UUID
 
+import numpy as np
+import pytest
+
 from fusion.visualization.domain.value_objects import (
-    PlotId,
+    Annotation,
+    DataType,
     DataVersion,
     MetricValue,
-    DataType,
+    PlotId,
     PlotSpecification,
-    PlotType,
-    PlotStyle,
-    LegendConfiguration,
-    Annotation,
 )
 
 
@@ -48,6 +46,7 @@ class TestPlotId:
         """PlotId should be immutable (frozen dataclass)."""
         plot_id = PlotId.generate()
         from dataclasses import FrozenInstanceError
+
         with pytest.raises(FrozenInstanceError):
             plot_id.value = UUID("12345678-1234-5678-1234-567812345678")  # type: ignore[misc]
 
@@ -168,8 +167,8 @@ class TestMetricValue:
     def test_immutability_raises_error(self) -> None:
         """MetricValue should be immutable."""
         value = MetricValue(value=0.5, data_type=DataType.FLOAT)
-        with pytest.raises(Exception):
-            _ = value  # Avoid the test error, just check the class is frozen
+        with pytest.raises((AttributeError, TypeError)):
+            value.value = 1.0  # type: ignore[misc]
 
 
 class TestPlotSpecification:

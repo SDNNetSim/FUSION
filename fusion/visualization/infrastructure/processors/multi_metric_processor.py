@@ -1,13 +1,13 @@
 """Multi-metric processor that delegates to specialized processors."""
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, List
 
 from fusion.visualization.application.ports import DataProcessorPort, ProcessedData
 from fusion.visualization.domain.entities.run import Run
-from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 from fusion.visualization.domain.exceptions import ProcessingError
+from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class MultiMetricProcessor(DataProcessorPort):
 
     def __init__(self) -> None:
         """Initialize with empty processor registry."""
-        self._processors: Dict[str, DataProcessorPort] = {}
+        self._processors: dict[str, DataProcessorPort] = {}
 
     def register_processor(self, processor: DataProcessorPort) -> None:
         """
@@ -39,16 +39,16 @@ class MultiMetricProcessor(DataProcessorPort):
         """Check if any registered processor can handle the metric."""
         return metric_name in self._processors
 
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """Get list of all supported metrics."""
         return list(self._processors.keys())
 
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
         """
@@ -76,7 +76,8 @@ class MultiMetricProcessor(DataProcessorPort):
         processor = self._processors[metric_name]
 
         logger.info(
-            f"Delegating processing of '{metric_name}' to {processor.__class__.__name__}"
+            f"Delegating processing of '{metric_name}' "
+            f"to {processor.__class__.__name__}"
         )
 
         return processor.process(

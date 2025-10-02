@@ -5,11 +5,14 @@ Provides user-friendly command-line interface for performing statistical
 comparisons between routing algorithms.
 """
 
-import click
 from pathlib import Path
-from typing import Optional, List
 
-from fusion.visualization.application.dto import ComparisonRequestDTO, ComparisonResultDTO
+import click
+
+from fusion.visualization.application.dto import (
+    ComparisonRequestDTO,
+    ComparisonResultDTO,
+)
 from fusion.visualization.application.use_cases.compare_algorithms import (
     CompareAlgorithmsUseCase,
 )
@@ -18,11 +21,13 @@ from fusion.visualization.interface.cli.migrate_command import viz_cli
 
 def _get_compare_use_case() -> CompareAlgorithmsUseCase:
     """Create and configure CompareAlgorithmsUseCase."""
-    from fusion.visualization.infrastructure.repositories import JsonSimulationRepository
     from fusion.visualization.infrastructure.adapters.data_adapter_registry import (
         DataAdapterRegistry,
     )
     from fusion.visualization.infrastructure.cache import FileSystemCache
+    from fusion.visualization.infrastructure.repositories import (
+        JsonSimulationRepository,
+    )
 
     # Create adapter registry
     adapter_registry = DataAdapterRegistry()
@@ -118,13 +123,13 @@ def _get_compare_use_case() -> CompareAlgorithmsUseCase:
     help="Show detailed output",
 )
 def compare_command(
-    config_path: Optional[Path],
-    network: Optional[str],
+    config_path: Path | None,
+    network: str | None,
     dates: tuple,
     algorithms: tuple,
     metric: str,
     traffic: tuple,
-    output_path: Optional[Path],
+    output_path: Path | None,
     no_stats: bool,
     no_effect_size: bool,
     confidence: float,
@@ -188,7 +193,10 @@ def compare_command(
         if verbose:
             _display_comparison_summary(request)
 
-        click.echo(f"\n🔄 Comparing {len(request.algorithms)} algorithms on '{request.metric}'...")
+        click.echo(
+            f"\n🔄 Comparing {len(request.algorithms)} algorithms "
+            f"on '{request.metric}'..."
+        )
 
         # Execute comparison
         use_case = _get_compare_use_case()
@@ -211,19 +219,22 @@ def compare_command(
         click.echo(click.style(f"\n❌ Error: {e}", fg="red", bold=True))
         if verbose:
             import traceback
+
             click.echo("\nTraceback:")
             click.echo(traceback.format_exc())
-        raise click.Abort()
+        raise click.Abort() from e
 
 
-def _load_comparison_from_config(config_path: Path, verbose: bool) -> ComparisonRequestDTO:
+def _load_comparison_from_config(
+    config_path: Path, verbose: bool
+) -> ComparisonRequestDTO:
     """Load comparison request from YAML config file."""
     import yaml
 
     if verbose:
         click.echo(f"📄 Loading configuration from: {config_path}\n")
 
-    with open(config_path, 'r') as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
 
     return ComparisonRequestDTO(
@@ -240,12 +251,12 @@ def _load_comparison_from_config(config_path: Path, verbose: bool) -> Comparison
 
 
 def _create_comparison_from_args(
-    network: Optional[str],
-    dates: List[str],
-    algorithms: List[str],
+    network: str | None,
+    dates: list[str],
+    algorithms: list[str],
     metric: str,
-    traffic: List[float],
-    output_path: Optional[Path],
+    traffic: list[float],
+    output_path: Path | None,
     include_statistical_tests: bool,
     include_effect_sizes: bool,
     confidence_level: float,
@@ -281,10 +292,18 @@ def _display_comparison_summary(request: ComparisonRequestDTO) -> None:
     click.echo(f"  Metric:      {request.metric}")
 
     if request.traffic_volumes:
-        click.echo(f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}")
+        click.echo(
+            f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}"
+        )
 
-    click.echo(f"  Tests:       {'Enabled' if request.include_statistical_tests else 'Disabled'}")
-    click.echo(f"  Effect Size: {'Enabled' if request.include_effect_sizes else 'Disabled'}")
+    click.echo(
+        f"  Tests:       "
+        f"{'Enabled' if request.include_statistical_tests else 'Disabled'}"
+    )
+    click.echo(
+        f"  Effect Size: "
+        f"{'Enabled' if request.include_effect_sizes else 'Disabled'}"
+    )
     click.echo(f"  Confidence:  {request.confidence_level:.1%}")
 
 
@@ -295,7 +314,9 @@ def _display_comparison_result(result: ComparisonResultDTO, verbose: bool) -> No
         click.echo(f"\nError: {result.error}")
         return
 
-    click.echo(click.style("\n✅ Comparison completed successfully!", fg="green", bold=True))
+    click.echo(
+        click.style("\n✅ Comparison completed successfully!", fg="green", bold=True)
+    )
 
     click.echo(f"\n📊 Statistical Comparisons ({len(result.comparisons)} pairwise):")
     click.echo(f"{'=' * 80}\n")
@@ -307,14 +328,10 @@ def _display_comparison_result(result: ComparisonResultDTO, verbose: bool) -> No
 
         # Means and std devs
         click.echo(
-            f"   {comp.algorithm_a}: "
-            f"mean={comp.mean_a:.6f}, "
-            f"std={comp.std_a:.6f}"
+            f"   {comp.algorithm_a}: mean={comp.mean_a:.6f}, std={comp.std_a:.6f}"
         )
         click.echo(
-            f"   {comp.algorithm_b}: "
-            f"mean={comp.mean_b:.6f}, "
-            f"std={comp.std_b:.6f}"
+            f"   {comp.algorithm_b}: mean={comp.mean_b:.6f}, std={comp.std_b:.6f}"
         )
 
         # Confidence intervals
@@ -366,7 +383,7 @@ def _display_comparison_result(result: ComparisonResultDTO, verbose: bool) -> No
 
 def _save_comparison_report(result: ComparisonResultDTO, output_path: Path) -> None:
     """Save comparison report to text file."""
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write("FUSION Visualization - Algorithm Comparison Report\n")
         f.write("=" * 80 + "\n\n")
 
@@ -392,10 +409,12 @@ def _save_comparison_report(result: ComparisonResultDTO, output_path: Path) -> N
                 f"   {comp.algorithm_b}: mean={comp.mean_b:.6f}, std={comp.std_b:.6f}\n"
             )
             f.write(
-                f"   {comp.algorithm_a} CI: [{comp.ci_lower_a:.6f}, {comp.ci_upper_a:.6f}]\n"
+                f"   {comp.algorithm_a} CI: "
+                f"[{comp.ci_lower_a:.6f}, {comp.ci_upper_a:.6f}]\n"
             )
             f.write(
-                f"   {comp.algorithm_b} CI: [{comp.ci_lower_b:.6f}, {comp.ci_upper_b:.6f}]\n"
+                f"   {comp.algorithm_b} CI: "
+                f"[{comp.ci_lower_b:.6f}, {comp.ci_upper_b:.6f}]\n"
             )
 
             if comp.test_name and comp.p_value is not None:
@@ -408,8 +427,12 @@ def _save_comparison_report(result: ComparisonResultDTO, output_path: Path) -> N
                 f.write(f"   Cohen's d: {effect_str}\n")
 
             if comp.p_value is not None and comp.p_value < 0.05:
-                better = comp.algorithm_a if comp.mean_a < comp.mean_b else comp.algorithm_b
-                worse = comp.algorithm_b if comp.mean_a < comp.mean_b else comp.algorithm_a
+                better = (
+                    comp.algorithm_a if comp.mean_a < comp.mean_b else comp.algorithm_b
+                )
+                worse = (
+                    comp.algorithm_b if comp.mean_a < comp.mean_b else comp.algorithm_a
+                )
                 f.write(f"   → {better} performs significantly better than {worse}\n")
 
             f.write("\n")

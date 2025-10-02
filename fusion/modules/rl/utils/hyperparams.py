@@ -12,6 +12,7 @@ from fusion.modules.rl.utils.errors import HyperparameterError
 # across DRL algorithms
 # to reduce code duplication and improve maintainability
 
+
 class HyperparamConfig:  # pylint: disable=too-few-public-methods
     """
     Controls all hyperparameter starts, ends, and episodic/time step modifications.
@@ -24,54 +25,56 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
         self.props = BanditProps()
         self.engine_props = engine_props
-        self.total_iters = engine_props['max_iters']
+        self.total_iters = engine_props["max_iters"]
         self.num_nodes = rl_props.num_nodes
         self.is_path = is_path
         if is_path:
-            self.n_arms = engine_props['k_paths']
+            self.n_arms = engine_props["k_paths"]
         else:
-            self.n_arms = engine_props['cores_per_link']
+            self.n_arms = engine_props["cores_per_link"]
 
         self.iteration = 0
         self.current_reward: float | None = None
         self.state_action_pair: tuple[Any, ...] | None = None
         self.action_index: int | None = None
-        self.alpha_strategy = engine_props['alpha_update']
-        self.epsilon_strategy = engine_props['epsilon_update']
+        self.alpha_strategy = engine_props["alpha_update"]
+        self.epsilon_strategy = engine_props["epsilon_update"]
 
-        if (self.alpha_strategy not in EPISODIC_STRATEGIES or
-            self.epsilon_strategy not in EPISODIC_STRATEGIES):
+        if (
+            self.alpha_strategy not in EPISODIC_STRATEGIES
+            or self.epsilon_strategy not in EPISODIC_STRATEGIES
+        ):
             self.fully_episodic = False
         else:
             self.fully_episodic = True
 
-        self.alpha_start = engine_props['alpha_start']
-        self.alpha_end = engine_props['alpha_end']
+        self.alpha_start = engine_props["alpha_start"]
+        self.alpha_end = engine_props["alpha_end"]
         self.current_alpha = self.alpha_start
 
-        self.epsilon_start = engine_props['epsilon_start']
-        self.epsilon_end = engine_props['epsilon_end']
+        self.epsilon_start = engine_props["epsilon_start"]
+        self.epsilon_end = engine_props["epsilon_end"]
         self.current_epsilon = self.epsilon_start
 
         self.temperature: float | None = None
         self.counts: dict[Any, Any] | None = None
         self.values: dict[Any, Any] | None = None
         self.reward_list: list[float] | None = None
-        self.decay_rate = engine_props['decay_rate']
+        self.decay_rate = engine_props["decay_rate"]
 
         self.alpha_strategies = {
-            'softmax': self._softmax_alpha,
-            'reward_based': self._reward_based_alpha,
-            'state_based': self._state_based_alpha,
-            'exp_decay': self._exp_alpha,
-            'linear_decay': self._linear_alpha,
+            "softmax": self._softmax_alpha,
+            "reward_based": self._reward_based_alpha,
+            "state_based": self._state_based_alpha,
+            "exp_decay": self._exp_alpha,
+            "linear_decay": self._linear_alpha,
         }
         self.epsilon_strategies = {
-            'softmax': self._softmax_eps,
-            'reward_based': self._reward_based_eps,
-            'state_based': self._state_based_eps,
-            'exp_decay': self._exp_eps,
-            'linear_decay': self._linear_eps,
+            "softmax": self._softmax_eps,
+            "reward_based": self._reward_based_eps,
+            "state_based": self._state_based_eps,
+            "exp_decay": self._exp_eps,
+            "linear_decay": self._linear_eps,
         }
 
         if self.iteration == 0:
@@ -114,32 +117,24 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         Reward-based epsilon update.
         """
         if self.reward_list is None or len(self.reward_list) != 2:
-            print(
-                'Did not update epsilon due to the length of the reward list.'
-            )
+            print("Did not update epsilon due to the length of the reward list.")
             return
 
         current_reward, last_reward = self.reward_list
         reward_difference = abs(current_reward - last_reward)
-        self.current_epsilon = self.epsilon_start * (
-            1 / (1 + reward_difference)
-        )
+        self.current_epsilon = self.epsilon_start * (1 / (1 + reward_difference))
 
     def _reward_based_alpha(self) -> None:
         """
         Reward-based alpha update.
         """
         if self.reward_list is None or len(self.reward_list) != 2:
-            print(
-                'Did not update alpha due to the length of the reward list.'
-            )
+            print("Did not update alpha due to the length of the reward list.")
             return
 
         current_reward, last_reward = self.reward_list
         reward_difference = abs(current_reward - last_reward)
-        self.current_alpha = self.alpha_start * (
-            1 / (1 + reward_difference)
-        )
+        self.current_alpha = self.alpha_start * (1 / (1 + reward_difference))
 
     def _state_based_eps(self) -> None:
         """
@@ -171,13 +166,13 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         Exponential distribution epsilon update.
         """
-        self.current_epsilon = self.epsilon_start * (self.decay_rate ** self.iteration)
+        self.current_epsilon = self.epsilon_start * (self.decay_rate**self.iteration)
 
     def _exp_alpha(self) -> None:
         """
         Exponential distribution alpha update.
         """
-        self.current_alpha = self.alpha_start * (self.decay_rate ** self.iteration)
+        self.current_alpha = self.alpha_start * (self.decay_rate**self.iteration)
 
     def _linear_eps(self) -> None:
         """
@@ -270,14 +265,14 @@ def _mlp_arch(
 
 def _policy_kwargs_actor_critic(trial: Trial) -> dict[str, Any]:
     return {
-        'ortho_init': True,
-        'activation_fn': _get_activation(trial),
-        'net_arch': {'pi': _mlp_arch(trial, "pi"), 'vf': _mlp_arch(trial, "vf")}
+        "ortho_init": True,
+        "activation_fn": _get_activation(trial),
+        "net_arch": {"pi": _mlp_arch(trial, "pi"), "vf": _mlp_arch(trial, "vf")},
     }
 
 
 def _policy_kwargs_dqn(trial: Trial, prefix: str) -> dict[str, Any]:
-    return {'net_arch': _mlp_arch(trial, prefix)}
+    return {"net_arch": _mlp_arch(trial, prefix)}
 
 
 def _ppo_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, Any]:
@@ -368,7 +363,7 @@ def _dqn_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, Any]:
     params["alpha_end"] = trial.suggest_float(
         "learning_rate_end", 1e-6, params["alpha_start"], log=True
     )
-    params["learning_rate"] = params['alpha_start']
+    params["learning_rate"] = params["alpha_start"]
     params["buffer_size"] = trial.suggest_int("buffer_size", 50000, 500000, step=50000)
     params["learning_starts"] = trial.suggest_int(
         "learning_starts", 1000, 10000, step=1000
@@ -397,8 +392,8 @@ def _qr_dqn_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, Any
     params: dict[str, Any] = _dqn_hyperparams(sim_dict, trial)
     params["n_quantiles"] = trial.suggest_int("n_quantiles", 25, 200, step=25)
     params["policy_kwargs"] = {
-        'net_arch': _mlp_arch(trial, "qr_dqn"),
-        'n_quantiles': params["n_quantiles"],
+        "net_arch": _mlp_arch(trial, "qr_dqn"),
+        "n_quantiles": params["n_quantiles"],
     }
     return params
 
@@ -426,51 +421,53 @@ def get_optuna_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, 
     """
     resp_dict: dict[str, Any] = {}
 
-    if sim_dict['path_algorithm'] in ('a2c', 'ppo', 'dqn', 'qr_dqn'):
+    if sim_dict["path_algorithm"] in ("a2c", "ppo", "dqn", "qr_dqn"):
         resp_dict = _drl_hyperparams(sim_dict=sim_dict, trial=trial)
         return resp_dict
 
     # There is no alpha in bandit algorithms
-    if 'bandit' not in sim_dict['path_algorithm']:
-        resp_dict['alpha_start'] = trial.suggest_float(
-            'alpha_start', low=0.01, high=0.5, log=False, step=0.01
+    if "bandit" not in sim_dict["path_algorithm"]:
+        resp_dict["alpha_start"] = trial.suggest_float(
+            "alpha_start", low=0.01, high=0.5, log=False, step=0.01
         )
-        resp_dict['alpha_end'] = trial.suggest_float(
-            'alpha_end', low=0.01, high=0.1, log=False, step=0.01
+        resp_dict["alpha_end"] = trial.suggest_float(
+            "alpha_end", low=0.01, high=0.1, log=False, step=0.01
         )
-        resp_dict['cong_cutoff'] = trial.suggest_float(
-            'cong_cutoff', low=0.1, high=0.9, log=False, step=0.1
+        resp_dict["cong_cutoff"] = trial.suggest_float(
+            "cong_cutoff", low=0.1, high=0.9, log=False, step=0.1
         )
     else:
-        resp_dict['alpha_start'], resp_dict['alpha_end'] = None, None
+        resp_dict["alpha_start"], resp_dict["alpha_end"] = None, None
 
-    if 'ucb' in sim_dict['path_algorithm']:
-        resp_dict['conf_param'] = trial.suggest_float(
-            'conf_param (c)', low=1.0, high=5.0, log=False, step=0.01
+    if "ucb" in sim_dict["path_algorithm"]:
+        resp_dict["conf_param"] = trial.suggest_float(
+            "conf_param (c)", low=1.0, high=5.0, log=False, step=0.01
         )
-        resp_dict['epsilon_start'] = None
-        resp_dict['epsilon_end'] = None
+        resp_dict["epsilon_start"] = None
+        resp_dict["epsilon_end"] = None
     else:
-        resp_dict['epsilon_start'] = trial.suggest_float(
-            'epsilon_start', low=0.01, high=0.5, log=False, step=0.01
+        resp_dict["epsilon_start"] = trial.suggest_float(
+            "epsilon_start", low=0.01, high=0.5, log=False, step=0.01
         )
-        resp_dict['epsilon_end'] = trial.suggest_float(
-            'epsilon_end', low=0.01, high=0.1, log=False, step=0.01
+        resp_dict["epsilon_end"] = trial.suggest_float(
+            "epsilon_end", low=0.01, high=0.1, log=False, step=0.01
         )
 
-    if 'q_learning' in (sim_dict['path_algorithm']):
-        resp_dict['discount_factor'] = trial.suggest_float(
-            'discount_factor', low=0.8, high=1.0, step=0.01
+    if "q_learning" in (sim_dict["path_algorithm"]):
+        resp_dict["discount_factor"] = trial.suggest_float(
+            "discount_factor", low=0.8, high=1.0, step=0.01
         )
     else:
-        resp_dict['discount_factor'] = None
+        resp_dict["discount_factor"] = None
 
-    if ('exp_decay' in (sim_dict['epsilon_update'], sim_dict['alpha_update']) and
-            'ucb' not in sim_dict['path_algorithm']):
-        resp_dict['decay_rate'] = trial.suggest_float(
-            'decay_rate', low=0.1, high=0.5, step=0.01
+    if (
+        "exp_decay" in (sim_dict["epsilon_update"], sim_dict["alpha_update"])
+        and "ucb" not in sim_dict["path_algorithm"]
+    ):
+        resp_dict["decay_rate"] = trial.suggest_float(
+            "decay_rate", low=0.1, high=0.5, step=0.01
         )
     else:
-        resp_dict['decay_rate'] = None
+        resp_dict["decay_rate"] = None
 
     return resp_dict

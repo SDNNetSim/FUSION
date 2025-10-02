@@ -33,10 +33,10 @@ class ConfigRegistry:
         :type schemas_dir: Optional[str]
         """
         self.templates_dir = templates_dir or os.path.join(
-            os.path.dirname(__file__), 'templates'
+            os.path.dirname(__file__), "templates"
         )
         self.schemas_dir = schemas_dir or os.path.join(
-            os.path.dirname(__file__), 'schemas'
+            os.path.dirname(__file__), "schemas"
         )
         self.validator = SchemaValidator(self.schemas_dir)
         self._templates: dict[str, str] = {}
@@ -47,7 +47,7 @@ class ConfigRegistry:
             return
 
         # Load all .ini template files from templates directory
-        template_pattern = os.path.join(self.templates_dir, '*.ini')
+        template_pattern = os.path.join(self.templates_dir, "*.ini")
         for template_path in glob.glob(template_pattern):
             template_name = Path(template_path).stem
             self._templates[template_name] = template_path
@@ -96,7 +96,7 @@ class ConfigRegistry:
         return ConfigManager(template_path, self.schemas_dir)
 
     def create_custom_config(
-        self, base_template: str = 'default', overrides: dict[str, Any] | None = None
+        self, base_template: str = "default", overrides: dict[str, Any] | None = None
     ) -> ConfigManager:
         """
         Create a custom configuration based on a template with overrides.
@@ -123,12 +123,12 @@ class ConfigRegistry:
         # Apply overrides if provided
         if overrides:
             for section_key, value in overrides.items():
-                if '.' in section_key:
-                    section, key = section_key.split('.', 1)
+                if "." in section_key:
+                    section, key = section_key.split(".", 1)
                     config_manager.update_config(section, key, value)
                 else:
                     # Default to general_settings for unqualified keys
-                    config_manager.update_config('general_settings', section_key, value)
+                    config_manager.update_config("general_settings", section_key, value)
 
         return config_manager
 
@@ -145,7 +145,10 @@ class ConfigRegistry:
             ConfigManager(config_path, self.schemas_dir)
             return []
         except (
-            ConfigError, ConfigFileNotFoundError, ValueError, FileNotFoundError
+            ConfigError,
+            ConfigFileNotFoundError,
+            ValueError,
+            FileNotFoundError,
         ) as e:
             return [str(e)]
 
@@ -157,51 +160,44 @@ class ConfigRegistry:
         :rtype: Dict[str, Dict[str, Any]]
         """
         return {
-            'quick_test': {
-                'description': 'Fast configuration for testing',
-                'template': 'minimal',
-                'overrides': {
-                    'max_iters': 1,
-                    'num_requests': 50,
-                    'erlang_stop': 300
-                }
+            "quick_test": {
+                "description": "Fast configuration for testing",
+                "template": "minimal",
+                "overrides": {"max_iters": 1, "num_requests": 50, "erlang_stop": 300},
             },
-            'development': {
-                'description': 'Development configuration with detailed logging',
-                'template': 'default',
-                'overrides': {
-                    'print_step': 5,
-                    'save_snapshots': True,
-                    'snapshot_step': 10
-                }
+            "development": {
+                "description": "Development configuration with detailed logging",
+                "template": "default",
+                "overrides": {
+                    "print_step": 5,
+                    "save_snapshots": True,
+                    "snapshot_step": 10,
+                },
             },
-            'production': {
-                'description': 'Production configuration with optimized settings',
-                'template': 'default',
-                'overrides': {
-                    'max_iters': 10,
-                    'thread_erlangs': True,
-                    'save_snapshots': False
-                }
+            "production": {
+                "description": "Production configuration with optimized settings",
+                "template": "default",
+                "overrides": {
+                    "max_iters": 10,
+                    "thread_erlangs": True,
+                    "save_snapshots": False,
+                },
             },
-            'rl_experiment': {
-                'description': 'Reinforcement learning experiment setup',
-                'template': 'rl_training',
-                'overrides': {
-                    'n_trials': 50,
-                    'optimize_hyperparameters': True
-                }
+            "rl_experiment": {
+                "description": "Reinforcement learning experiment setup",
+                "template": "rl_training",
+                "overrides": {"n_trials": 50, "optimize_hyperparameters": True},
             },
-            'benchmark': {
-                'description': 'Benchmarking configuration',
-                'template': 'default',
-                'overrides': {
-                    'max_iters': 20,
-                    'num_requests': 2000,
-                    'thread_erlangs': True,
-                    'save_start_end_slots': True
-                }
-            }
+            "benchmark": {
+                "description": "Benchmarking configuration",
+                "template": "default",
+                "overrides": {
+                    "max_iters": 20,
+                    "num_requests": 2000,
+                    "thread_erlangs": True,
+                    "save_start_end_slots": True,
+                },
+            },
         }
 
     def create_profile_config(
@@ -233,13 +229,13 @@ class ConfigRegistry:
             )
 
         profile = profiles[profile_name]
-        overrides = profile['overrides'].copy()
+        overrides = profile["overrides"].copy()
 
         # Merge additional overrides
         if additional_overrides:
             overrides.update(additional_overrides)
 
-        return self.create_custom_config(profile['template'], overrides)
+        return self.create_custom_config(profile["template"], overrides)
 
     def export_config_template(
         self, config_manager: ConfigManager, template_name: str, description: str = ""
@@ -263,7 +259,7 @@ class ConfigRegistry:
             # Description will be added when comment support is implemented
             _ = description  # Suppress unused variable warning
 
-        config_manager.save_config(template_path, 'ini')
+        config_manager.save_config(template_path, "ini")
 
         # Refresh templates to include the newly exported template
         self._load_templates()

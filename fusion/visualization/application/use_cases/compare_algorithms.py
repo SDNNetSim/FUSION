@@ -1,10 +1,10 @@
 """Use case for comparing algorithms statistically."""
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime
-from typing import List, Dict
-from pathlib import Path
+
 import numpy as np
 from scipy import stats
 
@@ -14,8 +14,8 @@ from fusion.visualization.application.dto import (
     StatisticalComparison,
 )
 from fusion.visualization.application.ports import CachePort
+from fusion.visualization.domain.exceptions import RepositoryError
 from fusion.visualization.domain.repositories import SimulationRepository
-from fusion.visualization.domain.exceptions import RepositoryError, ValidationError
 from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 logger = logging.getLogger(__name__)
@@ -129,14 +129,16 @@ class CompareAlgorithmsUseCase:
 
     def _load_algorithm_data(
         self, request: ComparisonRequestDTO
-    ) -> Dict[str, List[float]]:
+    ) -> dict[str, list[float]]:
         """
         Load metric data for all algorithms.
 
         Returns:
             Dictionary mapping algorithm names to lists of metric values
         """
-        algorithm_data: Dict[str, List[float]] = {algo: [] for algo in request.algorithms}
+        algorithm_data: dict[str, list[float]] = {
+            algo: [] for algo in request.algorithms
+        }
 
         for algorithm in request.algorithms:
             # Find runs for this algorithm
@@ -157,8 +159,8 @@ class CompareAlgorithmsUseCase:
             traffic_volumes = request.traffic_volumes
             if not traffic_volumes:
                 # Use traffic volumes from first run
-                traffic_volumes = self.simulation_repository.get_available_traffic_volumes(
-                    runs[0]
+                traffic_volumes = (
+                    self.simulation_repository.get_available_traffic_volumes(runs[0])
                 )
 
             # Load metric values for each run and traffic volume
@@ -211,12 +213,12 @@ class CompareAlgorithmsUseCase:
 
     def _perform_comparisons(
         self,
-        algorithm_data: Dict[str, List[float]],
+        algorithm_data: dict[str, list[float]],
         metric: str,
         include_statistical_tests: bool,
         include_effect_sizes: bool,
         confidence_level: float,
-    ) -> List[StatisticalComparison]:
+    ) -> list[StatisticalComparison]:
         """Perform pairwise statistical comparisons."""
         comparisons = []
         algorithms = list(algorithm_data.keys())

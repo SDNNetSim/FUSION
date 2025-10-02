@@ -4,7 +4,6 @@ This module provides the base class for metric processing strategies,
 which are used by plugins to define custom data processing logic.
 """
 
-from typing import Dict, List
 import logging
 
 from fusion.visualization.application.ports.data_processor_port import (
@@ -29,7 +28,7 @@ class GenericMetricProcessingStrategy(DataProcessorPort):
     values from canonical data and aggregating them.
     """
 
-    def __init__(self, supported_metrics: List[str] | None = None):
+    def __init__(self, supported_metrics: list[str] | None = None):
         """
         Initialize generic processor.
 
@@ -45,16 +44,16 @@ class GenericMetricProcessingStrategy(DataProcessorPort):
             return True  # Accept all if no specific metrics defined
         return metric_name in self.supported_metrics
 
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """Get list of supported metrics."""
         return self.supported_metrics.copy()
 
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
         """
@@ -76,6 +75,7 @@ class GenericMetricProcessingStrategy(DataProcessorPort):
 
         # Group by algorithm
         from collections import defaultdict
+
         runs_by_algo = defaultdict(list)
         for run in runs:
             runs_by_algo[run.algorithm].append(run)

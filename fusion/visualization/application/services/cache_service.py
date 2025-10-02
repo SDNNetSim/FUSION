@@ -1,12 +1,14 @@
 """Application-level caching service."""
 
 from __future__ import annotations
+
 import logging
 import pickle
 import time
-from pathlib import Path
-from typing import Any, Optional, Callable
+from collections.abc import Callable
 from hashlib import sha256
+from pathlib import Path
+from typing import Any
 
 from fusion.visualization.application.ports import CachePort
 
@@ -23,10 +25,10 @@ class InMemoryCacheService(CachePort):
 
     def __init__(self) -> None:
         """Initialize in-memory cache."""
-        self._cache: dict[str, tuple[Any, Optional[float]]] = {}
+        self._cache: dict[str, tuple[Any, float | None]] = {}
         # Cache structure: key -> (value, expiry_time)
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         if key not in self._cache:
             return None
@@ -40,7 +42,7 @@ class InMemoryCacheService(CachePort):
 
         return value
 
-    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         """Store value in cache."""
         expiry_time = None
         if ttl_seconds is not None:
@@ -52,7 +54,7 @@ class InMemoryCacheService(CachePort):
         self,
         key: str,
         compute_fn: Callable[[], Any],
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> Any:
         """Get from cache or compute and cache result."""
         # Try to get from cache
@@ -128,7 +130,7 @@ class FileCacheService(CachePort):
         key_hash = sha256(key.encode()).hexdigest()[:16]
         return self.cache_dir / f"{key_hash}.pkl"
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         cache_path = self._get_cache_path(key)
 
@@ -153,7 +155,7 @@ class FileCacheService(CachePort):
             logger.warning(f"Error reading cache file {cache_path}: {e}")
             return None
 
-    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         """Store value in cache."""
         cache_path = self._get_cache_path(key)
 
@@ -178,7 +180,7 @@ class FileCacheService(CachePort):
         self,
         key: str,
         compute_fn: Callable[[], Any],
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> Any:
         """Get from cache or compute and cache result."""
         # Try to get from cache
@@ -257,18 +259,20 @@ class CacheService(FileCacheService):
     for backward compatibility with existing code.
     """
 
-    def __init__(self, cache_dir: Optional[Path | str] = None):
+    def __init__(self, cache_dir: Path | str | None = None):
         """
         Initialize cache service.
 
         Args:
-            cache_dir: Optional directory for cache files. If None, uses in-memory cache.
+            cache_dir: Optional directory for cache files.
+                If None, uses in-memory cache.
         """
         if cache_dir is not None:
             super().__init__(Path(cache_dir))
         else:
             # For compatibility, if no cache_dir provided, still use a temp directory
             import tempfile
+
             super().__init__(Path(tempfile.gettempdir()) / "fusion_cache")
 
 
@@ -294,7 +298,7 @@ class CacheServiceFactory:
         return FileCacheService(Path(cache_dir))
 
     @staticmethod
-    def create_default_cache(cache_dir: Optional[Path | str] = None) -> CachePort:
+    def create_default_cache(cache_dir: Path | str | None = None) -> CachePort:
         """
         Create default cache service.
 

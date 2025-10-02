@@ -1,8 +1,8 @@
 """Data format version value object."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass(frozen=True)
@@ -32,9 +32,9 @@ class DataVersion:
             ValueError: If version string is invalid
         """
         # Remove 'v' prefix if present
-        version_str = version_str.lower().lstrip('v')
+        version_str = version_str.lower().lstrip("v")
 
-        parts = version_str.split('.')
+        parts = version_str.split(".")
         if len(parts) == 1:
             return cls(major=int(parts[0]))
         elif len(parts) == 2:

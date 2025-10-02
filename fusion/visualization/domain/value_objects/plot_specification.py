@@ -1,9 +1,11 @@
 """Plot specification value object."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
 from enum import Enum
+from typing import Any
+
 import numpy as np
 
 
@@ -65,24 +67,24 @@ class PlotSpecification:
 
     title: str
     x_data: np.ndarray
-    y_data: Dict[str, np.ndarray]  # algorithm/series name -> values
+    y_data: dict[str, np.ndarray]  # algorithm/series name -> values
     x_label: str
     y_label: str
     plot_type: PlotType = PlotType.LINE
     plot_style: PlotStyle = PlotStyle.DEFAULT
     legend: LegendConfiguration = field(default_factory=LegendConfiguration)
-    annotations: List[Annotation] = field(default_factory=list)
-    error_bars: Optional[Dict[str, np.ndarray]] = None  # algorithm -> error values
-    colors: Optional[Dict[str, str]] = None  # algorithm -> color
-    line_styles: Optional[Dict[str, str]] = None  # algorithm -> line style
-    markers: Optional[Dict[str, str]] = None  # algorithm -> marker
+    annotations: list[Annotation] = field(default_factory=list)
+    error_bars: dict[str, np.ndarray] | None = None  # algorithm -> error values
+    colors: dict[str, str] | None = None  # algorithm -> color
+    line_styles: dict[str, str] | None = None  # algorithm -> line style
+    markers: dict[str, str] | None = None  # algorithm -> marker
     grid: bool = True
     figsize: tuple[float, float] = (10, 6)
     dpi: int = 100
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     # Legacy parameters for backward compatibility
-    errors: Optional[Dict[str, np.ndarray]] = None  # alias for error_bars
-    y_ci_data: Optional[Dict[str, np.ndarray]] = None  # alias for error_bars
+    errors: dict[str, np.ndarray] | None = None  # alias for error_bars
+    y_ci_data: dict[str, np.ndarray] | None = None  # alias for error_bars
     include_ci: bool = True  # ignored, kept for compatibility
     include_legend: bool = True  # ignored, kept for compatibility
 
@@ -90,9 +92,9 @@ class PlotSpecification:
         """Validate plot specification and handle legacy parameters."""
         # Handle legacy parameter aliases
         if self.y_ci_data is not None and self.error_bars is None:
-            object.__setattr__(self, 'error_bars', self.y_ci_data)
+            object.__setattr__(self, "error_bars", self.y_ci_data)
         elif self.errors is not None and self.error_bars is None:
-            object.__setattr__(self, 'error_bars', self.errors)
+            object.__setattr__(self, "error_bars", self.errors)
 
         # Validate x_data and y_data shapes
         for algorithm, y_values in self.y_data.items():
@@ -107,16 +109,13 @@ class PlotSpecification:
             for algorithm, err_values in self.error_bars.items():
                 if algorithm not in self.y_data:
                     raise ValueError(
-                        f"Error bars specified for {algorithm} "
-                        f"but no y_data found"
+                        f"Error bars specified for {algorithm} but no y_data found"
                     )
                 if len(err_values) != len(self.x_data):
-                    raise ValueError(
-                        f"Error bar length mismatch for {algorithm}"
-                    )
+                    raise ValueError(f"Error bar length mismatch for {algorithm}")
 
     @property
-    def algorithms(self) -> List[str]:
+    def algorithms(self) -> list[str]:
         """Return list of algorithms/series in this plot."""
         return list(self.y_data.keys())
 

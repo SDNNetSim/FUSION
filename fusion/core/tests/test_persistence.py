@@ -54,7 +54,7 @@ class TestStatsPersistenceSaveStats:
             "file_type": "json",
             "erlang": 100.0,
             "thread_num": "s1",
-            "save_start_end_slots": True
+            "save_start_end_slots": True,
         }
         return StatsPersistence(engine_props, "test_sim")
 
@@ -88,15 +88,15 @@ class TestStatsPersistenceSaveStats:
             "bit_rate_block_variance": 0.0005,
             "bit_rate_block_ci": 0.01,
             "bit_rate_block_ci_percent": 0.03,
-            "iteration": 5
+            "iteration": 5,
         }
 
         return stats_dict, stats_props, blocking_stats
 
-    @patch('fusion.core.persistence.create_directory')
-    @patch('fusion.core.persistence.os.path.exists')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('json.dump')
+    @patch("fusion.core.persistence.create_directory")
+    @patch("fusion.core.persistence.os.path.exists")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("json.dump")
     def test_save_stats_creates_json_file_successfully(
         self,
         mock_json_dump: Any,
@@ -126,14 +126,14 @@ class TestStatsPersistenceSaveStats:
         assert "link_usage" in saved_data
         assert "iter_stats" in saved_data
 
-    @patch('fusion.core.persistence.os.path.exists')
+    @patch("fusion.core.persistence.os.path.exists")
     @patch(
-        'builtins.open',
+        "builtins.open",
         new_callable=mock_open,
         read_data='{"existing": "data", "iter_stats": {"0": {"old": "data"}}}',
     )
-    @patch('json.load')
-    @patch('json.dump')
+    @patch("json.load")
+    @patch("json.dump")
     def test_save_stats_preserves_existing_iter_stats(
         self,
         mock_json_dump: Any,
@@ -149,7 +149,7 @@ class TestStatsPersistenceSaveStats:
         mock_exists.return_value = True
         mock_json_load.return_value = {
             "existing": "data",
-            "iter_stats": {"0": {"old": "data"}}
+            "iter_stats": {"0": {"old": "data"}},
         }
 
         # Act
@@ -185,10 +185,10 @@ class TestStatsPersistenceSaveStats:
         with pytest.raises(NotImplementedError, match="Invalid file type: xml"):
             sample_persistence.save_stats(stats_dict, stats_props, blocking_stats)
 
-    @patch('fusion.core.persistence.create_directory')
-    @patch('fusion.core.persistence.os.path.exists')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('json.dump')
+    @patch("fusion.core.persistence.create_directory")
+    @patch("fusion.core.persistence.os.path.exists")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("json.dump")
     def test_save_stats_handles_missing_start_end_slots_when_disabled(
         self,
         mock_json_dump: Any,
@@ -238,14 +238,14 @@ class TestStatsPersistenceIterationStats:
 
         # Mock other required attributes
         for attr in [
-            'simulation_blocking_list',
-            'simulation_bitrate_blocking_list',
-            'modulations_used_dict',
-            'bandwidth_blocking_dict',
-            'number_of_transponders',
-            'request_id',
-            'start_slot_list',
-            'end_slot_list',
+            "simulation_blocking_list",
+            "simulation_bitrate_blocking_list",
+            "modulations_used_dict",
+            "bandwidth_blocking_dict",
+            "number_of_transponders",
+            "request_id",
+            "start_slot_list",
+            "end_slot_list",
         ]:
             setattr(stats_props, attr, [])
 
@@ -275,14 +275,14 @@ class TestStatsPersistenceIterationStats:
 
         # Mock other required attributes
         for attr in [
-            'simulation_blocking_list',
-            'simulation_bitrate_blocking_list',
-            'modulations_used_dict',
-            'bandwidth_blocking_dict',
-            'number_of_transponders',
-            'request_id',
-            'start_slot_list',
-            'end_slot_list',
+            "simulation_blocking_list",
+            "simulation_bitrate_blocking_list",
+            "modulations_used_dict",
+            "bandwidth_blocking_dict",
+            "number_of_transponders",
+            "request_id",
+            "start_slot_list",
+            "end_slot_list",
         ]:
             setattr(stats_props, attr, [])
 
@@ -305,21 +305,21 @@ class TestStatsPersistenceIterationStats:
 
         # Mock empty lists for other stats
         for attr in [
-            'transponders_list',
-            'hops_list',
-            'lengths_list',
-            'route_times_list',
+            "transponders_list",
+            "hops_list",
+            "lengths_list",
+            "route_times_list",
         ]:
             setattr(stats_props, attr, [])
         for attr in [
-            'simulation_blocking_list',
-            'simulation_bitrate_blocking_list',
-            'modulations_used_dict',
-            'bandwidth_blocking_dict',
-            'number_of_transponders',
-            'request_id',
-            'start_slot_list',
-            'end_slot_list',
+            "simulation_blocking_list",
+            "simulation_bitrate_blocking_list",
+            "modulations_used_dict",
+            "bandwidth_blocking_dict",
+            "number_of_transponders",
+            "request_id",
+            "start_slot_list",
+            "end_slot_list",
         ]:
             setattr(stats_props, attr, [])
 
@@ -347,11 +347,11 @@ class TestStatsPersistenceIterationStats:
 
         # Mock empty lists for stats that calculate mean/min/max
         for attr in [
-            'transponders_list',
-            'hops_list',
-            'lengths_list',
-            'route_times_list',
-            'crosstalk_list',
+            "transponders_list",
+            "hops_list",
+            "lengths_list",
+            "route_times_list",
+            "crosstalk_list",
         ]:
             setattr(stats_props, attr, [])
 
@@ -373,27 +373,20 @@ class TestStatsPersistenceFileOperations:
     @pytest.fixture
     def file_persistence(self) -> Any:
         """Provide persistence instance for file operation testing."""
-        engine_props = {
-            "erlang": 150.0,
-            "thread_num": "s2"
-        }
+        engine_props = {"erlang": 150.0, "thread_num": "s2"}
         return StatsPersistence(engine_props, "file_test_sim")
 
-    @patch('fusion.core.persistence.PROJECT_ROOT', '/test/root')
-    def test_get_save_path_constructs_correct_path(
-        self, file_persistence: Any
-    ) -> None:
+    @patch("fusion.core.persistence.PROJECT_ROOT", "/test/root")
+    def test_get_save_path_constructs_correct_path(self, file_persistence: Any) -> None:
         """Test save path construction with all parameters."""
         # Act
         path = file_persistence._get_save_path("custom_data")
 
         # Assert
-        expected = (
-            "/test/root/custom_data/output/file_test_sim/s2/150.0_erlang.json"
-        )
+        expected = "/test/root/custom_data/output/file_test_sim/s2/150.0_erlang.json"
         assert path == expected
 
-    @patch('fusion.core.persistence.PROJECT_ROOT', '/test/root')
+    @patch("fusion.core.persistence.PROJECT_ROOT", "/test/root")
     def test_get_save_path_uses_default_base_path(self, file_persistence: Any) -> None:
         """Test save path construction with default base path."""
         # Act
@@ -404,11 +397,11 @@ class TestStatsPersistenceFileOperations:
         assert path == expected
 
     @patch(
-        'builtins.open',
+        "builtins.open",
         new_callable=mock_open,
         read_data='{"test": "data", "value": 42}',
     )
-    @patch('json.load')
+    @patch("json.load")
     def test_load_stats_reads_json_file_successfully(
         self, mock_json_load: Any, mock_file_open: Any
     ) -> None:
@@ -423,16 +416,16 @@ class TestStatsPersistenceFileOperations:
         result = persistence.load_stats(file_path)
 
         # Assert
-        mock_file_open.assert_called_once_with(file_path, encoding='utf-8')
+        mock_file_open.assert_called_once_with(file_path, encoding="utf-8")
         mock_json_load.assert_called_once()
         assert result == test_data
 
     @patch(
-        'builtins.open',
+        "builtins.open",
         new_callable=mock_open,
         read_data='["not", "a", "dict"]',
     )
-    @patch('json.load')
+    @patch("json.load")
     def test_load_stats_raises_error_for_non_dict_json(
         self, mock_json_load: Any, mock_file_open: Any
     ) -> None:
@@ -468,8 +461,7 @@ class TestStatsPersistenceEdgeCases:
         """Test handling of corrupted existing JSON file."""
         # Arrange
         persistence = StatsPersistence(
-            {"file_type": "json", "erlang": 100.0, "thread_num": "s1"},
-            "corrupt_test"
+            {"file_type": "json", "erlang": 100.0, "thread_num": "s1"}, "corrupt_test"
         )
         stats_dict: dict[str, float | None] = {}
         stats_props = Mock()
@@ -478,38 +470,39 @@ class TestStatsPersistenceEdgeCases:
 
         # Mock all required attributes for stats_props
         for attr in [
-            'simulation_blocking_list',
-            'simulation_bitrate_blocking_list',
-            'modulations_used_dict',
-            'bandwidth_blocking_dict',
-            'number_of_transponders',
-            'request_id',
-            'start_slot_list',
-            'end_slot_list',
-            'transponders_list',
-            'hops_list',
-            'lengths_list',
-            'route_times_list',
-            'crosstalk_list',
+            "simulation_blocking_list",
+            "simulation_bitrate_blocking_list",
+            "modulations_used_dict",
+            "bandwidth_blocking_dict",
+            "number_of_transponders",
+            "request_id",
+            "start_slot_list",
+            "end_slot_list",
+            "transponders_list",
+            "hops_list",
+            "lengths_list",
+            "route_times_list",
+            "crosstalk_list",
         ]:
             setattr(stats_props, attr, [])
 
         # Act & Assert - should not raise exception
-        with patch('fusion.core.persistence.os.path.exists', return_value=True), \
-             patch('builtins.open', mock_open(read_data='invalid json')), \
-             patch('json.load', side_effect=json.JSONDecodeError("msg", "doc", 0)), \
-             patch('json.dump'), \
-             patch('fusion.core.persistence.create_directory'):
-
+        with (
+            patch("fusion.core.persistence.os.path.exists", return_value=True),
+            patch("builtins.open", mock_open(read_data="invalid json")),
+            patch("json.load", side_effect=json.JSONDecodeError("msg", "doc", 0)),
+            patch("json.dump"),
+            patch("fusion.core.persistence.create_directory"),
+        ):
             persistence.save_stats(stats_dict, stats_props, blocking_stats)
 
-    @patch('fusion.core.persistence.os.path.exists')
+    @patch("fusion.core.persistence.os.path.exists")
     def test_save_stats_handles_file_access_error(self, mock_exists: Any) -> None:
         """Test handling of file access errors during existing file read."""
         # Arrange
         persistence = StatsPersistence(
             {"file_type": "json", "erlang": 100.0, "thread_num": "s1"},
-            "access_error_test"
+            "access_error_test",
         )
         stats_dict: dict[str, float | None] = {}
         stats_props = Mock()
@@ -518,19 +511,19 @@ class TestStatsPersistenceEdgeCases:
 
         # Mock all required attributes
         for attr in [
-            'simulation_blocking_list',
-            'simulation_bitrate_blocking_list',
-            'modulations_used_dict',
-            'bandwidth_blocking_dict',
-            'number_of_transponders',
-            'request_id',
-            'start_slot_list',
-            'end_slot_list',
-            'transponders_list',
-            'hops_list',
-            'lengths_list',
-            'route_times_list',
-            'crosstalk_list',
+            "simulation_blocking_list",
+            "simulation_bitrate_blocking_list",
+            "modulations_used_dict",
+            "bandwidth_blocking_dict",
+            "number_of_transponders",
+            "request_id",
+            "start_slot_list",
+            "end_slot_list",
+            "transponders_list",
+            "hops_list",
+            "lengths_list",
+            "route_times_list",
+            "crosstalk_list",
         ]:
             setattr(stats_props, attr, [])
 
@@ -542,11 +535,11 @@ class TestStatsPersistenceEdgeCases:
         # Act & Assert - should handle gracefully and start fresh
         with (
             patch(
-                'builtins.open',
+                "builtins.open",
                 side_effect=[OSError("Permission denied"), mock_file.return_value],
             ),
-            patch('json.dump'),
-            patch('fusion.core.persistence.create_directory'),
+            patch("json.dump"),
+            patch("fusion.core.persistence.create_directory"),
         ):
             # Should not raise exception despite initial file access error
             persistence.save_stats(stats_dict, stats_props, blocking_stats)

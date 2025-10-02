@@ -25,7 +25,7 @@ class SchemaValidator:
         :type schema_dir: str | None
         """
         self.schema_dir = schema_dir or os.path.join(
-            os.path.dirname(__file__), 'schemas'
+            os.path.dirname(__file__), "schemas"
         )
         self.schemas: dict[str, dict[str, Any]] = {}
         self._load_schemas()
@@ -35,15 +35,15 @@ class SchemaValidator:
         if not os.path.exists(self.schema_dir):
             return
 
-        for schema_file in Path(self.schema_dir).glob('*.json'):
+        for schema_file in Path(self.schema_dir).glob("*.json"):
             schema_name = schema_file.stem
             try:
-                with open(schema_file, encoding='utf-8') as f:
+                with open(schema_file, encoding="utf-8") as f:
                     self.schemas[schema_name] = json.load(f)
             except (OSError, json.JSONDecodeError) as e:
                 logger.warning(f"Could not load schema {schema_file}: {e}")
 
-    def validate(self, config: dict[str, Any], schema_name: str = 'main') -> None:
+    def validate(self, config: dict[str, Any], schema_name: str = "main") -> None:
         """
         Validate configuration against schema.
 
@@ -58,7 +58,7 @@ class SchemaValidator:
             return
 
         schema = self.schemas[schema_name]
-        errors = self._validate_recursive(config, schema, '')
+        errors = self._validate_recursive(config, schema, "")
 
         if errors:
             raise ValidationError(
@@ -69,16 +69,16 @@ class SchemaValidator:
         errors_list: list[str] = []
 
         if isinstance(schema, dict):
-            if 'type' in schema:
+            if "type" in schema:
                 errors_list.extend(self._validate_type(config, schema, path))
 
-            if 'required' in schema and isinstance(config, dict):
+            if "required" in schema and isinstance(config, dict):
                 errors_list.extend(
-                    self._validate_required_fields(config, schema['required'], path)
+                    self._validate_required_fields(config, schema["required"], path)
                 )
 
-            if 'properties' in schema and isinstance(config, dict):
-                for prop, prop_schema in schema['properties'].items():
+            if "properties" in schema and isinstance(config, dict):
+                for prop, prop_schema in schema["properties"].items():
                     if prop in config:
                         prop_path = f"{path}.{prop}" if path else prop
                         errors_list.extend(
@@ -87,11 +87,11 @@ class SchemaValidator:
                             )
                         )
 
-            if 'items' in schema and isinstance(config, list):
+            if "items" in schema and isinstance(config, list):
                 for i, item in enumerate(config):
                     item_path = f"{path}[{i}]" if path else f"[{i}]"
                     errors_list.extend(
-                        self._validate_recursive(item, schema['items'], item_path)
+                        self._validate_recursive(item, schema["items"], item_path)
                     )
 
         return errors_list
@@ -100,16 +100,16 @@ class SchemaValidator:
         self, value: Any, schema: dict[str, Any], path: str
     ) -> list[str]:
         errors_list: list[str] = []
-        expected_type = schema['type']
+        expected_type = schema["type"]
 
         type_map: dict[str, type | tuple[type, ...]] = {
-            'string': str,
-            'number': (int, float),
-            'integer': int,
-            'boolean': bool,
-            'object': dict,
-            'array': list,
-            'null': type(None)
+            "string": str,
+            "number": (int, float),
+            "integer": int,
+            "boolean": bool,
+            "object": dict,
+            "array": list,
+            "null": type(None),
         }
 
         if expected_type in type_map:
@@ -121,24 +121,23 @@ class SchemaValidator:
                 )
 
         # Validate numeric constraints
-        if expected_type == 'number' and 'minimum' in schema:
-            if value < schema['minimum']:
+        if expected_type == "number" and "minimum" in schema:
+            if value < schema["minimum"]:
                 errors_list.append(
                     f"{path}: Value {value} is below minimum {schema['minimum']}"
                 )
 
-        if expected_type == 'number' and 'maximum' in schema:
-            if value > schema['maximum']:
+        if expected_type == "number" and "maximum" in schema:
+            if value > schema["maximum"]:
                 errors_list.append(
                     f"{path}: Value {value} is above maximum {schema['maximum']}"
                 )
 
         # Validate string enumeration
-        if expected_type == 'string' and 'enum' in schema:
-            if value not in schema['enum']:
+        if expected_type == "string" and "enum" in schema:
+            if value not in schema["enum"]:
                 errors_list.append(
-                    f"{path}: Value '{value}' not in allowed values: "
-                    f"{schema['enum']}"
+                    f"{path}: Value '{value}' not in allowed values: {schema['enum']}"
                 )
 
         return errors_list
@@ -153,7 +152,7 @@ class SchemaValidator:
                 errors_list.append(f"{field_path}: Required field missing")
         return errors_list
 
-    def get_default_config(self, schema_name: str = 'main') -> dict[str, Any]:
+    def get_default_config(self, schema_name: str = "main") -> dict[str, Any]:
         """
         Generate default configuration from schema.
 
@@ -177,28 +176,28 @@ class SchemaValidator:
         :return: Default value based on schema
         :rtype: Any
         """
-        if 'default' in schema:
-            return schema['default']
+        if "default" in schema:
+            return schema["default"]
 
-        if 'type' not in schema:
+        if "type" not in schema:
             return None
 
-        schema_type = schema['type']
+        schema_type = schema["type"]
 
-        if schema_type == 'object' and 'properties' in schema:
+        if schema_type == "object" and "properties" in schema:
             result = {}
-            for prop, prop_schema in schema['properties'].items():
+            for prop, prop_schema in schema["properties"].items():
                 result[prop] = self._generate_defaults(prop_schema)
             return result
 
         # Type defaults mapping
         type_defaults = {
-            'array': [],
-            'string': "",
-            'number': 0.0,
-            'integer': 0,
-            'boolean': False,
-            'null': None
+            "array": [],
+            "string": "",
+            "number": 0.0,
+            "integer": 0,
+            "boolean": False,
+            "null": None,
         }
 
         return type_defaults.get(schema_type, None)

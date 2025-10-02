@@ -1,9 +1,10 @@
 """Abstract repository interface for metadata access and caching."""
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any
 
 
 class MetadataRepository(ABC):
@@ -19,8 +20,8 @@ class MetadataRepository(ABC):
         self,
         base_path: Path,
         network: str,
-        dates: List[str],
-    ) -> List[Dict[str, Any]]:
+        dates: list[str],
+    ) -> list[dict[str, Any]]:
         """
         Discover all runs in the given network/dates.
 
@@ -44,7 +45,7 @@ class MetadataRepository(ABC):
         pass
 
     @abstractmethod
-    def get_run_metadata(self, run_path: Path) -> Dict[str, Any]:
+    def get_run_metadata(self, run_path: Path) -> dict[str, Any]:
         """
         Load metadata for a specific run.
 
@@ -64,7 +65,7 @@ class MetadataRepository(ABC):
     def cache_metadata(
         self,
         run_path: Path,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> None:
         """
         Cache metadata for faster subsequent access.
@@ -84,7 +85,7 @@ class MetadataRepository(ABC):
     def get_cached_metadata(
         self,
         run_path: Path,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get cached metadata if available.
 

@@ -37,7 +37,7 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         self.route_help_obj = RoutingHelpers(
             route_props=self.route_props,
             engine_props=self.engine_props,
-            sdn_props=self.sdn_props
+            sdn_props=self.sdn_props,
         )
         self._path_count = 0
         self._total_congestion = 0.0
@@ -61,7 +61,7 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
             USBackbone60, Pan-European, and Generic.
         :rtype: list[str]
         """
-        return ['NSFNet', 'USBackbone60', 'Pan-European', 'Generic']
+        return ["NSFNet", "USBackbone60", "Pan-European", "Generic"]
 
     def validate_environment(self, topology: Any) -> bool:
         """
@@ -72,9 +72,11 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         :return: True if the algorithm can route in this environment.
         :rtype: bool
         """
-        return (hasattr(topology, 'nodes') and
-                hasattr(topology, 'edges') and
-                hasattr(self.sdn_props, 'network_spectrum_dict'))
+        return (
+            hasattr(topology, "nodes")
+            and hasattr(topology, "edges")
+            and hasattr(self.sdn_props, "network_spectrum_dict")
+        )
 
     def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
         """
@@ -104,8 +106,8 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
                 self._path_count += 1
                 # Extract just the path from the dictionary structure
                 path_data = self.route_props.paths_matrix[0]
-                if isinstance(path_data, dict) and 'path_list' in path_data:
-                    best_path = path_data['path_list']
+                if isinstance(path_data, dict) and "path_list" in path_data:
+                    best_path = path_data["path_list"]
                     congestion = self._calculate_path_congestion(best_path)
                     self._total_congestion += float(congestion)
                     return (
@@ -126,13 +128,11 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         the one with the least congested bottleneck link.
         """
         topology = self.engine_props.get(
-            'topology', getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         all_paths_generator = nx.shortest_simple_paths(
-            topology,
-            self.sdn_props.source,
-            self.sdn_props.destination
+            topology, self.sdn_props.source, self.sdn_props.destination
         )
         minimum_hops = None
 
@@ -167,13 +167,13 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         most_congested_free_slots = -1
 
         for link_index in range(len(path_list) - 1):
-            network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+            network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
             link_dict = network_spectrum_dict[
                 (path_list[link_index], path_list[link_index + 1])
             ]
             total_free_slots = 0
-            for band in link_dict['cores_matrix']:
-                cores_matrix = link_dict['cores_matrix'][band]
+            for band in link_dict["cores_matrix"]:
+                cores_matrix = link_dict["cores_matrix"][band]
                 for core_array in cores_matrix:
                     total_free_slots += np.sum(core_array == 0)
 
@@ -184,13 +184,15 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
                 most_congested_free_slots = total_free_slots
                 most_congested_link = link_dict
 
-        self.route_props.paths_matrix.append({
-            'path_list': path_list,
-            'link_dict': {
-                'link': most_congested_link,
-                'free_slots': most_congested_free_slots,
-            },
-        })
+        self.route_props.paths_matrix.append(
+            {
+                "path_list": path_list,
+                "link_dict": {
+                    "link": most_congested_link,
+                    "free_slots": most_congested_free_slots,
+                },
+            }
+        )
 
     def _select_least_congested(self) -> None:
         """
@@ -202,8 +204,8 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         # Sort paths by number of free slots, descending (most free slots first)
         sorted_paths_list = sorted(
             self.route_props.paths_matrix,
-            key=lambda path_data: path_data['link_dict']['free_slots'],
-            reverse=True
+            key=lambda path_data: path_data["link_dict"]["free_slots"],
+            reverse=True,
         )
 
         # Keep all paths in the matrix (for backward compatibility with tests)
@@ -211,9 +213,9 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
 
         # But only populate weights and modulation for the best path
         best_path_data = sorted_paths_list[0]
-        self.route_props.weights_list = [int(best_path_data['link_dict']['free_slots'])]
+        self.route_props.weights_list = [int(best_path_data["link_dict"]["free_slots"])]
         # Use QPSK as the default modulation format for least congested routing
-        self.route_props.modulation_formats_matrix = [['QPSK']]
+        self.route_props.modulation_formats_matrix = [["QPSK"]]
 
     def _calculate_path_congestion(self, path: list[Any]) -> float:
         """
@@ -231,13 +233,13 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         total_used_slots = 0
         total_slots = 0
 
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for i in range(len(path) - 1):
             link_key = (path[i], path[i + 1])
             if link_key in network_spectrum_dict:
                 link_dict = network_spectrum_dict[link_key]
-                for band in link_dict['cores_matrix']:
-                    cores_matrix = link_dict['cores_matrix'][band]
+                for band in link_dict["cores_matrix"]:
+                    cores_matrix = link_dict["cores_matrix"][band]
                     for core_arr in cores_matrix:
                         total_slots += len(core_arr)
                         total_used_slots += np.sum(core_arr != 0)
@@ -285,10 +287,10 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         )
 
         return {
-            'algorithm': self.algorithm_name,
-            'paths_computed': self._path_count,
-            'average_congestion': avg_congestion,
-            'total_congestion_considered': self._total_congestion
+            "algorithm": self.algorithm_name,
+            "paths_computed": self._path_count,
+            "average_congestion": avg_congestion,
+            "total_congestion_considered": self._total_congestion,
         }
 
     def reset(self) -> None:

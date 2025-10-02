@@ -5,25 +5,24 @@ These tests verify that the entire system works correctly from data loading
 through processing to plot generation.
 """
 
-import pytest
 from pathlib import Path
-import matplotlib.pyplot as plt
 
-from fusion.visualization.domain.entities import PlotConfiguration, Run
-from fusion.visualization.domain.value_objects import PlotType, DataType
-from fusion.visualization.application.dto import PlotRequestDTO, PlotResultDTO
-from fusion.visualization.application.use_cases import GeneratePlotUseCase
-from fusion.visualization.infrastructure.repositories import (
-    JsonSimulationRepository,
-    FileMetadataRepository,
+import pytest
+
+from fusion.visualization.application.dto import PlotRequestDTO
+from fusion.visualization.application.services import (
+    CacheService,
+    PlotService,
 )
+from fusion.visualization.application.use_cases import GeneratePlotUseCase
+from fusion.visualization.domain.entities import Run
+from fusion.visualization.domain.value_objects import PlotType
 from fusion.visualization.infrastructure.adapters import DataAdapterRegistry
 from fusion.visualization.infrastructure.processors import BlockingProcessor
 from fusion.visualization.infrastructure.renderers import MatplotlibRenderer
-from fusion.visualization.application.services import (
-    PlotService,
-    CacheService,
-    ValidationService,
+from fusion.visualization.infrastructure.repositories import (
+    FileMetadataRepository,
+    JsonSimulationRepository,
 )
 
 
@@ -93,7 +92,9 @@ class TestFullPipeline:
         # Verify
         assert result.success, f"Pipeline failed: {result.error_message}"
         assert result.output_path is not None
-        assert result.output_path is not None and result.output_path.exists(), "Plot file not created"
+        assert result.output_path is not None and result.output_path.exists(), (
+            "Plot file not created"
+        )
         assert result.output_path.suffix == ".png", "Wrong file format"
         assert len(result.algorithms_plotted) == 2, "Should plot 2 algorithms"
         assert "ppo" in result.algorithms_plotted
@@ -249,7 +250,6 @@ class TestFullPipeline:
 
         # First execution (cold cache)
         result1 = use_case.execute(request)
-        duration1 = result1.duration_seconds
 
         # Second execution (warm cache)
         request.save_path = output_dir / "cache_test_2.png"
@@ -308,7 +308,10 @@ class TestFullPipeline:
         # Verify it fails gracefully
         assert not result.success
         assert result.error_message is not None
-        assert "not found" in result.error_message.lower() or "no runs" in result.error_message.lower()
+        assert (
+            "not found" in result.error_message.lower()
+            or "no runs" in result.error_message.lower()
+        )
 
     def test_pipeline_with_multiple_dates(
         self,
@@ -325,6 +328,7 @@ class TestFullPipeline:
 
         # Create data files
         import json
+
         for erlang in [600, 700, 800]:
             data = {
                 "blocking_mean": 0.015 + (erlang - 600) * 0.008,
@@ -341,7 +345,7 @@ class TestFullPipeline:
                 "sim_start_time": "0611_14_30_45_123456",
                 "sim_end_time": "0611_14_35_20_654321",
             }
-            with open(run_path / f"{erlang}_erlang.json", 'w') as f:
+            with open(run_path / f"{erlang}_erlang.json", "w") as f:
                 json.dump(data, f)
 
         # Create metadata
@@ -353,7 +357,7 @@ class TestFullPipeline:
             "date": date2,
             "seed": 4,
         }
-        with open(run_path.parent / "metadata.json", 'w') as f:
+        with open(run_path.parent / "metadata.json", "w") as f:
             json.dump(metadata, f)
 
         # Setup
@@ -489,8 +493,8 @@ class TestDataLoading:
 
         # Verify canonical data structure
         assert canonical_data is not None
-        assert hasattr(canonical_data, 'blocking_probability')
-        assert hasattr(canonical_data, 'iterations')
+        assert hasattr(canonical_data, "blocking_probability")
+        assert hasattr(canonical_data, "iterations")
         assert canonical_data.blocking_probability is not None
         assert len(canonical_data.iterations) > 0
 
@@ -523,8 +527,9 @@ class TestPlotGeneration:
         tmp_path: Path,
     ) -> None:
         """Test that renderer creates valid plot files."""
-        from fusion.visualization.domain.value_objects import PlotSpecification
         import numpy as np
+
+        from fusion.visualization.domain.value_objects import PlotSpecification
 
         # Create plot specification
         spec = PlotSpecification(
@@ -555,8 +560,9 @@ class TestPlotGeneration:
         tmp_path: Path,
     ) -> None:
         """Test rendering plots with confidence intervals."""
-        from fusion.visualization.domain.value_objects import PlotSpecification
         import numpy as np
+
+        from fusion.visualization.domain.value_objects import PlotSpecification
 
         # Create plot specification with CI data
         spec = PlotSpecification(
@@ -643,7 +649,9 @@ class TestPerformance:
         avg_time = total_time / 5
 
         # Performance target: <2 seconds per plot (generous for integration tests)
-        assert avg_time < 2.0, f"Average plot generation took {avg_time:.2f}s (target: <2.0s)"
+        assert avg_time < 2.0, (
+            f"Average plot generation took {avg_time:.2f}s (target: <2.0s)"
+        )
 
     def test_large_dataset_handling(
         self,
@@ -653,6 +661,7 @@ class TestPerformance:
         """Test handling of larger datasets."""
         # Create additional runs to simulate larger dataset
         import json
+
         network = "NSFNet"
         date = "0606"
 
@@ -677,7 +686,7 @@ class TestPerformance:
                     "sim_start_time": f"0606_12_{30 + seed}_45_{seed}23456",
                     "sim_end_time": f"0606_12_{35 + seed}_20_{seed}54321",
                 }
-                with open(run_path / f"{erlang}_erlang.json", 'w') as f:
+                with open(run_path / f"{erlang}_erlang.json", "w") as f:
                     json.dump(data, f)
 
             metadata = {
@@ -688,7 +697,7 @@ class TestPerformance:
                 "date": date,
                 "seed": seed,
             }
-            with open(run_path.parent / "metadata.json", 'w') as f:
+            with open(run_path.parent / "metadata.json", "w") as f:
                 json.dump(metadata, f)
 
         # Setup

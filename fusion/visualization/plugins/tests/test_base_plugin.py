@@ -1,15 +1,25 @@
 """Unit tests for BasePlugin class."""
 
-import pytest
-from typing import List, Dict
 from pathlib import Path
 
-from fusion.visualization.plugins.base_plugin import BasePlugin, PlotTypeRegistration
-from fusion.visualization.domain.entities.metric import MetricDefinition, DataType, AggregationStrategy
-from fusion.visualization.domain.strategies.processing_strategies import GenericMetricProcessingStrategy
-from fusion.visualization.infrastructure.renderers.base_renderer import BaseRenderer, PlotResult
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
+import pytest
+
 from fusion.visualization.application.ports.plot_renderer_port import RenderResult
+from fusion.visualization.domain.entities.metric import (
+    AggregationStrategy,
+    DataType,
+    MetricDefinition,
+)
+from fusion.visualization.domain.strategies.processing_strategies import (
+    GenericMetricProcessingStrategy,
+)
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
+from fusion.visualization.infrastructure.renderers.base_renderer import (
+    BaseRenderer,
+)
+from fusion.visualization.plugins.base_plugin import BasePlugin, PlotTypeRegistration
 
 
 class MockRenderer(BaseRenderer):
@@ -170,7 +180,7 @@ class TestBasePlugin:
             def name(self) -> str:
                 return "test"
 
-            def register_metrics(self) -> List[MetricDefinition]:
+            def register_metrics(self) -> list[MetricDefinition]:
                 return [
                     MetricDefinition(
                         name="test_metric",
@@ -255,7 +265,7 @@ class TestBasePlugin:
             def name(self) -> str:
                 return "test"
 
-            def validate_config(self, config: Dict) -> bool:
+            def validate_config(self, config: dict) -> bool:
                 return "required_field" in config
 
         plugin = TestPlugin()
@@ -300,7 +310,7 @@ class TestBasePlugin:
                 return "test"
 
             @property
-            def requires(self) -> List[str]:
+            def requires(self) -> list[str]:
                 return ["dep1", "dep2"]
 
         plugin = TestPlugin()

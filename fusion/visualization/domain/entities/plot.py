@@ -1,20 +1,20 @@
 """Plot entity representing a visualization."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
+from fusion.visualization.domain.exceptions.domain_exceptions import (
+    InvalidStateError,
+    ValidationError,
+)
 from fusion.visualization.domain.value_objects.plot_id import PlotId
 from fusion.visualization.domain.value_objects.plot_specification import (
     PlotSpecification,
     PlotType,
-)
-from fusion.visualization.domain.entities.metric import MetricDefinition
-from fusion.visualization.domain.exceptions.domain_exceptions import (
-    ValidationError,
-    InvalidStateError,
 )
 
 
@@ -36,18 +36,18 @@ class PlotConfiguration:
     """Configuration for a plot."""
 
     plot_type: PlotType
-    metrics: List[str]  # Metric names to plot
-    algorithms: List[str]
-    traffic_volumes: List[float]
-    title: Optional[str] = None
-    x_label: Optional[str] = None
-    y_label: Optional[str] = None
+    metrics: list[str]  # Metric names to plot
+    algorithms: list[str]
+    traffic_volumes: list[float]
+    title: str | None = None
+    x_label: str | None = None
+    y_label: str | None = None
     include_ci: bool = True  # Include confidence intervals
     include_baselines: bool = False
     dpi: int = 100
     figsize: tuple[float, float] = (10, 6)
-    save_path: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    save_path: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -64,9 +64,9 @@ class Plot:
     configuration: PlotConfiguration
     created_at: datetime = field(default_factory=datetime.now)
     state: PlotState = PlotState.PENDING
-    specification: Optional[PlotSpecification] = None
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    specification: PlotSpecification | None = None
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def validate(self) -> None:
         """
@@ -103,9 +103,7 @@ class Plot:
     def mark_loaded(self) -> None:
         """Mark plot data as loaded."""
         if self.state != PlotState.LOADING:
-            raise InvalidStateError(
-                f"Cannot mark loaded from state {self.state.value}"
-            )
+            raise InvalidStateError(f"Cannot mark loaded from state {self.state.value}")
         self.state = PlotState.LOADED
 
     def start_processing(self) -> None:
@@ -166,8 +164,4 @@ class Plot:
 
     def __repr__(self) -> str:
         """Return detailed representation."""
-        return (
-            f"Plot(id={self.id}, "
-            f"title='{self.title}', "
-            f"state={self.state.value})"
-        )
+        return f"Plot(id={self.id}, title='{self.title}', state={self.state.value})"

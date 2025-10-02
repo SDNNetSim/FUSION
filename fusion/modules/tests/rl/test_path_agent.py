@@ -77,9 +77,9 @@ class TestPathAgent:
         agent.hyperparam_obj.alpha_strategy = "non_episodic"
         agent.hyperparam_obj.epsilon_strategy = "non_episodic"
         agent._handle_hyperparams()
-        assert (
-            agent.state_action_pair == (agent.rl_props.source,
-                                      agent.rl_props.destination)
+        assert agent.state_action_pair == (
+            agent.rl_props.source,
+            agent.rl_props.destination,
         )
         assert agent.action_index == agent.rl_props.chosen_path_index
         agent.hyperparam_obj.update_timestep_data.assert_called_once()
@@ -113,32 +113,24 @@ class TestPathAgent:
         agent.algorithm_obj.select_path_arm.return_value = 1
 
         paths = np.array([[0, 1, 2], [0, 3, 1]])
-        route_obj = SimpleNamespace(route_props=SimpleNamespace(
-            paths_matrix=paths
-        ))
+        route_obj = SimpleNamespace(route_props=SimpleNamespace(paths_matrix=paths))
 
         agent._bandit_route(route_obj)
 
         assert agent.algorithm_obj.epsilon == 0.3
         assert agent.rl_props.chosen_path_index == 1
-        np.testing.assert_array_equal(
-            agent.rl_props.chosen_path_list, paths[1]
-        )
+        np.testing.assert_array_equal(agent.rl_props.chosen_path_list, paths[1])
 
     # -------------------------- _drl_route ----------------------------
     def test_drl_route_sets_path(self) -> None:
         """_drl_route assigns path for DRL agent."""
         agent = self._mk_agent(alg="ppo")
         paths = np.array([[0, 1, 2], [0, 3, 1]])
-        route_obj = SimpleNamespace(route_props=SimpleNamespace(
-            paths_matrix=paths
-        ))
+        route_obj = SimpleNamespace(route_props=SimpleNamespace(paths_matrix=paths))
 
         agent._drl_route(route_obj=route_obj, action=0)
         assert agent.rl_props.chosen_path_index == 0
-        np.testing.assert_array_equal(
-            agent.rl_props.chosen_path_list, paths[0]
-        )
+        np.testing.assert_array_equal(agent.rl_props.chosen_path_list, paths[0])
 
     def test_drl_route_unsupported_algo_raises(self) -> None:
         """_drl_route raises for unsupported algorithm."""

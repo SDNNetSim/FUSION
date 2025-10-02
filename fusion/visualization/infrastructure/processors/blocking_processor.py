@@ -1,15 +1,16 @@
 """Processor for blocking probability metrics."""
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, List
 from collections import defaultdict
+
 import numpy as np
 
 from fusion.visualization.application.ports import DataProcessorPort, ProcessedData
 from fusion.visualization.domain.entities.run import Run
-from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 from fusion.visualization.domain.exceptions import ProcessingError
+from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 logger = logging.getLogger(__name__)
 
@@ -32,18 +33,19 @@ class BlockingProbabilityProcessor(DataProcessorPort):
         """Check if this processor can handle the metric."""
         return metric_name in self.SUPPORTED_METRICS
 
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """Get list of supported metrics."""
         return self.SUPPORTED_METRICS.copy()
 
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]] | None = None,
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]] | None = None,
         metric_name: str = "blocking_probability",
-        traffic_volumes: List[float] | None = None,
+        traffic_volumes: list[float] | None = None,
         include_ci: bool = True,
-        run_data: Dict[str, Dict[float, CanonicalData]] | None = None,  # Legacy alias for data
+        run_data: dict[str, dict[float, CanonicalData]]
+        | None = None,  # Legacy alias for data
     ) -> ProcessedData:
         """
         Process blocking probability data.
@@ -93,8 +95,8 @@ class BlockingProbabilityProcessor(DataProcessorPort):
             sorted_tvs = sorted(traffic_volumes)
 
             # Prepare output data
-            y_data: Dict[str, List[float]] = {}
-            errors: Dict[str, List[float]] = {} if include_ci else {}
+            y_data: dict[str, list[float]] = {}
+            errors: dict[str, list[float]] = {} if include_ci else {}
 
             for algorithm, tv_dict in aggregated.items():
                 y_values = []
@@ -119,9 +121,7 @@ class BlockingProbabilityProcessor(DataProcessorPort):
                 if include_ci and errors is not None:
                     errors[algorithm] = error_values
 
-            logger.info(
-                f"Successfully processed data for {len(y_data)} algorithms"
-            )
+            logger.info(f"Successfully processed data for {len(y_data)} algorithms")
 
             return ProcessedData(
                 x_data=[float(tv) for tv in sorted_tvs],
@@ -137,14 +137,14 @@ class BlockingProbabilityProcessor(DataProcessorPort):
 
         except Exception as e:
             logger.exception(f"Error processing blocking probability: {e}")
-            raise ProcessingError(f"Failed to process blocking probability: {e}")
+            raise ProcessingError(f"Failed to process blocking probability: {e}") from e
 
     def _aggregate_by_algorithm(
         self,
-        runs_by_algorithm: Dict[str, List[Run]],
-        data: Dict[str, Dict[float, CanonicalData]],
-        traffic_volumes: List[float],
-    ) -> Dict[str, Dict[float, Dict[str, float]]]:
+        runs_by_algorithm: dict[str, list[Run]],
+        data: dict[str, dict[float, CanonicalData]],
+        traffic_volumes: list[float],
+    ) -> dict[str, dict[float, dict[str, float]]]:
         """
         Aggregate data by algorithm and traffic volume.
 
@@ -174,7 +174,9 @@ class BlockingProbabilityProcessor(DataProcessorPort):
                     values_array = np.array(values)
 
                     mean = float(np.mean(values_array))
-                    std = float(np.std(values_array, ddof=1)) if len(values) > 1 else 0.0
+                    std = (
+                        float(np.std(values_array, ddof=1)) if len(values) > 1 else 0.0
+                    )
 
                     # 95% confidence interval (1.96 * SEM)
                     sem = std / np.sqrt(len(values)) if len(values) > 0 else 0.0

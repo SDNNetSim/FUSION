@@ -184,4 +184,3 @@ class TestSimMain:
         assert any("Exception type:" in call for call in print_calls)
         # Should show traceback info
         assert any("Last few calls:" in call for call in print_calls)
-

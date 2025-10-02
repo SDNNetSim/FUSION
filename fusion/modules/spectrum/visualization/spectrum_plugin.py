@@ -5,19 +5,18 @@ utilization analysis in optical networks.
 """
 
 from pathlib import Path
-from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
-from matplotlib.figure import Figure
 
 from fusion.visualization.domain.entities.metric import (
     AggregationStrategy,
     DataType,
     MetricDefinition,
 )
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
 from fusion.visualization.infrastructure.renderers.base_renderer import (
     BaseRenderer,
     PlotResult,
@@ -64,7 +63,9 @@ class SpectrumHeatmapRenderer(BaseRenderer):
 
         if spectrum_matrix.size > 0:
             # Create heatmap
-            im = ax.imshow(spectrum_matrix, aspect="auto", cmap="YlOrRd", interpolation="nearest")
+            im = ax.imshow(
+                spectrum_matrix, aspect="auto", cmap="YlOrRd", interpolation="nearest"
+            )
 
             # Add colorbar
             cbar = plt.colorbar(im, ax=ax)
@@ -73,7 +74,11 @@ class SpectrumHeatmapRenderer(BaseRenderer):
             # Labels
             ax.set_xlabel("Spectrum Slot", fontsize=12)
             ax.set_ylabel("Link", fontsize=12)
-            ax.set_title(specification.title or "Spectrum Utilization Heatmap", fontsize=14, fontweight="bold")
+            ax.set_title(
+                specification.title or "Spectrum Utilization Heatmap",
+                fontsize=14,
+                fontweight="bold",
+            )
 
         plt.tight_layout()
 
@@ -82,7 +87,9 @@ class SpectrumHeatmapRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "spectrum_heatmap"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "spectrum_heatmap"},
         )
 
 
@@ -132,7 +139,9 @@ class FragmentationPlotRenderer(BaseRenderer):
 
         ax1.set_xlabel("Traffic Volume (Erlang)", fontsize=12)
         ax1.set_ylabel("Fragmentation Index", fontsize=12)
-        ax1.set_title("Spectrum Fragmentation vs Traffic", fontsize=12, fontweight="bold")
+        ax1.set_title(
+            "Spectrum Fragmentation vs Traffic", fontsize=12, fontweight="bold"
+        )
         ax1.legend(loc="best")
         ax1.grid(True, alpha=0.3)
 
@@ -148,7 +157,11 @@ class FragmentationPlotRenderer(BaseRenderer):
         ax2.set_title("Average Spectrum Fragment Size", fontsize=12, fontweight="bold")
         ax2.grid(True, alpha=0.3, axis="y")
 
-        fig.suptitle(specification.title or "Spectrum Fragmentation Analysis", fontsize=14, fontweight="bold")
+        fig.suptitle(
+            specification.title or "Spectrum Fragmentation Analysis",
+            fontsize=14,
+            fontweight="bold",
+        )
         plt.tight_layout()
 
         # Save
@@ -156,7 +169,9 @@ class FragmentationPlotRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "fragmentation_plot"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "fragmentation_plot"},
         )
 
 
@@ -184,7 +199,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
         """Return plugin description."""
         return "Visualization plugin for spectrum allocation and utilization analysis"
 
-    def register_metrics(self) -> List[MetricDefinition]:
+    def register_metrics(self) -> list[MetricDefinition]:
         """Register spectrum-specific metrics.
 
         Returns:
@@ -207,7 +222,10 @@ class SpectrumVisualizationPlugin(BasePlugin):
                 source_path="$.spectrum.fragmentation_index",
                 aggregation=AggregationStrategy.MEAN,
                 unit="index",
-                description="Measure of spectrum fragmentation (0=no fragmentation, 1=max fragmentation)",
+                description=(
+                    "Measure of spectrum fragmentation "
+                    "(0=no fragmentation, 1=max fragmentation)"
+                ),
             ),
             MetricDefinition(
                 name="avg_fragment_size",
@@ -247,7 +265,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
             ),
         ]
 
-    def register_plot_types(self) -> Dict[str, PlotTypeRegistration]:
+    def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
         """Register spectrum-specific plot types.
 
         Returns:
@@ -261,7 +279,9 @@ class SpectrumVisualizationPlugin(BasePlugin):
             "spectrum_heatmap": PlotTypeRegistration(
                 processor=GenericMetricProcessingStrategy(),
                 renderer=SpectrumHeatmapRenderer(),
-                description="Heatmap showing spectrum utilization across links and slots",
+                description=(
+                    "Heatmap showing spectrum utilization across links and slots"
+                ),
                 required_metrics=["spectrum_utilization"],
                 default_config={"colormap": "YlOrRd", "show_colorbar": True},
             ),
@@ -274,7 +294,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
             ),
         }
 
-    def get_config_schema(self) -> Dict:
+    def get_config_schema(self) -> dict:
         """Return JSON schema for spectrum plugin configuration.
 
         Returns:
@@ -285,7 +305,11 @@ class SpectrumVisualizationPlugin(BasePlugin):
             "title": "Spectrum Visualization Plugin Configuration",
             "type": "object",
             "properties": {
-                "colormap": {"type": "string", "default": "YlOrRd", "description": "Colormap for heatmaps"},
+                "colormap": {
+                    "type": "string",
+                    "default": "YlOrRd",
+                    "description": "Colormap for heatmaps",
+                },
                 "show_fragmentation_stats": {
                     "type": "boolean",
                     "default": True,

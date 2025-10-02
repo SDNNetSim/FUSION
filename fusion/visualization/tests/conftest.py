@@ -2,32 +2,31 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
+
 import pytest
-import numpy as np
 
 from fusion.visualization.domain.entities import (
-    Run,
     MetricDefinition,
-    PlotConfiguration,
     Plot,
+    PlotConfiguration,
+    Run,
 )
 from fusion.visualization.domain.value_objects import (
-    PlotId,
-    DataVersion,
-    MetricValue,
     DataType,
+    MetricValue,
+    PlotId,
     PlotType,
 )
 from fusion.visualization.infrastructure.adapters import (
+    DataAdapterRegistry,
     V1DataAdapter,
     V2DataAdapter,
-    DataAdapterRegistry,
 )
 
 
 @pytest.fixture
-def sample_v1_data() -> Dict[str, Any]:
+def sample_v1_data() -> dict[str, Any]:
     """Sample V1 format data."""
     return {
         "blocking_mean": 0.045,
@@ -57,7 +56,7 @@ def sample_v1_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_v2_data() -> Dict[str, Any]:
+def sample_v2_data() -> dict[str, Any]:
     """Sample V2 format data."""
     return {
         "version": "v2",
@@ -186,9 +185,9 @@ def fixtures_dir() -> Path:
 
 
 @pytest.fixture
-def sample_data_file(tmp_path: Path, sample_v1_data: Dict[str, Any]) -> Path:
+def sample_data_file(tmp_path: Path, sample_v1_data: dict[str, Any]) -> Path:
     """Create a sample data file."""
     data_file = tmp_path / "150_erlang.json"
-    with open(data_file, 'w') as f:
+    with open(data_file, "w") as f:
         json.dump(sample_v1_data, f)
     return data_file

@@ -6,8 +6,7 @@ from fusion.utils.os import find_project_root
 
 
 def create_pt(
-    cores_per_link: int,
-    network_spectrum_dict: dict[tuple, float]
+    cores_per_link: int, network_spectrum_dict: dict[tuple, float]
 ) -> dict[str, dict]:
     """Generate information relevant to the physical topology of the network.
 
@@ -20,40 +19,38 @@ def create_pt(
     :rtype: Dict[str, Dict]
     """
     fiber_props_dict = {
-        'attenuation': 0.2 / 4.343 * 1e-3,
-        'non_linearity': 1.3e-3,
-        'dispersion': (16e-6 * 1550e-9 ** 2) / (2 * math.pi * 3e8),
-        'num_cores': cores_per_link,
-        'fiber_type': 0,
-        'bending_radius': 0.05,
-        'mode_coupling_co': 4.0e-4,
-        'propagation_const': 4e6,
-        'core_pitch': 4e-5,
+        "attenuation": 0.2 / 4.343 * 1e-3,
+        "non_linearity": 1.3e-3,
+        "dispersion": (16e-6 * 1550e-9**2) / (2 * math.pi * 3e8),
+        "num_cores": cores_per_link,
+        "fiber_type": 0,
+        "bending_radius": 0.05,
+        "mode_coupling_co": 4.0e-4,
+        "propagation_const": 4e6,
+        "core_pitch": 4e-5,
     }
 
     topology_dict = {
-        'nodes': {
-            node: {'type': 'CDC'}
-            for nodes in network_spectrum_dict
-            for node in nodes
+        "nodes": {
+            node: {"type": "CDC"} for nodes in network_spectrum_dict for node in nodes
         },
-        'links': {},
+        "links": {},
     }
 
     for link_num, (source_node, destination_node) in enumerate(
         network_spectrum_dict, 1
     ):
         link_props_dict = {
-            'fiber': fiber_props_dict,
-            'length': network_spectrum_dict[(source_node, destination_node)],
-            'source': source_node,
-            'destination': destination_node,
-            'span_length': 100,
+            "fiber": fiber_props_dict,
+            "length": network_spectrum_dict[(source_node, destination_node)],
+            "source": source_node,
+            "destination": destination_node,
+            "span_length": 100,
         }
-        topology_dict['links'][link_num] = link_props_dict
+        topology_dict["links"][link_num] = link_props_dict
 
     # Validation check to ensure we have nodes
-    if not topology_dict['nodes']:
+    if not topology_dict["nodes"]:
         keys_sample = list(network_spectrum_dict.keys())[:5]
         raise ValueError(
             f"create_pt generated empty nodes dictionary. Input "
@@ -65,8 +62,7 @@ def create_pt(
 
 
 def create_bw_info(
-    mod_assumption: str,
-    mod_assumptions_path: str | None = None
+    mod_assumption: str, mod_assumptions_path: str | None = None
 ) -> dict[str, dict]:
     """Determine reach and slots needed for each bandwidth and modulation format.
 
@@ -83,9 +79,7 @@ def create_bw_info(
     # Set default path if none provided
     if not mod_assumptions_path or mod_assumptions_path == "None":
         project_root = Path(find_project_root())
-        resolved_path = (
-            project_root / "data/json_input/run_mods/mod_formats.json"
-        )
+        resolved_path = project_root / "data/json_input/run_mods/mod_formats.json"
     else:
         resolved_path = Path(mod_assumptions_path)
 
@@ -107,8 +101,6 @@ def create_bw_info(
             f"Could not parse JSON: {json_error.doc}"
         ) from json_error
     except FileNotFoundError as file_error:
-        raise FileNotFoundError(
-            f"File not found: {resolved_path}"
-        ) from file_error
+        raise FileNotFoundError(f"File not found: {resolved_path}") from file_error
 
     raise NotImplementedError(f"Unknown modulation assumption '{mod_assumption}'")

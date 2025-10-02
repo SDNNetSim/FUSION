@@ -233,7 +233,9 @@ class TestValidationService:
 
         assert result.is_valid
 
-    def test_insufficient_algorithms_for_comparison(self, service: ValidationService) -> None:
+    def test_insufficient_algorithms_for_comparison(
+        self, service: ValidationService
+    ) -> None:
         """Should require at least 2 algorithms for comparison."""
         config = {
             "network": "NSFNet",

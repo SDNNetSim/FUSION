@@ -1,20 +1,22 @@
 """Matplotlib-based plot renderer."""
 
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Optional
+
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+
+matplotlib.use("Agg")  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
 from fusion.visualization.application.ports import PlotRendererPort, RenderResult
+from fusion.visualization.domain.exceptions import RenderError
 from fusion.visualization.domain.value_objects.plot_specification import (
     PlotSpecification,
     PlotType,
 )
-from fusion.visualization.domain.exceptions import RenderError
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +48,16 @@ class MatplotlibRenderer(PlotRendererPort):
 
     def __init__(
         self,
-        style: Optional[str] = None,
-        output_dir: Optional[Path] = None,
+        style: str | None = None,
+        output_dir: Path | None = None,
     ):
         """
         Initialize renderer.
 
         Args:
             style: Matplotlib style to use (default: seaborn-v0_8-darkgrid)
-            output_dir: Optional default output directory (currently unused, kept for compatibility)
+            output_dir: Optional default output directory
+                (currently unused, kept for compatibility)
         """
         self.style = style or self.DEFAULT_STYLE
         self.output_dir = Path(output_dir) if output_dir else None
@@ -92,9 +95,7 @@ class MatplotlibRenderer(PlotRendererPort):
         Returns:
             RenderResult with success status
         """
-        logger.info(
-            f"Rendering {specification.plot_type.value} plot to {output_path}"
-        )
+        logger.info(f"Rendering {specification.plot_type.value} plot to {output_path}")
 
         try:
             # Validate format
@@ -172,7 +173,7 @@ class MatplotlibRenderer(PlotRendererPort):
             color = self.DEFAULT_COLORS[i % len(self.DEFAULT_COLORS)]
 
             # Plot line with markers
-            line = ax.plot(
+            ax.plot(
                 x_data,
                 y_data,
                 marker="o",

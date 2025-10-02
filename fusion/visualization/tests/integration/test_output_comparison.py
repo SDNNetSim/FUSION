@@ -5,20 +5,21 @@ These tests run both the legacy and new visualization systems in parallel
 and compare their outputs to ensure compatibility and correctness.
 """
 
-import pytest
-from pathlib import Path
-import numpy as np
 import json
-from typing import Dict, Any
+from pathlib import Path
+from typing import Any
 
-from fusion.visualization.infrastructure.repositories import JsonSimulationRepository
+import numpy as np
+import pytest
+
+from fusion.visualization.application.dto import PlotRequestDTO
+from fusion.visualization.application.services import CacheService, PlotService
+from fusion.visualization.application.use_cases import GeneratePlotUseCase
+from fusion.visualization.domain.value_objects import PlotType
 from fusion.visualization.infrastructure.adapters import DataAdapterRegistry
 from fusion.visualization.infrastructure.processors import BlockingProcessor
 from fusion.visualization.infrastructure.renderers import MatplotlibRenderer
-from fusion.visualization.application.services import PlotService, CacheService
-from fusion.visualization.application.use_cases import GeneratePlotUseCase
-from fusion.visualization.application.dto import PlotRequestDTO
-from fusion.visualization.domain.value_objects import PlotType
+from fusion.visualization.infrastructure.repositories import JsonSimulationRepository
 
 
 class TestOutputEquivalence:
@@ -68,8 +69,14 @@ class TestOutputEquivalence:
         assert 0.0 <= canonical_data_800.blocking_probability <= 1.0
 
         # Verify blocking increases with traffic (should be monotonic)
-        assert canonical_data_700.blocking_probability >= canonical_data_600.blocking_probability
-        assert canonical_data_800.blocking_probability >= canonical_data_700.blocking_probability
+        assert (
+            canonical_data_700.blocking_probability
+            >= canonical_data_600.blocking_probability
+        )
+        assert (
+            canonical_data_800.blocking_probability
+            >= canonical_data_700.blocking_probability
+        )
 
     def test_processor_output_format(
         self,
@@ -92,7 +99,7 @@ class TestOutputEquivalence:
         assert len(runs) > 0
 
         # Load data
-        run_data: Dict[str, Dict[float, Any]] = {}
+        run_data: dict[str, dict[float, Any]] = {}
         for run in runs:
             run_data[run.id] = {}
             for traffic_volume in [600.0, 700.0, 800.0]:
@@ -109,8 +116,8 @@ class TestOutputEquivalence:
 
         # Verify output structure
         assert processed_data is not None
-        assert hasattr(processed_data, 'x_data')
-        assert hasattr(processed_data, 'y_data')
+        assert hasattr(processed_data, "x_data")
+        assert hasattr(processed_data, "y_data")
         assert len(processed_data.x_data) == 3  # 3 traffic volumes
         assert "ppo" in processed_data.y_data  # Algorithm should be in results
 
@@ -224,15 +231,13 @@ class TestOutputEquivalence:
 
         # Calculate statistics manually
         manual_mean = np.mean(blocking_values)
-        manual_std = np.std(blocking_values, ddof=1)
+        np.std(blocking_values, ddof=1)
 
         # Use processor to calculate statistics
         processor = BlockingProcessor()
-        run_data: Dict[str, Dict[float, Any]] = {}
+        run_data: dict[str, dict[float, Any]] = {}
         for run in runs:
-            run_data[run.id] = {
-                600.0: sim_repo.get_run_data(run, traffic_volume=600)
-            }
+            run_data[run.id] = {600.0: sim_repo.get_run_data(run, traffic_volume=600)}
 
         processed = processor.process(
             runs=runs,
@@ -244,8 +249,9 @@ class TestOutputEquivalence:
         processor_mean = processed.y_data["ppo"][0]
 
         # Allow small numerical differences due to floating point arithmetic
-        assert np.isclose(processor_mean, manual_mean, rtol=1e-5), \
+        assert np.isclose(processor_mean, manual_mean, rtol=1e-5), (
             f"Processor mean {processor_mean} != manual mean {manual_mean}"
+        )
 
     def test_format_adaptation_produces_equivalent_results(
         self,
@@ -273,7 +279,9 @@ class TestOutputEquivalence:
         )
 
         # Load V1 data
-        runs_v1 = sim_repo_v1.find_runs(network="NSFNet", dates=["0606"], algorithm="ppo")
+        runs_v1 = sim_repo_v1.find_runs(
+            network="NSFNet", dates=["0606"], algorithm="ppo"
+        )
         if len(runs_v1) > 0:
             data_v1 = sim_repo_v1.get_run_data(runs_v1[0], traffic_volume=600)
             blocking_v1 = data_v1.blocking_probability
@@ -283,7 +291,9 @@ class TestOutputEquivalence:
             assert 0.0 <= blocking_v1 <= 1.0
 
         # Load V2 data
-        runs_v2 = sim_repo_v2.find_runs(network="USNet", dates=["0611"], algorithm="ppo")
+        runs_v2 = sim_repo_v2.find_runs(
+            network="USNet", dates=["0611"], algorithm="ppo"
+        )
         if len(runs_v2) > 0:
             data_v2 = sim_repo_v2.get_run_data(runs_v2[0], traffic_volume=600)
             blocking_v2 = data_v2.blocking_probability
@@ -319,10 +329,14 @@ class TestRegressionDetection:
 
         # Load raw data file
         data_file = (
-            integration_data_dir / "NSFNet" / "0606" /
-            "1715_12_30_45_123456" / "s1" / "600_erlang.json"
+            integration_data_dir
+            / "NSFNet"
+            / "0606"
+            / "1715_12_30_45_123456"
+            / "s1"
+            / "600_erlang.json"
         )
-        with open(data_file, 'r') as f:
+        with open(data_file) as f:
             raw_data = json.load(f)
 
         # Get adapter
@@ -341,7 +355,7 @@ class TestRegressionDetection:
 
         # Check first iteration
         first_iteration = canonical.iterations[0]
-        assert hasattr(first_iteration, 'sim_block_list')
+        assert hasattr(first_iteration, "sim_block_list")
         assert first_iteration.sim_block_list is not None
         assert len(first_iteration.sim_block_list) > 0
 
@@ -486,7 +500,10 @@ class TestRegressionDetection:
         # Should handle single point gracefully (may succeed or fail with clear message)
         if not result.success:
             assert result.error_message is not None
-            assert "single" in result.error_message.lower() or "point" in result.error_message.lower()
+            assert (
+                "single" in result.error_message.lower()
+                or "point" in result.error_message.lower()
+            )
 
 
 class TestBackwardCompatibility:
@@ -512,10 +529,14 @@ class TestBackwardCompatibility:
 
         # Load legacy format file
         data_file = (
-            integration_data_dir / "NSFNet" / "0606" /
-            "1715_12_30_45_123456" / "s1" / "600_erlang.json"
+            integration_data_dir
+            / "NSFNet"
+            / "0606"
+            / "1715_12_30_45_123456"
+            / "s1"
+            / "600_erlang.json"
         )
-        with open(data_file, 'r') as f:
+        with open(data_file) as f:
             raw_data = json.load(f)
 
         # Verify it's V1 format
@@ -535,7 +556,7 @@ class TestBackwardCompatibility:
 
         # Verify iteration data
         for iteration in canonical.iterations:
-            assert hasattr(iteration, 'sim_block_list')
+            assert hasattr(iteration, "sim_block_list")
             assert iteration.sim_block_list is not None
             assert len(iteration.sim_block_list) > 0
 

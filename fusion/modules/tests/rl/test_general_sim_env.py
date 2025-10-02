@@ -59,16 +59,20 @@ spaces_mod.Box = _DummySpace  # type: ignore[attr-defined]
 spaces_mod.Discrete = _DummySpace  # type: ignore[attr-defined]
 gym_mod.Env = _StubGymEnv  # type: ignore[attr-defined]
 gym_mod.spaces = spaces_mod  # type: ignore[attr-defined]
-sys.modules.update({
-    "gymnasium": gym_mod,
-    "gymnasium.spaces": spaces_mod,
-})
+sys.modules.update(
+    {
+        "gymnasium": gym_mod,
+        "gymnasium.spaces": spaces_mod,
+    }
+)
 
 torch_mod = ModuleType("torch")
 torch_nn_mod = ModuleType("torch.nn")
 
+
 class _Tensor:
     """Minimal placeholder for torch.Tensor."""
+
     def numel(self) -> int:
         """Return number of elements in tensor."""
         return 1
@@ -81,7 +85,9 @@ class _Tensor:
         """Return tensor with dimension `dim`."""
         return self
 
+
 torch_mod.Tensor = _Tensor  # type: ignore[attr-defined]
+
 
 class _NNModule:
     """Lightweight torch.nn.Module replacement."""
@@ -114,10 +120,12 @@ torch_nn_mod.Linear = _Linear  # type: ignore[attr-defined]
 torch_nn_mod.ReLU = _NNModule  # type: ignore[attr-defined]
 torch_mod.nn = torch_nn_mod  # type: ignore[attr-defined]
 torch_mod.randn = _randn  # type: ignore[attr-defined]
-sys.modules.update({
-    "torch": torch_mod,
-    "torch.nn": torch_nn_mod,
-})
+sys.modules.update(
+    {
+        "torch": torch_mod,
+        "torch.nn": torch_nn_mod,
+    }
+)
 
 # torch_geometric.nn with dummy convs
 tg_mod = ModuleType("torch_geometric")
@@ -125,10 +133,12 @@ tg_nn_mod = ModuleType("torch_geometric.nn")
 for _name in ("GraphConv", "SAGEConv", "GATv2Conv", "TransformerConv"):
     setattr(tg_nn_mod, _name, _NNModule)
 tg_mod.nn = tg_nn_mod  # type: ignore[attr-defined]
-sys.modules.update({
-    "torch_geometric": tg_mod,
-    "torch_geometric.nn": tg_nn_mod,
-})
+sys.modules.update(
+    {
+        "torch_geometric": tg_mod,
+        "torch_geometric.nn": tg_nn_mod,
+    }
+)
 
 sb3_root = ModuleType("stable_baselines3")
 
@@ -153,12 +163,14 @@ sb3_torch_layers.BaseFeaturesExtractor = type(  # type: ignore[attr-defined]
 sb3_common.base_class = sb3_base_class  # type: ignore[attr-defined]
 sb3_common.torch_layers = sb3_torch_layers  # type: ignore[attr-defined]
 
-sys.modules.update({
-    "stable_baselines3": sb3_root,
-    "stable_baselines3.common": sb3_common,
-    "stable_baselines3.common.base_class": sb3_base_class,
-    "stable_baselines3.common.torch_layers": sb3_torch_layers,
-})
+sys.modules.update(
+    {
+        "stable_baselines3": sb3_root,
+        "stable_baselines3.common": sb3_common,
+        "stable_baselines3.common.base_class": sb3_base_class,
+        "stable_baselines3.common.torch_layers": sb3_torch_layers,
+    }
+)
 
 sb3_contrib = ModuleType("sb3_contrib")
 for _name in ("ARS", "QRDQN"):
@@ -367,7 +379,10 @@ class TestSimEnv:
         self.env.rl_props.arrival_count = 0
         if not self.env.rl_props.arrival_list:
             arrival_dict: dict[str, Any] = {
-                "req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0
+                "req_id": 0,
+                "bandwidth": 10,
+                "depart": 20,
+                "arrive": 0,
             }
             self.env.rl_props.arrival_list.append(arrival_dict)  # type: ignore[arg-type]
 

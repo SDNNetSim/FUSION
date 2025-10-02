@@ -17,22 +17,23 @@ class TestConfigRegistry:
     def setup_method(self) -> None:
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
-        self.templates_dir = os.path.join(self.temp_dir, 'templates')
-        self.schemas_dir = os.path.join(self.temp_dir, 'schemas')
+        self.templates_dir = os.path.join(self.temp_dir, "templates")
+        self.schemas_dir = os.path.join(self.temp_dir, "schemas")
         os.makedirs(self.templates_dir)
         os.makedirs(self.schemas_dir)
 
     def teardown_method(self) -> None:
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir)
 
     def test_init_with_default_directories(self) -> None:
         """Test ConfigRegistry initialization with default directories."""
         registry = ConfigRegistry()
 
-        assert registry.templates_dir.endswith('templates')
-        assert registry.schemas_dir.endswith('schemas')
+        assert registry.templates_dir.endswith("templates")
+        assert registry.schemas_dir.endswith("schemas")
         assert isinstance(registry.validator, object)
         assert isinstance(registry._templates, dict)
 
@@ -52,44 +53,44 @@ class TestConfigRegistry:
     def test_load_templates_with_ini_files(self) -> None:
         """Test loading templates with INI files."""
         # Create test template files
-        template1_path = os.path.join(self.templates_dir, 'template1.ini')
-        template2_path = os.path.join(self.templates_dir, 'template2.ini')
+        template1_path = os.path.join(self.templates_dir, "template1.ini")
+        template2_path = os.path.join(self.templates_dir, "template2.ini")
 
-        with open(template1_path, 'w') as f:
-            f.write('[general_settings]\nholding_time = 10\n')
-        with open(template2_path, 'w') as f:
-            f.write('[general_settings]\nholding_time = 20\n')
+        with open(template1_path, "w") as f:
+            f.write("[general_settings]\nholding_time = 10\n")
+        with open(template2_path, "w") as f:
+            f.write("[general_settings]\nholding_time = 20\n")
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
 
-        assert 'template1' in registry._templates
-        assert 'template2' in registry._templates
-        assert registry._templates['template1'] == template1_path
-        assert registry._templates['template2'] == template2_path
+        assert "template1" in registry._templates
+        assert "template2" in registry._templates
+        assert registry._templates["template1"] == template1_path
+        assert registry._templates["template2"] == template2_path
 
     def test_load_templates_ignores_non_ini_files(self) -> None:
         """Test that loading templates ignores non-INI files."""
         # Create files with different extensions
-        ini_file = os.path.join(self.templates_dir, 'template.ini')
-        txt_file = os.path.join(self.templates_dir, 'readme.txt')
-        json_file = os.path.join(self.templates_dir, 'config.json')
+        ini_file = os.path.join(self.templates_dir, "template.ini")
+        txt_file = os.path.join(self.templates_dir, "readme.txt")
+        json_file = os.path.join(self.templates_dir, "config.json")
 
-        with open(ini_file, 'w') as f:
-            f.write('[general_settings]\nholding_time = 10\n')
-        with open(txt_file, 'w') as f:
-            f.write('This is a readme file')
-        with open(json_file, 'w') as f:
+        with open(ini_file, "w") as f:
+            f.write("[general_settings]\nholding_time = 10\n")
+        with open(txt_file, "w") as f:
+            f.write("This is a readme file")
+        with open(json_file, "w") as f:
             f.write('{"key": "value"}')
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
 
-        assert 'template' in registry._templates
-        assert 'readme' not in registry._templates
-        assert 'config' not in registry._templates
+        assert "template" in registry._templates
+        assert "readme" not in registry._templates
+        assert "config" not in registry._templates
 
     def test_load_templates_nonexistent_directory(self) -> None:
         """Test loading templates from non-existent directory."""
-        nonexistent_dir = os.path.join(self.temp_dir, 'nonexistent')
+        nonexistent_dir = os.path.join(self.temp_dir, "nonexistent")
         registry = ConfigRegistry(nonexistent_dir, self.schemas_dir)
 
         assert registry._templates == {}
@@ -106,45 +107,45 @@ class TestConfigRegistry:
         """Test listing templates when templates exist."""
         # Create test templates
         for i in range(3):
-            template_path = os.path.join(self.templates_dir, f'template{i}.ini')
-            with open(template_path, 'w') as f:
-                f.write(f'[general_settings]\nholding_time = {i * 10}\n')
+            template_path = os.path.join(self.templates_dir, f"template{i}.ini")
+            with open(template_path, "w") as f:
+                f.write(f"[general_settings]\nholding_time = {i * 10}\n")
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
         templates = registry.list_templates()
 
         assert len(templates) == 3
-        assert 'template0' in templates
-        assert 'template1' in templates
-        assert 'template2' in templates
+        assert "template0" in templates
+        assert "template1" in templates
+        assert "template2" in templates
 
     def test_get_template_path_existing(self) -> None:
         """Test getting path for existing template."""
-        template_path = os.path.join(self.templates_dir, 'test_template.ini')
-        with open(template_path, 'w') as f:
-            f.write('[general_settings]\nholding_time = 10\n')
+        template_path = os.path.join(self.templates_dir, "test_template.ini")
+        with open(template_path, "w") as f:
+            f.write("[general_settings]\nholding_time = 10\n")
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        result = registry.get_template_path('test_template')
+        result = registry.get_template_path("test_template")
 
         assert result == template_path
 
     def test_get_template_path_nonexistent(self) -> None:
         """Test getting path for non-existent template."""
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        result = registry.get_template_path('nonexistent')
+        result = registry.get_template_path("nonexistent")
 
         assert result is None
 
-    @patch.object(ConfigManager, '__init__', return_value=None)
+    @patch.object(ConfigManager, "__init__", return_value=None)
     def test_load_template_success(self, mock_config_manager: Mock) -> None:
         """Test successful template loading."""
-        template_path = os.path.join(self.templates_dir, 'test_template.ini')
-        with open(template_path, 'w') as f:
-            f.write('[general_settings]\nholding_time = 10\n')
+        template_path = os.path.join(self.templates_dir, "test_template.ini")
+        with open(template_path, "w") as f:
+            f.write("[general_settings]\nholding_time = 10\n")
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        result = registry.load_template('test_template')
+        result = registry.load_template("test_template")
 
         assert isinstance(result, ConfigManager)
         mock_config_manager.assert_called_once_with(template_path, self.schemas_dir)
@@ -154,11 +155,11 @@ class TestConfigRegistry:
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
 
         with pytest.raises(ConfigError) as exc_info:
-            registry.load_template('nonexistent')
+            registry.load_template("nonexistent")
 
         assert "Template 'nonexistent' not found" in str(exc_info.value)
 
-    @patch.object(ConfigRegistry, 'load_template')
+    @patch.object(ConfigRegistry, "load_template")
     def test_create_custom_config_default_template(
         self, mock_load_template: Mock
     ) -> None:
@@ -169,10 +170,10 @@ class TestConfigRegistry:
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
         result = registry.create_custom_config()
 
-        mock_load_template.assert_called_once_with('default')
+        mock_load_template.assert_called_once_with("default")
         assert result is mock_config_manager
 
-    @patch.object(ConfigRegistry, 'load_template')
+    @patch.object(ConfigRegistry, "load_template")
     def test_create_custom_config_with_overrides(
         self, mock_load_template: Mock
     ) -> None:
@@ -181,28 +182,28 @@ class TestConfigRegistry:
         mock_load_template.return_value = mock_config_manager
 
         overrides = {
-            'general_settings.max_iters': 5,
-            'holding_time': 15  # Unqualified key
+            "general_settings.max_iters": 5,
+            "holding_time": 15,  # Unqualified key
         }
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        registry.create_custom_config('test_template', overrides)
+        registry.create_custom_config("test_template", overrides)
 
-        mock_load_template.assert_called_once_with('test_template')
+        mock_load_template.assert_called_once_with("test_template")
         mock_config_manager.update_config.assert_any_call(
-            'general_settings', 'max_iters', 5
+            "general_settings", "max_iters", 5
         )
         mock_config_manager.update_config.assert_any_call(
-            'general_settings', 'holding_time', 15
+            "general_settings", "holding_time", 15
         )
 
     def test_validate_config_success(self) -> None:
         """Test successful configuration validation."""
-        config_path = os.path.join(self.temp_dir, 'valid_config.ini')
-        with open(config_path, 'w') as f:
-            f.write('[general_settings]\nholding_time = 10\n')
+        config_path = os.path.join(self.temp_dir, "valid_config.ini")
+        with open(config_path, "w") as f:
+            f.write("[general_settings]\nholding_time = 10\n")
 
-        with patch.object(ConfigManager, '__init__', return_value=None):
+        with patch.object(ConfigManager, "__init__", return_value=None):
             registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
             errors = registry.validate_config(config_path)
 
@@ -210,9 +211,9 @@ class TestConfigRegistry:
 
     def test_validate_config_failure(self) -> None:
         """Test configuration validation failure."""
-        config_path = os.path.join(self.temp_dir, 'invalid_config.ini')
-        with open(config_path, 'w') as f:
-            f.write('invalid ini content')
+        config_path = os.path.join(self.temp_dir, "invalid_config.ini")
+        with open(config_path, "w") as f:
+            f.write("invalid ini content")
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
         errors = registry.validate_config(config_path)
@@ -226,26 +227,26 @@ class TestConfigRegistry:
         profiles = registry.get_config_profiles()
 
         assert isinstance(profiles, dict)
-        assert 'quick_test' in profiles
-        assert 'development' in profiles
-        assert 'production' in profiles
-        assert 'rl_experiment' in profiles
-        assert 'benchmark' in profiles
+        assert "quick_test" in profiles
+        assert "development" in profiles
+        assert "production" in profiles
+        assert "rl_experiment" in profiles
+        assert "benchmark" in profiles
 
         # Test profile structure
-        quick_test = profiles['quick_test']
-        assert 'description' in quick_test
-        assert 'template' in quick_test
-        assert 'overrides' in quick_test
+        quick_test = profiles["quick_test"]
+        assert "description" in quick_test
+        assert "template" in quick_test
+        assert "overrides" in quick_test
 
-    @patch.object(ConfigRegistry, 'create_custom_config')
+    @patch.object(ConfigRegistry, "create_custom_config")
     def test_create_profile_config_success(self, mock_create_custom: Mock) -> None:
         """Test creating config from profile successfully."""
         mock_config_manager = Mock()
         mock_create_custom.return_value = mock_config_manager
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        result = registry.create_profile_config('quick_test')
+        result = registry.create_profile_config("quick_test")
 
         assert result is mock_config_manager
         mock_create_custom.assert_called_once()
@@ -255,11 +256,11 @@ class TestConfigRegistry:
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
 
         with pytest.raises(ConfigError) as exc_info:
-            registry.create_profile_config('nonexistent_profile')
+            registry.create_profile_config("nonexistent_profile")
 
         assert "Profile 'nonexistent_profile' not found" in str(exc_info.value)
 
-    @patch.object(ConfigRegistry, 'create_custom_config')
+    @patch.object(ConfigRegistry, "create_custom_config")
     def test_create_profile_config_with_additional_overrides(
         self, mock_create_custom: Mock
     ) -> None:
@@ -267,15 +268,15 @@ class TestConfigRegistry:
         mock_config_manager = Mock()
         mock_create_custom.return_value = mock_config_manager
 
-        additional_overrides = {'num_requests': 200}
+        additional_overrides = {"num_requests": 200}
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        registry.create_profile_config('development', additional_overrides)
+        registry.create_profile_config("development", additional_overrides)
 
         # Verify that additional overrides are merged
         call_args = mock_create_custom.call_args
         merged_overrides = call_args[0][1]  # Second argument is overrides
-        assert 'num_requests' in merged_overrides
+        assert "num_requests" in merged_overrides
 
     def test_export_config_template(self) -> None:
         """Test exporting configuration as template."""
@@ -283,14 +284,12 @@ class TestConfigRegistry:
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
         result_path = registry.export_config_template(
-            mock_config_manager,
-            'exported_template',
-            'Test description'
+            mock_config_manager, "exported_template", "Test description"
         )
 
-        expected_path = os.path.join(self.templates_dir, 'exported_template.ini')
+        expected_path = os.path.join(self.templates_dir, "exported_template.ini")
         assert result_path == expected_path
-        mock_config_manager.save_config.assert_called_once_with(expected_path, 'ini')
+        mock_config_manager.save_config.assert_called_once_with(expected_path, "ini")
 
     def test_export_config_template_refreshes_templates(self) -> None:
         """Test that exporting a template refreshes the template list."""
@@ -300,11 +299,11 @@ class TestConfigRegistry:
         initial_count = len(registry._templates)
 
         # Create a real file so _load_templates can find it
-        template_path = os.path.join(self.templates_dir, 'exported_template.ini')
-        with open(template_path, 'w') as f:
-            f.write('[general_settings]\nholding_time = 10\n')
+        template_path = os.path.join(self.templates_dir, "exported_template.ini")
+        with open(template_path, "w") as f:
+            f.write("[general_settings]\nholding_time = 10\n")
 
-        registry.export_config_template(mock_config_manager, 'exported_template')
+        registry.export_config_template(mock_config_manager, "exported_template")
 
         # Templates should be refreshed and include the new template
         assert len(registry._templates) > initial_count
@@ -314,7 +313,7 @@ class TestConfigRegistry:
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
         profiles = registry.get_config_profiles()
 
-        required_keys = {'description', 'template', 'overrides'}
+        required_keys = {"description", "template", "overrides"}
 
         for profile_name, profile in profiles.items():
             assert isinstance(profile, dict), f"Profile '{profile_name}' is not a dict"
@@ -322,23 +321,22 @@ class TestConfigRegistry:
             for key in required_keys:
                 assert key in profile, f"Profile '{profile_name}' missing key '{key}'"
 
-            assert isinstance(profile['description'], str)
-            assert isinstance(profile['template'], str)
-            assert isinstance(profile['overrides'], dict)
+            assert isinstance(profile["description"], str)
+            assert isinstance(profile["template"], str)
+            assert isinstance(profile["overrides"], dict)
 
     def test_template_name_validation(self) -> None:
         """Test template name handling and validation."""
         # Create templates with various valid names
-        valid_names = ['default', 'test_template', 'template-1', 'TEMPLATE']
+        valid_names = ["default", "test_template", "template-1", "TEMPLATE"]
 
         for name in valid_names:
-            template_path = os.path.join(self.templates_dir, f'{name}.ini')
-            with open(template_path, 'w') as f:
-                f.write('[general_settings]\nholding_time = 10\n')
+            template_path = os.path.join(self.templates_dir, f"{name}.ini")
+            with open(template_path, "w") as f:
+                f.write("[general_settings]\nholding_time = 10\n")
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
         templates = registry.list_templates()
 
         for name in valid_names:
             assert name in templates
-

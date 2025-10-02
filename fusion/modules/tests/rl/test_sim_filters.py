@@ -79,12 +79,7 @@ class TestNotFilters:
     def test_not_filters_with_multiple_filters(self) -> None:
         """Test _not_filters with multiple filter conditions."""
         # Arrange
-        filter_dict = {
-            "not_filter_list": [
-                ["key1", "reject1"],
-                ["key2", "reject2"]
-            ]
-        }
+        filter_dict = {"not_filter_list": [["key1", "reject1"], ["key2", "reject2"]]}
         file_dict = {"key1": "accept", "key2": "reject2"}
 
         # Act
@@ -231,13 +226,9 @@ class TestCheckFilters:
         filter_dict = {
             "and_filter_list": [["network", "nsfnet"]],
             "or_filter_list": [["algo", "ppo"], ["algo", "dqn"]],
-            "not_filter_list": [["status", "failed"]]
+            "not_filter_list": [["status", "failed"]],
         }
-        file_dict = {
-            "network": "nsfnet",
-            "algo": "ppo",
-            "status": "success"
-        }
+        file_dict = {"network": "nsfnet", "algo": "ppo", "status": "success"}
 
         # Act
         result = _check_filters(file_dict, filter_dict)
@@ -251,7 +242,7 @@ class TestCheckFilters:
         filter_dict = {
             "and_filter_list": [["network", "nsfnet"]],
             "or_filter_list": [],
-            "not_filter_list": []
+            "not_filter_list": [],
         }
         file_dict = {"network": "different"}
 
@@ -267,7 +258,7 @@ class TestCheckFilters:
         filter_dict = {
             "and_filter_list": [],
             "or_filter_list": [["algo", "ppo"]],
-            "not_filter_list": []
+            "not_filter_list": [],
         }
         file_dict = {"algo": "different"}
 
@@ -283,7 +274,7 @@ class TestCheckFilters:
         filter_dict = {
             "and_filter_list": [],
             "or_filter_list": [],
-            "not_filter_list": [["status", "failed"]]
+            "not_filter_list": [["status", "failed"]],
         }
         file_dict = {"status": "failed"}
 
@@ -297,10 +288,10 @@ class TestCheckFilters:
 class TestFindTimes:
     """Tests for find_times function."""
 
-    @patch('fusion.modules.rl.utils.sim_filters.update_matrices')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.listdir')
-    @patch('os.path.isdir')
+    @patch("fusion.modules.rl.utils.sim_filters.update_matrices")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.listdir")
+    @patch("os.path.isdir")
     def test_find_times_with_valid_directories(
         self, mock_isdir: Any, mock_listdir: Any, mock_file: Any, mock_update: Any
     ) -> None:
@@ -310,19 +301,20 @@ class TestFindTimes:
         filter_dict: dict[str, list[list[Any]]] = {
             "and_filter_list": [],
             "or_filter_list": [],
-            "not_filter_list": []
+            "not_filter_list": [],
         }
 
         mock_isdir.return_value = True
         mock_listdir.side_effect = [
             ["20240101_120000"],  # times_list
-            ["sim_input_0.json"]  # input_file_list
+            ["sim_input_0.json"],  # input_file_list
         ]
 
         file_content = json.dumps({"path_algorithm": "ppo", "network": "nsfnet"})
         mock_file.return_value.read.return_value = file_content
         mock_update.return_value = {
-            "times": ["20240101_120000"], "algorithms_matrix": []
+            "times": ["20240101_120000"],
+            "algorithms_matrix": [],
         }
 
         # Act
@@ -332,8 +324,8 @@ class TestFindTimes:
         assert "algorithms_matrix" in result
         mock_update.assert_called_once()
 
-    @patch('fusion.modules.rl.utils.sim_filters.update_matrices')
-    @patch('os.path.isdir')
+    @patch("fusion.modules.rl.utils.sim_filters.update_matrices")
+    @patch("os.path.isdir")
     def test_find_times_skips_nonexistent_directories(
         self, mock_isdir: Any, mock_update: Any
     ) -> None:
@@ -352,14 +344,18 @@ class TestFindTimes:
         assert result["algorithms_matrix"] == []
         mock_update.assert_called_once_with(info_dict={})
 
-    @patch('fusion.modules.rl.utils.sim_filters.update_matrices')
-    @patch('builtins.print')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.listdir')
-    @patch('os.path.isdir')
+    @patch("fusion.modules.rl.utils.sim_filters.update_matrices")
+    @patch("builtins.print")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("os.listdir")
+    @patch("os.path.isdir")
     def test_find_times_skips_invalid_json(
-        self, mock_isdir: Any, mock_listdir: Any, mock_file: Any,
-        mock_print: Any, mock_update: Any
+        self,
+        mock_isdir: Any,
+        mock_listdir: Any,
+        mock_file: Any,
+        mock_print: Any,
+        mock_update: Any,
     ) -> None:
         """Test that find_times skips files with invalid JSON."""
         # Arrange
@@ -367,14 +363,9 @@ class TestFindTimes:
         filter_dict: dict[str, list[list[Any]]] = {}
 
         mock_isdir.return_value = True
-        mock_listdir.side_effect = [
-            ["20240101_120000"],
-            ["sim_input_0.json"]
-        ]
+        mock_listdir.side_effect = [["20240101_120000"], ["sim_input_0.json"]]
         side_effect = json.JSONDecodeError("Invalid", "", 0)
-        mock_file.return_value.__enter__.return_value.read.side_effect = (
-            side_effect
-        )
+        mock_file.return_value.__enter__.return_value.read.side_effect = side_effect
         mock_update.return_value = {}
 
         # Act
@@ -383,10 +374,10 @@ class TestFindTimes:
         # Assert
         assert any("Skipping file" in str(call) for call in mock_print.call_args_list)
 
-    @patch('fusion.modules.rl.utils.sim_filters.update_matrices')
-    @patch('builtins.open')
-    @patch('os.listdir')
-    @patch('os.path.isdir')
+    @patch("fusion.modules.rl.utils.sim_filters.update_matrices")
+    @patch("builtins.open")
+    @patch("os.listdir")
+    @patch("os.path.isdir")
     def test_find_times_applies_filters(
         self, mock_isdir: Any, mock_listdir: Any, mock_file: Any, mock_update: Any
     ) -> None:
@@ -396,10 +387,7 @@ class TestFindTimes:
         filter_dict = {"and_filter_list": [["algo", "ppo"]]}
 
         mock_isdir.return_value = True
-        mock_listdir.side_effect = [
-            ["20240101_120000"],
-            ["sim_input_0.json"]
-        ]
+        mock_listdir.side_effect = [["20240101_120000"], ["sim_input_0.json"]]
 
         file_content = json.dumps({"algo": "dqn"})  # Won't match filter
         mock_file.return_value.__enter__.return_value = mock_open(

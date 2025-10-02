@@ -5,15 +5,18 @@ Provides user-friendly command-line interface for generating multiple plots
 in a single command, either sequentially or in parallel.
 """
 
-import click
 from pathlib import Path
-from typing import Optional
 
-from fusion.visualization.application.dto import BatchPlotRequestDTO, BatchPlotResultDTO, PlotRequestDTO
+import click
+
+from fusion.visualization.application.dto import (
+    BatchPlotRequestDTO,
+    BatchPlotResultDTO,
+    PlotRequestDTO,
+)
 from fusion.visualization.application.use_cases.batch_generate_plots import (
     BatchGeneratePlotsUseCase,
 )
-from fusion.visualization.application.use_cases.generate_plot import GeneratePlotUseCase
 from fusion.visualization.interface.cli.migrate_command import viz_cli
 from fusion.visualization.interface.cli.plot_command import _get_use_case
 
@@ -64,7 +67,7 @@ def batch_command(
     sequential: bool,
     workers: int,
     stop_on_error: bool,
-    output_dir: Optional[Path],
+    output_dir: Path | None,
     verbose: bool,
 ) -> None:
     """
@@ -139,10 +142,9 @@ def batch_command(
         if isinstance(result, list):
             # Convert to BatchPlotResultDTO for display
             from datetime import datetime
+
             batch_result = BatchPlotResultDTO(
-                results=result,
-                started_at=datetime.now(),
-                completed_at=datetime.now()
+                results=result, started_at=datetime.now(), completed_at=datetime.now()
             )
             _display_batch_result(batch_result, verbose)
             if any(not r.success for r in result):
@@ -161,9 +163,10 @@ def batch_command(
         click.echo(click.style(f"\n❌ Error: {e}", fg="red", bold=True))
         if verbose:
             import traceback
+
             click.echo("\nTraceback:")
             click.echo(traceback.format_exc())
-        raise click.Abort()
+        raise click.Abort() from e
 
 
 def _get_batch_use_case() -> BatchGeneratePlotsUseCase:
@@ -177,17 +180,18 @@ def _load_batch_request_from_config(
     parallel: bool,
     max_workers: int,
     stop_on_error: bool,
-    output_dir: Optional[Path],
+    output_dir: Path | None,
     verbose: bool,
 ) -> BatchPlotRequestDTO:
     """Load batch request from YAML config file."""
     import yaml
+
     from fusion.visualization.domain.value_objects.plot_specification import PlotType
 
     if verbose:
         click.echo(f"📄 Loading batch configuration from: {config_path}\n")
 
-    with open(config_path, 'r') as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
 
     # Extract network and dates (common to all plots)
@@ -202,7 +206,9 @@ def _load_batch_request_from_config(
     # Parse plot specifications
     plot_configs = config.get("plots", [])
     if not plot_configs:
-        raise click.UsageError("Configuration must specify at least one plot in 'plots'")
+        raise click.UsageError(
+            "Configuration must specify at least one plot in 'plots'"
+        )
 
     # Create PlotRequestDTO for each plot
     plot_requests = []
@@ -212,11 +218,11 @@ def _load_batch_request_from_config(
             plot_type_str = plot_config.get("type", "line")
             try:
                 plot_type = PlotType(plot_type_str)
-            except ValueError:
+            except ValueError as exc:
                 raise ValueError(
                     f"Invalid plot type: {plot_type_str}. "
                     f"Supported: {', '.join(pt.value for pt in PlotType)}"
-                )
+                ) from exc
 
             # Determine output path
             save_path = None
@@ -224,7 +230,7 @@ def _load_batch_request_from_config(
                 save_path = Path(plot_config["save_path"])
             elif output_dir:
                 # Auto-generate filename in output_dir
-                filename = f"{plot_type_str}_{i+1}.png"
+                filename = f"{plot_type_str}_{i + 1}.png"
                 save_path = Path(output_dir) / filename
 
             # Create request DTO
@@ -250,7 +256,7 @@ def _load_batch_request_from_config(
             plot_requests.append(request)
 
         except Exception as e:
-            raise click.UsageError(f"Error in plot {i+1}: {e}")
+            raise click.UsageError(f"Error in plot {i + 1}: {e}") from e
 
     # Create batch request
     return BatchPlotRequestDTO(
@@ -308,7 +314,8 @@ def _display_batch_result(result: BatchPlotResultDTO, verbose: bool) -> None:
     else:
         click.echo(
             click.style(
-                f"⚠️  {successful}/{len(result.results)} plots succeeded, {failed} failed",
+                f"⚠️  {successful}/{len(result.results)} plots succeeded, "
+                f"{failed} failed",
                 fg="yellow" if successful > 0 else "red",
                 bold=True,
             )
@@ -333,12 +340,16 @@ def _display_batch_result(result: BatchPlotResultDTO, verbose: bool) -> None:
 
             if verbose and plot_result.success:
                 click.echo(f"      Type: {plot_result.plot_type}")
-                duration = plot_result.duration.total_seconds() if plot_result.duration else 0.0
+                duration = (
+                    plot_result.duration.total_seconds()
+                    if plot_result.duration
+                    else 0.0
+                )
                 click.echo(f"      Duration: {duration:.2f}s")
 
     # Output directory summary
     if successful > 0:
-        click.echo(f"\n📁 Generated plots:")
+        click.echo("\n📁 Generated plots:")
         for plot_result in result.results:
             if plot_result.success and plot_result.output_path:
                 click.echo(f"  • {plot_result.output_path}")

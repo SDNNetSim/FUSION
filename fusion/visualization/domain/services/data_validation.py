@@ -1,7 +1,7 @@
 """Data validation service for the domain layer."""
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -9,8 +9,8 @@ class ValidationResult:
     """Result of data validation."""
 
     is_valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def add_error(self, error: str) -> None:
         """Add an error message."""
@@ -46,9 +46,9 @@ class DataValidationService:
 
     def validate(
         self,
-        data: Dict[str, Any],
-        required_fields: Optional[List[str]] = None,
-        schema: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any],
+        required_fields: list[str] | None = None,
+        schema: dict[str, Any] | None = None,
     ) -> ValidationResult:
         """
         Validate data against requirements.
@@ -84,7 +84,7 @@ class DataValidationService:
 
         return result
 
-    def validate_simulation_data(self, data: Dict[str, Any]) -> ValidationResult:
+    def validate_simulation_data(self, data: dict[str, Any]) -> ValidationResult:
         """
         Validate simulation output data.
 
@@ -117,9 +117,9 @@ class DataValidationService:
             "observation_spaces": "Use algorithm name with format 'ppo_obs_7'",
         }
 
-        for field, message in deprecated_fields.items():
-            if field in data:
-                result.add_warning(f"Field '{field}' is deprecated. {message}")
+        for field_name, message in deprecated_fields.items():
+            if field_name in data:
+                result.add_warning(f"Field '{field_name}' is deprecated. {message}")
 
         # Validate iter_stats structure if present
         if "iter_stats" in data:
@@ -131,7 +131,8 @@ class DataValidationService:
                 for key, value in iter_stats.items():
                     if not isinstance(value, dict):
                         result.add_error(
-                            f"iter_stats[{key}] should be a dict, got {type(value).__name__}"
+                            f"iter_stats[{key}] should be a dict, "
+                            f"got {type(value).__name__}"
                         )
 
         # Validate iterations structure if present
@@ -144,8 +145,8 @@ class DataValidationService:
 
     def _validate_schema(
         self,
-        data: Dict[str, Any],
-        schema: Dict[str, Any],
+        data: dict[str, Any],
+        schema: dict[str, Any],
         result: ValidationResult,
     ) -> None:
         """
@@ -156,18 +157,18 @@ class DataValidationService:
             schema: Schema definition
             result: ValidationResult to populate
         """
-        for field, expected_type in schema.items():
-            if field not in data:
+        for field_name, expected_type in schema.items():
+            if field_name not in data:
                 continue  # Optional field
 
-            value = data[field]
+            value = data[field_name]
             actual_type = type(value).__name__
 
             # Handle type checking
             if isinstance(expected_type, type):
                 if not isinstance(value, expected_type):
                     result.add_error(
-                        f"Field '{field}' should be {expected_type.__name__}, "
+                        f"Field '{field_name}' should be {expected_type.__name__}, "
                         f"got {actual_type}"
                     )
 
@@ -188,7 +189,7 @@ class DataValidationService:
             return result
 
         # Basic validation (can be expanded)
-        if not path.startswith("$") and not path.split('.')[0].isalnum():
+        if not path.startswith("$") and not path.split(".")[0].isalnum():
             result.add_warning(
                 f"Metric path '{path}' does not look like a valid JSONPath"
             )
@@ -197,9 +198,9 @@ class DataValidationService:
 
     def suggest_missing_fields(
         self,
-        data: Dict[str, Any],
-        expected_fields: List[str],
-    ) -> List[str]:
+        data: dict[str, Any],
+        expected_fields: list[str],
+    ) -> list[str]:
         """
         Suggest fields that might be missing.
 

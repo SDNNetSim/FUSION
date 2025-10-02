@@ -597,9 +597,7 @@ class TestExplicit:
         assert rows[0]["erlang_start"] == 100
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_explicit_calculates_default_erlang_stop(
-        self, mock_validate: Any
-    ) -> None:
+    def test_explicit_calculates_default_erlang_stop(self, mock_validate: Any) -> None:
         """Test _explicit calculates erlang_stop when not provided."""
         # Arrange
         jobs = [

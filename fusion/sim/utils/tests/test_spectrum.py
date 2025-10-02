@@ -1,6 +1,5 @@
 """Unit tests for fusion.sim.utils.spectrum module."""
 
-
 import numpy as np
 import pytest
 
@@ -260,9 +259,7 @@ class TestTakenChannelDetection:
         """Test finding taken channels with multiple allocated blocks."""
         # Arrange
         network_spectrum = {
-            (0, 1): {
-                "cores_matrix": {"c": np.array([[1, 1, -1, 2, 2, -1, 0, 0]])}
-            },
+            (0, 1): {"cores_matrix": {"c": np.array([[1, 1, -1, 2, 2, -1, 0, 0]])}},
         }
         link_tuple = (0, 1)
         expected = [[1, 1], [2, 2]]

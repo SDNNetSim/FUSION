@@ -346,9 +346,7 @@ class TestSetupThreads:
         section_list = ["s2"]
         types_dict = {"sim": {"simulation_time": int}}
 
-        result = _setup_threads(
-            config, config_dict, section_list, types_dict, {}, {}
-        )
+        result = _setup_threads(config, config_dict, section_list, types_dict, {}, {})
 
         assert "s2" in result
         assert result["s2"]["run_id"] == "default"

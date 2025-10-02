@@ -1,9 +1,9 @@
 """Abstract repository interface for simulation data access."""
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from fusion.visualization.domain.entities.run import Run
 from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
@@ -22,10 +22,10 @@ class SimulationRepository(ABC):
     def find_runs(
         self,
         network: str,
-        dates: List[str],
-        algorithm: Optional[str] = None,
-        run_ids: Optional[List[str]] = None,
-    ) -> List[Run]:
+        dates: list[str],
+        algorithm: str | None = None,
+        run_ids: list[str] | None = None,
+    ) -> list[Run]:
         """
         Find runs matching the given criteria.
 
@@ -70,8 +70,8 @@ class SimulationRepository(ABC):
     def get_run_data_batch(
         self,
         run: Run,
-        traffic_volumes: List[float],
-    ) -> Dict[float, CanonicalData]:
+        traffic_volumes: list[float],
+    ) -> dict[float, CanonicalData]:
         """
         Load data for multiple traffic volumes efficiently.
 
@@ -88,7 +88,7 @@ class SimulationRepository(ABC):
         pass
 
     @abstractmethod
-    def exists(self, run: Run, traffic_volume: Optional[float] = None) -> bool:
+    def exists(self, run: Run, traffic_volume: float | None = None) -> bool:
         """
         Check if data exists for a run.
 
@@ -102,7 +102,7 @@ class SimulationRepository(ABC):
         pass
 
     @abstractmethod
-    def get_available_traffic_volumes(self, run: Run) -> List[float]:
+    def get_available_traffic_volumes(self, run: Run) -> list[float]:
         """
         Get list of available traffic volumes for a run.
 
@@ -118,7 +118,7 @@ class SimulationRepository(ABC):
         pass
 
     @abstractmethod
-    def get_metadata(self, run: Run) -> Dict[str, Any]:
+    def get_metadata(self, run: Run) -> dict[str, Any]:
         """
         Get metadata for a run.
 

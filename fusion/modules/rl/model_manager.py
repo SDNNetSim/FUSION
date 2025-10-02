@@ -55,10 +55,7 @@ def _parse_policy_kwargs(string: str) -> dict[str, Any]:
 
 
 def get_model(
-    sim_dict: dict[str, Any],
-    device: str,
-    env: Any,
-    yaml_dict: dict[str, Any] | None
+    sim_dict: dict[str, Any], device: str, env: Any, yaml_dict: dict[str, Any] | None
 ) -> tuple[Any, dict[str, Any]]:
     """
     Build and return a Stable-Baselines3 model with configuration.

@@ -1,21 +1,21 @@
 """Factory for creating repository instances."""
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional
-import logging
 
-from fusion.visualization.domain.repositories.simulation_repository import (
-    SimulationRepository,
-)
+import logging
+from pathlib import Path
+
 from fusion.visualization.domain.repositories.metadata_repository import (
     MetadataRepository,
 )
-from fusion.visualization.infrastructure.repositories.json_simulation_repository import (
-    JsonSimulationRepository,
+from fusion.visualization.domain.repositories.simulation_repository import (
+    SimulationRepository,
 )
-from fusion.visualization.infrastructure.repositories.file_metadata_repository import (
+from fusion.visualization.infrastructure.repositories.file_metadata_repository import (  # noqa: E501
     FileMetadataRepository,
+)
+from fusion.visualization.infrastructure.repositories.json_simulation_repository import (  # noqa: E501
+    JsonSimulationRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class RepositoryFactory:
 
     def __init__(
         self,
-        base_path: Optional[Path] = None,
+        base_path: Path | None = None,
         cache_ttl_seconds: int = 3600,
         enable_cache: bool = True,
     ):
@@ -45,15 +45,17 @@ class RepositoryFactory:
         """
         if base_path is None:
             # Default to standard FUSION data directory
-            base_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "output"
+            base_path = (
+                Path(__file__).parent.parent.parent.parent.parent / "data" / "output"
+            )
 
         self.base_path = Path(base_path)
         self.cache_ttl_seconds = cache_ttl_seconds
         self.enable_cache = enable_cache
 
         # Singleton instances
-        self._metadata_repository: Optional[MetadataRepository] = None
-        self._simulation_repository: Optional[SimulationRepository] = None
+        self._metadata_repository: MetadataRepository | None = None
+        self._simulation_repository: SimulationRepository | None = None
 
         logger.info(
             f"RepositoryFactory initialized with base_path={self.base_path}, "
@@ -91,15 +93,17 @@ class RepositoryFactory:
                 base_path=self.base_path,
                 metadata_repository=metadata_repo,
             )
-            logger.debug(f"Created JsonSimulationRepository with base_path={self.base_path}")
+            logger.debug(
+                f"Created JsonSimulationRepository with base_path={self.base_path}"
+            )
 
         return self._simulation_repository
 
     def configure(
         self,
-        base_path: Optional[Path] = None,
-        cache_ttl_seconds: Optional[int] = None,
-        enable_cache: Optional[bool] = None,
+        base_path: Path | None = None,
+        cache_ttl_seconds: int | None = None,
+        enable_cache: bool | None = None,
     ) -> None:
         """
         Reconfigure the factory (clears cached instances).
@@ -133,7 +137,7 @@ class RepositoryFactory:
             self._metadata_repository.clear_cache()
 
         if self._simulation_repository is not None and hasattr(
-            self._simulation_repository, 'clear_cache'
+            self._simulation_repository, "clear_cache"
         ):
             self._simulation_repository.clear_cache()
 
@@ -144,20 +148,20 @@ class RepositoryFactory:
         stats = {}
 
         if self._metadata_repository is not None and hasattr(
-            self._metadata_repository, 'get_cache_stats'
+            self._metadata_repository, "get_cache_stats"
         ):
-            stats['metadata'] = self._metadata_repository.get_cache_stats()
+            stats["metadata"] = self._metadata_repository.get_cache_stats()
 
         if self._simulation_repository is not None and hasattr(
-            self._simulation_repository, 'get_cache_stats'
+            self._simulation_repository, "get_cache_stats"
         ):
-            stats['simulation'] = self._simulation_repository.get_cache_stats()
+            stats["simulation"] = self._simulation_repository.get_cache_stats()
 
         return stats
 
 
 # Global default factory instance
-_default_factory: Optional[RepositoryFactory] = None
+_default_factory: RepositoryFactory | None = None
 
 
 def get_default_factory() -> RepositoryFactory:
@@ -174,9 +178,9 @@ def get_default_factory() -> RepositoryFactory:
 
 
 def configure_default_factory(
-    base_path: Optional[Path] = None,
-    cache_ttl_seconds: Optional[int] = None,
-    enable_cache: Optional[bool] = None,
+    base_path: Path | None = None,
+    cache_ttl_seconds: int | None = None,
+    enable_cache: bool | None = None,
 ) -> None:
     """
     Configure the default repository factory.

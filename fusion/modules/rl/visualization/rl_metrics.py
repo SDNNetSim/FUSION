@@ -9,8 +9,6 @@ This module defines metrics specific to reinforcement learning:
 - Exploration metrics
 """
 
-from typing import List
-
 from fusion.visualization.domain.entities.metric import (
     AggregationStrategy,
     DataType,
@@ -18,7 +16,7 @@ from fusion.visualization.domain.entities.metric import (
 )
 
 
-def get_rl_metrics() -> List[MetricDefinition]:
+def get_rl_metrics() -> list[MetricDefinition]:
     """Get all RL-specific metric definitions.
 
     Returns:

@@ -55,9 +55,7 @@ class TestAbstractRoutingAlgorithmAbstractMethods:
             if hasattr(
                 getattr(AbstractRoutingAlgorithm, method), "__isabstractmethod__"
             )
-            and getattr(
-                AbstractRoutingAlgorithm, method
-            ).__isabstractmethod__
+            and getattr(AbstractRoutingAlgorithm, method).__isabstractmethod__
         }
 
         # Assert
@@ -81,9 +79,7 @@ class TestAbstractRoutingAlgorithmMethodSignatures:
         # Assert
         assert params == ["self", "source", "destination", "request"]
         annotation_str = str(route_sig.return_annotation)
-        assert (
-            "None" in annotation_str or "Optional" in annotation_str
-        )
+        assert "None" in annotation_str or "Optional" in annotation_str
 
     def test_get_paths_method_signature(self) -> None:
         """Test AbstractRoutingAlgorithm.get_paths method signature."""
@@ -98,9 +94,7 @@ class TestAbstractRoutingAlgorithmMethodSignatures:
     def test_validate_environment_method_signature(self) -> None:
         """Test AbstractRoutingAlgorithm.validate_environment signature."""
         # Arrange & Act
-        sig = inspect.signature(
-            AbstractRoutingAlgorithm.validate_environment
-        )
+        sig = inspect.signature(AbstractRoutingAlgorithm.validate_environment)
         params = list(sig.parameters.keys())
 
         # Assert

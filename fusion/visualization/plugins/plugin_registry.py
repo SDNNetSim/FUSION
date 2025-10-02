@@ -10,7 +10,6 @@ This module provides the PluginRegistry class that handles:
 import importlib
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Type
 
 from fusion.visualization.domain.entities.metric import MetricDefinition
 from fusion.visualization.plugins.base_plugin import BasePlugin, PlotTypeRegistration
@@ -53,9 +52,9 @@ class PluginRegistry:
 
     def __init__(self) -> None:
         """Initialize the plugin registry."""
-        self._plugins: Dict[str, BasePlugin] = {}
-        self._loaded: Set[str] = set()
-        self._failed: Dict[str, str] = {}
+        self._plugins: dict[str, BasePlugin] = {}
+        self._loaded: set[str] = set()
+        self._failed: dict[str, str] = {}
 
     def register_plugin(self, plugin: BasePlugin) -> None:
         """Register a plugin instance.
@@ -72,7 +71,7 @@ class PluginRegistry:
         logger.info(f"Registering plugin: {plugin.name} v{plugin.version}")
         self._plugins[plugin.name] = plugin
 
-    def register_plugin_class(self, plugin_class: Type[BasePlugin]) -> None:
+    def register_plugin_class(self, plugin_class: type[BasePlugin]) -> None:
         """Register a plugin class (will be instantiated).
 
         Args:
@@ -81,7 +80,7 @@ class PluginRegistry:
         plugin = plugin_class()
         self.register_plugin(plugin)
 
-    def discover_plugins(self, search_paths: Optional[List[Path]] = None) -> None:
+    def discover_plugins(self, search_paths: list[Path] | None = None) -> None:
         """Discover plugins from specified paths.
 
         Args:
@@ -100,7 +99,7 @@ class PluginRegistry:
 
             self._discover_in_path(path)
 
-    def _get_default_search_paths(self) -> List[Path]:
+    def _get_default_search_paths(self) -> list[Path]:
         """Get default plugin search paths."""
         paths = []
 
@@ -160,7 +159,7 @@ class PluginRegistry:
 
         except ImportError as e:
             logger.error(f"Failed to import plugin module {module_name}: {e}")
-            raise PluginLoadError(f"Import failed: {e}")
+            raise PluginLoadError(f"Import failed: {e}") from e
 
     def _file_to_module_name(self, plugin_file: Path) -> str:
         """Convert a file path to a module name.
@@ -177,8 +176,10 @@ class PluginRegistry:
             fusion_idx = parts.index("fusion")
             module_parts = parts[fusion_idx:-1] + (plugin_file.stem,)
             return ".".join(module_parts)
-        except ValueError:
-            raise ValueError(f"Could not determine module name for {plugin_file}")
+        except ValueError as exc:
+            raise ValueError(
+                f"Could not determine module name for {plugin_file}"
+            ) from exc
 
     def load_plugin(self, name: str) -> None:
         """Load a specific plugin by name.
@@ -214,7 +215,7 @@ class PluginRegistry:
             self._loaded.add(name)
             logger.info(f"Loaded plugin: {name}")
         except Exception as e:
-            raise PluginLoadError(f"Failed to load plugin '{name}': {e}")
+            raise PluginLoadError(f"Failed to load plugin '{name}': {e}") from e
 
     def _resolve_dependencies(self, plugin: BasePlugin) -> None:
         """Resolve and load plugin dependencies.
@@ -228,7 +229,8 @@ class PluginRegistry:
         for dep_name in plugin.requires:
             if dep_name not in self._plugins:
                 raise PluginDependencyError(
-                    f"Plugin '{plugin.name}' requires '{dep_name}' which is not registered"
+                    f"Plugin '{plugin.name}' requires '{dep_name}' "
+                    f"which is not registered"
                 )
 
             # Load dependency if not already loaded
@@ -237,8 +239,9 @@ class PluginRegistry:
                     self.load_plugin(dep_name)
                 except PluginLoadError as e:
                     raise PluginDependencyError(
-                        f"Failed to load dependency '{dep_name}' for '{plugin.name}': {e}"
-                    )
+                        f"Failed to load dependency '{dep_name}' "
+                        f"for '{plugin.name}': {e}"
+                    ) from e
 
     def load_all(self) -> None:
         """Load all registered plugins."""
@@ -271,7 +274,7 @@ class PluginRegistry:
             finally:
                 self._loaded.remove(name)
 
-    def get_plugin(self, name: str) -> Optional[BasePlugin]:
+    def get_plugin(self, name: str) -> BasePlugin | None:
         """Get a plugin by name.
 
         Args:
@@ -282,7 +285,7 @@ class PluginRegistry:
         """
         return self._plugins.get(name)
 
-    def get_all_plugins(self) -> Dict[str, BasePlugin]:
+    def get_all_plugins(self) -> dict[str, BasePlugin]:
         """Get all registered plugins.
 
         Returns:
@@ -290,7 +293,7 @@ class PluginRegistry:
         """
         return self._plugins.copy()
 
-    def get_loaded_plugins(self) -> List[str]:
+    def get_loaded_plugins(self) -> list[str]:
         """Get list of loaded plugin names.
 
         Returns:
@@ -298,7 +301,7 @@ class PluginRegistry:
         """
         return list(self._loaded)
 
-    def get_all_metrics(self) -> List[MetricDefinition]:
+    def get_all_metrics(self) -> list[MetricDefinition]:
         """Get all metrics from all loaded plugins.
 
         Returns:
@@ -310,7 +313,7 @@ class PluginRegistry:
             metrics.extend(plugin.register_metrics())
         return metrics
 
-    def get_metric(self, metric_name: str) -> Optional[MetricDefinition]:
+    def get_metric(self, metric_name: str) -> MetricDefinition | None:
         """Get a specific metric by name.
 
         Args:
@@ -324,7 +327,7 @@ class PluginRegistry:
                 return metric
         return None
 
-    def get_all_plot_types(self) -> Dict[str, PlotTypeRegistration]:
+    def get_all_plot_types(self) -> dict[str, PlotTypeRegistration]:
         """Get all plot types from all loaded plugins.
 
         Returns:
@@ -336,7 +339,7 @@ class PluginRegistry:
             plot_types.update(plugin.register_plot_types())
         return plot_types
 
-    def get_plot_type(self, plot_type_name: str) -> Optional[PlotTypeRegistration]:
+    def get_plot_type(self, plot_type_name: str) -> PlotTypeRegistration | None:
         """Get a specific plot type registration.
 
         Args:
@@ -358,7 +361,7 @@ class PluginRegistry:
         """
         return name in self._loaded
 
-    def get_failed_plugins(self) -> Dict[str, str]:
+    def get_failed_plugins(self) -> dict[str, str]:
         """Get plugins that failed to load.
 
         Returns:
@@ -368,7 +371,7 @@ class PluginRegistry:
 
 
 # Global plugin registry instance
-_global_registry: Optional[PluginRegistry] = None
+_global_registry: PluginRegistry | None = None
 
 
 def get_global_registry() -> PluginRegistry:

@@ -36,14 +36,15 @@ class QLearning:
 
     def _ensure_rl_props_initialized(self) -> None:
         """Ensure rl_props has required attributes for type safety."""
-        assert hasattr(self.rl_props, 'num_nodes'), "rl_props must have num_nodes"
-        assert hasattr(self.rl_props, 'k_paths'), "rl_props must have k_paths"
-        assert hasattr(self.rl_props, 'source'), "rl_props must have source"
-        assert hasattr(self.rl_props, 'destination'), "rl_props must have destination"
-        assert hasattr(self.rl_props, 'chosen_path_index'), \
+        assert hasattr(self.rl_props, "num_nodes"), "rl_props must have num_nodes"
+        assert hasattr(self.rl_props, "k_paths"), "rl_props must have k_paths"
+        assert hasattr(self.rl_props, "source"), "rl_props must have source"
+        assert hasattr(self.rl_props, "destination"), "rl_props must have destination"
+        assert hasattr(self.rl_props, "chosen_path_index"), (
             "rl_props must have chosen_path_index"
-        assert hasattr(self.rl_props, 'paths_list'), "rl_props must have paths_list"
-        assert hasattr(self.rl_props, 'cores_list'), "rl_props must have cores_list"
+        )
+        assert hasattr(self.rl_props, "paths_list"), "rl_props must have paths_list"
+        assert hasattr(self.rl_props, "cores_list"), "rl_props must have cores_list"
 
     @property
     def _rl_props(self) -> Any:
@@ -122,7 +123,7 @@ class QLearning:
     ) -> float:
         """Retrieve the maximum future Q-value based on congestion levels."""
         # Convert path_list to list if it's an ndarray
-        if hasattr(path_list, 'tolist'):
+        if hasattr(path_list, "tolist"):
             path_list = path_list.tolist()
 
         if flag == "core":
@@ -303,11 +304,11 @@ class QLearning:
         assert self.rewards_stats_dict is not None
 
         save_dir_path = (
-            Path("logs") /
-            "q_learning" /
-            self.engine_props["network"] /
-            self.engine_props["date"] /
-            self.engine_props["sim_start"]
+            Path("logs")
+            / "q_learning"
+            / self.engine_props["network"]
+            / self.engine_props["date"]
+            / self.engine_props["sim_start"]
         )
         create_directory(str(save_dir_path))
 

@@ -69,8 +69,11 @@ class TestPrintInfo:
 
     def test_invalid_algorithms_raise(self) -> None:
         """No RL algorithms → ValueError."""
-        sim = {"path_algorithm": "none", "core_algorithm": "none",
-                   "spectrum_algorithm": None}
+        sim = {
+            "path_algorithm": "none",
+            "core_algorithm": "none",
+            "spectrum_algorithm": None,
+        }
         with pytest.raises(su.ModelSetupError):
             su.print_info(sim)
 
@@ -82,20 +85,25 @@ class TestSetupHelper:
     @pytest.fixture(autouse=True)
     def setup_patches(self) -> Iterator[None]:
         """Patch heavy deps once for all tests in this class."""
-        with mock.patch.object(
-            su,
-            "SimulationEngine",
-            return_value=SNS(engine_props={}),
-        ), mock.patch.object(
-            su,
-            "Routing",
-            return_value="routing",
-        ), mock.patch.object(
-            su,
-            "create_input",
-            return_value={"props": 1},
-        ), mock.patch.object(su, "save_input"), \
-             mock.patch.object(su, "get_start_time"):
+        with (
+            mock.patch.object(
+                su,
+                "SimulationEngine",
+                return_value=SNS(engine_props={}),
+            ),
+            mock.patch.object(
+                su,
+                "Routing",
+                return_value="routing",
+            ),
+            mock.patch.object(
+                su,
+                "create_input",
+                return_value={"props": 1},
+            ),
+            mock.patch.object(su, "save_input"),
+            mock.patch.object(su, "get_start_time"),
+        ):
             yield
 
     @pytest.fixture

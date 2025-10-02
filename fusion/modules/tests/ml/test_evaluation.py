@@ -1,6 +1,5 @@
 """Unit tests for fusion.modules.ml.evaluation module."""
 
-
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -29,8 +28,8 @@ class TestEvaluateClassifier:
         metrics = evaluate_classifier(y_true, y_pred)
 
         # Assert
-        assert metrics['accuracy'] == 1.0
-        assert metrics['f1_score'] == 1.0
+        assert metrics["accuracy"] == 1.0
+        assert metrics["f1_score"] == 1.0
 
     def test_evaluate_returns_all_required_metrics(self) -> None:
         """Test that all expected metrics are returned."""
@@ -42,12 +41,12 @@ class TestEvaluateClassifier:
         metrics = evaluate_classifier(y_true, y_pred)
 
         # Assert
-        assert 'accuracy' in metrics
-        assert 'precision' in metrics
-        assert 'recall' in metrics
-        assert 'f1_score' in metrics
-        assert 'confusion_matrix' in metrics
-        assert 'classification_report' in metrics
+        assert "accuracy" in metrics
+        assert "precision" in metrics
+        assert "recall" in metrics
+        assert "f1_score" in metrics
+        assert "confusion_matrix" in metrics
+        assert "classification_report" in metrics
 
     def test_evaluate_includes_per_class_metrics(self) -> None:
         """Test that per-class metrics are included."""
@@ -59,25 +58,25 @@ class TestEvaluateClassifier:
         metrics = evaluate_classifier(y_true, y_pred)
 
         # Assert
-        assert 'precision_per_class' in metrics
-        assert 'recall_per_class' in metrics
-        assert 'f1_score_per_class' in metrics
-        assert 'accuracy_per_class' in metrics
+        assert "precision_per_class" in metrics
+        assert "recall_per_class" in metrics
+        assert "f1_score_per_class" in metrics
+        assert "accuracy_per_class" in metrics
 
     def test_evaluate_with_class_names_includes_names(self) -> None:
         """Test that class names are included in report."""
         # Arrange
         y_true = np.array([0, 1, 0, 1])
         y_pred = np.array([0, 1, 0, 1])
-        class_names = ['negative', 'positive']
+        class_names = ["negative", "positive"]
 
         # Act
         metrics = evaluate_classifier(y_true, y_pred, class_names)
 
         # Assert
-        assert 'classification_report' in metrics
-        report = metrics['classification_report']
-        assert 'negative' in report or 'positive' in report
+        assert "classification_report" in metrics
+        report = metrics["classification_report"]
+        assert "negative" in report or "positive" in report
 
     def test_evaluate_binary_classification_includes_roc_auc(self) -> None:
         """Test that ROC AUC is calculated for binary classification."""
@@ -89,7 +88,7 @@ class TestEvaluateClassifier:
         metrics = evaluate_classifier(y_true, y_pred)
 
         # Assert
-        assert 'roc_auc' in metrics
+        assert "roc_auc" in metrics
 
 
 class TestEvaluateRegressor:
@@ -105,10 +104,10 @@ class TestEvaluateRegressor:
         metrics = evaluate_regressor(y_true, y_pred)
 
         # Assert
-        assert metrics['mse'] == 0.0
-        assert metrics['rmse'] == 0.0
-        assert metrics['mae'] == 0.0
-        assert metrics['max_error'] == 0.0
+        assert metrics["mse"] == 0.0
+        assert metrics["rmse"] == 0.0
+        assert metrics["mae"] == 0.0
+        assert metrics["max_error"] == 0.0
 
     def test_evaluate_returns_all_regression_metrics(self) -> None:
         """Test that all expected regression metrics are returned."""
@@ -120,13 +119,13 @@ class TestEvaluateRegressor:
         metrics = evaluate_regressor(y_true, y_pred)
 
         # Assert
-        assert 'mse' in metrics
-        assert 'rmse' in metrics
-        assert 'mae' in metrics
-        assert 'r2' in metrics
-        assert 'mape' in metrics
-        assert 'max_error' in metrics
-        assert 'explained_variance' in metrics
+        assert "mse" in metrics
+        assert "rmse" in metrics
+        assert "mae" in metrics
+        assert "r2" in metrics
+        assert "mape" in metrics
+        assert "max_error" in metrics
+        assert "explained_variance" in metrics
 
     def test_evaluate_calculates_correct_mse(self) -> None:
         """Test that MSE is calculated correctly."""
@@ -139,7 +138,7 @@ class TestEvaluateRegressor:
         metrics = evaluate_regressor(y_true, y_pred)
 
         # Assert
-        assert abs(metrics['mse'] - expected_mse) < 1e-10
+        assert abs(metrics["mse"] - expected_mse) < 1e-10
 
     def test_evaluate_with_zero_values_handles_mape(self) -> None:
         """Test that MAPE handles zero values correctly."""
@@ -151,9 +150,9 @@ class TestEvaluateRegressor:
         metrics = evaluate_regressor(y_true, y_pred)
 
         # Assert
-        assert 'mape' in metrics
+        assert "mape" in metrics
         # MAPE should be inf when all true values are zero
-        assert metrics['mape'] == float('inf')
+        assert metrics["mape"] == float("inf")
 
 
 class TestCrossValidateModel:
@@ -165,16 +164,16 @@ class TestCrossValidateModel:
         model = RandomForestClassifier(n_estimators=10, random_state=42)
         X = pd.DataFrame(np.random.rand(100, 5))
         y = pd.Series(np.random.randint(0, 2, 100))
-        metrics = ['accuracy', 'precision_weighted']
+        metrics = ["accuracy", "precision_weighted"]
 
         # Act
         results = cross_validate_model(model, X, y, cv_folds=3, scoring_metrics=metrics)
 
         # Assert
-        assert 'accuracy' in results
-        assert 'precision_weighted' in results
-        assert 'fit_time' in results
-        assert 'score_time' in results
+        assert "accuracy" in results
+        assert "precision_weighted" in results
+        assert "fit_time" in results
+        assert "score_time" in results
 
     def test_cross_validate_includes_train_and_test_scores(self) -> None:
         """Test that both train and test scores are included."""
@@ -187,9 +186,9 @@ class TestCrossValidateModel:
         results = cross_validate_model(model, X, y, cv_folds=2)
 
         # Assert
-        assert results['accuracy']['test_mean'] is not None
-        assert results['accuracy']['train_mean'] is not None
-        assert results['accuracy']['test_std'] is not None
+        assert results["accuracy"]["test_mean"] is not None
+        assert results["accuracy"]["train_mean"] is not None
+        assert results["accuracy"]["test_std"] is not None
 
     def test_cross_validate_with_default_metrics(self) -> None:
         """Test that default metrics are used when none specified."""
@@ -202,8 +201,8 @@ class TestCrossValidateModel:
         results = cross_validate_model(model, X, y, cv_folds=2)
 
         # Assert
-        assert 'accuracy' in results
-        assert 'f1_weighted' in results
+        assert "accuracy" in results
+        assert "f1_weighted" in results
 
 
 class TestEvaluateModelStability:
@@ -220,10 +219,10 @@ class TestEvaluateModelStability:
         results = evaluate_model_stability(model, X, y, n_iterations=5)
 
         # Assert
-        assert 'accuracy' in results
-        assert 'precision' in results
-        assert 'recall' in results
-        assert 'f1_score' in results
+        assert "accuracy" in results
+        assert "precision" in results
+        assert "recall" in results
+        assert "f1_score" in results
 
     def test_stability_includes_all_statistics(self) -> None:
         """Test that all statistical measures are included."""
@@ -236,20 +235,20 @@ class TestEvaluateModelStability:
         results = evaluate_model_stability(model, X, y, n_iterations=3)
 
         # Assert
-        accuracy_stats = results['accuracy']
-        assert 'mean' in accuracy_stats
-        assert 'std' in accuracy_stats
-        assert 'variance' in accuracy_stats
-        assert 'min' in accuracy_stats
-        assert 'max' in accuracy_stats
-        assert 'range' in accuracy_stats
-        assert 'cv' in accuracy_stats
+        accuracy_stats = results["accuracy"]
+        assert "mean" in accuracy_stats
+        assert "std" in accuracy_stats
+        assert "variance" in accuracy_stats
+        assert "min" in accuracy_stats
+        assert "max" in accuracy_stats
+        assert "range" in accuracy_stats
+        assert "cv" in accuracy_stats
 
     def test_stability_with_perfect_model_has_zero_variance(self) -> None:
         """Test that a perfect model has zero variance."""
         # Arrange
         # Create a simple dataset where model will always predict correctly
-        X = pd.DataFrame({'feature': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 10})
+        X = pd.DataFrame({"feature": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 10})
         y = pd.Series([0, 1, 0, 1, 0, 1, 0, 1, 0, 1] * 10)
         model = LogisticRegression(random_state=42, max_iter=1000)
 
@@ -258,7 +257,7 @@ class TestEvaluateModelStability:
 
         # Assert
         # Variance should be very small (close to 0) for consistent model
-        assert results['accuracy']['variance'] >= 0
+        assert results["accuracy"]["variance"] >= 0
 
 
 class TestCompareModels:
@@ -268,8 +267,8 @@ class TestCompareModels:
         """Test that compare_models returns a DataFrame."""
         # Arrange
         models = {
-            'RF': RandomForestClassifier(n_estimators=10, random_state=42),
-            'LR': LogisticRegression(random_state=42, max_iter=200)
+            "RF": RandomForestClassifier(n_estimators=10, random_state=42),
+            "LR": LogisticRegression(random_state=42, max_iter=200),
         }
         X = pd.DataFrame(np.random.rand(100, 5))
         y = pd.Series(np.random.randint(0, 2, 100))
@@ -284,9 +283,7 @@ class TestCompareModels:
     def test_compare_includes_all_metrics(self) -> None:
         """Test that comparison includes all expected metrics."""
         # Arrange
-        models = {
-            'RF': RandomForestClassifier(n_estimators=10, random_state=42)
-        }
+        models = {"RF": RandomForestClassifier(n_estimators=10, random_state=42)}
         X = pd.DataFrame(np.random.rand(50, 3))
         y = pd.Series(np.random.randint(0, 2, 50))
 
@@ -294,20 +291,20 @@ class TestCompareModels:
         result = compare_models(models, X, y)
 
         # Assert
-        assert 'model' in result.columns
-        assert 'accuracy' in result.columns
-        assert 'precision' in result.columns
-        assert 'recall' in result.columns
-        assert 'f1_score' in result.columns
-        assert 'train_time' in result.columns
-        assert 'predict_time' in result.columns
+        assert "model" in result.columns
+        assert "accuracy" in result.columns
+        assert "precision" in result.columns
+        assert "recall" in result.columns
+        assert "f1_score" in result.columns
+        assert "train_time" in result.columns
+        assert "predict_time" in result.columns
 
     def test_compare_includes_model_names(self) -> None:
         """Test that model names are included in results."""
         # Arrange
         models = {
-            'RandomForest': RandomForestClassifier(n_estimators=10, random_state=42),
-            'LogReg': LogisticRegression(random_state=42, max_iter=200)
+            "RandomForest": RandomForestClassifier(n_estimators=10, random_state=42),
+            "LogReg": LogisticRegression(random_state=42, max_iter=200),
         }
         X = pd.DataFrame(np.random.rand(50, 3))
         y = pd.Series(np.random.randint(0, 2, 50))
@@ -316,8 +313,8 @@ class TestCompareModels:
         result = compare_models(models, X, y)
 
         # Assert
-        assert 'RandomForest' in result['model'].values
-        assert 'LogReg' in result['model'].values
+        assert "RandomForest" in result["model"].values
+        assert "LogReg" in result["model"].values
 
 
 class TestAnalyzePredictionErrors:
@@ -333,8 +330,8 @@ class TestAnalyzePredictionErrors:
         analysis = analyze_prediction_errors(y_true, y_pred)
 
         # Assert
-        assert analysis['total_errors'] == 0
-        assert analysis['error_rate'] == 0.0
+        assert analysis["total_errors"] == 0
+        assert analysis["error_rate"] == 0.0
 
     def test_analyze_with_errors_identifies_confused_pairs(self) -> None:
         """Test that error analysis identifies most confused class pair."""
@@ -346,9 +343,9 @@ class TestAnalyzePredictionErrors:
         analysis = analyze_prediction_errors(y_true, y_pred)
 
         # Assert
-        assert analysis['total_errors'] == 3
-        assert 'most_confused_pair' in analysis
-        assert analysis['most_confused_pair']['count'] >= 1
+        assert analysis["total_errors"] == 3
+        assert "most_confused_pair" in analysis
+        assert analysis["most_confused_pair"]["count"] >= 1
 
     def test_analyze_includes_errors_by_class(self) -> None:
         """Test that errors are broken down by class."""
@@ -360,26 +357,28 @@ class TestAnalyzePredictionErrors:
         analysis = analyze_prediction_errors(y_true, y_pred)
 
         # Assert
-        assert 'errors_by_true_class' in analysis
-        assert '0' in analysis['errors_by_true_class']
-        assert '1' in analysis['errors_by_true_class']
+        assert "errors_by_true_class" in analysis
+        assert "0" in analysis["errors_by_true_class"]
+        assert "1" in analysis["errors_by_true_class"]
 
     def test_analyze_with_features_includes_feature_stats(self) -> None:
         """Test that feature statistics are included when features provided."""
         # Arrange
         y_true = np.array([0, 1, 0, 1, 0, 1])
         y_pred = np.array([0, 1, 1, 1, 0, 0])
-        X = pd.DataFrame({
-            'feature1': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-            'feature2': [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
-        })
+        X = pd.DataFrame(
+            {
+                "feature1": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+                "feature2": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0],
+            }
+        )
 
         # Act
         analysis = analyze_prediction_errors(y_true, y_pred, X)
 
         # Assert
-        assert 'feature_stats' in analysis
-        assert 'feature1' in analysis['feature_stats']
+        assert "feature_stats" in analysis
+        assert "feature1" in analysis["feature_stats"]
 
     def test_analyze_calculates_error_indices(self) -> None:
         """Test that indices of errors are returned."""
@@ -391,6 +390,6 @@ class TestAnalyzePredictionErrors:
         analysis = analyze_prediction_errors(y_true, y_pred)
 
         # Assert
-        assert 'error_indices' in analysis
-        assert 1 in analysis['error_indices']
-        assert len(analysis['error_indices']) == 1
+        assert "error_indices" in analysis
+        assert 1 in analysis["error_indices"]
+        assert len(analysis["error_indices"]) == 1

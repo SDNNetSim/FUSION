@@ -1,15 +1,16 @@
 """DataSource entity for representing the origin of simulation data."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fusion.visualization.domain.value_objects.data_version import DataVersion
 
 if TYPE_CHECKING:
-    from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
+    pass
 
 
 class SourceType(Enum):
@@ -49,7 +50,7 @@ class DataSource:
         """Validate data source."""
         if self.source_type == SourceType.FILE:
             if not isinstance(self.location, Path):
-                object.__setattr__(self, 'location', Path(self.location))
+                object.__setattr__(self, "location", Path(self.location))
 
     def exists(self) -> bool:
         """Check if the data source exists."""

@@ -94,10 +94,8 @@ def _make_sim_env(
 class TestCheckTerminated:
     """SimEnvUtils.check_terminated end-of-episode flow."""
 
-    @mock.patch("fusion.modules.rl.utils.sim_env.VALID_PATH_ALGORITHMS",
-                ["q_learning"])
-    @mock.patch("fusion.modules.rl.utils.sim_env.os.path.join",
-                return_value="/tmp")
+    @mock.patch("fusion.modules.rl.utils.sim_env.VALID_PATH_ALGORITHMS", ["q_learning"])
+    @mock.patch("fusion.modules.rl.utils.sim_env.os.path.join", return_value="/tmp")
     def test_increments_iter_and_calls_end(self, _: mock.MagicMock) -> None:
         """Returns True, increments iteration, calls agent end_iter."""
         senv = _make_sim_env()

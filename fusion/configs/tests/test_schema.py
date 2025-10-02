@@ -20,12 +20,12 @@ class TestSchemaConstants:
     def test_sim_required_options_dict_sections(self) -> None:
         """Test that SIM_REQUIRED_OPTIONS_DICT contains expected sections."""
         expected_sections = {
-            'general_settings',
-            'topology_settings',
-            'spectrum_settings',
-            'snr_settings',
-            'file_settings',
-            'ml_settings'
+            "general_settings",
+            "topology_settings",
+            "spectrum_settings",
+            "snr_settings",
+            "file_settings",
+            "ml_settings",
         }
 
         actual_sections = set(SIM_REQUIRED_OPTIONS_DICT.keys())
@@ -54,12 +54,12 @@ class TestSchemaConstants:
     def test_optional_options_dict_sections(self) -> None:
         """Test that OPTIONAL_OPTIONS_DICT contains expected sections."""
         expected_sections = {
-            'general_settings',
-            'topology_settings',
-            'spectrum_settings',
-            'file_settings',
-            'rl_settings',
-            'ml_settings'
+            "general_settings",
+            "topology_settings",
+            "spectrum_settings",
+            "file_settings",
+            "rl_settings",
+            "ml_settings",
         }
 
         actual_sections = set(OPTIONAL_OPTIONS_DICT.keys())
@@ -77,15 +77,31 @@ class TestSchemaConstants:
 
     def test_general_settings_required_options(self) -> None:
         """Test specific required options in general_settings section."""
-        general_settings = SIM_REQUIRED_OPTIONS_DICT['general_settings']
+        general_settings = SIM_REQUIRED_OPTIONS_DICT["general_settings"]
 
         expected_options = {
-            'erlang_start', 'erlang_stop', 'erlang_step', 'mod_assumption',
-            'mod_assumption_path', 'holding_time', 'thread_erlangs', 'guard_slots',
-            'num_requests', 'max_iters', 'dynamic_lps', 'fixed_grid',
-            'pre_calc_mod_selection', 'max_segments', 'route_method',
-            'allocation_method', 'save_snapshots', 'snapshot_step',
-            'print_step', 'spectrum_priority', 'save_step', 'save_start_end_slots'
+            "erlang_start",
+            "erlang_stop",
+            "erlang_step",
+            "mod_assumption",
+            "mod_assumption_path",
+            "holding_time",
+            "thread_erlangs",
+            "guard_slots",
+            "num_requests",
+            "max_iters",
+            "dynamic_lps",
+            "fixed_grid",
+            "pre_calc_mod_selection",
+            "max_segments",
+            "route_method",
+            "allocation_method",
+            "save_snapshots",
+            "snapshot_step",
+            "print_step",
+            "spectrum_priority",
+            "save_step",
+            "save_start_end_slots",
         }
 
         actual_options = set(general_settings.keys())
@@ -93,11 +109,15 @@ class TestSchemaConstants:
 
     def test_topology_settings_required_options(self) -> None:
         """Test specific required options in topology_settings section."""
-        topology_settings = SIM_REQUIRED_OPTIONS_DICT['topology_settings']
+        topology_settings = SIM_REQUIRED_OPTIONS_DICT["topology_settings"]
 
         expected_options = {
-            'network', 'bw_per_slot', 'cores_per_link', 'const_link_weight',
-            'is_only_core_node', 'multi_fiber'
+            "network",
+            "bw_per_slot",
+            "cores_per_link",
+            "const_link_weight",
+            "is_only_core_node",
+            "multi_fiber",
         }
 
         actual_options = set(topology_settings.keys())
@@ -105,20 +125,27 @@ class TestSchemaConstants:
 
     def test_spectrum_settings_required_options(self) -> None:
         """Test specific required options in spectrum_settings section."""
-        spectrum_settings = SIM_REQUIRED_OPTIONS_DICT['spectrum_settings']
+        spectrum_settings = SIM_REQUIRED_OPTIONS_DICT["spectrum_settings"]
 
-        expected_options = {'c_band'}
+        expected_options = {"c_band"}
 
         actual_options = set(spectrum_settings.keys())
         assert expected_options.issubset(actual_options)
 
     def test_snr_settings_required_options(self) -> None:
         """Test specific required options in snr_settings section."""
-        snr_settings = SIM_REQUIRED_OPTIONS_DICT['snr_settings']
+        snr_settings = SIM_REQUIRED_OPTIONS_DICT["snr_settings"]
 
         expected_options = {
-            'snr_type', 'input_power', 'egn_model', 'beta', 'theta',
-            'xt_type', 'xt_noise', 'requested_xt', 'phi'
+            "snr_type",
+            "input_power",
+            "egn_model",
+            "beta",
+            "theta",
+            "xt_type",
+            "xt_noise",
+            "requested_xt",
+            "phi",
         }
 
         actual_options = set(snr_settings.keys())
@@ -126,35 +153,61 @@ class TestSchemaConstants:
 
     def test_file_settings_required_options(self) -> None:
         """Test specific required options in file_settings section."""
-        file_settings = SIM_REQUIRED_OPTIONS_DICT['file_settings']
+        file_settings = SIM_REQUIRED_OPTIONS_DICT["file_settings"]
 
-        expected_options = {'file_type'}
+        expected_options = {"file_type"}
 
         actual_options = set(file_settings.keys())
         assert expected_options.issubset(actual_options)
 
     def test_ml_settings_required_options(self) -> None:
         """Test specific required options in ml_settings section."""
-        ml_settings = SIM_REQUIRED_OPTIONS_DICT['ml_settings']
+        ml_settings = SIM_REQUIRED_OPTIONS_DICT["ml_settings"]
 
-        expected_options = {'deploy_model'}
+        expected_options = {"deploy_model"}
 
         actual_options = set(ml_settings.keys())
         assert expected_options.issubset(actual_options)
 
     def test_rl_settings_optional_options(self) -> None:
         """Test specific optional options in rl_settings section."""
-        rl_settings = OPTIONAL_OPTIONS_DICT['rl_settings']
+        rl_settings = OPTIONAL_OPTIONS_DICT["rl_settings"]
 
         expected_options = {
-            'obs_space', 'n_trials', 'device', 'optimize_hyperparameters',
-            'optuna_trials', 'is_training', 'path_algorithm', 'path_model',
-            'core_algorithm', 'core_model', 'spectrum_algorithm', 'spectrum_model',
-            'render_mode', 'super_channel_space', 'alpha_start', 'alpha_end',
-            'alpha_update', 'gamma', 'epsilon_start', 'epsilon_end',
-            'epsilon_update', 'path_levels', 'decay_rate', 'feature_extractor',
-            'gnn_type', 'layers', 'emb_dim', 'heads', 'conf_param',
-            'cong_cutoff', 'reward', 'penalty', 'dynamic_reward', 'core_beta'
+            "obs_space",
+            "n_trials",
+            "device",
+            "optimize_hyperparameters",
+            "optuna_trials",
+            "is_training",
+            "path_algorithm",
+            "path_model",
+            "core_algorithm",
+            "core_model",
+            "spectrum_algorithm",
+            "spectrum_model",
+            "render_mode",
+            "super_channel_space",
+            "alpha_start",
+            "alpha_end",
+            "alpha_update",
+            "gamma",
+            "epsilon_start",
+            "epsilon_end",
+            "epsilon_update",
+            "path_levels",
+            "decay_rate",
+            "feature_extractor",
+            "gnn_type",
+            "layers",
+            "emb_dim",
+            "heads",
+            "conf_param",
+            "cong_cutoff",
+            "reward",
+            "penalty",
+            "dynamic_reward",
+            "core_beta",
         }
 
         actual_options = set(rl_settings.keys())
@@ -191,12 +244,12 @@ class TestSchemaConstants:
 
         # Verify some expected boolean options that actually exist in the schema
         expected_boolean_options = [
-            'topology_settings.is_only_core_node',
-            'snr_settings.egn_model',
-            'snr_settings.xt_noise',
-            'ml_settings.deploy_model',
-            'rl_settings.dynamic_reward',
-            'rl_settings.is_training'
+            "topology_settings.is_only_core_node",
+            "snr_settings.egn_model",
+            "snr_settings.xt_noise",
+            "ml_settings.deploy_model",
+            "rl_settings.dynamic_reward",
+            "rl_settings.is_training",
         ]
 
         for expected in expected_boolean_options:
@@ -223,11 +276,11 @@ class TestSchemaConstants:
 
         # Verify some expected numeric options that actually exist
         expected_float_options = [
-            'snr_settings.input_power',
-            'snr_settings.beta',
-            'snr_settings.theta',
-            'rl_settings.alpha_start',
-            'rl_settings.gamma'
+            "snr_settings.input_power",
+            "snr_settings.beta",
+            "snr_settings.theta",
+            "rl_settings.alpha_start",
+            "rl_settings.gamma",
         ]
 
         for expected in expected_float_options:
@@ -249,12 +302,12 @@ class TestSchemaConstants:
 
         # Verify some expected string options that actually exist
         expected_string_options = [
-            'snr_settings.snr_type',
-            'snr_settings.xt_type',
-            'snr_settings.requested_xt',
-            'snr_settings.phi',
-            'rl_settings.device',
-            'rl_settings.obs_space'
+            "snr_settings.snr_type",
+            "snr_settings.xt_type",
+            "snr_settings.requested_xt",
+            "snr_settings.phi",
+            "rl_settings.device",
+            "rl_settings.obs_space",
         ]
 
         for expected in expected_string_options:
@@ -278,8 +331,8 @@ class TestSchemaConstants:
 
         # Allow known duplicates that exist in the current schema
         allowed_duplicates = {
-            'topology_settings.is_only_core_node',
-            'ml_settings.deploy_model'
+            "topology_settings.is_only_core_node",
+            "ml_settings.deploy_model",
         }
 
         unexpected_overlaps = overlaps - allowed_duplicates
@@ -323,11 +376,10 @@ class TestSchemaConstants:
 
         for section in all_sections:
             # All sections should end with '_settings'
-            assert section.endswith('_settings'), (
+            assert section.endswith("_settings"), (
                 f"Section '{section}' doesn't end with '_settings'"
             )
 
             # Section names should be lowercase with underscores
             assert section.islower(), f"Section '{section}' is not lowercase"
-            assert ' ' not in section, f"Section '{section}' contains spaces"
-
+            assert " " not in section, f"Section '{section}' contains spaces"

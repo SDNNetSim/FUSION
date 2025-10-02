@@ -1,23 +1,24 @@
 """JSON-based implementation of SimulationRepository."""
 
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import List, Optional, Dict, Any
-import logging
 
+import json
+import logging
+from pathlib import Path
+from typing import Any
+
+from fusion.visualization.domain.entities.run import Run
+from fusion.visualization.domain.exceptions.domain_exceptions import (
+    DataFormatError,
+    RepositoryError,
+    RunDataNotFoundError,
+)
 from fusion.visualization.domain.repositories.simulation_repository import (
     SimulationRepository,
 )
-from fusion.visualization.domain.entities.run import Run
 from fusion.visualization.infrastructure.adapters import (
     CanonicalData,
     get_adapter,
-)
-from fusion.visualization.domain.exceptions.domain_exceptions import (
-    RepositoryError,
-    RunDataNotFoundError,
-    DataFormatError,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,39 +35,39 @@ class JsonSimulationRepository(SimulationRepository):
     def __init__(
         self,
         base_path: Path,
-        metadata_repository: Optional[Any] = None,
-        adapter_registry: Optional[Any] = None,
+        metadata_repository: Any | None = None,
+        adapter_registry: Any | None = None,
     ):
         """
         Initialize JSON repository.
 
         Args:
             base_path: Root directory containing simulation data
-            metadata_repository: Optional metadata repository for faster discovery
-            adapter_registry: Optional adapter registry (currently unused, kept for compatibility)
+            metadata_repository: Optional metadata repository for faster
+                discovery
+            adapter_registry: Optional adapter registry
+                (currently unused, kept for compatibility)
         """
         self.base_path = Path(base_path)
         self.metadata_repository = metadata_repository
         self.adapter_registry = adapter_registry
-        self._data_cache: Dict[tuple, CanonicalData] = {}
+        self._data_cache: dict[tuple, CanonicalData] = {}
 
     def find_runs(
         self,
         network: str,
-        dates: List[str],
-        algorithm: Optional[str] = None,
-        run_ids: Optional[List[str]] = None,
-    ) -> List[Run]:
+        dates: list[str],
+        algorithm: str | None = None,
+        run_ids: list[str] | None = None,
+    ) -> list[Run]:
         """Find runs matching the given criteria."""
-        runs: List[Run] = []
+        runs: list[Run] = []
 
         for date in dates:
             date_path = self.base_path / network / date
 
             if not date_path.exists():
-                logger.warning(
-                    f"Date directory not found: {date_path}. Skipping."
-                )
+                logger.warning(f"Date directory not found: {date_path}. Skipping.")
                 continue
 
             # Discover run directories
@@ -146,16 +147,12 @@ class JsonSimulationRepository(SimulationRepository):
 
         # Load and parse JSON
         try:
-            with open(data_file, 'r') as f:
+            with open(data_file) as f:
                 raw_data = json.load(f)
         except json.JSONDecodeError as e:
-            raise DataFormatError(
-                f"Invalid JSON in {data_file}: {e}"
-            ) from e
+            raise DataFormatError(f"Invalid JSON in {data_file}: {e}") from e
         except Exception as e:
-            raise RepositoryError(
-                f"Failed to load data from {data_file}: {e}"
-            ) from e
+            raise RepositoryError(f"Failed to load data from {data_file}: {e}") from e
 
         # Convert to canonical format using adapter
         try:
@@ -175,8 +172,8 @@ class JsonSimulationRepository(SimulationRepository):
     def get_run_data_batch(
         self,
         run: Run,
-        traffic_volumes: List[float],
-    ) -> Dict[float, CanonicalData]:
+        traffic_volumes: list[float],
+    ) -> dict[float, CanonicalData]:
         """Load data for multiple traffic volumes efficiently."""
         result = {}
 
@@ -192,7 +189,7 @@ class JsonSimulationRepository(SimulationRepository):
     def exists(
         self,
         run: Run,
-        traffic_volume: Optional[float] = None,
+        traffic_volume: float | None = None,
     ) -> bool:
         """Check if data exists for a run."""
         if traffic_volume is None:
@@ -208,9 +205,9 @@ class JsonSimulationRepository(SimulationRepository):
 
         return any(path.exists() for path in possible_paths)
 
-    def get_available_traffic_volumes(self, run: Run) -> List[float]:
+    def get_available_traffic_volumes(self, run: Run) -> list[float]:
         """Get list of available traffic volumes for a run."""
-        traffic_volumes: List[float] = []
+        traffic_volumes: list[float] = []
 
         if not run.exists():
             return traffic_volumes
@@ -239,11 +236,11 @@ class JsonSimulationRepository(SimulationRepository):
 
         return sorted(traffic_volumes)
 
-    def get_metadata(self, run: Run) -> Dict[str, Any]:
+    def get_metadata(self, run: Run) -> dict[str, Any]:
         """Get metadata for a run."""
         return self._load_run_metadata(run.path)
 
-    def _load_run_metadata(self, run_path: Path) -> Dict[str, Any]:
+    def _load_run_metadata(self, run_path: Path) -> dict[str, Any]:
         """
         Load metadata from run directory.
 
@@ -272,13 +269,11 @@ class JsonSimulationRepository(SimulationRepository):
         for metadata_file in metadata_files:
             if metadata_file.exists():
                 try:
-                    with open(metadata_file, 'r') as f:
+                    with open(metadata_file) as f:
                         metadata = json.load(f)
                         return dict(metadata)
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to load metadata from {metadata_file}: {e}"
-                    )
+                    logger.warning(f"Failed to load metadata from {metadata_file}: {e}")
                     continue
 
         # No metadata found, return minimal info
@@ -292,7 +287,7 @@ class JsonSimulationRepository(SimulationRepository):
         """Clear the data cache."""
         self._data_cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return {
             "cached_entries": len(self._data_cache),

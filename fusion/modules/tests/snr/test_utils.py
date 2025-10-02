@@ -56,9 +56,7 @@ class TestGetLoadedFiles:
         cores_per_link = 7
         network = "test_network"
         file_mapping_dict = {
-            "test_network": {
-                (3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}
-            }
+            "test_network": {(3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}}
         }
 
         mf_data = np.array([10, 20, 30])
@@ -81,9 +79,7 @@ class TestGetLoadedFiles:
         cores_per_link = 7
         network = "test_network"
         file_mapping_dict = {
-            "test_network": {
-                (3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}
-            }
+            "test_network": {(3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}}
         }
 
         # Act & Assert

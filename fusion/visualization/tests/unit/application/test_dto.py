@@ -1,15 +1,15 @@
 """Unit tests for DTOs (Data Transfer Objects)."""
 
-import pytest
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+
+import pytest
 
 from fusion.visualization.application.dto import (
-    PlotRequestDTO,
-    PlotResultDTO,
-    BatchPlotRequestDTO,
     BatchPlotResultDTO,
     ComparisonRequestDTO,
+    PlotRequestDTO,
+    PlotResultDTO,
     StatisticalComparison,
 )
 from fusion.visualization.domain.value_objects.plot_specification import PlotType

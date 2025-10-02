@@ -106,9 +106,7 @@ class TestFindFreeSlots:
     def test_find_free_slots_with_legacy_parameter_name_works(self) -> None:
         """Test backward compatibility with network_spectrum_dict parameter."""
         # Arrange
-        network_spectrum = {
-            (1, 2): {"cores_matrix": {"c": np.array([[0, 1], [1, 0]])}}
-        }
+        network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[0, 1], [1, 0]])}}}
 
         # Act
         result = find_free_slots(
@@ -223,9 +221,7 @@ class TestFindFreeChannels:
         """Test that None parameters raise ValueError."""
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
-            find_free_channels(
-                network_spectrum=None, slots_needed=2, link_tuple=(1, 2)
-            )
+            find_free_channels(network_spectrum=None, slots_needed=2, link_tuple=(1, 2))
 
         assert "Must provide network_spectrum, link_tuple, and slots_needed" in str(
             exc_info.value
@@ -234,9 +230,7 @@ class TestFindFreeChannels:
     def test_find_free_channels_with_legacy_parameters_works(self) -> None:
         """Test backward compatibility with legacy parameter names."""
         # Arrange
-        network_spectrum = {
-            (1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0]])}}
-        }
+        network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0]])}}}
 
         # Act
         result = find_free_channels(
@@ -278,9 +272,7 @@ class TestFindTakenChannels:
     def test_find_taken_channels_with_empty_spectrum_returns_empty(self) -> None:
         """Test finding taken channels on empty spectrum."""
         # Arrange
-        network_spectrum = {
-            (1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0]])}}
-        }
+        network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0]])}}}
 
         # Act
         result = find_taken_channels(
@@ -360,9 +352,7 @@ class TestFindTakenChannels:
     def test_find_taken_channels_with_legacy_parameter_works(self) -> None:
         """Test backward compatibility with legacy parameter name."""
         # Arrange
-        network_spectrum = {
-            (1, 2): {"cores_matrix": {"c": np.array([[1, 1, -1]])}}
-        }
+        network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[1, 1, -1]])}}}
 
         # Act
         result = find_taken_channels(
@@ -380,15 +370,9 @@ class TestGetChannelOverlaps:
         """Test channel overlaps returns correct structure."""
         # Arrange - need 7 cores (0-6), nested structure for slots
         cores_slots = {i: np.array([0, 1, 2]) for i in range(7)}
-        free_channels_dict = {
-            (1, 2): {
-                "c": {i: [[0, 1, 2]] for i in range(7)}
-            }
-        }
+        free_channels_dict = {(1, 2): {"c": {i: [[0, 1, 2]] for i in range(7)}}}
         free_slots_dict: dict[Any, dict[str, dict[int, dict[int, Any]]]] = {
-            (1, 2): {
-                "c": {i: cores_slots.copy() for i in range(7)}
-            }
+            (1, 2): {"c": {i: cores_slots.copy() for i in range(7)}}
         }
 
         # Act
@@ -405,14 +389,10 @@ class TestGetChannelOverlaps:
         # Arrange - need 7 cores minimum, nested structure
         cores_slots = {i: np.array([]) for i in range(7)}
         free_channels_dict: dict[tuple[int, int], dict[str, dict[int, list[Any]]]] = {
-            (1, 2): {
-                "c": {i: [] for i in range(7)}
-            }
+            (1, 2): {"c": {i: [] for i in range(7)}}
         }
         free_slots_dict: dict[Any, dict[str, dict[int, dict[int, Any]]]] = {
-            (1, 2): {
-                "c": {i: cores_slots.copy() for i in range(7)}
-            }
+            (1, 2): {"c": {i: cores_slots.copy() for i in range(7)}}
         }
 
         # Act

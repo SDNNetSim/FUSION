@@ -1,17 +1,17 @@
 """V2 data adapter for future format."""
 
-from typing import Dict, Any
 import logging
+from typing import Any
 
-from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
+from fusion.visualization.domain.exceptions.domain_exceptions import (
+    UnsupportedDataFormatError,
+)
+from fusion.visualization.domain.value_objects.data_version import DataVersion
 from fusion.visualization.infrastructure.adapters.canonical_data import (
     CanonicalData,
     IterationData,
 )
-from fusion.visualization.domain.value_objects.data_version import DataVersion
-from fusion.visualization.domain.exceptions.domain_exceptions import (
-    UnsupportedDataFormatError,
-)
+from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class V2DataAdapter(DataAdapter):
         """Return version identifier."""
         return DataVersion.from_string("v2")
 
-    def can_handle(self, data: Dict[str, Any]) -> bool:
+    def can_handle(self, data: dict[str, Any]) -> bool:
         """
         Check if this adapter can handle the data format.
 
@@ -55,7 +55,7 @@ class V2DataAdapter(DataAdapter):
 
         return has_metrics or has_iterations_list
 
-    def to_canonical(self, raw_data: Dict[str, Any]) -> CanonicalData:
+    def to_canonical(self, raw_data: dict[str, Any]) -> CanonicalData:
         """
         Convert V2 format to canonical format.
 
@@ -69,15 +69,13 @@ class V2DataAdapter(DataAdapter):
             UnsupportedDataFormatError: If data format is not V2
         """
         if not self.can_handle(raw_data):
-            raise UnsupportedDataFormatError(
-                "Data does not match V2 format"
-            )
+            raise UnsupportedDataFormatError("Data does not match V2 format")
 
         # Extract metrics from structured metrics object
         metrics = raw_data.get("metrics", {})
         blocking_probability = metrics.get(
             "blocking_probability",
-            raw_data.get("blocking_mean")  # Fallback to V1 field
+            raw_data.get("blocking_mean"),  # Fallback to V1 field
         )
 
         # Parse iterations (list format in V2)
@@ -95,7 +93,7 @@ class V2DataAdapter(DataAdapter):
                     lengths_list=iter_data.get("lengths_list"),
                     snapshots_dict=iter_data.get("snapshots_dict"),
                     mods_used_dict=iter_data.get("mods_used_dict"),
-                    metadata=iter_data.get("metadata", {})
+                    metadata=iter_data.get("metadata", {}),
                 )
                 iterations.append(iteration)
 
@@ -106,18 +104,18 @@ class V2DataAdapter(DataAdapter):
         rl_data = raw_data.get("reinforcement_learning", {})
         rewards = rl_data.get("rewards", raw_data.get("rewards"))
         td_errors = rl_data.get("td_errors", raw_data.get("td_errors"))
-        episode_lengths = rl_data.get("episode_lengths", raw_data.get("episode_lengths"))
+        episode_lengths = rl_data.get(
+            "episode_lengths", raw_data.get("episode_lengths")
+        )
         q_values = rl_data.get("q_values")
 
         # Extract timing information
         timing = raw_data.get("timing", {})
         sim_start_time = timing.get(
-            "start_time",
-            metadata.get("sim_start_time", raw_data.get("sim_start_time"))
+            "start_time", metadata.get("sim_start_time", raw_data.get("sim_start_time"))
         )
         sim_end_time = timing.get(
-            "end_time",
-            metadata.get("sim_end_time", raw_data.get("sim_end_time"))
+            "end_time", metadata.get("sim_end_time", raw_data.get("sim_end_time"))
         )
         duration_seconds = timing.get("duration_seconds")
 
@@ -142,7 +140,7 @@ class V2DataAdapter(DataAdapter):
             metadata=metadata,
         )
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: dict[str, Any]) -> bool:
         """
         Validate V2 data structure.
 

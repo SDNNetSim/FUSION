@@ -8,10 +8,24 @@ This module tests:
 - Plugin configuration validation
 """
 
-import pytest
+from collections.abc import Generator
 from pathlib import Path
-from typing import List, Generator, Any
 
+import pytest
+
+from fusion.visualization.application.ports.plot_renderer_port import RenderResult
+from fusion.visualization.domain.entities.metric import (
+    AggregationStrategy,
+    DataType,
+    MetricDefinition,
+)
+from fusion.visualization.domain.strategies.processing_strategies import (
+    GenericMetricProcessingStrategy,
+)
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
+from fusion.visualization.infrastructure.renderers.base_renderer import BaseRenderer
 from fusion.visualization.plugins import (
     BasePlugin,
     PlotTypeRegistration,
@@ -19,11 +33,6 @@ from fusion.visualization.plugins import (
     get_global_registry,
     reset_global_registry,
 )
-from fusion.visualization.domain.entities.metric import MetricDefinition, DataType, AggregationStrategy
-from fusion.visualization.domain.strategies.processing_strategies import GenericMetricProcessingStrategy
-from fusion.visualization.infrastructure.renderers.base_renderer import BaseRenderer
-from fusion.visualization.application.ports.plot_renderer_port import RenderResult
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
 
 
 class TestPluginRegistry:
@@ -107,7 +116,7 @@ class TestPluginRegistry:
         assert registry.is_loaded("test")
         plugin = registry.get_plugin("test")
         assert plugin is not None
-        assert hasattr(plugin, 'loaded')
+        assert hasattr(plugin, "loaded")
         assert plugin.loaded  # type: ignore[attr-defined]
 
     def test_load_nonexistent_plugin_raises(self) -> None:
@@ -140,7 +149,7 @@ class TestPluginRegistry:
         assert not registry.is_loaded("test")
         plugin = registry.get_plugin("test")
         assert plugin is not None
-        assert hasattr(plugin, 'unloaded')
+        assert hasattr(plugin, "unloaded")
         assert plugin.unloaded  # type: ignore[attr-defined]
 
     def test_get_all_plugins(self) -> None:
@@ -208,7 +217,7 @@ class TestPluginMetrics:
             def name(self) -> str:
                 return "test"
 
-            def register_metrics(self) -> List[MetricDefinition]:
+            def register_metrics(self) -> list[MetricDefinition]:
                 return [
                     MetricDefinition(
                         name="test_metric",
@@ -234,7 +243,7 @@ class TestPluginMetrics:
             def name(self) -> str:
                 return "test"
 
-            def register_metrics(self) -> List[MetricDefinition]:
+            def register_metrics(self) -> list[MetricDefinition]:
                 return [
                     MetricDefinition(
                         name="metric1",
@@ -267,7 +276,7 @@ class TestPluginMetrics:
             def name(self) -> str:
                 return "plugin1"
 
-            def register_metrics(self) -> List[MetricDefinition]:
+            def register_metrics(self) -> list[MetricDefinition]:
                 return [
                     MetricDefinition(
                         name="metric1",
@@ -282,7 +291,7 @@ class TestPluginMetrics:
             def name(self) -> str:
                 return "plugin2"
 
-            def register_metrics(self) -> List[MetricDefinition]:
+            def register_metrics(self) -> list[MetricDefinition]:
                 return [
                     MetricDefinition(
                         name="metric2",
@@ -317,8 +326,17 @@ class TestPluginPlotTypes:
         registry = PluginRegistry()
 
         class DummyRenderer(BaseRenderer):
-            def render(self, specification: PlotSpecification, output_path: Path, dpi: int = 300, format: str = "png") -> "RenderResult":
-                from fusion.visualization.application.ports.plot_renderer_port import RenderResult
+            def render(
+                self,
+                specification: PlotSpecification,
+                output_path: Path,
+                dpi: int = 300,
+                format: str = "png",
+            ) -> "RenderResult":
+                from fusion.visualization.application.ports.plot_renderer_port import (
+                    RenderResult,
+                )
+
                 return RenderResult(success=True, output_path=output_path)
 
             def supports_format(self, format: str) -> bool:
@@ -354,8 +372,17 @@ class TestPluginPlotTypes:
         registry = PluginRegistry()
 
         class DummyRenderer(BaseRenderer):
-            def render(self, specification: PlotSpecification, output_path: Path, dpi: int = 300, format: str = "png") -> "RenderResult":
-                from fusion.visualization.application.ports.plot_renderer_port import RenderResult
+            def render(
+                self,
+                specification: PlotSpecification,
+                output_path: Path,
+                dpi: int = 300,
+                format: str = "png",
+            ) -> "RenderResult":
+                from fusion.visualization.application.ports.plot_renderer_port import (
+                    RenderResult,
+                )
+
                 return RenderResult(success=True, output_path=output_path)
 
             def supports_format(self, format: str) -> bool:
@@ -419,7 +446,7 @@ class TestPluginDependencies:
                 return "dependent"
 
             @property
-            def requires(self) -> List[str]:
+            def requires(self) -> list[str]:
                 return ["base"]
 
         registry.register_plugin_class(BasePlugin1)
@@ -443,7 +470,7 @@ class TestPluginDependencies:
                 return "dependent"
 
             @property
-            def requires(self) -> List[str]:
+            def requires(self) -> list[str]:
                 return ["missing"]
 
         registry.register_plugin_class(DependentPlugin)
@@ -518,9 +545,9 @@ class TestRealPlugins:
     def test_all_plugins_load(self) -> None:
         """Test that all FUSION plugins load successfully."""
         from fusion.modules.rl.visualization import RLVisualizationPlugin
-        from fusion.modules.spectrum.visualization import SpectrumVisualizationPlugin
-        from fusion.modules.snr.visualization import SNRVisualizationPlugin
         from fusion.modules.routing.visualization import RoutingVisualizationPlugin
+        from fusion.modules.snr.visualization import SNRVisualizationPlugin
+        from fusion.modules.spectrum.visualization import SpectrumVisualizationPlugin
 
         registry = PluginRegistry()
         registry.register_plugin_class(RLVisualizationPlugin)
@@ -539,9 +566,9 @@ class TestRealPlugins:
     def test_all_plugins_unique_metrics(self) -> None:
         """Test that all plugins register unique metrics."""
         from fusion.modules.rl.visualization import RLVisualizationPlugin
-        from fusion.modules.spectrum.visualization import SpectrumVisualizationPlugin
-        from fusion.modules.snr.visualization import SNRVisualizationPlugin
         from fusion.modules.routing.visualization import RoutingVisualizationPlugin
+        from fusion.modules.snr.visualization import SNRVisualizationPlugin
+        from fusion.modules.spectrum.visualization import SpectrumVisualizationPlugin
 
         registry = PluginRegistry()
         registry.register_plugin_class(RLVisualizationPlugin)

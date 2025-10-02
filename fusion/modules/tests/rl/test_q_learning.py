@@ -120,7 +120,7 @@ class TestGetMaxFutureQ:
         return_value=(0.4, None),
     )
     def test_max_future_q_path(
-            self, _cong: mock.MagicMock, _classify: mock.MagicMock
+        self, _cong: mock.MagicMock, _classify: mock.MagicMock
     ) -> None:
         """Path mode returns correct Q from matrix."""
         agent = _new_agent()

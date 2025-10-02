@@ -130,11 +130,11 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         of bidirectional links with the same fragmentation cost.
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         # Calculate fragmentation for each direct link
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source_node, destination_node = link_tuple
             direct_path = [source_node, destination_node]
@@ -166,7 +166,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         :type weight: str
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         paths_generator = nx.shortest_simple_paths(
@@ -215,7 +215,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             return 0.0
 
         try:
-            network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+            network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
             return find_path_fragmentation(
                 path_list=path,
                 network_spectrum=network_spectrum_dict,
@@ -238,7 +238,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         """
         # Update fragmentation costs first
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
         self._update_fragmentation_costs()
 
@@ -266,7 +266,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         :type topology: Any
         """
         # Recalculate fragmentation costs for all links
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source_node, destination_node = link_tuple
             direct_path = [source_node, destination_node]

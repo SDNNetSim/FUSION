@@ -6,7 +6,7 @@ by the simulation environment implementation.
 """
 
 # Configuration keys
-DEFAULT_SIMULATION_KEY: str = 's1'
+DEFAULT_SIMULATION_KEY: str = "s1"
 DEFAULT_SAVE_SIMULATION: bool = False
 
 # Supported spectral bands

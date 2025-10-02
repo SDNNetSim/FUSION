@@ -1,27 +1,28 @@
 """High-level plot service for orchestrating plot operations."""
 
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from fusion.visualization.application.dto import (
-    PlotRequestDTO,
-    PlotResultDTO,
     BatchPlotRequestDTO,
     BatchPlotResultDTO,
     ComparisonRequestDTO,
     ComparisonResultDTO,
-)
-from fusion.visualization.application.use_cases import (
-    GeneratePlotUseCase,
-    BatchGeneratePlotsUseCase,
-    CompareAlgorithmsUseCase,
+    PlotRequestDTO,
+    PlotResultDTO,
 )
 from fusion.visualization.application.ports import (
+    CachePort,
     DataProcessorPort,
     PlotRendererPort,
-    CachePort,
+)
+from fusion.visualization.application.use_cases import (
+    BatchGeneratePlotsUseCase,
+    CompareAlgorithmsUseCase,
+    GeneratePlotUseCase,
 )
 from fusion.visualization.domain.repositories import SimulationRepository
 from fusion.visualization.domain.value_objects.plot_specification import PlotType
@@ -40,11 +41,11 @@ class PlotService:
     def __init__(
         self,
         simulation_repository: SimulationRepository,
-        data_processor: Optional[DataProcessorPort] = None,
-        plot_renderer: Optional[PlotRendererPort] = None,
-        cache: Optional[CachePort] = None,
-        metadata_repository: Optional[Any] = None,
-        cache_service: Optional[CachePort] = None,
+        data_processor: DataProcessorPort | None = None,
+        plot_renderer: PlotRendererPort | None = None,
+        cache: CachePort | None = None,
+        metadata_repository: Any | None = None,
+        cache_service: CachePort | None = None,
     ):
         """
         Initialize plot service.
@@ -70,20 +71,26 @@ class PlotService:
 
         # Initialize use cases (only if we have required dependencies)
         if data_processor and plot_renderer:
-            self.generate_plot_use_case: Optional[GeneratePlotUseCase] = GeneratePlotUseCase(
-                simulation_repository=simulation_repository,
-                data_processor=data_processor,
-                plot_renderer=plot_renderer,
-                cache=cache,
+            self.generate_plot_use_case: GeneratePlotUseCase | None = (
+                GeneratePlotUseCase(
+                    simulation_repository=simulation_repository,
+                    data_processor=data_processor,
+                    plot_renderer=plot_renderer,
+                    cache=cache,
+                )
             )
 
-            self.batch_generate_plots_use_case: Optional[BatchGeneratePlotsUseCase] = BatchGeneratePlotsUseCase(
-                generate_plot_use_case=self.generate_plot_use_case
+            self.batch_generate_plots_use_case: BatchGeneratePlotsUseCase | None = (
+                BatchGeneratePlotsUseCase(
+                    generate_plot_use_case=self.generate_plot_use_case
+                )
             )
 
-            self.compare_algorithms_use_case: Optional[CompareAlgorithmsUseCase] = CompareAlgorithmsUseCase(
-                simulation_repository=simulation_repository,
-                cache=cache,
+            self.compare_algorithms_use_case: CompareAlgorithmsUseCase | None = (
+                CompareAlgorithmsUseCase(
+                    simulation_repository=simulation_repository,
+                    cache=cache,
+                )
             )
         else:
             self.generate_plot_use_case = None
@@ -93,11 +100,11 @@ class PlotService:
     def generate_plot(
         self,
         network: str,
-        dates: List[str],
+        dates: list[str],
         plot_type: str | PlotType,
-        algorithms: Optional[List[str]] = None,
-        traffic_volumes: Optional[List[float]] = None,
-        save_path: Optional[Path] = None,
+        algorithms: list[str] | None = None,
+        traffic_volumes: list[float] | None = None,
+        save_path: Path | None = None,
         **kwargs: Any,
     ) -> PlotResultDTO:
         """
@@ -129,23 +136,24 @@ class PlotService:
             **kwargs,
         )
 
-        logger.info(
-            f"Generating {plot_type.value} plot for {network} on dates {dates}"
-        )
+        logger.info(f"Generating {plot_type.value} plot for {network} on dates {dates}")
 
         if self.generate_plot_use_case is None:
-            raise RuntimeError("PlotService not fully initialized with data_processor and plot_renderer")
+            raise RuntimeError(
+                "PlotService not fully initialized with data_processor "
+                "and plot_renderer"
+            )
         return self.generate_plot_use_case.execute(request)
 
     def batch_generate(
         self,
         network: str,
-        dates: List[str],
-        plot_configs: List[Dict[str, Any]],
+        dates: list[str],
+        plot_configs: list[dict[str, Any]],
         parallel: bool = True,
         max_workers: int = 4,
-        output_dir: Optional[Path] = None,
-    ) -> BatchPlotResultDTO | List[PlotResultDTO]:
+        output_dir: Path | None = None,
+    ) -> BatchPlotResultDTO | list[PlotResultDTO]:
         """
         Generate multiple plots in batch.
 
@@ -195,17 +203,20 @@ class PlotService:
         )
 
         if self.batch_generate_plots_use_case is None:
-            raise RuntimeError("PlotService not fully initialized with data_processor and plot_renderer")
+            raise RuntimeError(
+                "PlotService not fully initialized with data_processor "
+                "and plot_renderer"
+            )
         return self.batch_generate_plots_use_case.execute(batch_request)
 
     def compare_algorithms(
         self,
         network: str,
-        dates: List[str],
-        algorithms: List[str],
+        dates: list[str],
+        algorithms: list[str],
         metric: str = "blocking_probability",
-        traffic_volumes: Optional[List[float]] = None,
-        save_path: Optional[Path] = None,
+        traffic_volumes: list[float] | None = None,
+        save_path: Path | None = None,
         **kwargs: Any,
     ) -> ComparisonResultDTO:
         """
@@ -239,10 +250,13 @@ class PlotService:
         )
 
         if self.compare_algorithms_use_case is None:
-            raise RuntimeError("PlotService not fully initialized with data_processor and plot_renderer")
+            raise RuntimeError(
+                "PlotService not fully initialized with data_processor "
+                "and plot_renderer"
+            )
         return self.compare_algorithms_use_case.execute(request)
 
-    def get_available_networks(self) -> List[str]:
+    def get_available_networks(self) -> list[str]:
         """
         Get list of available networks.
 
@@ -253,7 +267,7 @@ class PlotService:
         # For now, return common networks
         return ["NSFNet", "USNet", "Pan-European", "dt_network"]
 
-    def get_available_dates(self, network: str) -> List[str]:
+    def get_available_dates(self, network: str) -> list[str]:
         """
         Get list of available dates for a network.
 
@@ -268,9 +282,7 @@ class PlotService:
         logger.warning("get_available_dates not yet implemented")
         return []
 
-    def get_available_algorithms(
-        self, network: str, dates: List[str]
-    ) -> List[str]:
+    def get_available_algorithms(self, network: str, dates: list[str]) -> list[str]:
         """
         Get list of available algorithms for given network and dates.
 
@@ -288,7 +300,7 @@ class PlotService:
             )
 
             # Extract unique algorithms
-            algorithms = sorted(set(run.algorithm for run in runs))
+            algorithms = sorted({run.algorithm for run in runs})
             return algorithms
 
         except Exception as e:

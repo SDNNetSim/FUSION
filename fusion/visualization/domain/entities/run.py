@@ -1,10 +1,10 @@
 """Run entity representing a single simulation execution."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -22,14 +22,14 @@ class Run:
     date: str  # Date string (e.g., "0606")
     algorithm: str  # Algorithm name (e.g., "ppo_obs_7")
     path: Path  # Path to run data directory
-    metadata: Dict[str, Any] | None = None  # Additional metadata
+    metadata: dict[str, Any] | None = None  # Additional metadata
 
     def __post_init__(self) -> None:
         """Initialize default values."""
         if self.metadata is None:
-            object.__setattr__(self, 'metadata', {})
+            object.__setattr__(self, "metadata", {})
         if not isinstance(self.path, Path):
-            object.__setattr__(self, 'path', Path(self.path))
+            object.__setattr__(self, "path", Path(self.path))
 
     @property
     def full_id(self) -> str:

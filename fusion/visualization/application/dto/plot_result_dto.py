@@ -1,10 +1,11 @@
 """Data Transfer Objects for plot results."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -20,49 +21,49 @@ class PlotResultDTO:
     plot_id: str
 
     # Output information
-    output_path: Optional[Path] = None
-    plot_type: Optional[str] = None
+    output_path: Path | None = None
+    plot_type: str | None = None
 
     # Metadata about the generation
-    algorithms: List[str] = field(default_factory=list)
-    traffic_volumes: List[float] = field(default_factory=list)
+    algorithms: list[str] = field(default_factory=list)
+    traffic_volumes: list[float] = field(default_factory=list)
     num_runs: int = 0
 
     # Timing information
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    duration: Optional[timedelta] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    duration: timedelta | None = None
 
     # Error information
-    error: Optional[str] = None
-    error_details: Optional[str] = None
-    error_message: Optional[str] = None  # Alias for error
+    error: str | None = None
+    error_details: str | None = None
+    error_message: str | None = None  # Alias for error
 
     # Additional metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Handle error message aliases."""
         # If error_message is set but error is not, copy it
         if self.error_message and not self.error:
-            object.__setattr__(self, 'error', self.error_message)
+            object.__setattr__(self, "error", self.error_message)
         # If error is set but error_message is not, copy it
         elif self.error and not self.error_message:
-            object.__setattr__(self, 'error_message', self.error)
+            object.__setattr__(self, "error_message", self.error)
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Get duration in seconds."""
         if self.duration:
             return self.duration.total_seconds()
         return None
 
     @property
-    def algorithms_plotted(self) -> List[str]:
+    def algorithms_plotted(self) -> list[str]:
         """Alias for algorithms property (backward compatibility)."""
         return self.algorithms
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "success": self.success,
@@ -73,7 +74,9 @@ class PlotResultDTO:
             "traffic_volumes": self.traffic_volumes,
             "num_runs": self.num_runs,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
             "duration_seconds": self.duration_seconds,
             "error": self.error,
             "error_details": self.error_details,
@@ -85,22 +88,22 @@ class PlotResultDTO:
 class BatchPlotResultDTO:
     """DTO for batch plot generation results."""
 
-    results: List[PlotResultDTO]
-    plots: Optional[List[PlotResultDTO]] = None  # Alias for results
+    results: list[PlotResultDTO]
+    plots: list[PlotResultDTO] | None = None  # Alias for results
 
     # Overall batch status
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    duration: Optional[timedelta] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    duration: timedelta | None = None
 
     def __post_init__(self) -> None:
         """Handle results/plots aliases."""
         # If plots is set but results is not, copy it
         if self.plots and not self.results:
-            object.__setattr__(self, 'results', self.plots)
+            object.__setattr__(self, "results", self.plots)
         # If results is set but plots is not, copy it
         elif self.results and not self.plots:
-            object.__setattr__(self, 'plots', self.results)
+            object.__setattr__(self, "plots", self.results)
 
     @property
     def success_count(self) -> int:
@@ -129,7 +132,7 @@ class BatchPlotResultDTO:
         """Check if all plots succeeded."""
         return self.failure_count == 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "results": [r.to_dict() for r in self.results],
@@ -138,8 +141,12 @@ class BatchPlotResultDTO:
             "total_count": self.total_count,
             "success_rate": self.success_rate,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
-            "duration_seconds": self.duration.total_seconds() if self.duration else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
+            "duration_seconds": self.duration.total_seconds()
+            if self.duration
+            else None,
         }
 
 
@@ -158,19 +165,19 @@ class StatisticalComparison:
     std_b: float
 
     # Statistical tests
-    p_value: Optional[float] = None
-    test_statistic: Optional[float] = None
+    p_value: float | None = None
+    test_statistic: float | None = None
     test_name: str = "t-test"
 
     # Effect sizes
-    cohens_d: Optional[float] = None
-    effect_size_interpretation: Optional[str] = None
+    cohens_d: float | None = None
+    effect_size_interpretation: str | None = None
 
     # Confidence intervals
-    ci_lower_a: Optional[float] = None
-    ci_upper_a: Optional[float] = None
-    ci_lower_b: Optional[float] = None
-    ci_upper_b: Optional[float] = None
+    ci_lower_a: float | None = None
+    ci_upper_a: float | None = None
+    ci_lower_b: float | None = None
+    ci_upper_b: float | None = None
 
     @property
     def is_significant(self) -> bool:
@@ -195,24 +202,24 @@ class ComparisonResultDTO:
     """DTO for algorithm comparison results."""
 
     network: str
-    dates: List[str]
-    algorithms: List[str]
+    dates: list[str]
+    algorithms: list[str]
     metric: str
 
     # Comparison results
-    comparisons: List[StatisticalComparison]
+    comparisons: list[StatisticalComparison]
 
     # Output information
-    output_path: Optional[Path] = None
+    output_path: Path | None = None
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
 
     # Metadata
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    duration: Optional[timedelta] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    duration: timedelta | None = None
 
-    def get_comparison(self, algo_a: str, algo_b: str) -> Optional[StatisticalComparison]:
+    def get_comparison(self, algo_a: str, algo_b: str) -> StatisticalComparison | None:
         """Get comparison between two algorithms."""
         for comp in self.comparisons:
             if comp.algorithm_a == algo_a and comp.algorithm_b == algo_b:
@@ -228,7 +235,9 @@ class ComparisonResultDTO:
                     std_a=comp.std_b,
                     std_b=comp.std_a,
                     p_value=comp.p_value,
-                    test_statistic=-comp.test_statistic if comp.test_statistic else None,
+                    test_statistic=-comp.test_statistic
+                    if comp.test_statistic
+                    else None,
                     test_name=comp.test_name,
                     cohens_d=-comp.cohens_d if comp.cohens_d else None,
                     ci_lower_a=comp.ci_lower_b,
@@ -238,7 +247,7 @@ class ComparisonResultDTO:
                 )
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "network": self.network,
@@ -263,5 +272,7 @@ class ComparisonResultDTO:
             "output_path": str(self.output_path) if self.output_path else None,
             "success": self.success,
             "error": self.error,
-            "duration_seconds": self.duration.total_seconds() if self.duration else None,
+            "duration_seconds": self.duration.total_seconds()
+            if self.duration
+            else None,
         }

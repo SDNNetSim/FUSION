@@ -8,9 +8,6 @@ learning experiments including:
 - Multi-metric dashboards
 """
 
-from pathlib import Path
-from typing import Dict, List, Type
-
 from fusion.modules.rl.visualization.rl_metrics import get_rl_metrics
 from fusion.modules.rl.visualization.rl_plots import (
     ConvergencePlotRenderer,
@@ -81,9 +78,11 @@ class RLVisualizationPlugin(BasePlugin):
             import scipy  # noqa: F401
             import seaborn  # noqa: F401
         except ImportError as e:
-            raise ImportError(f"RL visualization plugin requires scipy and seaborn: {e}")
+            raise ImportError(
+                f"RL visualization plugin requires scipy and seaborn: {e}"
+            ) from e
 
-    def register_metrics(self) -> List[MetricDefinition]:
+    def register_metrics(self) -> list[MetricDefinition]:
         """Register RL-specific metrics.
 
         Returns:
@@ -91,7 +90,7 @@ class RLVisualizationPlugin(BasePlugin):
         """
         return get_rl_metrics()
 
-    def register_plot_types(self) -> Dict[str, PlotTypeRegistration]:
+    def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
         """Register RL-specific plot types.
 
         Returns:
@@ -102,7 +101,10 @@ class RLVisualizationPlugin(BasePlugin):
             "reward_learning_curve": PlotTypeRegistration(
                 processor=RewardProcessingStrategy(window_size=100),
                 renderer=RewardLearningCurveRenderer(),
-                description="Learning curve showing episode rewards over training with smoothing and confidence intervals",
+                description=(
+                    "Learning curve showing episode rewards over training "
+                    "with smoothing and confidence intervals"
+                ),
                 required_metrics=["episode_reward"],
                 default_config={
                     "window_size": 100,
@@ -118,9 +120,13 @@ class RLVisualizationPlugin(BasePlugin):
                 default_config={"colormap": "viridis", "annotate": False},
             ),
             "convergence_plot": PlotTypeRegistration(
-                processor=ConvergenceDetectionStrategy(window_size=100, threshold=0.01),
+                processor=ConvergenceDetectionStrategy(
+                    window_size=100, threshold=0.01
+                ),
                 renderer=ConvergencePlotRenderer(),
-                description="Training convergence analysis showing when metrics stabilize",
+                description=(
+                    "Training convergence analysis showing when metrics stabilize"
+                ),
                 required_metrics=["episode_reward"],
                 default_config={
                     "window_size": 100,
@@ -131,13 +137,21 @@ class RLVisualizationPlugin(BasePlugin):
             "rl_dashboard": PlotTypeRegistration(
                 processor=RewardProcessingStrategy(window_size=100),
                 renderer=MultiMetricDashboardRenderer(),
-                description="Comprehensive dashboard showing multiple RL training metrics",
-                required_metrics=["episode_reward", "policy_loss", "value_loss", "policy_entropy", "q_value_mean"],
+                description=(
+                    "Comprehensive dashboard showing multiple RL training metrics"
+                ),
+                required_metrics=[
+                    "episode_reward",
+                    "policy_loss",
+                    "value_loss",
+                    "policy_entropy",
+                    "q_value_mean",
+                ],
                 default_config={"layout": "3x2", "window_size": 100},
             ),
         }
 
-    def get_config_schema(self) -> Dict:
+    def get_config_schema(self) -> dict:
         """Get configuration schema for this plugin.
 
         Returns:
@@ -149,22 +163,22 @@ class RLVisualizationPlugin(BasePlugin):
                 "window_size": {
                     "type": "integer",
                     "default": 100,
-                    "description": "Smoothing window size for learning curves"
+                    "description": "Smoothing window size for learning curves",
                 },
                 "confidence_level": {
                     "type": "number",
                     "default": 0.95,
-                    "description": "Confidence level for intervals"
+                    "description": "Confidence level for intervals",
                 },
                 "colormap": {
                     "type": "string",
                     "default": "viridis",
-                    "description": "Colormap for heatmaps"
-                }
-            }
+                    "description": "Colormap for heatmaps",
+                },
+            },
         }
 
-    def validate_config(self, config: Dict) -> bool:
+    def validate_config(self, config: dict) -> bool:
         """Validate plugin configuration.
 
         Args:
@@ -182,12 +196,14 @@ class RLVisualizationPlugin(BasePlugin):
         # Validate confidence_level
         if "confidence_level" in config:
             confidence_level = config["confidence_level"]
-            if not isinstance(confidence_level, (int, float)) or not (0 < confidence_level < 1):
+            if not isinstance(confidence_level, (int, float)) or not (
+                0 < confidence_level < 1
+            ):
                 return False
 
         return True
 
-    def register_processors(self) -> Dict[str, MetricProcessingStrategy]:
+    def register_processors(self) -> dict[str, MetricProcessingStrategy]:
         """Register RL-specific data processors.
 
         Returns:
@@ -199,7 +215,7 @@ class RLVisualizationPlugin(BasePlugin):
             "convergence_detection": ConvergenceDetectionStrategy(),
         }
 
-    def register_renderers(self) -> Dict[str, Type[BaseRenderer]]:
+    def register_renderers(self) -> dict[str, type[BaseRenderer]]:
         """Register RL-specific renderers.
 
         Returns:

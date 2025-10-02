@@ -19,12 +19,8 @@ from fusion.sim.utils.spectrum import (
 def sample_network_spectrum() -> dict:
     """Provide sample network spectrum for tests."""
     return {
-        (0, 1): {
-            "cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}
-        },
-        (3, 4): {
-            "cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}
-        },
+        (0, 1): {"cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}},
+        (3, 4): {"cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}},
     }
 
 

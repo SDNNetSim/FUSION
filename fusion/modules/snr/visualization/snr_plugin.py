@@ -5,7 +5,6 @@ analysis in optical networks.
 """
 
 from pathlib import Path
-from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +14,9 @@ from fusion.visualization.domain.entities.metric import (
     DataType,
     MetricDefinition,
 )
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
 from fusion.visualization.infrastructure.renderers.base_renderer import (
     BaseRenderer,
     PlotResult,
@@ -69,19 +70,27 @@ class SNRvsDistancePlotRenderer(BaseRenderer):
                 # Add confidence interval if available
                 if std is not None:
                     color = line[0].get_color()
-                    ax.fill_between(distances, snr - std, snr + std, alpha=0.2, color=color)
+                    ax.fill_between(
+                        distances, snr - std, snr + std, alpha=0.2, color=color
+                    )
 
         # Add SNR threshold lines if specified
         if "snr_threshold" in specification.metadata:
             threshold = specification.metadata["snr_threshold"]
             ax.axhline(
-                threshold, color="red", linestyle="--", linewidth=2, label=f"Threshold ({threshold} dB)"
+                threshold,
+                color="red",
+                linestyle="--",
+                linewidth=2,
+                label=f"Threshold ({threshold} dB)",
             )
 
         # Styling
         ax.set_xlabel(specification.x_label or "Distance (km)", fontsize=12)
         ax.set_ylabel(specification.y_label or "SNR (dB)", fontsize=12)
-        ax.set_title(specification.title or "SNR vs Distance", fontsize=14, fontweight="bold")
+        ax.set_title(
+            specification.title or "SNR vs Distance", fontsize=14, fontweight="bold"
+        )
         ax.legend(loc="best", frameon=True, shadow=True)
         ax.grid(True, alpha=0.3)
 
@@ -92,7 +101,9 @@ class SNRvsDistancePlotRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "snr_vs_distance"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "snr_vs_distance"},
         )
 
 
@@ -149,7 +160,13 @@ class QFactorPlotRenderer(BaseRenderer):
         # Plot 2: BER vs SNR
         for config, config_data in data.items():
             if "snr" in config_data and "ber" in config_data:
-                ax2.semilogy(config_data["snr"], config_data["ber"], marker="o", label=config, linewidth=2)
+                ax2.semilogy(
+                    config_data["snr"],
+                    config_data["ber"],
+                    marker="o",
+                    label=config,
+                    linewidth=2,
+                )
 
         ax2.set_xlabel("SNR (dB)", fontsize=12)
         ax2.set_ylabel("Bit Error Rate (BER)", fontsize=12)
@@ -157,14 +174,22 @@ class QFactorPlotRenderer(BaseRenderer):
         ax2.legend(loc="best")
         ax2.grid(True, alpha=0.3, which="both")
 
-        fig.suptitle(specification.title or "Q-Factor and BER Analysis", fontsize=14, fontweight="bold")
+        fig.suptitle(
+            specification.title or "Q-Factor and BER Analysis",
+            fontsize=14,
+            fontweight="bold",
+        )
         plt.tight_layout()
 
         # Save
         fig.savefig(output_path, dpi=dpi, format=format, bbox_inches="tight")
         plt.close(fig)
 
-        return PlotResult(success=True, output_path=output_path, metadata={"plot_type": "q_factor_plot"})
+        return PlotResult(
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "q_factor_plot"},
+        )
 
 
 class OSNRMarginPlotRenderer(BaseRenderer):
@@ -209,12 +234,33 @@ class OSNRMarginPlotRenderer(BaseRenderer):
         bars = ax.bar(x_pos, margins, color=colors, alpha=0.7, edgecolor="black")
 
         # Add threshold lines
-        ax.axhline(3.0, color="green", linestyle="--", linewidth=2, alpha=0.5, label="Safe (>3 dB)")
-        ax.axhline(1.0, color="orange", linestyle="--", linewidth=2, alpha=0.5, label="Warning (>1 dB)")
-        ax.axhline(0.0, color="red", linestyle="--", linewidth=2, alpha=0.5, label="Critical (<0 dB)")
+        ax.axhline(
+            3.0,
+            color="green",
+            linestyle="--",
+            linewidth=2,
+            alpha=0.5,
+            label="Safe (>3 dB)",
+        )
+        ax.axhline(
+            1.0,
+            color="orange",
+            linestyle="--",
+            linewidth=2,
+            alpha=0.5,
+            label="Warning (>1 dB)",
+        )
+        ax.axhline(
+            0.0,
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            alpha=0.5,
+            label="Critical (<0 dB)",
+        )
 
         # Add value labels on bars
-        for bar, margin in zip(bars, margins):
+        for bar, margin in zip(bars, margins, strict=False):
             height = bar.get_height()
             ax.text(
                 bar.get_x() + bar.get_width() / 2.0,
@@ -229,7 +275,11 @@ class OSNRMarginPlotRenderer(BaseRenderer):
         ax.set_xticks(x_pos)
         ax.set_xticklabels(configs, rotation=45, ha="right")
         ax.set_ylabel("OSNR Margin (dB)", fontsize=12)
-        ax.set_title(specification.title or "OSNR Margin Analysis", fontsize=14, fontweight="bold")
+        ax.set_title(
+            specification.title or "OSNR Margin Analysis",
+            fontsize=14,
+            fontweight="bold",
+        )
         ax.legend(loc="best")
         ax.grid(True, alpha=0.3, axis="y")
 
@@ -240,7 +290,9 @@ class OSNRMarginPlotRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "osnr_margin_plot"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "osnr_margin_plot"},
         )
 
 
@@ -269,7 +321,7 @@ class SNRVisualizationPlugin(BasePlugin):
         """Return plugin description."""
         return "Visualization plugin for SNR and signal quality analysis"
 
-    def register_metrics(self) -> List[MetricDefinition]:
+    def register_metrics(self) -> list[MetricDefinition]:
         """Register SNR-specific metrics.
 
         Returns:
@@ -341,7 +393,7 @@ class SNRVisualizationPlugin(BasePlugin):
             ),
         ]
 
-    def register_plot_types(self) -> Dict[str, PlotTypeRegistration]:
+    def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
         """Register SNR-specific plot types.
 
         Returns:
@@ -371,11 +423,15 @@ class SNRVisualizationPlugin(BasePlugin):
                 renderer=OSNRMarginPlotRenderer(),
                 description="OSNR margin visualization with safety thresholds",
                 required_metrics=["osnr_margin"],
-                default_config={"show_thresholds": True, "safe_margin": 3.0, "warning_margin": 1.0},
+                default_config={
+                    "show_thresholds": True,
+                    "safe_margin": 3.0,
+                    "warning_margin": 1.0,
+                },
             ),
         }
 
-    def get_config_schema(self) -> Dict:
+    def get_config_schema(self) -> dict:
         """Return JSON schema for SNR plugin configuration.
 
         Returns:

@@ -24,14 +24,14 @@ For more information:
 """
 
 # New exports (recommended)
-from .application.use_cases.generate_plot import GeneratePlotUseCase
 from .application.use_cases.batch_generate_plots import BatchGeneratePlotsUseCase
 from .application.use_cases.compare_algorithms import CompareAlgorithmsUseCase
+from .application.use_cases.generate_plot import GeneratePlotUseCase
 
 __all__ = [
-    'GeneratePlotUseCase',
-    'BatchGeneratePlotsUseCase',
-    'CompareAlgorithmsUseCase',
+    "GeneratePlotUseCase",
+    "BatchGeneratePlotsUseCase",
+    "CompareAlgorithmsUseCase",
 ]
 
 __version__ = "6.0.0"

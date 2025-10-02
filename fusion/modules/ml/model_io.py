@@ -37,11 +37,11 @@ logger = get_logger(__name__)
 
 
 def save_model(
-        simulation_dict: dict[str, Any],
-        model: Any,
-        algorithm: str,
-        erlang: str,
-        metadata: dict[str, Any] | None = None
+    simulation_dict: dict[str, Any],
+    model: Any,
+    algorithm: str,
+    erlang: str,
+    metadata: dict[str, Any] | None = None,
 ) -> str:
     """
     Save a trained machine learning model with metadata.
@@ -67,11 +67,11 @@ def save_model(
         >>> print(f"Model saved to: {path}")
     """
     # Create directory structure
-    base_filepath = os.path.join('logs', algorithm, simulation_dict['train_file_path'])
+    base_filepath = os.path.join("logs", algorithm, simulation_dict["train_file_path"])
     create_directory(directory_path=base_filepath)
 
     # Generate filenames
-    model_filename = f'{algorithm}_{erlang}.joblib'
+    model_filename = f"{algorithm}_{erlang}.joblib"
     model_path = os.path.join(base_filepath, model_filename)
 
     # Save the model
@@ -80,16 +80,16 @@ def save_model(
 
     # Save metadata if provided
     if metadata:
-        metadata_filename = f'{algorithm}_{erlang}_metadata.json'
+        metadata_filename = f"{algorithm}_{erlang}_metadata.json"
         metadata_path = os.path.join(base_filepath, metadata_filename)
 
         # Add timestamp and version info
-        metadata['saved_at'] = datetime.now().isoformat()
-        metadata['model_file'] = model_filename
-        metadata['algorithm'] = algorithm
-        metadata['erlang'] = erlang
+        metadata["saved_at"] = datetime.now().isoformat()
+        metadata["model_file"] = model_filename
+        metadata["algorithm"] = algorithm
+        metadata["erlang"] = erlang
 
-        with open(metadata_path, 'w', encoding='utf-8') as f:
+        with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
         logger.debug("Saved model metadata to: %s", metadata_path)
 
@@ -115,10 +115,10 @@ def load_model(engine_properties: dict[str, Any]) -> Any:
         >>> model = load_model(engine_props)
     """
     model_filepath = os.path.join(
-        'logs',
-        engine_properties['ml_model'],
-        engine_properties['train_file_path'],
-        f"{engine_properties['ml_model']}_{str(int(engine_properties['erlang']))}.joblib"
+        "logs",
+        engine_properties["ml_model"],
+        engine_properties["train_file_path"],
+        f"{engine_properties['ml_model']}_{str(int(engine_properties['erlang']))}.joblib",
     )
 
     if not os.path.exists(model_filepath):
@@ -126,14 +126,14 @@ def load_model(engine_properties: dict[str, Any]) -> Any:
 
     model = joblib.load(filename=model_filepath)
     logger.info(
-        "Loaded %s model from: %s", engine_properties['ml_model'], model_filepath
+        "Loaded %s model from: %s", engine_properties["ml_model"], model_filepath
     )
 
     return model
 
 
 def load_model_with_metadata(
-        engine_properties: dict[str, Any]
+    engine_properties: dict[str, Any],
 ) -> tuple[Any, dict[str, Any]]:
     """
     Load a model along with its metadata.
@@ -152,15 +152,15 @@ def load_model_with_metadata(
 
     # Try to load metadata
     metadata_filepath = os.path.join(
-        'logs',
-        engine_properties['ml_model'],
-        engine_properties['train_file_path'],
-        f"{engine_properties['ml_model']}_{str(int(engine_properties['erlang']))}_metadata.json"
+        "logs",
+        engine_properties["ml_model"],
+        engine_properties["train_file_path"],
+        f"{engine_properties['ml_model']}_{str(int(engine_properties['erlang']))}_metadata.json",
     )
 
     metadata = {}
     if os.path.exists(metadata_filepath):
-        with open(metadata_filepath, encoding='utf-8') as f:
+        with open(metadata_filepath, encoding="utf-8") as f:
             metadata = json.load(f)
         logger.debug("Loaded model metadata")
     else:
@@ -170,10 +170,7 @@ def load_model_with_metadata(
 
 
 def save_model_ensemble(
-        models: list[Any],
-        simulation_dict: dict[str, Any],
-        ensemble_name: str,
-        erlang: str
+    models: list[Any], simulation_dict: dict[str, Any], ensemble_name: str, erlang: str
 ) -> str:
     """
     Save an ensemble of models.
@@ -194,17 +191,17 @@ def save_model_ensemble(
         >>> path = save_model_ensemble(models, sim_dict, "voting_ensemble", "1000")
     """
     base_filepath = os.path.join(
-        'logs', ensemble_name, simulation_dict['train_file_path']
+        "logs", ensemble_name, simulation_dict["train_file_path"]
     )
     create_directory(directory_path=base_filepath)
 
     ensemble_data = {
-        'models': models,
-        'n_models': len(models),
-        'ensemble_type': ensemble_name
+        "models": models,
+        "n_models": len(models),
+        "ensemble_type": ensemble_name,
     }
 
-    ensemble_path = os.path.join(base_filepath, f'{ensemble_name}_{erlang}.joblib')
+    ensemble_path = os.path.join(base_filepath, f"{ensemble_name}_{erlang}.joblib")
     joblib.dump(ensemble_data, ensemble_path)
 
     logger.info("Saved ensemble of %d models to: %s", len(models), ensemble_path)
@@ -213,10 +210,10 @@ def save_model_ensemble(
 
 
 def export_model_for_deployment(
-        model: Any,
-        export_path: str,
-        model_format: str = 'onnx',
-        input_sample: np.ndarray | None = None
+    model: Any,
+    export_path: str,
+    model_format: str = "onnx",
+    input_sample: np.ndarray | None = None,
 ) -> str:
     """
     Export model to deployment-friendly format.
@@ -239,7 +236,7 @@ def export_model_for_deployment(
         ...     model, "model.onnx", "onnx", sample
         ... )
     """
-    if model_format == 'onnx':
+    if model_format == "onnx":
         if not HAS_ONNX:
             logger.error("skl2onnx not installed. Install with: pip install skl2onnx")
             raise ImportError("skl2onnx not installed")
@@ -250,10 +247,12 @@ def export_model_for_deployment(
 
             onnx_model = convert_sklearn(
                 model,
-                initial_types=[(
-                    'input',
-                    skl2onnx.common.data_types.FloatTensorType(input_sample.shape)
-                )]
+                initial_types=[
+                    (
+                        "input",
+                        skl2onnx.common.data_types.FloatTensorType(input_sample.shape),
+                    )
+                ],
             )
 
             with open(export_path, "wb") as f:
@@ -263,11 +262,11 @@ def export_model_for_deployment(
             logger.error("skl2onnx not installed. Install with: pip install skl2onnx")
             raise
 
-    elif model_format == 'pickle':
-        with open(export_path, 'wb') as f:
+    elif model_format == "pickle":
+        with open(export_path, "wb") as f:
             pickle.dump(model, f)
 
-    elif model_format == 'pmml':
+    elif model_format == "pmml":
         if not HAS_PMML:
             logger.error(
                 "sklearn2pmml not installed. Install with: pip install sklearn2pmml"
@@ -290,8 +289,7 @@ def export_model_for_deployment(
 
 
 def check_model_compatibility(
-        model_path: str,
-        expected_features: list[str]
+    model_path: str, expected_features: list[str]
 ) -> dict[str, Any]:
     """
     Check if saved model is compatible with current feature set.
@@ -312,7 +310,7 @@ def check_model_compatibility(
         model = joblib.load(model_path)
 
         # Check if model has feature information
-        if hasattr(model, 'n_features_in_'):
+        if hasattr(model, "n_features_in_"):
             n_features = model.n_features_in_
             compatible = n_features == len(expected_features)
         else:
@@ -320,7 +318,7 @@ def check_model_compatibility(
             compatible = None  # Cannot determine
 
         # Try to get feature names if available
-        if hasattr(model, 'feature_names_in_'):
+        if hasattr(model, "feature_names_in_"):
             model_features = list(model.feature_names_in_)
             missing_features = set(expected_features) - set(model_features)
             extra_features = set(model_features) - set(expected_features)
@@ -330,20 +328,17 @@ def check_model_compatibility(
             extra_features = None
 
         report = {
-            'compatible': compatible,
-            'n_features_expected': len(expected_features),
-            'n_features_model': n_features,
-            'model_features': model_features,
-            'missing_features': list(missing_features) if missing_features else None,
-            'extra_features': list(extra_features) if extra_features else None,
-            'model_type': type(model).__name__
+            "compatible": compatible,
+            "n_features_expected": len(expected_features),
+            "n_features_model": n_features,
+            "model_features": model_features,
+            "missing_features": list(missing_features) if missing_features else None,
+            "extra_features": list(extra_features) if extra_features else None,
+            "model_type": type(model).__name__,
         }
 
         return report
 
     except (FileNotFoundError, EOFError, ValueError, AttributeError) as e:
         logger.error("Error checking model compatibility: %s", e)
-        return {
-            'compatible': False,
-            'error': str(e)
-        }
+        return {"compatible": False, "error": str(e)}

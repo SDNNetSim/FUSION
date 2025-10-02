@@ -5,27 +5,28 @@ These tests measure and compare performance metrics between old and new systems.
 They help ensure that the new system meets or exceeds performance targets.
 """
 
-import pytest
+import json
 import time
 from pathlib import Path
-import json
-from typing import List, Dict, Any, Literal
-import numpy as np
+from typing import Any, Literal
 
-from fusion.visualization.infrastructure.repositories import (
-    JsonSimulationRepository,
-    FileMetadataRepository,
+import numpy as np
+import pytest
+
+from fusion.visualization.application.dto import PlotRequestDTO
+from fusion.visualization.application.services import CacheService, PlotService
+from fusion.visualization.application.use_cases import (
+    BatchGeneratePlotsUseCase,
+    GeneratePlotUseCase,
 )
+from fusion.visualization.domain.value_objects import PlotType
 from fusion.visualization.infrastructure.adapters import DataAdapterRegistry
 from fusion.visualization.infrastructure.processors import BlockingProcessor
 from fusion.visualization.infrastructure.renderers import MatplotlibRenderer
-from fusion.visualization.application.services import PlotService, CacheService
-from fusion.visualization.application.use_cases import (
-    GeneratePlotUseCase,
-    BatchGeneratePlotsUseCase,
+from fusion.visualization.infrastructure.repositories import (
+    FileMetadataRepository,
+    JsonSimulationRepository,
 )
-from fusion.visualization.application.dto import PlotRequestDTO
-from fusion.visualization.domain.value_objects import PlotType
 
 
 class PerformanceTimer:
@@ -79,7 +80,7 @@ class PerformanceBenchmark:
                 }
 
                 # Add 100 iterations
-                iter_stats: Dict[str, Any] = {}
+                iter_stats: dict[str, Any] = {}
                 for iter_idx in range(100):
                     iter_stats[str(iter_idx)] = {
                         "sim_block_list": [
@@ -88,7 +89,9 @@ class PerformanceBenchmark:
                         "hops_mean": 3.2 + np.random.normal(0, 0.1),
                         "hops_list": [3, 3, 4, 3, 3, 4, 3, 3, 3, 4],
                         "lengths_mean": 450.5 + np.random.normal(0, 10),
-                        "lengths_list": [450 + int(np.random.normal(0, 20)) for _ in range(10)],
+                        "lengths_list": [
+                            450 + int(np.random.normal(0, 20)) for _ in range(10)
+                        ],
                         "computation_time_mean": 0.015 + np.random.normal(0, 0.002),
                     }
                 data["iter_stats"] = iter_stats
@@ -97,7 +100,7 @@ class PerformanceBenchmark:
                 data["sim_end_time"] = f"0606_12_{35 + run_idx}_20_{run_idx}54321"
 
                 file_path = run_path / f"{erlang}_erlang.json"
-                with open(file_path, 'w') as f:
+                with open(file_path, "w") as f:
                     json.dump(data, f)
 
             # Create metadata
@@ -109,7 +112,7 @@ class PerformanceBenchmark:
                 "date": date,
                 "seed": run_idx,
             }
-            with open(run_path.parent / "metadata.json", 'w') as f:
+            with open(run_path.parent / "metadata.json", "w") as f:
                 json.dump(metadata, f)
 
         return base_path
@@ -143,10 +146,14 @@ class TestDataLoadingPerformance:
 
         # Verify
         assert len(runs) > 0, "No runs found"
-        assert timer.duration is not None and timer.duration < 0.1, \
+        assert timer.duration is not None and timer.duration < 0.1, (
             f"Run discovery took {timer.duration:.3f}s (target: <0.1s)"
+        )
 
-        print(f"\n  Run discovery: {(timer.duration or 0)*1000:.2f}ms for {len(runs)} runs")
+        print(
+            f"\n  Run discovery: {(timer.duration or 0) * 1000:.2f}ms "
+            f"for {len(runs)} runs"
+        )
 
     @pytest.mark.skip(reason="Test data files not present in integration_data_dir")
     def test_single_file_loading_performance(
@@ -178,10 +185,11 @@ class TestDataLoadingPerformance:
 
         # Verify
         assert data is not None
-        assert timer.duration is not None and timer.duration < 0.05, \
+        assert timer.duration is not None and timer.duration < 0.05, (
             f"File loading took {timer.duration:.3f}s (target: <0.05s)"
+        )
 
-        print(f"\n  File loading: {(timer.duration or 0)*1000:.2f}ms")
+        print(f"\n  File loading: {(timer.duration or 0) * 1000:.2f}ms")
 
     @pytest.mark.skip(reason="Test data files not present in integration_data_dir")
     def test_multiple_files_loading_performance(
@@ -213,11 +221,15 @@ class TestDataLoadingPerformance:
 
         # Verify
         avg_time = (timer.duration or 0) / len(traffic_volumes)
-        assert timer.duration is not None and timer.duration < 0.5, \
-            f"Loading {len(traffic_volumes)} files took {timer.duration:.3f}s (target: <0.5s)"
+        assert timer.duration is not None and timer.duration < 0.5, (
+            f"Loading {len(traffic_volumes)} files took {timer.duration:.3f}s "
+            f"(target: <0.5s)"
+        )
 
-        print(f"\n  Multiple files: {(timer.duration or 0)*1000:.2f}ms total, "
-              f"{avg_time*1000:.2f}ms per file")
+        print(
+            f"\n  Multiple files: {(timer.duration or 0) * 1000:.2f}ms total, "
+            f"{avg_time * 1000:.2f}ms per file"
+        )
 
     def test_data_adaptation_performance(
         self,
@@ -232,10 +244,14 @@ class TestDataLoadingPerformance:
 
         # Load raw data
         data_file = (
-            integration_data_dir / "NSFNet" / "0606" /
-            "1715_12_30_45_123456" / "s1" / "600_erlang.json"
+            integration_data_dir
+            / "NSFNet"
+            / "0606"
+            / "1715_12_30_45_123456"
+            / "s1"
+            / "600_erlang.json"
         )
-        with open(data_file, 'r') as f:
+        with open(data_file) as f:
             raw_data = json.load(f)
 
         # Get adapter
@@ -250,10 +266,11 @@ class TestDataLoadingPerformance:
 
         # Verify
         assert canonical is not None
-        assert timer.duration is not None and timer.duration < 0.01, \
+        assert timer.duration is not None and timer.duration < 0.01, (
             f"Adaptation took {timer.duration:.3f}s (target: <0.01s)"
+        )
 
-        print(f"\n  Data adaptation: {(timer.duration or 0)*1000:.2f}ms")
+        print(f"\n  Data adaptation: {(timer.duration or 0) * 1000:.2f}ms")
 
 
 @pytest.mark.benchmark
@@ -281,7 +298,7 @@ class TestProcessingPerformance:
 
         # Load data
         traffic_volumes = [600, 700, 800]
-        run_data: Dict[str, Dict[float, Any]] = {}
+        run_data: dict[str, dict[float, Any]] = {}
         for run in runs:
             run_data[run.id] = {}
             for tv in traffic_volumes:
@@ -291,23 +308,30 @@ class TestProcessingPerformance:
         processor = BlockingProcessor()
 
         # Warm up
-        _ = processor.process(runs=runs, run_data=run_data, traffic_volumes=[float(v) for v in traffic_volumes])
+        _ = processor.process(
+            runs=runs,
+            run_data=run_data,
+            traffic_volumes=[float(v) for v in traffic_volumes],
+        )
 
         # Benchmark
         with PerformanceTimer("processing") as timer:
             processed = processor.process(
                 runs=runs,
                 run_data=run_data,
-                traffic_volumes=[float(v) for v in traffic_volumes]
+                traffic_volumes=[float(v) for v in traffic_volumes],
             )
 
         # Verify
         assert processed is not None
-        assert timer.duration is not None and timer.duration < 0.2, \
+        assert timer.duration is not None and timer.duration < 0.2, (
             f"Processing took {timer.duration:.3f}s (target: <0.2s)"
+        )
 
-        print(f"\n  Data processing: {(timer.duration or 0)*1000:.2f}ms for "
-              f"{len(runs)} runs, {len(traffic_volumes)} traffic volumes")
+        print(
+            f"\n  Data processing: {(timer.duration or 0) * 1000:.2f}ms for "
+            f"{len(runs)} runs, {len(traffic_volumes)} traffic volumes"
+        )
 
     def test_aggregation_performance(
         self,
@@ -332,13 +356,18 @@ class TestProcessingPerformance:
             pytest.skip("Need at least 2 runs for aggregation test")
 
         # Load data
-        from fusion.visualization.domain.value_objects.metric_value import MetricValue
         from fusion.visualization.domain.entities.metric import DataType
-        values: List[MetricValue] = []
+        from fusion.visualization.domain.value_objects.metric_value import MetricValue
+
+        values: list[MetricValue] = []
         for run in runs:
             data = sim_repo.get_run_data(run, traffic_volume=600)
             if data.blocking_probability is not None:
-                values.append(MetricValue(value=data.blocking_probability, data_type=DataType.FLOAT))
+                values.append(
+                    MetricValue(
+                        value=data.blocking_probability, data_type=DataType.FLOAT
+                    )
+                )
 
         # Create service
         aggregation_service = MetricAggregationService()
@@ -352,10 +381,14 @@ class TestProcessingPerformance:
 
         # Verify
         assert stats is not None
-        assert timer.duration is not None and timer.duration < 0.1, \
+        assert timer.duration is not None and timer.duration < 0.1, (
             f"Aggregation took {timer.duration:.3f}s (target: <0.1s)"
+        )
 
-        print(f"\n  Aggregation: {(timer.duration or 0)*1000:.2f}ms for {len(values)} values")
+        print(
+            f"\n  Aggregation: {(timer.duration or 0) * 1000:.2f}ms "
+            f"for {len(values)} values"
+        )
 
 
 @pytest.mark.benchmark
@@ -404,10 +437,11 @@ class TestRenderingPerformance:
         # Verify
         assert result.success
         assert output_path.exists()
-        assert timer.duration is not None and timer.duration < 0.5, \
+        assert timer.duration is not None and timer.duration < 0.5, (
             f"Rendering took {timer.duration:.3f}s (target: <0.5s)"
+        )
 
-        print(f"\n  Plot rendering: {(timer.duration or 0)*1000:.2f}ms")
+        print(f"\n  Plot rendering: {(timer.duration or 0) * 1000:.2f}ms")
 
     def test_complex_plot_rendering_performance(
         self,
@@ -454,11 +488,14 @@ class TestRenderingPerformance:
         # Verify
         assert result.success
         assert output_path.exists()
-        assert timer.duration is not None and timer.duration < 0.8, \
+        assert timer.duration is not None and timer.duration < 0.8, (
             f"Complex rendering took {timer.duration:.3f}s (target: <0.8s)"
+        )
 
-        print(f"\n  Complex plot rendering: {(timer.duration or 0)*1000:.2f}ms "
-              f"({len(algorithms)} algorithms, {len(x_data)} points, with CI)")
+        print(
+            f"\n  Complex plot rendering: {(timer.duration or 0) * 1000:.2f}ms "
+            f"({len(algorithms)} algorithms, {len(x_data)} points, with CI)"
+        )
 
 
 @pytest.mark.benchmark
@@ -526,10 +563,11 @@ class TestEndToEndPerformance:
 
         # Verify
         assert result.success
-        assert timer.duration is not None and timer.duration < 1.0, \
+        assert timer.duration is not None and timer.duration < 1.0, (
             f"E2E single plot took {timer.duration:.3f}s (target: <1.0s)"
+        )
 
-        print(f"\n  End-to-end single plot: {(timer.duration or 0)*1000:.2f}ms")
+        print(f"\n  End-to-end single plot: {(timer.duration or 0) * 1000:.2f}ms")
 
     def test_batch_plot_generation_performance(
         self,
@@ -595,11 +633,14 @@ class TestEndToEndPerformance:
             results = result.results
         assert all(r.success for r in results), "Some plots failed"
         avg_time = (timer.duration or 0) / len(requests)
-        assert timer.duration is not None and timer.duration < 8.0, \
+        assert timer.duration is not None and timer.duration < 8.0, (
             f"Batch generation took {timer.duration:.3f}s (target: <8.0s)"
+        )
 
-        print(f"\n  Batch plot generation: {(timer.duration or 0):.3f}s total, "
-              f"{avg_time*1000:.2f}ms per plot")
+        print(
+            f"\n  Batch plot generation: {(timer.duration or 0):.3f}s total, "
+            f"{avg_time * 1000:.2f}ms per plot"
+        )
 
     def test_cached_performance_improvement(
         self,
@@ -662,16 +703,19 @@ class TestEndToEndPerformance:
         assert result1.success
         assert result2.success
 
-        print(f"\n  Cache performance:")
-        print(f"    Cold cache: {(timer1.duration or 0)*1000:.2f}ms")
-        print(f"    Warm cache: {(timer2.duration or 0)*1000:.2f}ms")
+        print("\n  Cache performance:")
+        print(f"    Cold cache: {(timer1.duration or 0) * 1000:.2f}ms")
+        print(f"    Warm cache: {(timer2.duration or 0) * 1000:.2f}ms")
         if timer1.duration and timer2.duration and timer2.duration > 0:
-            print(f"    Speedup: {timer1.duration/timer2.duration:.2f}x")
+            print(f"    Speedup: {timer1.duration / timer2.duration:.2f}x")
 
         # Note: For small test datasets, cache speedup may be minimal
         # The important thing is that caching doesn't slow things down
-        assert timer1.duration is not None and timer2.duration is not None and timer2.duration <= timer1.duration * 1.5, \
-            "Cached execution should not be slower than cold execution"
+        assert (
+            timer1.duration is not None
+            and timer2.duration is not None
+            and timer2.duration <= timer1.duration * 1.5
+        ), "Cached execution should not be slower than cold execution"
 
 
 @pytest.mark.benchmark
@@ -756,8 +800,11 @@ class TestScalabilityBenchmarks:
         # Verify scaling is reasonable (should be roughly linear)
         print("\n  Scalability results:")
         for name, data in results.items():
-            print(f"    {name:8s}: {(data['duration'] or 0)*1000:6.2f}ms total, "
-                  f"{(data['per_run'] or 0)*1000:6.2f}ms per run ({data['num_runs']} runs)")
+            print(
+                f"    {name:8s}: {(data['duration'] or 0) * 1000:6.2f}ms total, "
+                f"{(data['per_run'] or 0) * 1000:6.2f}ms per run "
+                f"({data['num_runs']} runs)"
+            )
 
         # Check that performance doesn't degrade exponentially
         small_per_run = results["small"]["per_run"]
@@ -767,8 +814,9 @@ class TestScalabilityBenchmarks:
         else:
             degradation = 1.0
 
-        assert degradation < 3.0, \
+        assert degradation < 3.0, (
             f"Performance degraded {degradation:.1f}x (should be <3x)"
+        )
 
 
 if __name__ == "__main__":

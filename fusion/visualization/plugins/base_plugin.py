@@ -7,10 +7,11 @@ extend the FUSION visualization system with module-specific metrics and plot typ
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Type
 
 from fusion.visualization.domain.entities.metric import MetricDefinition
-from fusion.visualization.domain.strategies.processing_strategies import MetricProcessingStrategy
+from fusion.visualization.domain.strategies.processing_strategies import (
+    MetricProcessingStrategy,
+)
 from fusion.visualization.infrastructure.renderers.base_renderer import BaseRenderer
 
 
@@ -21,8 +22,8 @@ class PlotTypeRegistration:
     processor: MetricProcessingStrategy
     renderer: BaseRenderer
     description: str
-    required_metrics: List[str]
-    default_config: Optional[Dict] = None
+    required_metrics: list[str]
+    default_config: dict | None = None
 
     def __post_init__(self) -> None:
         """Validate registration."""
@@ -79,7 +80,7 @@ class BasePlugin(ABC):
         return "FUSION Team"
 
     @property
-    def requires(self) -> List[str]:
+    def requires(self) -> list[str]:
         """Return list of required plugin dependencies."""
         return []
 
@@ -92,10 +93,14 @@ class BasePlugin(ABC):
             return False
 
     def _check_dependencies(self) -> None:
-        """Check plugin dependencies. Raise ImportError if not satisfied."""
-        pass
+        """Check plugin dependencies. Raise ImportError if not satisfied.
 
-    def register_metrics(self) -> List[MetricDefinition]:
+        Override this method to check for required packages or dependencies.
+        """
+        # Default implementation: no dependencies
+        return
+
+    def register_metrics(self) -> list[MetricDefinition]:
         """Register custom metrics provided by this plugin.
 
         Returns:
@@ -103,7 +108,7 @@ class BasePlugin(ABC):
         """
         return []
 
-    def register_plot_types(self) -> Dict[str, PlotTypeRegistration]:
+    def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
         """Register custom plot types provided by this plugin.
 
         Returns:
@@ -111,7 +116,7 @@ class BasePlugin(ABC):
         """
         return {}
 
-    def register_processors(self) -> Dict[str, MetricProcessingStrategy]:
+    def register_processors(self) -> dict[str, MetricProcessingStrategy]:
         """Register custom processing strategies.
 
         Returns:
@@ -119,7 +124,7 @@ class BasePlugin(ABC):
         """
         return {}
 
-    def register_renderers(self) -> Dict[str, Type[BaseRenderer]]:
+    def register_renderers(self) -> dict[str, type[BaseRenderer]]:
         """Register custom renderer types.
 
         Returns:
@@ -128,14 +133,22 @@ class BasePlugin(ABC):
         return {}
 
     def on_load(self) -> None:
-        """Called when plugin is loaded. Override for initialization."""
-        pass
+        """Called when plugin is loaded. Override for initialization.
+
+        This hook is called after the plugin is successfully loaded.
+        """
+        # Default implementation: no initialization needed
+        return
 
     def on_unload(self) -> None:
-        """Called when plugin is unloaded. Override for cleanup."""
-        pass
+        """Called when plugin is unloaded. Override for cleanup.
 
-    def get_config_schema(self) -> Optional[Dict]:
+        This hook is called before the plugin is unloaded.
+        """
+        # Default implementation: no cleanup needed
+        return
+
+    def get_config_schema(self) -> dict | None:
         """Return JSON schema for plugin-specific configuration.
 
         Returns:
@@ -143,7 +156,7 @@ class BasePlugin(ABC):
         """
         return None
 
-    def validate_config(self, config: Dict) -> bool:
+    def validate_config(self, config: dict) -> bool:
         """Validate plugin-specific configuration.
 
         Args:
@@ -154,7 +167,7 @@ class BasePlugin(ABC):
         """
         return True
 
-    def get_examples_dir(self) -> Optional[Path]:
+    def get_examples_dir(self) -> Path | None:
         """Return path to plugin examples directory.
 
         Returns:

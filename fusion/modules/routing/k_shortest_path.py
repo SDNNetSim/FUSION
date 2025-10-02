@@ -101,7 +101,7 @@ class KShortestPath(AbstractRoutingAlgorithm):
 
         # Populate route_props for legacy compatibility
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         for path in paths:
@@ -133,13 +133,8 @@ class KShortestPath(AbstractRoutingAlgorithm):
                     modulation_formats_list = [str(modulation_format)]
             else:
                 # Use all modulation formats sorted by max_length
-                has_mod_dict = hasattr(
-                    self.sdn_props, "modulation_formats_dict"
-                )
-                if (
-                    has_mod_dict
-                    and self.sdn_props.modulation_formats_dict is not None
-                ):
+                has_mod_dict = hasattr(self.sdn_props, "modulation_formats_dict")
+                if has_mod_dict and self.sdn_props.modulation_formats_dict is not None:
                     modulation_formats_dict = sort_nested_dict_values(
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key="max_length",
@@ -180,7 +175,7 @@ class KShortestPath(AbstractRoutingAlgorithm):
         :rtype: list[list[Any]]
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         try:

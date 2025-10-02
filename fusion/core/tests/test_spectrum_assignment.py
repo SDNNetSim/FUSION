@@ -22,15 +22,17 @@ class TestSpectrumAssignment(unittest.TestCase):
     def setUp(self) -> None:
         """Set up test fixtures with proper isolation."""
         cores_matrix = {
-            "c": np.array([
-                [0, 0, 0, 0, 0, 0, 0, 0, 2, -2],
-                [1, -1, 0, 0, 0, 0, 3, 3, 3, -3],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-            ])
+            "c": np.array(
+                [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 2, -2],
+                    [1, -1, 0, 0, 0, 0, 3, 3, 3, -3],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                ]
+            )
         }
         self.engine_props = {
             "cores_per_link": 7,
@@ -68,15 +70,17 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_assign.spectrum_props.core_number = 0
         self.spec_assign.spectrum_props.path_list = [0, 1]  # Node indices as integers
         self.spec_assign.spectrum_props.cores_matrix = {
-            "c": np.array([
-                [0, 0, 0, 0, 0, 0, 0, 0, 2, -2],
-                [1, -1, 0, 0, 0, 0, 3, 3, 3, -3],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-                [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
-            ])
+            "c": np.array(
+                [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 2, -2],
+                    [1, -1, 0, 0, 0, 0, 3, 3, 3, -3],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                    [0, 4, 4, 4, -4, 0, 0, 1, 1, 0],
+                ]
+            )
         }
 
     def test_init_with_valid_parameters_creates_instance(self) -> None:
@@ -134,7 +138,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         channels_list = sorted(
             channels_list, key=lambda d: len(cast(list, d.get("channel", [])))
         )
-        with patch.object(self.spec_assign.spectrum_helpers, 'check_other_links'):
+        with patch.object(self.spec_assign.spectrum_helpers, "check_other_links"):
             self.spec_assign._allocate_best_fit_spectrum(channels_list)
 
         self.assertEqual(self.spec_assign.spectrum_props.start_slot, 5)
@@ -236,6 +240,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_get_spectrum_with_valid_modulation_allocates_successfully(self) -> None:
         """Test spectrum assignment with valid modulation format."""
+
         def mock_get_spectrum_side_effect() -> None:
             self.spec_assign.spectrum_props.is_free = True
             self.spec_assign.spectrum_props.start_slot = 0
@@ -243,12 +248,17 @@ class TestSpectrumAssignment(unittest.TestCase):
             self.spec_assign.spectrum_props.core_number = 0
             self.spec_assign.spectrum_props.current_band = "c"
 
-        with patch.object(
-            self.spec_assign,
-            "_determine_spectrum_allocation",
-            side_effect=mock_get_spectrum_side_effect,
-        ) as mock_get_spectrum, patch.object(
-            self.spec_assign.snr_measurements, "handle_snr", return_value=(True, 0.5)
+        with (
+            patch.object(
+                self.spec_assign,
+                "_determine_spectrum_allocation",
+                side_effect=mock_get_spectrum_side_effect,
+            ) as mock_get_spectrum,
+            patch.object(
+                self.spec_assign.snr_measurements,
+                "handle_snr",
+                return_value=(True, 0.5),
+            ),
         ):
             self.spec_assign.spectrum_props.is_free = False
             mod_format_list = ["QPSK"]
@@ -261,10 +271,15 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_get_spectrum_with_failed_allocation_remains_not_free(self) -> None:
         """Test spectrum assignment with failed allocation."""
-        with patch.object(
-            self.spec_assign, "_determine_spectrum_allocation"
-        ) as mock_get_spectrum, patch.object(
-            self.spec_assign.snr_measurements, "handle_snr", return_value=(True, 0.5)
+        with (
+            patch.object(
+                self.spec_assign, "_determine_spectrum_allocation"
+            ) as mock_get_spectrum,
+            patch.object(
+                self.spec_assign.snr_measurements,
+                "handle_snr",
+                return_value=(True, 0.5),
+            ),
         ):
             # Mock allocation failure - spectrum remains not free
             self.spec_assign.spectrum_props.is_free = False
@@ -361,12 +376,12 @@ class TestSpectrumAssignment(unittest.TestCase):
         with patch.object(
             self.spec_assign.snr_measurements,
             "check_snr_ext",
-            return_value=(True, 25.0)  # Return valid SNR response
+            return_value=(True, 25.0),  # Return valid SNR response
         ):
             with patch.object(
                 self.spec_assign.snr_measurements,
                 "check_snr_ext_open_slots",
-                return_value=[0, 1, 2, 3, 4]  # Return valid slots
+                return_value=[0, 1, 2, 3, 4],  # Return valid slots
             ):
                 with patch.object(
                     self.spec_assign.spectrum_helpers,
@@ -398,7 +413,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         with patch.object(
             self.spec_assign.snr_measurements,
             "check_snr_ext_open_slots",
-            return_value=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]  # Return valid slots list
+            return_value=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],  # Return valid slots list
         ):
             with patch.object(
                 self.spec_assign.spectrum_helpers,
@@ -432,8 +447,8 @@ class TestSpectrumAssignment(unittest.TestCase):
             # Verify the channels are sorted by length (shortest first)
             for i in range(1, len(called_channels)):
                 self.assertLessEqual(
-                    len(called_channels[i-1]["channel"]),
-                    len(called_channels[i]["channel"])
+                    len(called_channels[i - 1]["channel"]),
+                    len(called_channels[i]["channel"]),
                 )
 
 

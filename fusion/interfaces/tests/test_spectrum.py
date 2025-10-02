@@ -57,9 +57,7 @@ class TestAbstractSpectrumAssignerAbstractMethods:
             if hasattr(
                 getattr(AbstractSpectrumAssigner, method), "__isabstractmethod__"
             )
-            and getattr(
-                AbstractSpectrumAssigner, method
-            ).__isabstractmethod__
+            and getattr(AbstractSpectrumAssigner, method).__isabstractmethod__
         }
 
         # Assert
@@ -88,9 +86,7 @@ class TestAbstractSpectrumAssignerMethodSignatures:
     def test_check_spectrum_availability_method_signature(self) -> None:
         """Test check_spectrum_availability method signature."""
         # Arrange & Act
-        sig = inspect.signature(
-            AbstractSpectrumAssigner.check_spectrum_availability
-        )
+        sig = inspect.signature(AbstractSpectrumAssigner.check_spectrum_availability)
         params = list(sig.parameters.keys())
 
         # Assert
@@ -107,9 +103,7 @@ class TestAbstractSpectrumAssignerMethodSignatures:
     def test_allocate_spectrum_method_signature(self) -> None:
         """Test AbstractSpectrumAssigner.allocate_spectrum signature."""
         # Arrange & Act
-        sig = inspect.signature(
-            AbstractSpectrumAssigner.allocate_spectrum
-        )
+        sig = inspect.signature(AbstractSpectrumAssigner.allocate_spectrum)
         params = list(sig.parameters.keys())
 
         # Assert
@@ -127,9 +121,7 @@ class TestAbstractSpectrumAssignerMethodSignatures:
     def test_deallocate_spectrum_method_signature(self) -> None:
         """Test AbstractSpectrumAssigner.deallocate_spectrum signature."""
         # Arrange & Act
-        sig = inspect.signature(
-            AbstractSpectrumAssigner.deallocate_spectrum
-        )
+        sig = inspect.signature(AbstractSpectrumAssigner.deallocate_spectrum)
         params = list(sig.parameters.keys())
 
         # Assert
@@ -146,9 +138,7 @@ class TestAbstractSpectrumAssignerMethodSignatures:
     def test_get_fragmentation_metric_method_signature(self) -> None:
         """Test get_fragmentation_metric method signature."""
         # Arrange & Act
-        sig = inspect.signature(
-            AbstractSpectrumAssigner.get_fragmentation_metric
-        )
+        sig = inspect.signature(AbstractSpectrumAssigner.get_fragmentation_metric)
         params = list(sig.parameters.keys())
 
         # Assert
@@ -205,9 +195,7 @@ class TestAbstractSpectrumAssignerInitialization:
             def supports_multiband(self) -> bool:
                 return False
 
-            def assign(
-                self, path: list[Any], request: Any
-            ) -> dict[str, Any] | None:
+            def assign(self, path: list[Any], request: Any) -> dict[str, Any] | None:
                 return None
 
             def check_spectrum_availability(
@@ -281,9 +269,7 @@ class TestConcreteSpectrumAssignerImplementation:
             def supports_multiband(self) -> bool:
                 return True
 
-            def assign(
-                self, path: list[Any], request: Any
-            ) -> dict[str, Any] | None:
+            def assign(self, path: list[Any], request: Any) -> dict[str, Any] | None:
                 return {
                     "start_slot": 0,
                     "end_slot": 5,
@@ -381,9 +367,7 @@ class TestAbstractSpectrumAssignerReset:
             def supports_multiband(self) -> bool:
                 return False
 
-            def assign(
-                self, path: list[Any], request: Any
-            ) -> dict[str, Any] | None:
+            def assign(self, path: list[Any], request: Any) -> dict[str, Any] | None:
                 return None
 
             def check_spectrum_availability(
@@ -489,9 +473,7 @@ class TestAbstractSpectrumAssignerEdgeCases:
             def supports_multiband(self) -> bool:
                 return False
 
-            def assign(
-                self, path: list[Any], request: Any
-            ) -> dict[str, Any] | None:
+            def assign(self, path: list[Any], request: Any) -> dict[str, Any] | None:
                 return None
 
             def check_spectrum_availability(
@@ -554,9 +536,7 @@ class TestAbstractSpectrumAssignerEdgeCases:
             def supports_multiband(self) -> bool:
                 return False
 
-            def assign(
-                self, path: list[Any], request: Any
-            ) -> dict[str, Any] | None:
+            def assign(self, path: list[Any], request: Any) -> dict[str, Any] | None:
                 return None
 
             def check_spectrum_availability(
@@ -619,9 +599,7 @@ class TestAbstractSpectrumAssignerEdgeCases:
             def supports_multiband(self) -> bool:
                 return False
 
-            def assign(
-                self, path: list[Any], request: Any
-            ) -> dict[str, Any] | None:
+            def assign(self, path: list[Any], request: Any) -> dict[str, Any] | None:
                 return None
 
             def check_spectrum_availability(

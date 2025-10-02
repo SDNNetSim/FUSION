@@ -50,9 +50,7 @@ class PathAgent(BaseAgent):
                 "reward_penalty_list must be initialized - call setup_env first"
             )
         if self.algorithm_obj is None:
-            raise ValueError(
-                "algorithm_obj must be initialized - call setup_env first"
-            )
+            raise ValueError("algorithm_obj must be initialized - call setup_env first")
 
     def end_iter(self) -> None:
         """
@@ -67,10 +65,10 @@ class PathAgent(BaseAgent):
 
         self.hyperparam_obj.iteration += 1
         if self.hyperparam_obj.alpha_strategy in EPISODIC_STRATEGIES:
-            if 'bandit' not in self.engine_props['path_algorithm']:
+            if "bandit" not in self.engine_props["path_algorithm"]:
                 self.hyperparam_obj.update_alpha()
         if self.hyperparam_obj.epsilon_strategy in EPISODIC_STRATEGIES:
-            if 'ucb' not in self.engine_props['path_algorithm']:
+            if "ucb" not in self.engine_props["path_algorithm"]:
                 self.hyperparam_obj.update_eps()
 
     def _handle_hyperparams(self) -> None:
@@ -83,11 +81,10 @@ class PathAgent(BaseAgent):
             self.state_action_pair = (self.rl_props.source, self.rl_props.destination)
             self.action_index = self.rl_props.chosen_path_index
             self.hyperparam_obj.update_timestep_data(
-                state_action_pair=self.state_action_pair,
-                action_index=self.action_index
+                state_action_pair=self.state_action_pair, action_index=self.action_index
             )
         if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
-            if 'bandit' not in self.engine_props['path_algorithm']:
+            if "bandit" not in self.engine_props["path_algorithm"]:
                 self.hyperparam_obj.update_alpha()
         if self.hyperparam_obj.epsilon_strategy not in EPISODIC_STRATEGIES:
             self.hyperparam_obj.update_eps()
@@ -98,7 +95,7 @@ class PathAgent(BaseAgent):
         network_spectrum_dict: dict[str, Any],
         iteration: int,
         path_length: int,
-        trial: int
+        trial: int,
     ) -> None:  # pylint: disable=unused-argument
         """
         Update agent state based on action outcome.
@@ -126,7 +123,7 @@ class PathAgent(BaseAgent):
         assert self.reward_penalty_list is not None  # For mypy
         assert self.algorithm_obj is not None  # For mypy
 
-        if self.hyperparam_obj.iteration >= self.engine_props['max_iters']:
+        if self.hyperparam_obj.iteration >= self.engine_props["max_iters"]:
             raise AgentError(
                 f"Iteration {self.hyperparam_obj.iteration} exceeds maximum "
                 f"allowed iterations {self.engine_props['max_iters']}. "
@@ -135,9 +132,9 @@ class PathAgent(BaseAgent):
 
         reward = self.get_reward(
             was_allocated=was_allocated,
-            dynamic=self.engine_props['dynamic_reward'],
+            dynamic=self.engine_props["dynamic_reward"],
             core_index=None,
-            req_id=None
+            req_id=None,
         )
         self.reward_penalty_list[self.hyperparam_obj.iteration] += reward
         self.hyperparam_obj.current_reward = reward
@@ -147,39 +144,39 @@ class PathAgent(BaseAgent):
             raise ValueError("algorithm_obj must be initialized")
 
         # Set common attributes if they exist
-        if hasattr(self.algorithm_obj, 'learn_rate'):
+        if hasattr(self.algorithm_obj, "learn_rate"):
             self.algorithm_obj.learn_rate = self.hyperparam_obj.current_alpha
-        if hasattr(self.algorithm_obj, 'iteration'):
+        if hasattr(self.algorithm_obj, "iteration"):
             self.algorithm_obj.iteration = iteration
 
         self._handle_hyperparams()
-        if self.algorithm == 'q_learning':
-            if hasattr(self.algorithm_obj, 'learn_rate'):
+        if self.algorithm == "q_learning":
+            if hasattr(self.algorithm_obj, "learn_rate"):
                 self.algorithm_obj.learn_rate = self.hyperparam_obj.current_alpha
-            if hasattr(self.algorithm_obj, 'update_q_matrix'):
+            if hasattr(self.algorithm_obj, "update_q_matrix"):
                 self.algorithm_obj.update_q_matrix(
                     reward=reward,
                     level_index=self.level_index,
                     network_spectrum_dict=network_spectrum_dict,
-                    flag='path',
+                    flag="path",
                     trial=trial,
-                    iteration=iteration
+                    iteration=iteration,
                 )
-        elif self.algorithm == 'epsilon_greedy_bandit':
-            if hasattr(self.algorithm_obj, 'update'):
+        elif self.algorithm == "epsilon_greedy_bandit":
+            if hasattr(self.algorithm_obj, "update"):
                 self.algorithm_obj.update(
                     reward=reward,
                     arm=self.rl_props.chosen_path_index,
                     iteration=iteration,
-                    trial=trial
+                    trial=trial,
                 )
-        elif self.algorithm == 'ucb_bandit':
-            if hasattr(self.algorithm_obj, 'update'):
+        elif self.algorithm == "ucb_bandit":
+            if hasattr(self.algorithm_obj, "update"):
                 self.algorithm_obj.update(
                     reward=reward,
                     arm=self.rl_props.chosen_path_index,
                     iteration=iteration,
-                    trial=trial
+                    trial=trial,
                 )
         else:
             raise InvalidActionError(
@@ -212,7 +209,7 @@ class PathAgent(BaseAgent):
             if self.algorithm_obj is None:
                 raise ValueError("algorithm_obj must be initialized")
             # For Q-learning, we know algorithm_obj has get_max_curr_q method
-            if hasattr(self.algorithm_obj, 'get_max_curr_q'):
+            if hasattr(self.algorithm_obj, "get_max_curr_q"):
                 result = self.algorithm_obj.get_max_curr_q(
                     cong_list=self.congestion_list, matrix_flag="routes_matrix"
                 )
@@ -233,11 +230,11 @@ class PathAgent(BaseAgent):
         if self.algorithm_obj is None:
             raise ValueError("algorithm_obj must be initialized")
         # For Q-learning, we know algorithm_obj has props attribute
-        if hasattr(self.algorithm_obj, 'props'):
+        if hasattr(self.algorithm_obj, "props"):
             props_matrix = self.algorithm_obj.props.routes_matrix
             routes_matrix = props_matrix[
                 self.rl_props.source, self.rl_props.destination
-            ]['path']
+            ]["path"]
             self.rl_props.paths_list = routes_matrix
         else:
             raise ValueError(
@@ -275,23 +272,18 @@ class PathAgent(BaseAgent):
         assert self.algorithm_obj is not None  # Validated by setup_env
         assert self.hyperparam_obj is not None  # Validated by setup_env
 
-        if hasattr(self.algorithm_obj, 'epsilon'):
+        if hasattr(self.algorithm_obj, "epsilon"):
             self.algorithm_obj.epsilon = self.hyperparam_obj.current_epsilon
-        if hasattr(self.algorithm_obj, 'select_path_arm'):
-            self.rl_props.chosen_path_index = (
-                self.algorithm_obj.select_path_arm(
-                    source=int(source), dest=int(dest)
-                )
+        if hasattr(self.algorithm_obj, "select_path_arm"):
+            self.rl_props.chosen_path_index = self.algorithm_obj.select_path_arm(
+                source=int(source), dest=int(dest)
             )
         else:
             raise ValueError(
-                f"Algorithm {self.algorithm} does not have "
-                f"select_path_arm method"
+                f"Algorithm {self.algorithm} does not have select_path_arm method"
             )
         paths_matrix = route_obj.route_props.paths_matrix
-        self.rl_props.chosen_path_list = paths_matrix[
-            self.rl_props.chosen_path_index
-        ]
+        self.rl_props.chosen_path_list = paths_matrix[self.rl_props.chosen_path_index]
 
     def _drl_route(self, route_obj: Any, action: int) -> None:
         """
@@ -303,11 +295,9 @@ class PathAgent(BaseAgent):
         :type action: int
         :raises InvalidActionError: If algorithm is not a supported DRL algorithm
         """
-        if self.algorithm in ('ppo', 'a2c', 'dqn', 'qr_dqn'):
+        if self.algorithm in ("ppo", "a2c", "dqn", "qr_dqn"):
             self.rl_props.chosen_path_index = action
-            self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[
-                action
-            ]
+            self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[action]
         else:
             raise InvalidActionError(
                 f"Algorithm '{self.algorithm}' is not supported for DRL routing. "
@@ -323,16 +313,16 @@ class PathAgent(BaseAgent):
         :raises InvalidActionError: If algorithm is not supported
         :raises RouteSelectionError: If no valid path can be selected
         """
-        if self.algorithm == 'q_learning':
+        if self.algorithm == "q_learning":
             self._ql_route()
         elif self.algorithm in (
-            'epsilon_greedy_bandit', 'thompson_sampling_bandit', 'ucb_bandit'
+            "epsilon_greedy_bandit",
+            "thompson_sampling_bandit",
+            "ucb_bandit",
         ):
-            self._bandit_route(route_obj=kwargs['route_obj'])
-        elif self.algorithm in ('ppo', 'a2c', 'dqn', 'qr_dqn'):
-            self._drl_route(
-                route_obj=kwargs['route_obj'], action=kwargs['action']
-            )
+            self._bandit_route(route_obj=kwargs["route_obj"])
+        elif self.algorithm in ("ppo", "a2c", "dqn", "qr_dqn"):
+            self._drl_route(route_obj=kwargs["route_obj"], action=kwargs["action"])
         else:
             raise InvalidActionError(
                 f"Algorithm '{self.algorithm}' is not supported for routing. "

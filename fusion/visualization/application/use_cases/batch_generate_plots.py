@@ -1,10 +1,11 @@
 """Use case for batch generation of multiple plots."""
 
 from __future__ import annotations
+
 import logging
-from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 from fusion.visualization.application.dto import (
     BatchPlotRequestDTO,
@@ -34,10 +35,10 @@ class BatchGeneratePlotsUseCase:
 
     def __init__(
         self,
-        generate_plot_use_case: Optional[GeneratePlotUseCase] = None,
-        plot_service: Optional["PlotService"] = None,  # Legacy parameter
-        processor: Optional["DataProcessorPort"] = None,  # Legacy parameter
-        renderer: Optional["PlotRendererPort"] = None,  # Legacy parameter
+        generate_plot_use_case: GeneratePlotUseCase | None = None,
+        plot_service: PlotService | None = None,  # Legacy parameter
+        processor: DataProcessorPort | None = None,  # Legacy parameter
+        renderer: PlotRendererPort | None = None,  # Legacy parameter
     ):
         """
         Initialize batch use case.
@@ -49,8 +50,10 @@ class BatchGeneratePlotsUseCase:
             renderer: Legacy parameter - will create GeneratePlotUseCase if provided
         """
         # Handle legacy parameters by creating a GeneratePlotUseCase
-        if generate_plot_use_case is None and (plot_service or processor or renderer):
-            # Type checking: processor and renderer must be non-None for GeneratePlotUseCase
+        if generate_plot_use_case is None and (
+            plot_service or processor or renderer
+        ):
+            # Type checking: processor and renderer must be non-None
             if processor is not None and renderer is not None:
                 generate_plot_use_case = GeneratePlotUseCase(
                     plot_service=plot_service,
@@ -63,7 +66,9 @@ class BatchGeneratePlotsUseCase:
         self.processor = processor
         self.renderer = renderer
 
-    def execute(self, request: BatchPlotRequestDTO | List[PlotRequestDTO]) -> BatchPlotResultDTO | List[PlotResultDTO]:
+    def execute(
+        self, request: BatchPlotRequestDTO | list[PlotRequestDTO]
+    ) -> BatchPlotResultDTO | list[PlotResultDTO]:
         """
         Execute batch plot generation.
 
@@ -137,9 +142,7 @@ class BatchGeneratePlotsUseCase:
             duration=duration,
         )
 
-    def _generate_sequential(
-        self, request: BatchPlotRequestDTO
-    ) -> List[PlotResultDTO]:
+    def _generate_sequential(self, request: BatchPlotRequestDTO) -> list[PlotResultDTO]:
         """Generate plots sequentially."""
         results = []
 
@@ -174,9 +177,9 @@ class BatchGeneratePlotsUseCase:
 
         return results
 
-    def _generate_parallel(self, request: BatchPlotRequestDTO) -> List[PlotResultDTO]:
+    def _generate_parallel(self, request: BatchPlotRequestDTO) -> list[PlotResultDTO]:
         """Generate plots in parallel using thread pool."""
-        results: List[Optional[PlotResultDTO]] = [None] * len(request.plots)
+        results: list[PlotResultDTO | None] = [None] * len(request.plots)
 
         if self.generate_plot_use_case is None:
             raise RuntimeError("generate_plot_use_case is not initialized")
@@ -184,9 +187,7 @@ class BatchGeneratePlotsUseCase:
         with ThreadPoolExecutor(max_workers=request.max_workers) as executor:
             # Submit all tasks
             future_to_index = {
-                executor.submit(
-                    self.generate_plot_use_case.execute, plot_request
-                ): i
+                executor.submit(self.generate_plot_use_case.execute, plot_request): i
                 for i, plot_request in enumerate(request.plots)
             }
 
@@ -199,9 +200,7 @@ class BatchGeneratePlotsUseCase:
                     results[index] = result
 
                     if not result.success:
-                        logger.warning(
-                            f"Plot {index} failed: {result.error}"
-                        )
+                        logger.warning(f"Plot {index} failed: {result.error}")
 
                 except Exception as e:
                     logger.exception(f"Unexpected error in parallel plot {index}: {e}")

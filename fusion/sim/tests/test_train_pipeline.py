@@ -55,9 +55,7 @@ class TestTrainRLAgent:
         mock_config.get_args.return_value = mock_args
 
         mock_env = MagicMock()
-        mock_sim_dict = {
-            "s1": {"network": "test_net", "erlang": 300, "other": "value"}
-        }
+        mock_sim_dict = {"s1": {"network": "test_net", "erlang": 300, "other": "value"}}
         mock_callbacks = ["callback1"]
         mock_create_env.return_value = (mock_env, mock_sim_dict, mock_callbacks)
 

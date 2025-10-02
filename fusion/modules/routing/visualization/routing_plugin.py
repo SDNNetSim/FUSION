@@ -5,7 +5,6 @@ in optical networks.
 """
 
 from pathlib import Path
-from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +14,9 @@ from fusion.visualization.domain.entities.metric import (
     DataType,
     MetricDefinition,
 )
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
 from fusion.visualization.infrastructure.renderers.base_renderer import (
     BaseRenderer,
     PlotResult,
@@ -93,12 +94,14 @@ class HopCountPlotRenderer(BaseRenderer):
 
         # Create box plot
         positions = np.arange(len(algos))
-        bp = ax2.boxplot(hop_distributions, positions=positions, patch_artist=True, widths=0.6)
+        bp = ax2.boxplot(
+            hop_distributions, positions=positions, patch_artist=True, widths=0.6
+        )
 
         # Color the boxes
-        cmap = plt.cm.get_cmap('Set3')
+        cmap = plt.cm.get_cmap("Set3")
         colors = cmap(np.linspace(0, 1, len(algos)))
-        for patch, color in zip(bp["boxes"], colors):
+        for patch, color in zip(bp["boxes"], colors, strict=False):
             patch.set_facecolor(color)
             patch.set_alpha(0.7)
 
@@ -108,14 +111,22 @@ class HopCountPlotRenderer(BaseRenderer):
         ax2.set_title("Hop Count Distribution", fontsize=12, fontweight="bold")
         ax2.grid(True, alpha=0.3, axis="y")
 
-        fig.suptitle(specification.title or "Routing Hop Count Analysis", fontsize=14, fontweight="bold")
+        fig.suptitle(
+            specification.title or "Routing Hop Count Analysis",
+            fontsize=14,
+            fontweight="bold",
+        )
         plt.tight_layout()
 
         # Save
         fig.savefig(output_path, dpi=dpi, format=format, bbox_inches="tight")
         plt.close(fig)
 
-        return PlotResult(success=True, output_path=output_path, metadata={"plot_type": "hop_count_plot"})
+        return PlotResult(
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "hop_count_plot"},
+        )
 
 
 class PathLengthPlotRenderer(BaseRenderer):
@@ -164,7 +175,11 @@ class PathLengthPlotRenderer(BaseRenderer):
 
         ax.set_xlabel(specification.x_label or "Traffic Volume (Erlang)", fontsize=12)
         ax.set_ylabel(specification.y_label or "Mean Path Length (km)", fontsize=12)
-        ax.set_title(specification.title or "Average Path Length vs Traffic", fontsize=14, fontweight="bold")
+        ax.set_title(
+            specification.title or "Average Path Length vs Traffic",
+            fontsize=14,
+            fontweight="bold",
+        )
         ax.legend(loc="best", frameon=True, shadow=True)
         ax.grid(True, alpha=0.3)
 
@@ -175,7 +190,9 @@ class PathLengthPlotRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "path_length_plot"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "path_length_plot"},
         )
 
 
@@ -225,7 +242,9 @@ class ComputationTimePlotRenderer(BaseRenderer):
 
         ax1.set_xlabel("Traffic Volume (Erlang)", fontsize=12)
         ax1.set_ylabel("Mean Computation Time (ms)", fontsize=12)
-        ax1.set_title("Routing Computation Time vs Traffic", fontsize=12, fontweight="bold")
+        ax1.set_title(
+            "Routing Computation Time vs Traffic", fontsize=12, fontweight="bold"
+        )
         ax1.legend(loc="best")
         ax1.grid(True, alpha=0.3)
 
@@ -255,7 +274,11 @@ class ComputationTimePlotRenderer(BaseRenderer):
                 alpha=0.7,
             )
 
-        fig.suptitle(specification.title or "Routing Computation Time Analysis", fontsize=14, fontweight="bold")
+        fig.suptitle(
+            specification.title or "Routing Computation Time Analysis",
+            fontsize=14,
+            fontweight="bold",
+        )
         plt.tight_layout()
 
         # Save
@@ -263,7 +286,9 @@ class ComputationTimePlotRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "computation_time_plot"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "computation_time_plot"},
         )
 
 
@@ -292,7 +317,7 @@ class RoutingVisualizationPlugin(BasePlugin):
         """Return plugin description."""
         return "Visualization plugin for routing algorithm analysis"
 
-    def register_metrics(self) -> List[MetricDefinition]:
+    def register_metrics(self) -> list[MetricDefinition]:
         """Register routing-specific metrics.
 
         Returns:
@@ -355,7 +380,7 @@ class RoutingVisualizationPlugin(BasePlugin):
             ),
         ]
 
-    def register_plot_types(self) -> Dict[str, PlotTypeRegistration]:
+    def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
         """Register routing-specific plot types.
 
         Returns:
@@ -389,7 +414,7 @@ class RoutingVisualizationPlugin(BasePlugin):
             ),
         }
 
-    def get_config_schema(self) -> Dict:
+    def get_config_schema(self) -> dict:
         """Return JSON schema for routing plugin configuration.
 
         Returns:

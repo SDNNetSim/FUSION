@@ -18,7 +18,11 @@ WORST_CASE_MCI = 6.3349755556585961e-27  # Worst-case mutual coupling interferen
 
 # Statistics tracking constants
 SNAP_KEYS_LIST = [
-    'occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments'
+    "occupied_slots",
+    "guard_slots",
+    "active_requests",
+    "blocking_prob",
+    "num_segments",
 ]
 
 
@@ -146,7 +150,7 @@ class SNRProps:
             4: "16-QAM",
             3: "8-QAM",
             2: "QPSK",
-            1: "BPSK"
+            1: "BPSK",
         }
 
         self.bandwidth_mapping_dict: dict[str, int] = {
@@ -155,7 +159,7 @@ class SNRProps:
             "16-QAM": 400,
             "8-QAM": 300,
             "QPSK": 200,
-            "BPSK": 100
+            "BPSK": 100,
         }
 
         # Pre-calculated SNR file mappings
@@ -164,90 +168,90 @@ class SNRProps:
     def _initialize_file_mappings(self) -> None:
         """Initialize the pre-calculated SNR file mappings."""
         self.file_mapping_dict: dict[str, dict[str | tuple, dict[str, str]]] = {
-            'USbackbone60': {
-                'multi_fiber': {
-                    'mf': 'MF-USB6014-MF.npy',
-                    'gsnr': 'GSNR-USB6014-MF.npy'
+            "USbackbone60": {
+                "multi_fiber": {
+                    "mf": "MF-USB6014-MF.npy",
+                    "gsnr": "GSNR-USB6014-MF.npy",
                 },
                 (2, 4): {
-                    'mf': 'MF-USB6014-MCF4-C2.npy',
-                    'gsnr': 'GSNR-USB6014-MCF4-C2.npy'
+                    "mf": "MF-USB6014-MCF4-C2.npy",
+                    "gsnr": "GSNR-USB6014-MCF4-C2.npy",
                 },
                 (6, 7): {
-                    'mf': 'MF-USB6014-MCF7-C6.npy',
-                    'gsnr': 'GSNR-USB6014-MCF7-C6.npy'
+                    "mf": "MF-USB6014-MCF7-C6.npy",
+                    "gsnr": "GSNR-USB6014-MCF7-C6.npy",
                 },
                 (3, 7): {
-                    'mf': 'MF-USB6014-MCF7-C3.npy',
-                    'gsnr': 'GSNR-USB6014-MCF7-C3.npy'
+                    "mf": "MF-USB6014-MCF7-C3.npy",
+                    "gsnr": "GSNR-USB6014-MCF7-C3.npy",
                 },
                 (2, 13): {
-                    'mf': 'MF-USB6014-MCF13-C2.npy',
-                    'gsnr': 'GSNR-USB6014-MCF13-C2.npy'
+                    "mf": "MF-USB6014-MCF13-C2.npy",
+                    "gsnr": "GSNR-USB6014-MCF13-C2.npy",
                 },
                 (5, 13): {
-                    'mf': 'MF-USB6014-MCF13-C5.npy',
-                    'gsnr': 'GSNR-USB6014-MCF13-C5.npy'
+                    "mf": "MF-USB6014-MCF13-C5.npy",
+                    "gsnr": "GSNR-USB6014-MCF13-C5.npy",
                 },
                 (6, 13): {
-                    'mf': 'MF-USB6014-MCF13-C6.npy',
-                    'gsnr': 'GSNR-USB6014-MCF13-C6.npy'
+                    "mf": "MF-USB6014-MCF13-C6.npy",
+                    "gsnr": "GSNR-USB6014-MCF13-C6.npy",
                 },
                 (6, 19): {
-                    'mf': 'MF-USB6014-MCF19-C6.npy',
-                    'gsnr': 'GSNR-USB6014-MCF19-C6.npy'
+                    "mf": "MF-USB6014-MCF19-C6.npy",
+                    "gsnr": "GSNR-USB6014-MCF19-C6.npy",
                 },
                 (3, 19): {
-                    'mf': 'MF-USB6014-MCF19-C3.npy',
-                    'gsnr': 'GSNR-USB6014-MCF19-C3.npy'
+                    "mf": "MF-USB6014-MCF19-C3.npy",
+                    "gsnr": "GSNR-USB6014-MCF19-C3.npy",
                 },
                 (4, 19): {
-                    'mf': 'MF-USB6014-MCF19-C4.npy',
-                    'gsnr': 'GSNR-USB6014-MCF19-C4.npy'
+                    "mf": "MF-USB6014-MCF19-C4.npy",
+                    "gsnr": "GSNR-USB6014-MCF19-C4.npy",
                 },
             },
-            'Spainbackbone30': {
-                'multi_fiber': {
-                    'mf': 'MF-SPNB3014-MF.npy',
-                    'gsnr': 'GSNR-SPNB3014-MF.npy'
+            "Spainbackbone30": {
+                "multi_fiber": {
+                    "mf": "MF-SPNB3014-MF.npy",
+                    "gsnr": "GSNR-SPNB3014-MF.npy",
                 },
                 (2, 4): {
-                    'mf': 'MF-SPNB3014-MCF4-C2.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF4-C2.npy'
+                    "mf": "MF-SPNB3014-MCF4-C2.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF4-C2.npy",
                 },
                 (6, 7): {
-                    'mf': 'MF-SPNB3014-MCF7-C6.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF7-C6.npy'
+                    "mf": "MF-SPNB3014-MCF7-C6.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF7-C6.npy",
                 },
                 (3, 7): {
-                    'mf': 'MF-SPNB3014-MCF7-C3.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF7-C3.npy'
+                    "mf": "MF-SPNB3014-MCF7-C3.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF7-C3.npy",
                 },
                 (2, 13): {
-                    'mf': 'MF-SPNB3014-MCF13-C2.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF13-C2.npy'
+                    "mf": "MF-SPNB3014-MCF13-C2.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF13-C2.npy",
                 },
                 (5, 13): {
-                    'mf': 'MF-SPNB3014-MCF13-C5.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF13-C5.npy'
+                    "mf": "MF-SPNB3014-MCF13-C5.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF13-C5.npy",
                 },
                 (6, 13): {
-                    'mf': 'MF-SPNB3014-MCF13-C6.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF13-C6.npy'
+                    "mf": "MF-SPNB3014-MCF13-C6.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF13-C6.npy",
                 },
                 (6, 19): {
-                    'mf': 'MF-SPNB3014-MCF19-C6.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF19-C6.npy'
+                    "mf": "MF-SPNB3014-MCF19-C6.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF19-C6.npy",
                 },
                 (3, 19): {
-                    'mf': 'MF-SPNB3014-MCF19-C3.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF19-C3.npy'
+                    "mf": "MF-SPNB3014-MCF19-C3.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF19-C3.npy",
                 },
                 (4, 19): {
-                    'mf': 'MF-SPNB3014-MCF19-C4.npy',
-                    'gsnr': 'GSNR-SPNB3014-MCF19-C4.npy'
+                    "mf": "MF-SPNB3014-MCF19-C4.npy",
+                    "gsnr": "GSNR-SPNB3014-MCF19-C4.npy",
                 },
-            }
+            },
         }
 
     def __repr__(self) -> str:
@@ -312,17 +316,20 @@ class SDNProps:
 
         # Statistical tracking keys
         self.stat_key_list: list[str] = [
-            'modulation_list',
-            'crosstalk_list',
-            'core_list',
-            'band_list',
-            'start_slot_list',
-            'end_slot_list'
+            "modulation_list",
+            "crosstalk_list",
+            "core_list",
+            "band_list",
+            "start_slot_list",
+            "end_slot_list",
         ]
 
     def update_params(
-        self, key: str, spectrum_key: str | None,
-        spectrum_obj: Optional['SpectrumProps'], value: Any | None = None
+        self,
+        key: str,
+        spectrum_key: str | None,
+        spectrum_obj: Optional["SpectrumProps"],
+        value: Any | None = None,
     ) -> None:
         """
         Update lists to track statistics of routed requests or general network metrics.
@@ -420,9 +427,9 @@ class StatsProps:
 
         # Blocking reasons
         self.block_reasons_dict: dict[str, int | float | None] = {
-            'distance': None,
-            'congestion': None,
-            'xt_threshold': None
+            "distance": None,
+            "congestion": None,
+            "xt_threshold": None,
         }
 
         # Per-simulation metrics

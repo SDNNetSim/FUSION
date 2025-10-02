@@ -62,13 +62,13 @@ class QProps:
 
         # Rewards for the core and path q-learning agents
         self.rewards_dict: dict[str, dict[str, Any]] = {
-            'routes_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}},
-            'cores_dict': {'average': [], 'min': [], 'max': [], 'rewards': {}}
+            "routes_dict": {"average": [], "min": [], "max": [], "rewards": {}},
+            "cores_dict": {"average": [], "min": [], "max": [], "rewards": {}},
         }
         # Temporal difference (TD) errors for the core and path agents
         self.errors_dict: dict[str, dict[str, Any]] = {
-            'routes_dict': {'average': [], 'min': [], 'max': [], 'errors': {}},
-            'cores_dict': {'average': [], 'min': [], 'max': [], 'errors': {}}
+            "routes_dict": {"average": [], "min": [], "max": [], "errors": {}},
+            "cores_dict": {"average": [], "min": [], "max": [], "errors": {}},
         }
         # Total sum of rewards for each episode (episode as key, sum as value)
         self.sum_rewards_dict: dict[int, float] = {}
@@ -82,14 +82,23 @@ class QProps:
 
         # All important parameters to be saved in a QL simulation run
         self.save_params_dict = {
-            'q_params_list': [
-                'rewards_dict', 'errors_dict', 'epsilon_list',
-                'sum_rewards_dict', 'sum_errors_dict'
+            "q_params_list": [
+                "rewards_dict",
+                "errors_dict",
+                "epsilon_list",
+                "sum_rewards_dict",
+                "sum_errors_dict",
             ],
-            'engine_params_list': [
-                'epsilon_start', 'epsilon_end', 'max_iters', 'alpha_start',
-                'alpha_end', 'gamma', 'epsilon_update', 'alpha_update'
-            ]
+            "engine_params_list": [
+                "epsilon_start",
+                "epsilon_end",
+                "max_iters",
+                "alpha_start",
+                "alpha_end",
+                "gamma",
+                "epsilon_update",
+                "alpha_update",
+            ],
         }
 
     def get_data(self, key: str) -> Any:

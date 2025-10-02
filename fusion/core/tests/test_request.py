@@ -78,12 +78,15 @@ class TestRequestDistributionValidation:
         # Assert
         assert result is True
 
-    @pytest.mark.parametrize("distribution,num_requests,expected", [
-        ({"50GHz": 0.25, "100GHz": 0.75}, 4, True),
-        ({"50GHz": 0.2, "100GHz": 0.8}, 5, True),
-        ({"50GHz": 0.3, "100GHz": 0.7}, 10, True),
-        ({"50GHz": 0.33, "100GHz": 0.67}, 3, False),  # 0.99 + 2.01 ≠ 3
-    ])
+    @pytest.mark.parametrize(
+        "distribution,num_requests,expected",
+        [
+            ({"50GHz": 0.25, "100GHz": 0.75}, 4, True),
+            ({"50GHz": 0.2, "100GHz": 0.8}, 5, True),
+            ({"50GHz": 0.3, "100GHz": 0.7}, 10, True),
+            ({"50GHz": 0.33, "100GHz": 0.67}, 3, False),  # 0.99 + 2.01 ≠ 3
+        ],
+    )
     def test_validate_request_distribution_parametrized_cases(
         self, distribution: Any, num_requests: Any, expected: Any
     ) -> None:
@@ -100,22 +103,20 @@ class TestRequestGenerationCore:
         """Provide basic engine properties for testing."""
         return {
             "is_only_core_node": True,
-            "topology_info": {
-                "nodes": {"A": {}, "B": {}, "C": {}}
-            },
+            "topology_info": {"nodes": {"A": {}, "B": {}, "C": {}}},
             "arrival_rate": 1.0,
             "holding_time": 10.0,
             "num_requests": 10,
             "request_distribution": {"50GHz": 0.5, "100GHz": 0.5},
             "mod_per_bw": {
                 "50GHz": {"QPSK": {"max_length": [100]}},
-                "100GHz": {"QPSK": {"max_length": [200]}}
-            }
+                "100GHz": {"QPSK": {"max_length": [200]}},
+            },
         }
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generate_simulation_requests_creates_correct_number_of_events(
         self,
         mock_uniform: Any,
@@ -135,7 +136,7 @@ class TestRequestGenerationCore:
         ]
 
         # Create enough uniform values for node and bandwidth selection
-        mock_uniform.side_effect = ([0, 1, 0] * 50)
+        mock_uniform.side_effect = [0, 1, 0] * 50
         seed = 42
 
         # Act
@@ -145,9 +146,9 @@ class TestRequestGenerationCore:
         assert len(requests) == 20  # 10 requests * 2 events each
         mock_seed.assert_called_once_with(seed_value=42)
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generate_simulation_requests_creates_arrival_and_departure_pairs(
         self,
         mock_uniform: Any,
@@ -183,23 +184,21 @@ class TestRequestGenerationCore:
         basic_engine_props["num_requests"] = 2
         # Ensure valid distribution
         basic_engine_props["request_distribution"] = {"50GHz": 1.0}
-        basic_engine_props["mod_per_bw"] = {
-            "50GHz": {"QPSK": {"max_length": [100]}}
-        }
+        basic_engine_props["mod_per_bw"] = {"50GHz": {"QPSK": {"max_length": [100]}}}
 
         # Generate enough mock values to avoid StopIteration
         exponential_values = [float(i) for i in range(1, 20)] + [5.0] * 20
-        uniform_values = ([0, 1, 0] * 20)
+        uniform_values = [0, 1, 0] * 20
 
         # Act & Assert - should use core_nodes list instead of all nodes
         with (
-            patch('fusion.core.request.set_random_seed'),
+            patch("fusion.core.request.set_random_seed"),
             patch(
-                'fusion.core.request.generate_exponential_random_variable',
+                "fusion.core.request.generate_exponential_random_variable",
                 side_effect=exponential_values,
             ),
             patch(
-                'fusion.core.request.generate_uniform_random_variable',
+                "fusion.core.request.generate_uniform_random_variable",
                 side_effect=uniform_values,
             ),
         ):
@@ -214,7 +213,7 @@ class TestRequestGenerationCore:
             "topology_info": {"nodes": {}},
             "num_requests": 5,
             "request_distribution": {"50GHz": 1.0},
-            "mod_per_bw": {"50GHz": {"QPSK": {"max_length": [100]}}}
+            "mod_per_bw": {"50GHz": {"QPSK": {"max_length": [100]}}},
         }
 
         # Act & Assert
@@ -231,7 +230,7 @@ class TestRequestGenerationCore:
             "core_nodes": [],
             "num_requests": 5,
             "request_distribution": {"50GHz": 1.0},
-            "mod_per_bw": {"50GHz": {"QPSK": {"max_length": [100]}}}
+            "mod_per_bw": {"50GHz": {"QPSK": {"max_length": [100]}}},
         }
 
         # Act & Assert
@@ -264,14 +263,12 @@ class TestRequestStructure:
             "holding_time": 10.0,
             "num_requests": 1,
             "request_distribution": {"100GHz": 1.0},
-            "mod_per_bw": {
-                "100GHz": {"QPSK": {"max_length": [200]}}
-            }
+            "mod_per_bw": {"100GHz": {"QPSK": {"max_length": [200]}}},
         }
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generated_request_contains_required_fields(
         self,
         mock_uniform: Any,
@@ -298,9 +295,9 @@ class TestRequestStructure:
         assert "bandwidth" in request
         assert "mod_formats" in request
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generated_request_has_different_source_and_destination(
         self,
         mock_uniform: Any,
@@ -322,9 +319,9 @@ class TestRequestStructure:
         request = list(requests.values())[0]
         assert request["source"] != request["destination"]
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generated_request_timing_is_consistent(
         self,
         mock_uniform: Any,
@@ -356,9 +353,9 @@ class TestRequestStructure:
         assert arrival_req["depart"] == departure_req["depart"]
         assert departure_req["depart"] > departure_req["arrive"]
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generated_requests_respect_bandwidth_distribution(
         self, mock_uniform: Any, mock_exponential: Any, mock_seed: Any
     ) -> None:
@@ -373,8 +370,8 @@ class TestRequestStructure:
             "request_distribution": {"50GHz": 0.25, "100GHz": 0.75},
             "mod_per_bw": {
                 "50GHz": {"QPSK": {"max_length": [100]}},
-                "100GHz": {"QPSK": {"max_length": [200]}}
-            }
+                "100GHz": {"QPSK": {"max_length": [200]}},
+            },
         }
         mock_exponential.side_effect = [1.0, 5.0] * 10  # Times for all requests
         # Multiple selections
@@ -396,8 +393,8 @@ class TestRequestStructure:
 class TestLegacyCompatibility:
     """Tests for backward compatibility functionality."""
 
-    @patch('fusion.core.request.generate_simulation_requests')
-    @patch('fusion.core.request.logger')
+    @patch("fusion.core.request.generate_simulation_requests")
+    @patch("fusion.core.request.logger")
     def test_get_requests_calls_new_function_and_logs_warning(
         self, mock_logger: Any, mock_generate_requests: Any
     ) -> None:
@@ -432,12 +429,12 @@ class TestRequestGenerationEdgeCases:
             "holding_time": 10.0,
             "num_requests": 2,
             "request_distribution": {"100GHz": 1.0},
-            "mod_per_bw": {"100GHz": {"QPSK": {"max_length": [200]}}}
+            "mod_per_bw": {"100GHz": {"QPSK": {"max_length": [200]}}},
         }
 
-    @patch('fusion.core.request.set_random_seed')
-    @patch('fusion.core.request.generate_exponential_random_variable')
-    @patch('fusion.core.request.generate_uniform_random_variable')
+    @patch("fusion.core.request.set_random_seed")
+    @patch("fusion.core.request.generate_exponential_random_variable")
+    @patch("fusion.core.request.generate_uniform_random_variable")
     def test_generate_requests_handles_time_collisions(
         self,
         mock_uniform: Any,
@@ -448,9 +445,12 @@ class TestRequestGenerationEdgeCases:
         """Test handling of time collisions during request generation."""
         # Arrange - create scenario where times collide
         mock_exponential.side_effect = [
-            1.0, 5.0,  # First request times
-            0.0, 5.0,  # Second request - collision on arrival (1.0)
-            2.0, 5.0   # Second request retry - different arrival time
+            1.0,
+            5.0,  # First request times
+            0.0,
+            5.0,  # Second request - collision on arrival (1.0)
+            2.0,
+            5.0,  # Second request retry - different arrival time
         ]
         mock_uniform.side_effect = [0, 1, 0] * 3  # Multiple attempts
 
@@ -491,7 +491,7 @@ class TestRequestGenerationEdgeCases:
         with pytest.raises(KeyError, match="core_nodes"):
             generate_simulation_requests(42, engine_props)
 
-    @patch('fusion.core.request.set_random_seed')
+    @patch("fusion.core.request.set_random_seed")
     def test_generate_requests_with_zero_requests_returns_empty_dict(
         self, mock_seed: Any
     ) -> None:
@@ -502,7 +502,7 @@ class TestRequestGenerationEdgeCases:
             "topology_info": {"nodes": {"A": {}, "B": {}}},
             "num_requests": 0,
             "request_distribution": {"100GHz": 1.0},
-            "mod_per_bw": {"100GHz": {"QPSK": {"max_length": [200]}}}
+            "mod_per_bw": {"100GHz": {"QPSK": {"max_length": [200]}}},
         }
 
         # Act

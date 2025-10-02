@@ -1,9 +1,11 @@
 """Value object for measured metric values."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, Optional, Dict
 from enum import Enum
+from typing import Any
+
 import numpy as np
 
 
@@ -32,14 +34,14 @@ class MetricValue:
 
     value: Any
     data_type: DataType
-    unit: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    unit: str | None = None
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         """Validate the metric value."""
         if self.metadata is None:
             # Use object.__setattr__ since dataclass is frozen
-            object.__setattr__(self, 'metadata', {})
+            object.__setattr__(self, "metadata", {})
 
     @property
     def as_float(self) -> float:
@@ -72,7 +74,7 @@ class MetricValue:
             raise TypeError(f"Cannot convert {self.data_type} to array")
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Return value as dictionary."""
         if self.data_type == DataType.DICT:
             return dict(self.value)

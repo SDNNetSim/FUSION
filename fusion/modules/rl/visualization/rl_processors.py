@@ -7,19 +7,15 @@ This module provides processing strategies for RL-specific metrics:
 - Learning curve generation
 """
 
-from collections import defaultdict
-from typing import Any, Dict, List
-
 import numpy as np
 from numpy import ndarray
 from scipy.ndimage import uniform_filter1d
 
-from fusion.visualization.domain.entities.metric import MetricDefinition
-from fusion.visualization.domain.entities.run import Run
 from fusion.visualization.application.ports.data_processor_port import (
     DataProcessorPort,
     ProcessedData,
 )
+from fusion.visualization.domain.entities.run import Run
 from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 
@@ -40,16 +36,16 @@ class RewardProcessingStrategy(DataProcessorPort):
         """Check if this processor can handle the metric."""
         return metric_name in ["reward", "episode_reward", "training_reward"]
 
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """Get list of supported metrics."""
         return ["reward", "episode_reward", "training_reward"]
 
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
         """Process reward data with smoothing.
@@ -66,8 +62,8 @@ class RewardProcessingStrategy(DataProcessorPort):
         """
         # Extract x_data (traffic volumes) and y_data (algorithm -> values)
         x_data = traffic_volumes
-        y_data: Dict[str, List[float]] = {}
-        errors: Dict[str, List[float]] = {} if include_ci else {}
+        y_data: dict[str, list[float]] = {}
+        errors: dict[str, list[float]] = {} if include_ci else {}
 
         # Group by algorithm
         for run in runs:
@@ -104,7 +100,7 @@ class RewardProcessingStrategy(DataProcessorPort):
             return rewards
         return None
 
-    def _align_sequences(self, sequences: List[np.ndarray]) -> np.ndarray:
+    def _align_sequences(self, sequences: list[np.ndarray]) -> np.ndarray:
         """Align sequences to common length (truncate to shortest).
 
         Args:
@@ -131,7 +127,9 @@ class RewardProcessingStrategy(DataProcessorPort):
         if len(data) < self.window_size:
             return data
 
-        result: np.ndarray = uniform_filter1d(data, size=self.window_size, mode="nearest")
+        result: np.ndarray = uniform_filter1d(
+            data, size=self.window_size, mode="nearest"
+        )
         return result
 
 
@@ -142,16 +140,16 @@ class QValueProcessingStrategy(DataProcessorPort):
         """Check if this processor can handle the metric."""
         return metric_name in ["q_value", "q_values", "action_values"]
 
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """Get list of supported metrics."""
         return ["q_value", "q_values", "action_values"]
 
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
         """Process Q-value data.
@@ -168,8 +166,8 @@ class QValueProcessingStrategy(DataProcessorPort):
         """
         # Extract x_data (traffic volumes) and y_data (algorithm -> values)
         x_data = traffic_volumes
-        y_data: Dict[str, List[float]] = {}
-        errors: Dict[str, List[float]] = {} if include_ci else {}
+        y_data: dict[str, list[float]] = {}
+        errors: dict[str, list[float]] = {} if include_ci else {}
 
         # Group by algorithm
         for run in runs:
@@ -220,16 +218,16 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
         """Check if this processor can handle the metric."""
         return metric_name in ["convergence", "training_convergence"]
 
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """Get list of supported metrics."""
         return ["convergence", "training_convergence"]
 
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
         """Detect convergence in training.
@@ -244,10 +242,11 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
         Returns:
             ProcessedData with convergence information
         """
-        # Extract x_data (traffic volumes) and y_data (algorithm -> convergence episodes)
+        # Extract x_data (traffic volumes) and y_data
+        # (algorithm -> convergence episodes)
         x_data = traffic_volumes
-        y_data: Dict[str, List[float]] = {}
-        errors: Dict[str, List[float]] = {} if include_ci else {}
+        y_data: dict[str, list[float]] = {}
+        errors: dict[str, list[float]] = {} if include_ci else {}
 
         # Group by algorithm
         for run in runs:
@@ -263,7 +262,11 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
                     metric_values = self._extract_metric(run_data, metric_name)
                     if metric_values is not None:
                         convergence_episode = self._detect_convergence(metric_values)
-                        y_data[algo].append(float(convergence_episode) if convergence_episode is not None else 0.0)
+                        y_data[algo].append(
+                            float(convergence_episode)
+                            if convergence_episode is not None
+                            else 0.0
+                        )
                         if include_ci:
                             errors[algo].append(0.0)
 

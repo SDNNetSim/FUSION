@@ -22,8 +22,8 @@ class BanditModelPersistence:
         :return: The state-value functions V(s, a)
         :rtype: dict[str, Any]
         """
-        full_path = Path('logs') / train_fp
-        with open(full_path, encoding='utf-8') as file_obj:
+        full_path = Path("logs") / train_fp
+        with open(full_path, encoding="utf-8") as file_obj:
             state_vals_dict: dict[str, Any] = json.load(file_obj)
         return state_vals_dict
 
@@ -34,7 +34,7 @@ class BanditModelPersistence:
         cores_per_link: int,
         save_dir: str,
         is_path: bool,
-        trial: int
+        trial: int,
     ) -> None:
         """
         Save bandit model state values.
@@ -73,7 +73,7 @@ class BanditModelPersistence:
             )
 
         save_path = Path.cwd() / save_dir / filename
-        with open(save_path, 'w', encoding='utf-8') as file_obj:
+        with open(save_path, "w", encoding="utf-8") as file_obj:
             json.dump(state_values_dict, file_obj)
 
 
@@ -89,7 +89,7 @@ class QLearningModelPersistence:  # pylint: disable=too-few-public-methods
         base_str: str,
         trial: int,
         iteration: int,
-        save_dir: str
+        save_dir: str,
     ) -> None:
         """
         Save Q-learning model data.
@@ -112,7 +112,7 @@ class QLearningModelPersistence:  # pylint: disable=too-few-public-methods
         :type save_dir: str
         :raises AlgorithmNotFoundError: If core model saving is attempted
         """
-        if 'cores' in base_str:
+        if "cores" in base_str:
             raise AlgorithmNotFoundError(
                 "Core Q-learning model saving is not yet implemented. "
                 "Only routes Q-learning models are currently supported."
@@ -131,5 +131,5 @@ class QLearningModelPersistence:  # pylint: disable=too-few-public-methods
             f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
         )
         save_path_json = Path(save_dir) / json_filename
-        with open(save_path_json, 'w', encoding='utf-8') as file_obj:
+        with open(save_path_json, "w", encoding="utf-8") as file_obj:
             json.dump(q_dict, file_obj)

@@ -128,12 +128,12 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         Updates both directions of bidirectional links with the same XT cost.
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         # At the moment, we have identical bidirectional links
         # (no need to loop over all links)
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source_node, destination_node = link_tuple[0], link_tuple[1]
             span_count = 1.0
@@ -190,7 +190,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         :type weight: str
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         paths_generator = nx.shortest_simple_paths(
@@ -214,10 +214,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
 
             # Get modulation formats based on path length
             has_mod_dict = hasattr(self.sdn_props, "modulation_formats_dict")
-            if (
-                has_mod_dict
-                and self.sdn_props.modulation_formats_dict is not None
-            ):
+            if has_mod_dict and self.sdn_props.modulation_formats_dict is not None:
                 # Use sorted modulation formats
                 mod_formats_dict = sort_nested_dict_values(
                     original_dict=self.sdn_props.modulation_formats_dict,
@@ -261,15 +258,17 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
             return 0.0
 
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
         total_xt = 0.0
 
         for i in range(len(path) - 1):
             source, destination = path[i], path[i + 1]
-            if (topology is not None and
-                hasattr(topology, "edges") and
-                topology.has_edge(source, destination)):
+            if (
+                topology is not None
+                and hasattr(topology, "edges")
+                and topology.has_edge(source, destination)
+            ):
                 xt_cost = topology[source][destination].get("xt_cost", 0.0)
                 total_xt += xt_cost
 
@@ -291,7 +290,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         # Update XT costs first
         self._update_xt_costs()
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         try:
@@ -318,7 +317,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         :type topology: Any
         """
         # Recalculate XT costs for all links
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_list in list(network_spectrum_dict.keys())[::2]:
             source, destination = link_list[0], link_list[1]
             num_spans = (

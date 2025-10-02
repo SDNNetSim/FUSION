@@ -6,21 +6,22 @@ with the new visualization system without requiring immediate changes.
 """
 
 import warnings
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Callable
+from collections.abc import Callable
 from functools import wraps
+from pathlib import Path
+from typing import Any
 
-from fusion.visualization.application.use_cases import GeneratePlotUseCase
 from fusion.visualization.application.dto import PlotRequestDTO
+from fusion.visualization.application.services import CacheService, PlotService
+from fusion.visualization.application.use_cases import GeneratePlotUseCase
 from fusion.visualization.domain.value_objects import PlotType
-from fusion.visualization.infrastructure.repositories import (
-    JsonSimulationRepository,
-    FileMetadataRepository,
-)
 from fusion.visualization.infrastructure.adapters import DataAdapterRegistry
 from fusion.visualization.infrastructure.processors import BlockingProcessor
 from fusion.visualization.infrastructure.renderers import MatplotlibRenderer
-from fusion.visualization.application.services import PlotService, CacheService
+from fusion.visualization.infrastructure.repositories import (
+    FileMetadataRepository,
+    JsonSimulationRepository,
+)
 
 
 def legacy_deprecation_warning(old_api: str, new_api: str) -> None:
@@ -47,12 +48,12 @@ def legacy_plot_wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
     Wraps legacy plot functions to issue deprecation warnings and
     translate parameters to new format.
     """
+
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         # Issue deprecation warning
         legacy_deprecation_warning(
-            old_api=func.__name__,
-            new_api="fusion.visualization.generate_plot"
+            old_api=func.__name__, new_api="fusion.visualization.generate_plot"
         )
 
         # Call original function
@@ -80,9 +81,9 @@ class LegacyPlotAdapter:
 
     def __init__(
         self,
-        sims_info_dict: Optional[Dict[str, Any]] = None,
-        base_path: Optional[Path] = None,
-        **kwargs: Any
+        sims_info_dict: dict[str, Any] | None = None,
+        base_path: Path | None = None,
+        **kwargs: Any,
     ) -> None:
         """
         Initialize legacy adapter.
@@ -93,8 +94,7 @@ class LegacyPlotAdapter:
             **kwargs: Additional legacy parameters
         """
         legacy_deprecation_warning(
-            old_api="PlotStats",
-            new_api="fusion.visualization.generate_plot"
+            old_api="PlotStats", new_api="fusion.visualization.generate_plot"
         )
 
         self.sims_info_dict = sims_info_dict or {}
@@ -139,7 +139,7 @@ class LegacyPlotAdapter:
             renderer=self.renderer,
         )
 
-    def _extract_legacy_params(self) -> Dict[str, Any]:
+    def _extract_legacy_params(self) -> dict[str, Any]:
         """Extract parameters from legacy sims_info_dict."""
         params = {}
 
@@ -159,7 +159,9 @@ class LegacyPlotAdapter:
         if "path_algorithm_matrix" in self.sims_info_dict:
             algos = self.sims_info_dict["path_algorithm_matrix"]
             if algos and len(algos) > 0:
-                params["algorithms"] = algos[0] if isinstance(algos[0], list) else [algos[0]]
+                params["algorithms"] = (
+                    algos[0] if isinstance(algos[0], list) else [algos[0]]
+                )
 
         # Extract traffic volumes (from erlangs or similar)
         if "erlangs" in self.sims_info_dict:
@@ -170,8 +172,8 @@ class LegacyPlotAdapter:
     def plot_blocking(
         self,
         title: str = "Blocking Probability vs Traffic Volume",
-        save_path: Optional[Path] = None,
-        **kwargs: Any
+        save_path: Path | None = None,
+        **kwargs: Any,
     ) -> Any:
         """
         Generate blocking probability plot (legacy API).
@@ -214,15 +216,17 @@ class LegacyPlotAdapter:
         result = self.use_case.execute(request)
 
         if not result.success:
-            warnings.warn(f"Plot generation failed: {result.error_message}")
+            warnings.warn(
+                f"Plot generation failed: {result.error_message}", stacklevel=2
+            )
 
         return result
 
     def plot_rewards(
         self,
         title: str = "Rewards Over Time",
-        save_path: Optional[Path] = None,
-        **kwargs: Any
+        save_path: Path | None = None,
+        **kwargs: Any,
     ) -> Any:
         """
         Generate rewards plot (legacy API).
@@ -258,7 +262,9 @@ class LegacyPlotAdapter:
         result = self.use_case.execute(request)
 
         if not result.success:
-            warnings.warn(f"Plot generation failed: {result.error_message}")
+            warnings.warn(
+                f"Plot generation failed: {result.error_message}", stacklevel=2
+            )
 
         return result
 
@@ -285,7 +291,7 @@ class LegacyConfigAdapter:
     """
 
     @staticmethod
-    def adapt_config(legacy_config: Dict[str, Any]) -> PlotRequestDTO:
+    def adapt_config(legacy_config: dict[str, Any]) -> PlotRequestDTO:
         """
         Convert legacy configuration to new PlotRequestDTO.
 
@@ -324,7 +330,9 @@ class LegacyConfigAdapter:
             algorithms = combined_algorithms
 
         # Extract traffic volumes
-        traffic_volumes = legacy_config.get("traffic_volumes", [600, 700, 800, 900, 1000])
+        traffic_volumes = legacy_config.get(
+            "traffic_volumes", [600, 700, 800, 900, 1000]
+        )
 
         # Create request
         request = PlotRequestDTO(
@@ -337,7 +345,9 @@ class LegacyConfigAdapter:
             title=legacy_config.get("title", f"{plot_type_str.title()} Plot"),
             x_label=legacy_config.get("x_label", "Traffic Volume (Erlang)"),
             y_label=legacy_config.get("y_label", "Value"),
-            save_path=Path(legacy_config.get("save_path", f"./figures/{plot_type_str}.png")),
+            save_path=Path(
+                legacy_config.get("save_path", f"./figures/{plot_type_str}.png")
+            ),
             include_ci=legacy_config.get("include_ci", True),
         )
 
@@ -345,10 +355,10 @@ class LegacyConfigAdapter:
 
 
 def legacy_find_times(
-    dates_dict: Dict[str, str],
-    filter_dict: Optional[Dict[str, Any]] = None,
-    base_path: Optional[Path] = None,
-) -> Dict[str, list[list[str]]]:
+    dates_dict: dict[str, str],
+    filter_dict: dict[str, Any] | None = None,
+    base_path: Path | None = None,
+) -> dict[str, list[list[str]]]:
     """
     Legacy find_times function compatibility wrapper.
 
@@ -364,8 +374,7 @@ def legacy_find_times(
         Legacy-format sims_info_dict
     """
     legacy_deprecation_warning(
-        old_api="find_times",
-        new_api="SimulationRepository.find_runs"
+        old_api="find_times", new_api="SimulationRepository.find_runs"
     )
 
     base_path = base_path or Path("../../data/output")
@@ -395,7 +404,7 @@ def legacy_find_times(
 
 
 # Convenience functions for common legacy patterns
-def legacy_plot_blocking(config: Dict[str, Any]) -> Any:
+def legacy_plot_blocking(config: dict[str, Any]) -> Any:
     """
     Generate blocking plot using legacy config format.
 
@@ -405,16 +414,13 @@ def legacy_plot_blocking(config: Dict[str, Any]) -> Any:
     Returns:
         Plot result
     """
-    legacy_deprecation_warning(
-        old_api="legacy_plot_blocking",
-        new_api="generate_plot"
-    )
+    legacy_deprecation_warning(old_api="legacy_plot_blocking", new_api="generate_plot")
 
     adapter = LegacyPlotAdapter(sims_info_dict=config)
     return adapter.plot_blocking()
 
 
-def legacy_plot_rewards(config: Dict[str, Any]) -> Any:
+def legacy_plot_rewards(config: dict[str, Any]) -> Any:
     """
     Generate rewards plot using legacy config format.
 
@@ -424,10 +430,7 @@ def legacy_plot_rewards(config: Dict[str, Any]) -> Any:
     Returns:
         Plot result
     """
-    legacy_deprecation_warning(
-        old_api="legacy_plot_rewards",
-        new_api="generate_plot"
-    )
+    legacy_deprecation_warning(old_api="legacy_plot_rewards", new_api="generate_plot")
 
     adapter = LegacyPlotAdapter(sims_info_dict=config)
     return adapter.plot_rewards()

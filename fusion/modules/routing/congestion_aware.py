@@ -1,6 +1,7 @@
 """
 Congestion-aware routing algorithm implementation.
 """
+
 from typing import Any
 
 import networkx as nx
@@ -148,7 +149,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         k_paths = int(self.engine_props.get("k_paths", 1))
 
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
         paths_iterator = nx.shortest_simple_paths(
             G=topology,
@@ -168,7 +169,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
 
             mean_congestion, _ = find_path_congestion(
                 path_list=path,
-                network_spectrum=getattr(self.sdn_props, 'network_spectrum_dict', {}),
+                network_spectrum=getattr(self.sdn_props, "network_spectrum_dict", {}),
             )
             path_congestions.append(mean_congestion)
 
@@ -220,7 +221,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         :param scored_paths: List of (path, length, score) tuples sorted by score.
         :type scored_paths: list[tuple]
         """
-        chosen_bandwidth = getattr(self.sdn_props, 'bandwidth', None)
+        chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
 
         for path, path_length, score in scored_paths:
             modulation_list = self._get_modulation_formats(
@@ -251,10 +252,10 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             )
             if modulation_format and modulation_format is not True:
                 return [str(modulation_format)]
-            return ['QPSK']
+            return ["QPSK"]
 
         modulation_formats_sorted = sort_nested_dict_values(
-            original_dict=getattr(self.sdn_props, 'mod_formats_dict', {}),
+            original_dict=getattr(self.sdn_props, "mod_formats_dict", {}),
             nested_key="max_length",
         )
         return list(modulation_formats_sorted.keys())
@@ -268,7 +269,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         :rtype: list[Any] | None
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         all_paths_obj = nx.shortest_simple_paths(
@@ -289,8 +290,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
                     self._find_least_cong()
                     if self.route_props.paths_matrix:
                         first_path = self.route_props.paths_matrix[0]
-                        if isinstance(first_path, dict) and 'path_list' in first_path:
-                            path_list = first_path['path_list']
+                        if isinstance(first_path, dict) and "path_list" in first_path:
+                            path_list = first_path["path_list"]
                             return (
                                 list(path_list)
                                 if isinstance(path_list, (list, tuple))
@@ -319,10 +320,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
-            link_dict = network_spectrum_dict[
-                (path_list[i], path_list[i + 1])
-            ]
+            network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
+            link_dict = network_spectrum_dict[(path_list[i], path_list[i + 1])]
             free_slots = 0
             for band in link_dict["cores_matrix"]:
                 cores_matrix = link_dict["cores_matrix"][band]
@@ -375,7 +374,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         total_used_slots = 0
         total_slots = 0
 
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for i in range(len(path) - 1):
             link_key = (path[i], path[i + 1])
             if link_key in network_spectrum_dict:
@@ -414,7 +413,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         :type topology: Any
         """
         # Update congestion costs for all links based on current spectrum usage
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source, destination = link_tuple
             congestion = self._calculate_link_congestion(source, destination)
@@ -436,7 +435,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         :rtype: float
         """
         link_key = (source, destination)
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         if link_key not in network_spectrum_dict:
             return 0.0
 

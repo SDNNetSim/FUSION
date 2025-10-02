@@ -4,6 +4,7 @@ Algorithm registry configuration for reinforcement learning implementations.
 This module defines the registry mapping that associates algorithm names
 with their setup functions and implementation classes.
 """
+
 from collections.abc import Callable
 from typing import Any
 

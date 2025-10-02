@@ -1,19 +1,19 @@
 """File-based metadata repository with caching."""
 
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import List, Dict, Any, Optional
-import logging
-import hashlib
-import time
 
-from fusion.visualization.domain.repositories.metadata_repository import (
-    MetadataRepository,
-)
+import hashlib
+import json
+import logging
+import time
+from pathlib import Path
+from typing import Any
+
 from fusion.visualization.domain.exceptions.domain_exceptions import (
     RepositoryError,
-    MetadataNotFoundError,
+)
+from fusion.visualization.domain.repositories.metadata_repository import (
+    MetadataRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class FileMetadataRepository(MetadataRepository):
 
     def __init__(
         self,
-        base_path: Optional[Path] = None,
+        base_path: Path | None = None,
         cache_ttl_seconds: int = 3600,
         enable_cache: bool = True,
     ):
@@ -36,22 +36,23 @@ class FileMetadataRepository(MetadataRepository):
         Initialize metadata repository.
 
         Args:
-            base_path: Optional base path for data discovery (currently unused, kept for compatibility)
+            base_path: Optional base path for data discovery
+                (currently unused, kept for compatibility)
             cache_ttl_seconds: Time-to-live for cache entries in seconds
             enable_cache: Whether to enable caching
         """
         self.base_path = Path(base_path) if base_path else None
         self.cache_ttl_seconds = cache_ttl_seconds
         self.enable_cache = enable_cache
-        self._cache: Dict[str, Dict[str, Any]] = {}
-        self._cache_timestamps: Dict[str, float] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
+        self._cache_timestamps: dict[str, float] = {}
 
     def find_metadata(
         self,
         network: str,
-        dates: List[str],
-        base_path: Optional[Path] = None,
-    ) -> List[Dict[str, Any]]:
+        dates: list[str],
+        base_path: Path | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Find metadata for runs in the given network/dates.
 
@@ -65,7 +66,9 @@ class FileMetadataRepository(MetadataRepository):
         """
         if base_path is None:
             if self.base_path is None:
-                raise ValueError("base_path must be provided either in constructor or method call")
+                raise ValueError(
+                    "base_path must be provided either in constructor or method call"
+                )
             base_path = self.base_path
 
         return self.discover_runs(base_path, network, dates)
@@ -74,10 +77,10 @@ class FileMetadataRepository(MetadataRepository):
         self,
         base_path: Path,
         network: str,
-        dates: List[str],
-    ) -> List[Dict[str, Any]]:
+        dates: list[str],
+    ) -> list[dict[str, Any]]:
         """Discover all runs in the given network/dates."""
-        discovered_runs: List[Dict[str, Any]] = []
+        discovered_runs: list[dict[str, Any]] = []
 
         for date in dates:
             date_path = base_path / network / date
@@ -120,7 +123,7 @@ class FileMetadataRepository(MetadataRepository):
 
         return discovered_runs
 
-    def get_run_metadata(self, run_path: Path) -> Dict[str, Any]:
+    def get_run_metadata(self, run_path: Path) -> dict[str, Any]:
         """Load metadata for a specific run."""
         # Check cache first
         cached = self.get_cached_metadata(run_path)
@@ -138,7 +141,7 @@ class FileMetadataRepository(MetadataRepository):
     def cache_metadata(
         self,
         run_path: Path,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> None:
         """Cache metadata for faster subsequent access."""
         if not self.enable_cache:
@@ -157,7 +160,7 @@ class FileMetadataRepository(MetadataRepository):
     def get_cached_metadata(
         self,
         run_path: Path,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get cached metadata if available and not expired."""
         if not self.enable_cache:
             return None
@@ -180,7 +183,7 @@ class FileMetadataRepository(MetadataRepository):
 
         return self._cache[cache_key]
 
-    def _load_metadata_from_file(self, run_path: Path) -> Dict[str, Any]:
+    def _load_metadata_from_file(self, run_path: Path) -> dict[str, Any]:
         """
         Load metadata from file.
 
@@ -198,19 +201,15 @@ class FileMetadataRepository(MetadataRepository):
         for metadata_file in metadata_files:
             if metadata_file.exists():
                 try:
-                    with open(metadata_file, 'r') as f:
+                    with open(metadata_file) as f:
                         metadata: dict[str, Any] = json.load(f)
                         logger.debug(f"Loaded metadata from {metadata_file}")
                         return metadata
                 except json.JSONDecodeError as e:
-                    logger.warning(
-                        f"Invalid JSON in {metadata_file}: {e}"
-                    )
+                    logger.warning(f"Invalid JSON in {metadata_file}: {e}")
                     continue
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to load metadata from {metadata_file}: {e}"
-                    )
+                    logger.warning(f"Failed to load metadata from {metadata_file}: {e}")
                     continue
 
         # No metadata found, return minimal info
@@ -226,7 +225,7 @@ class FileMetadataRepository(MetadataRepository):
         path_str = str(run_path.absolute())
         return hashlib.md5(path_str.encode()).hexdigest()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         now = time.time()
         valid_entries = sum(

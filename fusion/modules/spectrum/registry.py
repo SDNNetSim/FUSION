@@ -32,12 +32,10 @@ class SpectrumRegistry:
         for algorithm_class in algorithms:
             # Create temporary instance to get algorithm name
             temp_sdn_props = SDNProps()  # Create temporary instance
-            temp_instance = algorithm_class(
-                {}, temp_sdn_props, None
-            )  # type: ignore[abstract]
+            temp_instance = algorithm_class({}, temp_sdn_props, None)  # type: ignore[abstract]
             self.register(
                 temp_instance.algorithm_name,
-                cast(type[AbstractSpectrumAssigner], algorithm_class)
+                cast(type[AbstractSpectrumAssigner], algorithm_class),
             )
 
     def register(

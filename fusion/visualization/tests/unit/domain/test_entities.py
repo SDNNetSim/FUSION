@@ -1,33 +1,32 @@
 """Unit tests for domain entities."""
 
-import pytest
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from fusion.visualization.domain.entities import (
-    Run,
+    DataFormat,
+    DataSource,
     MetricDefinition,
-    AggregationStrategy,
     Plot,
     PlotConfiguration,
     PlotState,
-    DataSource,
+    Run,
     SourceType,
-    DataFormat,
-)
-from fusion.visualization.domain.value_objects import (
-    PlotId,
-    DataVersion,
-    MetricValue,
-    DataType,
-    PlotType,
-    PlotSpecification,
 )
 from fusion.visualization.domain.exceptions import (
-    ValidationError,
-    InvalidStateError,
     InvalidMetricPathError,
+    InvalidStateError,
     MetricExtractionError,
+    ValidationError,
+)
+from fusion.visualization.domain.value_objects import (
+    DataType,
+    DataVersion,
+    PlotId,
+    PlotSpecification,
+    PlotType,
 )
 
 
@@ -188,11 +187,7 @@ class TestMetricDefinition:
             source_path="$.iter_stats.0.hops_mean",
         )
 
-        data = {
-            "iter_stats": {
-                "0": {"hops_mean": 3.2}
-            }
-        }
+        data = {"iter_stats": {"0": {"hops_mean": 3.2}}}
         value = metric.extract_from(data)
         assert value.value == 3.2
 
@@ -226,7 +221,9 @@ class TestPlot:
         """Should validate valid plot."""
         sample_plot.validate()  # Should not raise
 
-    def test_validate_empty_title_raises_error(self, sample_plot_configuration: Any) -> None:
+    def test_validate_empty_title_raises_error(
+        self, sample_plot_configuration: Any
+    ) -> None:
         """Should raise ValidationError for empty title."""
         plot = Plot(
             id=PlotId.generate(),

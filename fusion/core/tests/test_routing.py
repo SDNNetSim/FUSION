@@ -54,9 +54,7 @@ class TestRouting(unittest.TestCase):
 
     def test_init_with_valid_parameters_creates_instance(self) -> None:
         """Test Routing initialization with valid parameters."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         self.assertEqual(routing.engine_props, self.engine_props)
         self.assertEqual(routing.sdn_props, self.sdn_props)
@@ -68,9 +66,7 @@ class TestRouting(unittest.TestCase):
 
     def test_init_sets_current_algorithm_to_none(self) -> None:
         """Test Routing initialization sets current algorithm to None."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         self.assertIsNone(routing._current_algorithm)
 
@@ -79,9 +75,7 @@ class TestRouting(unittest.TestCase):
         self, mock_get: Any
     ) -> None:
         """Test algorithm retrieval for valid routing method."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         mock_algorithm_class = MagicMock()
         mock_algorithm_instance = MagicMock()
         mock_algorithm_class.return_value = mock_algorithm_instance
@@ -98,9 +92,7 @@ class TestRouting(unittest.TestCase):
         self, mock_get: Any
     ) -> None:
         """Test legacy method name mapping works correctly."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         mock_algorithm_class = MagicMock()
         mock_algorithm_instance = MagicMock()
         mock_algorithm_class.return_value = mock_algorithm_instance
@@ -116,9 +108,7 @@ class TestRouting(unittest.TestCase):
         self, mock_get: Any
     ) -> None:
         """Test unknown method name is passed through as-is."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         mock_algorithm_class = MagicMock()
         mock_algorithm_instance = MagicMock()
         mock_algorithm_class.return_value = mock_algorithm_instance
@@ -152,9 +142,7 @@ class TestRouting(unittest.TestCase):
         mock_registry_instance = MagicMock()
         mock_registry_class.return_value = mock_registry_instance
 
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         mock_registry_class.assert_called_once()
         self.assertEqual(routing.routing_registry, mock_registry_instance)
@@ -165,9 +153,7 @@ class TestRouting(unittest.TestCase):
         mock_helpers_instance = MagicMock()
         mock_helpers_class.return_value = mock_helpers_instance
 
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         mock_helpers_class.assert_called_once_with(
             route_props=routing.route_props,
@@ -178,9 +164,7 @@ class TestRouting(unittest.TestCase):
 
     def test_route_props_initialization(self) -> None:
         """Test that route props are properly initialized."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         self.assertIsInstance(routing.route_props, RoutingProps)
         # Check default values are set
@@ -211,9 +195,7 @@ class TestRouting(unittest.TestCase):
 
     def test_engine_props_storage(self) -> None:
         """Test that engine properties are correctly stored."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         self.assertEqual(routing.engine_props, self.engine_props)
         self.assertIn("k_paths", routing.engine_props)
@@ -222,9 +204,7 @@ class TestRouting(unittest.TestCase):
 
     def test_sdn_props_storage(self) -> None:
         """Test that SDN properties are correctly stored."""
-        routing = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
 
         self.assertEqual(routing.sdn_props, self.sdn_props)
         self.assertEqual(routing.sdn_props.source, "A")

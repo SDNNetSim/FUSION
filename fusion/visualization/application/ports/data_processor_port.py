@@ -1,12 +1,12 @@
 """Port interface for data processing."""
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
 from dataclasses import dataclass
+from typing import Any
 
 from fusion.visualization.domain.entities.run import Run
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
 from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 
@@ -14,10 +14,12 @@ from fusion.visualization.infrastructure.adapters.canonical_data import Canonica
 class ProcessedData:
     """Container for processed plot data."""
 
-    x_data: List[float]  # e.g., traffic volumes
-    y_data: Dict[str, List[float]]  # algorithm -> values
-    errors: Dict[str, List[float]] | None = None  # algorithm -> error bars (std, CI, etc.)
-    metadata: Dict[str, Any] | None = None
+    x_data: list[float]  # e.g., traffic volumes
+    y_data: dict[str, list[float]]  # algorithm -> values
+    errors: dict[str, list[float]] | None = (
+        None  # algorithm -> error bars (std, CI, etc.)
+    )
+    metadata: dict[str, Any] | None = None
 
 
 class DataProcessorPort(ABC):
@@ -32,10 +34,10 @@ class DataProcessorPort(ABC):
     @abstractmethod
     def process(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],  # run_id -> traffic_volume -> data
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],  # run_id -> traffic_volume -> data
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
         """
@@ -70,7 +72,7 @@ class DataProcessorPort(ABC):
         pass
 
     @abstractmethod
-    def get_supported_metrics(self) -> List[str]:
+    def get_supported_metrics(self) -> list[str]:
         """
         Get list of metrics this processor supports.
 

@@ -1,9 +1,10 @@
 """Data Transfer Objects for plot requests."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
 from pathlib import Path
+from typing import Any
 
 from fusion.visualization.domain.value_objects.plot_specification import PlotType
 
@@ -19,24 +20,24 @@ class PlotRequestDTO:
 
     # Required fields
     network: str
-    dates: List[str]
+    dates: list[str]
     plot_type: PlotType
 
     # Optional filters and configuration
-    algorithms: Optional[List[str]] = None
-    traffic_volumes: Optional[List[float]] = None
-    run_ids: Optional[List[str]] = None
-    metrics: Optional[List[str]] = None  # Specific metrics to plot
+    algorithms: list[str] | None = None
+    traffic_volumes: list[float] | None = None
+    run_ids: list[str] | None = None
+    metrics: list[str] | None = None  # Specific metrics to plot
 
     # Plot configuration
-    title: Optional[str] = None
-    x_label: Optional[str] = None
-    y_label: Optional[str] = None
+    title: str | None = None
+    x_label: str | None = None
+    y_label: str | None = None
     include_ci: bool = True
     include_baselines: bool = False
 
     # Output configuration
-    save_path: Optional[Path] = None
+    save_path: Path | None = None
     dpi: int = 300
     figsize: tuple[float, float] = (10, 6)
     format: str = "png"
@@ -44,9 +45,9 @@ class PlotRequestDTO:
     # Advanced options
     cache_enabled: bool = True
     parallel_processing: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """
         Validate the request.
 
@@ -78,16 +79,16 @@ class BatchPlotRequestDTO:
     """DTO for batch plot generation requests."""
 
     network: str
-    dates: List[str]
-    plots: List[PlotRequestDTO]
+    dates: list[str]
+    plots: list[PlotRequestDTO]
 
     # Batch-specific configuration
     parallel: bool = True
     max_workers: int = 4
     stop_on_error: bool = False
-    output_dir: Optional[Path] = None
+    output_dir: Path | None = None
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate batch request."""
         errors = []
 
@@ -114,22 +115,22 @@ class ComparisonRequestDTO:
     """DTO for algorithm comparison requests."""
 
     network: str
-    dates: List[str]
-    algorithms: List[str]
+    dates: list[str]
+    algorithms: list[str]
     metric: str  # e.g., "blocking_probability"
 
     # Comparison configuration
-    traffic_volumes: Optional[List[float]] = None
+    traffic_volumes: list[float] | None = None
     include_statistical_tests: bool = True
     include_effect_sizes: bool = True
     confidence_level: float = 0.95
 
     # Output configuration
-    save_path: Optional[Path] = None
+    save_path: Path | None = None
     dpi: int = 300
     format: str = "png"
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate comparison request."""
         errors = []
 

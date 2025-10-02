@@ -1,8 +1,10 @@
 """Port interface for caching."""
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class CachePort(ABC):
@@ -14,7 +16,7 @@ class CachePort(ABC):
     """
 
     @abstractmethod
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get value from cache.
 
@@ -27,7 +29,7 @@ class CachePort(ABC):
         pass
 
     @abstractmethod
-    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         """
         Store value in cache.
 
@@ -43,7 +45,7 @@ class CachePort(ABC):
         self,
         key: str,
         compute_fn: Callable[[], Any],
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> Any:
         """
         Get from cache or compute and cache result.

@@ -1,17 +1,17 @@
 """V1 data adapter for legacy format."""
 
-from typing import Dict, Any
 import logging
+from typing import Any
 
-from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
+from fusion.visualization.domain.exceptions.domain_exceptions import (
+    UnsupportedDataFormatError,
+)
+from fusion.visualization.domain.value_objects.data_version import DataVersion
 from fusion.visualization.infrastructure.adapters.canonical_data import (
     CanonicalData,
     IterationData,
 )
-from fusion.visualization.domain.value_objects.data_version import DataVersion
-from fusion.visualization.domain.exceptions.domain_exceptions import (
-    UnsupportedDataFormatError,
-)
+from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class V1DataAdapter(DataAdapter):
         """Return version identifier."""
         return DataVersion.from_string("v1")
 
-    def can_handle(self, data: Dict[str, Any]) -> bool:
+    def can_handle(self, data: dict[str, Any]) -> bool:
         """
         Check if this adapter can handle the data format.
 
@@ -52,7 +52,7 @@ class V1DataAdapter(DataAdapter):
 
         return True
 
-    def to_canonical(self, raw_data: Dict[str, Any]) -> CanonicalData:
+    def to_canonical(self, raw_data: dict[str, Any]) -> CanonicalData:
         """
         Convert V1 format to canonical format.
 
@@ -66,9 +66,7 @@ class V1DataAdapter(DataAdapter):
             UnsupportedDataFormatError: If data format is not V1
         """
         if not self.can_handle(raw_data):
-            raise UnsupportedDataFormatError(
-                "Data does not match V1 format"
-            )
+            raise UnsupportedDataFormatError("Data does not match V1 format")
 
         # Extract basic fields
         blocking_probability = raw_data.get("blocking_mean")
@@ -80,8 +78,7 @@ class V1DataAdapter(DataAdapter):
         if isinstance(iter_stats, dict):
             # V1 format: iter_stats is a dict with string keys
             for iter_key, iter_data in sorted(
-                iter_stats.items(),
-                key=lambda x: int(x[0]) if x[0].isdigit() else 0
+                iter_stats.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 0
             ):
                 iteration = IterationData(
                     iteration=int(iter_key) if iter_key.isdigit() else 0,
@@ -92,7 +89,7 @@ class V1DataAdapter(DataAdapter):
                     lengths_list=iter_data.get("lengths_list"),
                     snapshots_dict=iter_data.get("snapshots_dict"),
                     mods_used_dict=iter_data.get("mods_used_dict"),
-                    metadata={}
+                    metadata={},
                 )
                 iterations.append(iteration)
 
@@ -120,7 +117,7 @@ class V1DataAdapter(DataAdapter):
             metadata=metadata,
         )
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: dict[str, Any]) -> bool:
         """
         Validate V1 data structure.
 

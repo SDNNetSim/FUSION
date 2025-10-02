@@ -8,15 +8,15 @@ This module provides specialized plot types for RL visualization:
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from matplotlib.figure import Figure
 
-from fusion.visualization.domain.strategies.processing_strategies import ProcessedMetric
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
 from fusion.visualization.infrastructure.renderers.base_renderer import (
     BaseRenderer,
     PlotResult,
@@ -71,13 +71,22 @@ class RewardLearningCurveRenderer(BaseRenderer):
             # Plot confidence interval
             if ci_lower is not None and ci_upper is not None:
                 ax.fill_between(
-                    episodes, ci_lower, ci_upper, alpha=0.2, color=color, label=f"{algo} (95% CI)"
+                    episodes,
+                    ci_lower,
+                    ci_upper,
+                    alpha=0.2,
+                    color=color,
+                    label=f"{algo} (95% CI)",
                 )
 
         # Styling
         ax.set_xlabel(specification.x_label or "Episode", fontsize=12)
         ax.set_ylabel(specification.y_label or "Episode Reward", fontsize=12)
-        ax.set_title(specification.title or "RL Training: Reward Learning Curve", fontsize=14, fontweight="bold")
+        ax.set_title(
+            specification.title or "RL Training: Reward Learning Curve",
+            fontsize=14,
+            fontweight="bold",
+        )
         ax.legend(loc="best", frameon=True, shadow=True)
         ax.grid(True, alpha=0.3)
 
@@ -92,7 +101,9 @@ class RewardLearningCurveRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "reward_learning_curve"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "reward_learning_curve"},
         )
 
 
@@ -133,7 +144,7 @@ class QValueHeatmapRenderer(BaseRenderer):
         if n_algos == 1:
             axes = [axes]
 
-        for ax, (algo, algo_data) in zip(axes, data.items()):
+        for ax, (algo, algo_data) in zip(axes, data.items(), strict=False):
             q_values = algo_data.get("mean")
 
             if q_values is not None:
@@ -149,7 +160,9 @@ class QValueHeatmapRenderer(BaseRenderer):
                 ax.set_xlabel("Action")
                 ax.set_ylabel("State/Episode")
 
-        fig.suptitle(specification.title or "Q-Value Analysis", fontsize=14, fontweight="bold")
+        fig.suptitle(
+            specification.title or "Q-Value Analysis", fontsize=14, fontweight="bold"
+        )
         plt.tight_layout()
 
         # Save
@@ -157,7 +170,9 @@ class QValueHeatmapRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "q_value_heatmap"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "q_value_heatmap"},
         )
 
 
@@ -205,7 +220,12 @@ class ConvergencePlotRenderer(BaseRenderer):
                 if "convergence_episode" in algo_data:
                     conv_ep = algo_data["convergence_episode"]
                     if conv_ep is not None:
-                        ax1.axvline(conv_ep, linestyle="--", alpha=0.7, label=f"{algo} convergence")
+                        ax1.axvline(
+                            conv_ep,
+                            linestyle="--",
+                            alpha=0.7,
+                            label=f"{algo} convergence",
+                        )
 
         ax1.set_xlabel("Episode", fontsize=12)
         ax1.set_ylabel("Metric Value", fontsize=12)
@@ -215,7 +235,9 @@ class ConvergencePlotRenderer(BaseRenderer):
 
         # Bottom plot: convergence statistics
         algos = list(data.keys())
-        convergence_episodes = [data[a].get("mean_convergence_episode", 0) for a in algos]
+        convergence_episodes = [
+            data[a].get("mean_convergence_episode", 0) for a in algos
+        ]
         convergence_std = [data[a].get("std_convergence_episode", 0) for a in algos]
 
         x_pos = np.arange(len(algos))
@@ -226,7 +248,11 @@ class ConvergencePlotRenderer(BaseRenderer):
         ax2.set_title("Convergence Speed Comparison", fontsize=12, fontweight="bold")
         ax2.grid(True, alpha=0.3, axis="y")
 
-        fig.suptitle(specification.title or "RL Training Convergence Analysis", fontsize=14, fontweight="bold")
+        fig.suptitle(
+            specification.title or "RL Training Convergence Analysis",
+            fontsize=14,
+            fontweight="bold",
+        )
         plt.tight_layout()
 
         # Save
@@ -234,7 +260,9 @@ class ConvergencePlotRenderer(BaseRenderer):
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "convergence_plot"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "convergence_plot"},
         )
 
 
@@ -275,35 +303,53 @@ class MultiMetricDashboardRenderer(BaseRenderer):
 
         # Plot 1: Rewards
         ax1 = fig.add_subplot(gs[0, :])
-        self._plot_metric(ax1, metrics_data.get("rewards", {}), "Episode Reward", "Rewards")
+        self._plot_metric(
+            ax1, metrics_data.get("rewards", {}), "Episode Reward", "Rewards"
+        )
 
         # Plot 2: Policy Loss
         ax2 = fig.add_subplot(gs[1, 0])
-        self._plot_metric(ax2, metrics_data.get("policy_loss", {}), "Policy Loss", "Policy Loss")
+        self._plot_metric(
+            ax2, metrics_data.get("policy_loss", {}), "Policy Loss", "Policy Loss"
+        )
 
         # Plot 3: Value Loss
         ax3 = fig.add_subplot(gs[1, 1])
-        self._plot_metric(ax3, metrics_data.get("value_loss", {}), "Value Loss", "Value Loss")
+        self._plot_metric(
+            ax3, metrics_data.get("value_loss", {}), "Value Loss", "Value Loss"
+        )
 
         # Plot 4: Entropy
         ax4 = fig.add_subplot(gs[2, 0])
-        self._plot_metric(ax4, metrics_data.get("entropy", {}), "Entropy", "Policy Entropy")
+        self._plot_metric(
+            ax4, metrics_data.get("entropy", {}), "Entropy", "Policy Entropy"
+        )
 
         # Plot 5: Q-Values
         ax5 = fig.add_subplot(gs[2, 1])
-        self._plot_metric(ax5, metrics_data.get("q_values", {}), "Q-Value", "Mean Q-Value")
+        self._plot_metric(
+            ax5, metrics_data.get("q_values", {}), "Q-Value", "Mean Q-Value"
+        )
 
-        fig.suptitle(specification.title or "RL Training Dashboard", fontsize=16, fontweight="bold")
+        fig.suptitle(
+            specification.title or "RL Training Dashboard",
+            fontsize=16,
+            fontweight="bold",
+        )
 
         # Save
         fig.savefig(output_path, dpi=dpi, format=format, bbox_inches="tight")
         plt.close(fig)
 
         return PlotResult(
-            success=True, output_path=output_path, metadata={"plot_type": "multi_metric_dashboard"}
+            success=True,
+            output_path=output_path,
+            metadata={"plot_type": "multi_metric_dashboard"},
         )
 
-    def _plot_metric(self, ax: Any, data: Dict[str, Any], ylabel: str, title: str) -> None:
+    def _plot_metric(
+        self, ax: Any, data: dict[str, Any], ylabel: str, title: str
+    ) -> None:
         """Helper to plot a single metric."""
         for algo, algo_data in data.items():
             if "episodes" in algo_data and "mean" in algo_data:
@@ -314,7 +360,10 @@ class MultiMetricDashboardRenderer(BaseRenderer):
                 # Add confidence interval if available
                 if "ci_lower" in algo_data and "ci_upper" in algo_data:
                     ax.fill_between(
-                        episodes, algo_data["ci_lower"], algo_data["ci_upper"], alpha=0.2
+                        episodes,
+                        algo_data["ci_lower"],
+                        algo_data["ci_upper"],
+                        alpha=0.2,
                     )
 
         ax.set_xlabel("Episode", fontsize=10)

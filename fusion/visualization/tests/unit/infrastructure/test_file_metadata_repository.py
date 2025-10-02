@@ -1,17 +1,14 @@
 """Unit tests for FileMetadataRepository."""
 
 import json
-import pytest
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
+
+import pytest
 
 from fusion.visualization.infrastructure.repositories import (
     FileMetadataRepository,
-)
-from fusion.visualization.domain.exceptions.domain_exceptions import (
-    RepositoryError,
-    MetadataNotFoundError,
 )
 
 
@@ -27,7 +24,7 @@ class TestFileMetadataRepository:
         )
 
     @pytest.fixture
-    def setup_test_structure(self, tmp_path: Path) -> Dict[str, Any]:
+    def setup_test_structure(self, tmp_path: Path) -> dict[str, Any]:
         """Set up test directory structure with metadata."""
         network = "NSFNet"
         date = "0606"
@@ -46,14 +43,16 @@ class TestFileMetadataRepository:
                 "seed": i,
             }
 
-            with open(run_path / "metadata.json", 'w') as f:
+            with open(run_path / "metadata.json", "w") as f:
                 json.dump(metadata, f)
 
-            runs_data.append({
-                "id": run_id,
-                "path": run_path,
-                "metadata": metadata,
-            })
+            runs_data.append(
+                {
+                    "id": run_id,
+                    "path": run_path,
+                    "metadata": metadata,
+                }
+            )
 
         return {
             "base_path": tmp_path,
@@ -62,7 +61,9 @@ class TestFileMetadataRepository:
             "runs": runs_data,
         }
 
-    def test_discover_runs_success(self, repository: FileMetadataRepository, setup_test_structure: Dict[str, Any]) -> None:
+    def test_discover_runs_success(
+        self, repository: FileMetadataRepository, setup_test_structure: dict[str, Any]
+    ) -> None:
         """Should discover all runs successfully."""
         data = setup_test_structure
 
@@ -78,7 +79,9 @@ class TestFileMetadataRepository:
         assert "dqn_obs_7" in algorithms
         assert "k_shortest_path_4" in algorithms
 
-    def test_discover_runs_multiple_dates(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_discover_runs_multiple_dates(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should discover runs across multiple dates."""
         network = "NSFNet"
 
@@ -88,7 +91,7 @@ class TestFileMetadataRepository:
             run_path.mkdir(parents=True)
 
             metadata = {"path_algorithm": "ppo_obs_7", "run_id": "run1"}
-            with open(run_path / "metadata.json", 'w') as f:
+            with open(run_path / "metadata.json", "w") as f:
                 json.dump(metadata, f)
 
         runs = repository.discover_runs(
@@ -99,7 +102,9 @@ class TestFileMetadataRepository:
 
         assert len(runs) == 2
 
-    def test_discover_runs_nonexistent_date(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_discover_runs_nonexistent_date(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should handle nonexistent date gracefully."""
         runs = repository.discover_runs(
             base_path=tmp_path,
@@ -109,7 +114,9 @@ class TestFileMetadataRepository:
 
         assert len(runs) == 0
 
-    def test_get_run_metadata_from_file(self, repository: FileMetadataRepository, setup_test_structure: Dict[str, Any]) -> None:
+    def test_get_run_metadata_from_file(
+        self, repository: FileMetadataRepository, setup_test_structure: dict[str, Any]
+    ) -> None:
         """Should load metadata from file."""
         data = setup_test_structure
         run_data = data["runs"][0]
@@ -119,7 +126,9 @@ class TestFileMetadataRepository:
         assert metadata["path_algorithm"] == run_data["metadata"]["path_algorithm"]
         assert metadata["run_id"] == run_data["metadata"]["run_id"]
 
-    def test_get_run_metadata_uses_cache(self, repository: FileMetadataRepository, setup_test_structure: Dict[str, Any]) -> None:
+    def test_get_run_metadata_uses_cache(
+        self, repository: FileMetadataRepository, setup_test_structure: dict[str, Any]
+    ) -> None:
         """Should use cache for repeated requests."""
         data = setup_test_structure
         run_path = data["runs"][0]["path"]
@@ -132,20 +141,24 @@ class TestFileMetadataRepository:
 
         assert metadata1 is metadata2  # Same object reference (cached)
 
-    def test_get_run_metadata_fallback_to_input_json(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_get_run_metadata_fallback_to_input_json(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should fallback to input.json if metadata.json doesn't exist."""
         run_path = tmp_path / "run1"
         run_path.mkdir(parents=True)
 
         metadata = {"path_algorithm": "ppo_obs_7", "run_id": "run1"}
-        with open(run_path / "input.json", 'w') as f:
+        with open(run_path / "input.json", "w") as f:
             json.dump(metadata, f)
 
         result = repository.get_run_metadata(run_path)
 
         assert result["path_algorithm"] == "ppo_obs_7"
 
-    def test_get_run_metadata_no_file_uses_defaults(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_get_run_metadata_no_file_uses_defaults(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should return default metadata when no file exists."""
         run_path = tmp_path / "run1"
         run_path.mkdir(parents=True)
@@ -155,7 +168,9 @@ class TestFileMetadataRepository:
         assert metadata["path_algorithm"] == "unknown"
         assert metadata["run_id"] == "run1"
 
-    def test_cache_metadata(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_cache_metadata(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should cache metadata successfully."""
         run_path = tmp_path / "run1"
         metadata = {"path_algorithm": "ppo_obs_7", "run_id": "run1"}
@@ -167,7 +182,9 @@ class TestFileMetadataRepository:
         assert cached is not None
         assert cached["path_algorithm"] == "ppo_obs_7"
 
-    def test_cache_expiration(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_cache_expiration(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should expire cache entries after TTL."""
         run_path = tmp_path / "run1"
         metadata = {"path_algorithm": "ppo_obs_7", "run_id": "run1"}
@@ -185,7 +202,9 @@ class TestFileMetadataRepository:
         cached = repository.get_cached_metadata(run_path)
         assert cached is None
 
-    def test_clear_cache(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_clear_cache(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should clear all cached metadata."""
         run_path = tmp_path / "run1"
         metadata = {"path_algorithm": "ppo_obs_7", "run_id": "run1"}
@@ -209,7 +228,9 @@ class TestFileMetadataRepository:
         cached = repository.get_cached_metadata(run_path)
         assert cached is None
 
-    def test_get_cache_stats(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_get_cache_stats(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should return cache statistics."""
         # Initially empty
         stats = repository.get_cache_stats()
@@ -227,7 +248,9 @@ class TestFileMetadataRepository:
         assert stats["valid_entries"] == 3
         assert stats["expired_entries"] == 0
 
-    def test_prune_expired_entries(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_prune_expired_entries(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should remove expired cache entries."""
         # Add some entries
         for i in range(3):
@@ -246,13 +269,15 @@ class TestFileMetadataRepository:
         assert removed == 3
         assert len(repository._cache) == 0
 
-    def test_invalid_json_handling(self, repository: FileMetadataRepository, tmp_path: Path) -> None:
+    def test_invalid_json_handling(
+        self, repository: FileMetadataRepository, tmp_path: Path
+    ) -> None:
         """Should handle invalid JSON gracefully."""
         run_path = tmp_path / "run1"
         run_path.mkdir(parents=True)
 
         # Create invalid JSON file
-        with open(run_path / "metadata.json", 'w') as f:
+        with open(run_path / "metadata.json", "w") as f:
             f.write("{ invalid json }")
 
         # Should fall back to defaults

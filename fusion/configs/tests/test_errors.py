@@ -241,4 +241,3 @@ class TestExceptionHierarchy:
 
         for exception in exceptions:
             assert str(exception) == ""
-

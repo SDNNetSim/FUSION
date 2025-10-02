@@ -5,9 +5,9 @@ Provides user-friendly command-line interface for generating single plots
 from simulation data.
 """
 
-import click
 from pathlib import Path
-from typing import Optional, List
+
+import click
 
 from fusion.visualization.application.dto import PlotRequestDTO, PlotResultDTO
 from fusion.visualization.application.use_cases.generate_plot import GeneratePlotUseCase
@@ -22,13 +22,15 @@ def _get_use_case() -> GeneratePlotUseCase:
     Returns:
         Configured GeneratePlotUseCase instance
     """
-    from fusion.visualization.infrastructure.repositories import JsonSimulationRepository
     from fusion.visualization.infrastructure.adapters.data_adapter_registry import (
         DataAdapterRegistry,
     )
+    from fusion.visualization.infrastructure.cache import FileSystemCache
     from fusion.visualization.infrastructure.processors import MultiMetricProcessor
     from fusion.visualization.infrastructure.renderers import MatplotlibRenderer
-    from fusion.visualization.infrastructure.cache import FileSystemCache
+    from fusion.visualization.infrastructure.repositories import (
+        JsonSimulationRepository,
+    )
 
     # Create adapter registry
     adapter_registry = DataAdapterRegistry()
@@ -149,14 +151,14 @@ def _get_use_case() -> GeneratePlotUseCase:
     help="Show detailed output",
 )
 def plot_command(
-    config_path: Optional[Path],
-    network: Optional[str],
+    config_path: Path | None,
+    network: str | None,
     dates: tuple,
-    plot_type: Optional[str],
+    plot_type: str | None,
     algorithms: tuple,
     traffic: tuple,
-    output_path: Optional[Path],
-    title: Optional[str],
+    output_path: Path | None,
+    title: str | None,
     dpi: int,
     output_format: str,
     no_ci: bool,
@@ -239,9 +241,10 @@ def plot_command(
         click.echo(click.style(f"\n❌ Error: {e}", fg="red", bold=True))
         if verbose:
             import traceback
+
             click.echo("\nTraceback:")
             click.echo(traceback.format_exc())
-        raise click.Abort()
+        raise click.Abort() from e
 
 
 def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDTO:
@@ -251,7 +254,7 @@ def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDT
     if verbose:
         click.echo(f"📄 Loading configuration from: {config_path}\n")
 
-    with open(config_path, 'r') as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
 
     # Extract plot configuration (assume first plot if multiple)
@@ -261,11 +264,11 @@ def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDT
     plot_type_str = plot_config.get("type", config.get("type", "line"))
     try:
         plot_type = PlotType(plot_type_str)
-    except ValueError:
+    except ValueError as exc:
         raise click.UsageError(
             f"Invalid plot type: {plot_type_str}. "
             f"Supported: {', '.join(pt.value for pt in PlotType)}"
-        )
+        ) from exc
 
     # Create request DTO
     return PlotRequestDTO(
@@ -280,7 +283,9 @@ def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDT
         y_label=plot_config.get("y_label"),
         include_ci=plot_config.get("include_ci", True),
         include_baselines=plot_config.get("include_baselines", False),
-        save_path=Path(plot_config["save_path"]) if "save_path" in plot_config else None,
+        save_path=Path(plot_config["save_path"])
+        if "save_path" in plot_config
+        else None,
         dpi=config.get("defaults", {}).get("dpi", 300),
         figsize=tuple(plot_config.get("figsize", (10, 6))),
         format=config.get("defaults", {}).get("format", "png"),
@@ -290,13 +295,13 @@ def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDT
 
 
 def _create_request_from_args(
-    network: Optional[str],
-    dates: List[str],
-    plot_type: Optional[str],
-    algorithms: List[str],
-    traffic: List[float],
-    output_path: Optional[Path],
-    title: Optional[str],
+    network: str | None,
+    dates: list[str],
+    plot_type: str | None,
+    algorithms: list[str],
+    traffic: list[float],
+    output_path: Path | None,
+    title: str | None,
     dpi: int,
     output_format: str,
     include_ci: bool,
@@ -315,11 +320,11 @@ def _create_request_from_args(
     # Parse plot type
     try:
         plot_type_enum = PlotType(plot_type)
-    except ValueError:
+    except ValueError as exc:
         raise click.UsageError(
             f"Invalid plot type: {plot_type}. "
             f"Supported: {', '.join(pt.value for pt in PlotType)}"
-        )
+        ) from exc
 
     return PlotRequestDTO(
         network=network,
@@ -348,7 +353,9 @@ def _display_request_summary(request: PlotRequestDTO) -> None:
         click.echo(f"  Algorithms:  {', '.join(request.algorithms)}")
 
     if request.traffic_volumes:
-        click.echo(f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}")
+        click.echo(
+            f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}"
+        )
 
     click.echo(f"  Output DPI:  {request.dpi}")
     click.echo(f"  Format:      {request.format}")
@@ -358,11 +365,13 @@ def _display_request_summary(request: PlotRequestDTO) -> None:
 def _display_result(result: PlotResultDTO, verbose: bool) -> None:
     """Display plot generation result."""
     if result.success:
-        click.echo(click.style("\n✅ Plot generated successfully!", fg="green", bold=True))
+        click.echo(
+            click.style("\n✅ Plot generated successfully!", fg="green", bold=True)
+        )
         click.echo(f"\n📁 Output: {result.output_path}")
 
         if verbose:
-            click.echo(f"\n📊 Plot Details:")
+            click.echo("\n📊 Plot Details:")
             click.echo(f"  Plot ID:     {result.plot_id}")
             click.echo(f"  Plot Type:   {result.plot_type}")
             click.echo(f"  Algorithms:  {', '.join(result.algorithms)}")

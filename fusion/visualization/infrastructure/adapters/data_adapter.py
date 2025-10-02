@@ -1,10 +1,10 @@
 """Base data adapter interface."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any
 
-from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 from fusion.visualization.domain.value_objects.data_version import DataVersion
+from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 
 class DataAdapter(ABC):
@@ -22,7 +22,7 @@ class DataAdapter(ABC):
         """Return version identifier (e.g., v1, v2)."""
 
     @abstractmethod
-    def can_handle(self, data: Dict[str, Any]) -> bool:
+    def can_handle(self, data: dict[str, Any]) -> bool:
         """
         Check if this adapter can handle the data format.
 
@@ -34,7 +34,7 @@ class DataAdapter(ABC):
         """
 
     @abstractmethod
-    def to_canonical(self, raw_data: Dict[str, Any]) -> CanonicalData:
+    def to_canonical(self, raw_data: dict[str, Any]) -> CanonicalData:
         """
         Convert raw data to canonical internal format.
 
@@ -48,7 +48,7 @@ class DataAdapter(ABC):
             UnsupportedDataFormatError: If data format is not supported
         """
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: dict[str, Any]) -> bool:
         """
         Validate data structure.
 

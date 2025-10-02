@@ -43,9 +43,7 @@ class TestConvertOutputToInputPath:
     ) -> None:
         """Test conversion handles multiple nested directories correctly."""
         # Arrange
-        output_path = PurePosixPath(
-            "/data/cluster/output/topology2/exp/subexp/run/s3"
-        )
+        output_path = PurePosixPath("/data/cluster/output/topology2/exp/subexp/run/s3")
         expected = PurePosixPath("/data/cluster/input/topology2/exp/subexp/run")
 
         # Act
@@ -269,9 +267,7 @@ class TestSynchronizeRemoteDirectory:
         is_dry_run = False
 
         # Act
-        synchronize_remote_directory(
-            remote_root, absolute_path, dest_root, is_dry_run
-        )
+        synchronize_remote_directory(remote_root, absolute_path, dest_root, is_dry_run)
 
         # Assert
         mock_mkdir.assert_called_once()
@@ -290,9 +286,7 @@ class TestSynchronizeRemoteDirectory:
         is_dry_run = True
 
         # Act
-        synchronize_remote_directory(
-            remote_root, absolute_path, dest_root, is_dry_run
-        )
+        synchronize_remote_directory(remote_root, absolute_path, dest_root, is_dry_run)
 
         # Assert
         call_args = mock_execute.call_args
@@ -425,12 +419,8 @@ class TestExtractPathAlgorithmFromInput:
         input_dir = tmp_path
         test_file1 = input_dir / "sim_input_s1.json"
         test_file2 = input_dir / "sim_input_s2.json"
-        test_file1.write_text(
-            json.dumps({"path_algorithm": "ppo"}), encoding="utf-8"
-        )
-        test_file2.write_text(
-            json.dumps({"path_algorithm": "dqn"}), encoding="utf-8"
-        )
+        test_file1.write_text(json.dumps({"path_algorithm": "ppo"}), encoding="utf-8")
+        test_file2.write_text(json.dumps({"path_algorithm": "dqn"}), encoding="utf-8")
 
         # Act
         result = extract_path_algorithm_from_input(input_dir)

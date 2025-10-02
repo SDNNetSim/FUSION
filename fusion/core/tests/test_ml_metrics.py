@@ -52,11 +52,7 @@ class TestMLMetricsCollectorTrainDataUpdate:
     @pytest.fixture
     def sample_collector(self) -> Any:
         """Provide sample MLMetricsCollector for tests."""
-        engine_props = {
-            "cores_per_link": 2,
-            "erlang": 100.0,
-            "topology": Mock()
-        }
+        engine_props = {"cores_per_link": 2, "erlang": 100.0, "topology": Mock()}
         return MLMetricsCollector(engine_props, "test_sim")
 
     @pytest.fixture
@@ -64,21 +60,17 @@ class TestMLMetricsCollectorTrainDataUpdate:
         """Provide sample request data for tests."""
         old_request_info = {
             "bandwidth": "100GHz",
-            "mod_formats": {
-                "QPSK": {"max_length": [100, 200, 150]}
-            }
+            "mod_formats": {"QPSK": {"max_length": [100, 200, 150]}},
         }
-        request_info = {
-            "path": ["A", "B", "C"]
-        }
+        request_info = {"path": ["A", "B", "C"]}
         network_spectrum = {
             ("A", "B"): {"cores_matrix": {"c": np.ones((2, 80))}},
-            ("B", "C"): {"cores_matrix": {"c": np.zeros((2, 80))}}
+            ("B", "C"): {"cores_matrix": {"c": np.zeros((2, 80))}},
         }
         return old_request_info, request_info, network_spectrum
 
-    @patch('fusion.core.ml_metrics.find_core_congestion')
-    @patch('fusion.core.ml_metrics.find_path_length')
+    @patch("fusion.core.ml_metrics.find_core_congestion")
+    @patch("fusion.core.ml_metrics.find_path_length")
     def test_update_train_data_adds_entry_to_list(
         self,
         mock_path_length: Any,
@@ -107,8 +99,8 @@ class TestMLMetricsCollectorTrainDataUpdate:
         assert entry["average_congestion"] == 0.4  # (0.5 + 0.3) / 2
         assert entry["num_segments"] == 3
 
-    @patch('fusion.core.ml_metrics.find_core_congestion')
-    @patch('fusion.core.ml_metrics.find_path_length')
+    @patch("fusion.core.ml_metrics.find_core_congestion")
+    @patch("fusion.core.ml_metrics.find_path_length")
     def test_update_train_data_handles_single_core(
         self, mock_path_length: Any, mock_congestion: Any, sample_collector: Any
     ) -> None:
@@ -117,7 +109,7 @@ class TestMLMetricsCollectorTrainDataUpdate:
         sample_collector.engine_props["cores_per_link"] = 1
         old_request = {
             "bandwidth": "50GHz",
-            "mod_formats": {"QPSK": {"max_length": [80]}}
+            "mod_formats": {"QPSK": {"max_length": [80]}},
         }
         request_info = {"path": ["X", "Y"]}
         network_spectrum: dict[tuple[Any, Any], dict[str, Any]] = {}
@@ -135,8 +127,8 @@ class TestMLMetricsCollectorTrainDataUpdate:
         assert entry["average_congestion"] == 0.8
         assert entry["longest_reach"] == 80
 
-    @patch('fusion.core.ml_metrics.find_core_congestion')
-    @patch('fusion.core.ml_metrics.find_path_length')
+    @patch("fusion.core.ml_metrics.find_core_congestion")
+    @patch("fusion.core.ml_metrics.find_path_length")
     def test_update_train_data_multiple_calls_appends_entries(
         self,
         mock_path_length: Any,
@@ -177,15 +169,15 @@ class TestMLMetricsCollectorDataManagement:
                 "path_length": 200.0,
                 "longest_reach": 150,
                 "average_congestion": 0.4,
-                "num_segments": 2
+                "num_segments": 2,
             },
             {
                 "old_bandwidth": "50GHz",
                 "path_length": 150.0,
                 "longest_reach": 100,
                 "average_congestion": 0.6,
-                "num_segments": 1
-            }
+                "num_segments": 1,
+            },
         ]
         return collector
 
@@ -247,13 +239,13 @@ class TestMLMetricsCollectorDataPersistence:
                 "path_length": 200.0,
                 "longest_reach": 150,
                 "average_congestion": 0.4,
-                "num_segments": 2
+                "num_segments": 2,
             }
         ]
         return collector
 
-    @patch('fusion.core.ml_metrics.PROJECT_ROOT', '/tmp')
-    @patch('pandas.DataFrame.to_csv')
+    @patch("fusion.core.ml_metrics.PROJECT_ROOT", "/tmp")
+    @patch("pandas.DataFrame.to_csv")
     def test_save_train_data_on_last_iteration_saves_file(
         self, mock_to_csv: Any, temp_collector: Any
     ) -> None:
@@ -272,7 +264,7 @@ class TestMLMetricsCollectorDataPersistence:
         assert call_args[0][0] == expected_path
         assert call_args[1]["index"] is False
 
-    @patch('pandas.DataFrame.to_csv')
+    @patch("pandas.DataFrame.to_csv")
     def test_save_train_data_on_non_last_iteration_does_not_save(
         self, mock_to_csv: Any, temp_collector: Any
     ) -> None:
@@ -287,7 +279,7 @@ class TestMLMetricsCollectorDataPersistence:
         # Assert
         mock_to_csv.assert_not_called()
 
-    @patch('fusion.core.ml_metrics.logger')
+    @patch("fusion.core.ml_metrics.logger")
     def test_save_train_data_with_empty_data_logs_warning(
         self, mock_logger: Any
     ) -> None:
@@ -310,7 +302,7 @@ class TestMLMetricsCollectorDataPersistence:
         max_iterations = 10
 
         # Act & Assert (should not raise exception)
-        with patch('pandas.DataFrame.to_csv'):
+        with patch("pandas.DataFrame.to_csv"):
             temp_collector.save_train_data(iteration, max_iterations)
 
 
@@ -335,7 +327,7 @@ class TestMLMetricsCollectorEdgeCases:
         collector = MLMetricsCollector({"cores_per_link": 1}, "test")
         old_request = {
             "bandwidth": "100GHz",
-            "mod_formats": {"16QAM": {"max_length": [100]}}
+            "mod_formats": {"16QAM": {"max_length": [100]}},
         }
         request_info = {"path": ["A", "B"]}
         network_spectrum: dict[tuple[Any, Any], dict[str, Any]] = {}
@@ -344,8 +336,8 @@ class TestMLMetricsCollectorEdgeCases:
         with pytest.raises(KeyError):
             collector.update_train_data(old_request, request_info, network_spectrum, 1)
 
-    @patch('fusion.core.ml_metrics.find_core_congestion')
-    @patch('fusion.core.ml_metrics.find_path_length')
+    @patch("fusion.core.ml_metrics.find_core_congestion")
+    @patch("fusion.core.ml_metrics.find_path_length")
     def test_update_train_data_with_zero_cores_creates_empty_array(
         self, mock_path_length: Any, mock_congestion: Any
     ) -> None:
@@ -356,7 +348,7 @@ class TestMLMetricsCollectorEdgeCases:
         )
         old_request = {
             "bandwidth": "100GHz",
-            "mod_formats": {"QPSK": {"max_length": [100]}}
+            "mod_formats": {"QPSK": {"max_length": [100]}},
         }
         request_info = {"path": ["A", "B"]}
         network_spectrum: dict[tuple[Any, Any], dict[str, Any]] = {}
@@ -369,7 +361,7 @@ class TestMLMetricsCollectorEdgeCases:
         entry = collector.train_data_list[0]
         # np.mean([]) returns nan, which becomes nan in the result
         import numpy as np
+
         assert (
-            np.isnan(entry["average_congestion"])
-            or entry["average_congestion"] == 0.0
+            np.isnan(entry["average_congestion"]) or entry["average_congestion"] == 0.0
         )

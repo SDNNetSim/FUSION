@@ -1,12 +1,15 @@
 """Port interface for plot rendering."""
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Optional
-from dataclasses import dataclass
 
-from fusion.visualization.domain.value_objects.plot_specification import PlotSpecification
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from fusion.visualization.domain.value_objects.plot_specification import (
+    PlotSpecification,
+)
 
 
 @dataclass
@@ -14,8 +17,8 @@ class RenderResult:
     """Result of rendering a plot."""
 
     success: bool
-    output_path: Optional[Path] = None
-    error: Optional[str] = None
+    output_path: Path | None = None
+    error: str | None = None
     metadata: dict[str, Any] | None = None
 
 

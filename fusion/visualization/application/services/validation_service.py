@@ -1,10 +1,11 @@
 """Configuration validation service."""
 
 from __future__ import annotations
+
 import logging
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,8 @@ class ValidationResult:
     """Result of configuration validation."""
 
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
+    errors: list[str]
+    warnings: list[str]
 
     @property
     def has_errors(self) -> bool:
@@ -60,7 +61,7 @@ class ValidationService:
     ]
     VALID_FORMATS = ["png", "pdf", "svg", "jpg"]
 
-    def validate_plot_config(self, config: Dict[str, Any]) -> ValidationResult:
+    def validate_plot_config(self, config: dict[str, Any]) -> ValidationResult:
         """
         Validate a plot configuration dictionary.
 
@@ -165,7 +166,7 @@ class ValidationService:
             warnings=warnings,
         )
 
-    def validate_batch_config(self, config: Dict[str, Any]) -> ValidationResult:
+    def validate_batch_config(self, config: dict[str, Any]) -> ValidationResult:
         """
         Validate a batch plot configuration.
 
@@ -229,7 +230,7 @@ class ValidationService:
             warnings=warnings,
         )
 
-    def validate_comparison_config(self, config: Dict[str, Any]) -> ValidationResult:
+    def validate_comparison_config(self, config: dict[str, Any]) -> ValidationResult:
         """
         Validate an algorithm comparison configuration.
 
@@ -277,7 +278,7 @@ class ValidationService:
             warnings=warnings,
         )
 
-    def suggest_fixes(self, errors: List[str]) -> Dict[str, str]:
+    def suggest_fixes(self, errors: list[str]) -> dict[str, str]:
         """
         Suggest fixes for common validation errors.
 
@@ -291,17 +292,13 @@ class ValidationService:
 
         for error in errors:
             if "network" in error.lower():
-                suggestions["network"] = (
-                    f"Use one of: {', '.join(self.VALID_NETWORKS)}"
-                )
+                suggestions["network"] = f"Use one of: {', '.join(self.VALID_NETWORKS)}"
             elif "plot_type" in error.lower():
                 suggestions["plot_type"] = (
                     f"Use one of: {', '.join(self.VALID_PLOT_TYPES)}"
                 )
             elif "dates" in error.lower():
-                suggestions["dates"] = (
-                    'Use MMDD format, e.g., ["0606", "0611"]'
-                )
+                suggestions["dates"] = 'Use MMDD format, e.g., ["0606", "0611"]'
             elif "traffic_volumes" in error.lower():
                 suggestions["traffic_volumes"] = (
                     "Use list of positive numbers, e.g., [600, 700, 800]"

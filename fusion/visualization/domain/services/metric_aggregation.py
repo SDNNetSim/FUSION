@@ -1,12 +1,13 @@
 """Metric aggregation service for the domain layer."""
 
-from typing import List, Dict, Any, Optional
 import numpy as np
 from scipy import stats as scipy_stats
 
 from fusion.visualization.domain.entities.metric import AggregationStrategy
-from fusion.visualization.domain.value_objects.metric_value import MetricValue, DataType
-from fusion.visualization.domain.exceptions.domain_exceptions import InsufficientDataError
+from fusion.visualization.domain.exceptions.domain_exceptions import (
+    InsufficientDataError,
+)
+from fusion.visualization.domain.value_objects.metric_value import DataType, MetricValue
 
 
 class MetricAggregationService:
@@ -19,9 +20,9 @@ class MetricAggregationService:
 
     def aggregate(
         self,
-        values: List[MetricValue],
+        values: list[MetricValue],
         strategy: AggregationStrategy,
-        k: Optional[int] = None,
+        k: int | None = None,
         confidence_level: float = 0.95,
     ) -> MetricValue:
         """
@@ -64,7 +65,7 @@ class MetricAggregationService:
         else:
             raise ValueError(f"Unknown aggregation strategy: {strategy}")
 
-    def _aggregate_mean(self, values: List[MetricValue]) -> MetricValue:
+    def _aggregate_mean(self, values: list[MetricValue]) -> MetricValue:
         """Aggregate using mean."""
         numeric_values = [v.as_float for v in values]
         mean_value = np.mean(numeric_values)
@@ -76,11 +77,13 @@ class MetricAggregationService:
             metadata={
                 "aggregation": "mean",
                 "n_samples": len(values),
-                "std": float(np.std(numeric_values, ddof=1)) if len(values) > 1 else 0.0,
+                "std": float(np.std(numeric_values, ddof=1))
+                if len(values) > 1
+                else 0.0,
             },
         )
 
-    def _aggregate_median(self, values: List[MetricValue]) -> MetricValue:
+    def _aggregate_median(self, values: list[MetricValue]) -> MetricValue:
         """Aggregate using median."""
         numeric_values = [v.as_float for v in values]
         median_value = np.median(numeric_values)
@@ -95,17 +98,15 @@ class MetricAggregationService:
             },
         )
 
-    def _aggregate_last_k(self, values: List[MetricValue], k: int) -> MetricValue:
+    def _aggregate_last_k(self, values: list[MetricValue], k: int) -> MetricValue:
         """Aggregate using mean of last K values."""
         if len(values) < k:
-            raise InsufficientDataError(
-                f"Need at least {k} values, got {len(values)}"
-            )
+            raise InsufficientDataError(f"Need at least {k} values, got {len(values)}")
 
         last_k_values = values[-k:]
         return self._aggregate_mean(last_k_values)
 
-    def _aggregate_max(self, values: List[MetricValue]) -> MetricValue:
+    def _aggregate_max(self, values: list[MetricValue]) -> MetricValue:
         """Aggregate using maximum."""
         numeric_values = [v.as_float for v in values]
         max_value = np.max(numeric_values)
@@ -120,7 +121,7 @@ class MetricAggregationService:
             },
         )
 
-    def _aggregate_min(self, values: List[MetricValue]) -> MetricValue:
+    def _aggregate_min(self, values: list[MetricValue]) -> MetricValue:
         """Aggregate using minimum."""
         numeric_values = [v.as_float for v in values]
         min_value = np.min(numeric_values)
@@ -135,7 +136,7 @@ class MetricAggregationService:
             },
         )
 
-    def _aggregate_sum(self, values: List[MetricValue]) -> MetricValue:
+    def _aggregate_sum(self, values: list[MetricValue]) -> MetricValue:
         """Aggregate using sum."""
         numeric_values = [v.as_float for v in values]
         sum_value = np.sum(numeric_values)
@@ -152,7 +153,7 @@ class MetricAggregationService:
 
     def _aggregate_with_ci(
         self,
-        values: List[MetricValue],
+        values: list[MetricValue],
         confidence_level: float = 0.95,
     ) -> MetricValue:
         """Aggregate with confidence interval."""
@@ -190,8 +191,8 @@ class MetricAggregationService:
 
     def compute_statistics(
         self,
-        values: List[MetricValue],
-    ) -> Dict[str, float]:
+        values: list[MetricValue],
+    ) -> dict[str, float]:
         """
         Compute comprehensive statistics for a set of values.
 

@@ -229,7 +229,7 @@ class TestFindPathFragmentation:
         # Assert
         # 3 free slots in 3 separate blocks, max_block=1, total_free=3
         # fragmentation = 1 - (1/3) = 0.667
-        assert result == pytest.approx(2/3, rel=1e-5)
+        assert result == pytest.approx(2 / 3, rel=1e-5)
 
 
 class TestFindCoreCongestion:
@@ -290,9 +290,7 @@ class TestFindCoreFragmentationCongestion:
         with pytest.raises(
             NotImplementedError, match="Only works for 256 spectral slots"
         ):
-            find_core_fragmentation_congestion(
-                network_spectrum, path_list, core, band
-            )
+            find_core_fragmentation_congestion(network_spectrum, path_list, core, band)
 
 
 class TestClassifyCongestion:

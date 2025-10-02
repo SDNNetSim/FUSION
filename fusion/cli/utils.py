@@ -59,6 +59,8 @@ def create_main_wrapper(main_func: Callable[[], int]) -> Callable[[], None]:
     :return: Wrapper function that calls sys.exit
     :rtype: Callable[[], None]
     """
+
     def wrapper() -> None:
         sys.exit(main_func())
+
     return wrapper

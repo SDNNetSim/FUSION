@@ -126,11 +126,11 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         of bidirectional links with the same NLI cost.
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         # Bidirectional links are identical, therefore, we don't have to check each one
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source_node, destination_node = link_tuple[0], link_tuple[1]
             if topology is not None:
@@ -140,7 +140,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
                 )
             else:
                 span_count = 1.0
-            connection_bandwidth = getattr(self.sdn_props, 'bandwidth', None)
+            connection_bandwidth = getattr(self.sdn_props, "bandwidth", None)
 
             # Get slots needed for bandwidth (using QPSK as default)
             if (
@@ -177,7 +177,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         :type weight: str
         """
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         paths_generator = nx.shortest_simple_paths(
@@ -226,15 +226,17 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
             return 0.0
 
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
         total_nli = 0.0
 
         for link_index in range(len(path) - 1):
             source_node, destination_node = path[link_index], path[link_index + 1]
-            if (topology is not None and
-                hasattr(topology, "edges") and
-                topology.has_edge(source_node, destination_node)):
+            if (
+                topology is not None
+                and hasattr(topology, "edges")
+                and topology.has_edge(source_node, destination_node)
+            ):
                 link_nli_cost = topology[source_node][destination_node].get(
                     "nli_cost", 0.0
                 )
@@ -258,7 +260,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         # Update NLI costs first
         self._update_nli_costs()
         topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, 'topology', None)
+            "topology", getattr(self.sdn_props, "topology", None)
         )
 
         try:
@@ -285,7 +287,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
         :type topology: Any
         """
         # Recalculate NLI costs for all links
-        network_spectrum_dict = getattr(self.sdn_props, 'network_spectrum_dict', {})
+        network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
         for link_tuple in list(network_spectrum_dict.keys())[::2]:
             source_node, destination_node = link_tuple[0], link_tuple[1]
             span_count = (

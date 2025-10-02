@@ -1,16 +1,17 @@
 """Use case for generating a single plot."""
 
 from __future__ import annotations
+
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, TYPE_CHECKING, Any
+from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from fusion.visualization.application.dto import PlotRequestDTO, PlotResultDTO
 from fusion.visualization.application.ports import (
+    CachePort,
     DataProcessorPort,
     PlotRendererPort,
-    CachePort,
 )
 from fusion.visualization.domain.repositories import SimulationRepository
 
@@ -19,16 +20,15 @@ if TYPE_CHECKING:
 from fusion.visualization.domain.entities.plot import (
     Plot,
     PlotConfiguration,
-    PlotState,
 )
 from fusion.visualization.domain.entities.run import Run
-from fusion.visualization.domain.value_objects.plot_id import PlotId
 from fusion.visualization.domain.exceptions import (
-    ValidationError,
-    RepositoryError,
     ProcessingError,
     RenderError,
+    RepositoryError,
+    ValidationError,
 )
+from fusion.visualization.domain.value_objects.plot_id import PlotId
 from fusion.visualization.infrastructure.adapters.canonical_data import CanonicalData
 
 logger = logging.getLogger(__name__)
@@ -48,13 +48,13 @@ class GeneratePlotUseCase:
 
     def __init__(
         self,
-        simulation_repository: Optional[SimulationRepository] = None,
-        data_processor: Optional[DataProcessorPort] = None,
-        plot_renderer: Optional[PlotRendererPort] = None,
-        cache: Optional[CachePort] = None,
-        plot_service: Optional["PlotService"] = None,  # Legacy parameter
-        processor: Optional[DataProcessorPort] = None,  # Legacy alias for data_processor
-        renderer: Optional[PlotRendererPort] = None,  # Legacy alias for plot_renderer
+        simulation_repository: SimulationRepository | None = None,
+        data_processor: DataProcessorPort | None = None,
+        plot_renderer: PlotRendererPort | None = None,
+        cache: CachePort | None = None,
+        plot_service: PlotService | None = None,  # Legacy parameter
+        processor: DataProcessorPort | None = None,  # Legacy alias for data_processor
+        renderer: PlotRendererPort | None = None,  # Legacy alias for plot_renderer
     ):
         """
         Initialize use case.
@@ -247,12 +247,13 @@ class GeneratePlotUseCase:
 
     def _load_data(
         self, request: PlotRequestDTO
-    ) -> tuple[List[Run], Dict[str, Dict[float, CanonicalData]]]:
+    ) -> tuple[list[Run], dict[str, dict[float, CanonicalData]]]:
         """
         Load simulation data.
 
         Returns:
-            Tuple of (runs, data) where data is run_id -> traffic_volume -> CanonicalData
+            Tuple of (runs, data) where data is
+            run_id -> traffic_volume -> CanonicalData
         """
         if self.simulation_repository is None:
             raise RepositoryError("Simulation repository not configured")
@@ -275,20 +276,18 @@ class GeneratePlotUseCase:
             runs = [r for r in runs if r.algorithm in request.algorithms]
 
         if not runs:
-            raise RepositoryError(
-                f"No runs found for algorithms: {request.algorithms}"
-            )
+            raise RepositoryError(f"No runs found for algorithms: {request.algorithms}")
 
         # Load data for each run and traffic volume
-        data: Dict[str, Dict[float, CanonicalData]] = {}
+        data: dict[str, dict[float, CanonicalData]] = {}
         for run in runs:
             data[run.id] = {}
 
             # Get available traffic volumes if not specified
             traffic_volumes = request.traffic_volumes
             if not traffic_volumes:
-                traffic_volumes = self.simulation_repository.get_available_traffic_volumes(
-                    run
+                traffic_volumes = (
+                    self.simulation_repository.get_available_traffic_volumes(run)
                 )
 
             # Load data for each traffic volume
@@ -297,18 +296,25 @@ class GeneratePlotUseCase:
                     if self.cache and request.cache_enabled:
                         cache_key = f"run_data:{run.id}:{tv}"
                         if self.simulation_repository is None:
-                            raise RepositoryError("Simulation repository not configured")
+                            raise RepositoryError(
+                                "Simulation repository not configured"
+                            )
                         canonical_data = self.cache.get_or_compute(
                             key=cache_key,
-                            compute_fn=lambda: self.simulation_repository.get_run_data(  # type: ignore[union-attr]
-                                run, tv
+                            compute_fn=lambda r=run,
+                            t=tv: self.simulation_repository.get_run_data(  # type: ignore[union-attr]
+                                r, t
                             ),
                             ttl_seconds=3600,  # 1 hour cache
                         )
                     else:
                         if self.simulation_repository is None:
-                            raise RepositoryError("Simulation repository not configured")
-                        canonical_data = self.simulation_repository.get_run_data(run, tv)
+                            raise RepositoryError(
+                                "Simulation repository not configured"
+                            )
+                        canonical_data = self.simulation_repository.get_run_data(
+                            run, tv
+                        )
 
                     data[run.id][tv] = canonical_data
 
@@ -322,10 +328,10 @@ class GeneratePlotUseCase:
 
     def _process_data(
         self,
-        runs: List[Run],
-        data: Dict[str, Dict[float, CanonicalData]],
+        runs: list[Run],
+        data: dict[str, dict[float, CanonicalData]],
         metric_name: str,
-        traffic_volumes: List[float],
+        traffic_volumes: list[float],
         include_ci: bool,
     ) -> Any:
         """Process raw data into plottable format."""
@@ -346,7 +352,9 @@ class GeneratePlotUseCase:
             include_ci=include_ci,
         )
 
-    def _create_specification(self, request: PlotRequestDTO, processed_data: Any) -> Any:
+    def _create_specification(
+        self, request: PlotRequestDTO, processed_data: Any
+    ) -> Any:
         """Create PlotSpecification from processed data."""
         from fusion.visualization.domain.value_objects.plot_specification import (
             PlotSpecification,
@@ -356,7 +364,8 @@ class GeneratePlotUseCase:
             plot_type=request.plot_type,
             title=request.title or f"{request.plot_type.value} - {request.network}",
             x_label=request.x_label or "Traffic Volume (Erlang)",
-            y_label=request.y_label or request.plot_type.value.replace("_", " ").title(),
+            y_label=request.y_label
+            or request.plot_type.value.replace("_", " ").title(),
             x_data=processed_data.x_data,
             y_data=processed_data.y_data,
             errors=processed_data.errors,

@@ -144,14 +144,17 @@ class TestSDNProps(unittest.TestCase):
         self.assertIsNone(props.was_routed)
         self.assertIsNone(props.block_reason)
         # stat_key_list has default values in actual implementation
-        self.assertEqual(props.stat_key_list, [
-            'modulation_list',
-            'crosstalk_list',
-            'core_list',
-            'band_list',
-            'start_slot_list',
-            'end_slot_list'
-        ])
+        self.assertEqual(
+            props.stat_key_list,
+            [
+                "modulation_list",
+                "crosstalk_list",
+                "core_list",
+                "band_list",
+                "start_slot_list",
+                "end_slot_list",
+            ],
+        )
         self.assertEqual(props.bandwidth_list, [])
 
     def test_get_data_method_exists(self) -> None:
@@ -205,11 +208,10 @@ class TestStatsProps(unittest.TestCase):
         self.assertEqual(props.route_times_list, [])
         self.assertEqual(props.cores_dict, {})
         # block_reasons_dict has default None values in actual implementation
-        self.assertEqual(props.block_reasons_dict, {
-            'distance': None,
-            'congestion': None,
-            'xt_threshold': None
-        })
+        self.assertEqual(
+            props.block_reasons_dict,
+            {"distance": None, "congestion": None, "xt_threshold": None},
+        )
         self.assertEqual(props.snapshots_dict, {})
         self.assertEqual(props.weights_dict, {})
         self.assertEqual(props.modulations_used_dict, {})

@@ -1,15 +1,15 @@
 """Registry for managing data adapters with auto-detection."""
 
-from typing import Dict, Any, List, Optional
 import logging
+from typing import Any
 
-from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
-from fusion.visualization.infrastructure.adapters.v1_data_adapter import V1DataAdapter
-from fusion.visualization.infrastructure.adapters.v2_data_adapter import V2DataAdapter
 from fusion.visualization.domain.exceptions.domain_exceptions import (
     UnsupportedDataFormatError,
 )
 from fusion.visualization.domain.value_objects.data_version import DataVersion
+from fusion.visualization.infrastructure.adapters.data_adapter import DataAdapter
+from fusion.visualization.infrastructure.adapters.v1_data_adapter import V1DataAdapter
+from fusion.visualization.infrastructure.adapters.v2_data_adapter import V2DataAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class DataAdapterRegistry:
     Adapters are tried in reverse order (newest first) to prefer newer formats.
     """
 
-    def __init__(self, adapters: Optional[List[DataAdapter]] = None):
+    def __init__(self, adapters: list[DataAdapter] | None = None):
         """
         Initialize the registry.
 
@@ -31,7 +31,7 @@ class DataAdapterRegistry:
         """
         if adapters is None:
             # Default adapters in priority order (newest first)
-            self._adapters: List[DataAdapter] = [
+            self._adapters: list[DataAdapter] = [
                 V2DataAdapter(),
                 V1DataAdapter(),
             ]
@@ -49,7 +49,7 @@ class DataAdapterRegistry:
         self._adapters.insert(0, adapter)
         logger.info(f"Registered adapter: {adapter}")
 
-    def get_adapter(self, data: Dict[str, Any]) -> DataAdapter:
+    def get_adapter(self, data: dict[str, Any]) -> DataAdapter:
         """
         Auto-detect and return appropriate adapter for the data.
 
@@ -68,18 +68,13 @@ class DataAdapterRegistry:
                 return adapter
 
         # No adapter found
-        supported_versions = ", ".join(
-            str(a.version) for a in self._adapters
-        )
+        supported_versions = ", ".join(str(a.version) for a in self._adapters)
         raise UnsupportedDataFormatError(
             f"No adapter found for data format. "
             f"Supported versions: {supported_versions}"
         )
 
-    def get_adapter_by_version(
-        self,
-        version: DataVersion
-    ) -> Optional[DataAdapter]:
+    def get_adapter_by_version(self, version: DataVersion) -> DataAdapter | None:
         """
         Get adapter by specific version.
 
@@ -94,7 +89,7 @@ class DataAdapterRegistry:
                 return adapter
         return None
 
-    def get_supported_versions(self) -> List[DataVersion]:
+    def get_supported_versions(self) -> list[DataVersion]:
         """
         Get list of all supported versions.
 
@@ -137,7 +132,7 @@ def register_adapter(adapter: DataAdapter) -> None:
     _default_registry.register_adapter(adapter)
 
 
-def get_adapter(data: Dict[str, Any]) -> DataAdapter:
+def get_adapter(data: dict[str, Any]) -> DataAdapter:
     """
     Get appropriate adapter from the default registry.
 

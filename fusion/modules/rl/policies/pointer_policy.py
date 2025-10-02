@@ -73,38 +73,26 @@ class PointerHead(torch.nn.Module):
         """
         # Input validation
         if path_features.dim() != 3:
-            raise ValueError(
-                f"Expected 3D tensor, got {path_features.dim()}D tensor"
-            )
+            raise ValueError(f"Expected 3D tensor, got {path_features.dim()}D tensor")
         if path_features.size(1) != DEFAULT_ATTENTION_HEADS:
             raise ValueError(
-                f"Expected {DEFAULT_ATTENTION_HEADS} paths, "
-                f"got {path_features.size(1)}"
+                f"Expected {DEFAULT_ATTENTION_HEADS} paths, got {path_features.size(1)}"
             )
         if path_features.size(-1) != self.dimension:
             raise ValueError(
-                f"Expected dimension {self.dimension}, "
-                f"got {path_features.size(-1)}"
+                f"Expected dimension {self.dimension}, got {path_features.size(-1)}"
             )
 
         # Compute query, key, value transformations
-        query_key_value = self.query_key_value(
-            path_features
-        )  # (batch, 3, 3*dimension)
-        query, key, value = query_key_value.chunk(
-            QUERY_KEY_VALUE_MULTIPLIER, dim=-1
-        )
+        query_key_value = self.query_key_value(path_features)  # (batch, 3, 3*dimension)
+        query, key, value = query_key_value.chunk(QUERY_KEY_VALUE_MULTIPLIER, dim=-1)
 
         # Compute attention scores
-        scores = torch.einsum(
-            "bid,bjd->bij", query, key
-        ) / math.sqrt(query.size(-1))
+        scores = torch.einsum("bid,bjd->bij", query, key) / math.sqrt(query.size(-1))
         attention = torch.softmax(scores, dim=-1)  # (batch, 3, 3)
 
         # Apply attention to values
-        output = torch.einsum(
-            "bij,bjd->bid", attention, value
-        )  # (batch, 3, dimension)
+        output = torch.einsum("bij,bjd->bid", attention, value)  # (batch, 3, dimension)
 
         # Generate path logits
         logits = output.sum(dim=-1)  # (batch, 3)
@@ -143,10 +131,7 @@ class PointerPolicy(ActorCriticPolicy):
 
         :raises AttributeError: If features_extractor is not properly initialized
         """
-        if (
-            not hasattr(self, 'features_extractor')
-            or self.features_extractor is None
-        ):
+        if not hasattr(self, "features_extractor") or self.features_extractor is None:
             raise AttributeError(
                 "Features extractor must be initialized before building MLP extractor"
             )
@@ -167,4 +152,3 @@ class PointerPolicy(ActorCriticPolicy):
         self.mlp_extractor.value_net = torch.nn.Linear(  # type: ignore[assignment]
             self.features_extractor.features_dim, 1
         )
-

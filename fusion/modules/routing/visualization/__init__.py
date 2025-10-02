@@ -6,6 +6,8 @@ This module provides routing-specific visualization components including:
 - Computation time metrics
 """
 
-from fusion.modules.routing.visualization.routing_plugin import RoutingVisualizationPlugin
+from fusion.modules.routing.visualization.routing_plugin import (
+    RoutingVisualizationPlugin,
+)
 
 __all__ = ["RoutingVisualizationPlugin"]
