@@ -66,22 +66,10 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             self.sim_dict = setup_rl_sim()[DEFAULT_SIMULATION_KEY]
         else:
             self.sim_dict = sim_dict[DEFAULT_SIMULATION_KEY]
-        # Add super_channel_space attribute to rl_props if it doesn't exist
-        if hasattr(self.rl_props, 'super_channel_space'):
-            self.rl_props.super_channel_space = self.sim_dict[
-                'super_channel_space'
-            ]  # type: ignore[attr-defined]
-        else:
-            # Dynamically add the attribute for compatibility
-            self.rl_props.super_channel_space = self.sim_dict[
-                'super_channel_space'
-            ]  # type: ignore[attr-defined]
-
-        # Add arrival_count attribute to rl_props if it doesn't exist
-        if not hasattr(self.rl_props, 'arrival_count'):
-            self.rl_props.arrival_count = (
-                DEFAULT_ARRIVAL_COUNT  # type: ignore[attr-defined]
-            )
+        # Set super_channel_space from simulation dictionary
+        self.rl_props.super_channel_space = self.sim_dict['super_channel_space']
+        # Initialize arrival_count
+        self.rl_props.arrival_count = DEFAULT_ARRIVAL_COUNT
 
         self.iteration = DEFAULT_ITERATION
         self.trial: int | None = None
@@ -110,12 +98,20 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # Used to get config variables into the observation space
         self.reset(options={"save_sim": DEFAULT_SAVE_SIMULATION})
 
-        self.observation_space = get_obs_space(
+        obs_space = get_obs_space(
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
         )
+        # Ensure observation_space is properly typed
+        self.observation_space: gym.Space[Any] = (
+            obs_space if obs_space is not None else gym.spaces.Box(low=0, high=1, shape=(1,))
+        )
 
-        self.action_space = get_action_space(
+        action_space = get_action_space(
             sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
+        )
+        # Ensure action_space is properly typed
+        self.action_space: gym.Space[Any] = (
+            action_space if action_space is not None else gym.spaces.Discrete(2)
         )
 
     def reset(
@@ -210,10 +206,8 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         :param print_flag: Whether to enable printing during initialization
         :type print_flag: bool
         """
-        # Ensure arrival_count attribute exists
-        self.rl_props.arrival_count = (
-            DEFAULT_ARRIVAL_COUNT  # type: ignore[attr-defined]
-        )
+        # Reset arrival_count
+        self.rl_props.arrival_count = DEFAULT_ARRIVAL_COUNT
 
         # Ensure engine_obj is properly initialized before use
         if self.engine_obj is not None:

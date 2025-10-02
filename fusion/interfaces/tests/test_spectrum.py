@@ -25,8 +25,7 @@ class TestAbstractSpectrumAssignerInstantiation:
         """Test AbstractSpectrumAssigner cannot be directly instantiated."""
         # Arrange & Act & Assert
         with pytest.raises(TypeError):
-            # type: ignore[abstract,arg-type]
-            AbstractSpectrumAssigner({}, None, None)
+            AbstractSpectrumAssigner({}, None, None)  # type: ignore[abstract,arg-type]
 
 
 # ============================================================================
@@ -358,8 +357,7 @@ class TestConcreteSpectrumAssignerImplementation:
 
         # Act & Assert
         with pytest.raises(TypeError):
-            # type: ignore[abstract]
-            IncompleteSpectrumAssigner({}, Mock(), Mock())
+            IncompleteSpectrumAssigner({}, Mock(), Mock())  # type: ignore[abstract]
 
 
 # ============================================================================
@@ -444,10 +442,13 @@ class TestAbstractSpectrumAssignerPropertyReturnTypes:
     def test_algorithm_name_returns_string(self) -> None:
         """Test that algorithm_name property returns string."""
         # Arrange
-        sig = inspect.signature(
-            # type: ignore[attr-defined]
-            AbstractSpectrumAssigner.algorithm_name.fget
-        )
+        # For abstract properties, access the function directly
+        prop = AbstractSpectrumAssigner.algorithm_name
+        if isinstance(prop, property) and prop.fget is not None:
+            sig = inspect.signature(prop.fget)
+        else:
+            # Fallback for abstractmethod properties
+            sig = inspect.signature(prop.fget)  # type: ignore[union-attr,attr-defined]
 
         # Assert
         assert sig.return_annotation is str
@@ -455,10 +456,13 @@ class TestAbstractSpectrumAssignerPropertyReturnTypes:
     def test_supports_multiband_returns_bool(self) -> None:
         """Test that supports_multiband property returns bool."""
         # Arrange
-        sig = inspect.signature(
-            # type: ignore[attr-defined]
-            AbstractSpectrumAssigner.supports_multiband.fget
-        )
+        # For abstract properties, access the function directly
+        prop = AbstractSpectrumAssigner.supports_multiband
+        if isinstance(prop, property) and prop.fget is not None:
+            sig = inspect.signature(prop.fget)
+        else:
+            # Fallback for abstractmethod properties
+            sig = inspect.signature(prop.fget)  # type: ignore[union-attr,attr-defined]
 
         # Assert
         assert sig.return_annotation is bool

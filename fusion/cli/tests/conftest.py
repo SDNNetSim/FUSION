@@ -62,7 +62,7 @@ def sample_args_dict() -> dict[str, Any]:
 
 
 @pytest.fixture
-def mock_logger(monkeypatch) -> MagicMock:
+def mock_logger(monkeypatch: Any) -> MagicMock:
     """Provide a mock logger for testing."""
     mock_log = MagicMock()
     monkeypatch.setattr("fusion.utils.logging_config.get_logger", lambda _: mock_log)

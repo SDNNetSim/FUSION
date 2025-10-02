@@ -1,10 +1,32 @@
-"""Unit tests for reinforcement_learning.gymnasium_envs.general_sim_env."""
+"""Unit tests for fusion.modules.rl.gymnasium_envs/general_sim_env module."""
 
 # pylint: disable=too-few-public-methods, unused-argument
 
-from types import ModuleType, SimpleNamespace
-from unittest import TestCase, mock
 import sys
+from types import ModuleType, SimpleNamespace
+from typing import Any
+from unittest import mock
+
+import pytest
+
+# Save original modules before mocking
+_ORIGINAL_MODULES = {
+    key: sys.modules.get(key)
+    for key in [
+        "gymnasium",
+        "gymnasium.spaces",
+        "torch",
+        "torch.nn",
+        "torch_geometric",
+        "torch_geometric.nn",
+        "stable_baselines3",
+        "stable_baselines3.common",
+        "stable_baselines3.common.base_class",
+        "stable_baselines3.common.torch_layers",
+        "sb3_contrib",
+    ]
+    if key in sys.modules
+}
 
 gym_mod = ModuleType("gymnasium")
 spaces_mod = ModuleType("gymnasium.spaces")
@@ -13,30 +35,30 @@ spaces_mod = ModuleType("gymnasium.spaces")
 class _DummySpace:  # pylint: disable=too-few-public-methods
     """Minimal placeholder for Box / Discrete."""
 
-    def __init__(self, *_, **__):
+    def __init__(self, *_: Any, **__: Any) -> None:
         pass
 
 
 class _StubGymEnv:  # pylint: disable=too-few-public-methods
     """Lightweight stand-in for gymnasium.Env."""
 
-    def reset(self, *_, **__):
+    def reset(self, *_: Any, **__: Any) -> tuple[None, dict[str, Any]]:
         """
         Mock Gym reset.
         """
         return None, {}
 
-    def step(self, *_, **__):
+    def step(self, *_: Any, **__: Any) -> tuple[None, None, bool, bool, dict[str, Any]]:
         """
         Mock Environment/Gym step.
         """
         return None, None, False, False, {}
 
 
-spaces_mod.Box = _DummySpace
-spaces_mod.Discrete = _DummySpace
-gym_mod.Env = _StubGymEnv
-gym_mod.spaces = spaces_mod
+spaces_mod.Box = _DummySpace  # type: ignore[attr-defined]
+spaces_mod.Discrete = _DummySpace  # type: ignore[attr-defined]
+gym_mod.Env = _StubGymEnv  # type: ignore[attr-defined]
+gym_mod.spaces = spaces_mod  # type: ignore[attr-defined]
 sys.modules.update({
     "gymnasium": gym_mod,
     "gymnasium.spaces": spaces_mod,
@@ -47,24 +69,24 @@ torch_nn_mod = ModuleType("torch.nn")
 
 class _Tensor:
     """Minimal placeholder for torch.Tensor."""
-    def numel(self):
+    def numel(self) -> int:
         """Return number of elements in tensor."""
         return 1
 
-    def unsqueeze(self, dim):
+    def unsqueeze(self, dim: int) -> "_Tensor":
         """Return tensor with dimension `dim`."""
         return self
 
-    def repeat(self, *args, **kwargs):
+    def repeat(self, *args: Any, **kwargs: Any) -> "_Tensor":
         """Return tensor with dimension `dim`."""
         return self
 
-torch_mod.Tensor = _Tensor
+torch_mod.Tensor = _Tensor  # type: ignore[attr-defined]
 
 class _NNModule:
     """Lightweight torch.nn.Module replacement."""
 
-    def forward(self, *_, **__):
+    def forward(self, *_: Any, **__: Any) -> None:
         """
         Mock NN forward.
         """
@@ -76,22 +98,22 @@ class _NNModule:
 class _Linear(_NNModule):
     """Dummy Linear layer."""
 
-    def __init__(self, in_features, out_features, bias=True):  # noqa: D401
+    def __init__(self, in_features: int, out_features: int, bias: bool = True) -> None:  # noqa: D401
         self.in_features = in_features
         self.out_features = out_features
         self.bias = bias
 
 
-def _randn(*shape, **__):  # noqa: D401
+def _randn(*shape: int, **__: Any) -> list[list[int]]:  # noqa: D401
     """Return zeros list with requested shape."""
     return [[0] * (shape[-1] or 1)]
 
 
-torch_nn_mod.Module = _NNModule
-torch_nn_mod.Linear = _Linear
-torch_nn_mod.ReLU = _NNModule
-torch_mod.nn = torch_nn_mod
-torch_mod.randn = _randn
+torch_nn_mod.Module = _NNModule  # type: ignore[attr-defined]
+torch_nn_mod.Linear = _Linear  # type: ignore[attr-defined]
+torch_nn_mod.ReLU = _NNModule  # type: ignore[attr-defined]
+torch_mod.nn = torch_nn_mod  # type: ignore[attr-defined]
+torch_mod.randn = _randn  # type: ignore[attr-defined]
 sys.modules.update({
     "torch": torch_mod,
     "torch.nn": torch_nn_mod,
@@ -102,7 +124,7 @@ tg_mod = ModuleType("torch_geometric")
 tg_nn_mod = ModuleType("torch_geometric.nn")
 for _name in ("GraphConv", "SAGEConv", "GATv2Conv", "TransformerConv"):
     setattr(tg_nn_mod, _name, _NNModule)
-tg_mod.nn = tg_nn_mod
+tg_mod.nn = tg_nn_mod  # type: ignore[attr-defined]
 sys.modules.update({
     "torch_geometric": tg_mod,
     "torch_geometric.nn": tg_nn_mod,
@@ -114,7 +136,7 @@ sb3_root = ModuleType("stable_baselines3")
 class _BaseAlgo:  # pylint: disable=too-few-public-methods
     """Placeholder SB3 BaseAlgorithm."""
 
-    def __init__(self, *_, **__):
+    def __init__(self, *_: Any, **__: Any) -> None:
         pass
 
 
@@ -124,12 +146,12 @@ for _alg in ("PPO", "A2C", "DQN"):
 sb3_common = ModuleType("stable_baselines3.common")
 sb3_base_class = ModuleType("stable_baselines3.common.base_class")
 sb3_torch_layers = ModuleType("stable_baselines3.common.torch_layers")
-sb3_base_class.BaseAlgorithm = _BaseAlgo
-sb3_torch_layers.BaseFeaturesExtractor = type(
+sb3_base_class.BaseAlgorithm = _BaseAlgo  # type: ignore[attr-defined]
+sb3_torch_layers.BaseFeaturesExtractor = type(  # type: ignore[attr-defined]
     "BaseFeaturesExtractor", (), {}
 )
-sb3_common.base_class = sb3_base_class
-sb3_common.torch_layers = sb3_torch_layers
+sb3_common.base_class = sb3_base_class  # type: ignore[attr-defined]
+sb3_common.torch_layers = sb3_torch_layers  # type: ignore[attr-defined]
 
 sys.modules.update({
     "stable_baselines3": sb3_root,
@@ -152,7 +174,7 @@ from fusion.modules.rl.gymnasium_envs import (  # pylint: disable=wrong-import-p
 class _DummyEngine:  # pylint: disable=too-few-public-methods
     """Stub for engine_obj with minimal surface."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.engine_props = {
             "is_drl_agent": True,
             "reward": 10,
@@ -160,65 +182,65 @@ class _DummyEngine:  # pylint: disable=too-few-public-methods
             "cores_per_link": 2,
             "holding_time": 10,
         }
-        self.reqs_status_dict = {}
+        self.reqs_status_dict: dict[int, bool] = {}
         self.topology = SimpleNamespace(nodes=[0, 1])
 
-    def init_iter(self, *_, **__):
+    def init_iter(self, *_: Any, **__: Any) -> None:
         """No-op."""
 
-    def create_topology(self):
+    def create_topology(self) -> None:
         """No-op."""
 
 
 class _DummyRoute:
     """Stub for route_obj."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.route_props = SimpleNamespace(weights_list=[1])
 
 
 class _DummySimEnvUtils:  # noqa: D401
     """Stub replacing SimEnvUtils."""
 
-    def __init__(self, sim_env):
+    def __init__(self, sim_env: Any) -> None:
         self.sim_env = sim_env
 
-    def handle_step(self, *_, **__):
+    def handle_step(self, *_: Any, **__: Any) -> None:
         """No-op."""
 
-    def get_obs(self, *_, **__):
+    def get_obs(self, *_: Any, **__: Any) -> str:
         """
         Mock get obs.
         """
         return "obs"
 
-    def check_terminated(self):
+    def check_terminated(self) -> bool:
         """
         Mock check terminated.
         """
         return True
 
-    def handle_test_train_step(self, *_, **__):
+    def handle_test_train_step(self, *_: Any, **__: Any) -> None:
         """No-op."""
 
 
 class _DummySimEnvObs:
     """Stub replacing SimEnvObs."""
 
-    def __init__(self, sim_env):
+    def __init__(self, sim_env: Any) -> None:
         self.sim_env = sim_env
 
-    def update_helper_obj(self, *_, **__):
+    def update_helper_obj(self, *_: Any, **__: Any) -> None:
         """No-op."""
 
 
 class _DummyCoreUtilHelpers:
     """Stub CoreUtilHelpers."""
 
-    def __init__(self, rl_props, *_, **__):
+    def __init__(self, rl_props: Any, *_: Any, **__: Any) -> None:
         self.rl_props = rl_props
 
-    def reset_reqs_dict(self, *_, **__):
+    def reset_reqs_dict(self, *_: Any, **__: Any) -> None:
         """
         Mocking reset reqs dict.
         """
@@ -226,37 +248,37 @@ class _DummyCoreUtilHelpers:
             {"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0}
         )
 
-    def allocate(self):
+    def allocate(self) -> None:
         """No-op."""
 
-    def update_snapshots(self):
+    def update_snapshots(self) -> None:
         """No-op."""
 
 
 class _DummySetupHelper:
     """Stub replacing SetupHelper."""
 
-    def __init__(self, sim_env):
+    def __init__(self, sim_env: Any) -> None:
         self.sim_env = sim_env
 
-    def init_envs(self):
+    def init_envs(self) -> None:
         """No-op."""
 
-    def create_input(self):
+    def create_input(self) -> None:
         """
         Mock create input.
         """
         self.sim_env.engine_obj = _DummyEngine()
         self.sim_env.route_obj = _DummyRoute()
 
-    def load_models(self):
+    def load_models(self) -> None:
         """No-op."""
 
 
 class _DummyPathAgent:
     """Stub for PathAgent."""
 
-    def __init__(self, *_, **__):
+    def __init__(self, *_: Any, **__: Any) -> None:
         pass
 
 
@@ -286,9 +308,9 @@ _PATCHES = {
 }
 
 
-def _apply_patches():
+def _apply_patches() -> list[Any]:
     """Apply monkey-patches to the target module."""
-    patchers = []
+    patchers: list[Any] = []
     for name, repl in _PATCHES.items():
         patcher = mock.patch.object(gen_env, name, repl)
         patchers.append(patcher)
@@ -296,47 +318,72 @@ def _apply_patches():
     return patchers
 
 
-class TestSimEnv(TestCase):
+@pytest.fixture(scope="module", autouse=True)
+def _cleanup_sys_modules() -> Any:
+    """Restore original sys.modules after all tests in this module complete."""
+    yield
+    # Restore original modules
+    for key in [
+        "gymnasium",
+        "gymnasium.spaces",
+        "torch",
+        "torch.nn",
+        "torch_geometric",
+        "torch_geometric.nn",
+        "stable_baselines3",
+        "stable_baselines3.common",
+        "stable_baselines3.common.base_class",
+        "stable_baselines3.common.torch_layers",
+        "sb3_contrib",
+    ]:
+        if key in _ORIGINAL_MODULES:
+            original_mod = _ORIGINAL_MODULES[key]
+            if original_mod is not None:
+                sys.modules[key] = original_mod
+        elif key in sys.modules:
+            del sys.modules[key]
+
+
+class TestSimEnv:
     """SimEnv reset/step behaviour."""
 
-    def setUp(self):
+    def setup_method(self) -> None:
         self._patchers = _apply_patches()
         self.env = gen_env.SimEnv(sim_dict={"s1": _SIM_DICT})
 
-    def tearDown(self):
+    def teardown_method(self) -> None:
         for patcher in self._patchers:
             patcher.stop()
 
-    def test_reset_returns_obs_and_info(self):
+    def test_reset_returns_obs_and_info(self) -> None:
         """reset yields 'obs' and empty info dict."""
         obs, info = self.env.reset(seed=123)
-        self.assertEqual(obs, "obs")
-        self.assertEqual(info, {})
-        self.assertEqual(self.env.trial, 123)
+        assert obs == "obs"
+        assert info == {}
+        assert self.env.trial == 123
 
-    def _ensure_arrivals(self):
+    def _ensure_arrivals(self) -> None:
         """Guarantee an arrival exists before step()."""
         self.env.rl_props.arrival_count = 0
         if not self.env.rl_props.arrival_list:
-            self.env.rl_props.arrival_list.append(
-                {"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0}
-            )
+            arrival_dict: dict[str, Any] = {"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0}
+            self.env.rl_props.arrival_list.append(arrival_dict)  # type: ignore[arg-type]
 
-    def test_step_reward_when_allocated(self):
+    def test_step_reward_when_allocated(self) -> None:
         """step returns +reward for allocated request."""
         self._ensure_arrivals()
         self.env.engine_obj.reqs_status_dict = {0: True}
         _, reward, terminated, truncated, info = self.env.step(action=0)
-        self.assertEqual(reward, self.env.engine_obj.engine_props["reward"])
-        self.assertTrue(terminated)
-        self.assertFalse(truncated)
-        self.assertEqual(info, {})
+        assert reward == self.env.engine_obj.engine_props["reward"]
+        assert terminated is True
+        assert truncated is False
+        assert info == {}
 
-    def test_step_reward_when_blocked(self):
+    def test_step_reward_when_blocked(self) -> None:
         """step returns penalty for blocked request."""
         self._ensure_arrivals()
         self.env.engine_obj.reqs_status_dict = {}
         _, reward, terminated, truncated, _ = self.env.step(action=0)
-        self.assertEqual(reward, self.env.engine_obj.engine_props["penalty"])
-        self.assertTrue(terminated)
-        self.assertFalse(truncated)
+        assert reward == self.env.engine_obj.engine_props["penalty"]
+        assert terminated is True
+        assert truncated is False

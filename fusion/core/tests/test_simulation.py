@@ -521,8 +521,7 @@ class TestSimulationEngineIterationManagement:
         # save_step is 5, so should save on iteration 4 (4+1=5)
         iteration = 4
         iteration_engine.engine_props["is_training"] = False
-        # type: ignore
-        iteration_engine.stats_obj.calculate_confidence_interval.return_value = False
+        iteration_engine.stats_obj.calculate_confidence_interval.return_value = False  # type: ignore[attr-defined]
 
         with patch.object(iteration_engine, '_save_all_stats') as mock_save:
             # Act
@@ -546,8 +545,7 @@ class TestSimulationEngineIterationManagement:
         result = iteration_engine.end_iter(iteration, print_flag=False)
 
         # Assert
-        # type: ignore
-        iteration_engine.stats_obj.calculate_confidence_interval.assert_not_called()
+        iteration_engine.stats_obj.calculate_confidence_interval.assert_not_called()  # type: ignore[attr-defined]
         assert result is False
 
 

@@ -24,8 +24,7 @@ class TestAbstractRoutingAlgorithmInstantiation:
         """Test AbstractRoutingAlgorithm cannot be directly instantiated."""
         # Arrange & Act & Assert
         with pytest.raises(TypeError):
-            # type: ignore[abstract,arg-type]
-            AbstractRoutingAlgorithm({}, None)
+            AbstractRoutingAlgorithm({}, None)  # type: ignore[abstract,arg-type]
 
 
 # ============================================================================
@@ -325,10 +324,13 @@ class TestAbstractRoutingAlgorithmPropertyReturnTypes:
     def test_algorithm_name_returns_string(self) -> None:
         """Test that algorithm_name property returns string."""
         # Arrange
-        sig = inspect.signature(
-            # type: ignore[attr-defined]
-            AbstractRoutingAlgorithm.algorithm_name.fget
-        )
+        # For abstract properties, access the function directly
+        prop = AbstractRoutingAlgorithm.algorithm_name
+        if isinstance(prop, property) and prop.fget is not None:
+            sig = inspect.signature(prop.fget)
+        else:
+            # Fallback for abstractmethod properties
+            sig = inspect.signature(prop.fget)  # type: ignore[union-attr,attr-defined]
 
         # Assert
         assert sig.return_annotation is str
@@ -336,10 +338,13 @@ class TestAbstractRoutingAlgorithmPropertyReturnTypes:
     def test_supported_topologies_returns_list_of_strings(self) -> None:
         """Test supported_topologies property returns list of strings."""
         # Arrange
-        sig = inspect.signature(
-            # type: ignore[attr-defined]
-            AbstractRoutingAlgorithm.supported_topologies.fget
-        )
+        # For abstract properties, access the function directly
+        prop = AbstractRoutingAlgorithm.supported_topologies
+        if isinstance(prop, property) and prop.fget is not None:
+            sig = inspect.signature(prop.fget)
+        else:
+            # Fallback for abstractmethod properties
+            sig = inspect.signature(prop.fget)  # type: ignore[union-attr,attr-defined]
         annotation_str = str(sig.return_annotation)
 
         # Assert

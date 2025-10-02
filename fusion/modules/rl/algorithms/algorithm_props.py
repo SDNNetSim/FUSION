@@ -11,10 +11,10 @@ class RLProps:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self) -> None:
-        self.k_paths = None  # Number of paths the agent has to choose from
-        self.cores_per_link = None  # Number of cores on every link
-        self.spectral_slots = None  # Numerical value of spectral slots on every core
-        self.num_nodes = None  # Total nodes in the network topology
+        self.k_paths: int | None = None  # Number of paths the agent has to choose from
+        self.cores_per_link: int | None = None  # Number of cores on every link
+        self.spectral_slots: int | list[int] | None = None  # Spectral slots on every core
+        self.num_nodes: int | None = None  # Total nodes in the network topology
 
         self.arrival_list: list[float] = []  # Inter-arrival times for every request
         self.depart_list: list[float] = []  # Departure times for every request
@@ -30,6 +30,10 @@ class RLProps:  # pylint: disable=too-few-public-methods
         self.chosen_path_list: list[int] = []
         self.core_index = None  # Index of the last core chosen for a request
 
+        # Additional attributes used by SimEnv
+        self.super_channel_space: int = 0  # Super channel space configuration
+        self.arrival_count: int = 0  # Count of processed arrivals
+
     def __repr__(self) -> str:
         return f"RLProps({self.__dict__})"
 
@@ -40,12 +44,12 @@ class QProps:
     """
 
     def __init__(self) -> None:
-        self.epsilon = None  # Current epsilon used at a certain point in time
-        self.epsilon_start = None  # Starting value of epsilon
-        self.epsilon_end = None  # Ending value of epsilon to be linearly decayed
+        self.epsilon: float | None = None  # Current epsilon used at a certain point in time
+        self.epsilon_start: float | None = None  # Starting value of epsilon
+        self.epsilon_end: float | None = None  # Ending value of epsilon to be linearly decayed
         self.epsilon_list: list[float] = []  # A list of every value at each time step
 
-        self.is_training = None  # Flag to determine whether to load a trained agent
+        self.is_training: bool | None = None  # Flag to determine whether to load a trained agent
 
         # Rewards for the core and path q-learning agents
         self.rewards_dict: dict[str, dict[str, Any]] = {
