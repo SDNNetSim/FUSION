@@ -20,42 +20,50 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.plot_props = plot_props
 
         self.plot_props.title_names = list_to_title(input_list=net_names_list)
-        self.file_info = None
-        self.erlang_dict = None
-        self.erlang = None
-        self.time = None
-        self.sim_num = None
-        self.data_dict = None
+        self.file_info: dict | None = None
+        self.erlang_dict: dict | None = None
+        self.erlang: float | None = None
+        self.time: str | None = None
+        self.sim_num: str | None = None
+        self.data_dict: dict | None = None
 
     # TODO: (drl_path_agents) This function is only partially functional for q-learning
-    def _find_ai_stats(self, cores_per_link: int):
+    def _find_ai_stats(self, cores_per_link: int) -> None:
         # TODO: Generalize
         # TODO: Save the date of a simulation
+        if self.data_dict is None or self.time is None or self.erlang is None:
+            return
+        assert self.data_dict is not None  # Type narrowing
         ai_fp = os.path.join('..', 'logs', 'ql', self.data_dict['network'], self.data_dict['date'], self.time)
         ai_fp = os.path.join(ai_fp, f"e{self.erlang}_params_c{cores_per_link}.json")
 
         ai_dict = self._read_json_file(file_path=ai_fp)
-        for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards_dict', 'sum_errors_dict'):
-            if ai_key in ('sum_rewards_dict', 'sum_errors_dict'):
-                label_list = ai_key.split('_')
-                label = f"{label_list[0]}_{label_list[1]}_list"
-                self.plot_props.plot_dict[self.time][self.sim_num][label].append(list(ai_dict[ai_key].values()))
-            else:
-                self.plot_props.plot_dict[self.time][self.sim_num][ai_key] = ai_dict[ai_key]
+        if ai_dict is not None:
+            assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
+            for ai_key in ('learn_rate', 'discount_factor', 'epsilon_start', 'sum_rewards_dict', 'sum_errors_dict'):
+                if ai_key in ('sum_rewards_dict', 'sum_errors_dict'):
+                    label_list = ai_key.split('_')
+                    label = f"{label_list[0]}_{label_list[1]}_list"
+                    getattr(self.plot_props.plot_dict[self.time][self.sim_num], label).append(list(ai_dict[ai_key].values()))
+                else:
+                    setattr(self.plot_props.plot_dict[self.time][self.sim_num], ai_key, ai_dict[ai_key])
 
-    def _find_misc_stats(self):
+    def _find_misc_stats(self) -> None:
+        assert self.erlang_dict is not None  # Type narrowing
+        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
         lengths_list = dict_to_list(self.erlang_dict['iter_stats'], 'lengths_mean')
         hops_list = dict_to_list(self.erlang_dict['iter_stats'], 'hops_mean')
-        times_list = np.array(dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean')) * 10 ** 3
+        times_list_raw = dict_to_list(self.erlang_dict['iter_stats'], 'route_times_mean')
+        times_list = times_list_raw * 10 ** 3 if isinstance(times_list_raw, (int, float)) else [t * 10 ** 3 for t in times_list_raw]
 
         cong_list = dict_to_list(self.erlang_dict['iter_stats'], 'congestion', ['block_reasons_dict'])
         dist_list = dict_to_list(self.erlang_dict['iter_stats'], 'distance', ['block_reasons_dict'])
 
-        average_length = np.nanmean(lengths_list) if len(lengths_list) > 0 else 0
-        average_hop = np.nanmean(hops_list) if len(hops_list) > 0 else 0
-        average_time = np.nanmean(times_list) if len(times_list) > 0 else 0
-        average_cong = np.nanmean(cong_list) if len(cong_list) > 0 else 0
-        average_dist = np.nanmean(dist_list) if len(dist_list) > 0 else 0
+        average_length = np.nanmean(lengths_list) if isinstance(lengths_list, list) and len(lengths_list) > 0 else 0
+        average_hop = np.nanmean(hops_list) if isinstance(hops_list, list) and len(hops_list) > 0 else 0
+        average_time = np.nanmean(times_list) if isinstance(times_list, list) and len(times_list) > 0 else 0
+        average_cong = np.nanmean(cong_list) if isinstance(cong_list, list) and len(cong_list) > 0 else 0
+        average_dist = np.nanmean(dist_list) if isinstance(dist_list, list) and len(dist_list) > 0 else 0
 
         self.plot_props.plot_dict[self.time][self.sim_num].lengths_list.append(average_length)
         self.plot_props.plot_dict[self.time][self.sim_num].hops_list.append(average_hop)
@@ -64,17 +72,20 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.plot_props.plot_dict[self.time][self.sim_num].dist_block_list.append(average_dist)
 
     @staticmethod
-    def _dict_to_np_array(snap_val_list: list, key: str):
-        return np.nan_to_num([np.nan if d.get(key) is None else d.get(key) for d in snap_val_list])
+    def _dict_to_np_array(snap_val_list: list, key: str) -> np.ndarray:
+        result: np.ndarray = np.nan_to_num([np.nan if d.get(key) is None else d.get(key) for d in snap_val_list])
+        return result
 
-    def _process_snapshots(self, snap_val_list: list):
+    def _process_snapshots(self, snap_val_list: list) -> tuple:
         active_req_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='active_requests')
         block_req_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='blocking_prob')
         occ_slot_list = self._dict_to_np_array(snap_val_list=snap_val_list, key='occ_slots')
 
         return active_req_list, block_req_list, occ_slot_list
 
-    def _find_snapshot_usage(self):
+    def _find_snapshot_usage(self) -> None:
+        assert self.erlang_dict is not None  # Type narrowing
+        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
         req_num_list, active_req_matrix, block_req_matrix, occ_slot_matrix = [], [], [], []
         for _, stats_dict in self.erlang_dict['iter_stats'].items():
             snapshots_dict = stats_dict['snapshots_dict']
@@ -91,7 +102,9 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.plot_props.plot_dict[self.time][self.sim_num].block_req_matrix = np.mean(block_req_matrix, axis=0)
         self.plot_props.plot_dict[self.time][self.sim_num].occ_slot_matrix = np.mean(occ_slot_matrix, axis=0)
 
-    def _find_mod_info(self):
+    def _find_mod_info(self) -> None:
+        assert self.erlang_dict is not None  # Type narrowing
+        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
         mods_used_dict = self.erlang_dict['iter_stats']['0']['mods_used_dict']
         mods_used_dict = {k: v for k, v in mods_used_dict.items() if k.isdigit()}
         # fixme: Modulation stats got into mods used dict?
@@ -104,10 +117,14 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                 modulations_dict = self.plot_props.plot_dict[self.time][self.sim_num].modulations_dict
                 modulations_dict.setdefault(bandwidth, {})
 
-                modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
+                if isinstance(mod_usages, list):
+                    modulations_dict[bandwidth].setdefault(modulation, []).append(mean(mod_usages))
+                else:
+                    modulations_dict[bandwidth].setdefault(modulation, []).append(mod_usages)
 
-    def _find_sim_info(self, input_dict: dict):
+    def _find_sim_info(self, input_dict: dict) -> None:
         # TODO: (drl_path_agents) Does not support all bands/slots
+        assert self.time is not None and self.sim_num is not None and self.plot_props.plot_dict is not None  # Type narrowing
         info_item_list = ['holding_time', 'cores_per_link', 'c_band', 'network', 'num_requests',
                           'cores_per_link', 'max_segments']
         self.plot_props = self.plot_props.plot_dict[self.time][self.sim_num].update_info_dict(
@@ -117,7 +134,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
             time=self.time,
             sim_num=self.sim_num)
 
-    def _update_plot_dict(self):
+    def _update_plot_dict(self) -> None:
+        assert self.time is not None and self.sim_num is not None  # Type narrowing
         if self.plot_props.plot_dict is None:
             self.plot_props.plot_dict = {self.time: {}}
         elif self.time not in self.plot_props.plot_dict:
@@ -126,15 +144,17 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self.plot_props.plot_dict[self.time][self.sim_num] = PlotArgs()
 
     @staticmethod
-    def _read_json_file(file_path: str):
+    def _read_json_file(file_path: str) -> dict | None:
         with open(file_path, 'r', encoding='utf-8') as file_obj:
             try:
-                return json.load(file_obj)
+                result: dict = json.load(file_obj)
+                return result
             except json.JSONDecodeError:
                 print('JSON file did not finishing writing, skipping!')
                 return None
 
-    def _read_input_output(self):
+    def _read_input_output(self) -> tuple[dict | None, dict | None]:
+        assert self.data_dict is not None and self.time is not None and self.sim_num is not None  # Type narrowing
         base_fp = os.path.join(self.data_dict['network'], self.data_dict['date'], self.time)
         file_name = f'{self.erlang}_erlang.json'
         output_fp = os.path.join(self.plot_props.output_dir, base_fp, self.sim_num, file_name)
@@ -146,7 +166,8 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
         return input_dict, erlang_dict
 
-    def _get_data(self):
+    def _get_data(self) -> None:
+        assert self.file_info is not None  # Type narrowing
         for time, data_dict in self.file_info.items():
             self.time = time
             self.data_dict = data_dict
@@ -160,6 +181,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                     if input_dict is None or self.erlang_dict is None:
                         continue
 
+                    assert self.plot_props.plot_dict is not None  # Type narrowing
                     self.plot_props.plot_dict[time][sim_num].erlang_list.append(float(erlang))
 
                     self.plot_props.erlang_dict = self.erlang_dict
@@ -177,13 +199,13 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                     self._find_snapshot_usage()
                     self._find_misc_stats()
 
-    def get_file_info(self, sims_info_dict: dict):
+    def get_file_info(self, sims_info_dict: dict) -> None:
         """
         Retrieves all necessary file information to plot.
 
         :param sims_info_dict: A dictionary of specified configurations to find.
         """
-        self.file_info = dict()
+        self.file_info = {}
         matrix_count = 0
         networks_matrix = sims_info_dict['networks_matrix']
         dates_matrix = sims_info_dict['dates_matrix']
@@ -191,7 +213,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
 
         for network_list, dates_list, times_list in zip(networks_matrix, dates_matrix, times_matrix):
             for network, date, time, in zip(network_list, dates_list, times_list):
-                self.file_info[time] = {'network': network, 'date': date, 'sim_dict': dict()}
+                self.file_info[time] = {'network': network, 'date': date, 'sim_dict': {}}
                 curr_dir = os.path.join(self.plot_props.output_dir, network, date, time)
                 # Sort by sim number
                 try:
@@ -209,7 +231,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
                         continue
 
                     curr_fp = os.path.join(curr_dir, sim)
-                    self.file_info[time]['sim_dict'][sim] = list()
+                    self.file_info[time]['sim_dict'][sim] = []
                     files_list = os.listdir(curr_fp)
                     sorted_files_list = sorted(files_list, key=lambda x: float(x.split('_')[0]))
 
@@ -221,7 +243,7 @@ class PlotHelpers:  # pylint: disable=too-few-public-methods
         self._get_data()
 
 
-def _not_filters(filter_dict: dict, file_dict: dict):
+def _not_filters(filter_dict: dict, file_dict: dict) -> bool:
     keep_config = True
     for flags_list in filter_dict['not_filter_list']:
         keys_list = flags_list[0:-1]
@@ -240,7 +262,7 @@ def _not_filters(filter_dict: dict, file_dict: dict):
     return keep_config
 
 
-def _or_filters(filter_dict: dict, file_dict: dict):
+def _or_filters(filter_dict: dict, file_dict: dict) -> bool:
     keep_config = True
     for flags_list in filter_dict['or_filter_list']:
         keys_list = flags_list[0:-1]
@@ -259,7 +281,7 @@ def _or_filters(filter_dict: dict, file_dict: dict):
     return keep_config
 
 
-def _and_filters(filter_dict: dict, file_dict: dict):
+def _and_filters(filter_dict: dict, file_dict: dict) -> bool:
     keep_config = True
     for flags_list in filter_dict['and_filter_list']:
         keys_list = flags_list[0:-1]
@@ -281,7 +303,7 @@ def _and_filters(filter_dict: dict, file_dict: dict):
     return keep_config
 
 
-def _check_filters(file_dict: dict, filter_dict: dict):
+def _check_filters(file_dict: dict, filter_dict: dict) -> bool:
     keep_config = _and_filters(filter_dict=filter_dict, file_dict=file_dict)
 
     if keep_config:
@@ -293,7 +315,7 @@ def _check_filters(file_dict: dict, filter_dict: dict):
     return keep_config
 
 
-def find_times(dates_dict: dict, filter_dict: dict):
+def find_times(dates_dict: dict, filter_dict: dict) -> dict:
     """
     Searches output directories based on filters and retrieves simulation directory information.
 
@@ -302,13 +324,13 @@ def find_times(dates_dict: dict, filter_dict: dict):
     :return: A dictionary with all times, sim numbers, networks, and dates that matched the filter dict.
     :rtype: dict
     """
-    resp = {
-        'times_matrix': list(),
-        'sims_matrix': list(),
-        'networks_matrix': list(),
-        'dates_matrix': list(),
+    resp: dict[str, list] = {
+        'times_matrix': [],
+        'sims_matrix': [],
+        'networks_matrix': [],
+        'dates_matrix': [],
     }
-    info_dict = dict()
+    info_dict: dict[str, dict[str, list]] = {}
     for date, network in dates_dict.items():
         times_path = os.path.join('..', 'data', 'input', network, date)
         times_list = [curr_dir for curr_dir in os.listdir(times_path)
@@ -331,7 +353,7 @@ def find_times(dates_dict: dict, filter_dict: dict):
                 keep_config = _check_filters(file_dict=file_dict, filter_dict=filter_dict)
                 if keep_config:
                     if curr_time not in info_dict:
-                        info_dict[curr_time] = {'sim_list': list(), 'network_list': list(), 'dates_list': list()}
+                        info_dict[curr_time] = {'sim_list': [], 'network_list': [], 'dates_list': []}
 
                     sim = input_file.split('_')[2]
                     sim = sim.split('.')[0]

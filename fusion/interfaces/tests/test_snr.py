@@ -479,8 +479,7 @@ class TestAbstractSNRMeasurerPropertyReturnTypes:
         """Test that supports_multicore property returns bool."""
         # Arrange
         sig = inspect.signature(
-            # type: ignore[attr-defined]
-            AbstractSNRMeasurer.supports_multicore.fget
+            AbstractSNRMeasurer.supports_multicore.fget  # type: ignore[attr-defined]
         )
 
         # Assert

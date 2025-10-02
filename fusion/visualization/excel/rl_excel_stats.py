@@ -4,6 +4,7 @@
 
 import os
 import json
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ from fusion.visualization.properties import PlotProps
 NETWORK_LIST = ['NSFNet', 'USNet']
 ARRIVAL_RATE_LIST = [10, 20, 30, 50, 70, 90, 110, 130, 150, 170, 190]
 
-inf_baselines = {
+inf_baselines: dict[tuple[str, float], float] = {
     # With 2,000 requests and k=3
     ('NSFNet', 40): 0.00065,
     ('NSFNet', 60): 0.0176,
@@ -50,7 +51,7 @@ inf_baselines = {
     ('Pan-European', 200): 0.1081,
 }
 
-ksp_baselines = {
+ksp_baselines: dict[tuple[str, float], float] = {
     ('NSFNet', 10): 0.0,
     ('NSFNet', 20): 0.0,
     ('NSFNet', 30): 0.00165,
@@ -104,7 +105,7 @@ ksp_baselines = {
     ('Pan-European', 200): 0.1294,
 }
 
-spf_baselines = {
+spf_baselines: dict[tuple[str, float], float] = {
     ('NSFNet', 10): 0.0,
     ('NSFNet', 20): 0.0,
     ('NSFNet', 30): 0.0068,
@@ -191,7 +192,7 @@ for network in NETWORK_LIST:
         helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
 
         counter = 0  # pylint: disable=invalid-name
-        dict_list = []
+        dict_list: list[dict[str, Any]] = []
         BATCH_SIZE = 200
 
         save_fp = os.path.join('..', 'data', 'excel')
@@ -199,16 +200,19 @@ for network in NETWORK_LIST:
         csv_file = os.path.join(save_fp, f'{network}_analysis_{arrival_rate / 0.2}.csv')
 
 
-        def read_files():
+        def read_files() -> tuple[dict[str, Any] | bool, dict[str, Any] | bool]:
             """
             Reads a file from a single reinforcement learning simulation run.
 
             :return: The input and output JSON files.
             :rtype: tuple
             """
-            output_fp = os.path.join('..', 'data', 'output', network, date, run_time, 's1',
-                                     f'{erlang}_erlang.json')
-            input_fp = os.path.join('..', 'data', 'input', network, date, run_time, 'sim_input_s1.json')
+            date_str: str = str(date)
+            run_time_str: str = str(run_time)
+            erlang_val: float = float(erlang)
+            output_fp = os.path.join('..', 'data', 'output', network, date_str, run_time_str, 's1',
+                                     f'{erlang_val}_erlang.json')
+            input_fp = os.path.join('..', 'data', 'input', network, date_str, run_time_str, 'sim_input_s1.json')
 
             if not os.path.exists(output_fp):
                 print(f'Output file not found! Skipping: {output_fp}')
@@ -233,7 +237,7 @@ for network in NETWORK_LIST:
             return input_dict, output_dict
 
 
-        def calculate_baseline_reductions(tmp_dict, network, arrival_rate):
+        def calculate_baseline_reductions(tmp_dict: dict[str, Any], network: str, arrival_rate: float) -> None:
             """
             Calculates percentage reductions compared to SPF, KSP, and KSP-Inf baselines.
             Updates tmp_dict in-place.
@@ -267,7 +271,7 @@ for network in NETWORK_LIST:
                 tmp_dict['KSP-Inf Reduction (%)'] = np.inf
 
 
-        def get_dict(input_dict: dict, output_dict: dict, network: str, arrival_rate: int):
+        def get_dict(input_dict: dict[str, Any], output_dict: dict[str, Any], network: str, arrival_rate: float) -> dict[str, Any]:
             """
             Gets desired information from input and output for a single RL simulation.
             Calculates percentage reductions compared to SPF and KSP baselines.
@@ -279,8 +283,11 @@ for network in NETWORK_LIST:
             :return: Relevant data from input/output with percentage reductions.
             :rtype: dict
             """
-            tmp_dict = dict()
-            last_key = list(output_dict['iter_stats'].keys())[-1]
+            tmp_dict: dict[str, Any] = dict()
+            iter_stats = output_dict.get('iter_stats')
+            if iter_stats is None:
+                return tmp_dict
+            last_key = list(iter_stats.keys())[-1]
             tmp_dict['Blocking'] = np.mean(output_dict['iter_stats'][last_key]['sim_block_list'][-10:])
             tmp_dict['Completed Iters'] = len(output_dict['iter_stats'][last_key]['sim_block_list'])
             tmp_dict['Sim Start'] = input_dict['sim_start'].split('_')[-1]
@@ -308,6 +315,8 @@ for network in NETWORK_LIST:
             HEADER = False
 
         # TODO: Only supports 's1'
+        if helpers_obj.file_info is None:
+            continue
         for run_time, run_obj in helpers_obj.file_info.items():
             net_key, date_key, sim_key = list(run_obj.keys())
             sim_network = run_obj[net_key]
@@ -320,10 +329,16 @@ for network in NETWORK_LIST:
                 print(f'No data found in dictionary. Skipping: {run_time}')
                 continue
 
-            input_dict, output_dict = read_files()
+            input_dict_result, output_dict_result = read_files()
 
-            if not input_dict or not output_dict:
+            if not input_dict_result or not output_dict_result:
                 continue
+            if isinstance(input_dict_result, bool) or isinstance(output_dict_result, bool):
+                continue
+
+            input_dict: dict[str, Any] = input_dict_result
+            output_dict: dict[str, Any] = output_dict_result
+
             if '19' in input_dict['sim_start'][0:2]:
                 continue
 

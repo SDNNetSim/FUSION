@@ -1,0 +1,35 @@
+{
+  "version": "v2",
+  "metrics": {
+    "blocking_probability": 0.045
+  },
+  "iterations": [
+    {
+      "iteration": 0,
+      "sim_block_list": [0.05, 0.04, 0.045, 0.043],
+      "hops_mean": 3.2,
+      "hops_list": [3, 3, 4, 3, 3],
+      "lengths_mean": 450.5,
+      "lengths_list": [450, 460, 440, 455],
+      "metadata": {}
+    },
+    {
+      "iteration": 1,
+      "sim_block_list": [0.046, 0.044, 0.045, 0.044],
+      "hops_mean": 3.3,
+      "hops_list": [3, 4, 3, 3, 3],
+      "lengths_mean": 455.0,
+      "lengths_list": [455, 465, 445, 450],
+      "metadata": {}
+    }
+  ],
+  "timing": {
+    "start_time": "2024-04-29T21:14:39.491949",
+    "end_time": "2024-04-29T21:16:42.123456",
+    "duration_seconds": 122.631507
+  },
+  "metadata": {
+    "network": "NSFNet",
+    "algorithm": "ppo_obs_7"
+  }
+}

@@ -317,7 +317,7 @@ class TestSchemaConstants:
 
     def test_section_naming_consistency(self) -> None:
         """Test that section names follow consistent naming conventions."""
-        all_sections = set()
+        all_sections: set[str] = set()
         all_sections.update(SIM_REQUIRED_OPTIONS_DICT.keys())
         all_sections.update(OPTIONAL_OPTIONS_DICT.keys())
 

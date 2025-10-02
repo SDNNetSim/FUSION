@@ -21,7 +21,7 @@ class PlotStats:
 
         self.plot_help_obj.get_file_info(sims_info_dict=sims_info_dict)
 
-    def _save_plot(self, file_name: str):
+    def _save_plot(self, file_name: str) -> None:
         # Default to the earliest time for saving
         time = self.sims_info_dict['times_matrix'][0][-1]
         network = self.sims_info_dict['networks_matrix'][0][-1]
@@ -33,7 +33,7 @@ class PlotStats:
         plt.savefig(save_fp)
 
     def _setup_plot(self, title: str, y_lim: list, y_label: str, x_label: str, grid: bool = True, y_ticks: bool = True,
-                    x_ticks: bool = True):
+                    x_ticks: bool = True) -> None:
         plt.figure(figsize=(6.4, 4.8), dpi=100, layout='constrained')
         plt.title(f"{self.props.title_names} {title}")
         plt.ylabel(y_label)
@@ -54,25 +54,28 @@ class PlotStats:
         if grid:
             plt.grid()
 
-    def _plot_helper_two(self, y_vals_list: list, erlang: float, file_name: str):
+    def _plot_helper_two(self, y_vals_list: list, erlang: float, file_name: str) -> None:
         """
         Meant to plot iter stats with erlang each on its own plot.
         """
         color_count = 0
         style_count = 0
-        for sims_dict in self.props.plot_dict.values():
-            for info_dict in sims_dict.values():
-                style = self.props.style_list[style_count]
+        if self.props.plot_dict is not None:
+            for sims_dict in self.props.plot_dict.values():
+                for info_dict in sims_dict.values():
+                    style = self.props.style_list[style_count]
 
-                for y_val in y_vals_list:
-                    color = self.props.color_list[color_count]
-                    index = [index for index, value in enumerate(info_dict['erlang_list']) if value == erlang][0]
-                    x_vals = list(range(len(info_dict[y_val][index])))
-                    plt.plot(x_vals, info_dict[y_val][index], linestyle=style, markersize=2.3, color=color)
-                    # color_count += 1
+                    for y_val in y_vals_list:
+                        color = self.props.color_list[color_count]
+                        erlang_list = getattr(info_dict, 'erlang_list')
+                        index: int = [i for i, value in enumerate(erlang_list) if value == erlang][0]
+                        y_val_data = getattr(info_dict, y_val)
+                        x_vals = list(range(len(y_val_data[index])))
+                        plt.plot(x_vals, y_val_data[index], linestyle=style, markersize=2.3, color=color)
+                        # color_count += 1
 
-            color_count += 1
-            style_count = 0
+                color_count += 1
+                style_count = 0
 
         plt.axhline(y=0.055, color='r', linestyle='--', linewidth=1.5, label='y=0.055')
 
@@ -82,34 +85,38 @@ class PlotStats:
         plt.show()
 
     def _plot_helper_one(self, x_vals: str, y_vals_list: list, legend_val_list: list, force_legend: bool,
-                         file_name: str):
-        legend_list = list()
+                         file_name: str) -> None:
+        legend_list: list[str] = list()
         color_count = 0
         style_count = 0
-        for sims_dict in self.props.plot_dict.values():
-            for info_dict in sims_dict.values():
-                style = self.props.style_list[style_count]
-                for y_val in y_vals_list:
-                    for legend_val in legend_val_list:
-                        color = self.props.color_list[color_count]
+        if self.props.plot_dict is not None:
+            for sims_dict in self.props.plot_dict.values():
+                for info_dict in sims_dict.values():
+                    style = self.props.style_list[style_count]
+                    for y_val in y_vals_list:
+                        for legend_val in legend_val_list:
+                            color = self.props.color_list[color_count]
 
-                        # Plot with each combination of y_val and legend_val
-                        plt.plot(info_dict[x_vals], info_dict[y_val], linestyle=style, markersize=2.3, color=color)
+                            # Plot with each combination of y_val and legend_val
+                            x_data = getattr(info_dict, x_vals)
+                            y_data = getattr(info_dict, y_val)
+                            plt.plot(x_data, y_data, linestyle=style, markersize=2.3, color=color)
 
-                        if force_legend:
-                            legend_list.append(legend_val)
-                        else:
-                            legend_list.append(info_dict[legend_val])
-                        color_count += 1
+                            if force_legend:
+                                legend_list.append(legend_val)
+                            else:
+                                legend_val_str = str(getattr(info_dict, legend_val))
+                                legend_list.append(legend_val_str)
+                            color_count += 1
 
-                    color_count = 0
-                    style_count = 0
+                        color_count = 0
+                        style_count = 0
 
         plt.legend(legend_list)
         self._save_plot(file_name=file_name)
         plt.show()
 
-    def plot_errors(self, erlang_list: list):
+    def plot_errors(self, erlang_list: list) -> None:
         """
         Plots temporal difference errors.
 
@@ -121,7 +128,7 @@ class PlotStats:
             self._plot_helper_two(y_vals_list=['sum_errors_list'], erlang=float(erlang),
                                   file_name=f'sum_errors_{erlang}')
 
-    def plot_rewards(self, erlang_list: list):
+    def plot_rewards(self, erlang_list: list) -> None:
         """
         Plot rewards.
 
@@ -133,7 +140,7 @@ class PlotStats:
             self._plot_helper_two(y_vals_list=['sum_rewards_list'], erlang=float(erlang),
                                   file_name=f'sum_rewards_{erlang}')
 
-    def plot_block_reasons(self):
+    def plot_block_reasons(self) -> None:
         """
         Plots the reasons for blocking as a percentage.
         """
@@ -143,7 +150,7 @@ class PlotStats:
                               legend_val_list=['Congestion', 'Distance'], force_legend=True,
                               file_name='block_reasons')
 
-    def plot_hops(self):
+    def plot_hops(self) -> None:
         """
         Plots the average number of hops.
         """
@@ -152,7 +159,7 @@ class PlotStats:
         self._plot_helper_one(x_vals='erlang_list', y_vals_list=['hops_list'], legend_val_list=['QRC', 'k=3', 'k=1'],
                               force_legend=True, file_name='average_hops')
 
-    def plot_path_length(self):
+    def plot_path_length(self) -> None:
         """
         Plots the average path length.
         """
@@ -161,7 +168,7 @@ class PlotStats:
         self._plot_helper_one(x_vals='erlang_list', y_vals_list=['lengths_list'], legend_val_list=['QRC', 'k=3', 'k=1'],
                               force_legend=True, file_name='average_lengths')
 
-    def plot_blocking(self, art_int: bool = False):
+    def plot_blocking(self, art_int: bool = False) -> None:
         """
         Plots the average blocking probability for each Erlang value.
 
@@ -178,11 +185,11 @@ class PlotStats:
                                   force_legend=True, file_name='average_bp')
 
 
-def main():
+def main() -> None:
     """
     Controls this script.
     """
-    filter_dict = {
+    filter_dict: dict[str, list] = {
         'and_filter_list': [
             # ['path_algorithm', 'ppo']
         ],
