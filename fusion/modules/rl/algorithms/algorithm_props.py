@@ -11,10 +11,14 @@ class RLProps:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self) -> None:
-        self.k_paths: int | None = None  # Number of paths the agent has to choose from
-        self.cores_per_link: int | None = None  # Number of cores on every link
-        self.spectral_slots: int | list[int] | None = None  # Spectral slots on every core
-        self.num_nodes: int | None = None  # Total nodes in the network topology
+        # Number of paths the agent has to choose from
+        self.k_paths: int | None = None
+        # Number of cores on every link
+        self.cores_per_link: int | None = None
+        # Spectral slots on every core
+        self.spectral_slots: int | list[int] | None = None
+        # Total nodes in the network topology
+        self.num_nodes: int | None = None
 
         self.arrival_list: list[float] = []  # Inter-arrival times for every request
         self.depart_list: list[float] = []  # Departure times for every request
@@ -44,12 +48,17 @@ class QProps:
     """
 
     def __init__(self) -> None:
-        self.epsilon: float | None = None  # Current epsilon used at a certain point in time
-        self.epsilon_start: float | None = None  # Starting value of epsilon
-        self.epsilon_end: float | None = None  # Ending value of epsilon to be linearly decayed
-        self.epsilon_list: list[float] = []  # A list of every value at each time step
+        # Current epsilon used at a certain point in time
+        self.epsilon: float | None = None
+        # Starting value of epsilon
+        self.epsilon_start: float | None = None
+        # Ending value of epsilon to be linearly decayed
+        self.epsilon_end: float | None = None
+        # A list of every value at each time step
+        self.epsilon_list: list[float] = []
 
-        self.is_training: bool | None = None  # Flag to determine whether to load a trained agent
+        # Flag to determine whether to load a trained agent
+        self.is_training: bool | None = None
 
         # Rewards for the core and path q-learning agents
         self.rewards_dict: dict[str, dict[str, Any]] = {

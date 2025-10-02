@@ -103,7 +103,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         )
         # Ensure observation_space is properly typed
         self.observation_space: gym.Space[Any] = (
-            obs_space if obs_space is not None else gym.spaces.Box(low=0, high=1, shape=(1,))
+            obs_space
+            if obs_space is not None
+            else gym.spaces.Box(low=0, high=1, shape=(1,))
         )
 
         action_space = get_action_space(

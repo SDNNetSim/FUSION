@@ -39,7 +39,8 @@ class BanditModelPersistence:
         """
         Save bandit model state values.
 
-        :param state_values_dict: Dictionary of state values to save (keys can be strings or tuples)
+        :param state_values_dict: Dictionary of state values to save
+                                  (keys can be strings or tuples)
         :type state_values_dict: dict[str, Any] | dict[tuple[int, int], Any] | None
         :param erlang: Erlang traffic value
         :type erlang: float

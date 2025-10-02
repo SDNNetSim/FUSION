@@ -208,11 +208,6 @@ def save_model(sim_dict: dict[str, Any], env: Any, model: Any) -> None:
     :raises RLConfigurationError: If algorithm info format is invalid
     """
     model_type = determine_model_type(sim_dict=sim_dict)
-    if "_" not in model_type:
-        raise RLConfigurationError(
-            f"Algorithm info '{model_type}' must include both algorithm "
-            "and agent type (e.g., 'ppo_path')."
-        )
 
     algorithm = sim_dict.get(model_type)
     if algorithm is None:
@@ -220,6 +215,11 @@ def save_model(sim_dict: dict[str, Any], env: Any, model: Any) -> None:
     if not isinstance(algorithm, str):
         raise RLConfigurationError(
             f"Algorithm must be a string, got {type(algorithm).__name__}"
+        )
+    if "_" not in algorithm:
+        raise RLConfigurationError(
+            f"Algorithm info '{algorithm}' must include both algorithm "
+            "and agent type (e.g., 'ppo_path')."
         )
 
     save_fp = os.path.join(

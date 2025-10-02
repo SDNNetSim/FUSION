@@ -30,7 +30,12 @@ def get_algorithm_registry() -> dict[str, AlgorithmConfig]:
         from fusion.modules.rl.algorithms.qr_dqn import QrDQN
 
         # Import setup functions
-        from fusion.modules.rl.utils.setup import setup_a2c, setup_dqn, setup_ppo, setup_qr_dqn
+        from fusion.modules.rl.utils.setup import (
+            setup_a2c,
+            setup_dqn,
+            setup_ppo,
+            setup_qr_dqn,
+        )
 
         _algorithm_registry = {
             "a2c": {

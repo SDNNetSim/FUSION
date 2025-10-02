@@ -21,7 +21,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self, engine_props: dict[str, Any], rl_props: Any, is_path: bool
     ) -> None:
         from fusion.modules.rl.algorithms.algorithm_props import BanditProps
-        
+
         self.props = BanditProps()
         self.engine_props = engine_props
         self.total_iters = engine_props['max_iters']

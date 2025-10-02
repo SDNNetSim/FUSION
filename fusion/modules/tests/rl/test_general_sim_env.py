@@ -165,7 +165,7 @@ for _name in ("ARS", "QRDQN"):
     setattr(sb3_contrib, _name, type(_name, (), {}))
 sys.modules["sb3_contrib"] = sb3_contrib
 
-from fusion.modules.rl.gymnasium_envs import (  # pylint: disable=wrong-import-position
+from fusion.modules.rl.gymnasium_envs import (  # noqa: E402  # pylint: disable=wrong-import-position
     general_sim_env as gen_env,
 )
 
@@ -366,7 +366,9 @@ class TestSimEnv:
         """Guarantee an arrival exists before step()."""
         self.env.rl_props.arrival_count = 0
         if not self.env.rl_props.arrival_list:
-            arrival_dict: dict[str, Any] = {"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0}
+            arrival_dict: dict[str, Any] = {
+                "req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0
+            }
             self.env.rl_props.arrival_list.append(arrival_dict)  # type: ignore[arg-type]
 
     def test_step_reward_when_allocated(self) -> None:
