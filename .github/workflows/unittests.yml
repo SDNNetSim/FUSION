@@ -36,7 +36,7 @@ jobs:
         run: |
           # Step 1: Upgrade pip and install core build and testing tools
           python -m pip install --upgrade pip setuptools wheel
-          pip install flake8 pytest
+          pip install flake8 pytest pytest-cov
 
           # Step 2: Install torch first
           pip install torch==2.2.2

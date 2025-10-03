@@ -54,7 +54,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             (0, 1): {"cores_matrix": cores_matrix},
             (1, 0): {"cores_matrix": cores_matrix},
         }
-        self.sdn_props.mod_formats_dict = {
+        self.sdn_props.modulation_formats_dict = {
             "16QAM": {"slots_needed": 2},
             "QPSK": {"slots_needed": 3},
             "64QAM": {"slots_needed": 4},
