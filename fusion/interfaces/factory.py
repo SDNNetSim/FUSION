@@ -153,6 +153,8 @@ class SimulationPipeline:
     def _create_spectrum_algorithm(self) -> AbstractSpectrumAssigner:
         """Create spectrum assignment algorithm from configuration."""
         spectrum_name = self.config.get("spectrum_algorithm", "first_fit")
+        if self.sdn_props is None:
+            raise ValueError("sdn_props is required for spectrum algorithm creation")
         return AlgorithmFactory.create_spectrum_algorithm(
             spectrum_name,
             self.engine_props,

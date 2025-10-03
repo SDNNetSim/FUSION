@@ -25,7 +25,7 @@
 ## Medium Priority
 
 ### Multi-Core Configuration Support
-- **Issue**: Cross-talk and SNR calculations limited to 7-core configurations  
+- **Issue**: Cross-talk and SNR calculations limited to 7-core configurations
 - **Files**: `spectrum_assignment.py:216`, `snr_measurements.py:12,213`
 - **Next Steps**: Generalize methods to support all core configurations (4, 13, 19 cores)
 

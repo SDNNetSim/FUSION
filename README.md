@@ -47,6 +47,7 @@ The script automatically:
 - ✅ Handles PyTorch Geometric compilation issues
 - ✅ Installs all dependencies in the correct order
 - ✅ Sets up development tools
+- ✅ Installs and configures pre-commit hooks
 - ✅ Verifies the installation
 
 ### 📦 Package Installation
@@ -64,9 +65,13 @@ source venv/bin/activate
 pip install -e .
 
 # Install optional components as needed:
-pip install -e .[dev]        # Development tools (ruff, mypy, pytest)
+pip install -e .[dev]        # Development tools (ruff, mypy, pytest, pre-commit)
 pip install -e .[rl]         # Reinforcement learning (stable-baselines3)
 pip install -e .[all]        # Everything except PyTorch Geometric
+
+# Install pre-commit hooks (for development)
+pre-commit install
+pre-commit install --hook-type commit-msg
 
 # PyTorch Geometric requires manual installation:
 # macOS (Apple Silicon):
@@ -147,9 +152,9 @@ This project is brought to you by the efforts of **Arash Rezaee**, **Ryan McCann
 
 If you use FUSION in your research, please cite the following paper:
 
-R. McCann, A. Rezaee, and V. M. Vokkarane,  
-"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"  
-*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.  
+R. McCann, A. Rezaee, and V. M. Vokkarane,
+"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"
+*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.
 DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
 ### 📄 BibTeX
@@ -157,8 +162,8 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
 ```bibtex
 @INPROCEEDINGS{10898199,
   author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
-  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
-  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)},
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking},
   year={2024},
   pages={1-6},
   doi={10.1109/ANTS63515.2024.10898199}
@@ -169,45 +174,65 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
 
 ## 🛠️ Development & Contributing
 
-### PR Validation
+### Setting Up Pre-commit Hooks
 
-Before submitting a pull request, validate your changes locally to ensure they pass all CI/CD checks:
+The project uses pre-commit hooks for code quality checks. Set them up once:
 
 ```bash
-# Quick validation (recommended during development)
-make quick-validate
+# Install pre-commit (if not already installed)
+pip install pre-commit
 
-# Complete validation (before submitting PR)
-make validate
+# Install the git hooks
+pre-commit install
 
-# Individual checks
-make lint            # Code style and quality
-make test            # Unit tests
-make cross-platform  # Cross-platform compatibility
+# Install commit message hook
+pre-commit install --hook-type commit-msg
 ```
 
-**Alternative methods:**
+### Running Code Quality Checks
+
+**Pre-commit hooks (recommended):**
 ```bash
-# Python script (full-featured)
-python tools/validate_pr.py --quick
+# Run all checks on staged files
+pre-commit run
 
-# Shell script (simple)
-./tools/validate_pr.sh quick
+# Run all checks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run ruff --all-files
+pre-commit run mypy --all-files
 ```
 
-For detailed information, see [tools/VALIDATION.md](tools/VALIDATION.md).
+**Using Makefile:**
+```bash
+# Run tests
+make test
+
+# Run linting (using pre-commit)
+make lint
+
+# Clean up generated files
+make clean
+```
 
 ### What Gets Validated
-- Python syntax and imports
-- Code style (pylint)
-- Unit tests (pytest)
-- Configuration file validation
-- Cross-platform compatibility
+
+Pre-commit hooks check:
+- **Ruff** - Code linting and formatting (replaces pylint)
+- **Mypy** - Type checking
+- **Vulture** - Dead code detection
+- **Bandit** - Security vulnerability scanning
+- **Pre-commit hooks** - Trailing whitespace, file endings, YAML validation
+- **Conventional commits** - Commit message format
 
 ### Development Workflow
-1. Make your changes
-2. Run `make quick-validate` during development
-3. Run `make validate` before committing
-4. Submit your PR - CI/CD should pass ✅
 
-The validation tools mirror our GitHub Actions workflows, so passing locally means passing in CI/CD.
+1. Install pre-commit hooks (one time): `pre-commit install`
+2. Make your changes
+3. Stage files: `git add .`
+4. Hooks run automatically on commit, or run manually: `pre-commit run`
+5. Run tests: `make test` or `pytest`
+6. Submit your PR - all checks should pass ✅
+
+**Note:** The `fusion/gui` module is excluded from all checks as it's deprecated and requires a revamp.

@@ -10,7 +10,7 @@ The fastest way to validate your PR:
 # Complete validation (recommended before submitting PR)
 make validate
 
-# Quick validation during development  
+# Quick validation during development
 make quick-validate
 
 # Lint only (fastest)
@@ -56,7 +56,7 @@ The validation process runs the same checks as our GitHub Actions CI/CD pipeline
 - Checks all Python files for syntax errors
 - Ensures code can be compiled
 
-### 2. **Import Tests** 
+### 2. **Import Tests**
 - Verifies all key modules can be imported
 - Catches missing dependencies or circular imports
 

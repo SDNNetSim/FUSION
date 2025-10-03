@@ -91,10 +91,10 @@ def test_function_name():
     # Arrange - Set up test data
     input_data = {"key": "value"}
     expected_result = True
-    
+
     # Act - Execute function
     result = function_under_test(input_data)
-    
+
     # Assert - Verify results
     assert result == expected_result
 ```
@@ -107,24 +107,24 @@ from ..config import load_configuration, ConfigFileNotFoundError
 
 class TestConfigurationLoading:
     """Tests for configuration loading functionality."""
-    
+
     def test_valid_file_loads_successfully(self):
         """Test successful loading of valid config file."""
         # Arrange
         config_path = "tests/fixtures/valid_config.ini"
-        
+
         # Act
         result = load_configuration(config_path)
-        
+
         # Assert
         assert isinstance(result, dict)
         assert "database" in result
-    
+
     def test_missing_file_raises_error(self):
         """Test that missing file raises appropriate error."""
         # Arrange
         config_path = "nonexistent.ini"
-        
+
         # Act & Assert
         with pytest.raises(ConfigFileNotFoundError):
             load_configuration(config_path)
@@ -162,7 +162,7 @@ def test_config_file_validation_when_missing(mock_exists):
     """Test validation when config file doesn't exist (unit test)."""
     # Arrange - Mock external dependency
     mock_exists.return_value = False
-    
+
     # Act & Assert - Test only the unit's logic
     with pytest.raises(ConfigFileNotFoundError):
         validate_config_file("missing.ini")
@@ -250,7 +250,7 @@ def test_invalid_input_raises_validation_error():
     """Test that invalid input raises ValidationError with clear message."""
     with pytest.raises(ValidationError) as exc_info:
         validate_input("")
-    
+
     assert "Input cannot be empty" in str(exc_info.value)
 ```
 

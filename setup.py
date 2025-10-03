@@ -1,40 +1,46 @@
 #!/usr/bin/env python3
 """
-Setup script for FUSION - Flexible Unified System for Intelligent Optical Networking.
+Setup script for FUSION - Flexible Unified System for Intelligent Optical
+Networking.
 
-This package provides simulation capabilities for Software Defined Elastic Optical Networks (SD-EONs)
-with artificial intelligence integration for network optimization.
+This package provides simulation capabilities for Software Defined Elastic
+Optical Networks (SD-EONs) with artificial intelligence integration for
+network optimization.
 """
 
-from setuptools import setup, find_packages
 import os
 
+from setuptools import find_packages, setup
+
+
 # Read the README file for long description
-def read_readme():
-    readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
+def read_readme() -> str:
+    readme_path = os.path.join(os.path.dirname(__file__), "README.md")
     if os.path.exists(readme_path):
-        with open(readme_path, 'r', encoding='utf-8') as f:
+        with open(readme_path, encoding="utf-8") as f:
             return f.read()
     return "FUSION - Flexible Unified System for Intelligent Optical Networking"
 
+
 # Read requirements from requirements.txt
-def read_requirements():
-    requirements_path = os.path.join(os.path.dirname(__file__), 'requirements.txt')
+def read_requirements() -> list[str]:
+    requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
     requirements = []
-    
+
     if os.path.exists(requirements_path):
-        with open(requirements_path, 'r', encoding='utf-8') as f:
+        with open(requirements_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 # Skip empty lines, comments, and pip-specific options
-                if line and not line.startswith('#') and not line.startswith('--'):
+                if line and not line.startswith("#") and not line.startswith("--"):
                     # Handle version constraints
-                    if '~=' in line:
+                    if "~=" in line:
                         # Convert ~= to >= for setuptools compatibility
-                        line = line.replace('~=', '>=')
+                        line = line.replace("~=", ">=")
                     requirements.append(line)
-    
+
     return requirements
+
 
 setup(
     name="fusion-optical-networks",
@@ -45,7 +51,7 @@ setup(
     long_description=read_readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/fusion-dev/FUSION",
-    packages=find_packages(exclude=['tests*', 'docs*', 'tools*', 'venv*']),
+    packages=find_packages(exclude=["tests*", "docs*", "tools*", "venv*"]),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -97,7 +103,7 @@ setup(
         ],
         "all": [
             "stable-baselines3>=2.2.1",
-            "rl_zoo3>=2.2.1", 
+            "rl_zoo3>=2.2.1",
             "gymnasium>=0.29.1",
             "optuna>=3.6.1",
             "torch-geometric>=2.6.1",
@@ -120,7 +126,10 @@ setup(
     },
     include_package_data=True,
     zip_safe=False,
-    keywords="optical networks, machine learning, simulation, reinforcement learning, software defined networks",
+    keywords=(
+        "optical networks, machine learning, simulation, "
+        "reinforcement learning, software defined networks"
+    ),
     project_urls={
         "Bug Reports": "https://github.com/fusion-dev/FUSION/issues",
         "Source": "https://github.com/fusion-dev/FUSION",

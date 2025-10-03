@@ -35,7 +35,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     for dynamic, iterative simulations.
     """
 
-    metadata = {}
+    metadata: dict[str, Any] = {}
 
     def __init__(
         self,

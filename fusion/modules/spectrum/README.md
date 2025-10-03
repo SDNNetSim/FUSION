@@ -147,9 +147,9 @@ from fusion.modules.spectrum import create_spectrum_algorithm
 
 # Initialize algorithm
 algorithm = create_spectrum_algorithm(
-    "best_fit", 
-    engine_props, 
-    sdn_props, 
+    "best_fit",
+    engine_props,
+    sdn_props,
     route_props
 )
 

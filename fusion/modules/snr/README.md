@@ -56,7 +56,7 @@ Primary SNR measurement algorithm implementing comprehensive noise modeling.
 ### Utility Functions
 
 - **File Loading**: Modulation format and GSNR data retrieval
-- **Slot Indexing**: Band-aware spectrum slot calculations  
+- **Slot Indexing**: Band-aware spectrum slot calculations
 - **Response Validation**: SNR threshold and modulation validation
 
 ## Usage
@@ -70,7 +70,7 @@ from fusion.modules.snr import create_snr_algorithm
 snr_measurer = create_snr_algorithm(
     "standard_snr",
     engine_props,
-    sdn_props, 
+    sdn_props,
     spectrum_props,
     route_props
 )
@@ -124,7 +124,7 @@ snr_db = snr_measurer.calculate_snr(path, spectrum_info)
 
 ### Spectrum Information
 - `start_slot`: Starting spectrum slot index
-- `end_slot`: Ending spectrum slot index  
+- `end_slot`: Ending spectrum slot index
 - `core_number`: Core identifier for multi-core systems
 - `band`: Spectrum band ('l', 'c', 's')
 
@@ -132,7 +132,7 @@ snr_db = snr_measurer.calculate_snr(path, spectrum_info)
 
 Supported modulation formats with SNR thresholds:
 - **BPSK**: 6.0 dB
-- **QPSK**: 9.0 dB  
+- **QPSK**: 9.0 dB
 - **8QAM**: 12.0 dB
 - **16QAM**: 15.0 dB
 - **32QAM**: 18.0 dB

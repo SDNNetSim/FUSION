@@ -120,9 +120,7 @@ class RLVisualizationPlugin(BasePlugin):
                 default_config={"colormap": "viridis", "annotate": False},
             ),
             "convergence_plot": PlotTypeRegistration(
-                processor=ConvergenceDetectionStrategy(
-                    window_size=100, threshold=0.01
-                ),
+                processor=ConvergenceDetectionStrategy(window_size=100, threshold=0.01),
                 renderer=ConvergencePlotRenderer(),
                 description=(
                     "Training convergence analysis showing when metrics stabilize"

@@ -294,7 +294,7 @@ def _get_hfrag_score(
     """
     big_n = len(super_channel_index_matrix) * -1.0
     if big_n == 0.0:
-        return np.inf
+        return float(np.inf)
 
     channel_length = len(super_channel_index_matrix[0])
     response_score = (

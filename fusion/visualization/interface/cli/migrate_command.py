@@ -148,8 +148,7 @@ def migrate_config(
         if not no_backup:
             backup_path = input_path.with_suffix(".bak.yml")
             click.echo(
-                f"  4. Once confirmed working, you can delete the backup: "
-                f"{backup_path}"
+                f"  4. Once confirmed working, you can delete the backup: {backup_path}"
             )
     elif not result.success:
         click.echo(click.style("\n❌ Migration failed!", fg="red", bold=True))

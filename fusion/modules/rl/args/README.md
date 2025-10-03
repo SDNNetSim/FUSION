@@ -26,7 +26,7 @@ This directory contains configuration constants and argument definitions for the
 - **`constants.py`** - Comprehensive constants with enums (for new code)
   - Provides type-safe enums and better organization
   - Includes validation sets and default configurations
-  
+
 - **`__init__.py`** - Package exports for convenient imports
 
 ## Usage Examples

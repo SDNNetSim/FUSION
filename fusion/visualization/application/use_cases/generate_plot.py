@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -301,9 +302,8 @@ class GeneratePlotUseCase:
                             )
                         canonical_data = self.cache.get_or_compute(
                             key=cache_key,
-                            compute_fn=lambda r=run,
-                            t=tv: self.simulation_repository.get_run_data(  # type: ignore[union-attr]
-                                r, t
+                            compute_fn=partial(
+                                self.simulation_repository.get_run_data, run, tv
                             ),
                             ttl_seconds=3600,  # 1 hour cache
                         )

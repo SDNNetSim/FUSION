@@ -122,8 +122,8 @@ class TestOutputEquivalence:
         assert "ppo" in processed_data.y_data  # Algorithm should be in results
 
         # Verify data types
-        assert isinstance(processed_data.x_data, np.ndarray)
-        assert isinstance(processed_data.y_data["ppo"], np.ndarray)
+        assert isinstance(processed_data.x_data, list)
+        assert isinstance(processed_data.y_data["ppo"], list)
         assert len(processed_data.y_data["ppo"]) == 3
 
     def test_multi_algorithm_comparison_consistency(

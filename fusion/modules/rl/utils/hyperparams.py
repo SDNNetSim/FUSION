@@ -249,7 +249,12 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
 
 def _get_activation(trial: Trial) -> type[nn.Module]:
     name = trial.suggest_categorical("activation_fn", ["relu", "tanh", "elu"])
-    return {"relu": nn.ReLU, "tanh": nn.Tanh, "elu": nn.ELU}[name]
+    activation_map: dict[str, type[nn.Module]] = {
+        "relu": nn.ReLU,
+        "tanh": nn.Tanh,
+        "elu": nn.ELU,
+    }
+    return activation_map[name]
 
 
 def _mlp_arch(

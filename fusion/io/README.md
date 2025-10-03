@@ -75,7 +75,7 @@ DEFAULT_TOPOLOGY_PATH = "data/raw/"
 
 ### Supported Network Types
 - `NSFNet`: NSF network topology
-- `Pan-European`: European network topology  
+- `Pan-European`: European network topology
 - `USNet`: US network topology
 - `USbackbone60`: 60-node US backbone
 - `Spainbackbone30`: 30-node Spain backbone
@@ -115,7 +115,7 @@ metrics_data = [
 ]
 
 exporter.export_topology(topology_data, "topology.json")
-exporter.export_results(results_data, "results.json") 
+exporter.export_results(results_data, "results.json")
 exporter.export_metrics(metrics_data, "metrics.csv")
 ```
 

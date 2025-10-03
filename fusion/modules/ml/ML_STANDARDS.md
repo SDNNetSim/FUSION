@@ -57,7 +57,7 @@ modules/ml/
   'average_congestion_percent'
   'path_length_kilometers'
   'bandwidth_gigabits'
-  
+
   # Avoid
   'avg_cong'
   'len'
@@ -218,10 +218,10 @@ def train_classifier(
     algorithm: str = "random_forest"
 ) -> Tuple[Any, Dict[str, float]]:
     """Train a classification model.
-    
+
     This function supports multiple algorithms and automatically
     handles class imbalance through SMOTE or class weights.
-    
+
     :param features: Feature matrix with shape (n_samples, n_features)
     :type features: pd.DataFrame
     :param labels: Target labels with shape (n_samples,)
@@ -230,10 +230,10 @@ def train_classifier(
     :type algorithm: str
     :return: Trained model and evaluation metrics
     :rtype: Tuple[Any, Dict[str, float]]
-    
+
     :raises ValueError: If algorithm not supported
     :raises DataError: If features/labels shape mismatch
-    
+
     Example:
         >>> features = pd.DataFrame({'f1': [1, 2], 'f2': [3, 4]})
         >>> labels = pd.Series([0, 1])

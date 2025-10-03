@@ -196,7 +196,7 @@ for network in NETWORK_LIST:
         csv_file = os.path.join(save_fp, f"{network}_analysis_{arrival_rate / 0.2}.csv")
 
         def read_files(
-            date, run_time, erlang, network
+            date: Any, run_time: Any, erlang: Any, network: Any
         ) -> tuple[dict[str, Any] | bool, dict[str, Any] | bool]:
             """
             Reads a file from a single reinforcement learning simulation run.

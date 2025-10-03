@@ -301,8 +301,7 @@ def _display_comparison_summary(request: ComparisonRequestDTO) -> None:
         f"{'Enabled' if request.include_statistical_tests else 'Disabled'}"
     )
     click.echo(
-        f"  Effect Size: "
-        f"{'Enabled' if request.include_effect_sizes else 'Disabled'}"
+        f"  Effect Size: {'Enabled' if request.include_effect_sizes else 'Disabled'}"
     )
     click.echo(f"  Confidence:  {request.confidence_level:.1%}")
 

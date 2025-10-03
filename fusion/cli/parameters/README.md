@@ -352,7 +352,7 @@ add_traffic_args(parser)    # Traffic generation
 args = parser.parse_args()
 
 # Example usage:
-# python sim.py --config_path config.ini --run_id sim001 
+# python sim.py --config_path config.ini --run_id sim001
 #               --network NSFNet --route_method shortest_path
 #               --erlang_start 50 --erlang_stop 200
 ```

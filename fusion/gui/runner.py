@@ -69,7 +69,7 @@ def launch_gui(config_like):
 def launch_gui_pipeline(args):
     """
     Pipeline function for launching GUI from CLI.
-    
+
     Args:
         args: Parsed command line arguments
     """

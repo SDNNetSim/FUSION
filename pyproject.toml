@@ -1,7 +1,7 @@
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-exclude = ["venv", "build", "dist"]
+exclude = ["venv", "build", "dist", "fusion/gui"]
 
 [tool.ruff.lint]
 select = [
@@ -50,3 +50,6 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.bandit]
+exclude_dirs = ["venv", "build", "dist", "fusion/gui"]

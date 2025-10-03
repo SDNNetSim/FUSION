@@ -50,9 +50,7 @@ class BatchGeneratePlotsUseCase:
             renderer: Legacy parameter - will create GeneratePlotUseCase if provided
         """
         # Handle legacy parameters by creating a GeneratePlotUseCase
-        if generate_plot_use_case is None and (
-            plot_service or processor or renderer
-        ):
+        if generate_plot_use_case is None and (plot_service or processor or renderer):
             # Type checking: processor and renderer must be non-None
             if processor is not None and renderer is not None:
                 generate_plot_use_case = GeneratePlotUseCase(

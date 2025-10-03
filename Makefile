@@ -1,7 +1,7 @@
 # FUSION Project Makefile
 # Provides convenient commands for development and validation
 
-.PHONY: help install lint test validate quick-validate clean check-env
+.PHONY: help install lint test validate clean check-env precommit-install precommit-run
 
 # Default target
 help:
@@ -9,25 +9,25 @@ help:
 	@echo "=========================="
 	@echo ""
 	@echo "Setup:"
-	@echo "  install         Install all dependencies (automated)"
-	@echo "  install-dev     Install development tools only"
-	@echo "  install-manual  Manual installation (advanced users)"
-	@echo "  check-env       Check if virtual environment is activated"
+	@echo "  install            Install all dependencies (automated)"
+	@echo "  install-dev        Install development tools only"
+	@echo "  install-manual     Manual installation (advanced users)"
+	@echo "  precommit-install  Install pre-commit hooks"
+	@echo "  check-env          Check if virtual environment is activated"
 	@echo ""
 	@echo "Validation (run before submitting PR):"
-	@echo "  validate        Run complete PR validation (lint + test + cross-platform)"
-	@echo "  quick-validate  Run quick validation (faster, stops on first failure)"
-	@echo "  lint            Run only linting checks"
-	@echo "  test            Run only unit tests"
-	@echo "  cross-platform  Run only cross-platform compatibility test"
+	@echo "  validate           Run all pre-commit checks on all files"
+	@echo "  lint               Run pre-commit checks on all files"
+	@echo "  precommit-run      Run pre-commit on staged files only"
+	@echo "  test               Run unit tests with pytest"
 	@echo ""
 	@echo "Utilities:"
-	@echo "  clean           Clean up generated files"
+	@echo "  clean              Clean up generated files"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make validate          # Full validation before PR"
-	@echo "  make quick-validate    # Quick check during development"
-	@echo "  make lint              # Check code style only"
+	@echo "  make lint              # Run all linting checks"
+	@echo "  make test              # Run tests only"
 
 # Check if virtual environment is activated
 check-env:
@@ -73,30 +73,36 @@ install-manual: check-env
 	pip install -e .[rl,dev]
 	@echo "✅ Dependencies installed successfully"
 
-# Full PR validation
+# Install pre-commit hooks
+precommit-install: check-env
+	@echo "📦 Installing pre-commit hooks..."
+	pip install pre-commit
+	pre-commit install
+	pre-commit install --hook-type commit-msg
+	@echo "✅ Pre-commit hooks installed"
+
+# Run pre-commit on staged files
+precommit-run: check-env
+	@echo "🔍 Running pre-commit checks on staged files..."
+	pre-commit run
+
+# Full PR validation - run all pre-commit checks on all files
 validate: check-env
-	@echo "🚀 Running complete PR validation..."
-	python tools/validate_pr.py
+	@echo "🚀 Running complete validation (pre-commit + tests)..."
+	@echo "Running pre-commit checks on all files..."
+	pre-commit run --all-files
+	@echo "Running unit tests..."
+	pytest
 
-# Quick validation for development
-quick-validate: check-env
-	@echo "⚡ Running quick validation..."
-	python tools/validate_pr.py --quick
-
-# Lint only
+# Lint only - run all pre-commit checks
 lint: check-env
-	@echo "🔍 Running linting checks..."
-	python tools/validate_pr.py --lint-only
+	@echo "🔍 Running all pre-commit checks on all files..."
+	pre-commit run --all-files
 
-# Test only  
+# Test only
 test: check-env
 	@echo "🧪 Running unit tests..."
-	python tools/validate_pr.py --test-only
-
-# Cross-platform test only
-cross-platform: check-env
-	@echo "🌐 Running cross-platform compatibility test..."
-	python tools/validate_pr.py --cross-platform-only
+	pytest
 
 # Clean up generated files
 clean:
@@ -111,5 +117,4 @@ clean:
 
 # Legacy aliases for common workflows
 pr-ready: validate
-dev-check: quick-validate
 style-check: lint
