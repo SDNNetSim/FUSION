@@ -184,7 +184,7 @@ class TestMetricDefinition:
         metric = MetricDefinition(
             name="hops",
             data_type=DataType.FLOAT,
-            source_path="$.iter_stats.0.hops_mean",
+            source_path="$.iter_stats['0'].hops_mean",
         )
 
         data = {"iter_stats": {"0": {"hops_mean": 3.2}}}

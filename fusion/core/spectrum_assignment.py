@@ -480,7 +480,8 @@ class SpectrumAssignment:
                 else:
                     continue
 
-            if modulation_format is False:
+            # Skip invalid modulation formats (False, None, empty string, etc.)
+            if not modulation_format or modulation_format is False:
                 self.sdn_props.block_reason = "distance"
                 continue
 
@@ -488,6 +489,10 @@ class SpectrumAssignment:
                 modulation_bandwidth_dict = self.engine_props_dict["mod_per_bw"][
                     slice_bandwidth
                 ]
+                # Validate modulation format exists in bandwidth dict
+                if modulation_format not in modulation_bandwidth_dict:
+                    self.sdn_props.block_reason = "distance"
+                    continue
                 self.spectrum_props.slots_needed = modulation_bandwidth_dict[
                     modulation_format
                 ]["slots_needed"]
@@ -497,6 +502,10 @@ class SpectrumAssignment:
                 else:
                     if self.sdn_props.modulation_formats_dict is None:
                         raise ValueError("Modulation formats dict must be initialized")
+                    # Validate modulation format exists in dict
+                    if modulation_format not in self.sdn_props.modulation_formats_dict:
+                        self.sdn_props.block_reason = "distance"
+                        continue
                     self.spectrum_props.slots_needed = (
                         self.sdn_props.modulation_formats_dict[modulation_format][
                             "slots_needed"
