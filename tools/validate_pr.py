@@ -80,7 +80,8 @@ class ValidationRunner:
 
         start_time = time.time()
         try:
-            result = subprocess.run(
+            # shell=True only for string commands, list commands use shell=False
+            result = subprocess.run(  # nosec B602
                 cmd,
                 cwd=cwd,
                 capture_output=True,

@@ -221,9 +221,9 @@ class FileMetadataRepository(MetadataRepository):
 
     def _get_cache_key(self, run_path: Path) -> str:
         """Generate cache key for a run path."""
-        # Use hash of absolute path as cache key
+        # Use hash of absolute path as cache key (not for security)
         path_str = str(run_path.absolute())
-        return hashlib.md5(path_str.encode()).hexdigest()
+        return hashlib.md5(path_str.encode(), usedforsecurity=False).hexdigest()
 
     def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""

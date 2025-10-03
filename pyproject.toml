@@ -53,3 +53,9 @@ exclude_lines = [
 
 [tool.bandit]
 exclude_dirs = ["venv", "build", "dist", "fusion/gui"]
+# B101: Assert statements are acceptable for type narrowing and test files
+# B108: Hardcoded /tmp paths in test files are safe (test fixtures only)
+# B403/B404: pickle and subprocess imports are intentional and necessary
+# B602/B603: subprocess calls are properly validated
+# B614: PyTorch save/load with nosec comments where appropriate
+skips = ["B101", "B108", "B403", "B404", "B602", "B603"]

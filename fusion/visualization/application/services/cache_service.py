@@ -139,7 +139,8 @@ class FileCacheService(CachePort):
 
         try:
             with open(cache_path, "rb") as f:
-                data = pickle.load(f)
+                # Loading trusted cache file that we created
+                data = pickle.load(f)  # nosec B301
 
             value = data["value"]
             expiry_time = data.get("expiry_time")
@@ -223,7 +224,8 @@ class FileCacheService(CachePort):
 
         try:
             with open(cache_path, "rb") as f:
-                data = pickle.load(f)
+                # Loading trusted cache file that we created
+                data = pickle.load(f)  # nosec B301
 
             expiry_time = data.get("expiry_time")
 

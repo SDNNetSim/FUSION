@@ -262,7 +262,9 @@ def _hash_params(
 ) -> tuple[str, dict[str, Any]]:
     """Return (md5‑hash, params_dict) for a trial row, ignoring bookkeeping cols."""
     items = sorted((k, row[k]) for k in row.index if k not in ignore)
-    return hashlib.md5(str(items).encode()).hexdigest(), dict(items)
+    # MD5 used only for creating unique identifiers, not for security
+    hash_value = hashlib.md5(str(items).encode(), usedforsecurity=False).hexdigest()
+    return hash_value, dict(items)
 
 
 def _gather_csvs(topo_dir: Path) -> list[Path]:

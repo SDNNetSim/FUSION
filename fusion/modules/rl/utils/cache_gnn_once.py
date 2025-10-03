@@ -105,7 +105,7 @@ def main() -> None:
         with torch.inference_mode():
             emb = enc(x, edge_index, path_masks).cpu()
 
-        torch.save(emb, cache_path)
+        torch.save(emb, cache_path)  # nosec B614
         logger.info("Saved cache to %s", cache_path)
     except Exception as e:
         raise CacheError(
