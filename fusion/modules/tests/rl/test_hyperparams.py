@@ -39,11 +39,11 @@ def _mock_trial() -> SimpleNamespace:
     trial = SimpleNamespace()
 
     # suggest_float
-    def _sf(name: str, low: Any = None, high: Any = None, **kw: Any) -> Any:
+    def _sf(name: str, low: Any = None, _high: Any = None, **_kw: Any) -> Any:
         return {"gamma": 0.95, "clip_range": 0.2}.get(name, low)
 
     # suggest_int
-    def _si(name: str, low: Any = None, high: Any = None, **kw: Any) -> Any:
+    def _si(name: str, low: Any = None, _high: Any = None, **_kw: Any) -> Any:
         return low
 
     def _sc(name: str, choices: list[Any]) -> Any:  # suggest_categorical

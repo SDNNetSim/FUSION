@@ -99,7 +99,7 @@ class TestLoadMemoryUsage:
     def test_file_found_loads_numpy(
         self,
         mock_exists: mock.MagicMock,
-        mock_extract: mock.MagicMock,
+        _mock_extract: mock.MagicMock,
         mock_load: mock.MagicMock,
         setup_data: dict[str, Any],
     ) -> None:
@@ -161,7 +161,7 @@ class TestLoadAllRewards:
     )
     def test_regex_parses_indices_and_stores(
         self,
-        mock_extract: mock.MagicMock,
+        _mock_extract: mock.MagicMock,
         mock_exists: mock.MagicMock,
         mock_listdir: mock.MagicMock,
         mock_load: mock.MagicMock,

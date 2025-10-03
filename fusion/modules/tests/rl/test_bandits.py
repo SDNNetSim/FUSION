@@ -61,7 +61,7 @@ class TestSaveModelLowLevel:
     @mock.patch("os.getcwd", return_value="/cwd")
     def test_save_model_writes_json_for_path(
         self,
-        mock_cwd: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_cwd: mock.MagicMock,  # pylint: disable=unused-argument
         mock_open_fn: mock.MagicMock,
         mock_dump: mock.MagicMock,
     ) -> None:

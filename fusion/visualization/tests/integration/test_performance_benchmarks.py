@@ -42,7 +42,7 @@ class PerformanceTimer:
         self.start_time = time.perf_counter()
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> Literal[False]:
         self.end_time = time.perf_counter()
         assert self.start_time is not None  # For type checker
         self.duration = self.end_time - self.start_time
