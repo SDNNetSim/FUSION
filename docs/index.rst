@@ -188,9 +188,9 @@ Acknowledgments
 
 This project is brought to you by the efforts of:
 
-* **Arash Rezaee** - Original developer
-* **Ryan McCann** - Lead developer
-* **Vinod M. Vokkarane** - Principal investigator
+* **Arash Rezaee** - Networking Systems Lead and Co-Founder
+* **Ryan McCann** - Technical Architect, AI Lead, and Co-Founder
+* **Vinod M. Vokkarane** - Principal Investigator
 
 We welcome contributions from the community to help make this project even better!
 

@@ -59,7 +59,23 @@
     margin-bottom: 2em;
 }
 
-/* Logo and branding */
+/* Logo and branding - moved below sidebar navigation */
+
+/* Improve sidebar navigation */
+.wy-nav-side {
+    background-color: #F5F5F5;
+    border-right: 2px solid #E0E0E0;
+}
+
+/* Main content area */
+.wy-nav-content-wrap {
+    background-color: #FFFFFF;
+}
+
+.wy-nav-content {
+    background-color: #FFFFFF;
+}
+
 .wy-side-nav-search {
     background-color: #2C3E50;
 }
@@ -70,13 +86,39 @@
     font-weight: bold;
 }
 
-/* Improve sidebar navigation */
+.wy-side-nav-search input[type="text"] {
+    border-color: #34495E;
+}
+
+.wy-menu-vertical {
+    background-color: #F5F5F5;
+}
+
 .wy-menu-vertical a {
     color: #404040;
 }
 
 .wy-menu-vertical a:hover {
     background-color: #E3F2FD;
+    color: #2980B9;
+}
+
+.wy-menu-vertical a.current {
+    background-color: #E3F2FD;
+    color: #2980B9;
+    font-weight: bold;
+}
+
+/* Better contrast for sidebar text */
+.wy-menu-vertical li.toctree-l1 > a {
+    color: #404040;
+}
+
+.wy-menu-vertical li.toctree-l2 > a {
+    color: #606060;
+}
+
+.wy-menu-vertical li.current a {
     color: #2980B9;
 }
 
