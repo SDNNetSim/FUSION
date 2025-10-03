@@ -9,6 +9,7 @@ Resources for contributing to and extending FUSION.
 
    contributing
    development_setup
+   visualizing_codebase
    workflow
    testing
    coding_standards
