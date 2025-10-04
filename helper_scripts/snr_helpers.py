@@ -110,10 +110,7 @@ def edge_set(path: list[int], bidirectional: bool = True) -> set:
     Return a normalized set of links from a path.
     If bidirectional, uses frozenset to collapse direction.
     """
-    if bidirectional:
-        return {frozenset({u, v}) for u, v in zip(path, path[1:])}
-
-    return set(zip(path, path[1:]))
+    return {tuple(sorted((u, v))) for u, v in zip(path, path[1:])}
 
 
 def get_overlapping_lightpaths(new_lp: dict, lp_list: list[dict], *, cores_per_link: int,
@@ -144,14 +141,14 @@ def get_overlapping_lightpaths(new_lp: dict, lp_list: list[dict], *, cores_per_l
             continue
 
         # for band overlap
-        lp_band = lp.get("band")
-        if not (include_all_bands or lp_band == new_band):
-            continue
+        # lp_band = lp.get("band")
+        # if not (include_all_bands or lp_band == new_band):
+        #     continue
 
         # for slot interval overlap
-        lp_start, lp_end = lp["spectrum"]
-        if new_end < lp_start or new_start > lp_end:
-            continue
+        # lp_start, lp_end = lp["start_slot"], lp["end_slot"]
+        # if new_end < lp_start or new_start > lp_end:
+        #     continue
 
         affected.append(lp)
 

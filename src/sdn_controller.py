@@ -1,5 +1,5 @@
 import time
-
+import copy
 import numpy as np
 
 from helper_scripts.sim_helpers import sort_dict_keys, get_path_mod, find_path_len, sort_nested_dict_vals, average_bandwidth_usage
@@ -253,7 +253,10 @@ class SDNController:
         self.sdn_props.num_trans = 1
         self.sdn_props.is_sliced = False
         self.sdn_props.was_partially_routed = False
-        self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+        if self.sdn_props.was_partially_groomed:
+            self.sdn_props.remaining_bw = self.sdn_props.lightpath_bandwidth_list
+        else:
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
         self.sdn_props.was_new_lp_established = list()
 
     def _handle_dynamic_slicing(self, path_list: list, forced_segments: int ):
@@ -271,14 +274,6 @@ class SDNController:
                     self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                     self.spectrum_obj.spectrum_props.lightpath_bandwidth = bw
                     self.allocate()
-
-                    if not self._check_snr_after_allocation(lp_id):
-                        # Rollback this lightpath and stop
-                        self.sdn_props.was_routed = False
-                        self.sdn_props.block_reason = 'snr_recheck_failed'
-                        self._handle_congestion(remaining_bw)
-                        break
-
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     self._update_req_stats(bandwidth=str(dedicated_bw), remaining= str(remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else 0))
                     remaining_bw -= bw
@@ -286,6 +281,13 @@ class SDNController:
                     self.sdn_props.is_sliced = True
                     self.sdn_props.was_new_lp_established.append(lp_id)
                     self.sdn_props.was_partially_routed = False
+                    if not self._check_snr_after_allocation(lp_id):
+                        # Rollback this lightpath and stop
+                        self.sdn_props.was_routed = False
+                        self.sdn_props.block_reason = 'snr_recheck_failed'
+                        remaining_bw += bw
+                        self._handle_congestion(remaining_bw)
+                        break
                 else:
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = 'congestion'
@@ -321,6 +323,13 @@ class SDNController:
                             self.sdn_props.is_sliced = True
                             self.sdn_props.was_new_lp_established.append(lp_id)
                             self.sdn_props.was_partially_routed = False
+                            if not self._check_snr_after_allocation(lp_id):
+                                # Rollback this lightpath and stop
+                                self.sdn_props.was_routed = False
+                                self.sdn_props.block_reason = 'snr_recheck_failed'
+                                remaining_bw += bw
+                                self._handle_congestion(remaining_bw)
+                                break
                         else:
                             break
 
@@ -362,7 +371,7 @@ class SDNController:
         snr_checker = SnrMeasurements(
             self.engine_props,
             self.sdn_props,
-            self.spectrum_obj.spectrum_props,
+            copy.deepcopy(self.spectrum_obj.spectrum_props),
             self.route_obj.route_props,
         )
         recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
@@ -371,9 +380,13 @@ class SDNController:
             return True
 
         # Rollback
-        self.release(lightpath_id=lp_id)
+        self.release(lightpath_id=lp_id, slicing_flag = True)
         if lp_id in self.sdn_props.lightpath_id_list:
             idx = self.sdn_props.lightpath_id_list.index(lp_id)
+            if self.sdn_props.remaining_bw == '0':
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth_list[idx])
+            else:
+                self.sdn_props.remaining_bw += self.sdn_props.bandwidth_list[idx]
             for l in [
                 self.sdn_props.lightpath_id_list,
                 self.sdn_props.lightpath_bandwidth_list,

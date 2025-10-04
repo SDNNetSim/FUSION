@@ -820,133 +820,49 @@ class SnrMeasurements:
 
     def _build_lightpath_list_from_net_spec(self) -> list[dict]:
         """Build lightpath list using net_spec_dict as primary source, lightpath_status_dict as reference"""
-        lightpath_info = {}
-
-        # Build lightpath_info from net_spec_dict (existing code)
-        for (src, dst), link_info in self.sdn_props.net_spec_dict.items():
-            for band, cores in link_info['cores_matrix'].items():
-                for core_num, core_arr in enumerate(cores):
-                    for slot_idx, val in enumerate(core_arr):
-                        if val > 0:
-                            lp_id = int(val)
-                            if lp_id not in lightpath_info:
-                                lightpath_info[lp_id] = {
-                                    "band": band,
-                                    "core": core_num,
-                                    "links": [],
-                                    "spectrum": [slot_idx, slot_idx],
-                                    "mod_format": "QPSK"
-                                }
-
-                            # Extend spectrum range
-                            lightpath_info[lp_id]["spectrum"][0] = min(lightpath_info[lp_id]["spectrum"][0], slot_idx)
-                            lightpath_info[lp_id]["spectrum"][1] = max(lightpath_info[lp_id]["spectrum"][1], slot_idx)
-
-                            # Add link if new
-                            if (src, dst) not in lightpath_info[lp_id]["links"]:
-                                lightpath_info[lp_id]["links"].append((src, dst))
-
-        # FIXED: Create a reverse lookup from lightpath_id to light_id
-        lp_id_to_light_id = {}
-        for light_id, lightpaths in self.sdn_props.lightpath_status_dict.items():
-            for lp_id in lightpaths.keys():
-                lp_id_to_light_id[lp_id] = light_id
-
-        # Second pass: Reconstruct paths and enhance with lightpath_status_dict info
-        lp_list = []
-        found_in_status_dict = 0
-        not_found_in_status_dict = 0
-
-        for lp_id, info in lightpath_info.items():
-            path = None
-            enhanced_info = {}
-            found_in_status = False
-
-            if lp_id in lp_id_to_light_id:
-                light_id = lp_id_to_light_id[lp_id]
-                lp_data = self.sdn_props.lightpath_status_dict[light_id][lp_id]
-
-                path = lp_data.get("path")
-                actual_mod_format = lp_data.get("mod_format", "QPSK")
-                enhanced_info = {"mod_format": actual_mod_format}
-                found_in_status = True
-
-
-
-            # Fallback: reconstruct path from links if not in lightpath_status_dict
-            if path is None:
-                path = self._reconstruct_path_from_links(info["links"])
-
-            if path and len(path) >= 2:
-                lp_entry = {
-                    "id": lp_id,
-                    "path": path,
-                    "spectrum": info["spectrum"],
-                    "core": info["core"],
-                    "band": info["band"],
-                    "mod_format": enhanced_info.get("mod_format", info["mod_format"]),
-                }
-                lp_list.append(lp_entry)
+        lp_list = [
+                    {**self.sdn_props.lightpath_status_dict[light_id][lp_id], "id": lp_id}
+                    for light_id in self.sdn_props.lightpath_status_dict
+                    for lp_id in self.sdn_props.lightpath_status_dict[light_id]
+                ]
+        if len(self.sdn_props.lightpath_id_list) > 1:
+            for lp_cnt in range(0, len(self.sdn_props.lightpath_id_list)):
+                lp_list.append({
+                            "id": self.sdn_props.lightpath_id_list[lp_cnt],
+                            "path": self.sdn_props.path_list,
+                            "core": self.sdn_props.core_list[lp_cnt],
+                            "start_slot":self.sdn_props.start_slot_list[lp_cnt],
+                            "end_slot":self.sdn_props.end_slot_list[lp_cnt],
+                            "band": self.sdn_props.band_list[lp_cnt],
+                            "mod_format": self.sdn_props.modulation_list[lp_cnt],
+                            "snr_cost": self.sdn_props.xt_list[lp_cnt],
+                            })
 
         return lp_list
 
-    def _reconstruct_path_from_links(self, links: list) -> list:
-        """Reconstruct a continuous path from a list of link tuples"""
-        if not links:
-            return []
-
-        if len(links) == 1:
-            return list(links[0])
-
-        # Build adjacency and reconstruct path
-        # This is complex - might need graph traversal
-        # Simplified version for now:
-        path = [links[0][0], links[0][1]]
-        remaining_links = links[1:]
-
-        while remaining_links:
-            found_next = False
-            for i, (src, dst) in enumerate(remaining_links):
-                if src == path[-1]:
-                    path.append(dst)
-                    remaining_links.pop(i)
-                    found_next = True
-                    break
-                elif dst == path[-1]:
-                    path.append(src)
-                    remaining_links.pop(i)
-                    found_next = True
-                    break
-
-            if not found_next:
-                break  # Disconnected path
-
-        return path
 
     def load_from_lp_info(self, lp_info: dict):
         """Load a specific lightpath's state into this SnrMeasurements object."""
         self.spectrum_props.path_list = lp_info["path"]
-        self.spectrum_props.start_slot = lp_info["spectrum"][0]
-        self.spectrum_props.end_slot = lp_info["spectrum"][1]
+        self.spectrum_props.start_slot = lp_info["start_slot"]
+        self.spectrum_props.end_slot = lp_info["end_slot"]
         self.spectrum_props.core_num = lp_info["core"]
+        self.spectrum_props.curr_band = lp_info["band"]
         self.spectrum_props.modulation = lp_info.get("mod_format", "QPSK")
         self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
 
     def evaluate_lp(self, lp_info: dict) -> float:
         """Compute SNR for a given lightpath and return it in dB."""
         self.load_from_lp_info(lp_info)
-
         if self.engine_props["snr_type"] == "gsnr":
-            _, snr_db, _ = self.check_gsnr()
-        elif self.engine_props["snr_type"] == "gsnr_mb":
-            _, snr_db, _ = self.check_gsnr_mb()
-        elif self.engine_props["snr_type"] == "snr_calc_nli":
-            ok, _ = self.check_snr()
-            snr_db = float("inf") if ok else 0.0
+            if self.engine_props['band_list'] == ['c']:
+                resp, snr_val, bandwidth = self.check_gsnr()
+            elif self.engine_props['band_list'] == ['c', 'l']:
+                resp, snr_val, bandwidth  = self.check_gsnr_mb()
         else:
             raise NotImplementedError(f"Unsupported snr_type: {self.engine_props['snr_type']}")
 
-        return snr_db
+        return resp, snr_val
 
     def reevaluate_lightpaths(self, lp_list: list[dict]) -> list[tuple]:
         """Evaluate SNR for all lightpaths in lp_list."""
@@ -981,9 +897,9 @@ class SnrMeasurements:
 
         violations = []
         for lp in overlapping_lps:
-            observed_snr = self.evaluate_lp(lp)
+            resp, observed_snr = self.evaluate_lp(lp)
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
-            if observed_snr < required_snr:
+            if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 
         return not violations, violations
