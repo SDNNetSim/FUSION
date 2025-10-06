@@ -1,713 +1,502 @@
-# FUSION Coding Standards & Guidelines
+# FUSION Coding Standards
 
-## Table of Contents
-1. [General Principles](#general-principles)
-2. [Naming Conventions](#naming-conventions)
-3. [Code Organization](#code-organization)
-4. [Documentation Standards](#documentation-standards)
-5. [Error Handling](#error-handling)
-6. [Type Annotations](#type-annotations)
-7. [Import Standards](#import-standards)
-8. [Testing Standards](#testing-standards)
+> **AI/LLM Usage Note**: This document is optimized for Claude to understand and apply FUSION project coding standards consistently.
 
-## General Principles
+## 1. Naming Conventions
 
-### Code Quality Pillars
-- **Readability**: Code is read more often than it's written
-- **Consistency**: Follow established patterns throughout the codebase
-- **Simplicity**: Prefer simple, clear solutions over clever ones
-- **Maintainability**: Write code that's easy to modify and extend
+### 1.1 Basic Rules
+- **Functions**: `snake_case` verbs (`load_config`, `validate_data`)
+- **Variables**: `snake_case` nouns (`config_path`, `user_settings`)
+- **Constants**: `SCREAMING_SNAKE_CASE`
+- **Classes**: `PascalCase`
+- **Private**: Prefix with `_`
 
-### File Organization
-- Keep files under 500 lines when possible
-- Use meaningful file and directory names
-- Group related functionality in packages/modules
-- Separate concerns (errors, constants, schemas, utilities)
-
-## Naming Conventions
-
-### Functions and Variables
-- Use `snake_case` for all functions and variables
-- Be descriptive and avoid abbreviations
-- Use verb phrases for functions: `load_config()`, `validate_structure()`
-- Use noun phrases for variables: `config_path`, `user_settings`
-
-#### Data Type Suffixes (Recommended)
-For complex data types, append the type suffix to improve readability:
-
+### 1.2 Data Type Suffixes
+Use for complex collections when unclear:
 ```python
-# Recommended - Clear data structure intent
+# ✅ Use suffixes for clarity
 user_settings_dict: Dict[str, Any] = {}
 active_connections_set: Set[str] = set()
 pending_requests_list: List[Request] = []
-error_message_queue: Queue[str] = Queue()
-thread_config_map: Dict[str, ThreadConfig] = {}
 
-# Less clear
-user_settings: Dict[str, Any] = {}
-active_connections: Set[str] = set()  # Could be list, tuple, etc.
+# ❌ Don't use for obvious types
+count: int = 0  # Not count_int
 ```
 
-**When to use suffixes:**
-- ✅ Complex collections (`_dict`, `_set`, `_list`, `_queue`, `_map`)  
-- ✅ When the base name doesn't indicate structure
-- ❌ Simple variables where context is clear
-- ❌ When type hints make it obvious
+### 1.3 Variable Best Practices
+- **Descriptive**: `blocked_requests` not `blocked_reqs`
+- **Full words**: `current_congestion` not `curr_cong`
+- **Units**: `timeout_seconds`, `distance_km`
+- **Booleans**: `is_valid`, `has_data`, `was_routed`
 
-### Constants
-- Use `SCREAMING_SNAKE_CASE` for module-level constants
-- Group related constants together
-- Use descriptive names that indicate purpose and scope
+### 1.4 ⚠️ CRITICAL: Refactoring Names
+When changing variable/function names:
+1. **Search entire codebase** for ALL occurrences
+2. Check dictionary keys, config files, tests
+3. Preserve external API compatibility
+4. Update consistently across all files
 
-```python
-# Good
-DEFAULT_CONFIG_PATH = "config.ini"
-MAX_RETRY_ATTEMPTS = 3
-SUPPORTED_FILE_EXTENSIONS = ['.json', '.yaml', '.ini']
+### 1.5 Standardized Names
+Use these standardized names consistently across the codebase:
 
-# Avoid
-PATH = "config.ini"  # Too generic
-MAX = 3  # Unclear what this limits
-```
+**Engine/Simulation**:
+- `engine_props` (not `engine_properties`, `props`, `config`)
+- `sim_params` (not `simulation_parameters`, `params`)
+- `network_topology` (not `topology`, `network_topo`)
 
-### Classes
-- Use `PascalCase` for class names
-- Choose names that represent the entity or concept
-- Avoid generic names like `Manager`, `Handler` unless they truly manage/handle
+**Data Structures**:
+- `request_list` (not `requests`, `req_list`)
+- `connection_dict` (not `connections`, `conn_dict`)
+- `stats_collector` (not `statistics`, `stats`)
 
-```python
-# Good
-class ConfigurationManager:  # Clear purpose
-class NetworkTopology:       # Clear domain concept
-class RequestProcessor:      # Clear action
+**File/Path Related**:
+- `config_path` (not `config_file`, `cfg_path`)
+- `output_dir` (not `output_directory`, `out_dir`)
+- `data_file_path` (not `datafile`, `data_path`)
 
-# Less ideal  
-class Manager:              # Too generic
-class Helper:               # Unclear purpose
-```
+**Add new standardized names here as needed**
 
-### Private Methods and Variables
-- Use single underscore `_` for internal use
-- Use double underscore `__` only for name mangling (rare)
-- Private methods don't need docstrings unless complex
+## 2. Code Organization
 
-### Function Parameters
-- Use descriptive parameter names
-- Avoid single letters except for common math operations
-- Use full words over abbreviations
-
-```python
-# Good
-def process_configuration(config_path: str, output_directory: str) -> bool:
-
-# Avoid
-def process_config(path: str, out_dir: str) -> bool:  # Abbreviations
-def process(p: str, o: str) -> bool:  # Single letters
-```
-
-### Variable Naming Best Practices
-- **Be descriptive**: `blocked_requests` instead of `blocked_reqs`
-- **Use full words**: `current_congestion` instead of `curr_cong`
-- **Indicate units when relevant**: `timeout_seconds`, `distance_km`
-- **Boolean variables should sound like questions**: `is_valid`, `has_data`, `was_routed`
-
-### ⚠️ CRITICAL: Refactoring Variable Names
-
-When changing variable or function names, you MUST:
-
-1. **Search entire codebase** for all occurrences:
-   - Variable assignments and usage
-   - Function/method calls
-   - Dictionary keys that might reference the name
-   - Configuration files that might use the name
-   - Tests that might depend on the name
-
-2. **Be especially careful with**:
-   - Dictionary keys (e.g., `stats_dict['blocking_prob']`)
-   - Public API methods that external code might call
-   - Configuration parameters that users might have in their files
-   - Serialized data formats that might break compatibility
-
-3. **Example of careful refactoring**:
-```python
-# BEFORE: Check if 'req_num' is used as:
-# - Variable: self.req_num
-# - Parameter: def process(req_num: int)
-# - Dict key: data['req_num']
-# - Config: config.req_num
-# - External API: might be called by other modules
-
-# AFTER: Change ALL occurrences consistently
-# BUT preserve dictionary keys if they're part of data format:
-data['req_num'] = request_number  # Keep key for compatibility
-```
-
-## Code Organization
-
-### Module Structure
+### 2.1 Module Structure
 ```
 package/
 ├── __init__.py          # Public API exports
-├── constants.py         # Package constants
+├── constants.py         # Module constants
 ├── errors.py           # Custom exceptions
-├── schema.py           # Data schemas/models
+├── core.py             # Main functionality
 ├── utils.py            # Utility functions
-└── core.py             # Main functionality
+├── registry.py         # Component registry (if needed)
+├── README.md           # Module documentation
+└── tests/              # Unit tests
+    ├── __init__.py
+    └── test_*.py
 ```
 
-### Function Organization
-- Keep functions under 50 lines when possible
-- Single responsibility principle
-- Extract complex logic into helper functions
-- Group related functions together
-
-### Class Organization
+### 2.1.1 __init__.py Standards
 ```python
-class ExampleClass:
-    """Class docstring."""
+"""Package description.
+
+Brief description of what this package does and its main components.
+"""
+
+# Public API exports
+from .core import MainClass, primary_function
+from .errors import CustomError, ValidationError
+from .constants import DEFAULT_CONFIG, MAX_RETRIES
+
+# Version info
+__version__ = "1.0.0"
+
+# Public API - explicitly define what's exported
+__all__ = [
+    "MainClass",
+    "primary_function", 
+    "CustomError",
+    "ValidationError",
+    "DEFAULT_CONFIG",
+    "MAX_RETRIES",
+]
+```
+
+### 2.1.2 Registry.py Guidelines
+**When to include `registry.py`**:
+- ✅ Modules with multiple component types (e.g., algorithms, strategies)
+- ✅ Plugin-style architectures
+- ✅ Factory pattern implementations
+- ❌ Simple utility modules
+- ❌ Single-purpose modules
+
+```python
+# Example registry.py
+class ComponentRegistry:
+    """Registry for component discovery and instantiation."""
     
-    # Class variables
-    CLASS_CONSTANT = "value"
-    
-    def __init__(self):
-        """Constructor."""
-        pass
-    
-    # Public methods first
-    def public_method(self):
-        """Public method."""
-        pass
+    _components = {}
     
     @classmethod
-    def class_method(cls):
-        """Class method."""
-        pass
+    def register(cls, name: str, component_class):
+        """Register a component class."""
+        cls._components[name] = component_class
     
-    @staticmethod
-    def static_method():
-        """Static method."""
-        pass
-    
-    # Private methods last
-    def _private_method(self):
-        pass
+    @classmethod
+    def get_component(cls, name: str):
+        """Get registered component by name."""
+        return cls._components.get(name)
 ```
 
-### Single Responsibility Principle
+### 2.1.3 README.md Requirements
+**Every module MUST have a README.md** with:
+```markdown
+# Module Name
 
-Each class should have **one reason to change** and **one clear responsibility**:
+## Purpose
+Brief description of what this module does.
 
+## Key Components
+- `core.py`: Main functionality
+- `utils.py`: Helper functions
+
+## Usage
+Basic usage examples.
+
+## Dependencies
+Internal and external dependencies.
+```
+
+### 2.2 File Size Limits
+- **Files**: < 500 lines
+- **Functions**: < 50 lines
+- **Single responsibility** per class/function
+
+### 2.2.1 Utils Module Organization
+**When `utils.py` exceeds 500 lines**:
+```
+utils/
+├── __init__.py          # Export main utilities
+├── file_operations.py   # File I/O utilities
+├── data_processing.py   # Data manipulation
+├── validation.py        # Input validation
+└── helpers.py          # General helpers
+```
+
+**Utils module `__init__.py`**:
 ```python
-# BAD: Too many responsibilities
-class SimStats:
-    def collect_metrics(self): pass        # ✅ Core responsibility
-    def calculate_statistics(self): pass   # ✅ Related to metrics
-    def save_to_file(self): pass          # ❌ File I/O responsibility
-    def generate_ml_data(self): pass       # ❌ ML-specific responsibility
-    def analyze_network(self): pass        # ❌ Network analysis responsibility
+"""Utility functions for the module."""
 
-# GOOD: Single responsibility
+# Import most commonly used utilities
+from .file_operations import load_config, save_data
+from .validation import validate_input, check_format
+from .helpers import normalize_path, get_timestamp
+
+__all__ = [
+    "load_config", "save_data",
+    "validate_input", "check_format", 
+    "normalize_path", "get_timestamp",
+]
+```
+
+### 2.3 Class Organization
+```python
+class ExampleClass:
+    """Docstring."""
+    
+    CLASS_CONSTANT = "value"    # Class variables
+    
+    def __init__(self): pass    # Constructor
+    def public_method(self): pass    # Public methods
+    @classmethod
+    def class_method(cls): pass      # Class methods
+    @staticmethod
+    def static_method(): pass       # Static methods
+    def _private_method(self): pass  # Private methods last
+```
+
+### 2.4 Single Responsibility
+```python
+# ✅ Good - Single responsibility
 class SimStats:
     def collect_metrics(self): pass
     def calculate_statistics(self): pass
-    def get_blocking_statistics(self): pass
-    
+
 class StatsPersistence:
     def save_stats(self): pass
-    def load_stats(self): pass
-    
-class MLMetricsCollector:
-    def update_train_data(self): pass
-    def save_train_data(self): pass
+
+# ❌ Bad - Multiple responsibilities
+class SimStats:
+    def collect_metrics(self): pass
+    def save_to_file(self): pass      # File I/O responsibility
+    def generate_ml_data(self): pass   # ML responsibility
 ```
 
-### File and Class Responsibility Guidelines
+## 3. Path Handling & State Management
 
-**Before adding a method to a class, ask:**
-- Does this method directly relate to the class's core purpose?
-- Would this method make sense in a different, more specialized class?
-- Does this method introduce dependencies that don't belong?
-
-**When to split classes:**
-- File I/O operations (→ dedicated persistence classes)
-- Format-specific operations (→ formatter classes)
-- Domain-specific logic (→ specialized domain classes)
-- External integrations (→ adapter/connector classes)
-
-## Documentation Standards
-
-### Docstring Format (Sphinx)
-Use Sphinx format for all public functions, classes, and methods:
+### 3.1 Path Handling Guidelines
+⚠️ **NEVER hardcode paths** - Use configuration and path utilities
 
 ```python
-def load_configuration(config_path: str, validate: bool = True) -> Dict[str, Any]:
-    """Load and parse configuration file.
-    
-    Detailed description of what the function does, including any
-    important behavior, side effects, or assumptions.
-    
-    :param config_path: Path to configuration file (absolute or relative)
-    :type config_path: str
-    :param validate: Whether to validate configuration structure, defaults to True
-    :type validate: bool
-    :return: Parsed configuration data with normalized values
-    :rtype: Dict[str, Any]
-    :raises ConfigFileNotFoundError: If config file doesn't exist
-    :raises ConfigParseError: If file format is invalid
-    
-    Example:
-        >>> config = load_configuration("settings.ini")
-        >>> print(config['database']['host'])
-        localhost
-    """
+# ❌ Never do this
+def load_data():
+    with open("/home/user/data/config.txt") as f:
+        return f.read()
+
+# ✅ Always do this
+from pathlib import Path
+from fusion.core.config import get_data_dir
+
+def load_data(config_filename: str = "config.txt"):
+    data_dir = get_data_dir()  # From configuration
+    config_path = Path(data_dir) / config_filename
+    with open(config_path) as f:
+        return f.read()
 ```
 
-### Comments
-- Use comments sparingly - good code should be self-documenting
-- Explain **why**, not **what**
-- Use comments for complex algorithms or business logic
+**Path handling best practices**:
+- Use `pathlib.Path` for all path operations
+- Get base paths from configuration/environment
+- Use relative paths from known base directories
+- Validate paths exist before using
+- Use forward slashes (/) - `pathlib` handles OS differences
 
 ```python
-# Good - explains the why
-# Retry with exponential backoff to handle network instability
-time.sleep(2 ** attempt)
+# Path construction
+base_dir = Path(config.get_base_directory())
+output_file = base_dir / "results" / f"simulation_{timestamp}.json"
 
-# Less useful - explains the what (obvious from code)
-# Increment the counter
-counter += 1
+# Path validation
+if not output_file.parent.exists():
+    output_file.parent.mkdir(parents=True, exist_ok=True)
 ```
 
-### README and Documentation
-- Every package should have a README explaining its purpose
-- Include usage examples for complex modules
-- Document configuration options and their effects
-
-## Error Handling
-
-### Custom Exceptions
-Create specific exceptions for different error conditions:
+### 3.2 State Management with StateWrapper
+⚠️ **Use StateWrapper for mutable state objects like `engine_props`**
 
 ```python
-# Good - Specific exceptions
+# fusion/core/state_wrapper.py
+class StateWrapper:
+    """Minimal wrapper that preserves dict interface but adds safety."""
+    
+    def __init__(self, data: dict, name: str = "state"):
+        self._data = data
+        self._name = name
+        self._original = data.copy()  # Keep original for debugging
+        self._frozen = False
+        self._log_mutations = False
+    
+    def __getitem__(self, key):
+        return self._data[key]
+    
+    def __setitem__(self, key, value):
+        if self._frozen:
+            raise RuntimeError(f"Cannot modify frozen state: {self._name}")
+        
+        if self._log_mutations:
+            old_value = self._data.get(key, "<missing>")
+            print(f"[{self._name}] {key}: {old_value} -> {value}")
+        
+        self._data[key] = value
+    
+    def __contains__(self, key):
+        return key in self._data
+    
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+    
+    def freeze(self):
+        """Temporarily prevent mutations during critical sections."""
+        self._frozen = True
+    
+    def unfreeze(self):
+        """Allow mutations again."""
+        self._frozen = False
+    
+    def get_changes(self):
+        """See what changed since initialization."""
+        return {k: v for k, v in self._data.items()
+                if k not in self._original or self._original[k] != v}
+    
+    # Make it dict-like
+    def __getattr__(self, name):
+        return getattr(self._data, name)
+```
+
+**Usage**:
+```python
+# In simulation initialization
+def __init__(self, engine_props: dict):
+    # Wrap mutable state for safety
+    self.engine_props = StateWrapper(engine_props, "engine_props")
+    
+    # Enable mutation logging during development
+    if DEBUG_MODE:
+        self.engine_props._log_mutations = True
+
+# During critical sections
+def critical_calculation(self):
+    self.engine_props.freeze()  # Prevent accidental mutations
+    try:
+        result = complex_calculation(self.engine_props)
+        return result
+    finally:
+        self.engine_props.unfreeze()
+```
+
+## 4. Type Annotations & Imports
+
+### 4.1 Required Annotations
+- All function parameters and returns
+- Class attributes
+- Module-level variables
+
+```python
+def process_data(input_data: List[Dict[str, Any]], format: str = "json") -> Optional[str]:
+    pass
+```
+
+### 4.2 Import Organization
+```python
+# 1. Standard library
+import os
+from pathlib import Path
+
+# 2. Third-party
+import numpy as np
+
+# 3. Local
+from fusion.core.config import ConfigManager
+```
+
+## 5. Error Handling
+
+### 5.1 Custom Exceptions
+```python
 class ConfigurationError(Exception):
     """Base exception for configuration errors."""
     pass
 
 class ConfigFileNotFoundError(ConfigurationError):
-    """Raised when configuration file cannot be found."""
-    pass
-
-class InvalidConfigFormatError(ConfigurationError):
-    """Raised when configuration file format is invalid."""
+    """Configuration file not found."""
     pass
 ```
 
-### Exception Handling Patterns
+### 5.2 Exception Handling
 ```python
-# Good - Specific exception handling
+# ✅ Specific exceptions
 try:
     config = load_configuration(path)
 except ConfigFileNotFoundError:
     logger.error(f"Config file not found: {path}")
     return default_config()
-except InvalidConfigFormatError as e:
-    logger.error(f"Invalid config format: {e}")
-    raise
 
-# Avoid - Broad exception catching
-try:
-    config = load_configuration(path)
+# ❌ Broad catching
 except Exception as e:  # Too broad
-    print(f"Something went wrong: {e}")
-```
-
-### Error Messages
-- Be specific and actionable
-- Include relevant context (file paths, values, etc.)
-- Suggest solutions when possible
-
-```python
-# Good
-raise ConfigFileNotFoundError(
-    f"Configuration file not found at '{config_path}'. "
-    f"Please ensure the file exists or provide a valid path."
-)
-
-# Less helpful
-raise Exception("Config error")
-```
-
-## Type Annotations
-
-### Required Annotations
-- All function parameters and return values
-- Class attributes and instance variables
-- Module-level variables and constants
-
-```python
-from typing import Dict, List, Optional, Union, Any
-
-# Function annotations
-def process_data(
-    input_data: List[Dict[str, Any]], 
-    output_format: str = "json"
-) -> Optional[str]:
     pass
-
-# Variable annotations
-config_cache: Dict[str, Any] = {}
-retry_count: int = 0
-is_initialized: bool = False
 ```
 
-### Type Hint Best Practices
-- Use `Optional[T]` for values that can be None
-- Use `Union[T1, T2]` sparingly - consider refactoring instead
-- Use `Any` as a last resort
-- Import types from `typing` module
+## 6. Documentation
 
-## Import Standards
-
-### Import Organization
+### 6.1 Docstrings (Sphinx)
 ```python
-# 1. Standard library imports
-import os
-import re
-from pathlib import Path
-from typing import Dict, List, Optional
-
-# 2. Third-party library imports
-import numpy as np
-import pandas as pd
-
-# 3. Local application imports
-from fusion.core.config import ConfigManager
-from fusion.utils.helpers import normalize_path
-```
-
-### Import Guidelines
-- Use absolute imports for clarity
-- Group imports logically with blank lines
-- Use `from module import specific_items` for frequently used items
-- Avoid `import *` except in `__init__.py` files
-
-## Testing Standards
-
-### Test File Organization
-```
-tests/
-├── unit/
-│   ├── test_config.py
-│   └── test_utils.py
-├── integration/
-│   └── test_pipeline.py
-└── fixtures/
-    └── sample_config.ini
-```
-
-### Test Naming
-- Use descriptive test names: `test_config_loading_with_missing_file`
-- Follow pattern: `test_[what]_[when]_[expected]`
-- Group related tests in classes
-
-### Test Structure
-```python
-def test_configuration_loading_with_valid_file():
-    """Test that valid configuration file loads successfully."""
-    # Arrange
-    config_path = "tests/fixtures/valid_config.ini"
-    expected_values = {"database": {"host": "localhost"}}
+def load_configuration(config_path: str) -> Dict[str, Any]:
+    """Load and parse configuration file.
     
-    # Act
-    result = load_configuration(config_path)
-    
-    # Assert
-    assert result["database"]["host"] == "localhost"
-    assert "database" in result
+    :param config_path: Path to configuration file
+    :type config_path: str
+    :return: Parsed configuration data
+    :rtype: Dict[str, Any]
+    :raises ConfigFileNotFoundError: If config file doesn't exist
+    """
 ```
 
-## Code Quality Tools
+### 6.2 Comments
+- Explain **why**, not **what**
+- Use sparingly - code should be self-documenting
 
-### Required Tools
-- **Black**: Code formatting
-- **isort**: Import sorting  
-- **flake8**: Linting
-- **mypy**: Type checking
-- **pytest**: Testing
+## 7. Logging
 
-### Pre-commit Configuration
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-```
-
-## Performance Guidelines
-
-### General Performance
-- Avoid premature optimization
-- Profile before optimizing
-- Use appropriate data structures
-- Cache expensive operations when beneficial
-
-### Memory Management
-- Use generators for large datasets
-- Close file handles and connections
-- Avoid circular references
-- Clean up resources in finally blocks
-
-## Logging Guidelines
-
-### Logging Architecture
-- Use the centralized logging configuration from `fusion.utils.logging_config`
-- Separate presentation logic from data collection
-- Use the reporting module for output formatting
-
-### Logger Setup
+### 7.1 Setup
 ```python
-# At module level
 from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
-
-# For simulation-specific logging
-from fusion.utils.logging_config import configure_simulation_logging
-logger = configure_simulation_logging(sim_name, erlang, thread_num)
 ```
 
-### Logging Levels
-- **DEBUG**: Detailed information for diagnosing problems
-- **INFO**: General informational messages
-- **WARNING**: Warning messages for potentially harmful situations
-- **ERROR**: Error messages for serious problems
-- **CRITICAL**: Critical messages for very serious errors
-
-### Best Practices
-- Never use `print()` statements - always use logging
-- Log at appropriate levels (don't log everything as INFO)
-- Include context in log messages
-- Use structured logging for complex data
-
+### 7.2 Usage
 ```python
-# Good
-logger.info(f"Processing request {request_id} for user {user_id}")
-logger.error(f"Failed to connect to database: {e}", exc_info=True)
+# ✅ Always use logger
+logger.info(f"Processing request {request_id}")
+logger.error(f"Failed to connect: {e}", exc_info=True)
 
-# Avoid
-print(f"Processing request")  # Use logger instead
-logger.info("Error occurred")  # Too vague, wrong level
+# ❌ Never use print
+print("Processing request")
 ```
 
-### Output Organization
-- Runtime logs go to `logs/` directory (gitignored)
-- Simulation results go to `data/output/`
-- Reporting code goes in `fusion/reporting/`
+## 8. Testing
 
-## Security Guidelines
+**Note**: See `testing_standards.md` for details
 
-### Input Validation
-- Validate all external input
-- Sanitize file paths
-- Use parameterized queries for databases
-- Avoid eval() and exec()
+### 8.1 Module-Level Testing
+- Tests in same directory as code
+- Test files: `test_<module_name>.py`
+- One test file per module
 
-### Configuration Security
-- Never commit secrets or API keys
-- Use environment variables for sensitive data
-- Validate configuration values
-- Set appropriate file permissions
+## 9. Bash Scripts
 
----
-
-## Quick Reference
-
-### Naming Checklist
-- [ ] Functions use verb phrases (`load_config`, `validate_data`)
-- [ ] Variables use noun phrases (`config_path`, `user_settings`)  
-- [ ] Complex data types use suffixes (`settings_dict`, `users_list`)
-- [ ] Constants are SCREAMING_SNAKE_CASE
-- [ ] Classes are PascalCase
-- [ ] Private members start with `_`
-
-### Code Quality Checklist
-- [ ] Functions are under 50 lines
-- [ ] Files are under 500 lines
-- [ ] All public functions have docstrings
-- [ ] Type annotations on all parameters/returns
-- [ ] Specific exception handling
-- [ ] Imports organized correctly
-- [ ] Tests cover main functionality
-- [ ] No print statements (use logging)
-- [ ] Proper separation of concerns
-- [ ] Variable names are descriptive and complete
-- [ ] All name changes verified across codebase
-
-## Bash Script Coding Standards
-
-### File Organization
-- Store bash scripts in dedicated directories (`bash_scripts/`, `scripts/`)
-- Use descriptive filenames that indicate the script's purpose
-- Include `.sh` extension for all bash scripts
-- Group related scripts together (e.g., cluster management, environment setup)
-
-### Script Structure
+### 9.1 Structure
 ```bash
 #!/bin/bash
-
-# Script description: What this script does and when to use it
-# Usage: ./script_name.sh <param1> <param2>
-# Example: ./script_name.sh /path/to/file "argument"
-
-# Exit on any error
 set -e
 
-# Function definitions
+# Usage: ./script.sh <param1> <param2>
+
 function_name() {
-    local param1="$1"
-    local param2="$2"
+    local param="$1"
     # Function body
 }
 
-# Main script logic
 main() {
-    # Script implementation
+    # Script logic
 }
 
-# Call main function if script is executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
 ```
 
-### Header Requirements
-Every bash script MUST include:
-- Shebang line: `#!/bin/bash`
-- Purpose description comment
-- Usage instructions with examples
-- Parameter descriptions for complex scripts
+### 9.2 Standards
+- Quote variables: `"$variable"`
+- `UPPER_CASE` for constants
+- `snake_case` for local variables
+- Include error checking
 
-### Variable Naming
-- Use `UPPER_CASE` for environment variables and constants
-- Use `snake_case` for local variables
-- Use `readonly` for constants when appropriate
-- Quote all variable references: `"$variable"`
+## 10. Code Quality Tools
 
-```bash
-# Good
-readonly SCRIPT_DIR="$(dirname "$0")"
-user_name="$1"
-target_directory="$2"
+### 10.1 Pre-commit Tools
+- **black**: Code formatting
+- **isort**: Import sorting
+- **flake8**: Linting (→ ruff)
+- **pylint**: Advanced linting
+- **mypy**: Type checking
+- **pytest**: Testing
+- **pydeps**: Dependencies
+- **vulture**: Dead code
+- **mccabe**: Complexity
+- **sphinx**: Documentation
 
-# Avoid
-SCRIPTDIR=$(dirname $0)  # No quotes, inconsistent case
-userName=$1              # camelCase not preferred
-```
-
-### Error Handling
-- Use `set -e` to exit on errors
-- Check for required parameters
-- Validate file/directory existence before operations
-- Provide helpful error messages
-
-```bash
-# Good error handling
-if [[ $# -lt 2 ]]; then
-    echo "Usage: $0 <username> <partition>" >&2
-    exit 1
-fi
-
-if [[ ! -f "$config_file" ]]; then
-    echo "Error: Configuration file not found: $config_file" >&2
-    exit 1
-fi
-```
-
-### Function Guidelines
-- Use functions for reusable code blocks
-- Use `local` for function variables
-- Return meaningful exit codes
-- Document complex functions
-
-```bash
-# Good function structure
-validate_input() {
-    local input="$1"
-    local context="$2"
-    
-    if [[ -z "$input" ]]; then
-        echo "Error: Empty $context provided" >&2
-        return 1
-    fi
-    
-    return 0
-}
-```
-
-### Command Execution
-- Use full paths for commands when possible
-- Check command availability with `command -v`
-- Handle command failures gracefully
-- Quote arguments that may contain spaces
-
-```bash
-# Good
-if ! command -v python3 &>/dev/null; then
-    echo "Error: python3 not found" >&2
-    exit 1
-fi
-
-python3 -m venv "$target_directory/venv"
-```
-
-### Output and Logging
-- Use `echo` for informational messages
-- Use `echo ... >&2` for error messages
-- Include timestamps for long-running operations
-- Use consistent formatting for status messages
-
-```bash
-# Good output formatting
-echo "🔧 Creating virtual environment..."
-echo "✅ Virtual environment created successfully"
-echo "❌ Error: Operation failed" >&2
-```
-
-### Security Best Practices
-- Validate all input parameters
-- Use `readonly` for sensitive variables
-- Avoid executing user-provided strings
-- Use proper file permissions (755 for executables)
-
-### SLURM Integration Standards
-For cluster-related scripts:
-- Use environment variables for SLURM parameters
-- Include job array handling when applicable
-- Implement proper resource management
-- Log job progress and completion status
-
-```bash
-# SLURM script standards
-echo "🌟 Starting SLURM Job ${SLURM_ARRAY_TASK_ID}"
-echo "Manifest: ${MANIFEST}"
-echo "Job Directory: ${JOB_DIR}"
-```
-
-### Testing and Validation
-- Include dry-run options where applicable
-- Test scripts with various input combinations
-- Validate script behavior in different environments
-- Document any environment-specific requirements
+### 10.2 Additional Tools
+- **graphviz**: Dependency graphs
+- **pyreverse**: UML diagrams
+- **snakeviz**: Performance profiling
+- **pyspy**: Python profiler
 
 ---
 
-*This document should be updated as the codebase evolves and new patterns emerge.*
+## Quick Reference Checklist
+
+### Naming ✓
+- [ ] Functions: verb phrases (`load_config`)
+- [ ] Variables: noun phrases (`config_path`)
+- [ ] Suffixes for complex types (`settings_dict`)
+- [ ] Constants: `SCREAMING_SNAKE_CASE`
+- [ ] Classes: `PascalCase`
+
+### Code Quality ✓
+- [ ] Functions < 50 lines
+- [ ] Files < 500 lines (utils -> utils/ if exceeded)
+- [ ] Type annotations on all params/returns
+- [ ] Specific exception handling
+- [ ] No print statements (use logging)
+- [ ] Single responsibility classes
+- [ ] Search codebase when refactoring names
+- [ ] No hardcoded paths (use pathlib + config)
+- [ ] StateWrapper for mutable state objects
+
+### Module Organization ✓
+- [ ] __init__.py with proper exports and __all__
+- [ ] README.md in every module
+- [ ] registry.py only when needed (multi-component modules)
+- [ ] tests/ subdirectory with proper structure
+- [ ] Standardized naming (engine_props, sim_params, etc.)
+
+---
+
+*Follow these standards for consistent, maintainable code that AI can easily understand and work with.*

@@ -27,13 +27,17 @@ ini/run_ini/*
 bash_scripts/slurm/*
 
 .vscode/
-.venv/
 
 # Virtual environments
+.venv/
+venv/
+venvs/
+ENV/
+env/
+*.pyc
+__pycache__/
 venvs/unity_venv/venv
 
-# vscode-generated cache files
-__pycache__/
 
 data/json_input/run_mods/*
 
@@ -48,3 +52,13 @@ reinforcement_learning/experiments/
 sb3_scripts/yml
 
 fusion/configs/hyperparams/
+
+# Coverage files
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
