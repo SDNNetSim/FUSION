@@ -57,16 +57,16 @@ This simulator is an open-source initiative, and we welcome contributions from e
 3. Increase the version numbers in any examples files and the README.md to the new version that this Pull Request would represent. The versioning scheme we use is semantic.
 4. You may merge* the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
 
-*Check to ensure that your pull request meets the requirements as outlined by the [PR template](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/pull_request_template.md) before merging.
+*Check to ensure that your pull request meets the requirements as outlined by the [PR template](https://github.com/SDNNetSim/FUSION/blob/main/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) before merging.
 
 ## Issue Reporting Process
 The github issue tracker is our primary medium for raising and resolving issues. Specific information related to reporting bugs and requesting features can be found below.
 
 ### Bug Reports
-For bug reports, please be sure the structure of your report is consistent with the [bug report](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/issue_template/bug_report.md) template.
+For bug reports, please be sure the structure of your report is consistent with the [bug report](https://github.com/SDNNetSim/FUSION/blob/main/.github/issue_template/01_bug_report.yml) template.
 
 ### Feature Requests
-For feature requests, please be sure the structure of your request is consistent with the [feature request](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/issue_template/feature_request.md) template.
+For feature requests, please be sure the structure of your request is consistent with the [feature request](https://github.com/SDNNetSim/FUSION/blob/main/.github/issue_template/02_feature_request.yml) template.
 
 
 ## Code of Conduct
@@ -75,6 +75,6 @@ Our project adheres to a Code of Conduct that we expect all contributors to foll
 
 ## Questions or Comments
 
-If you have any questions or comments about contributing to the ACNL project, please feel free to reach out to us. We're more than happy to help you get started or clarify any points.
+If you have any questions or comments about contributing to the FUSION project, please feel free to reach out to us. We're more than happy to help you get started or clarify any points.
 
-Thank you for contributing to the ACNL project!
+Thank you for contributing to the FUSION project!

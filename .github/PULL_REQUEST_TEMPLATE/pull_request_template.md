@@ -201,7 +201,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 
 Before submitting this PR, confirm:
 
-- [ ] I have followed the [contributing guidelines](CONTRIBUTING.md)
+- [ ] I have followed the [contributing guidelines](../../CONTRIBUTING.md)
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation

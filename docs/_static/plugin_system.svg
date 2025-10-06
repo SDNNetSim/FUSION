@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">
+  <!-- Plugin System Diagram -->
+  <defs>
+    <style>
+      .box { fill: #ECF0F1; stroke: #2C3E50; stroke-width: 2; }
+      .interface { fill: #E74C3C; }
+      .plugin { fill: #1ABC9C; }
+      .registry { fill: #F39C12; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #2C3E50; text-anchor: middle; }
+      .title { font-size: 16px; font-weight: bold; }
+      .code { font-family: monospace; font-size: 11px; }
+      .arrow { stroke: #34495E; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34495E" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="300" y="30" class="text title">FUSION Plugin System</text>
+
+  <!-- Interface Layer -->
+  <rect x="200" y="60" width="200" height="70" class="box interface"/>
+  <text x="300" y="85" class="text title" style="fill: white;">Abstract Interface</text>
+  <text x="300" y="105" class="code" style="fill: white;">class RouterInterface:</text>
+  <text x="300" y="120" class="code" style="fill: white;">  def calculate_paths(...)</text>
+
+  <!-- Registry -->
+  <rect x="50" y="180" width="500" height="60" class="box registry"/>
+  <text x="300" y="205" class="text title">Registry System</text>
+  <text x="300" y="225" class="code">@register_router("algorithm_name")</text>
+
+  <path d="M 300,130 L 300,180" class="arrow"/>
+
+  <!-- Plugin Implementations -->
+  <rect x="30" y="290" width="110" height="80" class="box plugin"/>
+  <text x="85" y="310" class="text title" style="font-size: 13px;">K-Shortest</text>
+  <text x="85" y="325" class="text title" style="font-size: 13px;">Paths</text>
+  <text x="85" y="345" class="code">@register_router</text>
+  <text x="85" y="360" class="code">("k_shortest")</text>
+
+  <rect x="160" y="290" width="110" height="80" class="box plugin"/>
+  <text x="215" y="310" class="text title" style="font-size: 13px;">Dijkstra</text>
+  <text x="215" y="345" class="code">@register_router</text>
+  <text x="215" y="360" class="code">("dijkstra")</text>
+
+  <rect x="290" y="290" width="110" height="80" class="box plugin"/>
+  <text x="345" y="310" class="text title" style="font-size: 13px;">Adaptive</text>
+  <text x="345" y="345" class="code">@register_router</text>
+  <text x="345" y="360" class="code">("adaptive")</text>
+
+  <rect x="420" y="290" width="110" height="80" class="box plugin"/>
+  <text x="475" y="310" class="text title" style="font-size: 13px;">Custom</text>
+  <text x="475" y="325" class="text title" style="font-size: 13px;">Algorithm</text>
+  <text x="475" y="345" class="code">@register_router</text>
+  <text x="475" y="360" class="code">("my_router")</text>
+
+  <path d="M 85,240 L 85,290" class="arrow"/>
+  <path d="M 215,240 L 215,290" class="arrow"/>
+  <path d="M 345,240 L 345,290" class="arrow"/>
+  <path d="M 475,240 L 475,290" class="arrow"/>
+
+  <!-- Arrow labels -->
+  <text x="85" y="270" class="text" style="font-size: 11px;">implements</text>
+  <text x="215" y="270" class="text" style="font-size: 11px;">implements</text>
+  <text x="345" y="270" class="text" style="font-size: 11px;">implements</text>
+  <text x="475" y="270" class="text" style="font-size: 11px;">implements</text>
+
+  <!-- Benefits box -->
+  <rect x="50" y="385" width="500" height="1" style="fill: none; stroke: #BDC3C7; stroke-width: 1;"/>
+
+  <g transform="translate(60, 390)">
+    <text x="0" y="0" class="text" style="font-size: 12px; text-anchor: start; font-weight: bold;">Benefits:</text>
+    <text x="15" y="15" class="text" style="font-size: 11px; text-anchor: start;">• Easy to add new algorithms without modifying core code</text>
+    <text x="15" y="28" class="text" style="font-size: 11px; text-anchor: start;">• Runtime algorithm selection via configuration</text>
+    <text x="280" y="15" class="text" style="font-size: 11px; text-anchor: start;">• Type-safe with abstract interfaces</text>
+    <text x="280" y="28" class="text" style="font-size: 11px; text-anchor: start;">• Automatic discovery and registration</text>
+  </g>
+</svg>

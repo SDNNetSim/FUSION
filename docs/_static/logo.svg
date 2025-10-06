@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- FUSION Logo - Optical fiber network theme -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2980B9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1ABC9C;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#E74C3C;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#F39C12;stop-opacity:0.8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#grad1)" opacity="0.1"/>
+
+  <!-- Network nodes -->
+  <circle cx="50" cy="60" r="8" fill="url(#grad1)"/>
+  <circle cx="150" cy="60" r="8" fill="url(#grad1)"/>
+  <circle cx="50" cy="140" r="8" fill="url(#grad1)"/>
+  <circle cx="150" cy="140" r="8" fill="url(#grad1)"/>
+  <circle cx="100" cy="100" r="10" fill="url(#grad2)"/>
+
+  <!-- Optical fiber connections (gradient lines) -->
+  <line x1="50" y1="60" x2="100" y2="100" stroke="url(#grad1)" stroke-width="3" opacity="0.6"/>
+  <line x1="150" y1="60" x2="100" y2="100" stroke="url(#grad1)" stroke-width="3" opacity="0.6"/>
+  <line x1="50" y1="140" x2="100" y2="100" stroke="url(#grad1)" stroke-width="3" opacity="0.6"/>
+  <line x1="150" y1="140" x2="100" y2="100" stroke="url(#grad1)" stroke-width="3" opacity="0.6"/>
+
+  <!-- Light waves (representing optical signals) -->
+  <path d="M 55,65 Q 70,80 85,95" stroke="url(#grad2)" stroke-width="2" fill="none" opacity="0.7">
+    <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2s" repeatCount="indefinite"/>
+  </path>
+  <path d="M 145,65 Q 130,80 115,95" stroke="url(#grad2)" stroke-width="2" fill="none" opacity="0.7">
+    <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Text -->
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#2C3E50">FUSION</text>
+</svg>

@@ -1,0 +1,16 @@
+# Documentation build requirements
+# Used by ReadTheDocs and CI/CD
+
+# Sphinx and core extensions
+sphinx>=8.0.0
+sphinx-rtd-theme>=2.0.0
+sphinx-copybutton>=0.5.0
+sphinx-tabs>=3.4.0
+myst-parser>=4.0.0
+
+# Optional but recommended
+sphinx-autodoc-typehints>=2.0.0
+sphinx-autosummary-accessors>=2023.4.0
+
+# Additional tools
+graphviz>=0.20.0

@@ -209,6 +209,6 @@ When adding new tests:
 
 ## Additional Resources
 
-- [FUSION Testing Standards](../../../testing_standards.md)
+- [FUSION Testing Standards](../../../../TESTING_STANDARDS.md)
 - [pytest Documentation](https://docs.pytest.org/)
 - [unittest.mock Guide](https://docs.python.org/3/library/unittest.mock.html)
