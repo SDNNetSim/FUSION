@@ -55,9 +55,7 @@ class TestAbstractSNRMeasurerAbstractMethods:
         abstract_methods = {
             method
             for method in dir(AbstractSNRMeasurer)
-            if hasattr(
-                getattr(AbstractSNRMeasurer, method), "__isabstractmethod__"
-            )
+            if hasattr(getattr(AbstractSNRMeasurer, method), "__isabstractmethod__")
             and getattr(AbstractSNRMeasurer, method).__isabstractmethod__
         }
 
@@ -127,9 +125,7 @@ class TestAbstractSNRMeasurerMethodSignatures:
     def test_get_required_snr_threshold_method_signature(self) -> None:
         """Test get_required_snr_threshold method signature."""
         # Arrange & Act
-        sig = inspect.signature(
-            AbstractSNRMeasurer.get_required_snr_threshold
-        )
+        sig = inspect.signature(AbstractSNRMeasurer.get_required_snr_threshold)
         params = list(sig.parameters.keys())
 
         # Assert
@@ -258,9 +254,7 @@ class TestAbstractSNRMeasurerInitialization:
         route_props = Mock()
 
         # Act
-        algo = ConcreteSNRMeasurer(
-            engine_props, sdn_props, spectrum_props, route_props
-        )
+        algo = ConcreteSNRMeasurer(engine_props, sdn_props, spectrum_props, route_props)
 
         # Assert
         assert algo.engine_props == engine_props
@@ -346,9 +340,7 @@ class TestConcreteSNRMeasurerImplementation:
         route_props = Mock()
 
         # Act
-        algo = ConcreteSNRMeasurer(
-            engine_props, sdn_props, spectrum_props, route_props
-        )
+        algo = ConcreteSNRMeasurer(engine_props, sdn_props, spectrum_props, route_props)
 
         # Assert
         assert algo.algorithm_name == "standard_snr"
@@ -479,8 +471,7 @@ class TestAbstractSNRMeasurerPropertyReturnTypes:
         """Test that supports_multicore property returns bool."""
         # Arrange
         sig = inspect.signature(
-            # type: ignore[attr-defined]
-            AbstractSNRMeasurer.supports_multicore.fget
+            AbstractSNRMeasurer.supports_multicore.fget  # type: ignore[attr-defined]
         )
 
         # Assert

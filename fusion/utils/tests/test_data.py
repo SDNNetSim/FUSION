@@ -166,9 +166,7 @@ class TestSortNestedDictValues:
     def test_sort_nested_dict_values_with_single_item_returns_same(self) -> None:
         """Test sorting single-item dictionary."""
         # Arrange
-        input_dict = {
-            "only": {"score": 42}
-        }
+        input_dict = {"only": {"score": 42}}
 
         # Act
         result = sort_nested_dict_values(input_dict, "score")

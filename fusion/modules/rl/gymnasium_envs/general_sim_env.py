@@ -6,6 +6,7 @@ in a Gymnasium-compatible interface for reinforcement learning training and eval
 The environment handles simulation setup, state management, and reward calculation
 for network resource allocation problems.
 """
+
 from typing import Any
 
 import gymnasium as gym
@@ -33,14 +34,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
     Integrates multi-agent helpers, setup utilities, and step management
     for dynamic, iterative simulations.
     """
-    metadata = {}
+
+    metadata: dict[str, Any] = {}
 
     def __init__(
-            self,
-            render_mode: str | None = None,
-            custom_callback: object | None = None,
-            sim_dict: dict[str, Any] | None = None,
-            **kwargs: Any
+        self,
+        render_mode: str | None = None,
+        custom_callback: object | None = None,
+        sim_dict: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> None:
         """
         Initialize the simulation environment.
@@ -67,7 +69,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         else:
             self.sim_dict = sim_dict[DEFAULT_SIMULATION_KEY]
         # Set super_channel_space from simulation dictionary
-        self.rl_props.super_channel_space = self.sim_dict['super_channel_space']
+        self.rl_props.super_channel_space = self.sim_dict["super_channel_space"]
         # Initialize arrival_count
         self.rl_props.arrival_count = DEFAULT_ARRIVAL_COUNT
 
@@ -85,7 +87,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj = CoreUtilHelpers(
             rl_props=self.rl_props,
             engine_props=self.engine_obj,
-            route_obj=self.route_obj
+            route_obj=self.route_obj,
         )
         self._setup_agents()
 
@@ -142,7 +144,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         actual_seed = seed if seed is not None else 0
         self._init_props_envs(seed=actual_seed, print_flag=print_flag)
 
-        if not self.sim_dict['is_training'] and self.iteration == 0:
+        if not self.sim_dict["is_training"] and self.iteration == 0:
             self._load_models()
         if seed is None:
             seed = self.iteration
@@ -150,15 +152,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         self.rl_help_obj.reset_reqs_dict(seed=seed)
 
         # Ensure arrival_list is properly typed and arrival_count exists
-        arrival_count = getattr(self.rl_props, 'arrival_count', 0)
+        arrival_count = getattr(self.rl_props, "arrival_count", 0)
         if (
-            hasattr(self.rl_props, 'arrival_list')
+            hasattr(self.rl_props, "arrival_list")
             and len(self.rl_props.arrival_list) > arrival_count
         ):
             req_info_dict = self.rl_props.arrival_list[arrival_count]
             if isinstance(req_info_dict, dict):
-                bandwidth = req_info_dict['bandwidth']
-                holding_time = req_info_dict['depart'] - req_info_dict['arrive']
+                bandwidth = req_info_dict["bandwidth"]
+                holding_time = req_info_dict["depart"] - req_info_dict["arrive"]
             else:
                 bandwidth = 0.0
                 holding_time = 0.0
@@ -217,22 +219,18 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
                 seed=seed,
                 trial=self.trial,
                 iteration=self.iteration,
-                print_flag=print_flag
+                print_flag=print_flag,
             )
             self.engine_obj.create_topology()
             self.rl_help_obj.topology = self.engine_obj.topology
             # Ensure num_nodes attribute exists
-            if not hasattr(self.rl_props, 'num_nodes'):
-                self.rl_props.num_nodes = len(
-                    self.engine_obj.topology.nodes
-                )  # type: ignore[attr-defined,assignment]
+            if not hasattr(self.rl_props, "num_nodes"):
+                self.rl_props.num_nodes = len(self.engine_obj.topology.nodes)  # type: ignore[attr-defined,assignment]
             else:
-                self.rl_props.num_nodes = len(
-                    self.engine_obj.topology.nodes
-                )  # type: ignore[attr-defined,assignment]
+                self.rl_props.num_nodes = len(self.engine_obj.topology.nodes)  # type: ignore[attr-defined,assignment]
         else:
             # Initialize with default values if engine_obj is None
-            if not hasattr(self.rl_props, 'num_nodes'):
+            if not hasattr(self.rl_props, "num_nodes"):
                 self.rl_props.num_nodes = 0  # type: ignore[attr-defined,assignment]
             else:
                 self.rl_props.num_nodes = 0  # type: ignore[attr-defined,assignment]
@@ -260,16 +258,16 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             )
 
         # Get arrival_count safely
-        arrival_count = getattr(self.rl_props, 'arrival_count', 0)
+        arrival_count = getattr(self.rl_props, "arrival_count", 0)
         if (
-            hasattr(self.rl_props, 'arrival_list')
+            hasattr(self.rl_props, "arrival_list")
             and len(self.rl_props.arrival_list) > arrival_count
         ):
             req_info_dict = self.rl_props.arrival_list[arrival_count]
             if isinstance(req_info_dict, dict):
-                req_id = req_info_dict['req_id']
-                bandwidth = req_info_dict['bandwidth']
-                holding_time = req_info_dict['depart'] - req_info_dict['arrive']
+                req_id = req_info_dict["req_id"]
+                bandwidth = req_info_dict["bandwidth"]
+                holding_time = req_info_dict["depart"] - req_info_dict["arrive"]
             else:
                 req_id = 0
                 bandwidth = 0.0
@@ -291,7 +289,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             was_allocated = False
 
         # Safely access route_obj attributes
-        if self.route_obj is not None and hasattr(self.route_obj, 'route_props'):
+        if self.route_obj is not None and hasattr(self.route_obj, "route_props"):
             path_length = self.route_obj.route_props.weights_list[0]
         else:
             path_length = 0.0
@@ -306,14 +304,14 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # Safely get reward values
         if self.engine_obj is not None:
             if was_allocated:
-                reward = self.engine_obj.engine_props['reward']
+                reward = self.engine_obj.engine_props["reward"]
             else:
-                reward = self.engine_obj.engine_props['penalty']
+                reward = self.engine_obj.engine_props["penalty"]
         else:
             reward = 0.0
 
         # Safely increment arrival_count
-        current_count = getattr(self.rl_props, 'arrival_count', 0)
+        current_count = getattr(self.rl_props, "arrival_count", 0)
         self.rl_props.arrival_count = current_count + 1  # type: ignore[attr-defined]
         terminated = self.step_helper.check_terminated()
         new_obs = self.step_helper.get_obs(
@@ -341,36 +339,36 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         Sets up this class.
         """
-        if self.sim_dict['optimize'] or self.sim_dict['optimize_hyperparameters']:
+        if self.sim_dict["optimize"] or self.sim_dict["optimize_hyperparameters"]:
             self.optimize = True
         else:
             self.optimize = False
 
-        self.rl_props.k_paths = self.sim_dict['k_paths']
-        self.rl_props.cores_per_link = self.sim_dict['cores_per_link']
+        self.rl_props.k_paths = self.sim_dict["k_paths"]
+        self.rl_props.cores_per_link = self.sim_dict["cores_per_link"]
         # Currently only C-band is supported - see SUPPORTED_SPECTRAL_BANDS
-        self.rl_props.spectral_slots = self.sim_dict['c_band']
+        self.rl_props.spectral_slots = self.sim_dict["c_band"]
 
         self._create_input()
 
-        self.sim_dict['arrival_dict'] = {
-            ARRIVAL_DICT_KEYS['start']: self.sim_dict['erlang_start'],
-            ARRIVAL_DICT_KEYS['stop']: self.sim_dict['erlang_stop'],
-            ARRIVAL_DICT_KEYS['step']: self.sim_dict['erlang_step'],
+        self.sim_dict["arrival_dict"] = {
+            ARRIVAL_DICT_KEYS["start"]: self.sim_dict["erlang_start"],
+            ARRIVAL_DICT_KEYS["stop"]: self.sim_dict["erlang_stop"],
+            ARRIVAL_DICT_KEYS["step"]: self.sim_dict["erlang_step"],
         }
 
         # Ensure engine_obj is available before accessing its properties
         if self.engine_obj is not None:
-            self.engine_obj.engine_props['erlang'] = float(
-                self.sim_dict['erlang_start']
+            self.engine_obj.engine_props["erlang"] = float(
+                self.sim_dict["erlang_start"]
             )
-            cores_per_link = self.engine_obj.engine_props['cores_per_link']
-            erlang = self.engine_obj.engine_props['erlang']
-            holding_time = self.engine_obj.engine_props['holding_time']
-            self.engine_obj.engine_props['arrival_rate'] = (
-                (cores_per_link * erlang) / holding_time
-            )
-            self.engine_obj.engine_props['band_list'] = SUPPORTED_SPECTRAL_BANDS
+            cores_per_link = self.engine_obj.engine_props["cores_per_link"]
+            erlang = self.engine_obj.engine_props["erlang"]
+            holding_time = self.engine_obj.engine_props["holding_time"]
+            self.engine_obj.engine_props["arrival_rate"] = (
+                cores_per_link * erlang
+            ) / holding_time
+            self.engine_obj.engine_props["band_list"] = SUPPORTED_SPECTRAL_BANDS
 
     def _setup_agents(self) -> None:
         """
@@ -380,9 +378,9 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         placeholders for core and spectrum agents (currently unused).
         """
         self.path_agent = PathAgent(
-            path_algorithm=self.sim_dict['path_algorithm'],
+            path_algorithm=self.sim_dict["path_algorithm"],
             rl_props=self.rl_props,
-            rl_help_obj=self.rl_help_obj
+            rl_help_obj=self.rl_help_obj,
         )
         self.core_agent = None
         self.spectrum_agent = None

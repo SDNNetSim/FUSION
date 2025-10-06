@@ -159,9 +159,7 @@ class TestGenerateUniformRandomVariable:
         assert all(r in {0, 1} for r in results)
 
     @patch("fusion.utils.random.np.random.uniform")
-    def test_generate_uniform_calls_numpy_uniform(
-        self, mock_uniform: Mock
-    ) -> None:
+    def test_generate_uniform_calls_numpy_uniform(self, mock_uniform: Mock) -> None:
         """Test that function calls numpy's uniform function."""
         # Arrange
         mock_uniform.return_value = 0.5

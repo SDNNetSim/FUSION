@@ -9,7 +9,7 @@ This file tracks known issues and future improvements for the FUSION configurati
 - **Files**: `runtime_config.ini`, `xtar_example_config.ini`, `cross_platform.ini`
 - **Description**: The path_levels parameter in RL settings is hard-coded and needs to be made configurable based on network topology or algorithm requirements
 - **Impact**: Limits flexibility in deep reinforcement learning experiments
-- **Next Steps**: 
+- **Next Steps**:
   1. Analyze optimal path_levels values for different topologies
   2. Implement dynamic calculation based on network characteristics
   3. Add validation for path_levels range

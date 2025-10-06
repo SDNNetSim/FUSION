@@ -133,7 +133,7 @@ The module provides comprehensive error handling for common failure scenarios:
 - **Solution**: Ensure algorithm YAML exists in `sb3_scripts/yml/`
 - **Message**: Clear path to missing file and suggested resolution
 
-### PermissionError  
+### PermissionError
 - **Cause**: Insufficient permissions to write to RLZoo3 directory
 - **Solution**: Check virtual environment permissions and file access
 - **Message**: Specific destination path and permission requirements
@@ -200,7 +200,7 @@ SimEnv:
 ### DQN Configuration
 ```yaml
 SimEnv:
-  policy: 'MlpPolicy' 
+  policy: 'MlpPolicy'
   n_timesteps: !!float 1e6
   buffer_size: 1000000
   learning_rate: !!float 1e-4

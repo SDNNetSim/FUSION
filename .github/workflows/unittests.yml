@@ -36,14 +36,14 @@ jobs:
         run: |
           # Step 1: Upgrade pip and install core build and testing tools
           python -m pip install --upgrade pip setuptools wheel
-          pip install flake8 pytest
-          
+          pip install flake8 pytest pytest-cov
+
           # Step 2: Install torch first
           pip install torch==2.2.2
-          
+
           # Step 3: Install PyG packages for Linux
           pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
-          
+
           # Step 4: Install the rest of the requirements from the original file
           # This ensures stable-baselines3 and all other packages are installed
           pip install -r requirements.txt

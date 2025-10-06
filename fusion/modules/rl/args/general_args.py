@@ -16,10 +16,10 @@ VALID_PATH_ALGORITHMS: list[str] = [
     "epsilon_greedy_bandit",
     "ucb_bandit",
     # Deep RL algorithms
-    "ppo",       # Proximal Policy Optimization
-    "a2c",       # Advantage Actor-Critic
-    "dqn",       # Deep Q-Network
-    "qr_dqn",    # Quantile Regression DQN
+    "ppo",  # Proximal Policy Optimization
+    "a2c",  # Advantage Actor-Critic
+    "dqn",  # Deep Q-Network
+    "qr_dqn",  # Quantile Regression DQN
 ]
 
 # Traditional RL algorithms for core network decisions
@@ -32,10 +32,10 @@ VALID_CORE_ALGORITHMS: list[str] = [
 # Deep reinforcement learning algorithms
 # Note: Abbreviated name kept for backward compatibility
 VALID_DRL_ALGORITHMS: list[str] = [
-    "ppo",       # Proximal Policy Optimization
-    "a2c",       # Advantage Actor-Critic
-    "dqn",       # Deep Q-Network
-    "qr_dqn",    # Quantile Regression DQN
+    "ppo",  # Proximal Policy Optimization
+    "a2c",  # Advantage Actor-Critic
+    "dqn",  # Deep Q-Network
+    "qr_dqn",  # Quantile Regression DQN
 ]
 
 # Full name alias for better clarity in new code

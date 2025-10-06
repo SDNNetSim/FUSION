@@ -4,6 +4,7 @@ Graph Transformer feature extractor for reinforcement learning.
 This module implements a Transformer-based graph neural network feature extractor
 that uses multi-head attention mechanisms to process graph-structured observations.
 """
+
 import torch
 from gymnasium import spaces
 from torch_geometric.nn import TransformerConv
@@ -20,6 +21,7 @@ from fusion.modules.rl.feat_extrs.constants import (
 
 # TODO: (version 5.5-6) Add params to optuna
 
+
 class GraphTransformerExtractor(BaseGraphFeatureExtractor):
     """
     Custom Graph Transformer feature extractor integrated with StableBaselines3.
@@ -30,11 +32,11 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
     """
 
     def __init__(
-            self,
-            obs_space: spaces.Dict,  # Note: kept for backward compatibility
-            emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
-            heads: int = DEFAULT_NUM_HEADS,  # Kept for compat
-            layers: int = DEFAULT_NUM_LAYERS
+        self,
+        obs_space: spaces.Dict,  # Note: kept for backward compatibility
+        emb_dim: int = DEFAULT_EMBEDDING_DIMENSION,  # Kept for compat
+        heads: int = DEFAULT_NUM_HEADS,  # Kept for compat
+        layers: int = DEFAULT_NUM_LAYERS,
     ):
         """
         Initialize the Graph Transformer feature extractor.
@@ -75,17 +77,21 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
         super().__init__(obs_space, features_dimension)
 
         # Create transformer convolution layers
-        self.convolution_layers = torch.nn.ModuleList([
-            TransformerConv(
-                in_channels=(
-                    input_dimension if layer_idx == 0 else convolution_output_dimension
-                ),
-                out_channels=output_per_head,
-                heads=heads,
-                concat=True  # Concatenate attention head outputs
-            )
-            for layer_idx in range(layers)
-        ])
+        self.convolution_layers = torch.nn.ModuleList(
+            [
+                TransformerConv(
+                    in_channels=(
+                        input_dimension
+                        if layer_idx == 0
+                        else convolution_output_dimension
+                    ),
+                    out_channels=output_per_head,
+                    heads=heads,
+                    concat=True,  # Concatenate attention head outputs
+                )
+                for layer_idx in range(layers)
+            ]
+        )
 
         # Readout layer to transform concatenated head outputs to final embedding
         self.readout_layer = torch.nn.Linear(convolution_output_dimension, emb_dim)
@@ -120,12 +126,16 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
                 for batch_idx in range(batch_size):
                     # Extract sample from batch
                     node_features_batch = node_features_list[batch_idx]
-                    edge_index_batch = (edge_index_list[batch_idx]
-                                        if edge_index_list.dim() == 3
-                                        else edge_index_list)
-                    path_masks_batch = (path_masks_list[batch_idx]
-                                        if path_masks_list.dim() == 3
-                                        else path_masks_list)
+                    edge_index_batch = (
+                        edge_index_list[batch_idx]
+                        if edge_index_list.dim() == 3
+                        else edge_index_list
+                    )
+                    path_masks_batch = (
+                        path_masks_list[batch_idx]
+                        if path_masks_list.dim() == 3
+                        else path_masks_list
+                    )
 
                     # Process through transformer layers
                     node_embeddings_batch = node_features_batch
@@ -137,8 +147,8 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
                     # Compute edge embeddings
                     source_idx, destination_idx = edge_index_batch
                     edge_embeddings_batch = (
-                        node_embeddings_batch[source_idx] +
-                        node_embeddings_batch[destination_idx]
+                        node_embeddings_batch[source_idx]
+                        + node_embeddings_batch[destination_idx]
                     ) * EDGE_EMBEDDING_SCALE_FACTOR
 
                     # Aggregate path embeddings
@@ -168,15 +178,12 @@ class GraphTransformerExtractor(BaseGraphFeatureExtractor):
         # Process single sample (no batch) or after squeezing batch=1
         node_embeddings = node_features_list
         for convolution_layer in self.convolution_layers:
-            node_embeddings = convolution_layer(
-                node_embeddings, edge_index_list
-            ).relu()
+            node_embeddings = convolution_layer(node_embeddings, edge_index_list).relu()
 
         # Compute edge embeddings
         source_idx, destination_idx = edge_index_list
         edge_embeddings = (
-            node_embeddings[source_idx] +
-            node_embeddings[destination_idx]
+            node_embeddings[source_idx] + node_embeddings[destination_idx]
         ) * EDGE_EMBEDDING_SCALE_FACTOR
 
         # Aggregate path embeddings

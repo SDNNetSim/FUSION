@@ -216,8 +216,7 @@ class TestCreatePt:
         # Arrange
         cores_per_link = 2
         network_spectrum_dict = {
-            (f"Node{i}", f"Node{i+1}"): float(i * 10)
-            for i in range(20)
+            (f"Node{i}", f"Node{i + 1}"): float(i * 10) for i in range(20)
         }
 
         # Act
@@ -331,9 +330,7 @@ class TestCreateBwInfo:
         ).return_value
 
         # Act & Assert
-        with pytest.raises(
-            NotImplementedError, match="Unknown modulation assumption"
-        ):
+        with pytest.raises(NotImplementedError, match="Unknown modulation assumption"):
             create_bw_info("unknown_assumption")
 
     @patch("fusion.io.generate.find_project_root")
@@ -385,9 +382,7 @@ class TestCreateBwInfo:
         ).return_value
 
         # Act
-        result = create_bw_info(
-            "test", mod_assumptions_path="relative/path.json"
-        )
+        result = create_bw_info("test", mod_assumptions_path="relative/path.json")
 
         # Assert
         assert result == {"100G": {"slots": 4, "reach": 1000}}

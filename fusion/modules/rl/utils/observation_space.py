@@ -22,25 +22,23 @@ def get_observation_space(rl_props: Any, engine_props: Any) -> dict[str, spaces.
     bw_set = {d["bandwidth"] for d in rl_props.arrival_list}
     num_set = {int(s) for s in bw_set}
     max_bw = str(max(num_set))
-    mod_per_bw_dict = engine_props.engine_props['mod_per_bw']
-    max_slots = mod_per_bw_dict[max_bw]['QPSK']['slots_needed']
+    mod_per_bw_dict = engine_props.engine_props["mod_per_bw"]
+    max_slots = mod_per_bw_dict[max_bw]["QPSK"]["slots_needed"]
     max_paths = rl_props.k_paths
 
-    obs_key = engine_props.engine_props.get('obs_space', 'obs_1')
-    if 'graph' in obs_key:
+    obs_key = engine_props.engine_props.get("obs_space", "obs_1")
+    if "graph" in obs_key:
         include_graph = True
-        obs_key = obs_key.replace('_graph', '')
+        obs_key = obs_key.replace("_graph", "")
 
-    obs_features = OBS_DICT.get(obs_key, OBS_DICT['obs_1'])
+    obs_features = OBS_DICT.get(obs_key, OBS_DICT["obs_1"])
     print("Observation space: ", obs_features)
 
     feature_space_map = {
         "source": lambda: spaces.MultiBinary(rl_props.num_nodes),
         "destination": lambda: spaces.MultiBinary(rl_props.num_nodes),
         "request_bandwidth": lambda: spaces.MultiBinary(len(bw_set)),
-        "holding_time": lambda: spaces.Box(
-            low=0, high=1, shape=(1,), dtype=np.float32
-        ),
+        "holding_time": lambda: spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
         "slots_needed": lambda: spaces.Box(
             low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32
         ),
@@ -63,16 +61,20 @@ def get_observation_space(rl_props: Any, engine_props: Any) -> dict[str, spaces.
     }
 
     ei, ea, xf, _ = convert_networkx_topo(
-        engine_props.engine_props['topology'], as_directed=True
+        engine_props.engine_props["topology"], as_directed=True
     )
     num_nodes, num_edges = xf.shape[0], ei.shape[1]
     if include_graph:
-        obs_space_dict.update({
-            "x": spaces.Box(-np.inf, np.inf, xf.shape, dtype=np.float32),
-            "edge_index": spaces.Box(0, num_nodes - 1, ei.shape, dtype=np.int64),
-            "edge_attr": spaces.Box(-np.inf, np.inf, ea.shape, dtype=np.float32),
-            "path_masks": spaces.Box(0, 1, (max_paths, num_edges), dtype=np.float32),
-        })
+        obs_space_dict.update(
+            {
+                "x": spaces.Box(-np.inf, np.inf, xf.shape, dtype=np.float32),
+                "edge_index": spaces.Box(0, num_nodes - 1, ei.shape, dtype=np.int64),
+                "edge_attr": spaces.Box(-np.inf, np.inf, ea.shape, dtype=np.float32),
+                "path_masks": spaces.Box(
+                    0, 1, (max_paths, num_edges), dtype=np.float32
+                ),
+            }
+        )
         print(f"Updated the observation space with graph features: {obs_space_dict}")
 
     return obs_space_dict
@@ -161,7 +163,7 @@ class FragmentationTracker:
             last_src, last_dst = chosen_path[-2], chosen_path[-1]
             if self.dirty_cores[last_src, last_dst, core_index]:
                 core_mask = self.core_masks[last_src, last_dst, core_index]
-                padded = np.pad(core_mask, (1,), 'constant')
+                padded = np.pad(core_mask, (1,), "constant")
                 transitions = np.abs(np.diff(padded))
                 core_frag = np.sum(transitions) / (2 * self.norm_factor)
 
@@ -172,7 +174,7 @@ class FragmentationTracker:
         for i in range(total_links):
             src, dst = chosen_path[i], chosen_path[i + 1]
             for c in range(self.core_count):
-                padded = np.pad(self.core_masks[src, dst, c], (1,), 'constant')
+                padded = np.pad(self.core_masks[src, dst, c], (1,), "constant")
                 transitions = np.abs(np.diff(padded))
                 path_transitions += np.sum(transitions)
 
@@ -186,6 +188,6 @@ class FragmentationTracker:
         self.dirty_cores.fill(False)
 
         return {
-            'fragmentation': np.array([core_frag], dtype=np.float32),
-            'path_frag': np.array([path_frag], dtype=np.float32)
+            "fragmentation": np.array([core_frag], dtype=np.float32),
+            "path_frag": np.array([path_frag], dtype=np.float32),
         }

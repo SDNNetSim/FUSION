@@ -72,11 +72,13 @@ def _parse_one_out(path: Path) -> tuple[dict[str, str | None], pd.DataFrame]:
             # Trials
             m_trial = TRIAL_RE.search(line)
             if m_trial:
-                trials_list.append({
-                    "trial": int(m_trial.group("trial")),
-                    "objective_value": float(m_trial.group("value")),
-                    **ast.literal_eval(m_trial.group("params"))
-                })
+                trials_list.append(
+                    {
+                        "trial": int(m_trial.group("trial")),
+                        "objective_value": float(m_trial.group("value")),
+                        **ast.literal_eval(m_trial.group("params")),
+                    }
+                )
 
     if not trials_list:
         raise ValueError(f"No trial lines detected in {path}")
@@ -84,11 +86,7 @@ def _parse_one_out(path: Path) -> tuple[dict[str, str | None], pd.DataFrame]:
     keep = ["run_id", "path_algorithm", "network", "erlang_start"]
     meta_small_dict: dict[str, str | None] = {k: meta_dict.get(k) for k in keep}
 
-    trials_df = (
-        pd.DataFrame(trials_list)
-        .sort_values("trial")
-        .reset_index(drop=True)
-    )
+    trials_df = pd.DataFrame(trials_list).sort_values("trial").reset_index(drop=True)
 
     return meta_small_dict, trials_df
 
@@ -139,7 +137,7 @@ def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> No
 
 def _encode_param_matrix(
     df: pd.DataFrame,
-    ignore: tuple[str, ...] = ("trial", "objective_value", "erlang_start")
+    ignore: tuple[str, ...] = ("trial", "objective_value", "erlang_start"),
 ) -> tuple[np.ndarray, ColumnTransformer, list[str]]:
     """Return (X, enc, param_cols) where X is the encoded feature matrix."""
     param_cols = [c for c in df.columns if c not in ignore]
@@ -150,15 +148,17 @@ def _encode_param_matrix(
     logger.debug("[encode] #numeric=%d  #categorical=%d", len(num_cols), len(cat_cols))
 
     # Fill missing numerics (e.g. unused layers) with a sentinel
-    num_tf = Pipeline([
-        ("imputer", SimpleImputer(strategy="constant", fill_value=-1)),
-        ("scaler", StandardScaler())
-    ])
+    num_tf = Pipeline(
+        [
+            ("imputer", SimpleImputer(strategy="constant", fill_value=-1)),
+            ("scaler", StandardScaler()),
+        ]
+    )
 
     # Categorical → one-hot
-    cat_tf = Pipeline([
-        ("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
-    ])
+    cat_tf = Pipeline(
+        [("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]
+    )
 
     enc = ColumnTransformer(
         transformers=[
@@ -180,9 +180,7 @@ def _encode_param_matrix(
 
 
 def _knn_predict_matrix(
-    df: pd.DataFrame,
-    curr_x: np.ndarray,
-    k: int = 5
+    df: pd.DataFrame, curr_x: np.ndarray, k: int = 5
 ) -> tuple[np.ndarray, list[float]]:
     """
     Build one k‑NN model per Erlang load and return a (n_samples, n_loads) matrix
@@ -225,7 +223,7 @@ def _knn_robust_aggregate(df: pd.DataFrame, k: int = 5) -> pd.DataFrame:
     logger.info(
         "[knn_agg] Incoming rows: %d   unique loads: %d",
         len(df),
-        df['erlang_start'].nunique(),
+        df["erlang_start"].nunique(),
     )
     curr_x, _, param_cols = _encode_param_matrix(df)
 
@@ -239,29 +237,34 @@ def _knn_robust_aggregate(df: pd.DataFrame, k: int = 5) -> pd.DataFrame:
     for key, idxs in df.groupby("_key").groups.items():
         pmat = pred_mat[list(idxs)]
         obs = pmat.mean(axis=0)
-        summary_rows.append({
-            **df.loc[idxs[0], param_cols].to_dict(),
-            "worst_pred_return": obs.min(),
-            "mean_pred_return": obs.mean(),
-            "std_pred_return": obs.std(ddof=0),
-            "samples": len(idxs),
-            "_key": key,
-        })
+        summary_rows.append(
+            {
+                **df.loc[idxs[0], param_cols].to_dict(),
+                "worst_pred_return": obs.min(),
+                "mean_pred_return": obs.mean(),
+                "std_pred_return": obs.std(ddof=0),
+                "samples": len(idxs),
+                "_key": key,
+            }
+        )
 
     out = pd.DataFrame(summary_rows)
-    out = out.sort_values(["worst_pred_return", "mean_pred_return"],
-                          ascending=[False, False])  # higher is better
+    out = out.sort_values(
+        ["worst_pred_return", "mean_pred_return"], ascending=[False, False]
+    )  # higher is better
     logger.info("[knn_agg] Aggregation complete")
     return out
 
 
 def _hash_params(
     row: pd.Series,
-    ignore: tuple[str, ...] = ("trial", "objective_value", "erlang_start")
+    ignore: tuple[str, ...] = ("trial", "objective_value", "erlang_start"),
 ) -> tuple[str, dict[str, Any]]:
     """Return (md5‑hash, params_dict) for a trial row, ignoring bookkeeping cols."""
     items = sorted((k, row[k]) for k in row.index if k not in ignore)
-    return hashlib.md5(str(items).encode()).hexdigest(), dict(items)
+    # MD5 used only for creating unique identifiers, not for security
+    hash_value = hashlib.md5(str(items).encode(), usedforsecurity=False).hexdigest()
+    return hash_value, dict(items)
 
 
 def _gather_csvs(topo_dir: Path) -> list[Path]:
@@ -305,12 +308,14 @@ def find_best_params_for_topology(topo_dir: Path, out_root: Path | None = None) 
     leaderboard = _knn_robust_aggregate(df_all, k=5)
     logger.info(
         "Top 5 results:\n%s",
-        leaderboard.head(5)[[
-            "worst_pred_return",
-            "mean_pred_return",
-            "std_pred_return",
-            "samples",
-        ]],
+        leaderboard.head(5)[
+            [
+                "worst_pred_return",
+                "mean_pred_return",
+                "std_pred_return",
+                "samples",
+            ]
+        ],
     )
     best = leaderboard.iloc[0]
 
@@ -327,17 +332,19 @@ def find_best_params_for_topology(topo_dir: Path, out_root: Path | None = None) 
     logger.info(
         "[Phase 2] 🏆  %s → best_params.json saved (worst=%.2f, mean=%.2f)",
         topo_dir.relative_to(out_root),
-        best['worst_pred_return'],
-        best['mean_pred_return']
+        best["worst_pred_return"],
+        best["mean_pred_return"],
     )
     # Optional: log top‑3 summary
     logger.debug(
         "Top 3 summary:\n%s",
-        leaderboard.head(3)[[
-            "worst_pred_return",
-            "mean_pred_return",
-            "std_pred_return",
-        ]],
+        leaderboard.head(3)[
+            [
+                "worst_pred_return",
+                "mean_pred_return",
+                "std_pred_return",
+            ]
+        ],
     )
 
 

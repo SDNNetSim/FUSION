@@ -93,22 +93,22 @@ class TestSimulationEngineTopologyCreation:
                 "nodes": {
                     "A": {"type": "core"},
                     "B": {"type": "edge"},
-                    "C": {"type": "core"}
+                    "C": {"type": "core"},
                 },
                 "links": {
                     "1": {
                         "source": "A",
                         "destination": "B",
                         "length": 100.0,
-                        "fiber": {"num_cores": 4}
+                        "fiber": {"num_cores": 4},
                     },
                     "2": {
                         "source": "B",
                         "destination": "C",
                         "length": 150.0,
-                        "fiber": {"num_cores": 4}
-                    }
-                }
+                        "fiber": {"num_cores": 4},
+                    },
+                },
             },
             "c_band": 80,
             "l_band": 0,
@@ -172,18 +172,26 @@ class TestSimulationEngineTopologyCreation:
         """Test topology creation with multiple enabled bands."""
         # Arrange
         engine_props = {
-            "network": "test", "date": "2024-01-01", "sim_start": "multi_band",
+            "network": "test",
+            "date": "2024-01-01",
+            "sim_start": "multi_band",
             "output_train_data": False,
             "topology_info": {
                 "nodes": {"A": {}, "B": {}},
                 "links": {
                     "1": {
-                        "source": "A", "destination": "B", "length": 100.0,
-                        "fiber": {"num_cores": 2}
+                        "source": "A",
+                        "destination": "B",
+                        "length": 100.0,
+                        "fiber": {"num_cores": 2},
                     }
-                }
+                },
             },
-            "c_band": 80, "l_band": 60, "s_band": 0, "o_band": 0, "e_band": 0,
+            "c_band": 80,
+            "l_band": 60,
+            "s_band": 0,
+            "o_band": 0,
+            "e_band": 0,
         }
         engine = SimulationEngine(engine_props)
 
@@ -224,8 +232,11 @@ class TestSimulationEngineRequestHandling:
     def engine_with_requests(self) -> SimulationEngine:
         """Provide engine with sample requests for testing."""
         engine_props = {
-            "network": "test", "date": "2024-01-01", "sim_start": "req_test",
-            "output_train_data": False, "save_snapshots": False,
+            "network": "test",
+            "date": "2024-01-01",
+            "sim_start": "req_test",
+            "output_train_data": False,
+            "save_snapshots": False,
         }
         engine = SimulationEngine(engine_props)
         engine.reqs_dict = {
@@ -237,7 +248,7 @@ class TestSimulationEngineRequestHandling:
                 "depart": 5.0,
                 "request_type": "arrival",
                 "bandwidth": "100GHz",
-                "mod_formats": {"QPSK": {"max_length": [200]}}
+                "mod_formats": {"QPSK": {"max_length": [200]}},
             },
             5.0: {
                 "req_id": 1,
@@ -247,8 +258,8 @@ class TestSimulationEngineRequestHandling:
                 "depart": 5.0,
                 "request_type": "release",
                 "bandwidth": "100GHz",
-                "mod_formats": {"QPSK": {"max_length": [200]}}
-            }
+                "mod_formats": {"QPSK": {"max_length": [200]}},
+            },
         }
         engine.reqs_status_dict = {
             1: {
@@ -261,7 +272,7 @@ class TestSimulationEngineRequestHandling:
                 "start_slot_list": [10],
                 "end_slot_list": [20],
                 "bandwidth_list": ["100GHz"],
-                "snr_cost": [0.5]
+                "snr_cost": [0.5],
             }
         }
         return engine
@@ -313,7 +324,7 @@ class TestSimulationEngineRequestHandling:
             force_core=force_core,
             force_slicing=force_slicing,
             forced_index=forced_index,
-            force_mod_format=force_mod_format
+            force_mod_format=force_mod_format,
         )
 
         # Assert
@@ -365,7 +376,7 @@ class TestSimulationEngineRequestHandling:
         engine_with_requests.engine_props["save_snapshots"] = False
         engine_with_requests.engine_props["output_train_data"] = False
 
-        with patch.object(engine_with_requests, 'handle_arrival') as mock_arrival:
+        with patch.object(engine_with_requests, "handle_arrival") as mock_arrival:
             # Act
             engine_with_requests.handle_request(current_time, request_number)
 
@@ -381,7 +392,7 @@ class TestSimulationEngineRequestHandling:
         request_number = 1
 
         # Act & Assert
-        with patch.object(engine_with_requests, 'handle_release') as mock_release:
+        with patch.object(engine_with_requests, "handle_release") as mock_release:
             engine_with_requests.handle_request(current_time, request_number)
             mock_release.assert_called_once_with(current_time=current_time)
 
@@ -407,10 +418,17 @@ class TestSimulationEngineIterationManagement:
     def iteration_engine(self) -> SimulationEngine:
         """Provide engine for iteration testing."""
         engine_props = {
-            "network": "test", "date": "2024-01-01", "sim_start": "iter_test",
-            "output_train_data": False, "max_iters": 10, "print_step": 1,
-            "save_step": 5, "erlang": 100.0, "thread_num": "s1",
-            "deploy_model": False, "seeds": None,
+            "network": "test",
+            "date": "2024-01-01",
+            "sim_start": "iter_test",
+            "output_train_data": False,
+            "max_iters": 10,
+            "print_step": 1,
+            "save_step": 5,
+            "erlang": 100.0,
+            "thread_num": "s1",
+            "deploy_model": False,
+            "seeds": None,
         }
         engine = SimulationEngine(engine_props)
         engine.stats_obj = Mock()
@@ -438,7 +456,7 @@ class TestSimulationEngineIterationManagement:
             ("A", "B"): {"usage_count": 10, "throughput": 1000}
         }
 
-        with patch.object(iteration_engine, 'generate_requests'):
+        with patch.object(iteration_engine, "generate_requests"):
             # Act
             iteration_engine.init_iter(iteration, seed)
 
@@ -459,14 +477,14 @@ class TestSimulationEngineIterationManagement:
         iteration = 0
         trial = 2
 
-        with patch.object(iteration_engine, 'generate_requests'):
+        with patch.object(iteration_engine, "generate_requests"):
             # Act
             iteration_engine.init_iter(iteration, trial=trial)
 
             # Assert
             assert iteration_engine.engine_props["thread_num"] == "s3"  # trial + 1
 
-    @patch('fusion.core.simulation.load_model')
+    @patch("fusion.core.simulation.load_model")
     def test_init_iter_loads_ml_model_when_deploy_model_enabled(
         self, mock_load_model: Mock, iteration_engine: SimulationEngine
     ) -> None:
@@ -476,7 +494,7 @@ class TestSimulationEngineIterationManagement:
         mock_model = Mock()
         mock_load_model.return_value = mock_model
 
-        with patch.object(iteration_engine, 'generate_requests'):
+        with patch.object(iteration_engine, "generate_requests"):
             # Act
             iteration_engine.init_iter(0, print_flag=True)
 
@@ -492,7 +510,7 @@ class TestSimulationEngineIterationManagement:
         iteration_engine.engine_props["seeds"] = [10, 20, 30]
         iteration = 1
 
-        with patch.object(iteration_engine, 'generate_requests') as mock_gen:
+        with patch.object(iteration_engine, "generate_requests") as mock_gen:
             # Act
             iteration_engine.init_iter(iteration)
 
@@ -506,7 +524,7 @@ class TestSimulationEngineIterationManagement:
         # Arrange
         iteration = 3
 
-        with patch.object(iteration_engine, 'generate_requests') as mock_gen:
+        with patch.object(iteration_engine, "generate_requests") as mock_gen:
             # Act
             iteration_engine.init_iter(iteration)
 
@@ -523,7 +541,7 @@ class TestSimulationEngineIterationManagement:
         iteration_engine.engine_props["is_training"] = False
         iteration_engine.stats_obj.calculate_confidence_interval.return_value = False  # type: ignore[attr-defined]
 
-        with patch.object(iteration_engine, '_save_all_stats') as mock_save:
+        with patch.object(iteration_engine, "_save_all_stats") as mock_save:
             # Act
             result = iteration_engine.end_iter(iteration)
 
@@ -556,17 +574,24 @@ class TestSimulationEngineFullExecution:
     def execution_engine(self) -> SimulationEngine:
         """Provide engine for full execution testing."""
         engine_props = {
-            "network": "test", "date": "2024-01-01", "sim_start": "exec_test",
-            "output_train_data": False, "max_iters": 3, "print_step": 1,
-            "save_step": 3, "erlang": 100.0,
+            "network": "test",
+            "date": "2024-01-01",
+            "sim_start": "exec_test",
+            "output_train_data": False,
+            "max_iters": 3,
+            "print_step": 1,
+            "save_step": 3,
+            "erlang": 100.0,
             "topology_info": {
                 "nodes": {"A": {}, "B": {}},
                 "links": {
                     "1": {
-                        "source": "A", "destination": "B", "length": 100.0,
-                        "fiber": {"num_cores": 1}
+                        "source": "A",
+                        "destination": "B",
+                        "length": 100.0,
+                        "fiber": {"num_cores": 1},
                     }
-                }
+                },
             },
             "c_band": 80,
         }
@@ -580,11 +605,9 @@ class TestSimulationEngineFullExecution:
         execution_engine.reqs_dict = {1.0: {"request_type": "arrival"}}
 
         with (
-            patch.object(execution_engine, 'init_iter') as mock_init,
-            patch.object(
-                execution_engine, 'end_iter', return_value=False
-            ) as mock_end,
-            patch.object(execution_engine, 'handle_request'),
+            patch.object(execution_engine, "init_iter") as mock_init,
+            patch.object(execution_engine, "end_iter", return_value=False) as mock_end,
+            patch.object(execution_engine, "handle_request"),
         ):
             # Act
             result = execution_engine.run(seed=42)
@@ -602,11 +625,11 @@ class TestSimulationEngineFullExecution:
         execution_engine.reqs_dict = {1.0: {"request_type": "arrival"}}
 
         with (
-            patch.object(execution_engine, 'init_iter'),
+            patch.object(execution_engine, "init_iter"),
             patch.object(
-                execution_engine, 'end_iter', side_effect=[False, True, False]
+                execution_engine, "end_iter", side_effect=[False, True, False]
             ),
-            patch.object(execution_engine, 'handle_request'),
+            patch.object(execution_engine, "handle_request"),
         ):
             # Act
             result = execution_engine.run()
@@ -625,10 +648,11 @@ class TestSimulationEngineFullExecution:
         execution_engine.stop_flag = stop_flag
         execution_engine.reqs_dict = {1.0: {"request_type": "arrival"}}
 
-        with patch.object(execution_engine, 'init_iter'), \
-             patch.object(execution_engine, 'end_iter', return_value=False), \
-             patch.object(execution_engine, 'handle_request'):
-
+        with (
+            patch.object(execution_engine, "init_iter"),
+            patch.object(execution_engine, "end_iter", return_value=False),
+            patch.object(execution_engine, "handle_request"),
+        ):
             # Act
             result = execution_engine.run()
 
@@ -643,7 +667,9 @@ class TestSimulationEngineSignalHandling:
     def signal_engine(self) -> SimulationEngine:
         """Provide engine for signal handling tests."""
         engine_props = {
-            "network": "test", "date": "2024-01-01", "sim_start": "signal_test",
+            "network": "test",
+            "date": "2024-01-01",
+            "sim_start": "signal_test",
             "output_train_data": False,
         }
         return SimulationEngine(engine_props)
@@ -656,7 +682,7 @@ class TestSimulationEngineSignalHandling:
         signum = signal.SIGINT
         frame = Mock()
 
-        with patch.object(signal_engine, '_save_all_stats') as mock_save:
+        with patch.object(signal_engine, "_save_all_stats") as mock_save:
             # Act
             signal_engine._signal_save_handler(signum, frame)
 
@@ -672,10 +698,14 @@ class TestSimulationEngineEdgeCases:
     ) -> None:
         """Test update_arrival_params handles missing requests dict."""
         # Arrange
-        engine = SimulationEngine({
-            "network": "test", "date": "2024-01-01", "sim_start": "edge_test",
-            "output_train_data": False,
-        })
+        engine = SimulationEngine(
+            {
+                "network": "test",
+                "date": "2024-01-01",
+                "sim_start": "edge_test",
+                "output_train_data": False,
+            }
+        )
         current_time = 1.0
 
         # Act & Assert - should not raise exception
@@ -684,10 +714,14 @@ class TestSimulationEngineEdgeCases:
     def test_update_arrival_params_with_missing_time_handles_gracefully(self) -> None:
         """Test update_arrival_params handles missing time in requests dict."""
         # Arrange
-        engine = SimulationEngine({
-            "network": "test", "date": "2024-01-01", "sim_start": "edge_test",
-            "output_train_data": False,
-        })
+        engine = SimulationEngine(
+            {
+                "network": "test",
+                "date": "2024-01-01",
+                "sim_start": "edge_test",
+                "output_train_data": False,
+            }
+        )
         engine.reqs_dict = {2.0: {"req_id": 1}}
         current_time = 1.0  # Different time
 
@@ -697,13 +731,17 @@ class TestSimulationEngineEdgeCases:
     def test_generate_requests_calls_get_requests_with_correct_params(self) -> None:
         """Test generate_requests calls get_requests function properly."""
         # Arrange
-        engine = SimulationEngine({
-            "network": "test", "date": "2024-01-01", "sim_start": "gen_test",
-            "output_train_data": False,
-        })
+        engine = SimulationEngine(
+            {
+                "network": "test",
+                "date": "2024-01-01",
+                "sim_start": "gen_test",
+                "output_train_data": False,
+            }
+        )
         seed = 123
 
-        with patch('fusion.core.simulation.get_requests') as mock_get_requests:
+        with patch("fusion.core.simulation.get_requests") as mock_get_requests:
             mock_get_requests.return_value = {
                 1.0: {"req_id": 1},
                 2.0: {"req_id": 2},
@@ -724,17 +762,22 @@ class TestSimulationEngineEdgeCases:
     def test_save_all_stats_saves_ml_data_when_ml_metrics_available(self) -> None:
         """Test _save_all_stats saves ML data when ML metrics collector exists."""
         # Arrange
-        engine = SimulationEngine({
-            "network": "test", "date": "2024-01-01", "sim_start": "ml_test",
-            "output_train_data": True, "max_iters": 10,
-        })
+        engine = SimulationEngine(
+            {
+                "network": "test",
+                "date": "2024-01-01",
+                "sim_start": "ml_test",
+                "output_train_data": True,
+                "max_iters": 10,
+            }
+        )
         engine.ml_metrics = Mock()
         engine.stats_obj = Mock()
         engine.stats_obj.iteration = 5
         engine.stats_obj.get_blocking_statistics.return_value = {}
         engine.stats_obj.stats_props = Mock()
 
-        with patch.object(engine.persistence, 'save_stats'):
+        with patch.object(engine.persistence, "save_stats"):
             # Act
             engine._save_all_stats("test_data")
 

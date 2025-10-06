@@ -137,7 +137,7 @@ class TestCreateTrainingArgumentParser:
             help=(
                 "Type of agent to train "
                 "(rl=reinforcement learning, ml=machine learning)"
-            )
+            ),
         )
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")

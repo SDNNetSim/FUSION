@@ -4,6 +4,7 @@ Base feature extractor class for graph neural networks.
 This module provides common functionality for GNN-based feature extractors
 to reduce code duplication across different implementations.
 """
+
 from abc import abstractmethod
 
 import torch
@@ -33,10 +34,10 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         super().__init__(observation_space, features_dim)
 
     def _process_batch_dimensions(
-            self,
-            node_features: torch.Tensor,
-            edge_index: torch.Tensor,
-            path_masks: torch.Tensor
+        self,
+        node_features: torch.Tensor,
+        edge_index: torch.Tensor,
+        path_masks: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, int | None]:
         """
         Process and normalize batch dimensions for consistent handling.
@@ -65,9 +66,7 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         return node_features, edge_index, path_masks, batch_size
 
     def _compute_edge_embeddings(
-            self,
-            node_embeddings: torch.Tensor,
-            edge_index: torch.Tensor
+        self, node_embeddings: torch.Tensor, edge_index: torch.Tensor
     ) -> torch.Tensor:
         """
         Compute edge embeddings from node embeddings.
@@ -86,9 +85,7 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         return edge_embeddings
 
     def _compute_path_embeddings(
-            self,
-            edge_embeddings: torch.Tensor,
-            path_masks: torch.Tensor
+        self, edge_embeddings: torch.Tensor, path_masks: torch.Tensor
     ) -> torch.Tensor:
         """
         Compute path embeddings from edge embeddings using path masks.

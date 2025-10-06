@@ -45,7 +45,7 @@ class AgentInterface(ABC):
         """
 
     @abstractmethod
-    def act(self, observation: Any, deterministic: bool = False) -> int | Any:
+    def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
         """
         Select an action based on the current observation.
 
@@ -58,7 +58,7 @@ class AgentInterface(ABC):
         """
 
     @abstractmethod
-    def train(self, env: Any, total_timesteps: int, **kwargs: Any) -> dict[str, Any]:
+    def train(self, env: Any, _total_timesteps: int, **kwargs: Any) -> dict[str, Any]:
         """
         Train the agent on the given environment.
 
@@ -78,7 +78,7 @@ class AgentInterface(ABC):
         observation: Any,
         action: int | Any,
         reward: float,
-        next_observation: Any,
+        _next_observation: Any,
         done: bool,
     ) -> dict[str, float] | None:
         """
@@ -121,7 +121,7 @@ class AgentInterface(ABC):
         self,
         state: dict[str, Any],
         action: int | Any,
-        next_state: dict[str, Any],
+        _next_state: dict[str, Any],
         info: dict[str, Any],
     ) -> float:
         """
@@ -140,7 +140,7 @@ class AgentInterface(ABC):
         """
 
     @abstractmethod
-    def update_exploration_params(self, timestep: int, total_timesteps: int) -> None:
+    def update_exploration_params(self, _timestep: int, _total_timesteps: int) -> None:
         """
         Update exploration parameters based on training progress.
 

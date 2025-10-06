@@ -142,9 +142,7 @@ class TestAllocateBlocking:
         helper.allocate()
 
         assert eng.stats_obj.blocked_reqs == 1
-        assert (
-            eng.stats_obj.stats_props["block_reasons_dict"]["congestion"] == 1
-        )
+        assert eng.stats_obj.stats_props["block_reasons_dict"]["congestion"] == 1
         assert eng.stats_obj.stats_props["block_bw_dict"]["100G"] == 1
         eng.handle_arrival.assert_not_called()
 
@@ -172,7 +170,7 @@ class TestSaveArr:
         return_value="joined/path.npy",
     )
     def test_save_arr_joins_path_and_saves(
-            self, mock_join: mock.MagicMock, mock_save: mock.MagicMock
+        self, mock_join: mock.MagicMock, mock_save: mock.MagicMock
     ) -> None:
         """np.save called with path from os.path.join."""
         sim = {

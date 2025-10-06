@@ -138,9 +138,7 @@ class CoreUtilHelpers:
 
         return information_list
 
-    def classify_cores(
-        self, cores_list: list[Any]
-    ) -> list[tuple[int, Any, int]]:
+    def classify_cores(self, cores_list: list[Any]) -> list[tuple[int, Any, int]]:
         """
         Classify cores by their congestion level.
 
@@ -156,9 +154,7 @@ class CoreUtilHelpers:
             "core-level congestion patterns."
         )
 
-    def update_route_props(
-        self, bandwidth: str, chosen_path: list[list[Any]]
-    ) -> None:
+    def update_route_props(self, bandwidth: str, chosen_path: list[list[Any]]) -> None:
         """
         Updates the route properties.
 

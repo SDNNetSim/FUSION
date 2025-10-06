@@ -46,19 +46,19 @@ from .parameters.registry import args_registry
 
 __all__ = [
     # Modern function names
-    'build_main_argument_parser',
-    'create_training_argument_parser',
-    'create_gui_argument_parser',
+    "build_main_argument_parser",
+    "create_training_argument_parser",
+    "create_gui_argument_parser",
     # Legacy function names
-    'build_parser',
-    'get_train_args',
-    'get_gui_args',
+    "build_parser",
+    "get_train_args",
+    "get_gui_args",
     # Core functionality
-    'args_registry',
-    'setup_config_from_cli',
-    'ConfigManager',
+    "args_registry",
+    "setup_config_from_cli",
+    "ConfigManager",
     # CLI constants
-    'SUCCESS_EXIT_CODE',
-    'ERROR_EXIT_CODE',
-    'INTERRUPT_EXIT_CODE'
+    "SUCCESS_EXIT_CODE",
+    "ERROR_EXIT_CODE",
+    "INTERRUPT_EXIT_CODE",
 ]

@@ -55,7 +55,7 @@
 
 ### Writing Guidelines:
 - **Concise**: Each item should be scannable in 30 seconds
-- **Actionable**: Clear problem statement and solution direction  
+- **Actionable**: Clear problem statement and solution direction
 - **Specific**: Reference exact files and line numbers when possible
 - **No Implementation Details**: Keep solutions high-level
 - **Remove Completed Items**: Don't track completed work in TODO

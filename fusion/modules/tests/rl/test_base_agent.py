@@ -14,9 +14,7 @@ from fusion.modules.rl.errors import AlgorithmNotFoundError
 @pytest.fixture
 def mock_hpc() -> Iterator[mock.MagicMock]:
     """Patch HyperparamConfig for all tests."""
-    with mock.patch(
-        "fusion.modules.rl.agents.base_agent.HyperparamConfig"
-    ) as mock_hpc:
+    with mock.patch("fusion.modules.rl.agents.base_agent.HyperparamConfig") as mock_hpc:
         yield mock_hpc
 
 
@@ -37,7 +35,7 @@ class TestBaseAgent:
         }
 
     def _new_agent(
-            self, algorithm: str = "q_learning", mock_hpc: Any = None
+        self, algorithm: str = "q_learning", mock_hpc: Any = None
     ) -> base_agent.BaseAgent:
         """Return BaseAgent with stubbed props."""
         agent = base_agent.BaseAgent(
@@ -64,15 +62,13 @@ class TestBaseAgent:
         """Allocated+static returns fixed reward."""
         agent = self._new_agent(mock_hpc=mock_hpc)
         assert agent.engine_props is not None
-        assert (
-            agent.get_reward(True, False, 0, 0) == agent.engine_props["reward"]
-        )
+        assert agent.get_reward(True, False, 0, 0) == agent.engine_props["reward"]
 
     def test_get_reward_dynamic_allocated(self, mock_hpc: mock.MagicMock) -> None:
         """Allocated+dynamic delegates to dynamic reward."""
         agent = self._new_agent(mock_hpc=mock_hpc)
         with mock.patch.object(
-                agent, "calculate_dynamic_reward", return_value=7.7
+            agent, "calculate_dynamic_reward", return_value=7.7
         ) as dyn_reward:
             assert agent.get_reward(True, True, 3, 4) == 7.7
             dyn_reward.assert_called_once_with(3, 4)
@@ -81,15 +77,13 @@ class TestBaseAgent:
         """Blocked+static returns fixed penalty."""
         agent = self._new_agent(mock_hpc=mock_hpc)
         assert agent.engine_props is not None
-        assert (
-            agent.get_reward(False, False, 0, 0) == agent.engine_props["penalty"]
-        )
+        assert agent.get_reward(False, False, 0, 0) == agent.engine_props["penalty"]
 
     def test_get_reward_dynamic_not_allocated(self, mock_hpc: mock.MagicMock) -> None:
         """Blocked+dynamic delegates to dynamic penalty."""
         agent = self._new_agent(mock_hpc=mock_hpc)
         with mock.patch.object(
-                agent, "calculate_dynamic_penalty", return_value=-9.9
+            agent, "calculate_dynamic_penalty", return_value=-9.9
         ) as dyn_pen:
             assert agent.get_reward(False, True, 5, 6) == -9.9
             dyn_pen.assert_called_once_with(5, 6)
@@ -97,7 +91,7 @@ class TestBaseAgent:
     # ------- setup_env -------------------------------------------------
     @mock.patch("fusion.modules.rl.agents.base_agent.QLearning")
     def test_setup_env_chooses_q_learning(
-            self, mock_qlearn: mock.MagicMock, mock_hpc: mock.MagicMock
+        self, mock_qlearn: mock.MagicMock, mock_hpc: mock.MagicMock
     ) -> None:
         """setup_env instantiates QLearning."""
         mock_qlearn.return_value = mock.MagicMock()
@@ -115,17 +109,20 @@ class TestBaseAgent:
             agent.setup_env(is_path=False)
 
     # ------- load_model -----------------------------------------------
-    @mock.patch("fusion.modules.rl.agents.base_agent.np.load",
-                return_value="dummy_matrix")
-    @mock.patch("fusion.modules.rl.agents.base_agent.os.path.join",
-                return_value="joined/path.npy")
+    @mock.patch(
+        "fusion.modules.rl.agents.base_agent.np.load", return_value="dummy_matrix"
+    )
+    @mock.patch(
+        "fusion.modules.rl.agents.base_agent.os.path.join",
+        return_value="joined/path.npy",
+    )
     @mock.patch("fusion.modules.rl.agents.base_agent.QLearning")
     def test_load_model_sets_matrix(
-            self,
-            mock_qlearn: mock.MagicMock,
-            mock_join: mock.MagicMock,
-            mock_npload: mock.MagicMock,
-            mock_hpc: mock.MagicMock,
+        self,
+        mock_qlearn: mock.MagicMock,
+        mock_join: mock.MagicMock,
+        mock_npload: mock.MagicMock,
+        mock_hpc: mock.MagicMock,
     ) -> None:
         """load_model reads file and assigns cores_matrix."""
         alg_instance = mock_qlearn.return_value
@@ -140,9 +137,6 @@ class TestBaseAgent:
             is_path=False,
         )
 
-        mock_join.assert_called_once_with(
-            "logs", "my_run", "core_e60_c4.npy"
-        )
-        mock_npload.assert_called_once_with("joined/path.npy",
-                                            allow_pickle=True)
+        mock_join.assert_called_once_with("logs", "my_run", "core_e60_c4.npy")
+        mock_npload.assert_called_once_with("joined/path.npy", allow_pickle=True)
         assert alg_instance.props.cores_matrix == "dummy_matrix"

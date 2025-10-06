@@ -18,9 +18,7 @@ logger = get_logger(__name__)
 
 
 def process_training_data(
-        simulation_dict: dict[str, Any],
-        input_dataframe: pd.DataFrame,
-        erlang: float
+    simulation_dict: dict[str, Any], input_dataframe: pd.DataFrame, erlang: float
 ) -> pd.DataFrame:
     """
     Process raw data for machine learning model training.
@@ -43,13 +41,11 @@ def process_training_data(
     """
     # Generate visualizations of the input data
     plot_data_distributions(
-        simulation_dict=simulation_dict,
-        input_dataframe=input_dataframe,
-        erlang=erlang
+        simulation_dict=simulation_dict, input_dataframe=input_dataframe, erlang=erlang
     )
 
     # One-hot encode categorical columns
-    processed_dataframe = pd.get_dummies(input_dataframe, columns=['old_bandwidth'])
+    processed_dataframe = pd.get_dummies(input_dataframe, columns=["old_bandwidth"])
 
     # Convert boolean columns to integers
     for column in processed_dataframe.columns:
@@ -58,17 +54,18 @@ def process_training_data(
 
     logger.info(
         "Processed %d samples with %d features",
-        len(processed_dataframe), len(processed_dataframe.columns)
+        len(processed_dataframe),
+        len(processed_dataframe.columns),
     )
 
     return processed_dataframe
 
 
 def balance_training_data(
-        input_dataframe: pd.DataFrame,
-        balance_per_slice: bool,
-        erlang: float,
-        simulation_dict: dict[str, Any]
+    input_dataframe: pd.DataFrame,
+    balance_per_slice: bool,
+    erlang: float,
+    simulation_dict: dict[str, Any],
 ) -> pd.DataFrame:
     """
     Balance training data to ensure representative sampling.
@@ -90,7 +87,7 @@ def balance_training_data(
         >>> data = pd.DataFrame({'num_segments': [1, 1, 2, 2, 4, 4, 8, 8]})
         >>> balanced = balance_training_data(data, True, 1000.0, sim_dict)
     """
-    if 'num_segments' not in input_dataframe.columns:
+    if "num_segments" not in input_dataframe.columns:
         logger.warning("Column 'num_segments' not found, returning unbalanced data")
         return process_training_data(simulation_dict, input_dataframe, erlang)
 
@@ -100,18 +97,15 @@ def balance_training_data(
         balanced_df = _balance_weighted(input_dataframe)
 
     return process_training_data(
-        simulation_dict=simulation_dict,
-        input_dataframe=balanced_df,
-        erlang=erlang
+        simulation_dict=simulation_dict, input_dataframe=balanced_df, erlang=erlang
     )
 
 
 def _balance_equally(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Balance data with equal samples per segment class."""
-    unique_segments = dataframe['num_segments'].unique()
+    unique_segments = dataframe["num_segments"].unique()
     segment_dataframes = [
-        dataframe[dataframe['num_segments'] == segment]
-        for segment in unique_segments
+        dataframe[dataframe["num_segments"] == segment] for segment in unique_segments
     ]
 
     # Find minimum class size
@@ -119,8 +113,7 @@ def _balance_equally(dataframe: pd.DataFrame) -> pd.DataFrame:
 
     # Sample equal amounts from each class
     sampled_dataframes = [
-        df.sample(n=min_size, random_state=42)
-        for df in segment_dataframes
+        df.sample(n=min_size, random_state=42) for df in segment_dataframes
     ]
 
     # Combine and shuffle
@@ -138,12 +131,12 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
         1: 0.05,  # 5% - least common in practice
         2: 0.35,  # 35% - common
         4: 0.35,  # 35% - common
-        8: 0.25  # 25% - less common
+        8: 0.25,  # 25% - less common
     }
 
     segment_dataframes = {}
     for segments, _weight in segment_weights.items():
-        segment_df = dataframe[dataframe['num_segments'] == segments]
+        segment_df = dataframe[dataframe["num_segments"] == segments]
         if len(segment_df) > 0:
             segment_dataframes[segments] = segment_df
 
@@ -160,8 +153,7 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
             sample_size = int(min_size * weight)
             if 0 < sample_size <= len(segment_dataframes[segments]):
                 sampled_df = segment_dataframes[segments].sample(
-                    n=sample_size,
-                    random_state=42
+                    n=sample_size, random_state=42
                 )
                 sampled_dataframes.append(sampled_df)
                 logger.debug(
@@ -178,9 +170,9 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 def prepare_prediction_features(
-        raw_features: dict[str, Any],
-        engine_properties: dict[str, Any],
-        sdn_properties: object
+    raw_features: dict[str, Any],
+    engine_properties: dict[str, Any],
+    sdn_properties: object,
 ) -> pd.DataFrame:
     """
     Prepare features for model prediction from raw request data.
@@ -204,7 +196,7 @@ def prepare_prediction_features(
     processed_dataframe = pd.DataFrame(raw_features, index=[0])
 
     # One-hot encode bandwidth
-    processed_dataframe = pd.get_dummies(processed_dataframe, columns=['old_bandwidth'])
+    processed_dataframe = pd.get_dummies(processed_dataframe, columns=["old_bandwidth"])
 
     # Convert boolean columns to integers
     for column in processed_dataframe.columns:
@@ -212,17 +204,18 @@ def prepare_prediction_features(
             processed_dataframe[column] = processed_dataframe[column].astype(int)
 
     # Ensure all expected bandwidth columns exist
-    for bandwidth, percentage in engine_properties['request_distribution'].items():
+    for bandwidth, percentage in engine_properties["request_distribution"].items():
         if percentage > 0:
-            column_name = f'old_bandwidth_{bandwidth}'
-            if (bandwidth != getattr(sdn_properties, 'bandwidth', None) and
-                    column_name not in processed_dataframe.columns):
+            column_name = f"old_bandwidth_{bandwidth}"
+            if (
+                bandwidth != getattr(sdn_properties, "bandwidth", None)
+                and column_name not in processed_dataframe.columns
+            ):
                 processed_dataframe[column_name] = 0
 
     # Only include columns that exist
     available_columns = [
-        col for col in EXPECTED_ML_COLUMNS
-        if col in processed_dataframe.columns
+        col for col in EXPECTED_ML_COLUMNS if col in processed_dataframe.columns
     ]
     processed_dataframe = processed_dataframe.reindex(columns=available_columns)
 
@@ -230,8 +223,7 @@ def prepare_prediction_features(
 
 
 def split_features_labels(
-        dataframe: pd.DataFrame,
-        target_column: str
+    dataframe: pd.DataFrame, target_column: str
 ) -> tuple[pd.DataFrame, pd.Series]:
     """
     Split DataFrame into features and labels.
@@ -258,8 +250,7 @@ def split_features_labels(
 
 
 def normalize_features(
-        features: pd.DataFrame,
-        normalization_type: str = 'standard'
+    features: pd.DataFrame, normalization_type: str = "standard"
 ) -> tuple[pd.DataFrame, Any]:
     """
     Normalize features using specified method.
@@ -276,9 +267,9 @@ def normalize_features(
         >>> X = pd.DataFrame({'feature1': [1, 2, 3], 'feature2': [10, 20, 30]})
         >>> X_norm, scaler = normalize_features(X, 'standard')
     """
-    if normalization_type == 'standard':
+    if normalization_type == "standard":
         scaler = StandardScaler()
-    elif normalization_type == 'minmax':
+    elif normalization_type == "minmax":
         scaler = MinMaxScaler()
     else:
         raise ValueError(
@@ -291,9 +282,7 @@ def normalize_features(
 
     # Convert back to DataFrame with same columns
     normalized_features = pd.DataFrame(
-        normalized_array,
-        columns=features.columns,
-        index=features.index
+        normalized_array, columns=features.columns, index=features.index
     )
 
     return normalized_features, scaler

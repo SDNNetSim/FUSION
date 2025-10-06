@@ -52,5 +52,5 @@ class BaseDRLAlgorithm:
         :return: Discrete action space object compatible with Gymnasium
         :rtype: spaces.Discrete
         """
-        action_space = spaces.Discrete(self.engine_obj.engine_props['k_paths'])
+        action_space = spaces.Discrete(self.engine_obj.engine_props["k_paths"])
         return action_space

@@ -138,11 +138,12 @@ class TestSimStats(unittest.TestCase):
             }
         }
 
-        with patch.object(
-            self.sim_stats, "_get_snapshot_info", return_value=(3, 3, 1)
-        ), patch(
-            "fusion.analysis.network_analysis.NetworkAnalyzer.get_link_usage_summary",
-            return_value={}
+        with (
+            patch.object(self.sim_stats, "_get_snapshot_info", return_value=(3, 3, 1)),
+            patch(
+                "fusion.analysis.network_analysis.NetworkAnalyzer.get_link_usage_summary",
+                return_value={},
+            ),
         ):
             self.sim_stats.blocked_requests = 1
             self.sim_stats.bit_rate_request = 100
@@ -264,7 +265,10 @@ class TestSimStats(unittest.TestCase):
         """Test confidence interval calculation with sufficient data."""
         self.sim_stats.stats_props.simulation_blocking_list = [0.1, 0.2, 0.15, 0.25]
         self.sim_stats.stats_props.simulation_bitrate_blocking_list = [
-            0.1, 0.2, 0.15, 0.25
+            0.1,
+            0.2,
+            0.15,
+            0.25,
         ]
 
         should_end = self.sim_stats.calculate_confidence_interval()

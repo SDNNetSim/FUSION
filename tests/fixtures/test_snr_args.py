@@ -3,8 +3,15 @@ import numpy as np
 engine_props = {
     'topology_info': {
         'links': {
-            'link_id': {'fiber': {'non_linearity': 1.27e-3, 'attenuation': 0.001, 'dispersion': 100},
-                        'span_length': 80, 'length': 320}
+            'link_id': {
+                'fiber': {
+                    'non_linearity': 1.27e-3,
+                    'attenuation': 0.001,
+                    'dispersion': 100,
+                },
+                'span_length': 80,
+                'length': 320,
+            }
         }
     },
     'requested_xt': {'QPSK': -30},
@@ -20,10 +27,22 @@ cores_matrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [1, 1, 1, 1], [1, 1, 1, 1],
                          [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]])
 sdn_props = {
     'net_spec_dict': {
-        ('source', 'dest'): {'cores_matrix': cores_matrix, 'link_num': 'link_id'},
-        ('source', 'intermediate'): {'cores_matrix': cores_matrix, 'link_num': 'link_id'},
-        ('intermediate', 'dest'): {'cores_matrix': cores_matrix, 'link_num': 'link_id'},
-        ('dest', 'intermediate'): {'cores_matrix': cores_matrix, 'link_num': 'link_id'}
+        ('source', 'dest'): {
+            'cores_matrix': cores_matrix,
+            'link_num': 'link_id',
+        },
+        ('source', 'intermediate'): {
+            'cores_matrix': cores_matrix,
+            'link_num': 'link_id',
+        },
+        ('intermediate', 'dest'): {
+            'cores_matrix': cores_matrix,
+            'link_num': 'link_id',
+        },
+        ('dest', 'intermediate'): {
+            'cores_matrix': cores_matrix,
+            'link_num': 'link_id',
+        },
     }
 }
 

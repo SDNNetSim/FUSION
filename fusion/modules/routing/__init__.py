@@ -32,18 +32,17 @@ from .xt_aware import XTAwareRouting
 
 __all__ = [
     # Registry functions
-    'RoutingRegistry',
-    'create_algorithm',
-    'get_algorithm',
-    'list_routing_algorithms',
-    'get_routing_algorithm_info',
-    'ROUTING_ALGORITHMS',
-
+    "RoutingRegistry",
+    "create_algorithm",
+    "get_algorithm",
+    "list_routing_algorithms",
+    "get_routing_algorithm_info",
+    "ROUTING_ALGORITHMS",
     # Algorithm classes
-    'KShortestPath',
-    'CongestionAwareRouting',
-    'LeastCongestedRouting',
-    'FragmentationAwareRouting',
-    'NLIAwareRouting',
-    'XTAwareRouting'
+    "KShortestPath",
+    "CongestionAwareRouting",
+    "LeastCongestedRouting",
+    "FragmentationAwareRouting",
+    "NLIAwareRouting",
+    "XTAwareRouting",
 ]

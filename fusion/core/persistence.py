@@ -37,11 +37,11 @@ class StatsPersistence:
         self.sim_info = sim_info
 
     def save_stats(
-            self,
-            stats_dict: dict[str, Any],
-            stats_props: Any,
-            blocking_stats: dict[str, float | None],
-            base_file_path: str | None = None
+        self,
+        stats_dict: dict[str, Any],
+        stats_props: Any,
+        blocking_stats: dict[str, float | None],
+        base_file_path: str | None = None,
     ) -> None:
         """
         Save simulation statistics to file.
@@ -51,7 +51,7 @@ class StatsPersistence:
         :param blocking_stats: Blocking statistics (means, variances, CIs)
         :param base_file_path: Base path for output files
         """
-        if self.engine_props['file_type'] not in ('json', 'csv'):
+        if self.engine_props["file_type"] not in ("json", "csv"):
             raise NotImplementedError(
                 f"Invalid file type: {self.engine_props['file_type']}, expected csv or "
                 "json."
@@ -61,7 +61,7 @@ class StatsPersistence:
         try:
             existing_file = self._get_save_path(base_file_path)
             if os.path.exists(existing_file):
-                with open(existing_file, encoding='utf-8') as f:
+                with open(existing_file, encoding="utf-8") as f:
                     save_dict = json.load(f)
             else:
                 save_dict = {}
@@ -70,43 +70,43 @@ class StatsPersistence:
             save_dict = {}
 
         # Update with current stats_dict data, but preserve iter_stats
-        existing_iter_stats = save_dict.get('iter_stats', {})
+        existing_iter_stats = save_dict.get("iter_stats", {})
         save_dict.update(copy.deepcopy(stats_dict))
 
         # Restore existing iter_stats if we had any
-        if existing_iter_stats and 'iter_stats' in save_dict:
-            save_dict['iter_stats'].update(existing_iter_stats)
+        if existing_iter_stats and "iter_stats" in save_dict:
+            save_dict["iter_stats"].update(existing_iter_stats)
 
         # Add link usage
-        save_dict['link_usage'] = stats_props.link_usage_dict
+        save_dict["link_usage"] = stats_props.link_usage_dict
 
         # Add blocking statistics
-        save_dict['blocking_mean'] = blocking_stats.get('block_mean')
-        save_dict['blocking_variance'] = blocking_stats.get('block_variance')
-        save_dict['ci_rate_block'] = blocking_stats.get('block_ci')
-        save_dict['ci_percent_block'] = blocking_stats.get('block_ci_percent')
+        save_dict["blocking_mean"] = blocking_stats.get("block_mean")
+        save_dict["blocking_variance"] = blocking_stats.get("block_variance")
+        save_dict["ci_rate_block"] = blocking_stats.get("block_ci")
+        save_dict["ci_percent_block"] = blocking_stats.get("block_ci_percent")
 
-        save_dict['bit_rate_blocking_mean'] = blocking_stats.get('bit_rate_block_mean')
-        save_dict['bit_rate_blocking_variance'] = blocking_stats.get(
-            'bit_rate_block_variance'
+        save_dict["bit_rate_blocking_mean"] = blocking_stats.get("bit_rate_block_mean")
+        save_dict["bit_rate_blocking_variance"] = blocking_stats.get(
+            "bit_rate_block_variance"
         )
-        save_dict['ci_rate_bit_rate_block'] = blocking_stats.get('bit_rate_block_ci')
-        save_dict['ci_percent_bit_rate_block'] = blocking_stats.get(
-            'bit_rate_block_ci_percent'
+        save_dict["ci_rate_bit_rate_block"] = blocking_stats.get("bit_rate_block_ci")
+        save_dict["ci_percent_bit_rate_block"] = blocking_stats.get(
+            "bit_rate_block_ci_percent"
         )
 
         # Prepare iteration statistics
-        if 'iter_stats' not in save_dict:
-            save_dict['iter_stats'] = {}
+        if "iter_stats" not in save_dict:
+            save_dict["iter_stats"] = {}
 
         # Save iteration statistics using actual iteration number as key
         # This preserves the original behavior of multiple iteration entries
-        current_iteration = blocking_stats.get('iteration', 0)
+        current_iteration = blocking_stats.get("iteration", 0)
         logger.info("Saving stats for iteration %s", current_iteration)
         iteration_data = self._prepare_iteration_stats(stats_props, current_iteration)
 
         # Always save iteration data, even if minimal - preserves original behavior
-        save_dict['iter_stats'][current_iteration] = iteration_data
+        save_dict["iter_stats"][current_iteration] = iteration_data
 
         # Save to file
         json_path = self._get_save_path(base_file_path)
@@ -116,10 +116,10 @@ class StatsPersistence:
         create_directory(save_dir)
 
         sim_end_time = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-        save_dict['sim_end_time'] = sim_end_time
+        save_dict["sim_end_time"] = sim_end_time
 
-        if self.engine_props['file_type'] == 'json':
-            with open(json_path, 'w', encoding='utf-8') as file:
+        if self.engine_props["file_type"] == "json":
+            with open(json_path, "w", encoding="utf-8") as file:
                 json.dump(save_dict, file, indent=4)
         else:
             # CSV implementation would go here
@@ -142,22 +142,22 @@ class StatsPersistence:
         # Process list statistics
         for stat_key in vars(stats_props).keys():
             if stat_key in (
-                'transponders_list',
-                'hops_list',
-                'lengths_list',
-                'route_times_list',
-                'crosstalk_list',
+                "transponders_list",
+                "hops_list",
+                "lengths_list",
+                "route_times_list",
+                "crosstalk_list",
             ):
                 # Map new property names to old output key names for backward
                 # compatibility
-                if stat_key == 'transponders_list':
-                    save_key = 'trans_'
-                elif stat_key == 'crosstalk_list':
-                    save_key = 'xt_'
+                if stat_key == "transponders_list":
+                    save_key = "trans_"
+                elif stat_key == "crosstalk_list":
+                    save_key = "xt_"
                 else:
                     save_key = f"{stat_key.split('_list')[0]}_"
 
-                if stat_key == 'crosstalk_list':
+                if stat_key == "crosstalk_list":
                     stat_array = [
                         0 if stat is None else stat
                         for stat in getattr(stats_props, stat_key)
@@ -167,35 +167,35 @@ class StatsPersistence:
 
                 # Handle empty arrays
                 if len(stat_array) == 0:
-                    iter_stats[f'{save_key}mean'] = None
-                    iter_stats[f'{save_key}min'] = None
-                    iter_stats[f'{save_key}max'] = None
+                    iter_stats[f"{save_key}mean"] = None
+                    iter_stats[f"{save_key}min"] = None
+                    iter_stats[f"{save_key}max"] = None
                 else:
-                    iter_stats[f'{save_key}mean'] = round(float(mean(stat_array)), 2)
-                    iter_stats[f'{save_key}min'] = round(float(min(stat_array)), 2)
-                    iter_stats[f'{save_key}max'] = round(float(max(stat_array)), 2)
+                    iter_stats[f"{save_key}mean"] = round(float(mean(stat_array)), 2)
+                    iter_stats[f"{save_key}min"] = round(float(min(stat_array)), 2)
+                    iter_stats[f"{save_key}max"] = round(float(max(stat_array)), 2)
             else:
                 # Map new property names to old output keys for backward compatibility
-                if stat_key == 'simulation_blocking_list':
-                    output_key = 'sim_block_list'
-                elif stat_key == 'simulation_bitrate_blocking_list':
-                    output_key = 'sim_br_block_list'
-                elif stat_key == 'modulations_used_dict':
-                    output_key = 'mods_used_dict'
-                elif stat_key == 'bandwidth_blocking_dict':
-                    output_key = 'block_bw_dict'
-                elif stat_key == 'number_of_transponders':
-                    output_key = 'num_trans'
-                elif stat_key == 'request_id':
-                    output_key = 'req_id'
+                if stat_key == "simulation_blocking_list":
+                    output_key = "sim_block_list"
+                elif stat_key == "simulation_bitrate_blocking_list":
+                    output_key = "sim_br_block_list"
+                elif stat_key == "modulations_used_dict":
+                    output_key = "mods_used_dict"
+                elif stat_key == "bandwidth_blocking_dict":
+                    output_key = "block_bw_dict"
+                elif stat_key == "number_of_transponders":
+                    output_key = "num_trans"
+                elif stat_key == "request_id":
+                    output_key = "req_id"
                 else:
                     output_key = stat_key
 
                 # Handle start/end slot lists based on configuration
-                if (
-                    stat_key in ['start_slot_list', 'end_slot_list']
-                    and not self.engine_props.get('save_start_end_slots', False)
-                ):
+                if stat_key in [
+                    "start_slot_list",
+                    "end_slot_list",
+                ] and not self.engine_props.get("save_start_end_slots", False):
                     iter_stats[output_key] = []
                 else:
                     iter_stats[output_key] = copy.deepcopy(
@@ -212,14 +212,14 @@ class StatsPersistence:
         :return: Full path to the JSON file
         """
         if base_file_path is None:
-            base_file_path = 'data'
+            base_file_path = "data"
 
         save_path = os.path.join(
             PROJECT_ROOT,
             base_file_path,
-            'output',
+            "output",
             self.sim_info,
-            self.engine_props['thread_num']
+            self.engine_props["thread_num"],
         )
 
         return os.path.join(save_path, f"{self.engine_props['erlang']}_erlang.json")
@@ -231,8 +231,8 @@ class StatsPersistence:
         :param file_path: Path to the statistics file
         :return: Loaded statistics dictionary
         """
-        if file_path.endswith('.json'):
-            with open(file_path, encoding='utf-8') as file:
+        if file_path.endswith(".json"):
+            with open(file_path, encoding="utf-8") as file:
                 loaded_data = json.load(file)
                 if not isinstance(loaded_data, dict):
                     data_type = type(loaded_data)

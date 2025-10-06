@@ -35,6 +35,7 @@ seaborn==0.13.2
 
 # Utilities & General Purpose
 alembic~=1.13.1
+jsonpath-ng~=1.6.0
 astroid~=3.0.3
 Babel~=2.14.0
 certifi>=2024.07.04

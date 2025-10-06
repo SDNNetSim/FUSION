@@ -86,10 +86,10 @@ class TestEpisodicRewardCallback:
     @mock.patch("fusion.modules.rl.utils.callbacks.create_directory")
     @mock.patch("fusion.modules.rl.utils.callbacks.np.save")
     def test_first_call_creates_matrix_and_accumulates(
-            self,
-            mock_save: mock.MagicMock,
-            mock_dir: mock.MagicMock,
-            callback: cb.EpisodicRewardCallback,
+        self,
+        mock_save: mock.MagicMock,
+        mock_dir: mock.MagicMock,
+        callback: cb.EpisodicRewardCallback,
     ) -> None:
         """First step allocates rewards_matrix and records reward."""
         callback.locals = {"rewards": [2.0], "dones": [False]}
@@ -103,7 +103,7 @@ class TestEpisodicRewardCallback:
 
     @mock.patch.object(cb.EpisodicRewardCallback, "_save_drl_trial_rewards")
     def test_done_saves_and_resets(
-            self, mock_save: mock.MagicMock, callback: cb.EpisodicRewardCallback
+        self, mock_save: mock.MagicMock, callback: cb.EpisodicRewardCallback
     ) -> None:
         """Episode end saves trial rewards and resets counters."""
         callback.rewards_matrix = np.zeros((2, 3))
@@ -134,7 +134,7 @@ class TestLearnRateEntCallback:
         return lr_cb
 
     def test_first_done_initialises_and_sets_params(
-            self, lr_callback: cb.LearnRateEntCallback
+        self, lr_callback: cb.LearnRateEntCallback
     ) -> None:
         """First done sets ent_coef and learning_rate."""
         lr_callback.locals = {"dones": [True]}
@@ -146,7 +146,7 @@ class TestLearnRateEntCallback:
         assert lr_callback.model.learning_rate == pytest.approx(0.00075)  # type: ignore[attr-defined]
 
     def test_subsequent_done_decays_and_updates(
-            self, lr_callback: cb.LearnRateEntCallback
+        self, lr_callback: cb.LearnRateEntCallback
     ) -> None:
         """Later episodes decay ent_coef and adjust lr linearly."""
         # Pretend first episode already ran

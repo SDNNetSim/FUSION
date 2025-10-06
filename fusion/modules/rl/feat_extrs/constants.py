@@ -4,6 +4,7 @@ Constants for the feature extraction module.
 This module defines directory paths and other constants used by
 the feature extraction components.
 """
+
 from pathlib import Path
 
 # Directory for caching GNN embeddings

@@ -57,7 +57,7 @@ class GetModelParams(BaseCallback):
         """
         self.model_params = self.model.get_parameters()
 
-        obs = self.locals.get('obs_tensor')
+        obs = self.locals.get("obs_tensor")
         if obs is not None:
             try:
                 values = self.model.policy.predict_values(obs=obs)  # type: ignore[misc,operator]
@@ -123,8 +123,8 @@ class EpisodicRewardCallback(BaseCallback):
         if self.sim_dict is None:
             return
 
-        erlang = float(self.sim_dict['erlang_start'])
-        cores = int(self.sim_dict['cores_per_link'])
+        erlang = float(self.sim_dict["erlang_start"])
+        cores = int(self.sim_dict["cores_per_link"])
         file_path = os.path.join(
             "logs",
             self.sim_dict["path_algorithm"],
@@ -139,18 +139,18 @@ class EpisodicRewardCallback(BaseCallback):
             f"rewards_e{erlang}_routes_c{cores}_t{self.trial}_iter_{self.iteration}.npy",
         )
         if self.rewards_matrix_array is not None:
-            rewards_array = self.rewards_matrix_array[
-                :self.iteration + 1, :
-            ].mean(axis=0)
+            rewards_array = self.rewards_matrix_array[: self.iteration + 1, :].mean(
+                axis=0
+            )
         else:
             rewards_array = np.array([])
         np.save(file_name, rewards_array)
 
     def _on_step(self) -> bool:
         if self.rewards_matrix_array is None and self.sim_dict is not None:
-            self.rewards_matrix_array = np.empty((
-                self.sim_dict['max_iters'], self.sim_dict['num_requests']
-            ))
+            self.rewards_matrix_array = np.empty(
+                (self.sim_dict["max_iters"], self.sim_dict["num_requests"])
+            )
 
         reward = self.locals.get("rewards", 0)[0]
         done = self.locals.get("dones", False)[0]
@@ -163,9 +163,14 @@ class EpisodicRewardCallback(BaseCallback):
             self.episode_rewards_array = np.append(
                 self.episode_rewards_array, self.current_episode_reward
             )
-            if (self.sim_dict is not None and self.max_iters is not None and
-                ((self.iteration % self.sim_dict["save_step"]) == 0 or
-                 (self.iteration == self.max_iters - 1))):
+            if (
+                self.sim_dict is not None
+                and self.max_iters is not None
+                and (
+                    (self.iteration % self.sim_dict["save_step"]) == 0
+                    or (self.iteration == self.max_iters - 1)
+                )
+            ):
                 self._save_drl_trial_rewards()
 
             self.iteration += 1
@@ -174,10 +179,12 @@ class EpisodicRewardCallback(BaseCallback):
                 self._callback_logger.info(
                     "Episode %d finished with reward: %f",
                     len(self.episode_rewards_array),
-                    self.current_episode_reward
+                    self.current_episode_reward,
                 )
-                if (self.max_iters is not None and
-                    len(self.episode_rewards_array) == self.max_iters):
+                if (
+                    self.max_iters is not None
+                    and len(self.episode_rewards_array) == self.max_iters
+                ):
                     self.current_episode_reward = 0
                     self.iteration = 0
                     return False
@@ -223,16 +230,15 @@ class LearnRateEntCallback(BaseCallback):
         done = self.locals.get("dones", [False])[0]
         if done and self.sim_dict is not None:
             if self.current_entropy is None:
-                self.current_entropy = self.sim_dict['epsilon_start']
-                self.current_learning_rate = self.sim_dict['alpha_start']
+                self.current_entropy = self.sim_dict["epsilon_start"]
+                self.current_learning_rate = self.sim_dict["alpha_start"]
 
             self.iteration += 1
 
             progress = min(self.iteration / self.sim_dict["max_iters"], 1.0)
             self.current_learning_rate = (
                 self.sim_dict["alpha_start"]
-                + (self.sim_dict["alpha_end"] - self.sim_dict["alpha_start"])
-                * progress
+                + (self.sim_dict["alpha_end"] - self.sim_dict["alpha_start"]) * progress
             )
 
             if self.sim_dict["path_algorithm"] in ("ppo", "a2c"):
@@ -241,7 +247,7 @@ class LearnRateEntCallback(BaseCallback):
                         self.sim_dict["epsilon_end"],
                         self.current_entropy * self.sim_dict["decay_rate"],
                     )
-                if hasattr(self.model, 'ent_coef'):
+                if hasattr(self.model, "ent_coef"):
                     self.model.ent_coef = self.current_entropy
             self.model.learning_rate = self.current_learning_rate
 
@@ -252,13 +258,13 @@ class LearnRateEntCallback(BaseCallback):
                         "LR: %.6f, EntCoef: %.6f",
                         self.iteration,
                         self.current_learning_rate,
-                        self.current_entropy
+                        self.current_entropy,
                     )
                 else:
                     self._callback_logger.info(
                         "[LearnRateEntCallback] Episode %d finished. LR: %.6f",
                         self.iteration,
-                        self.current_learning_rate
+                        self.current_learning_rate,
                     )
 
         return True

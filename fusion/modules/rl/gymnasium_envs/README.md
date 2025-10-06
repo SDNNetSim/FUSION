@@ -34,10 +34,10 @@ obs, info = env.reset(seed=42)
 for step in range(max_steps):
     # Select action (example: random action)
     action = env.action_space.sample()
-    
+
     # Take step in environment
     obs, reward, terminated, truncated, info = env.step(action)
-    
+
     if terminated or truncated:
         obs, info = env.reset()
 ```

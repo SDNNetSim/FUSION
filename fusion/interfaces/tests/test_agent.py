@@ -57,9 +57,7 @@ class TestAgentInterfaceAbstractMethods:
         abstract_methods = {
             method
             for method in dir(AgentInterface)
-            if hasattr(
-                getattr(AgentInterface, method), "__isabstractmethod__"
-            )
+            if hasattr(getattr(AgentInterface, method), "__isabstractmethod__")
             and getattr(AgentInterface, method).__isabstractmethod__
         }
 
@@ -82,8 +80,8 @@ class TestAgentInterfaceMethodSignatures:
         params = list(sig.parameters.keys())
 
         # Assert
-        assert params == ["self", "observation", "deterministic"]
-        assert sig.parameters["deterministic"].default is False
+        assert params == ["self", "observation", "_deterministic"]
+        assert sig.parameters["_deterministic"].default is False
 
     def test_train_method_signature(self) -> None:
         """Test AgentInterface.train method signature."""
@@ -92,7 +90,7 @@ class TestAgentInterfaceMethodSignatures:
 
         # Assert
         assert "env" in sig.parameters
-        assert "total_timesteps" in sig.parameters
+        assert "_total_timesteps" in sig.parameters
         assert "kwargs" in sig.parameters
 
     def test_learn_from_experience_method_signature(self) -> None:
@@ -107,7 +105,7 @@ class TestAgentInterfaceMethodSignatures:
             "observation",
             "action",
             "reward",
-            "next_observation",
+            "_next_observation",
             "done",
         ]
         annotation_str = str(sig.return_annotation)
@@ -120,7 +118,7 @@ class TestAgentInterfaceMethodSignatures:
         params = list(sig.parameters.keys())
 
         # Assert
-        assert params == ["self", "state", "action", "next_state", "info"]
+        assert params == ["self", "state", "action", "_next_state", "info"]
         assert sig.return_annotation is float
 
     def test_update_exploration_params_method_signature(self) -> None:
@@ -130,7 +128,7 @@ class TestAgentInterfaceMethodSignatures:
         params = list(sig.parameters.keys())
 
         # Assert
-        assert params == ["self", "timestep", "total_timesteps"]
+        assert params == ["self", "_timestep", "_total_timesteps"]
 
 
 # ============================================================================
@@ -195,13 +193,11 @@ class TestConcreteAgentImplementation:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
-                self, env: Any, total_timesteps: int, **kwargs: Any
+                self, env: Any, _total_timesteps: int, **kwargs: Any
             ) -> dict[str, Any]:
                 return {"loss": 0.5}
 
@@ -210,7 +206,7 @@ class TestConcreteAgentImplementation:
                 observation: Any,
                 action: int | Any,
                 reward: float,
-                next_observation: Any,
+                _next_observation: Any,
                 done: bool,
             ) -> dict[str, float] | None:
                 return {"loss": 0.1}
@@ -225,13 +221,13 @@ class TestConcreteAgentImplementation:
                 self,
                 state: dict[str, Any],
                 action: int | Any,
-                next_state: dict[str, Any],
+                _next_state: dict[str, Any],
                 info: dict[str, Any],
             ) -> float:
                 return 1.0
 
             def update_exploration_params(
-                self, timestep: int, total_timesteps: int
+                self, _timestep: int, _total_timesteps: int
             ) -> None:
                 pass
 
@@ -280,6 +276,7 @@ class TestAgentInterfaceOptionalMethods:
 
     def test_reset_method_has_default_implementation(self) -> None:
         """Test that reset method has default implementation."""
+
         # Arrange
         class MinimalAgent(AgentInterface):
             @property
@@ -294,13 +291,11 @@ class TestAgentInterfaceOptionalMethods:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
-                self, env: Any, total_timesteps: int, **kwargs: Any
+                self, env: Any, _total_timesteps: int, **kwargs: Any
             ) -> dict[str, Any]:
                 return {}
 
@@ -309,7 +304,7 @@ class TestAgentInterfaceOptionalMethods:
                 observation: Any,
                 action: int | Any,
                 reward: float,
-                next_observation: Any,
+                _next_observation: Any,
                 done: bool,
             ) -> dict[str, float] | None:
                 return None
@@ -324,13 +319,13 @@ class TestAgentInterfaceOptionalMethods:
                 self,
                 state: dict[str, Any],
                 action: int | Any,
-                next_state: dict[str, Any],
+                _next_state: dict[str, Any],
                 info: dict[str, Any],
             ) -> float:
                 return 0.0
 
             def update_exploration_params(
-                self, timestep: int, total_timesteps: int
+                self, _timestep: int, _total_timesteps: int
             ) -> None:
                 pass
 
@@ -352,6 +347,7 @@ class TestAgentInterfaceOptionalMethods:
 
     def test_on_episode_start_has_default_implementation(self) -> None:
         """Test that on_episode_start has default implementation."""
+
         # Arrange
         class MinimalAgent(AgentInterface):
             @property
@@ -366,13 +362,11 @@ class TestAgentInterfaceOptionalMethods:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
-                self, env: Any, total_timesteps: int, **kwargs: Any
+                self, env: Any, _total_timesteps: int, **kwargs: Any
             ) -> dict[str, Any]:
                 return {}
 
@@ -381,7 +375,7 @@ class TestAgentInterfaceOptionalMethods:
                 observation: Any,
                 action: int | Any,
                 reward: float,
-                next_observation: Any,
+                _next_observation: Any,
                 done: bool,
             ) -> dict[str, float] | None:
                 return None
@@ -396,13 +390,13 @@ class TestAgentInterfaceOptionalMethods:
                 self,
                 state: dict[str, Any],
                 action: int | Any,
-                next_state: dict[str, Any],
+                _next_state: dict[str, Any],
                 info: dict[str, Any],
             ) -> float:
                 return 0.0
 
             def update_exploration_params(
-                self, timestep: int, total_timesteps: int
+                self, _timestep: int, _total_timesteps: int
             ) -> None:
                 pass
 
@@ -424,6 +418,7 @@ class TestAgentInterfaceOptionalMethods:
 
     def test_on_episode_end_has_default_implementation(self) -> None:
         """Test that on_episode_end has default implementation."""
+
         # Arrange
         class MinimalAgent(AgentInterface):
             @property
@@ -438,13 +433,11 @@ class TestAgentInterfaceOptionalMethods:
             def observation_space_shape(self) -> tuple[int, ...]:
                 return (10,)
 
-            def act(
-                self, observation: Any, deterministic: bool = False
-            ) -> int | Any:
+            def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
             def train(
-                self, env: Any, total_timesteps: int, **kwargs: Any
+                self, env: Any, _total_timesteps: int, **kwargs: Any
             ) -> dict[str, Any]:
                 return {}
 
@@ -453,7 +446,7 @@ class TestAgentInterfaceOptionalMethods:
                 observation: Any,
                 action: int | Any,
                 reward: float,
-                next_observation: Any,
+                _next_observation: Any,
                 done: bool,
             ) -> dict[str, float] | None:
                 return None
@@ -468,13 +461,13 @@ class TestAgentInterfaceOptionalMethods:
                 self,
                 state: dict[str, Any],
                 action: int | Any,
-                next_state: dict[str, Any],
+                _next_state: dict[str, Any],
                 info: dict[str, Any],
             ) -> float:
                 return 0.0
 
             def update_exploration_params(
-                self, timestep: int, total_timesteps: int
+                self, _timestep: int, _total_timesteps: int
             ) -> None:
                 pass
 

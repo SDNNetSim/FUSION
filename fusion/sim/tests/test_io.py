@@ -71,9 +71,7 @@ class TestModifyMultipleJsonValues:
         # Verify read operation
         mock_file.assert_any_call("test_dir/sim_input_s1.json", encoding="utf-8")
         # Verify write operation
-        mock_file.assert_any_call(
-            "test_dir/sim_input_s2.json", "w", encoding="utf-8"
-        )
+        mock_file.assert_any_call("test_dir/sim_input_s2.json", "w", encoding="utf-8")
         # Verify data was dumped correctly
         mock_json_dump.assert_called_once_with(
             {"key1": "new_value1", "key2": "new_value2"}, mock_file_handle, indent=4
@@ -132,6 +130,4 @@ class TestModifyMultipleJsonValues:
 
         # Assert
         mock_file.assert_any_call("test_dir/sim_input_s1.json", encoding="utf-8")
-        mock_file.assert_any_call(
-            "test_dir/sim_input_s6.json", "w", encoding="utf-8"
-        )
+        mock_file.assert_any_call("test_dir/sim_input_s6.json", "w", encoding="utf-8")

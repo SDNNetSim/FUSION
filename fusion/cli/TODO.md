@@ -7,7 +7,7 @@
 - **Impact**: Poor user experience with unclear error messages and difficult debugging
 - **Solution**: Create custom CLI error module with specific exception types (SimulationError, ConfigurationError, ResourceError, ValidationError) and user-friendly error messages
 
-### GUI Interface Development  
+### GUI Interface Development
 - **Issue**: GUI parameter system needs expansion (`parameters/gui.py:26`)
 - **Missing**: Window sizing, themes, display options, interactive controls, real-time monitoring
 - **Solution**: Design and implement GUI-specific argument structure integrated with existing parameter system

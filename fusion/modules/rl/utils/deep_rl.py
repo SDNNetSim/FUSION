@@ -26,7 +26,7 @@ def get_algorithm_instance(
     """
     model_type = determine_model_type(sim_dict=sim_dict)
 
-    if '_' not in model_type:
+    if "_" not in model_type:
         raise ConfigurationError(
             "Algorithm configuration must include both algorithm and agent "
             "type (e.g., 'ppo_path'). "
@@ -34,8 +34,8 @@ def get_algorithm_instance(
             "Please check your simulation configuration."
         )
 
-    if 's1' in sim_dict:
-        algorithm = sim_dict['s1'].get(model_type)
+    if "s1" in sim_dict:
+        algorithm = sim_dict["s1"].get(model_type)
     else:
         algorithm = sim_dict.get(model_type)
 
@@ -44,10 +44,10 @@ def get_algorithm_instance(
 
     # Non-DRL case, skip
     if algorithm in VALID_PATH_ALGORITHMS and algorithm not in algorithm_registry:
-        engine_props.engine_props['is_drl_agent'] = False
+        engine_props.engine_props["is_drl_agent"] = False
         return None
 
-    engine_props.engine_props['is_drl_agent'] = True
+    engine_props.engine_props["is_drl_agent"] = True
     if algorithm not in algorithm_registry:
         raise ModelSetupError(
             f"Algorithm '{algorithm}' is not registered in the algorithm registry. "
@@ -55,7 +55,7 @@ def get_algorithm_instance(
             "Please verify your algorithm configuration or register the algorithm."
         )
 
-    algorithm_class = algorithm_registry[algorithm]['class']
+    algorithm_class = algorithm_registry[algorithm]["class"]
     if algorithm_class is not None:
         return algorithm_class(rl_props=rl_props, engine_props=engine_props)
     return None

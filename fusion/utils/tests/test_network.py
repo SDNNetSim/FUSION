@@ -1,6 +1,5 @@
 """Unit tests for fusion.utils.network module."""
 
-
 import networkx as nx
 import numpy as np
 import pytest

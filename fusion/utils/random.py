@@ -44,7 +44,7 @@ def generate_uniform_random_variable(
         >>> random_int = generate_uniform_random_variable(10.0)
     """
     if scale_parameter is None:
-        return np.random.uniform(0, 1)
+        return float(np.random.uniform(0, 1))
 
     if scale_parameter <= 0:
         raise ValueError("Scale parameter must be positive")

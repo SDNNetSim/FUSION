@@ -44,3 +44,27 @@ callback_event = True
 
 # Property names
 property = True
+
+# Mock fixtures - pytest fixtures used by @patch decorators
+mock_validate = True
+mock_process_req = True
+mock_process_opt = True
+mock_cwd = True
+mock_extract = True
+mock_save_input = True
+
+# Abstract method parameters - required for interface documentation
+deterministic = True
+total_timesteps = True
+next_observation = True
+next_state = True
+timestep = True
+
+# Protocol parameters - required by Python protocols
+exc_type = True
+exc_val = True
+exc_tb = True
+
+# Tuple unpacking in tests - variables that are unpacked but not all used
+high = True
+kw = True

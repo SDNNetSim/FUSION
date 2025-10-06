@@ -40,7 +40,7 @@ class RoutingRegistry:
             LeastCongestedRouting,
             FragmentationAwareRouting,
             NLIAwareRouting,
-            XTAwareRouting
+            XTAwareRouting,
         ]
 
         # Map algorithm classes to their known names to avoid instantiation
@@ -50,13 +50,12 @@ class RoutingRegistry:
             LeastCongestedRouting: "least_congested",
             FragmentationAwareRouting: "fragmentation_aware",
             NLIAwareRouting: "nli_aware",
-            XTAwareRouting: "xt_aware"
+            XTAwareRouting: "xt_aware",
         }
 
         for algorithm_class in algorithm_classes:
             algorithm_name = algorithm_name_mapping.get(
-                algorithm_class,
-                algorithm_class.__name__.lower().replace('routing', '')
+                algorithm_class, algorithm_class.__name__.lower().replace("routing", "")
             )
             self.register(algorithm_name, algorithm_class)
 
@@ -93,8 +92,10 @@ class RoutingRegistry:
         :raises KeyError: If algorithm is not found.
         """
         if name not in self._algorithms:
-            raise KeyError(f"Routing algorithm '{name}' not found. "
-                           f"Available algorithms: {list(self._algorithms.keys())}")
+            raise KeyError(
+                f"Routing algorithm '{name}' not found. "
+                f"Available algorithms: {list(self._algorithms.keys())}"
+            )
 
         return self._algorithms[name]
 
@@ -138,19 +139,19 @@ class RoutingRegistry:
         # Create temporary instance to get properties
         try:
             temporary_instance = algorithm_class({}, None)
-            supported_topologies = ', '.join(temporary_instance.supported_topologies)
+            supported_topologies = ", ".join(temporary_instance.supported_topologies)
         except Exception:
-            supported_topologies = 'Unknown'
+            supported_topologies = "Unknown"
 
         return {
-            'name': name,
-            'class': algorithm_class.__name__,
-            'module': algorithm_class.__module__,
-            'supported_topologies': supported_topologies,
-            'description': (
+            "name": name,
+            "class": algorithm_class.__name__,
+            "module": algorithm_class.__module__,
+            "supported_topologies": supported_topologies,
+            "description": (
                 algorithm_class.__doc__.strip()
                 if algorithm_class.__doc__
-                else 'No description'
+                else "No description"
             ),
         }
 

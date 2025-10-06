@@ -9,7 +9,7 @@ from fusion.utils.spectrum import find_free_channels, find_taken_channels
 
 # Constants for routing calculations
 FULLY_CONGESTED_LINK_COST = 1000.0
-DEFAULT_BAND = 'c'
+DEFAULT_BAND = "c"
 CENTER_CORE_INDEX = 6
 MAX_OUTER_CORES = 6
 
@@ -69,15 +69,15 @@ class RoutingHelpers:
         :return: Numpy array representing the simulated link spectrum.
         :rtype: np.ndarray
         """
-        sim_link_list = np.zeros(self.engine_props['spectral_slots'])
+        sim_link_list = np.zeros(self.engine_props["spectral_slots"])
         # Add to the step to account for the guard band
-        total_slots = self.sdn_props.slots_needed + self.engine_props['guard_slots']
+        total_slots = self.sdn_props.slots_needed + self.engine_props["guard_slots"]
         for i in range(0, len(sim_link_list), total_slots):
             value_to_set = i // self.sdn_props.slots_needed + 1
-            sim_link_list[i:i + self.sdn_props.slots_needed + 2] = value_to_set
+            sim_link_list[i : i + self.sdn_props.slots_needed + 2] = value_to_set
 
         # Add guard-bands
-        sim_link_list[self.sdn_props.slots_needed::total_slots] *= -1
+        sim_link_list[self.sdn_props.slots_needed :: total_slots] *= -1
         # Free the middle-most channel with respect to the number of slots needed
         center_index = len(sim_link_list) // 2
         start_index, end_index = self._get_indexes(center_index=center_index)
@@ -113,7 +113,7 @@ class RoutingHelpers:
             curr_mci = math.log(
                 curr_mci / (abs(center_freq - curr_freq) - (bandwidth / 2.0))
             )
-            curr_mci *= power_spec_dens ** 2
+            curr_mci *= power_spec_dens**2
 
             total_mci += curr_mci
 
@@ -148,8 +148,7 @@ class RoutingHelpers:
                     # Calculate the center frequency for the open channel
                     center_freq = channel[0] * self.route_props.frequency_spacing
                     center_freq += (
-                        self.sdn_props.slots_needed
-                        * self.route_props.frequency_spacing
+                        self.sdn_props.slots_needed * self.route_props.frequency_spacing
                     ) / 2
 
                     nli_cost += self._find_channel_mci(
@@ -182,9 +181,9 @@ class RoutingHelpers:
         sim_link_list = self._get_simulated_link()
 
         orig_link_list = copy.copy(
-            self.sdn_props.network_spectrum_dict[links_list[0]]['cores_matrix'][band]
+            self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band]
         )
-        self.sdn_props.network_spectrum_dict[links_list[0]]['cores_matrix'][band][0] = (
+        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band][0] = (
             sim_link_list
         )
 
@@ -203,7 +202,7 @@ class RoutingHelpers:
             num_span=span_count,
         )
 
-        self.sdn_props.network_spectrum_dict[links_list[0]]['cores_matrix'][band] = (
+        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band] = (
             orig_link_list
         )
         return nli_worst
@@ -309,7 +308,7 @@ class RoutingHelpers:
                 free_slots += len(free_slots_dict[band][core_num])
                 for channel in free_slots_dict[band][core_num]:
                     core_info_dict = self.sdn_props.network_spectrum_dict[link_list][
-                        'cores_matrix'
+                        "cores_matrix"
                     ]
                     num_overlapped = self._find_num_overlapped(
                         channel=channel,
@@ -337,7 +336,7 @@ class RoutingHelpers:
         """
         nli_cost = 0.0
         for source, destination in zip(path_list, path_list[1:], strict=False):
-            link_length = self.engine_props['topology'][source][destination]['length']
+            link_length = self.engine_props["topology"][source][destination]["length"]
             num_span = link_length / self.route_props.span_length
             link_tuple = (source, destination)
             nli_cost += self.get_nli_cost(link_tuple=link_tuple, num_span=num_span)
@@ -351,9 +350,9 @@ class RoutingHelpers:
         Updates the route_props.max_link_length with the maximum link length
         found in the network topology.
         """
-        topology = self.engine_props['topology']
+        topology = self.engine_props["topology"]
         self.route_props.max_link_length = max(
-            nx.get_edge_attributes(topology, 'length').values(), default=0.0
+            nx.get_edge_attributes(topology, "length").values(), default=0.0
         )
 
     def get_nli_cost(self, link_tuple: tuple[Any, Any], num_span: float) -> float:
@@ -370,26 +369,26 @@ class RoutingHelpers:
         free_channels_dict = find_free_channels(
             network_spectrum_dict=self.sdn_props.network_spectrum_dict,
             slots_needed=self.sdn_props.slots_needed,
-            link_tuple=link_tuple
+            link_tuple=link_tuple,
         )
         taken_channels_dict = find_taken_channels(
             network_spectrum_dict=self.sdn_props.network_spectrum_dict,
-            link_tuple=link_tuple
+            link_tuple=link_tuple,
         )
 
         link_cost = self._find_link_cost(
             free_channels_dict=free_channels_dict,
             taken_channels_dict=taken_channels_dict,
-            num_span=num_span
+            num_span=num_span,
         )
 
         source, dest = link_tuple[0], link_tuple[1]
         if self.route_props.max_link_length is None:
             self.get_max_link_length()
 
-        link_length = self.engine_props['topology'][source][dest]['length']
+        link_length = self.engine_props["topology"][source][dest]["length"]
         nli_cost = link_length / self.route_props.max_link_length
-        nli_cost *= self.engine_props['beta']
-        nli_cost += ((1 - self.engine_props['beta']) * link_cost)
+        nli_cost *= self.engine_props["beta"]
+        nli_cost += (1 - self.engine_props["beta"]) * link_cost
 
         return float(nli_cost)

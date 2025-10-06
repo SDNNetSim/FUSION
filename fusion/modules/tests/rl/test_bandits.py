@@ -60,10 +60,10 @@ class TestSaveModelLowLevel:
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("os.getcwd", return_value="/cwd")
     def test_save_model_writes_json_for_path(
-            self,
-            mock_cwd: mock.MagicMock,  # pylint: disable=unused-argument
-            mock_open_fn: mock.MagicMock,
-            mock_dump: mock.MagicMock,
+        self,
+        _mock_cwd: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_open_fn: mock.MagicMock,
+        mock_dump: mock.MagicMock,
     ) -> None:
         """_save_model converts arrays and dumps JSON."""
         data: dict[tuple[str, ...], np.ndarray[Any, Any]] = {("a",): np.array([1, 2])}
@@ -114,7 +114,7 @@ class TestUpdateBandit:
 
     @mock.patch("fusion.modules.rl.algorithms.bandits.save_model")
     def test_update_bandit_first_step_sets_value(
-            self, mock_save_model: mock.MagicMock
+        self, mock_save_model: mock.MagicMock
     ) -> None:
         """First update sets value to reward."""
         props = SimpleNamespace(rewards_matrix=[])
@@ -148,8 +148,7 @@ class TestUpdateBandit:
 class TestEpsilonGreedy:
     """EpsilonGreedyBandit action selection."""
 
-    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand",
-                return_value=0.9)
+    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand", return_value=0.9)
     def test_get_action_exploits_when_rand_gt_eps(self, _: mock.MagicMock) -> None:
         """With rand>eps the greedy arm is chosen."""
         bandit = bandits.EpsilonGreedyBandit(
@@ -165,12 +164,12 @@ class TestEpsilonGreedy:
         arm = bandit.select_path_arm(*pair)
         assert arm == 0
 
-    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.randint",
-                return_value=2)
-    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand",
-                return_value=0.0)
+    @mock.patch(
+        "fusion.modules.rl.algorithms.bandits.np.random.randint", return_value=2
+    )
+    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand", return_value=0.0)
     def test_get_action_explores_when_rand_lt_eps(
-            self, _: mock.MagicMock, __: mock.MagicMock
+        self, _: mock.MagicMock, __: mock.MagicMock
     ) -> None:
         """With rand<eps a random arm is chosen."""
         bandit = bandits.EpsilonGreedyBandit(
@@ -206,9 +205,7 @@ class TestUCB:
     def test_ucb_computes_confidence_bound(self) -> None:
         """UCB returns argmax of UCB values."""
         eng = _mk_engine(conf_param=1.0)
-        bandit = bandits.UCBBandit(
-            rl_props=_mk_rl(), engine_props=eng, is_path=True
-        )
+        bandit = bandits.UCBBandit(rl_props=_mk_rl(), engine_props=eng, is_path=True)
         pair = (0, 1)
         # Ensure the dicts are initialized first
         if pair not in bandit.counts:

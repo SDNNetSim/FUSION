@@ -45,14 +45,13 @@ def create_training_argument_parser() -> Namespace:
     :raises SystemExit: If required arguments are missing or invalid
     """
     training_parser = args_registry.create_parser_with_groups(
-        "Train an agent (RL or ML)",
-        TRAINING_GROUP_NAMES
+        "Train an agent (RL or ML)", TRAINING_GROUP_NAMES
     )
     training_parser.add_argument(
         "--agent_type",
         choices=AGENT_TYPE_CHOICES,
         required=True,
-        help="Type of agent to train (rl=reinforcement learning, ml=machine learning)"
+        help="Type of agent to train (rl=reinforcement learning, ml=machine learning)",
     )
     return training_parser.parse_args()
 
@@ -69,8 +68,7 @@ def create_gui_argument_parser() -> Namespace:
     :raises SystemExit: If argument parsing fails
     """
     gui_parser = args_registry.create_parser_with_groups(
-        "Launch GUI for FUSION",
-        GUI_GROUP_NAMES
+        "Launch GUI for FUSION", GUI_GROUP_NAMES
     )
     return gui_parser.parse_args()
 

@@ -37,7 +37,7 @@ def register_run_sim_args(subparsers: argparse._SubParsersAction) -> None:
     """
     Register run_sim subcommand parser. Legacy compatibility function.
     """
-    parser = subparsers.add_parser('run_sim', help='Run network simulation')
+    parser = subparsers.add_parser("run_sim", help="Run network simulation")
     add_config_args(parser)
     add_debug_args(parser)
     add_output_args(parser)

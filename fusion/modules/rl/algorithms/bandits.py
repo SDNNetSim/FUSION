@@ -11,16 +11,16 @@ from fusion.utils.os import create_directory
 
 def _ensure_bandit_attributes(bandit_obj: object) -> None:
     """Ensure bandit object has required attributes for type safety."""
-    assert hasattr(bandit_obj, 'engine_props'), "bandit must have engine_props"
-    assert hasattr(bandit_obj, 'props'), "bandit must have props"
-    assert hasattr(bandit_obj, 'is_path'), "bandit must have is_path"
-    assert hasattr(bandit_obj, 'values'), "bandit must have values"
-    assert hasattr(bandit_obj, 'counts'), "bandit must have counts"
-    assert hasattr(bandit_obj, 'num_nodes'), "bandit must have num_nodes"
-    assert hasattr(bandit_obj, 'n_arms'), "bandit must have n_arms"
-    assert hasattr(bandit_obj, 'source'), "bandit must have source"
-    assert hasattr(bandit_obj, 'dest'), "bandit must have dest"
-    assert hasattr(bandit_obj, 'iteration'), "bandit must have iteration"
+    assert hasattr(bandit_obj, "engine_props"), "bandit must have engine_props"
+    assert hasattr(bandit_obj, "props"), "bandit must have props"
+    assert hasattr(bandit_obj, "is_path"), "bandit must have is_path"
+    assert hasattr(bandit_obj, "values"), "bandit must have values"
+    assert hasattr(bandit_obj, "counts"), "bandit must have counts"
+    assert hasattr(bandit_obj, "num_nodes"), "bandit must have num_nodes"
+    assert hasattr(bandit_obj, "n_arms"), "bandit must have n_arms"
+    assert hasattr(bandit_obj, "source"), "bandit must have source"
+    assert hasattr(bandit_obj, "dest"), "bandit must have dest"
+    assert hasattr(bandit_obj, "iteration"), "bandit must have iteration"
 
 
 def load_model(train_fp: str) -> dict[str, Any]:
@@ -32,8 +32,8 @@ def load_model(train_fp: str) -> dict[str, Any]:
     :return: The state-value functions V(s, a)
     :rtype: dict[str, Any]
     """
-    full_path = Path('logs') / train_fp
-    with open(full_path, encoding='utf-8') as file_obj:
+    full_path = Path("logs") / train_fp
+    with open(full_path, encoding="utf-8") as file_obj:
         state_vals_dict: dict[str, Any] = json.load(file_obj)
 
     return state_vals_dict
@@ -54,7 +54,7 @@ def _save_model(
     cores_per_link: int,
     save_dir: str,
     is_path: bool,
-    trial: int
+    trial: int,
 ) -> None:
     """
     Delegate to BanditModelPersistence to avoid code duplication.
@@ -93,35 +93,34 @@ def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None
     _ensure_bandit_attributes(self)
     bandit = cast(Any, self)
 
-    max_iters = bandit.engine_props['max_iters']
+    max_iters = bandit.engine_props["max_iters"]
     rewards_matrix = bandit.props.rewards_matrix
 
     should_save = (
-        (iteration % bandit.engine_props['save_step'] == 0 or
-         iteration == max_iters - 1) and
-        len(bandit.props.rewards_matrix[iteration]) ==
-        bandit.engine_props['num_requests']
-    )
+        iteration % bandit.engine_props["save_step"] == 0 or iteration == max_iters - 1
+    ) and len(bandit.props.rewards_matrix[iteration]) == bandit.engine_props[
+        "num_requests"
+    ]
 
     if should_save:
         rewards_matrix = np.array(rewards_matrix)
         rewards_arr = rewards_matrix.mean(axis=0)
 
         date_time_path = (
-            Path(bandit.engine_props['network']) /
-            bandit.engine_props['date'] /
-            bandit.engine_props['sim_start']
+            Path(bandit.engine_props["network"])
+            / bandit.engine_props["date"]
+            / bandit.engine_props["sim_start"]
         )
-        save_dir = Path('logs') / algorithm / date_time_path
+        save_dir = Path("logs") / algorithm / date_time_path
         create_directory(directory_path=str(save_dir))
 
-        erlang = bandit.engine_props['erlang']
-        cores_per_link = bandit.engine_props['cores_per_link']
+        erlang = bandit.engine_props["erlang"]
+        cores_per_link = bandit.engine_props["cores_per_link"]
         base_fp = _get_base_fp(
             is_path=bandit.is_path, erlang=erlang, cores_per_link=cores_per_link
         )
 
-        rewards_fp = f'rewards_{base_fp}_t{trial + 1}_iter_{iteration}.npy'
+        rewards_fp = f"rewards_{base_fp}_t{trial + 1}_iter_{iteration}.npy"
         save_fp = Path.cwd() / save_dir / rewards_fp
         np.save(save_fp, rewards_arr)
 
@@ -131,7 +130,7 @@ def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None
             cores_per_link=cores_per_link,
             save_dir=str(save_dir),
             is_path=bandit.is_path,
-            trial=trial
+            trial=trial,
         )
 
 
@@ -146,11 +145,11 @@ def get_q_table(self: object) -> tuple[dict, dict]:
     """
     # Validate essential attributes (not values/counts since we're creating them)
     bandit = cast(Any, self)
-    assert hasattr(bandit, 'engine_props'), "bandit must have engine_props"
-    assert hasattr(bandit, 'props'), "bandit must have props"
-    assert hasattr(bandit, 'is_path'), "bandit must have is_path"
-    assert hasattr(bandit, 'num_nodes'), "bandit must have num_nodes"
-    assert hasattr(bandit, 'n_arms'), "bandit must have n_arms"
+    assert hasattr(bandit, "engine_props"), "bandit must have engine_props"
+    assert hasattr(bandit, "props"), "bandit must have props"
+    assert hasattr(bandit, "is_path"), "bandit must have is_path"
+    assert hasattr(bandit, "num_nodes"), "bandit must have num_nodes"
+    assert hasattr(bandit, "n_arms"), "bandit must have n_arms"
 
     bandit.counts = {}
     bandit.values = {}
@@ -163,7 +162,7 @@ def get_q_table(self: object) -> tuple[dict, dict]:
                 bandit.counts[(source, destination)] = np.zeros(bandit.n_arms)
                 bandit.values[(source, destination)] = np.zeros(bandit.n_arms)
             else:
-                for path_index in range(bandit.engine_props['k_paths']):
+                for path_index in range(bandit.engine_props["k_paths"]):
                     key = (source, destination, path_index)
                     bandit.counts[key] = np.zeros(bandit.n_arms)
                     bandit.values[key] = np.zeros(bandit.n_arms)
@@ -172,12 +171,7 @@ def get_q_table(self: object) -> tuple[dict, dict]:
 
 
 def _update_bandit(
-    self: object,
-    iteration: int,
-    reward: float,
-    arm: int,
-    algorithm: str,
-    trial: int
+    self: object, iteration: int, reward: float, arm: int, algorithm: str, trial: int
 ) -> None:
     """
     Update bandit values with new reward.
@@ -246,9 +240,9 @@ class EpsilonGreedyBandit:
         self.path_index: int | None = None  # Index of the last chosen path
 
         if is_path:
-            self.n_arms = engine_props['k_paths']
+            self.n_arms = engine_props["k_paths"]
         else:
-            self.n_arms = engine_props['cores_per_link']
+            self.n_arms = engine_props["cores_per_link"]
 
         self.epsilon: float | None = None
         self.num_nodes = cast(Any, rl_props).num_nodes
@@ -316,8 +310,8 @@ class EpsilonGreedyBandit:
             iteration=iteration,
             reward=reward,
             arm=arm,
-            algorithm='epsilon_greedy_bandit',
-            trial=trial
+            algorithm="epsilon_greedy_bandit",
+            trial=trial,
         )
 
 
@@ -352,9 +346,9 @@ class UCBBandit:
         self.num_nodes = cast(Any, rl_props).num_nodes
 
         if is_path:
-            self.n_arms = engine_props['k_paths']
+            self.n_arms = engine_props["k_paths"]
         else:
-            self.n_arms = engine_props['cores_per_link']
+            self.n_arms = engine_props["cores_per_link"]
 
         self.counts, self.values = get_q_table(self=self)
 
@@ -363,13 +357,10 @@ class UCBBandit:
         if 0 in self.counts[state_action_pair]:
             return int(np.argmin(self.counts[state_action_pair]))
 
-        conf_param = self.engine_props['conf_param']
+        conf_param = self.engine_props["conf_param"]
         total_counts = sum(self.counts[state_action_pair])
-        ucb_values = (
-            self.values[state_action_pair] +
-            np.sqrt(
-                conf_param * np.log(total_counts) / self.counts[state_action_pair]
-            )
+        ucb_values = self.values[state_action_pair] + np.sqrt(
+            conf_param * np.log(total_counts) / self.counts[state_action_pair]
         )
         return int(np.argmax(ucb_values))
 
@@ -428,6 +419,6 @@ class UCBBandit:
             arm=arm,
             reward=reward,
             self=self,
-            algorithm='ucb_bandit',
-            trial=trial
+            algorithm="ucb_bandit",
+            trial=trial,
         )

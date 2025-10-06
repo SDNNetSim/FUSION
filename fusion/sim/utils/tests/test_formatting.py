@@ -1,6 +1,5 @@
 """Unit tests for fusion.sim.utils.formatting module."""
 
-
 from typing import Any
 
 from ..formatting import int_to_string, list_to_title, snake_to_title
@@ -177,7 +176,9 @@ class TestListToTitle:
         """Test converting list with multiple items."""
         # Arrange
         input_list: list[tuple[str, Any]] = [
-            ("Alice", None), ("Bob", None), ("Charlie", None)
+            ("Alice", None),
+            ("Bob", None),
+            ("Charlie", None),
         ]
         expected = "Alice, Bob & Charlie"
 
@@ -227,7 +228,10 @@ class TestListToTitle:
         """Test that duplicate items are removed."""
         # Arrange
         input_list: list[tuple[str, Any]] = [
-            ("Alice", None), ("Bob", None), ("Alice", None), ("Charlie", None)
+            ("Alice", None),
+            ("Bob", None),
+            ("Alice", None),
+            ("Charlie", None),
         ]
         expected = "Alice, Bob & Charlie"
 
@@ -253,7 +257,9 @@ class TestListToTitle:
         """Test that order of first occurrences is preserved."""
         # Arrange
         input_list: list[tuple[str, Any]] = [
-            ("Charlie", None), ("Alice", None), ("Bob", None)
+            ("Charlie", None),
+            ("Alice", None),
+            ("Bob", None),
         ]
         expected = "Charlie, Alice & Bob"
 

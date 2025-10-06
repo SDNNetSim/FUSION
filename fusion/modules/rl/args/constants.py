@@ -6,40 +6,44 @@ organized by category for better maintainability and discoverability.
 This file is intended for new code; existing code should continue using
 the individual files for backward compatibility.
 """
+
 from enum import Enum
 
 
 class AlgorithmType(Enum):
     """Enumeration of algorithm types for better type safety."""
+
     # Traditional RL algorithms
-    Q_LEARNING = 'q_learning'
-    EPSILON_GREEDY_BANDIT = 'epsilon_greedy_bandit'
-    UCB_BANDIT = 'ucb_bandit'
+    Q_LEARNING = "q_learning"
+    EPSILON_GREEDY_BANDIT = "epsilon_greedy_bandit"
+    UCB_BANDIT = "ucb_bandit"
 
     # Deep RL algorithms
-    PPO = 'ppo'  # Proximal Policy Optimization
-    A2C = 'a2c'  # Advantage Actor-Critic
-    DQN = 'dqn'  # Deep Q-Network
-    QR_DQN = 'qr_dqn'  # Quantile Regression DQN
+    PPO = "ppo"  # Proximal Policy Optimization
+    A2C = "a2c"  # Advantage Actor-Critic
+    DQN = "dqn"  # Deep Q-Network
+    QR_DQN = "qr_dqn"  # Quantile Regression DQN
 
 
 class EpisodicStrategy(Enum):
     """Enumeration of episodic exploration strategies."""
-    EXPONENTIAL_DECAY = 'exp_decay'
-    LINEAR_DECAY = 'linear_decay'
+
+    EXPONENTIAL_DECAY = "exp_decay"
+    LINEAR_DECAY = "linear_decay"
 
 
 class ObservationFeature(Enum):
     """Enumeration of all possible observation features."""
-    SOURCE = 'source'
-    DESTINATION = 'destination'
-    REQUEST_BANDWIDTH = 'request_bandwidth'
-    HOLDING_TIME = 'holding_time'
-    SLOTS_NEEDED = 'slots_needed'
-    PATH_LENGTHS = 'path_lengths'
-    PATH_CONGESTION = 'paths_cong'  # Note: abbreviated for backward compatibility
-    AVAILABLE_SLOTS = 'available_slots'
-    IS_FEASIBLE = 'is_feasible'
+
+    SOURCE = "source"
+    DESTINATION = "destination"
+    REQUEST_BANDWIDTH = "request_bandwidth"
+    HOLDING_TIME = "holding_time"
+    SLOTS_NEEDED = "slots_needed"
+    PATH_LENGTHS = "path_lengths"
+    PATH_CONGESTION = "paths_cong"  # Note: abbreviated for backward compatibility
+    AVAILABLE_SLOTS = "available_slots"
+    IS_FEASIBLE = "is_feasible"
 
 
 # Algorithm categorizations
@@ -75,51 +79,37 @@ BASIC_ROUTING_OBSERVATION: list[str] = [
 ]
 
 # Standard observation spaces
-ROUTING_WITH_BANDWIDTH_OBSERVATION: list[str] = (
-    BASIC_ROUTING_OBSERVATION + [
-        ObservationFeature.REQUEST_BANDWIDTH.value,
-    ]
-)
+ROUTING_WITH_BANDWIDTH_OBSERVATION: list[str] = BASIC_ROUTING_OBSERVATION + [
+    ObservationFeature.REQUEST_BANDWIDTH.value,
+]
 
-ROUTING_WITH_TIME_OBSERVATION: list[str] = (
-    BASIC_ROUTING_OBSERVATION + [
-        ObservationFeature.HOLDING_TIME.value,
-    ]
-)
+ROUTING_WITH_TIME_OBSERVATION: list[str] = BASIC_ROUTING_OBSERVATION + [
+    ObservationFeature.HOLDING_TIME.value,
+]
 
-ROUTING_STANDARD_OBSERVATION: list[str] = (
-    BASIC_ROUTING_OBSERVATION + [
-        ObservationFeature.REQUEST_BANDWIDTH.value,
-        ObservationFeature.HOLDING_TIME.value,
-    ]
-)
+ROUTING_STANDARD_OBSERVATION: list[str] = BASIC_ROUTING_OBSERVATION + [
+    ObservationFeature.REQUEST_BANDWIDTH.value,
+    ObservationFeature.HOLDING_TIME.value,
+]
 
 # Extended observation spaces
-ROUTING_WITH_PATHS_OBSERVATION: list[str] = (
-    ROUTING_STANDARD_OBSERVATION + [
-        ObservationFeature.SLOTS_NEEDED.value,
-        ObservationFeature.PATH_LENGTHS.value,
-    ]
-)
+ROUTING_WITH_PATHS_OBSERVATION: list[str] = ROUTING_STANDARD_OBSERVATION + [
+    ObservationFeature.SLOTS_NEEDED.value,
+    ObservationFeature.PATH_LENGTHS.value,
+]
 
-ROUTING_WITH_CONGESTION_OBSERVATION: list[str] = (
-    ROUTING_WITH_PATHS_OBSERVATION + [
-        ObservationFeature.PATH_CONGESTION.value,
-    ]
-)
+ROUTING_WITH_CONGESTION_OBSERVATION: list[str] = ROUTING_WITH_PATHS_OBSERVATION + [
+    ObservationFeature.PATH_CONGESTION.value,
+]
 
-ROUTING_WITH_RESOURCES_OBSERVATION: list[str] = (
-    ROUTING_WITH_CONGESTION_OBSERVATION + [
-        ObservationFeature.AVAILABLE_SLOTS.value,
-    ]
-)
+ROUTING_WITH_RESOURCES_OBSERVATION: list[str] = ROUTING_WITH_CONGESTION_OBSERVATION + [
+    ObservationFeature.AVAILABLE_SLOTS.value,
+]
 
 # Complete observation space
-ROUTING_COMPLETE_OBSERVATION: list[str] = (
-    ROUTING_WITH_RESOURCES_OBSERVATION + [
-        ObservationFeature.IS_FEASIBLE.value,
-    ]
-)
+ROUTING_COMPLETE_OBSERVATION: list[str] = ROUTING_WITH_RESOURCES_OBSERVATION + [
+    ObservationFeature.IS_FEASIBLE.value,
+]
 
 
 # Validation sets

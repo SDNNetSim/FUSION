@@ -65,9 +65,11 @@ class SnrMeasurements:
         :return: The self-phase power spectral density
         :rtype: float
         """
-        if (self.snr_props.link_dictionary is None or
-            self.snr_props.center_psd is None or
-            self.snr_props.bandwidth is None):
+        if (
+            self.snr_props.link_dictionary is None
+            or self.snr_props.center_psd is None
+            or self.snr_props.bandwidth is None
+        ):
             raise ValueError("Required SNR properties are not initialized")
 
         rho_parameter = (math.pi**2) * np.abs(
@@ -118,8 +120,10 @@ class SnrMeasurements:
         channel_bandwidth *= POWER_CONVERSION_FACTOR
         channel_psd = self.engine_props_dict["input_power"] / channel_bandwidth
 
-        if (self.snr_props.center_frequency is not None and
-            self.snr_props.center_frequency != channel_frequency):
+        if (
+            self.snr_props.center_frequency is not None
+            and self.snr_props.center_frequency != channel_frequency
+        ):
             log_term = abs(self.snr_props.center_frequency - channel_frequency) + (
                 channel_bandwidth / 2
             )
@@ -142,8 +146,10 @@ class SnrMeasurements:
         :return: The total cross-phase modulation noise on the link
         :rtype: float
         """
-        if (self.spectrum_props.path_list is None or
-            self.sdn_props.network_spectrum_dict is None):
+        if (
+            self.spectrum_props.path_list is None
+            or self.sdn_props.network_spectrum_dict is None
+        ):
             raise ValueError("Required spectrum properties are not initialized")
 
         self.channels_list = []
@@ -223,9 +229,11 @@ class SnrMeasurements:
 
         :return: The total power spectral density correction
         """
-        if (self.channels_list is None or
-            self.snr_props.link_dictionary is None or
-            self.snr_props.length is None):
+        if (
+            self.channels_list is None
+            or self.snr_props.link_dictionary is None
+            or self.snr_props.length is None
+        ):
             raise ValueError("Required properties are not initialized")
 
         # The harmonic number series
@@ -251,7 +259,7 @@ class SnrMeasurements:
             ** 2
         )
         temp_coefficient *= effective_span_length**2
-        if (self.snr_props.center_psd is None or self.snr_props.bandwidth is None):
+        if self.snr_props.center_psd is None or self.snr_props.bandwidth is None:
             raise ValueError("Center PSD and bandwidth must be initialized")
         temp_coefficient *= self.snr_props.center_psd**3 * self.snr_props.bandwidth**2
         temp_coefficient /= (
@@ -280,10 +288,12 @@ class SnrMeasurements:
         :return: The total power spectral density non-linear interference
         :rtype float
         """
-        if (self.snr_props.self_channel_interference_psd is None or
-            self.snr_props.cross_channel_interference_psd is None or
-            self.snr_props.mu_parameter is None or
-            self.snr_props.center_psd is None):
+        if (
+            self.snr_props.self_channel_interference_psd is None
+            or self.snr_props.cross_channel_interference_psd is None
+            or self.snr_props.mu_parameter is None
+            or self.snr_props.center_psd is None
+        ):
             raise ValueError("Required interference PSD properties are not initialized")
 
         psd_nli = (
@@ -301,7 +311,7 @@ class SnrMeasurements:
         """
         Updates needed parameters for each link used for calculating SNR or XT.
         """
-        if (self.link_id is None or self.snr_props.link_dictionary is None):
+        if self.link_id is None or self.snr_props.link_dictionary is None:
             raise ValueError("Link ID and link dictionary must be initialized")
 
         non_linearity = (
@@ -360,8 +370,10 @@ class SnrMeasurements:
         :return: Whether the SNR threshold can be met.
         :rtype: bool
         """
-        if (self.spectrum_props.path_list is None or
-            self.sdn_props.network_spectrum_dict is None):
+        if (
+            self.spectrum_props.path_list is None
+            or self.sdn_props.network_spectrum_dict is None
+        ):
             raise ValueError("Path list and network spectrum dict must be initialized")
 
         total_snr = 0.0
@@ -401,9 +413,11 @@ class SnrMeasurements:
             else:
                 power_xt = 0.0
 
-            if (self.snr_props.center_psd is None or
-                self.snr_props.bandwidth is None or
-                self.snr_props.number_of_spans is None):
+            if (
+                self.snr_props.center_psd is None
+                or self.snr_props.bandwidth is None
+                or self.snr_props.number_of_spans is None
+            ):
                 raise ValueError("Required SNR properties are not initialized")
 
             current_snr = self.snr_props.center_psd * self.snr_props.bandwidth
@@ -425,10 +439,12 @@ class SnrMeasurements:
 
         :return: The number of adjacent cores that have overlapping channels.
         """
-        if (self.spectrum_props.core_number is None or
-            self.sdn_props.network_spectrum_dict is None or
-            self.spectrum_props.start_slot is None or
-            self.spectrum_props.end_slot is None):
+        if (
+            self.spectrum_props.core_number is None
+            or self.sdn_props.network_spectrum_dict is None
+            or self.spectrum_props.start_slot is None
+            or self.spectrum_props.end_slot is None
+        ):
             raise ValueError("Required spectrum properties must be initialized")
 
         overlapping_adjacent_cores = 0
@@ -487,7 +503,7 @@ class SnrMeasurements:
             )
             max_link = max(edge_lengths, key=edge_lengths.get, default=None)
 
-            if (max_link is None or self.sdn_props.network_spectrum_dict is None):
+            if max_link is None or self.sdn_props.network_spectrum_dict is None:
                 raise ValueError(
                     "No valid links found or network spectrum dict not initialized"
                 )
@@ -514,8 +530,10 @@ class SnrMeasurements:
         :return: Whether the cross-talk interference threshold can be met
         :rtype: bool
         """
-        if (self.spectrum_props.path_list is None or
-            self.sdn_props.network_spectrum_dict is None):
+        if (
+            self.spectrum_props.path_list is None
+            or self.sdn_props.network_spectrum_dict is None
+        ):
             raise ValueError("Path list and network spectrum dict must be initialized")
 
         cross_talk = 0.0
@@ -728,8 +746,10 @@ class SnrMeasurements:
                  request and its cost
         :rtype: tuple
         """
-        if (self.spectrum_props.end_slot is None or
-            self.spectrum_props.start_slot is None):
+        if (
+            self.spectrum_props.end_slot is None
+            or self.spectrum_props.start_slot is None
+        ):
             raise ValueError("End slot and start slot must be initialized")
 
         self.number_of_slots = (
@@ -758,8 +778,10 @@ class SnrMeasurements:
                  request and its cost
         :rtype: tuple
         """
-        if (self.spectrum_props.end_slot is None or
-            self.spectrum_props.start_slot is None):
+        if (
+            self.spectrum_props.end_slot is None
+            or self.spectrum_props.start_slot is None
+        ):
             raise ValueError("End slot and start slot must be initialized")
 
         self.number_of_slots = (

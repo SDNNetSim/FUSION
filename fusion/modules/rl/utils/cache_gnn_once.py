@@ -68,12 +68,16 @@ def main() -> None:
                 f"Expected Dict observation space, got {type(env.observation_space)}"
             )
 
-        enc = PathGNNEncoder(
-            env.observation_space,
-            emb_dim=env.engine_obj.engine_props["emb_dim"],
-            gnn_type=env.engine_obj.engine_props["gnn_type"],
-            layers=env.engine_obj.engine_props["layers"],
-        ).to(sim_dict.get("device", "cpu")).eval()
+        enc = (
+            PathGNNEncoder(
+                env.observation_space,
+                emb_dim=env.engine_obj.engine_props["emb_dim"],
+                gnn_type=env.engine_obj.engine_props["gnn_type"],
+                layers=env.engine_obj.engine_props["layers"],
+            )
+            .to(sim_dict.get("device", "cpu"))
+            .eval()
+        )
 
         device = torch.device(sim_dict.get("device", "cpu"))
 
@@ -101,7 +105,7 @@ def main() -> None:
         with torch.inference_mode():
             emb = enc(x, edge_index, path_masks).cpu()
 
-        torch.save(emb, cache_path)
+        torch.save(emb, cache_path)  # nosec B614
         logger.info("Saved cache to %s", cache_path)
     except Exception as e:
         raise CacheError(

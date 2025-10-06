@@ -66,7 +66,7 @@ Main simulation orchestrator that:
 - Collects comprehensive performance metrics
 - Supports multiprocessing and batch execution
 
-### SDNController  
+### SDNController
 Software-defined network controller that:
 - Processes arrival and departure requests
 - Manages spectrum allocation and deallocation
@@ -185,7 +185,7 @@ All properties classes provide type-safe data structures with comprehensive vali
 
 - **RoutingProps**: Path computation and routing parameters
 - **SpectrumProps**: Spectrum assignment and allocation state
-- **SNRProps**: Signal quality measurement parameters  
+- **SNRProps**: Signal quality measurement parameters
 - **SDNProps**: Network controller state and request data
 - **StatsProps**: Statistics collection and performance metrics
 
@@ -217,23 +217,23 @@ engine_props = {
     'num_requests': 1000,       # Requests per iteration
     'erlang': 300,              # Traffic load in Erlangs
     'holding_time': 1.0,        # Request holding time
-    
+
     # Network topology
     'network': 'NSFNet',        # Network topology name
     'cores_per_link': 7,        # Fiber cores per link
     'c_band': 320,              # C-band spectrum slots
     'bw_per_slot': 12.5,        # Bandwidth per slot (GHz)
-    
+
     # Routing and spectrum
     'route_method': 'k_shortest_path',    # Routing algorithm
     'allocation_method': 'first_fit',     # Spectrum allocation
     'k_paths': 3,                         # Number of paths to consider
-    
+
     # Signal quality
     'snr_type': 'xt_calculation',         # SNR calculation method
     'xt_noise': True,                     # Enable crosstalk modeling
     'input_power': 0.001,                 # Input power (Watts)
-    
+
     # Output and debugging
     'print_step': 10,           # Progress reporting interval
     'save_snapshots': False,    # Enable snapshot collection
@@ -247,15 +247,15 @@ advanced_props = {
     # Multi-band support
     'band_list': ['c', 'l'],         # Enabled spectral bands
     'spectrum_priority': 'BSC',      # Band switching criteria
-    
-    # Cross-talk modeling  
+
+    # Cross-talk modeling
     'xt_type': 'with_length',        # Crosstalk calculation type
     'requested_xt': {'QPSK': -15.0}, # XT thresholds by modulation
-    
+
     # Machine learning
     'deploy_model': False,           # Use ML model for routing
     'ml_model': 'decision_tree',     # ML model type
-    
+
     # Performance optimization
     'thread_erlangs': True,          # Enable multithreading
     'fixed_grid': False,             # Use flexible grid
@@ -338,7 +338,7 @@ The core module provides robust error handling with:
 if self.spectrum_props.path_list is None:
     raise ValueError("Path list must be initialized")
 
-# Network state validation  
+# Network state validation
 if self.sdn_props.network_spectrum_dict is None:
     raise ValueError("Network spectrum dict must be initialized")
 
@@ -352,7 +352,7 @@ if self.spectrum_props.slots_needed is None:
 ### Optimization Features
 - **Lazy loading**: Heavy modules loaded only when needed
 - **Efficient data structures**: NumPy arrays for spectrum matrices
-- **Caching**: Repeated calculations cached when possible  
+- **Caching**: Repeated calculations cached when possible
 - **Memory management**: Proper resource cleanup and disposal
 - **Parallel processing**: Multiprocessing support for large simulations
 
@@ -365,7 +365,7 @@ spectrum_matrix = np.zeros((cores, slots), dtype=np.int32)
 def process_request(self, request_data: dict[str, Any]) -> None:
     if not isinstance(request_data, dict):
         raise TypeError("Request data must be dictionary")
-    
+
 # Handle resource cleanup
 try:
     # Simulation operations
@@ -379,7 +379,7 @@ finally:
 
 ### Internal Dependencies
 - `fusion.modules.routing`: Modular routing algorithm implementations
-- `fusion.modules.spectrum`: Spectrum assignment algorithm implementations  
+- `fusion.modules.spectrum`: Spectrum assignment algorithm implementations
 - `fusion.modules.snr`: SNR calculation utilities and external data integration
 - `fusion.utils.logging_config`: Standardized logging configuration
 - `fusion.configs`: Configuration management and validation
@@ -439,7 +439,7 @@ This module maintains the highest code quality standards:
 When contributing to the core module:
 
 1. **Maintain type safety**: Add type hints and null checks for all new code
-2. **Follow patterns**: Use established error handling and validation patterns  
+2. **Follow patterns**: Use established error handling and validation patterns
 3. **Test thoroughly**: Add comprehensive tests for all new functionality
 4. **Document clearly**: Provide clear docstrings and usage examples
 5. **Performance focus**: Consider memory and computational efficiency
@@ -449,7 +449,7 @@ The core module follows these design principles:
 
 - **Type Safety First**: Prevent runtime errors through comprehensive type checking
 - **Fail Fast**: Validate inputs early with clear error messages
-- **Single Responsibility**: Each class has a focused, well-defined purpose  
+- **Single Responsibility**: Each class has a focused, well-defined purpose
 - **Loose Coupling**: Minimal dependencies between components
 - **Extensibility**: Design for easy extension and algorithm swapping
 - **Production Ready**: Robust error handling suitable for production deployment

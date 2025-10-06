@@ -20,8 +20,10 @@ def _rl_props() -> SimpleNamespace:
 def _engine_obj(key: str = "obs_1") -> SimpleNamespace:
     return SimpleNamespace(
         engine_props={
-            "mod_per_bw": {"100": {"QPSK": {"slots_needed": 4}},
-                           "100G": {"QPSK": {"slots_needed": 4}}},
+            "mod_per_bw": {
+                "100": {"QPSK": {"slots_needed": 4}},
+                "100G": {"QPSK": {"slots_needed": 4}},
+            },
             "topology": "dummy_topo",
             "obs_space": key,
         }
@@ -29,7 +31,7 @@ def _engine_obj(key: str = "obs_1") -> SimpleNamespace:
 
 
 def _fake_topo(
-        *_: object, **__: object
+    *_: object, **__: object
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, None]:
     """ei(2,5) edge_idx, ea(5,1) edge_attr, xf(4,3) node_feat, _."""
     ei = np.zeros((2, 5), dtype=int)
@@ -80,9 +82,7 @@ class TestFragmentationTracker:
     @pytest.fixture
     def tracker(self) -> obs_mod.FragmentationTracker:
         """Create FragmentationTracker instance."""
-        return obs_mod.FragmentationTracker(
-            num_nodes=3, core_count=2, spectral_slots=4
-        )
+        return obs_mod.FragmentationTracker(num_nodes=3, core_count=2, spectral_slots=4)
 
     def test_fragmentation_values(self, tracker: obs_mod.FragmentationTracker) -> None:
         """update then get_fragmentation returns expected fractions."""
@@ -94,7 +94,7 @@ class TestFragmentationTracker:
         assert frag["path_frag"][0] == pytest.approx(32.0)
 
     def test_path_len_one_returns_zero(
-            self, tracker: obs_mod.FragmentationTracker
+        self, tracker: obs_mod.FragmentationTracker
     ) -> None:
         """Single-node path yields zero fragmentation."""
         frag = tracker.get_fragmentation([0], core_index=0)

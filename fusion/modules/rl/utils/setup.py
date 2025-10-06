@@ -53,7 +53,8 @@ def setup_feature_extractor(
         cache_fp = CACHE_DIR / f"{engine_props['network']}.pt"
 
         if os.path.exists(cache_fp):  # ✔ cache already there
-            cached = torch.load(cache_fp)
+            # Loading trusted GNN embedding from local cache
+            cached = torch.load(cache_fp)  # nosec B614
             extr_class = CachedPathGNN
             feat_kwargs = {"cached_embedding": cached}
             print(f"✅  Using cached GNN embedding from {cache_fp}")
@@ -74,7 +75,7 @@ def setup_feature_extractor(
                     obs["path_masks"].to(enc.device),
                 ).cpu()
             os.makedirs("gnn_cached", exist_ok=True)
-            torch.save(emb, cache_fp)
+            torch.save(emb, cache_fp)  # nosec B614
             print(f"✅  Saved cache to {cache_fp}")
 
             extr_class = CachedPathGNN

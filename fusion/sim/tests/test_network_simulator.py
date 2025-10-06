@@ -97,7 +97,7 @@ class TestNetworkSimulator:
     @patch("fusion.sim.network_simulator.save_input")
     def test_run_generic_sim_single_erlang_creates_engine(
         self,
-        mock_save_input: MagicMock,
+        _mock_save_input: MagicMock,
         mock_create_input: MagicMock,
         mock_engine_class: MagicMock,
         sample_engine_props: dict,
@@ -136,7 +136,7 @@ class TestNetworkSimulator:
     @patch("fusion.sim.network_simulator.save_input")
     def test_run_generic_sim_multiple_erlangs_sequential(
         self,
-        mock_save_input: MagicMock,
+        _mock_save_input: MagicMock,
         mock_create_input: MagicMock,
         mock_engine_class: MagicMock,
         mock_manager: MagicMock,

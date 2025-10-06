@@ -1,6 +1,5 @@
 """Unit tests for fusion.modules.rl.algorithms.algorithm_props module."""
 
-
 import numpy as np
 import pytest
 
@@ -114,13 +113,16 @@ class TestQProps:
         props = QProps()
 
         # Assert
-        assert 'routes_dict' in props.rewards_dict
-        assert 'cores_dict' in props.rewards_dict
-        assert props.rewards_dict['routes_dict'] == {
-            'average': [], 'min': [], 'max': [], 'rewards': {}
+        assert "routes_dict" in props.rewards_dict
+        assert "cores_dict" in props.rewards_dict
+        assert props.rewards_dict["routes_dict"] == {
+            "average": [],
+            "min": [],
+            "max": [],
+            "rewards": {},
         }
-        assert 'routes_dict' in props.errors_dict
-        assert 'cores_dict' in props.errors_dict
+        assert "routes_dict" in props.errors_dict
+        assert "cores_dict" in props.errors_dict
 
     def test_init_creates_sum_dicts(self) -> None:
         """Test that QProps initializes sum dictionaries."""
@@ -137,10 +139,10 @@ class TestQProps:
         props = QProps()
 
         # Assert
-        assert 'q_params_list' in props.save_params_dict
-        assert 'engine_params_list' in props.save_params_dict
-        assert 'rewards_dict' in props.save_params_dict['q_params_list']
-        assert 'epsilon_start' in props.save_params_dict['engine_params_list']
+        assert "q_params_list" in props.save_params_dict
+        assert "engine_params_list" in props.save_params_dict
+        assert "rewards_dict" in props.save_params_dict["q_params_list"]
+        assert "epsilon_start" in props.save_params_dict["engine_params_list"]
 
     def test_get_data_returns_existing_attribute(self) -> None:
         """Test that get_data returns value of existing attribute."""
@@ -150,8 +152,8 @@ class TestQProps:
         props.num_nodes = 10
 
         # Act
-        epsilon = props.get_data('epsilon_start')
-        nodes = props.get_data('num_nodes')
+        epsilon = props.get_data("epsilon_start")
+        nodes = props.get_data("num_nodes")
 
         # Assert
         assert epsilon == 0.9
@@ -164,7 +166,7 @@ class TestQProps:
 
         # Act & Assert
         with pytest.raises(AttributeError, match="'RLProps' object has no attribute"):
-            props.get_data('nonexistent_key')
+            props.get_data("nonexistent_key")
 
     def test_repr_contains_dict_representation(self) -> None:
         """Test that __repr__ returns string with QProps and dict."""
@@ -274,7 +276,7 @@ class TestPPOProps:
         props = PPOProps()
 
         # Act
-        attrs = [attr for attr in dir(props) if not attr.startswith('_')]
+        attrs = [attr for attr in dir(props) if not attr.startswith("_")]
 
         # Assert
         # Should have no public attributes (placeholder class)

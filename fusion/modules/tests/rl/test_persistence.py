@@ -32,7 +32,7 @@ class TestBanditModelPersistence:
     def test_load_model_constructs_correct_path(self) -> None:
         """Test that load_model constructs path with logs directory."""
         # Arrange
-        mock_data = '{}'
+        mock_data = "{}"
 
         with patch("builtins.open", mock_open(read_data=mock_data)) as m:
             # Act
@@ -41,7 +41,7 @@ class TestBanditModelPersistence:
             # Assert
             m.assert_called_once()
             call_args = m.call_args[0][0]
-            assert str(call_args) == str(Path('logs') / 'subdir/model.json')
+            assert str(call_args) == str(Path("logs") / "subdir/model.json")
 
     def test_save_model_returns_early_if_none(self) -> None:
         """Test that save_model returns early when state_values_dict is None."""
@@ -52,19 +52,15 @@ class TestBanditModelPersistence:
             cores_per_link=4,
             save_dir="test_dir",
             is_path=True,
-            trial=0
+            trial=0,
         )
 
     def test_save_model_converts_tuples_to_strings(self) -> None:
         """Test that save_model converts tuple keys to strings."""
         # Arrange
-        state_values = {
-            (0, 1): np.array([1.0, 2.0]),
-            (1, 2): np.array([3.0, 4.0])
-        }
+        state_values = {(0, 1): np.array([1.0, 2.0]), (1, 2): np.array([3.0, 4.0])}
 
-        with patch("builtins.open", mock_open()), \
-             patch("json.dump") as mock_dump:
+        with patch("builtins.open", mock_open()), patch("json.dump") as mock_dump:
             # Act
             BanditModelPersistence.save_model(
                 state_values_dict=state_values,
@@ -72,7 +68,7 @@ class TestBanditModelPersistence:
                 cores_per_link=4,
                 save_dir="test_dir",
                 is_path=True,
-                trial=0
+                trial=0,
             )
 
             # Assert
@@ -87,8 +83,7 @@ class TestBanditModelPersistence:
         # Arrange
         state_values = {(0, 1): np.array([1.0])}
 
-        with patch("builtins.open", mock_open()) as m, \
-             patch("json.dump"):
+        with patch("builtins.open", mock_open()) as m, patch("json.dump"):
             # Act
             BanditModelPersistence.save_model(
                 state_values_dict=state_values,
@@ -96,7 +91,7 @@ class TestBanditModelPersistence:
                 cores_per_link=4,
                 save_dir="test_dir",
                 is_path=True,
-                trial=2
+                trial=2,
             )
 
             # Assert
@@ -116,7 +111,7 @@ class TestBanditModelPersistence:
                 cores_per_link=4,
                 save_dir="test_dir",
                 is_path=False,
-                trial=0
+                trial=0,
             )
 
 
@@ -129,9 +124,11 @@ class TestQLearningModelPersistence:
         q_dict = {"state1": [1.0, 2.0]}
         rewards_avg = np.array([10.0, 20.0, 30.0])
 
-        with patch("numpy.save") as mock_npsave, \
-             patch("builtins.open", mock_open()), \
-             patch("json.dump"):
+        with (
+            patch("numpy.save") as mock_npsave,
+            patch("builtins.open", mock_open()),
+            patch("json.dump"),
+        ):
             # Act
             QLearningModelPersistence.save_model(
                 q_dict=q_dict,
@@ -141,7 +138,7 @@ class TestQLearningModelPersistence:
                 base_str="routes",
                 trial=0,
                 iteration=5,
-                save_dir="test_dir"
+                save_dir="test_dir",
             )
 
             # Assert
@@ -155,9 +152,11 @@ class TestQLearningModelPersistence:
         q_dict = {"state1": [1.0]}
         rewards_avg = np.array([10.0])
 
-        with patch("numpy.save") as mock_npsave, \
-             patch("builtins.open", mock_open()) as mock_file, \
-             patch("json.dump"):
+        with (
+            patch("numpy.save") as mock_npsave,
+            patch("builtins.open", mock_open()) as mock_file,
+            patch("json.dump"),
+        ):
             # Act
             QLearningModelPersistence.save_model(
                 q_dict=q_dict,
@@ -167,7 +166,7 @@ class TestQLearningModelPersistence:
                 base_str="routes",
                 trial=1,
                 iteration=10,
-                save_dir="test_dir"
+                save_dir="test_dir",
             )
 
             # Assert
@@ -183,9 +182,11 @@ class TestQLearningModelPersistence:
         q_dict = {"(0, 1)": [1.0, 2.0, 3.0]}
         rewards_avg = np.array([10.0])
 
-        with patch("numpy.save"), \
-             patch("builtins.open", mock_open()), \
-             patch("json.dump") as mock_dump:
+        with (
+            patch("numpy.save"),
+            patch("builtins.open", mock_open()),
+            patch("json.dump") as mock_dump,
+        ):
             # Act
             QLearningModelPersistence.save_model(
                 q_dict=q_dict,
@@ -195,7 +196,7 @@ class TestQLearningModelPersistence:
                 base_str="routes",
                 trial=0,
                 iteration=1,
-                save_dir="test_dir"
+                save_dir="test_dir",
             )
 
             # Assert
@@ -219,7 +220,7 @@ class TestQLearningModelPersistence:
                 base_str="cores",
                 trial=0,
                 iteration=1,
-                save_dir="test_dir"
+                save_dir="test_dir",
             )
 
     def test_save_model_uses_correct_save_directory(self) -> None:
@@ -229,9 +230,11 @@ class TestQLearningModelPersistence:
         rewards_avg = np.array([10.0])
         save_dir = "custom/save/dir"
 
-        with patch("numpy.save") as mock_npsave, \
-             patch("builtins.open", mock_open()) as mock_file, \
-             patch("json.dump"):
+        with (
+            patch("numpy.save") as mock_npsave,
+            patch("builtins.open", mock_open()) as mock_file,
+            patch("json.dump"),
+        ):
             # Act
             QLearningModelPersistence.save_model(
                 q_dict=q_dict,
@@ -241,7 +244,7 @@ class TestQLearningModelPersistence:
                 base_str="routes",
                 trial=0,
                 iteration=1,
-                save_dir=save_dir
+                save_dir=save_dir,
             )
 
             # Assert

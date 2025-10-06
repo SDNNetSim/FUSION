@@ -1,6 +1,5 @@
 """Unit tests for fusion.modules.ml.constants module."""
 
-
 from fusion.modules.ml.constants import BANDWIDTH_CATEGORIES, EXPECTED_ML_COLUMNS
 
 
@@ -18,21 +17,21 @@ class TestConstants:
     def test_expected_ml_columns_contains_path_length(self) -> None:
         """Test that path_length is in expected columns."""
         # Assert
-        assert 'path_length' in EXPECTED_ML_COLUMNS
+        assert "path_length" in EXPECTED_ML_COLUMNS
 
     def test_expected_ml_columns_contains_ave_cong(self) -> None:
         """Test that ave_cong is in expected columns."""
         # Assert
-        assert 'ave_cong' in EXPECTED_ML_COLUMNS
+        assert "ave_cong" in EXPECTED_ML_COLUMNS
 
     def test_expected_ml_columns_contains_bandwidth_features(self) -> None:
         """Test that all bandwidth one-hot encoded features are present."""
         # Arrange
         expected_bandwidth_cols = [
-            'old_bandwidth_50',
-            'old_bandwidth_100',
-            'old_bandwidth_200',
-            'old_bandwidth_400'
+            "old_bandwidth_50",
+            "old_bandwidth_100",
+            "old_bandwidth_200",
+            "old_bandwidth_400",
         ]
 
         # Act & Assert

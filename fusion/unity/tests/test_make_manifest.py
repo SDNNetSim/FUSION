@@ -422,7 +422,7 @@ class TestExpandGrid:
 
     @patch("fusion.unity.make_manifest._validate_keys")
     def test_expand_grid_with_basic_config_generates_correct_rows(
-        self, mock_validate: Any
+        self, _mock_validate: Any
     ) -> None:
         """Test _expand_grid generates correct number of job rows."""
         # Arrange
@@ -443,7 +443,7 @@ class TestExpandGrid:
 
     @patch("fusion.unity.make_manifest._validate_keys")
     def test_expand_grid_generates_rows_with_required_fields(
-        self, mock_validate: Any
+        self, _mock_validate: Any
     ) -> None:
         """Test _expand_grid includes all required fields in rows."""
         # Arrange
@@ -471,7 +471,7 @@ class TestExpandGrid:
 
     @patch("fusion.unity.make_manifest._validate_keys")
     def test_expand_grid_calculates_erlang_stop_correctly(
-        self, mock_validate: Any
+        self, _mock_validate: Any
     ) -> None:
         """Test _expand_grid sets erlang_stop to erlang_start + 50."""
         # Arrange
@@ -491,7 +491,7 @@ class TestExpandGrid:
 
     @patch("fusion.unity.make_manifest._validate_keys")
     def test_expand_grid_with_starting_rid_continues_numbering(
-        self, mock_validate: Any
+        self, _mock_validate: Any
     ) -> None:
         """Test _expand_grid continues run_id numbering from starting_rid."""
         # Arrange
@@ -532,7 +532,7 @@ class TestExplicit:
     """Tests for _explicit function."""
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_explicit_with_job_list_generates_rows(self, mock_validate: Any) -> None:
+    def test_explicit_with_job_list_generates_rows(self, _mock_validate: Any) -> None:
         """Test _explicit generates rows from explicit job definitions."""
         # Arrange
         jobs = [
@@ -559,7 +559,7 @@ class TestExplicit:
         assert len(rows) == 2
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_explicit_sets_correct_algorithm_field(self, mock_validate: Any) -> None:
+    def test_explicit_sets_correct_algorithm_field(self, _mock_validate: Any) -> None:
         """Test _explicit maps 'algorithm' to 'path_algorithm'."""
         # Arrange
         jobs = [
@@ -578,7 +578,7 @@ class TestExplicit:
         assert rows[0]["path_algorithm"] == "ppo"
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_explicit_uses_erlang_start_for_traffic(self, mock_validate: Any) -> None:
+    def test_explicit_uses_erlang_start_for_traffic(self, _mock_validate: Any) -> None:
         """Test _explicit uses traffic value for erlang_start."""
         # Arrange
         jobs = [
@@ -597,9 +597,7 @@ class TestExplicit:
         assert rows[0]["erlang_start"] == 100
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_explicit_calculates_default_erlang_stop(
-        self, mock_validate: Any
-    ) -> None:
+    def test_explicit_calculates_default_erlang_stop(self, _mock_validate: Any) -> None:
         """Test _explicit calculates erlang_stop when not provided."""
         # Arrange
         jobs = [

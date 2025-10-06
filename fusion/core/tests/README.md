@@ -2,7 +2,7 @@
 
 ## Test Coverage
 - **test_metrics.py**: SimStats class for simulation statistics collection
-- **test_routing.py**: Routing coordination and algorithm dispatch  
+- **test_routing.py**: Routing coordination and algorithm dispatch
 - **test_sdn_controller.py**: SDN controller for network resource management
 - **test_snr_measurements.py**: Signal-to-noise ratio calculations
 - **test_spectrum_assignment.py**: Spectrum allocation algorithms

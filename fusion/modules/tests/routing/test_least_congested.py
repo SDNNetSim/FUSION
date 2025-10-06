@@ -16,9 +16,9 @@ def topology() -> nx.Graph:
     :rtype: nx.Graph
     """
     graph = nx.Graph()
-    graph.add_edge('A', 'B', length=100.0, weight=1)
-    graph.add_edge('B', 'C', length=150.0, weight=1)
-    graph.add_edge('A', 'C', length=300.0, weight=3)
+    graph.add_edge("A", "B", length=100.0, weight=1)
+    graph.add_edge("B", "C", length=150.0, weight=1)
+    graph.add_edge("A", "C", length=300.0, weight=3)
     return graph
 
 
@@ -31,11 +31,7 @@ def engine_props(topology: nx.Graph) -> dict[str, Any]:
     :return: Engine configuration dictionary.
     :rtype: dict[str, Any]
     """
-    return {
-        'topology': topology,
-        'k_paths': 2,
-        'beta': 0.5
-    }
+    return {"topology": topology, "k_paths": 2, "beta": 0.5}
 
 
 @pytest.fixture
@@ -48,35 +44,21 @@ def sdn_props(topology: nx.Graph) -> Mock:
     :rtype: Mock
     """
     props = Mock()
-    props.source = 'A'
-    props.destination = 'C'
-    props.bandwidth = '50GHz'
+    props.source = "A"
+    props.destination = "C"
+    props.bandwidth = "50GHz"
     props.slots_needed = 10
     props.topology = topology
     props.network_spectrum_dict = {
-        ('A', 'B'): {
-            'cores_matrix': {
-                'c': [np.zeros(320), np.zeros(320)]
-            }
-        },
-        ('B', 'C'): {
-            'cores_matrix': {
-                'c': [np.ones(320), np.ones(320)]
-            }
-        },
-        ('A', 'C'): {
-            'cores_matrix': {
-                'c': [np.zeros(320), np.zeros(320)]
-            }
-        }
+        ("A", "B"): {"cores_matrix": {"c": [np.zeros(320), np.zeros(320)]}},
+        ("B", "C"): {"cores_matrix": {"c": [np.ones(320), np.ones(320)]}},
+        ("A", "C"): {"cores_matrix": {"c": [np.zeros(320), np.zeros(320)]}},
     }
     return props
 
 
 @pytest.fixture
-def least_congested(
-    engine_props: dict[str, Any], sdn_props: Mock
-) -> Any:
+def least_congested(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
     """Create LeastCongestedRouting instance for testing.
 
     :param engine_props: Engine configuration dictionary.
@@ -87,6 +69,7 @@ def least_congested(
     :rtype: Any
     """
     from fusion.modules.routing.least_congested import LeastCongestedRouting
+
     return LeastCongestedRouting(engine_props, sdn_props)
 
 
@@ -99,26 +82,22 @@ class TestLeastCongestedRouting:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert least_congested.engine_props == engine_props
-        assert hasattr(least_congested, 'route_props')
-        assert hasattr(least_congested, 'route_help_obj')
+        assert hasattr(least_congested, "route_props")
+        assert hasattr(least_congested, "route_help_obj")
 
-    def test_algorithm_name_property(
-        self, least_congested: Any
-    ) -> None:
+    def test_algorithm_name_property(self, least_congested: Any) -> None:
         """Test algorithm name property returns correct identifier."""
         # Assert
-        assert least_congested.algorithm_name == 'least_congested'
+        assert least_congested.algorithm_name == "least_congested"
 
-    def test_supported_topologies_property(
-        self, least_congested: Any
-    ) -> None:
+    def test_supported_topologies_property(self, least_congested: Any) -> None:
         """Test supported topologies property returns expected list."""
         # Act
         topologies = least_congested.supported_topologies
 
         # Assert
         assert isinstance(topologies, list)
-        assert 'Generic' in topologies
+        assert "Generic" in topologies
 
     def test_validate_environment_with_valid_topology(
         self, least_congested: Any, topology: nx.Graph
@@ -130,37 +109,31 @@ class TestLeastCongestedRouting:
         # Assert
         assert is_valid is True
 
-    def test_route_finds_least_congested_path(
-        self, least_congested: Any
-    ) -> None:
+    def test_route_finds_least_congested_path(self, least_congested: Any) -> None:
         """Test that route method finds path with least congested bottleneck link."""
         # Act
-        path = least_congested.route('A', 'C', request=None)
+        path = least_congested.route("A", "C", request=None)
 
         # Assert
         assert path is not None
-        assert path[0] == 'A'
-        assert path[-1] == 'C'
+        assert path[0] == "A"
+        assert path[-1] == "C"
 
-    def test_route_with_no_path_returns_none(
-        self, least_congested: Any
-    ) -> None:
+    def test_route_with_no_path_returns_none(self, least_congested: Any) -> None:
         """Test that route returns None when no path exists."""
         # Act
-        path = least_congested.route('A', 'Z', request=None)
+        path = least_congested.route("A", "Z", request=None)
 
         # Assert
         assert path is None
 
-    def test_route_updates_metrics(
-        self, least_congested: Any
-    ) -> None:
+    def test_route_updates_metrics(self, least_congested: Any) -> None:
         """Test that route method updates internal metrics."""
         # Arrange
         initial_count = least_congested._path_count
 
         # Act
-        least_congested.route('A', 'C', request=None)
+        least_congested.route("A", "C", request=None)
 
         # Assert
         assert least_congested._path_count == initial_count + 1
@@ -170,7 +143,7 @@ class TestLeastCongestedRouting:
     ) -> None:
         """Test that find most congested link identifies the bottleneck."""
         # Arrange
-        path_list = ['A', 'B', 'C']
+        path_list = ["A", "B", "C"]
 
         # Act
         least_congested._find_most_cong_link(path_list)
@@ -178,8 +151,8 @@ class TestLeastCongestedRouting:
         # Assert
         assert len(least_congested.route_props.paths_matrix) == 1
         path_data = least_congested.route_props.paths_matrix[0]
-        assert 'path_list' in path_data
-        assert 'link_dict' in path_data
+        assert "path_list" in path_data
+        assert "link_dict" in path_data
 
     def test_select_least_congested_sorts_by_free_slots(
         self, least_congested: Any
@@ -187,8 +160,11 @@ class TestLeastCongestedRouting:
         """Test that select least congested sorts paths by free slots."""
         # Arrange
         least_congested.route_props.paths_matrix = [
-            {'path_list': ['A', 'C'], 'link_dict': {'link': {}, 'free_slots': 100}},
-            {'path_list': ['A', 'B', 'C'], 'link_dict': {'link': {}, 'free_slots': 200}}
+            {"path_list": ["A", "C"], "link_dict": {"link": {}, "free_slots": 100}},
+            {
+                "path_list": ["A", "B", "C"],
+                "link_dict": {"link": {}, "free_slots": 200},
+            },
         ]
 
         # Act
@@ -197,14 +173,12 @@ class TestLeastCongestedRouting:
         # Assert
         # Best path should have most free slots (200)
         best_path = least_congested.route_props.paths_matrix[0]
-        assert best_path['link_dict']['free_slots'] == 200
+        assert best_path["link_dict"]["free_slots"] == 200
 
-    def test_get_paths_returns_best_path(
-        self, least_congested: Any
-    ) -> None:
+    def test_get_paths_returns_best_path(self, least_congested: Any) -> None:
         """Test that get_paths returns the best path."""
         # Act
-        paths = least_congested.get_paths('A', 'C', k=1)
+        paths = least_congested.get_paths("A", "C", k=1)
 
         # Assert
         assert isinstance(paths, list)
@@ -222,23 +196,21 @@ class TestLeastCongestedRouting:
     ) -> None:
         """Test that get_metrics returns performance statistics."""
         # Arrange
-        least_congested.route('A', 'C', request=None)
+        least_congested.route("A", "C", request=None)
 
         # Act
         metrics = least_congested.get_metrics()
 
         # Assert
-        assert 'algorithm' in metrics
-        assert metrics['algorithm'] == 'least_congested'
-        assert 'paths_computed' in metrics
-        assert 'average_congestion' in metrics
+        assert "algorithm" in metrics
+        assert metrics["algorithm"] == "least_congested"
+        assert "paths_computed" in metrics
+        assert "average_congestion" in metrics
 
-    def test_reset_clears_algorithm_state(
-        self, least_congested: Any
-    ) -> None:
+    def test_reset_clears_algorithm_state(self, least_congested: Any) -> None:
         """Test that reset clears internal state counters."""
         # Arrange
-        least_congested.route('A', 'C', request=None)
+        least_congested.route("A", "C", request=None)
         assert least_congested._path_count > 0
 
         # Act
@@ -253,7 +225,7 @@ class TestLeastCongestedRouting:
     ) -> None:
         """Test path congestion calculation returns valid metric."""
         # Arrange
-        path = ['A', 'B', 'C']
+        path = ["A", "B", "C"]
 
         # Act
         congestion = least_congested._calculate_path_congestion(path)

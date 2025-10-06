@@ -5,7 +5,7 @@ on:
     types:
       - opened
       - edited
-      - reopened  
+      - reopened
       - synchronize
   pull_request_target:
     types:
@@ -49,29 +49,29 @@ jobs:
         run: |
           #!/bin/bash
           set -e
-          
+
           echo "=== Custom Commit Message Validation ==="
-          
+
           # Enhanced validation for conventional commits
           # Allow detailed commit bodies while enforcing subject line format
           validate_commit() {
             local commit_sha="$1"
             local subject_line="$2"
-            
+
             # Check if this is a merge commit - these have different rules
             local MERGE_PATTERN='^Merge (branch|pull request|remote-tracking branch)'
             if echo "$subject_line" | grep -qE "$MERGE_PATTERN"; then
               return 0  # Pass silently for merge commits
             fi
-            
+
             # Pattern for conventional commit subject line
             # - Type is required
-            # - Scope is optional  
+            # - Scope is optional
             # - Description must be at least 5 chars, max 100 for entire subject line
             # - Use imperative mood (no period at end)
             # - Allow upper or lowercase start (for acronyms like CLI, API, etc.)
             local SUBJECT_PATTERN='^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\(.+\))?: [a-zA-Z].{4,}[^.]$'
-            
+
             # Check subject line length (entire line should be <= 100 chars)
             if [ ${#subject_line} -gt 100 ]; then
               echo "❌ COMMIT $commit_sha FAILED:"
@@ -80,7 +80,7 @@ jobs:
               echo ""
               return 1
             fi
-            
+
             # Check subject line format
             if echo "$subject_line" | grep -qE "$SUBJECT_PATTERN"; then
               return 0  # Pass silently
@@ -92,20 +92,20 @@ jobs:
               return 1
             fi
           }
-          
+
           # Get commits to validate
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "Validating latest commit in PR: ${{ github.event.pull_request.head.sha }}"
             echo ""
-            
+
             # Only validate the latest commit (HEAD of the PR branch)
             commit_sha="${{ github.event.pull_request.head.sha }}"
             commit_msg=$(git log --format="%s" -n 1 "$commit_sha")
-            
+
             echo "Latest commit: $commit_sha"
             echo "Message: '$commit_msg'"
             echo ""
-            
+
             if validate_commit "$commit_sha" "$commit_msg"; then
               echo "✅ Latest commit message is valid!"
             else
@@ -117,7 +117,7 @@ jobs:
               echo ""
               echo "🏷️ Valid Types:"
               echo "• feat     - New feature"
-              echo "• fix      - Bug fix"  
+              echo "• fix      - Bug fix"
               echo "• docs     - Documentation changes"
               echo "• style    - Code style changes (formatting, etc.)"
               echo "• refactor - Code refactoring"
@@ -151,11 +151,10 @@ jobs:
             echo "Validating push commit"
             commit_sha=$(git rev-parse HEAD)
             commit_msg=$(git log --format="%s" -n 1 HEAD)
-            
+
             if validate_commit "$commit_sha" "$commit_msg"; then
               echo "✅ Commit message is valid!"
             else
               exit 1
             fi
           fi
-

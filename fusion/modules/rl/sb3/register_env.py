@@ -84,17 +84,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Register custom Gymnasium environment with StableBaselines3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Example: python register_env.py --algo PPO --env-name SimEnv"
+        epilog="Example: python register_env.py --algo PPO --env-name SimEnv",
     )
     parser.add_argument(
         "--algo",
         required=True,
-        help="Algorithm name for configuration file (e.g., PPO, DQN)"
+        help="Algorithm name for configuration file (e.g., PPO, DQN)",
     )
     parser.add_argument(
         "--env-name",
         required=True,
-        help="Environment class name to register (e.g., SimEnv)"
+        help="Environment class name to register (e.g., SimEnv)",
     )
     args = parser.parse_args()
 
@@ -104,8 +104,7 @@ def main() -> None:
         register(
             id=args.env_name,
             entry_point=(
-                f"reinforcement_learning.gymnasium_envs.general_sim_env:"
-                f"{args.env_name}"
+                f"reinforcement_learning.gymnasium_envs.general_sim_env:{args.env_name}"
             ),
         )
 
@@ -126,5 +125,5 @@ def main() -> None:
         raise RuntimeError(f"Failed to register environment: {exc}") from exc
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

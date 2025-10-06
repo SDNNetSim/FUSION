@@ -34,19 +34,20 @@ class TestSchemaValidator:
     def setup_method(self) -> None:
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
-        self.schema_dir = os.path.join(self.temp_dir, 'schemas')
+        self.schema_dir = os.path.join(self.temp_dir, "schemas")
         os.makedirs(self.schema_dir)
 
     def teardown_method(self) -> None:
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir)
 
     def test_init_with_default_schema_dir(self) -> None:
         """Test SchemaValidator initialization with default schema directory."""
         validator = SchemaValidator()
 
-        assert validator.schema_dir.endswith('schemas')
+        assert validator.schema_dir.endswith("schemas")
         assert isinstance(validator.schemas, dict)
 
     def test_init_with_custom_schema_dir(self) -> None:
@@ -65,50 +66,40 @@ class TestSchemaValidator:
     def test_load_schemas_with_valid_json(self) -> None:
         """Test loading schemas with valid JSON files."""
         # Create test schema files
-        schema1 = {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"}
-            }
-        }
-        schema2 = {
-            "type": "object",
-            "properties": {
-                "value": {"type": "number"}
-            }
-        }
+        schema1 = {"type": "object", "properties": {"name": {"type": "string"}}}
+        schema2 = {"type": "object", "properties": {"value": {"type": "number"}}}
 
-        schema1_path = os.path.join(self.schema_dir, 'schema1.json')
-        schema2_path = os.path.join(self.schema_dir, 'schema2.json')
+        schema1_path = os.path.join(self.schema_dir, "schema1.json")
+        schema2_path = os.path.join(self.schema_dir, "schema2.json")
 
-        with open(schema1_path, 'w') as f:
+        with open(schema1_path, "w") as f:
             json.dump(schema1, f)
-        with open(schema2_path, 'w') as f:
+        with open(schema2_path, "w") as f:
             json.dump(schema2, f)
 
         validator = SchemaValidator(self.schema_dir)
 
-        assert 'schema1' in validator.schemas
-        assert 'schema2' in validator.schemas
-        assert validator.schemas['schema1'] == schema1
-        assert validator.schemas['schema2'] == schema2
+        assert "schema1" in validator.schemas
+        assert "schema2" in validator.schemas
+        assert validator.schemas["schema1"] == schema1
+        assert validator.schemas["schema2"] == schema2
 
     def test_load_schemas_invalid_json(self) -> None:
         """Test loading schemas with invalid JSON files."""
         # Create invalid JSON file
-        invalid_schema_path = os.path.join(self.schema_dir, 'invalid.json')
-        with open(invalid_schema_path, 'w') as f:
+        invalid_schema_path = os.path.join(self.schema_dir, "invalid.json")
+        with open(invalid_schema_path, "w") as f:
             f.write('{"invalid": json}')
 
-        with patch('fusion.configs.validate.logger') as mock_logger:
+        with patch("fusion.configs.validate.logger") as mock_logger:
             validator = SchemaValidator(self.schema_dir)
 
-            assert 'invalid' not in validator.schemas
+            assert "invalid" not in validator.schemas
             mock_logger.warning.assert_called()
 
     def test_load_schemas_nonexistent_directory(self) -> None:
         """Test loading schemas from non-existent directory."""
-        nonexistent_dir = os.path.join(self.temp_dir, 'nonexistent')
+        nonexistent_dir = os.path.join(self.temp_dir, "nonexistent")
         validator = SchemaValidator(nonexistent_dir)
 
         assert validator.schemas == {}
@@ -117,42 +108,37 @@ class TestSchemaValidator:
         """Test successful configuration validation."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "age": {"type": "number"}
-            },
-            "required": ["name"]
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
+            "required": ["name"],
         }
 
-        schema_path = os.path.join(self.schema_dir, 'test.json')
-        with open(schema_path, 'w') as f:
+        schema_path = os.path.join(self.schema_dir, "test.json")
+        with open(schema_path, "w") as f:
             json.dump(schema, f)
 
         validator = SchemaValidator(self.schema_dir)
         config = {"name": "test", "age": 25}
 
         # Should not raise any exception
-        validator.validate(config, 'test')
+        validator.validate(config, "test")
 
     def test_validate_failure(self) -> None:
         """Test configuration validation failure."""
         schema = {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"}
-            },
-            "required": ["name"]
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
         }
 
-        schema_path = os.path.join(self.schema_dir, 'test.json')
-        with open(schema_path, 'w') as f:
+        schema_path = os.path.join(self.schema_dir, "test.json")
+        with open(schema_path, "w") as f:
             json.dump(schema, f)
 
         validator = SchemaValidator(self.schema_dir)
         config = {"age": 25}  # Missing required "name" field
 
         with pytest.raises(ValidationError) as exc_info:
-            validator.validate(config, 'test')
+            validator.validate(config, "test")
 
         assert "Configuration validation failed" in str(exc_info.value)
 
@@ -161,9 +147,9 @@ class TestSchemaValidator:
         validator = SchemaValidator(self.schema_dir)
         config = {"name": "test"}
 
-        with patch('fusion.configs.validate.logger') as mock_logger:
+        with patch("fusion.configs.validate.logger") as mock_logger:
             # Should not raise exception, just log warning
-            validator.validate(config, 'nonexistent')
+            validator.validate(config, "nonexistent")
 
             mock_logger.warning.assert_called_with(
                 "Schema 'nonexistent' not found, skipping validation"
@@ -329,56 +315,52 @@ class TestSchemaValidator:
                     "type": "object",
                     "properties": {
                         "name": {"type": "string"},
-                        "age": {"type": "number"}
+                        "age": {"type": "number"},
                     },
-                    "required": ["name"]
+                    "required": ["name"],
                 }
-            }
+            },
         }
 
-        schema_path = os.path.join(self.schema_dir, 'nested.json')
-        with open(schema_path, 'w') as f:
+        schema_path = os.path.join(self.schema_dir, "nested.json")
+        with open(schema_path, "w") as f:
             json.dump(schema, f)
 
         validator = SchemaValidator(self.schema_dir)
 
         # Valid nested object
         config = {"user": {"name": "John", "age": 30}}
-        validator.validate(config, 'nested')  # Should not raise
+        validator.validate(config, "nested")  # Should not raise
 
         # Invalid nested object
         config = {"user": {"age": 30}}  # Missing required "name"
         with pytest.raises(ValidationError):
-            validator.validate(config, 'nested')
+            validator.validate(config, "nested")
 
     def test_validate_recursive_array_items(self) -> None:
         """Test recursive validation of array items."""
         schema = {
             "type": "object",
-            "properties": {
-                "numbers": {
-                    "type": "array",
-                    "items": {"type": "number"}
-                }
-            }
+            "properties": {"numbers": {"type": "array", "items": {"type": "number"}}},
         }
 
-        schema_path = os.path.join(self.schema_dir, 'array.json')
-        with open(schema_path, 'w') as f:
+        schema_path = os.path.join(self.schema_dir, "array.json")
+        with open(schema_path, "w") as f:
             json.dump(schema, f)
 
         validator = SchemaValidator(self.schema_dir)
 
         # Valid array
         config = {"numbers": [1, 2, 3.5]}
-        validator.validate(config, 'array')  # Should not raise
+        validator.validate(config, "array")  # Should not raise
 
         # Invalid array items - contains string which violates number schema
         from typing import Any
+
         invalid_numbers: list[Any] = [1, "two", 3.0]
         config = {"numbers": invalid_numbers}
         with pytest.raises(ValidationError):
-            validator.validate(config, 'array')
+            validator.validate(config, "array")
 
     def test_get_default_config_success(self) -> None:
         """Test generating default configuration from schema."""
@@ -387,25 +369,25 @@ class TestSchemaValidator:
             "properties": {
                 "name": {"type": "string", "default": "default_name"},
                 "age": {"type": "number", "default": 0},
-                "active": {"type": "boolean", "default": True}
-            }
+                "active": {"type": "boolean", "default": True},
+            },
         }
 
-        schema_path = os.path.join(self.schema_dir, 'defaults.json')
-        with open(schema_path, 'w') as f:
+        schema_path = os.path.join(self.schema_dir, "defaults.json")
+        with open(schema_path, "w") as f:
             json.dump(schema, f)
 
         validator = SchemaValidator(self.schema_dir)
-        defaults = validator.get_default_config('defaults')
+        defaults = validator.get_default_config("defaults")
 
-        assert defaults['name'] == "default_name"
-        assert defaults['age'] == 0
-        assert defaults['active'] is True
+        assert defaults["name"] == "default_name"
+        assert defaults["age"] == 0
+        assert defaults["active"] is True
 
     def test_get_default_config_schema_not_found(self) -> None:
         """Test getting default config for non-existent schema."""
         validator = SchemaValidator(self.schema_dir)
-        defaults = validator.get_default_config('nonexistent')
+        defaults = validator.get_default_config("nonexistent")
 
         assert defaults == {}
 
@@ -440,25 +422,19 @@ class TestSchemaValidator:
         schema = {
             "type": "object",
             "properties": {
-                "user": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string"}
-                    }
-                }
-            }
+                "user": {"type": "object", "properties": {"name": {"type": "string"}}}
+            },
         }
 
-        schema_path = os.path.join(self.schema_dir, 'paths.json')
-        with open(schema_path, 'w') as f:
+        schema_path = os.path.join(self.schema_dir, "paths.json")
+        with open(schema_path, "w") as f:
             json.dump(schema, f)
 
         validator = SchemaValidator(self.schema_dir)
         config = {"user": {"name": 123}}  # Wrong type for name
 
         with pytest.raises(ValidationError) as exc_info:
-            validator.validate(config, 'paths')
+            validator.validate(config, "paths")
 
         error_message = str(exc_info.value)
         assert "user.name" in error_message
-

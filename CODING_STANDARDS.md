@@ -101,7 +101,7 @@ __version__ = "1.0.0"
 # Public API - explicitly define what's exported
 __all__ = [
     "MainClass",
-    "primary_function", 
+    "primary_function",
     "CustomError",
     "ValidationError",
     "DEFAULT_CONFIG",
@@ -121,14 +121,14 @@ __all__ = [
 # Example registry.py
 class ComponentRegistry:
     """Registry for component discovery and instantiation."""
-    
+
     _components = {}
-    
+
     @classmethod
     def register(cls, name: str, component_class):
         """Register a component class."""
         cls._components[name] = component_class
-    
+
     @classmethod
     def get_component(cls, name: str):
         """Get registered component by name."""
@@ -181,7 +181,7 @@ from .helpers import normalize_path, get_timestamp
 
 __all__ = [
     "load_config", "save_data",
-    "validate_input", "check_format", 
+    "validate_input", "check_format",
     "normalize_path", "get_timestamp",
 ]
 ```
@@ -190,9 +190,9 @@ __all__ = [
 ```python
 class ExampleClass:
     """Docstring."""
-    
+
     CLASS_CONSTANT = "value"    # Class variables
-    
+
     def __init__(self): pass    # Constructor
     def public_method(self): pass    # Public methods
     @classmethod
@@ -265,46 +265,46 @@ if not output_file.parent.exists():
 # fusion/core/state_wrapper.py
 class StateWrapper:
     """Minimal wrapper that preserves dict interface but adds safety."""
-    
+
     def __init__(self, data: dict, name: str = "state"):
         self._data = data
         self._name = name
         self._original = data.copy()  # Keep original for debugging
         self._frozen = False
         self._log_mutations = False
-    
+
     def __getitem__(self, key):
         return self._data[key]
-    
+
     def __setitem__(self, key, value):
         if self._frozen:
             raise RuntimeError(f"Cannot modify frozen state: {self._name}")
-        
+
         if self._log_mutations:
             old_value = self._data.get(key, "<missing>")
             print(f"[{self._name}] {key}: {old_value} -> {value}")
-        
+
         self._data[key] = value
-    
+
     def __contains__(self, key):
         return key in self._data
-    
+
     def get(self, key, default=None):
         return self._data.get(key, default)
-    
+
     def freeze(self):
         """Temporarily prevent mutations during critical sections."""
         self._frozen = True
-    
+
     def unfreeze(self):
         """Allow mutations again."""
         self._frozen = False
-    
+
     def get_changes(self):
         """See what changed since initialization."""
         return {k: v for k, v in self._data.items()
                 if k not in self._original or self._original[k] != v}
-    
+
     # Make it dict-like
     def __getattr__(self, name):
         return getattr(self._data, name)
@@ -316,7 +316,7 @@ class StateWrapper:
 def __init__(self, engine_props: dict):
     # Wrap mutable state for safety
     self.engine_props = StateWrapper(engine_props, "engine_props")
-    
+
     # Enable mutation logging during development
     if DEBUG_MODE:
         self.engine_props._log_mutations = True
@@ -389,7 +389,7 @@ except Exception as e:  # Too broad
 ```python
 def load_configuration(config_path: str) -> Dict[str, Any]:
     """Load and parse configuration file.
-    
+
     :param config_path: Path to configuration file
     :type config_path: str
     :return: Parsed configuration data

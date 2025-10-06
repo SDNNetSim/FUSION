@@ -269,9 +269,9 @@ class TestLoadConfig:
         self,
         mock_resolve: Any,
         mock_read: Any,
-        mock_validate: Any,
-        mock_process_req: Any,
-        mock_process_opt: Any,
+        _mock_validate: Any,
+        _mock_process_req: Any,
+        _mock_process_opt: Any,
         temp_config_file: Any,
         sample_args_dict: dict[str, Any],
     ) -> None:
@@ -304,9 +304,9 @@ class TestLoadConfig:
         self,
         mock_resolve: Any,
         mock_read: Any,
-        mock_validate: Any,
-        mock_process_req: Any,
-        mock_process_opt: Any,
+        _mock_validate: Any,
+        _mock_process_req: Any,
+        _mock_process_opt: Any,
         mock_setup_threads: Any,
         multi_thread_config_file: Any,
         sample_args_dict: dict[str, Any],
@@ -346,9 +346,7 @@ class TestSetupThreads:
         section_list = ["s2"]
         types_dict = {"sim": {"simulation_time": int}}
 
-        result = _setup_threads(
-            config, config_dict, section_list, types_dict, {}, {}
-        )
+        result = _setup_threads(config, config_dict, section_list, types_dict, {}, {})
 
         assert "s2" in result
         assert result["s2"]["run_id"] == "default"

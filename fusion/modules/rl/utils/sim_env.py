@@ -365,7 +365,12 @@ class SimEnvObs:
         slots_needed_list = []
         mod_bw_dict = self.sim_env.engine_obj.engine_props["mod_per_bw"]
         for mod_format in route_props.modulation_formats_matrix:
-            if not mod_format[0]:
+            # Check for invalid modulation formats (False, None, empty, etc.)
+            if (
+                not mod_format[0]
+                or mod_format[0] is False
+                or mod_format[0] not in mod_bw_dict.get(bandwidth, {})
+            ):
                 slots_needed = -1
             else:
                 slots_needed = mod_bw_dict[bandwidth][mod_format[0]]["slots_needed"]

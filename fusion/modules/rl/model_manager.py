@@ -42,7 +42,8 @@ def _parse_policy_kwargs(string: str) -> dict[str, Any]:
     """
     safe_globals = {"__builtins__": None, "dict": dict, "nn": nn}
     try:
-        result = eval(string, safe_globals, {})  # pylint: disable=eval-used
+        # eval is safe here with restricted globals - only dict and nn allowed
+        result = eval(string, safe_globals, {})  # nosec B307 # pylint: disable=eval-used
         if not isinstance(result, dict):
             raise RLConfigurationError(f"Expected dict, got {type(result).__name__}")
         return result
@@ -55,10 +56,7 @@ def _parse_policy_kwargs(string: str) -> dict[str, Any]:
 
 
 def get_model(
-    sim_dict: dict[str, Any],
-    device: str,
-    env: Any,
-    yaml_dict: dict[str, Any] | None
+    sim_dict: dict[str, Any], device: str, env: Any, yaml_dict: dict[str, Any] | None
 ) -> tuple[Any, dict[str, Any]]:
     """
     Build and return a Stable-Baselines3 model with configuration.
@@ -96,7 +94,8 @@ def get_model(
         parameters = yaml_dict
     cache_file_path = CACHE_DIR / f"{sim_dict['network']}.pt"
     if os.path.exists(cache_file_path):
-        cached = torch.load(cache_file_path)
+        # Loading trusted model checkpoint from local cache
+        cached = torch.load(cache_file_path)  # nosec B614
         policy_kwargs_raw = parameters.get("policy_kwargs", {})
         if isinstance(policy_kwargs_raw, str):
             policy_kwargs = _parse_policy_kwargs(policy_kwargs_raw)

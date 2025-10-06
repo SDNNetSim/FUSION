@@ -220,12 +220,10 @@ class ArgumentRegistry:
         """
         parser = argparse.ArgumentParser(
             description="FUSION Simulator CLI",
-            formatter_class=argparse.RawDescriptionHelpFormatter
+            formatter_class=argparse.RawDescriptionHelpFormatter,
         )
         subparsers = parser.add_subparsers(
-            dest="mode",
-            required=True,
-            help="Available simulation modes"
+            dest="mode", required=True, help="Available simulation modes"
         )
 
         for _, register_func in self._subcommand_parsers.items():

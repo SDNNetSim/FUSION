@@ -19,9 +19,9 @@ logger = get_logger(__name__)
 
 
 def extract_ml_features(
-        request_dict: dict[str, Any],
-        engine_properties: dict[str, Any],
-        sdn_properties: object
+    request_dict: dict[str, Any],
+    engine_properties: dict[str, Any],
+    sdn_properties: object,
 ) -> pd.DataFrame:
     """
     Extract machine learning features from a network request.
@@ -46,37 +46,35 @@ def extract_ml_features(
     """
     # Calculate path metrics
     path_length_km = find_path_len(
-        path_list=getattr(sdn_properties, 'path_list', []),
-        topology=engine_properties['topology']
+        path_list=getattr(sdn_properties, "path_list", []),
+        topology=engine_properties["topology"],
     )
 
     # Calculate congestion across all cores
     congestion_metrics = _calculate_congestion_metrics(
-        engine_properties=engine_properties,
-        sdn_properties=sdn_properties
+        engine_properties=engine_properties, sdn_properties=sdn_properties
     )
 
     # Build feature dictionary
     feature_dict = {
-        'old_bandwidth': request_dict['bandwidth'],
-        'path_length': path_length_km,
-        'longest_reach': request_dict['mod_formats']['QPSK']['max_length'],
-        'ave_cong': congestion_metrics['average'],
+        "old_bandwidth": request_dict["bandwidth"],
+        "path_length": path_length_km,
+        "longest_reach": request_dict["mod_formats"]["QPSK"]["max_length"],
+        "ave_cong": congestion_metrics["average"],
     }
 
     # Convert to properly formatted DataFrame
     formatted_features = _format_features_for_prediction(
         feature_dict=feature_dict,
         engine_properties=engine_properties,
-        sdn_properties=sdn_properties
+        sdn_properties=sdn_properties,
     )
 
     return formatted_features
 
 
 def _calculate_congestion_metrics(
-        engine_properties: dict[str, Any],
-        sdn_properties: object
+    engine_properties: dict[str, Any], sdn_properties: object
 ) -> dict[str, float]:
     """
     Calculate congestion metrics across all cores.
@@ -90,31 +88,34 @@ def _calculate_congestion_metrics(
     """
     congestion_array = np.array([])
 
-    for core_number in range(engine_properties['cores_per_link']):
+    for core_number in range(engine_properties["cores_per_link"]):
         current_congestion = find_core_congestion(
             core_index=core_number,
-            network_spectrum=getattr(sdn_properties, 'network_spectrum', {}),
-            path_list=getattr(sdn_properties, 'path_list', [])
+            network_spectrum=getattr(sdn_properties, "network_spectrum", {}),
+            path_list=getattr(sdn_properties, "path_list", []),
         )
         congestion_array = np.append(congestion_array, current_congestion)
 
     congestion_metrics = {
-        'average': float(np.mean(congestion_array)),
-        'max': float(np.max(congestion_array)) if len(congestion_array) > 0 else 0.0,
-        'min': float(np.min(congestion_array)) if len(congestion_array) > 0 else 0.0,
-        'std': float(np.std(congestion_array)) if len(congestion_array) > 1 else 0.0
+        "average": float(np.mean(congestion_array)),
+        "max": float(np.max(congestion_array)) if len(congestion_array) > 0 else 0.0,
+        "min": float(np.min(congestion_array)) if len(congestion_array) > 0 else 0.0,
+        "std": float(np.std(congestion_array)) if len(congestion_array) > 1 else 0.0,
     }
 
-    logger.debug("Calculated congestion metrics: avg=%.3f, max=%.3f",
-                 congestion_metrics['average'], congestion_metrics['max'])
+    logger.debug(
+        "Calculated congestion metrics: avg=%.3f, max=%.3f",
+        congestion_metrics["average"],
+        congestion_metrics["max"],
+    )
 
     return congestion_metrics
 
 
 def _format_features_for_prediction(
-        feature_dict: dict[str, Any],
-        engine_properties: dict[str, Any],
-        sdn_properties: object
+    feature_dict: dict[str, Any],
+    engine_properties: dict[str, Any],
+    sdn_properties: object,
 ) -> pd.DataFrame:
     """
     Format raw features into the structure expected by ML models.
@@ -134,7 +135,7 @@ def _format_features_for_prediction(
     features_df = pd.DataFrame(feature_dict, index=[0])
 
     # One-hot encode bandwidth
-    features_df = pd.get_dummies(features_df, columns=['old_bandwidth'])
+    features_df = pd.get_dummies(features_df, columns=["old_bandwidth"])
 
     # Convert boolean columns to integers
     for column in features_df.columns:
@@ -142,11 +143,13 @@ def _format_features_for_prediction(
             features_df[column] = features_df[column].astype(int)
 
     # Ensure all expected bandwidth columns exist
-    for bandwidth, percentage in engine_properties['request_distribution'].items():
+    for bandwidth, percentage in engine_properties["request_distribution"].items():
         if percentage > 0:
-            column_name = f'old_bandwidth_{bandwidth}'
-            if (bandwidth != getattr(sdn_properties, 'bandwidth', None) and
-                    column_name not in features_df.columns):
+            column_name = f"old_bandwidth_{bandwidth}"
+            if (
+                bandwidth != getattr(sdn_properties, "bandwidth", None)
+                and column_name not in features_df.columns
+            ):
                 features_df[column_name] = 0
 
     # Reindex to expected columns
@@ -156,8 +159,7 @@ def _format_features_for_prediction(
 
 
 def create_interaction_features(
-        features: pd.DataFrame,
-        interactions: list[tuple[str, str]] | None = None
+    features: pd.DataFrame, interactions: list[tuple[str, str]] | None = None
 ) -> pd.DataFrame:
     """
     Create interaction features between existing features.
@@ -179,8 +181,8 @@ def create_interaction_features(
     if interactions is None:
         # Default interactions that often improve model performance
         interactions = [
-            ('path_length', 'ave_cong'),  # Length-congestion interaction
-            ('path_length', 'longest_reach'),  # Length-reach constraint
+            ("path_length", "ave_cong"),  # Length-congestion interaction
+            ("path_length", "longest_reach"),  # Length-reach constraint
         ]
 
     features_with_interactions = features.copy()
@@ -189,7 +191,7 @@ def create_interaction_features(
         if feature1 in features.columns and feature2 in features.columns:
             interaction_name = f"{feature1}_x_{feature2}"
             features_with_interactions[interaction_name] = (
-                    features[feature1] * features[feature2]
+                features[feature1] * features[feature2]
             )
             logger.debug("Created interaction feature: %s", interaction_name)
 
@@ -197,9 +199,7 @@ def create_interaction_features(
 
 
 def create_polynomial_features(
-        features: pd.DataFrame,
-        degree: int = 2,
-        include_bias: bool = False
+    features: pd.DataFrame, degree: int = 2, include_bias: bool = False
 ) -> pd.DataFrame:
     """
     Create polynomial features up to specified degree.
@@ -225,22 +225,20 @@ def create_polynomial_features(
 
     # Create DataFrame with new features
     poly_features = pd.DataFrame(
-        poly_array,
-        columns=feature_names,
-        index=features.index
+        poly_array, columns=feature_names, index=features.index
     )
 
     logger.info(
         "Created polynomial features: %d -> %d features",
-        features.shape[1], poly_features.shape[1]
+        features.shape[1],
+        poly_features.shape[1],
     )
 
     return poly_features
 
 
 def engineer_network_features(
-        request_dict: dict[str, Any],
-        network_state: dict[str, Any]
+    request_dict: dict[str, Any], network_state: dict[str, Any]
 ) -> dict[str, float]:
     """
     Engineer advanced network-specific features.
@@ -263,35 +261,37 @@ def engineer_network_features(
     engineered_features = {}
 
     # Path diversity features
-    if 'alternative_paths' in network_state:
-        engineered_features['path_diversity'] = float(
-            len(network_state['alternative_paths'])
+    if "alternative_paths" in network_state:
+        engineered_features["path_diversity"] = float(
+            len(network_state["alternative_paths"])
         )
-        engineered_features['avg_alternative_length'] = float(np.mean([
-            len(path) for path in network_state['alternative_paths']
-        ])) if network_state['alternative_paths'] else 0.0
+        engineered_features["avg_alternative_length"] = (
+            float(np.mean([len(path) for path in network_state["alternative_paths"]]))
+            if network_state["alternative_paths"]
+            else 0.0
+        )
 
     # Bottleneck features
-    if 'link_utilization' in network_state:
-        utilization_values = list(network_state['link_utilization'].values())
-        engineered_features['max_link_utilization'] = float(
+    if "link_utilization" in network_state:
+        utilization_values = list(network_state["link_utilization"].values())
+        engineered_features["max_link_utilization"] = float(
             max(utilization_values) if utilization_values else 0.0
         )
-        engineered_features['utilization_variance'] = float(
+        engineered_features["utilization_variance"] = float(
             np.var(utilization_values) if len(utilization_values) > 1 else 0.0
         )
 
     # Temporal features (if available)
-    if 'time_of_day' in network_state:
-        hour = network_state['time_of_day']
-        engineered_features['is_peak_hour'] = float(8 <= hour <= 18)
-        engineered_features['hour_sin'] = float(np.sin(2 * np.pi * hour / 24))
-        engineered_features['hour_cos'] = float(np.cos(2 * np.pi * hour / 24))
+    if "time_of_day" in network_state:
+        hour = network_state["time_of_day"]
+        engineered_features["is_peak_hour"] = float(8 <= hour <= 18)
+        engineered_features["hour_sin"] = float(np.sin(2 * np.pi * hour / 24))
+        engineered_features["hour_cos"] = float(np.cos(2 * np.pi * hour / 24))
 
     # Request-specific features
-    if 'bandwidth' in request_dict:
-        engineered_features['bandwidth_category'] = _categorize_bandwidth(
-            request_dict['bandwidth']
+    if "bandwidth" in request_dict:
+        engineered_features["bandwidth_category"] = _categorize_bandwidth(
+            request_dict["bandwidth"]
         )
 
     return engineered_features

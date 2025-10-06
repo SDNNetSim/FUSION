@@ -1,6 +1,5 @@
 """Unit tests for fusion/sim/utils/formatting.py module."""
 
-
 from fusion.sim.utils.formatting import int_to_string, list_to_title, snake_to_title
 
 

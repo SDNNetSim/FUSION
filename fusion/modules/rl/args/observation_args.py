@@ -11,42 +11,54 @@ configurations used by RL agents for decision making.
 OBS_DICT: dict[str, list[str]] = {
     # Basic routing information only
     "obs_1": ["source", "destination"],
-
     # Routing with bandwidth requirement
     "obs_2": ["source", "destination", "request_bandwidth"],
-
     # Routing with time constraint
     "obs_3": ["source", "destination", "holding_time"],
-
     # Routing with bandwidth and time constraints
-    "obs_4": [
-        "source", "destination", "request_bandwidth", "holding_time"
-    ],
-
+    "obs_4": ["source", "destination", "request_bandwidth", "holding_time"],
     # Extended routing with path information
     "obs_5": [
-        "source", "destination", "request_bandwidth", "holding_time",
-        "slots_needed", "path_lengths"
+        "source",
+        "destination",
+        "request_bandwidth",
+        "holding_time",
+        "slots_needed",
+        "path_lengths",
     ],
-
     # Extended routing with congestion information
     # Note: 'paths_cong' maintained for backward compatibility
     "obs_6": [
-        "source", "destination", "request_bandwidth", "holding_time",
-        "slots_needed", "path_lengths", "paths_cong"
+        "source",
+        "destination",
+        "request_bandwidth",
+        "holding_time",
+        "slots_needed",
+        "path_lengths",
+        "paths_cong",
     ],
-
     # Full routing information with resource availability
     "obs_7": [
-        "source", "destination", "request_bandwidth", "holding_time",
-        "slots_needed", "path_lengths", "paths_cong", "available_slots"
+        "source",
+        "destination",
+        "request_bandwidth",
+        "holding_time",
+        "slots_needed",
+        "path_lengths",
+        "paths_cong",
+        "available_slots",
     ],
-
     # Complete observation space with feasibility indicator
     "obs_8": [
-        "source", "destination", "request_bandwidth", "holding_time",
-        "slots_needed", "path_lengths", "paths_cong", "available_slots",
-        "is_feasible"
+        "source",
+        "destination",
+        "request_bandwidth",
+        "holding_time",
+        "slots_needed",
+        "path_lengths",
+        "paths_cong",
+        "available_slots",
+        "is_feasible",
     ],
 }
 
@@ -63,5 +75,5 @@ VALID_OBSERVATION_FEATURES: set[str] = {
     "path_lengths",
     "paths_cong",  # Path congestion levels
     "available_slots",
-    "is_feasible"
+    "is_feasible",
 }

@@ -22,22 +22,22 @@ class TestSimulationConfig:
     def test_simulation_config_initialization(self) -> None:
         """Test SimulationConfig can be created with all sections."""
         config = SimulationConfig(
-            general={'holding_time': 10},
-            topology={'network': 'nsfnet'},
-            spectrum={'c_band': 1},
-            snr={'snr_type': 'gn'},
-            rl={'device': 'cpu'},
-            ml={'deploy_model': False},
-            file={'file_type': 'csv'}
+            general={"holding_time": 10},
+            topology={"network": "nsfnet"},
+            spectrum={"c_band": 1},
+            snr={"snr_type": "gn"},
+            rl={"device": "cpu"},
+            ml={"deploy_model": False},
+            file={"file_type": "csv"},
         )
 
-        assert config.general == {'holding_time': 10}
-        assert config.topology == {'network': 'nsfnet'}
-        assert config.spectrum == {'c_band': 1}
-        assert config.snr == {'snr_type': 'gn'}
-        assert config.rl == {'device': 'cpu'}
-        assert config.ml == {'deploy_model': False}
-        assert config.file == {'file_type': 'csv'}
+        assert config.general == {"holding_time": 10}
+        assert config.topology == {"network": "nsfnet"}
+        assert config.spectrum == {"c_band": 1}
+        assert config.snr == {"snr_type": "gn"}
+        assert config.rl == {"device": "cpu"}
+        assert config.ml == {"deploy_model": False}
+        assert config.file == {"file_type": "csv"}
 
 
 class TestConfigManager:
@@ -61,12 +61,12 @@ class TestConfigManager:
 
     def test_init_with_existing_config_path(self) -> None:
         """Test ConfigManager initialization with existing config file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
-            f.write('[general_settings]\nholding_time = 10\n')
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
+            f.write("[general_settings]\nholding_time = 10\n")
             config_path = f.name
 
         try:
-            with patch.object(ConfigManager, 'load_config') as mock_load:
+            with patch.object(ConfigManager, "load_config") as mock_load:
                 ConfigManager(config_path=config_path)
                 mock_load.assert_called_once_with(config_path)
         finally:
@@ -77,15 +77,15 @@ class TestConfigManager:
         manager = ConfigManager()
 
         with pytest.raises(ConfigFileNotFoundError) as exc_info:
-            manager.load_config('nonexistent.ini')
+            manager.load_config("nonexistent.ini")
 
-        assert 'Configuration file not found' in str(exc_info.value)
-        assert 'nonexistent.ini' in str(exc_info.value)
+        assert "Configuration file not found" in str(exc_info.value)
+        assert "nonexistent.ini" in str(exc_info.value)
 
     def test_load_config_unsupported_format(self) -> None:
         """Test loading configuration file with unsupported format."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-            f.write('some content')
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write("some content")
             config_path = f.name
 
         try:
@@ -94,7 +94,7 @@ class TestConfigManager:
             with pytest.raises(ConfigParseError) as exc_info:
                 manager.load_config(config_path)
 
-            assert 'Unsupported configuration file format' in str(exc_info.value)
+            assert "Unsupported configuration file format" in str(exc_info.value)
         finally:
             os.unlink(config_path)
 
@@ -109,7 +109,7 @@ num_requests = 100
 network = nsfnet
 cores_per_link = 1
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write(ini_content)
             config_path = f.name
 
@@ -118,11 +118,11 @@ cores_per_link = 1
             config = manager.load_config(config_path)
 
             assert isinstance(config, SimulationConfig)
-            assert config.general['holding_time'] == 10
-            assert config.general['thread_erlangs'] is True
-            assert config.general['num_requests'] == 100
-            assert config.topology['network'] == 'nsfnet'
-            assert config.topology['cores_per_link'] == 1
+            assert config.general["holding_time"] == 10
+            assert config.general["thread_erlangs"] is True
+            assert config.general["num_requests"] == 100
+            assert config.topology["network"] == "nsfnet"
+            assert config.topology["cores_per_link"] == 1
         finally:
             os.unlink(config_path)
 
@@ -133,7 +133,7 @@ request_distribution = {"uniform": 0.5, "poisson": 0.5}
 phi = [1, 2, 3]
 none_value = null
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write(ini_content)
             config_path = f.name
 
@@ -141,11 +141,12 @@ none_value = null
             manager = ConfigManager()
             config = manager.load_config(config_path)
 
-            assert config.general['request_distribution'] == {
-                "uniform": 0.5, "poisson": 0.5
+            assert config.general["request_distribution"] == {
+                "uniform": 0.5,
+                "poisson": 0.5,
             }
-            assert config.general['phi'] == [1, 2, 3]
-            assert config.general['none_value'] is None
+            assert config.general["phi"] == [1, 2, 3]
+            assert config.general["none_value"] is None
         finally:
             os.unlink(config_path)
 
@@ -153,10 +154,10 @@ none_value = null
         """Test successful loading of JSON configuration."""
         json_content = {
             "general_settings": {"holding_time": 10},
-            "topology_settings": {"network": "nsfnet"}
+            "topology_settings": {"network": "nsfnet"},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(json_content, f)
             config_path = f.name
 
@@ -164,14 +165,14 @@ none_value = null
             manager = ConfigManager()
             config = manager.load_config(config_path)
 
-            assert config.general['holding_time'] == 10
-            assert config.topology['network'] == 'nsfnet'
+            assert config.general["holding_time"] == 10
+            assert config.topology["network"] == "nsfnet"
         finally:
             os.unlink(config_path)
 
     def test_load_json_config_invalid(self) -> None:
         """Test loading invalid JSON configuration."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write('{"invalid": json}')
             config_path = f.name
 
@@ -181,46 +182,46 @@ none_value = null
             with pytest.raises(ConfigParseError) as exc_info:
                 manager.load_config(config_path)
 
-            assert 'Invalid JSON format' in str(exc_info.value)
+            assert "Invalid JSON format" in str(exc_info.value)
         finally:
             os.unlink(config_path)
 
-    @patch('fusion.configs.config.yaml')
+    @patch("fusion.configs.config.yaml")
     def test_load_yaml_config_success(self, mock_yaml: Mock) -> None:
         """Test successful loading of YAML configuration."""
         yaml_content = {
             "general_settings": {"holding_time": 10},
-            "topology_settings": {"network": "nsfnet"}
+            "topology_settings": {"network": "nsfnet"},
         }
         mock_yaml.safe_load.return_value = yaml_content
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            f.write('content')
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("content")
             config_path = f.name
 
         try:
             manager = ConfigManager()
             config = manager.load_config(config_path)
 
-            assert config.general['holding_time'] == 10
-            assert config.topology['network'] == 'nsfnet'
+            assert config.general["holding_time"] == 10
+            assert config.topology["network"] == "nsfnet"
         finally:
             os.unlink(config_path)
 
     def test_load_yaml_config_without_yaml_library(self) -> None:
         """Test loading YAML config when PyYAML is not available."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            f.write('content')
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("content")
             config_path = f.name
 
         try:
-            with patch('fusion.configs.config.yaml', None):
+            with patch("fusion.configs.config.yaml", None):
                 manager = ConfigManager()
 
                 with pytest.raises(ConfigParseError) as exc_info:
                     manager.load_config(config_path)
 
-                assert 'PyYAML is required' in str(exc_info.value)
+                assert "PyYAML is required" in str(exc_info.value)
         finally:
             os.unlink(config_path)
 
@@ -228,7 +229,7 @@ none_value = null
         """Test loading config with schema validation."""
         ini_content = "[general_settings]\nholding_time = 10\n"
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write(ini_content)
             config_path = f.name
 
@@ -247,7 +248,7 @@ none_value = null
         """Test config loading with schema validation failure."""
         ini_content = "[general_settings]\nholding_time = 10\n"
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             f.write(ini_content)
             config_path = f.name
 
@@ -260,7 +261,7 @@ none_value = null
             with pytest.raises(ConfigError) as exc_info:
                 manager.load_config(config_path)
 
-            assert 'Configuration validation failed' in str(exc_info.value)
+            assert "Configuration validation failed" in str(exc_info.value)
         finally:
             os.unlink(config_path)
 
@@ -288,27 +289,36 @@ none_value = null
         """Test getting routing module configuration."""
         manager = ConfigManager()
         manager._config = SimulationConfig(
-            general={'k_paths': 3},
-            topology={'network': 'nsfnet'},
-            spectrum={}, snr={}, rl={}, ml={}, file={}
+            general={"k_paths": 3},
+            topology={"network": "nsfnet"},
+            spectrum={},
+            snr={},
+            rl={},
+            ml={},
+            file={},
         )
 
-        result = manager.get_module_config('routing')
+        result = manager.get_module_config("routing")
 
-        assert result['k_paths'] == 3
-        assert result['network'] == 'nsfnet'
+        assert result["k_paths"] == 3
+        assert result["network"] == "nsfnet"
 
     def test_get_module_config_spectrum(self) -> None:
         """Test getting spectrum module configuration."""
         manager = ConfigManager()
         manager._config = SimulationConfig(
-            general={}, topology={}, spectrum={'c_band': 1},
-            snr={}, rl={}, ml={}, file={}
+            general={},
+            topology={},
+            spectrum={"c_band": 1},
+            snr={},
+            rl={},
+            ml={},
+            file={},
         )
 
-        result = manager.get_module_config('spectrum')
+        result = manager.get_module_config("spectrum")
 
-        assert result['c_band'] == 1
+        assert result["c_band"] == 1
 
     def test_get_module_config_unknown_module(self) -> None:
         """Test getting configuration for unknown module."""
@@ -317,7 +327,7 @@ none_value = null
             general={}, topology={}, spectrum={}, snr={}, rl={}, ml={}, file={}
         )
 
-        result = manager.get_module_config('unknown')
+        result = manager.get_module_config("unknown")
 
         assert result == {}
 
@@ -325,7 +335,7 @@ none_value = null
         """Test getting module configuration when no config is loaded."""
         manager = ConfigManager()
 
-        result = manager.get_module_config('spectrum')
+        result = manager.get_module_config("spectrum")
 
         assert result == {}
 
@@ -334,35 +344,38 @@ none_value = null
         manager = ConfigManager()
 
         with pytest.raises(ValueError) as exc_info:
-            manager.save_config('output.ini')
+            manager.save_config("output.ini")
 
-        assert 'No configuration loaded to save' in str(exc_info.value)
+        assert "No configuration loaded to save" in str(exc_info.value)
 
     def test_save_config_ini_format(self) -> None:
         """Test saving configuration in INI format."""
         manager = ConfigManager()
         manager._raw_config = {
-            'general_settings': {'holding_time': 10, 'complex_data': [1, 2, 3]},
-            'topology_settings': {'network': 'nsfnet'}
+            "general_settings": {"holding_time": 10, "complex_data": [1, 2, 3]},
+            "topology_settings": {"network": "nsfnet"},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as f:
             config_path = f.name
 
         try:
-            manager.save_config(config_path, 'ini')
+            manager.save_config(config_path, "ini")
 
             assert os.path.exists(config_path)
 
             # Verify content
             import configparser
+
             saved_config = configparser.ConfigParser()
             saved_config.read(config_path)
 
-            assert saved_config['general_settings']['holding_time'] == '10'
-            assert json.loads(
-                saved_config['general_settings']['complex_data']
-            ) == [1, 2, 3]
+            assert saved_config["general_settings"]["holding_time"] == "10"
+            assert json.loads(saved_config["general_settings"]["complex_data"]) == [
+                1,
+                2,
+                3,
+            ]
         finally:
             if os.path.exists(config_path):
                 os.unlink(config_path)
@@ -370,35 +383,35 @@ none_value = null
     def test_save_config_json_format(self) -> None:
         """Test saving configuration in JSON format."""
         manager = ConfigManager()
-        manager._raw_config = {'general_settings': {'holding_time': 10}}
+        manager._raw_config = {"general_settings": {"holding_time": 10}}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             config_path = f.name
 
         try:
-            manager.save_config(config_path, 'json')
+            manager.save_config(config_path, "json")
 
             assert os.path.exists(config_path)
 
             with open(config_path) as f:
                 saved_data = json.load(f)
 
-            assert saved_data['general_settings']['holding_time'] == 10
+            assert saved_data["general_settings"]["holding_time"] == 10
         finally:
             if os.path.exists(config_path):
                 os.unlink(config_path)
 
-    @patch('fusion.configs.config.yaml')
+    @patch("fusion.configs.config.yaml")
     def test_save_config_yaml_format(self, mock_yaml: Mock) -> None:
         """Test saving configuration in YAML format."""
         manager = ConfigManager()
-        manager._raw_config = {'general_settings': {'holding_time': 10}}
+        manager._raw_config = {"general_settings": {"holding_time": 10}}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             config_path = f.name
 
         try:
-            manager.save_config(config_path, 'yaml')
+            manager.save_config(config_path, "yaml")
 
             mock_yaml.dump.assert_called_once()
         finally:
@@ -408,66 +421,71 @@ none_value = null
     def test_save_config_yaml_without_library(self) -> None:
         """Test saving YAML config when PyYAML is not available."""
         manager = ConfigManager()
-        manager._raw_config = {'test': 'data'}
+        manager._raw_config = {"test": "data"}
 
-        with patch('fusion.configs.config.yaml', None):
+        with patch("fusion.configs.config.yaml", None):
             with pytest.raises(ConfigError) as exc_info:
-                manager.save_config('output.yaml', 'yaml')
+                manager.save_config("output.yaml", "yaml")
 
-            assert 'PyYAML is required' in str(exc_info.value)
+            assert "PyYAML is required" in str(exc_info.value)
 
     def test_save_config_unsupported_format(self) -> None:
         """Test saving configuration with unsupported format."""
         manager = ConfigManager()
-        manager._raw_config = {'test': 'data'}
+        manager._raw_config = {"test": "data"}
 
         with pytest.raises(ConfigError) as exc_info:
-            manager.save_config('output.txt', 'txt')
+            manager.save_config("output.txt", "txt")
 
-        assert 'Unsupported format' in str(exc_info.value)
+        assert "Unsupported format" in str(exc_info.value)
 
     def test_update_config_new_section(self) -> None:
         """Test updating configuration with new section."""
         manager = ConfigManager()
         manager._raw_config = {}
 
-        manager.update_config('new_section', 'key', 'value')
+        manager.update_config("new_section", "key", "value")
 
-        assert manager._raw_config['new_section']['key'] == 'value'
+        assert manager._raw_config["new_section"]["key"] == "value"
 
     def test_update_config_existing_section(self) -> None:
         """Test updating configuration in existing section."""
         manager = ConfigManager()
-        manager._raw_config = {'general_settings': {'old_key': 'old_value'}}
+        manager._raw_config = {"general_settings": {"old_key": "old_value"}}
         manager._config = SimulationConfig(
-            general={'old_key': 'old_value'}, topology={}, spectrum={},
-            snr={}, rl={}, ml={}, file={}
+            general={"old_key": "old_value"},
+            topology={},
+            spectrum={},
+            snr={},
+            rl={},
+            ml={},
+            file={},
         )
 
-        manager.update_config('general_settings', 'new_key', 'new_value')
+        manager.update_config("general_settings", "new_key", "new_value")
 
-        assert manager._raw_config['general_settings']['new_key'] == 'new_value'
-        assert manager._raw_config['general_settings']['old_key'] == 'old_value'
-        assert manager._config.general['new_key'] == 'new_value'
+        assert manager._raw_config["general_settings"]["new_key"] == "new_value"
+        assert manager._raw_config["general_settings"]["old_key"] == "old_value"
+        assert manager._config.general["new_key"] == "new_value"
 
-    @patch('fusion.configs.config.CLIToConfigMapper')
+    @patch("fusion.configs.config.CLIToConfigMapper")
     def test_merge_cli_args_success(self, mock_mapper_class: Mock) -> None:
         """Test successful merging of CLI arguments."""
         mock_mapper = Mock()
         mock_mapper.map_args_to_config.return_value = {
-            'general_settings': {'holding_time': 15}
+            "general_settings": {"holding_time": 15}
         }
         mock_mapper_class.return_value = mock_mapper
 
         manager = ConfigManager()
-        manager._raw_config = {'general_settings': {'network': 'nsfnet'}}
+        manager._raw_config = {"general_settings": {"network": "nsfnet"}}
 
-        manager.merge_cli_args({'holding_time': 15})
+        manager.merge_cli_args({"holding_time": 15})
 
-        assert manager._raw_config['general_settings']['holding_time'] == 15
-        assert manager._raw_config['general_settings']['network'] == 'nsfnet'
+        assert manager._raw_config["general_settings"]["holding_time"] == 15
+        assert manager._raw_config["general_settings"]["network"] == "nsfnet"
 
-    @patch('fusion.configs.config.CLIToConfigMapper')
+    @patch("fusion.configs.config.CLIToConfigMapper")
     def test_merge_cli_args_failure(self, mock_mapper_class: Mock) -> None:
         """Test CLI argument merging failure."""
         mock_mapper = Mock()
@@ -477,46 +495,45 @@ none_value = null
         manager = ConfigManager()
 
         with pytest.raises(ConfigTypeConversionError) as exc_info:
-            manager.merge_cli_args({'invalid': 'arg'})
+            manager.merge_cli_args({"invalid": "arg"})
 
-        assert 'Failed to merge CLI arguments' in str(exc_info.value)
+        assert "Failed to merge CLI arguments" in str(exc_info.value)
 
     def test_create_config_object(self) -> None:
         """Test creating SimulationConfig object from raw config."""
         manager = ConfigManager()
         raw_config = {
-            'general_settings': {'holding_time': 10},
-            'topology_settings': {'network': 'nsfnet'},
-            'spectrum_settings': {'c_band': 1},
-            'snr_settings': {'snr_type': 'gn'},
-            'rl_settings': {'device': 'cpu'},
-            'ml_settings': {'deploy_model': False},
-            'file_settings': {'file_type': 'csv'}
+            "general_settings": {"holding_time": 10},
+            "topology_settings": {"network": "nsfnet"},
+            "spectrum_settings": {"c_band": 1},
+            "snr_settings": {"snr_type": "gn"},
+            "rl_settings": {"device": "cpu"},
+            "ml_settings": {"deploy_model": False},
+            "file_settings": {"file_type": "csv"},
         }
 
         config = manager._create_config_object(raw_config)
 
         assert isinstance(config, SimulationConfig)
-        assert config.general == {'holding_time': 10}
-        assert config.topology == {'network': 'nsfnet'}
-        assert config.spectrum == {'c_band': 1}
-        assert config.snr == {'snr_type': 'gn'}
-        assert config.rl == {'device': 'cpu'}
-        assert config.ml == {'deploy_model': False}
-        assert config.file == {'file_type': 'csv'}
+        assert config.general == {"holding_time": 10}
+        assert config.topology == {"network": "nsfnet"}
+        assert config.spectrum == {"c_band": 1}
+        assert config.snr == {"snr_type": "gn"}
+        assert config.rl == {"device": "cpu"}
+        assert config.ml == {"deploy_model": False}
+        assert config.file == {"file_type": "csv"}
 
     def test_create_config_object_missing_sections(self) -> None:
         """Test creating config object with missing sections."""
         manager = ConfigManager()
-        raw_config = {'general_settings': {'holding_time': 10}}
+        raw_config = {"general_settings": {"holding_time": 10}}
 
         config = manager._create_config_object(raw_config)
 
-        assert config.general == {'holding_time': 10}
+        assert config.general == {"holding_time": 10}
         assert config.topology == {}
         assert config.spectrum == {}
         assert config.snr == {}
         assert config.rl == {}
         assert config.ml == {}
         assert config.file == {}
-

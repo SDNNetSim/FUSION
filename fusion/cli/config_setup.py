@@ -63,7 +63,7 @@ def setup_config_from_cli(args: Any) -> dict[str, Any]:
     :rtype: Dict[str, Any]
     """
     args_dict = vars(args)
-    config_path = args_dict.get('config_path')
+    config_path = args_dict.get("config_path")
 
     try:
         config_data = load_config(config_path, args_dict)
@@ -81,10 +81,13 @@ def setup_config_from_cli(args: Any) -> dict[str, Any]:
         return {}
 
 
-def _process_required_options(config: ConfigParser, config_dict: dict[str, Any],
-                              required_dict: dict[str, dict[str, Any]],
-                              optional_dict: dict[str, dict[str, Any]],
-                              args_dict: dict[str, Any]) -> None:
+def _process_required_options(
+    config: ConfigParser,
+    config_dict: dict[str, Any],
+    required_dict: dict[str, dict[str, Any]],
+    optional_dict: dict[str, dict[str, Any]],
+    args_dict: dict[str, Any],
+) -> None:
     for category, options_dict in required_dict.items():
         for option, type_obj in options_dict.items():
             if not config.has_option(category, option):
@@ -122,9 +125,12 @@ def _process_required_options(config: ConfigParser, config_dict: dict[str, Any],
             config_dict[DEFAULT_THREAD_NAME][option] = final_value
 
 
-def _process_optional_options(config: ConfigParser, config_dict: dict[str, Any],
-                              optional_dict: dict[str, dict[str, Any]],
-                              args_dict: dict[str, Any]) -> None:
+def _process_optional_options(
+    config: ConfigParser,
+    config_dict: dict[str, Any],
+    optional_dict: dict[str, dict[str, Any]],
+    args_dict: dict[str, Any],
+) -> None:
     for category, options_dict in optional_dict.items():
         for option, type_obj in options_dict.items():
             if option not in config[category]:
@@ -227,7 +233,7 @@ def load_config(
                 section_list=thread_sections,
                 types_dict=SIM_REQUIRED_OPTIONS_DICT,
                 optional_dict=OPTIONAL_OPTIONS_DICT,
-                args_dict=args_dict
+                args_dict=args_dict,
             )
 
         return config_dict or {}
@@ -266,10 +272,9 @@ def _setup_threads(
             if category is None:
                 continue
 
-            type_obj = (
-                types_dict.get(category, {}).get(key)
-                or optional_dict.get(category, {}).get(key)
-            )
+            type_obj = types_dict.get(category, {}).get(key) or optional_dict.get(
+                category, {}
+            ).get(key)
             if type_obj is None:
                 continue
 
@@ -288,9 +293,7 @@ def _setup_threads(
     return config_dict
 
 
-def _copy_dict_vals(
-    dest_key: str, dictionary: dict[str, Any]
-) -> dict[str, Any]:
+def _copy_dict_vals(dest_key: str, dictionary: dict[str, Any]) -> dict[str, Any]:
     dictionary[dest_key] = dict(dictionary[DEFAULT_THREAD_NAME].items())
     return dictionary
 
@@ -343,7 +346,7 @@ class ConfigManager:
             pass  # Config might have other threads, which is valid
 
     @classmethod
-    def from_args(cls, args: Any) -> 'ConfigManager':
+    def from_args(cls, args: Any) -> "ConfigManager":
         """Load arguments from command line input.
 
         :param args: Parsed command line arguments
@@ -364,7 +367,7 @@ class ConfigManager:
     @classmethod
     def from_file(
         cls, config_path: str, args_dict: dict[str, Any] | None = None
-    ) -> 'ConfigManager':
+    ) -> "ConfigManager":
         """Create ConfigManager from config file path.
 
         :param config_path: Path to configuration file
@@ -442,7 +445,7 @@ class ConfigManager:
         return self._args
 
 
-if __name__ == '__main__':
-    dummy_args: dict[str, Any] = {'run_id': 'debug_test'}
-    result = load_config('ini/run_ini/config.ini', dummy_args)
+if __name__ == "__main__":
+    dummy_args: dict[str, Any] = {"run_id": "debug_test"}
+    result = load_config("ini/run_ini/config.ini", dummy_args)
     logger.info(f"Debug config load result: {result}")

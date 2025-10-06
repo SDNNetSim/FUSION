@@ -12,6 +12,7 @@ class TestCreateEntryPointWrapper:
 
     def test_create_entry_point_wrapper_returns_correct_functions(self) -> None:
         """Test that entry point wrapper returns two callable functions."""
+
         def dummy_main() -> int:
             return 0
 
