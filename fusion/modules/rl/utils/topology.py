@@ -1,10 +1,22 @@
-import torch
+from typing import Any
+
 import networkx as nx
+import torch
 
 
-def convert_networkx_topo(graph: nx.Graph, as_directed: bool = True):
+def convert_networkx_topo(
+    graph: nx.Graph, as_directed: bool = True
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]:
     """
     Converts a networkx topology to a tensor.
+
+    :param graph: NetworkX graph to convert
+    :type graph: nx.Graph
+    :param as_directed: Whether to treat the graph as directed
+    :type as_directed: bool
+    :return: Tuple containing edge index tensor, edge attributes tensor,
+        node features tensor, and node ID to index mapping
+    :rtype: tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]
     """
     nodes = list(graph.nodes())
     nodes.sort()
@@ -29,12 +41,23 @@ def convert_networkx_topo(graph: nx.Graph, as_directed: bool = True):
     edge_attr = torch.tensor(attr_list, dtype=torch.float32)
     node_feats = torch.ones((num_nodes, 1), dtype=torch.float32)
 
-    # Remember that networkx using strings to sort, so nodes are: 0, 10, ... NOT 0, 1, ...
+    # Remember that networkx using strings to sort, so nodes are:
+    # 0, 10, ... NOT 0, 1, ...
     return edge_index, edge_attr, node_feats, id2idx
 
 
-def load_topology_from_graph(graph: nx.Graph, **kwargs):
+def load_topology_from_graph(
+    graph: nx.Graph, **kwargs: Any
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]:
     """
     Shortcut to get (edge_index, edge_attr, node_feats) from a NetworkX graph.
+
+    :param graph: NetworkX graph to convert
+    :type graph: nx.Graph
+    :param kwargs: Additional keyword arguments passed to convert_networkx_topo
+    :type kwargs: Any
+    :return: Tuple containing edge index tensor, edge attributes tensor,
+        node features tensor, and node ID to index mapping
+    :rtype: tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]
     """
     return convert_networkx_topo(graph, **kwargs)

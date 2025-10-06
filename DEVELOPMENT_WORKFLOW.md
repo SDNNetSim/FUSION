@@ -46,15 +46,14 @@ The project uses two distinct directories for automation:
 ## Code Quality Tools
 
 ### Modern Stack (Recommended)
-- **black**: Code formatting
-- **ruff**: Fast, modern linting (replaces flake8 + isort + many plugins)
+- **ruff**: Fast, modern formatting and linting (replaces black, flake8, isort + many plugins)
 - **mypy**: Type checking
 - **pytest + pytest-cov**: Testing with coverage
 - **vulture**: Dead code detection
 - **bandit**: Security vulnerability scanning
 
 ### Tool Configuration
-- `pyproject.toml` - Configuration for black, ruff, pytest, coverage
+- `pyproject.toml` - Configuration for ruff, pytest, coverage
 - `mypy.ini` - MyPy type checking configuration
 - `.pre-commit-config.yaml` - Git hooks configuration
 - `.vulture_whitelist.py` - Dead code detection whitelist
@@ -63,7 +62,7 @@ The project uses two distinct directories for automation:
 
 ### Core Workflow
 ```bash
-make format      # Format code with black and isort
+make format      # Format code with ruff
 make lint-new    # Modern linting with ruff and mypy
 make test-new    # Run tests with coverage reporting
 make analyze     # Dependency analysis and dead code detection
@@ -90,11 +89,8 @@ make test           # Legacy testing
 
 Pre-commit hooks automatically run when you commit code:
 
-- **black**: Code formatting
-- **isort**: Import sorting
-- **ruff**: Modern linting and formatting
+- **ruff**: Modern formatting and linting (includes import sorting)
 - **mypy**: Type checking
-- **pylint**: Advanced code analysis
 - **vulture**: Dead code detection
 - **bandit**: Security scanning
 - **Standard hooks**: Trailing whitespace, YAML validation, etc.
@@ -127,7 +123,7 @@ The `.github/workflows/quality.yml` workflow runs on every push and PR:
 
 ### Configuration Files
 ```
-├── pyproject.toml              # Tool configuration (black, ruff, pytest)
+├── pyproject.toml              # Tool configuration (ruff, pytest)
 ├── mypy.ini                    # Type checking configuration
 ├── .pre-commit-config.yaml     # Git hooks configuration
 ├── .vulture_whitelist.py       # Dead code detection whitelist
@@ -224,7 +220,7 @@ The new tools complement existing validation:
 - CI runs both legacy and modern checks
 
 ### Key Differences
-- **ruff** replaces flake8 + many plugins (faster, more comprehensive)
+- **ruff** replaces black, flake8, isort + many plugins (faster, more comprehensive)
 - **pytest-cov** provides better coverage reporting
 - **Pre-commit hooks** catch issues earlier in development
 - **Automated formatting** reduces style discussions

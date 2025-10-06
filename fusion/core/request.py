@@ -1,12 +1,18 @@
-"""Request generation module for FUSION simulations.
+"""
+Request generation module for FUSION simulations.
 
-This module handles the generation of arrival and departure requests for network simulations.
-It creates requests based on specified distributions and traffic patterns.
+This module handles the generation of arrival and departure requests for network
+simulations. It creates requests based on specified distributions and traffic patterns.
 """
 
-from typing import Dict, Any, List, Tuple
-from fusion.utils.random import set_random_seed, generate_uniform_random_variable, generate_exponential_random_variable
+from typing import Any
+
 from fusion.utils.logging_config import get_logger
+from fusion.utils.random import (
+    generate_exponential_random_variable,
+    generate_uniform_random_variable,
+    set_random_seed,
+)
 
 # Module-level constants
 DEFAULT_REQUEST_TYPE_ARRIVAL = "arrival"
@@ -19,21 +25,22 @@ __all__ = ["generate_simulation_requests", "validate_request_distribution"]
 
 
 def validate_request_distribution(
-        request_distribution: Dict[str, float],
+        request_distribution: dict[str, float],
         number_of_requests: int
 ) -> bool:
-    """Validate that request distribution can be properly allocated.
-    
+    """
+    Validate that request distribution can be properly allocated.
+
     Checks if the request distribution percentages can be evenly distributed
     across the specified number of requests without remainder.
-    
+
     :param request_distribution: Bandwidth distribution percentages
     :type request_distribution: Dict[str, float]
     :param number_of_requests: Total number of requests to generate
     :type number_of_requests: int
     :return: True if distribution is valid, False otherwise
     :rtype: bool
-    
+
     Example:
         >>> distribution = {"50GHz": 0.5, "100GHz": 0.5}
         >>> validate_request_distribution(distribution, 100)
@@ -49,22 +56,29 @@ def validate_request_distribution(
 
 
 def _select_random_node_pair(
-        nodes_list: List[str]
-) -> Tuple[str, str]:
-    """Select a random source-destination pair from available nodes.
-    
+        nodes_list: list[str]
+) -> tuple[str, str]:
+    """
+    Select a random source-destination pair from available nodes.
+
     Ensures that source and destination are different nodes.
-    
+
     :param nodes_list: List of available node identifiers
     :type nodes_list: List[str]
     :return: Tuple of (source_node, destination_node)
     :rtype: Tuple[str, str]
     """
-    source = nodes_list[generate_uniform_random_variable(scale_parameter=len(nodes_list))]
-    destination = nodes_list[generate_uniform_random_variable(scale_parameter=len(nodes_list))]
+    source = nodes_list[
+        int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))
+    ]
+    destination = nodes_list[
+        int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))
+    ]
 
     while destination == source:
-        destination = nodes_list[generate_uniform_random_variable(scale_parameter=len(nodes_list))]
+        destination = nodes_list[
+            int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))
+        ]
 
     return source, destination
 
@@ -73,11 +87,12 @@ def _generate_request_times(
         arrival_rate: float,
         holding_time: float,
         current_time: float
-) -> Tuple[float, float]:
-    """Generate arrival and departure times for a request.
-    
+) -> tuple[float, float]:
+    """
+    Generate arrival and departure times for a request.
+
     Uses exponential distribution to model arrival and holding times.
-    
+
     :param arrival_rate: Rate parameter for arrival distribution
     :type arrival_rate: float
     :param holding_time: Mean holding time for requests
@@ -87,8 +102,12 @@ def _generate_request_times(
     :return: Tuple of (arrival_time, departure_time)
     :rtype: Tuple[float, float]
     """
-    arrival_time = current_time + generate_exponential_random_variable(scale_parameter=arrival_rate)
-    departure_time = arrival_time + generate_exponential_random_variable(scale_parameter=1 / holding_time)
+    arrival_time = current_time + generate_exponential_random_variable(
+        scale_parameter=arrival_rate
+    )
+    departure_time = arrival_time + generate_exponential_random_variable(
+        scale_parameter=1 / holding_time
+    )
 
     return arrival_time, departure_time
 
@@ -101,13 +120,14 @@ def _create_request_entry(
         departure_time: float,
         request_type: str,
         bandwidth: str,
-        modulation_formats: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Create a single request dictionary entry.
-    
+        modulation_formats: dict[str, Any]
+) -> dict[str, Any]:
+    """
+    Create a single request dictionary entry.
+
     Note: Dictionary keys use abbreviated forms for backward compatibility,
     while function parameters use descriptive names per coding standards.
-    
+
     :param request_id: Unique identifier for the request
     :type request_id: int
     :param source: Source node identifier
@@ -141,14 +161,15 @@ def _create_request_entry(
 
 def generate_simulation_requests(
         seed: int,
-        engine_properties: Dict[str, Any]
-) -> Dict[float, Dict[str, Any]]:
-    """Generate requests for a single simulation run.
-    
+        engine_properties: dict[str, Any]
+) -> dict[float, dict[str, Any]]:
+    """
+    Generate requests for a single simulation run.
+
     Creates both arrival and departure events for network requests based on
     the specified traffic parameters and distributions. Each request has a
     unique ID and is placed at specific simulation times.
-    
+
     :param seed: Random seed for reproducible generation
     :type seed: int
     :param engine_properties: Simulation engine configuration containing:
@@ -164,7 +185,7 @@ def generate_simulation_requests(
     :return: Dictionary mapping simulation times to request events
     :rtype: Dict[float, Dict[str, Any]]
     :raises ValueError: If no nodes available or distribution invalid
-    
+
     Example:
         >>> engine_props = {
         ...     "is_only_core_node": True,
@@ -180,7 +201,7 @@ def generate_simulation_requests(
     logger.debug("Generating requests with seed %s", seed)
 
     # Initialize variables
-    requests_dict: Dict[float, Dict[str, Any]] = {}
+    requests_dict: dict[float, dict[str, Any]] = {}
     current_time = 0.0
     request_id = 1
 
@@ -256,7 +277,7 @@ def generate_simulation_requests(
         chosen_bandwidth = None
         while chosen_bandwidth is None:
             candidate_bandwidth = bandwidth_list[
-                generate_uniform_random_variable(scale_parameter=len(bandwidth_list))
+                int(generate_uniform_random_variable(scale_parameter=len(bandwidth_list)))
             ]
             if bandwidth_count_dict[candidate_bandwidth] > 0:
                 bandwidth_count_dict[candidate_bandwidth] -= 1
@@ -306,12 +327,13 @@ def generate_simulation_requests(
 
 
 # Maintain backward compatibility with old function name
-def get_requests(seed: int, engine_props: dict) -> Dict[float, Dict[str, Any]]:
-    """Legacy function name for backward compatibility.
-    
+def get_requests(seed: int, engine_props: dict) -> dict[float, dict[str, Any]]:
+    """
+    Legacy function name for backward compatibility.
+
     .. deprecated:: 2.0.0
         Use :func:`generate_simulation_requests` instead.
-    
+
     :param seed: Random seed for generation
     :type seed: int
     :param engine_props: Engine properties dictionary

@@ -5,14 +5,18 @@ This module contains abstract base classes that define the contracts
 for all pluggable components in the FUSION architecture.
 """
 
-from .router import AbstractRoutingAlgorithm
-from .spectrum import AbstractSpectrumAssigner
-from .snr import AbstractSNRMeasurer
 from .agent import AgentInterface
+from .factory import AlgorithmFactory, SimulationPipeline, create_simulation_pipeline
+from .router import AbstractRoutingAlgorithm
+from .snr import AbstractSNRMeasurer
+from .spectrum import AbstractSpectrumAssigner
 
 __all__ = [
-    'AbstractRoutingAlgorithm',
-    'AbstractSpectrumAssigner',
-    'AbstractSNRMeasurer',
-    'AgentInterface'
+    "AbstractRoutingAlgorithm",
+    "AbstractSpectrumAssigner",
+    "AbstractSNRMeasurer",
+    "AgentInterface",
+    "AlgorithmFactory",
+    "SimulationPipeline",
+    "create_simulation_pipeline",
 ]

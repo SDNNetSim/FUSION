@@ -1,21 +1,27 @@
-from typing import Any, Dict, List
+from collections.abc import Generator
+from typing import Any
 
-from fusion.sim.utils import sort_dict_keys, get_path_mod, find_path_len
+from fusion.utils.data import sort_dict_keys
+from fusion.utils.network import find_path_length, get_path_modulation
 from fusion.utils.logging_config import get_logger
 
-# pylint: disable=protected-access,unused-argument,unused-variable
 # Need to access SDN controller's protected methods
 # Some arguments/variables are kept for interface compatibility or future use
 
 logger = get_logger(__name__)
 
+# Backward compatibility aliases for tests
+find_path_len = find_path_length
+get_path_mod = get_path_modulation
+
 
 class LightPathSlicingManager:
-    """Manages light path segment slicing for optical network requests.
-    
+    """
+    Manages light path segment slicing for optical network requests.
+
     This class handles the allocation of network requests using segment slicing
     strategies including static and dynamic slicing approaches.
-    
+
     :param engine_props: Engine configuration properties
     :type engine_props: Dict[str, Any]
     :param sdn_props: SDN controller properties
@@ -24,15 +30,19 @@ class LightPathSlicingManager:
     :type spectrum_obj: Any
     """
 
-    def __init__(self, engine_props: Dict[str, Any], sdn_props: Any, spectrum_obj: Any) -> None:
+    def __init__(
+        self, engine_props: dict[str, Any], sdn_props: Any, spectrum_obj: Any
+    ) -> None:
         self.engine_props = engine_props
         self.sdn_props = sdn_props
         self.spectrum_obj = spectrum_obj
 
-    def allocate_slicing(self, num_segments: int, mod_format: str, path_list: List[Any],
-                         bandwidth: str) -> None:
-        """Allocate network request using segment slicing.
-        
+    def allocate_slicing(
+        self, num_segments: int, mod_format: str, path_list: list[Any], bandwidth: str
+    ) -> Generator[tuple[str, str | None], None, None]:
+        """
+        Allocate network request using segment slicing.
+
         :param num_segments: Number of segments to allocate
         :type num_segments: int
         :param mod_format: Modulation format to use
@@ -47,19 +57,24 @@ class LightPathSlicingManager:
         mod_format_list = [mod_format]
 
         for _ in range(num_segments):
-            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
+            self.spectrum_obj.get_spectrum(
+                mod_format_list=mod_format_list, slice_bandwidth=bandwidth
+            )
             if self.spectrum_obj.spectrum_props.is_free:
                 # Delegate allocation back to SDN controller
-                yield 'allocate', bandwidth
+                yield "allocate", bandwidth
             else:
                 self.sdn_props.was_routed = False
-                self.sdn_props.block_reason = 'congestion'
-                yield 'release', None
+                self.sdn_props.block_reason = "congestion"
+                yield "release", None
                 break
 
-    def handle_static_slicing(self, path_list: List[Any], forced_segments: int) -> bool:
-        """Handle static segment slicing for a network request.
-        
+    def handle_static_slicing(
+        self, path_list: list[Any], forced_segments: int
+    ) -> Generator[tuple[str, str | None], None, bool]:
+        """
+        Handle static segment slicing for a network request.
+
         :param path_list: List of nodes in the routing path
         :type path_list: List[Any]
         :param forced_segments: Number of segments to force (-1 for auto)
@@ -67,24 +82,31 @@ class LightPathSlicingManager:
         :return: True if slicing was successful, False otherwise
         :rtype: bool
         """
-        bandwidth_modulation_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+        
+        bandwidth_modulation_dict = sort_dict_keys(
+            dictionary=self.engine_props["mod_per_bw"]
+        )
 
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
             if int(bandwidth) >= int(self.sdn_props.bandwidth):
                 continue
 
-            path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
-            mod_format = get_path_mod(mods_dict=mods_dict, path_len=path_len)
-            if not mod_format:
+            path_len = find_path_length(
+                path_list=path_list, topology=self.engine_props["topology"]
+            )
+            mod_format = get_path_modulation(
+                modulation_formats=mods_dict, path_length=path_len
+            )
+            if not mod_format or not isinstance(mod_format, str):
                 continue
 
             self.sdn_props.was_routed = True
             num_segments = int(int(self.sdn_props.bandwidth) / int(bandwidth))
 
-            if num_segments > self.engine_props['max_segments']:
+            if num_segments > self.engine_props["max_segments"]:
                 self.sdn_props.was_routed = False
-                self.sdn_props.block_reason = 'max_segments'
+                self.sdn_props.block_reason = "max_segments"
                 break
 
             if forced_segments not in (-1, num_segments):
@@ -94,13 +116,15 @@ class LightPathSlicingManager:
             # Process allocation through generator
             success = True
             for action, allocation_bandwidth in self.allocate_slicing(
-                    num_segments=num_segments, mod_format=mod_format,
-                    path_list=path_list, bandwidth=bandwidth
+                num_segments=num_segments,
+                mod_format=mod_format,
+                path_list=path_list,
+                bandwidth=bandwidth,
             ):
-                if action == 'allocate':
-                    yield 'allocate', allocation_bandwidth
-                elif action == 'release':
-                    yield 'release', None
+                if action == "allocate":
+                    yield "allocate", allocation_bandwidth
+                elif action == "release":
+                    yield "release", None
                     success = False
                     break
 
@@ -112,10 +136,12 @@ class LightPathSlicingManager:
 
         return False
 
-    def handle_static_slicing_direct(self, path_list: List[Any], forced_segments: int,
-                                     sdn_controller: Any) -> bool:
-        """Handle static slicing using original logic with direct method calls.
-        
+    def handle_static_slicing_direct(
+        self, path_list: list[Any], forced_segments: int, sdn_controller: Any
+    ) -> bool:
+        """
+        Handle static slicing using original logic with direct method calls.
+
         :param path_list: List of nodes in the routing path
         :type path_list: List[Any]
         :param forced_segments: Number of segments to force (-1 for auto)
@@ -125,24 +151,31 @@ class LightPathSlicingManager:
         :return: True if slicing was successful
         :rtype: bool
         """
-        bandwidth_modulation_dict = sort_dict_keys(dictionary=self.engine_props['mod_per_bw'])
+        
+        bandwidth_modulation_dict = sort_dict_keys(
+            dictionary=self.engine_props["mod_per_bw"]
+        )
 
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
             if int(bandwidth) >= int(self.sdn_props.bandwidth):
                 continue
 
-            path_len = find_path_len(path_list=path_list, topology=self.engine_props['topology'])
-            mod_format = get_path_mod(mods_dict=mods_dict, path_len=path_len)
-            if not mod_format:
+            path_len = find_path_length(
+                path_list=path_list, topology=self.engine_props["topology"]
+            )
+            mod_format = get_path_modulation(
+                modulation_formats=mods_dict, path_length=path_len
+            )
+            if not mod_format or not isinstance(mod_format, str):
                 continue
 
             self.sdn_props.was_routed = True
             num_segments = int(int(self.sdn_props.bandwidth) / int(bandwidth))
 
-            if num_segments > self.engine_props['max_segments']:
+            if num_segments > self.engine_props["max_segments"]:
                 self.sdn_props.was_routed = False
-                self.sdn_props.block_reason = 'max_segments'
+                self.sdn_props.block_reason = "max_segments"
                 break
 
             if forced_segments not in (-1, num_segments):
@@ -155,13 +188,15 @@ class LightPathSlicingManager:
             mod_format_list = [mod_format]
 
             for _ in range(num_segments):
-                self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
+                self.spectrum_obj.get_spectrum(
+                    mod_format_list=mod_format_list, slice_bandwidth=bandwidth
+                )
                 if self.spectrum_obj.spectrum_props.is_free:
                     sdn_controller.allocate()
                     sdn_controller._update_req_stats(bandwidth=bandwidth)
                 else:
                     self.sdn_props.was_routed = False
-                    self.sdn_props.block_reason = 'congestion'
+                    self.sdn_props.block_reason = "congestion"
                     sdn_controller.release()
                     break
 
@@ -173,10 +208,16 @@ class LightPathSlicingManager:
 
         return False
 
-    def handle_dynamic_slicing_direct(self, path_list: List[Any], path_index: int,
-                                      forced_segments: int, sdn_controller: Any) -> bool:
-        """Handle dynamic slicing using original logic with direct method calls.
-        
+    def handle_dynamic_slicing_direct(
+        self,
+        path_list: list[Any],
+        path_index: int,
+        forced_segments: int,
+        sdn_controller: Any,
+    ) -> bool:
+        """
+        Handle dynamic slicing using original logic with direct method calls.
+
         :param path_list: List of nodes in the routing path
         :type path_list: List[Any]
         :param path_index: Index of the current path being processed
@@ -189,16 +230,17 @@ class LightPathSlicingManager:
         :rtype: bool
         """
         remaining_bw = int(self.sdn_props.bandwidth)
-        path_len = find_path_len(path_list=path_list,
-                                 topology=self.engine_props['topology'])
-        bandwidth_modulation_dict = sort_dict_keys(self.engine_props['mod_per_bw'])
+        _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
+        _ = sort_dict_keys(self.engine_props["mod_per_bw"])
 
         self.spectrum_obj.spectrum_props.path_list = path_list
         self.sdn_props.number_of_transponders = 0
 
         while remaining_bw > 0:
-            if not self.engine_props['fixed_grid']:
-                raise NotImplementedError("Dynamic slicing for non-fixed grid is not implemented.")
+            if not self.engine_props["fixed_grid"]:
+                raise NotImplementedError(
+                    "Dynamic slicing for non-fixed grid is not implemented."
+                )
 
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
@@ -216,12 +258,19 @@ class LightPathSlicingManager:
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                 break
 
-        return self.sdn_props.was_routed
+        return bool(self.sdn_props.was_routed)
 
-    def allocate_slicing_direct(self, num_segments: int, mod_format: str, path_list: List[Any],
-                                bandwidth: str, sdn_controller: Any) -> None:
-        """Direct implementation of allocate slicing logic.
-        
+    def allocate_slicing_direct(
+        self,
+        num_segments: int,
+        mod_format: str,
+        path_list: list[Any],
+        bandwidth: str,
+        sdn_controller: Any,
+    ) -> None:
+        """
+        Direct implementation of allocate slicing logic.
+
         :param num_segments: Number of segments to allocate
         :type num_segments: int
         :param mod_format: Modulation format to use
@@ -237,23 +286,27 @@ class LightPathSlicingManager:
         self.spectrum_obj.spectrum_props.path_list = path_list
         mod_format_list = [mod_format]
         for _ in range(num_segments):
-            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
+            self.spectrum_obj.get_spectrum(
+                mod_format_list=mod_format_list, slice_bandwidth=bandwidth
+            )
             if self.spectrum_obj.spectrum_props.is_free:
                 sdn_controller.allocate()
                 sdn_controller._update_req_stats(bandwidth=bandwidth)
             else:
                 self.sdn_props.was_routed = False
-                self.sdn_props.block_reason = 'congestion'
+                self.sdn_props.block_reason = "congestion"
                 sdn_controller.release()
                 break
 
-    def handle_dynamic_slicing(self, path_list: List[Any], path_index: int,
-                               forced_segments: int) -> None:
-        """Handle dynamic slicing for a network request.
-        
+    def handle_dynamic_slicing(
+        self, path_list: list[Any], path_index: int, forced_segments: int
+    ) -> Generator[tuple[str, str | int | None], None, None]:
+        """
+        Handle dynamic slicing for a network request.
+
         Attempts to allocate bandwidth using dynamic slicing when traditional
         allocation fails due to fragmentation.
-        
+
         :param path_list: List of nodes in the routing path
         :type path_list: List[Any]
         :param path_index: Index of the current path being processed
@@ -262,16 +315,17 @@ class LightPathSlicingManager:
         :type forced_segments: int
         """
         remaining_bw = int(self.sdn_props.bandwidth)
-        path_len = find_path_len(path_list=path_list,
-                                 topology=self.engine_props['topology'])
-        bandwidth_modulation_dict = sort_dict_keys(self.engine_props['mod_per_bw'])
+        _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
+        _ = sort_dict_keys(self.engine_props["mod_per_bw"])
 
         self.spectrum_obj.spectrum_props.path_list = path_list
         self.sdn_props.number_of_transponders = 0
 
         while remaining_bw > 0:
-            if not self.engine_props['fixed_grid']:
-                raise NotImplementedError("Dynamic slicing for non-fixed grid is not implemented.")
+            if not self.engine_props["fixed_grid"]:
+                raise NotImplementedError(
+                    "Dynamic slicing for non-fixed grid is not implemented."
+                )
 
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
@@ -279,12 +333,12 @@ class LightPathSlicingManager:
             )
 
             if self.spectrum_obj.spectrum_props.is_free:
-                yield 'allocate', None
+                yield "allocate", None
                 dedicated_bw = min(bandwidth, remaining_bw)
-                yield 'update_stats', str(dedicated_bw)
+                yield "update_stats", str(dedicated_bw)
                 remaining_bw -= bandwidth
                 self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True
             else:
-                yield 'handle_congestion', remaining_bw
+                yield "handle_congestion", remaining_bw
                 break

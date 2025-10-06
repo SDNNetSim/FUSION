@@ -1,12 +1,8 @@
 # Development Dependencies for FUSION Project
 # Install with: pip install -r requirements-dev.txt
 
-# Code Formatting
-black>=23.0.0
-isort>=5.13.0
-
-# Modern Linting and Type Checking
-ruff>=0.1.0              # Modern, fast linter (replaces flake8 + many plugins)
+# Code Formatting and Linting
+ruff>=0.1.0              # Modern, fast linter and formatter (replaces black, isort, flake8)
 mypy>=1.0.0              # Type checking
 
 # Testing and Coverage
@@ -35,4 +31,6 @@ bandit>=1.7.0            # Security vulnerability scanner
 # sphinx>=7.0.0          # Documentation generation
 
 # Additional development utilities
-types-all>=1.0.0         # Type stubs for mypy
+types-PyYAML
+types-requests
+types-setuptools

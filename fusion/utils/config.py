@@ -1,93 +1,125 @@
-"""Configuration utility functions for the FUSION simulator."""
+"""
+Configuration utility functions for the FUSION simulator.
+
+This module provides utilities for configuration management including:
+- String to boolean conversion
+- Dictionary string parsing
+- CLI argument override handling
+- Type conversion with error handling
+- Dictionary parameter conversion
+"""
 
 import ast
-from typing import Dict, Any, Optional, Union, Callable
+from collections.abc import Callable
+from typing import Any
 
-from fusion.configs.constants import DICT_PARAM_OPTIONS_LIST
+from fusion.configs.constants import DICT_PARAM_OPTIONS
 from fusion.configs.errors import ConfigTypeConversionError
 
 
 def str_to_bool(string: str) -> bool:
-    """Convert string to boolean value.
-    
-    Args:
-        string: Input string to convert
-        
-    Returns:
-        Boolean value
     """
-    return string.lower() in ['true', 'yes', '1']
+    Convert string to boolean value.
 
 
-def convert_string_to_dict(value: str) -> Union[str, Dict[str, Any]]:
-    """Convert string representation of dictionary to actual dictionary.
-    
-    Args:
-        value: String that may contain a dictionary literal
-        
-    Returns:
-        Dictionary if conversion successful, original string otherwise
+    :param string: Input string to convert
+    :type string: str
+    :return: Boolean value
+    :rtype: bool
+    """
+    return string.lower() in ["true", "yes", "1"]
+
+
+def convert_string_to_dict(value: str) -> str | dict[str, Any]:
+    """
+    Convert string representation of dictionary to actual dictionary.
+
+
+    :param value: String that may contain a dictionary literal
+    :type value: str
+    :return: Dictionary if conversion successful, original string otherwise
+    :rtype: str | dict[str, Any]
     """
     try:
-        return ast.literal_eval(value)
+        result = ast.literal_eval(value)
+        if isinstance(result, dict):
+            return result
+        else:
+            return value
     except (ValueError, SyntaxError):
         return value  # Keep as string if parsing fails
 
 
-def apply_cli_override(config_value: Any, cli_value: Optional[Any],
-                       type_converter: Callable) -> Any:
-    """Apply CLI argument override with proper handling of boolean store_true arguments.
-    
-    Args:
-        config_value: Value from config file
-        cli_value: Value from CLI arguments (may be None)
-        type_converter: Function to convert string values to appropriate type
-        
-    Returns:
-        Final value after considering CLI override
+def apply_cli_override(
+    configuration_value: Any, cli_argument_value: Any | None, type_converter: Callable
+) -> Any:
     """
-    if cli_value is None:
-        return type_converter(config_value) if isinstance(config_value, str) else config_value
+    Apply CLI argument override with proper handling of boolean store_true arguments.
+
+
+    :param configuration_value: Value from config file
+    :type configuration_value: Any
+    :param cli_argument_value: Value from CLI arguments (may be None)
+    :type cli_argument_value: Any | None
+    :param type_converter: Function to convert string values to appropriate type
+    :type type_converter: Callable
+    :return: Final value after considering CLI override
+    :rtype: Any
+    """
+    if cli_argument_value is None:
+        return (
+            type_converter(configuration_value)
+            if isinstance(configuration_value, str)
+            else configuration_value
+        )
 
     # For boolean store_true arguments, only override if explicitly set to True
-    if type_converter is str_to_bool and cli_value is False:
-        return type_converter(config_value) if isinstance(config_value, str) else config_value
+    if type_converter is str_to_bool and cli_argument_value is False:
+        return (
+            type_converter(configuration_value)
+            if isinstance(configuration_value, str)
+            else configuration_value
+        )
 
-    return cli_value
+    return cli_argument_value
 
 
 def safe_type_convert(value: str, type_converter: Callable, option_name: str) -> Any:
-    """Safely convert value with proper error context.
-    
-    Args:
-        value: String value to convert
-        type_converter: Function to perform conversion
-        option_name: Name of option for error reporting
-        
-    Returns:
-        Converted value
-        
-    Raises:
-        ConfigTypeConversionError: If conversion fails
+    """
+    Safely convert value with proper error context.
+
+
+    :param value: String value to convert
+    :type value: str
+    :param type_converter: Function to perform conversion
+    :type type_converter: Callable
+    :param option_name: Name of option for error reporting
+    :type option_name: str
+    :return: Converted value
+    :rtype: Any
+    :raises ConfigTypeConversionError: If conversion fails
     """
     try:
         return type_converter(value)
     except (ValueError, TypeError) as e:
         raise ConfigTypeConversionError(
-            f"Failed to convert {option_name}='{value}' using {type_converter.__name__}: {e}"
+            f"Failed to convert {option_name}='{value}' "
+            f"using {type_converter.__name__}: {e}"
         ) from e
 
 
 def convert_dict_params_if_needed(value: Any, option: str) -> Any:
-    """Convert dictionary parameters from string to dict if needed.
-    
-    Args:
-        value: Configuration value
-        option: Option name
-        
-    Returns:
-        Converted value if it was a dict param, otherwise original value
     """
-    if option in DICT_PARAM_OPTIONS_LIST and isinstance(value, str):
+    Convert dictionary parameters from string to dict if needed.
+
+
+    :param value: Configuration value
+    :type value: Any
+    :param option: Option name
+    :type option: str
+    :return: Converted value if it was a dict param, otherwise original value
+    :rtype: Any
+    """
+    if option in DICT_PARAM_OPTIONS and isinstance(value, str):
         return convert_string_to_dict(value)
     return value

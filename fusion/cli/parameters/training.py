@@ -9,10 +9,10 @@ import argparse
 def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     """
     Add reinforcement learning specific arguments.
-    
+
     Configures RL algorithms, model paths, training parameters,
     exploration strategies, and reward functions for RL-based optimization.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -30,13 +30,19 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     rl_group.add_argument(
         "--core_algorithm",
         type=str,
-        choices=["dqn", "ppo", "a2c", "q_learning", "bandits", "epsilon_greedy_bandit", "first_fit"],
+        choices=[
+            "dqn", "ppo", "a2c", "q_learning", "bandits",
+            "epsilon_greedy_bandit", "first_fit"
+        ],
         help="Core selection RL algorithm"
     )
     rl_group.add_argument(
         "--spectrum_algorithm",
         type=str,
-        choices=["dqn", "ppo", "a2c", "q_learning", "bandits", "epsilon_greedy_bandit", "first_fit"],
+        choices=[
+            "dqn", "ppo", "a2c", "q_learning", "bandits",
+            "epsilon_greedy_bandit", "first_fit"
+        ],
         help="Spectrum allocation RL algorithm"
     )
 
@@ -118,10 +124,10 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
 def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     """
     Add feature extraction and neural network arguments.
-    
+
     Configures feature extraction methods, neural network architectures,
     and observation space representations for ML model training.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -169,10 +175,10 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
 def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     """
     Add traditional machine learning arguments.
-    
+
     Configures classical ML algorithms, training data paths,
     test/train splits, and model deployment options.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -187,7 +193,10 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     ml_group.add_argument(
         "--ml_model",
         type=str,
-        choices=["random_forest", "svm", "linear_regression", "neural_network", "decision_tree"],
+        choices=[
+            "random_forest", "svm", "linear_regression",
+            "neural_network", "decision_tree"
+        ],
         help="Machine learning model type"
     )
     ml_group.add_argument(
@@ -216,10 +225,10 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
 def add_optimization_args(parser: argparse.ArgumentParser) -> None:
     """
     Add hyperparameter optimization arguments.
-    
+
     Configures automated hyperparameter tuning, optimization trials,
     and computing device selection for training acceleration.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -260,10 +269,10 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
 def add_all_training_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all training-related argument groups.
-    
+
     Convenience function that combines reinforcement learning,
     feature extraction, machine learning, and optimization arguments.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None

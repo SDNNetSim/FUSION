@@ -1,33 +1,37 @@
 """
 K-Shortest Path routing algorithm implementation.
 """
-# pylint: disable=duplicate-code
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 import networkx as nx
 
-from fusion.interfaces.router import AbstractRoutingAlgorithm
 from fusion.core.properties import RoutingProps
-from fusion.sim.utils import find_path_len, get_path_mod, sort_nested_dict_vals
+from fusion.interfaces.router import AbstractRoutingAlgorithm
+from fusion.utils.data import sort_nested_dict_values
+from fusion.utils.network import find_path_length, get_path_modulation
 
 
 class KShortestPath(AbstractRoutingAlgorithm):
-    """K-Shortest Path routing algorithm.
-    
+    """
+    K-Shortest Path routing algorithm.
+
     This algorithm finds the k shortest paths between source and destination
     based on hop count or other specified weights.
     """
 
-    def __init__(self, engine_props: dict, sdn_props: object):
-        """Initialize K-Shortest Path routing algorithm.
-        
-        Args:
-            engine_props: Dictionary containing engine configuration
-            sdn_props: Object containing SDN controller properties
+    def __init__(self, engine_props: dict[str, Any], sdn_props: Any) -> None:
+        """
+        Initialize K-Shortest Path routing algorithm.
+
+        :param engine_props: Dictionary containing engine configuration.
+        :type engine_props: dict[str, Any]
+        :param sdn_props: Object containing SDN controller properties.
+        :type sdn_props: Any
         """
         super().__init__(engine_props, sdn_props)
-        self.k_paths_count = engine_props.get('k_paths', 3)
-        self.routing_weight = engine_props.get('routing_weight', 'length')
+        self.k_paths_count = engine_props.get("k_paths", 3)
+        self.routing_weight = engine_props.get("routing_weight", "length")
         self._path_count = 0
         self._total_hops = 0
 
@@ -36,36 +40,52 @@ class KShortestPath(AbstractRoutingAlgorithm):
 
     @property
     def algorithm_name(self) -> str:
-        """Return the name of the routing algorithm."""
+        """
+        Get the name of the routing algorithm.
+
+        :return: The algorithm name 'k_shortest_path'.
+        :rtype: str
+        """
         return "k_shortest_path"
 
     @property
-    def supported_topologies(self) -> List[str]:
-        """Return list of supported topology types."""
-        return ['NSFNet', 'USBackbone60', 'Pan-European', 'Generic']
+    def supported_topologies(self) -> list[str]:
+        """
+        Get the list of supported topology types.
+
+        :return: List of supported topology names including NSFNet,
+            USBackbone60, Pan-European, and Generic.
+        :rtype: list[str]
+        """
+        return ["NSFNet", "USBackbone60", "Pan-European", "Generic"]
 
     def validate_environment(self, topology: nx.Graph) -> bool:
-        """Validate that the routing algorithm can work with the given topology.
-        
-        Args:
-            topology: NetworkX graph representing the network topology
-            
-        Returns:
-            True if the algorithm can route in this environment
+        """
+        Validate that the routing algorithm can work with the given topology.
+
+        :param topology: NetworkX graph representing the network topology.
+        :type topology: nx.Graph
+        :return: True if the algorithm can route in this environment.
+        :rtype: bool
         """
         # K-shortest path works with any connected graph
-        return nx.is_connected(topology)
+        try:
+            return bool(nx.is_connected(topology))
+        except Exception:
+            return False
 
-    def route(self, source: Any, destination: Any, request: Any) -> Optional[List[Any]]:
-        """Find a route from source to destination for the given request.
-        
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            request: Request object containing traffic demand details
-            
-        Returns:
-            Shortest available path, or None if no path found
+    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+        """
+        Find a route from source to destination for the given request.
+
+        :param source: Source node identifier.
+        :type source: Any
+        :param destination: Destination node identifier.
+        :type destination: Any
+        :param request: Request object containing traffic demand details.
+        :type request: Any
+        :return: Shortest available path, or None if no path found.
+        :rtype: list[Any] | None
         """
         # Clear previous route properties
         self.route_props.paths_matrix = []
@@ -80,37 +100,49 @@ class KShortestPath(AbstractRoutingAlgorithm):
             return None
 
         # Populate route_props for legacy compatibility
-        topology = self.engine_props.get('topology', self.sdn_props.topology)
+        topology = self.engine_props.get(
+            "topology", getattr(self.sdn_props, 'topology', None)
+        )
 
         for path in paths:
             # Calculate path length
-            path_length = find_path_len(path_list=path, topology=topology)
+            path_length = find_path_length(path_list=path, topology=topology)
 
             # Get modulation formats
-            chosen_bandwidth = getattr(self.sdn_props, 'bandwidth', None)
-            if chosen_bandwidth and not self.engine_props.get('pre_calc_mod_selection', False):
+            chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
+            if chosen_bandwidth and not self.engine_props.get(
+                "pre_calc_mod_selection", False
+            ):
                 # Use mod_per_bw if available
-                if 'mod_per_bw' in self.engine_props and chosen_bandwidth in self.engine_props['mod_per_bw']:
-                    modulation_formats_list = [get_path_mod(
-                        mods_dict=self.engine_props['mod_per_bw'][chosen_bandwidth],
-                        path_len=path_length
-                    )]
+                if (
+                    "mod_per_bw" in self.engine_props
+                    and chosen_bandwidth in self.engine_props["mod_per_bw"]
+                ):
+                    modulation_format = get_path_modulation(
+                        mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
+                        path_len=path_length,
+                    )
+                    modulation_formats_list = [modulation_format]
                 else:
                     # Fallback to mod_formats
-                    modulation_formats = getattr(self.sdn_props, 'mod_formats', {})
-                    modulation_format = get_path_mod(modulation_formats, path_length)
+                    modulation_formats = getattr(self.sdn_props, "mod_formats", {})
+                    modulation_format = get_path_modulation(
+                        modulation_formats, path_length
+                    )
                     modulation_formats_list = [modulation_format]
             else:
                 # Use all modulation formats sorted by max_length
-                if hasattr(self.sdn_props, 'modulation_formats_dict'):
-                    modulation_formats_dict = sort_nested_dict_vals(
+                if hasattr(self.sdn_props, "modulation_formats_dict"):
+                    modulation_formats_dict = sort_nested_dict_values(
                         original_dict=self.sdn_props.modulation_formats_dict,
-                        nested_key='max_length'
+                        nested_key="max_length",
                     )
-                    modulation_formats_list = list(modulation_formats_dict.keys())[::-1]
+                    # Ensure all keys are strings
+                    all_keys = list(modulation_formats_dict.keys())
+                    modulation_formats_list = [str(key) for key in all_keys][::-1]
                 else:
                     # Fallback to simple list
-                    modulation_formats_list = ['QPSK']
+                    modulation_formats_list = ["QPSK"]
 
             self.route_props.paths_matrix.append(path)
             self.route_props.modulation_formats_matrix.append(modulation_formats_list)
@@ -126,18 +158,22 @@ class KShortestPath(AbstractRoutingAlgorithm):
 
         return selected_path
 
-    def get_paths(self, source: Any, destination: Any, k: int = 1) -> List[List[Any]]:
-        """Get k shortest paths between source and destination.
-        
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            k: Number of paths to return
-            
-        Returns:
-            List of k paths, where each path is a list of nodes
+    def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
         """
-        topology = self.engine_props.get('topology', self.sdn_props.topology)
+        Get k shortest paths between source and destination.
+
+        :param source: Source node identifier.
+        :type source: Any
+        :param destination: Destination node identifier.
+        :type destination: Any
+        :param k: Number of paths to return.
+        :type k: int
+        :return: List of k paths, where each path is a list of nodes.
+        :rtype: list[list[Any]]
+        """
+        topology = self.engine_props.get(
+            "topology", getattr(self.sdn_props, 'topology', None)
+        )
 
         try:
             if self.routing_weight:
@@ -163,28 +199,33 @@ class KShortestPath(AbstractRoutingAlgorithm):
             return []
 
     def update_weights(self, topology: nx.Graph) -> None:
-        """Update edge weights based on current network state.
-        
-        Args:
-            topology: NetworkX graph to update weights for
         """
-        # This implementation doesn't dynamically update weights
-        # Subclasses can override this method for adaptive routing
+        Update edge weights based on current network state.
 
-    def get_metrics(self) -> Dict[str, Any]:
-        """Get routing algorithm performance metrics.
-        
-        Returns:
-            Dictionary containing algorithm-specific metrics
+        This implementation doesn't dynamically update weights.
+        Subclasses can override this method for adaptive routing.
+
+        :param topology: NetworkX graph to update weights for.
+        :type topology: nx.Graph
+        """
+
+    def get_metrics(self) -> dict[str, Any]:
+        """
+        Get routing algorithm performance metrics.
+
+        :return: Dictionary containing algorithm-specific metrics including
+            algorithm name, paths computed, average hop count, k value, and
+            weight metric.
+        :rtype: dict[str, Any]
         """
         avg_hops = self._total_hops / self._path_count if self._path_count > 0 else 0
 
         return {
-            'algorithm': self.algorithm_name,
-            'paths_computed': self._path_count,
-            'average_hop_count': avg_hops,
-            'k_value': self.k_paths_count,
-            'weight_metric': self.routing_weight or 'hop_count'
+            "algorithm": self.algorithm_name,
+            "paths_computed": self._path_count,
+            "average_hop_count": avg_hops,
+            "k_value": self.k_paths_count,
+            "weight_metric": self.routing_weight or "hop_count",
         }
 
     def reset(self) -> None:

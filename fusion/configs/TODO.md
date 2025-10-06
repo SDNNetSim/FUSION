@@ -85,54 +85,16 @@ This file tracks known issues and future improvements for the FUSION configurati
   2. Identify bottlenecks in validation process
   3. Implement caching mechanisms
 
-## Completed Items
+## Future Considerations
 
-### ✅ Schema Validation System
-- Implemented JSON schema-based validation
-- Added comprehensive error reporting
-- Created default configuration generation
+### Algorithm-Specific Configs
+- Different routing algorithms may need unique parameter sections
+- **Research**: Survey algorithm requirements
 
-### ✅ Template and Profile System
-- Created template registry with multiple pre-configured setups
-- Added configuration profiles for common use cases
-- Implemented template export functionality
+### Multi-Objective Optimization
+- Support for optimizing multiple metrics simultaneously
+- **Research**: Define parameter structures
 
-### ✅ CLI Integration
-- Enhanced CLI to configuration mapping
-- Added argument override capabilities
-- Maintained backward compatibility
-
-## Research Questions
-
-### Algorithm-Specific Configuration
-- **Question**: Should we create algorithm-specific configuration sections?
-- **Context**: Different routing/allocation algorithms may need unique parameters
-- **Research Needed**: Survey of algorithm-specific requirements across the codebase
-
-### Multi-Objective Configuration
-- **Question**: How to handle configurations for multi-objective optimization?
-- **Context**: Some experiments require optimizing multiple metrics simultaneously
-- **Research Needed**: Define multi-objective parameter structures
-
-### Dynamic Configuration Updates
-- **Question**: Should configurations be updatable during simulation runtime?
-- **Context**: Long-running simulations might benefit from parameter adjustments
-- **Research Needed**: Analyze safety and consistency requirements for runtime updates
-
----
-
-## Contributing to TODOs
-
-When adding new TODO items:
-
-1. **Categorize by Priority**: High (blocking), Medium (enhances functionality), Low (nice to have)
-2. **Provide Context**: Why is this needed? What's the impact?
-3. **Define Next Steps**: Clear actionable items
-4. **Reference Files**: List affected configuration files or code
-5. **Estimate Effort**: Add complexity estimates when possible
-
-When completing TODO items:
-1. Move to "Completed Items" section with ✅ 
-2. Add brief description of solution implemented
-3. Update relevant documentation
-4. Remove associated TODO comments from code
+### Runtime Updates
+- Allow configuration changes during long simulations
+- **Research**: Safety and consistency requirements

@@ -1,13 +1,14 @@
+import ast
+import json
 import os
 import re
-import json
-import ast
 from collections import defaultdict
+from typing import Any
 
 import numpy as np
 
 
-def _extract_traffic_label(sim_time_path):
+def _extract_traffic_label(sim_time_path: str) -> str:
     for item in os.listdir(sim_time_path):
         item_path = os.path.join(sim_time_path, item)
         if os.path.isdir(item_path):
@@ -17,17 +18,25 @@ def _extract_traffic_label(sim_time_path):
     return ""
 
 
-def load_memory_usage(simulation_times, base_logs_dir, base_dir, network, date):
+def load_memory_usage(
+    simulation_times: dict[str, list[list[str]]],
+    base_logs_dir: str,
+    base_dir: str,
+    network: str,
+    date: str,
+) -> dict[str, dict[str, np.ndarray]]:
     """
     Load each algorithm's memory usage.
     """
-    memory_usage_data = {}
+    memory_usage_data: dict[str, dict[str, np.ndarray]] = {}
     for algorithm, sim_time_lists in simulation_times.items():
         alg_snake = algorithm.lower().replace(" ", "_")
         memory_usage_data[algorithm] = {}
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            mem_file = os.path.join(base_logs_dir, alg_snake, network, date, sim_time, "memory_usage.npy")
+            mem_file = os.path.join(
+                base_logs_dir, alg_snake, network, date, sim_time, "memory_usage.npy"
+            )
             sim_time_path = os.path.join(base_dir, sim_time)
 
             traffic_label = _extract_traffic_label(sim_time_path)
@@ -53,19 +62,27 @@ def _extract_traffic_label_from_filename(fname: str, fallback: str) -> str:
     return fallback
 
 
-def load_and_average_state_values(simulation_times, base_logs_dir, date, network):
+def load_and_average_state_values(
+    simulation_times: dict[str, list[list[str]]],
+    base_logs_dir: str,
+    date: str,
+    network: str,
+) -> dict[str, dict[str, dict[tuple[Any, ...], list[float]]]]:
     """
     Load state-value data from:
       - JSON files ("state_vals_e###.json") for most algorithms.
       - NumPy arrays (e.g. "e###.0_routes_cX_tY.npy") for Q-learning,
-        where each element is an array of 2 tuples: [(path_or_None, q_value), (path_or_None, q_value)].
+        where each element is an array of 2 tuples: [(path_or_None, q_value),
+        (path_or_None, q_value)].
     """
     all_algorithms_data = {}
     for algorithm, sim_time_lists in simulation_times.items():
         if algorithm.lower() == "baselines":
             continue
         alg_snake = algorithm.lower().replace(" ", "_")
-        traffic_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        traffic_data: defaultdict[
+            str, defaultdict[tuple[Any, ...], defaultdict[int, list[float]]]
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
             logs_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
@@ -78,22 +95,25 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
             ]
             for json_file in json_files:
                 file_path = os.path.join(logs_dir, json_file)
-                traffic_label = _extract_traffic_label_from_filename(json_file, dir_label)
+                traffic_label = _extract_traffic_label_from_filename(
+                    json_file, dir_label
+                )
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, encoding='utf-8') as f:
                         data = json.load(f)
                 except (OSError, json.JSONDecodeError):
                     continue
                 for link_str, path_vals in data.items():
                     try:
-                        # Safely parse link string using ast.literal_eval instead of eval()
+                        # Safely parse link string using ast.literal_eval instead
+                        # of eval()
                         link_tuple = ast.literal_eval(link_str)
                     except (ValueError, SyntaxError):
                         # Skip invalid link strings that can't be parsed as tuples
                         continue
                     for p_idx, val in enumerate(path_vals):
                         traffic_data[traffic_label][link_tuple][p_idx].append(val)
-        final_data = {}
+        final_data: dict[str, dict[tuple[Any, ...], list[float]]] = {}
         for t_label, link_map in traffic_data.items():
             final_data[t_label] = {}
             for link_tuple, pidx_map in link_map.items():
@@ -110,13 +130,23 @@ def load_and_average_state_values(simulation_times, base_logs_dir, date, network
     return all_algorithms_data
 
 
-def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, date):
+def load_all_rewards_files(
+    simulation_times: dict[str, list[list[str]]],
+    base_logs_dir: str,
+    base_dir: str,
+    network: str,
+    date: str,
+) -> dict[str, dict[str, dict[int, dict[int, np.ndarray]]]]:
     """
     Load all per-episode, per-trial reward files for each algorithm.
     Includes files that may or may not have "_iter_" in their filenames.
     """
-    pattern = re.compile(r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)(?:_iter_(\d+))?\.npy$")
-    all_rewards_data = {}
+    pattern = re.compile(
+        r"^rewards_e([0-9.]+)_routes_c\d+_t(\d+)(?:_iter_(\d+))?\.npy$"
+    )
+    all_rewards_data: dict[
+        str, dict[str, dict[int, dict[int, np.ndarray]]]
+    ] = {}
 
     for algorithm, sim_time_lists in simulation_times.items():
         if algorithm.lower() == "baselines":
@@ -126,7 +156,9 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
 
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            rewards_dir = os.path.join(base_logs_dir, alg_snake, network, date, sim_time)
+            rewards_dir = os.path.join(
+                base_logs_dir, alg_snake, network, date, sim_time
+            )
             if not os.path.exists(rewards_dir):
                 print(f"Warning: Directory does not exist: {rewards_dir}")
                 continue
@@ -148,12 +180,14 @@ def load_all_rewards_files(simulation_times, base_logs_dir, base_dir, network, d
                 rewards_array = np.load(file_path)
                 if trial_index not in all_rewards_data[algorithm][traffic_label]:
                     all_rewards_data[algorithm][traffic_label][trial_index] = {}
-                all_rewards_data[algorithm][traffic_label][trial_index][episode_index] = rewards_array
+                all_rewards_data[algorithm][traffic_label][trial_index][
+                    episode_index
+                ] = rewards_array
 
     return all_rewards_data
 
 
-def _process_baseline(sim_time_path: str):
+def _process_baseline(sim_time_path: str) -> dict[str, dict[str, list[float]]]:
     """
     Process a baseline simulation time folder.
     """
@@ -162,7 +196,7 @@ def _process_baseline(sim_time_path: str):
         sim_run_path = os.path.join(sim_time_path, sim_run)
         if not os.path.isdir(sim_run_path):
             continue
-        run_data = defaultdict(list)
+        run_data: defaultdict[float, list[list[float]]] = defaultdict(list)
         for filename in os.listdir(sim_run_path):
             if not filename.endswith(".json"):
                 continue
@@ -176,7 +210,7 @@ def _process_baseline(sim_time_path: str):
 
             file_path = os.path.join(sim_run_path, filename)
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, encoding='utf-8') as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError) as exc:
                 print(f"Error reading {file_path}: {exc}")
@@ -197,16 +231,18 @@ def _process_baseline(sim_time_path: str):
             if not lists:
                 continue
             arr = np.array(lists)
-            avg_run_data[str(tv)] = lists[0] if arr.shape[0] == 1 else np.mean(arr, axis=0).tolist()
+            avg_run_data[str(tv)] = (
+                lists[0] if arr.shape[0] == 1 else np.mean(arr, axis=0).tolist()
+            )
         baseline_data[sim_run] = avg_run_data
     return baseline_data
 
 
-def _process_sim_time(sim_time_path: str):
+def _process_sim_time(sim_time_path: str) -> dict[str, list[float]]:
     """
     Process a non-baseline simulation time folder.
     """
-    sim_time_data = defaultdict(list)
+    sim_time_data: defaultdict[float, list[list[float]]] = defaultdict(list)
     for sim_run in os.listdir(sim_time_path):
         sim_run_path = os.path.join(sim_time_path, sim_run)
         if not os.path.isdir(sim_run_path):
@@ -224,7 +260,7 @@ def _process_sim_time(sim_time_path: str):
 
             file_path = os.path.join(sim_run_path, filename)
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, encoding='utf-8') as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError) as exc:
                 print(f"Error reading {file_path}: {exc}")
@@ -263,7 +299,9 @@ def _process_sim_time(sim_time_path: str):
     return averaged_data
 
 
-def _process_single_sim_time(sim_time: str, base_dir: str, baseline_time):
+def _process_single_sim_time(
+    sim_time: str, base_dir: str, baseline_time: str
+) -> dict[str, Any] | None:
     """
     Process a single simulation time folder based on its type.
     """
@@ -276,16 +314,22 @@ def _process_single_sim_time(sim_time: str, base_dir: str, baseline_time):
     return _process_sim_time(sim_time_path)
 
 
-def load_blocking_data(simulation_times, base_dir, baseline_time):
+def load_blocking_data(
+    simulation_times: dict[str, list[list[str]]],
+    base_dir: str,
+    baseline_time: str,
+) -> dict[str, dict[str, Any]]:
     """
     Process simulation JSON files to compute blocking probabilities.
     """
-    final_result = {}
+    final_result: dict[str, dict[str, Any]] = {}
     for algorithm, sim_time_lists in simulation_times.items():
-        alg_result = defaultdict(list)
+        alg_result: defaultdict[str, list[list[float]]] = defaultdict(list)
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
-            data = _process_single_sim_time(sim_time, base_dir, baseline_time=baseline_time)
+            data = _process_single_sim_time(
+                sim_time, base_dir, baseline_time=baseline_time
+            )
             if data is None:
                 continue
 
@@ -308,11 +352,17 @@ def load_blocking_data(simulation_times, base_dir, baseline_time):
     return final_result
 
 
-def load_rewards(simulation_times, base_logs_dir, base_dir, network, date):
+def load_rewards(
+    simulation_times: dict[str, list[list[str]]],
+    base_logs_dir: str,
+    base_dir: str,
+    network: str,
+    date: str,
+) -> dict[str, dict[str, np.ndarray]]:
     """
     Load average rewards from .npy files for each non-baseline algorithm.
     """
-    rewards_data = {}
+    rewards_data: dict[str, dict[str, np.ndarray]] = {}
     for algorithm, sim_time_lists in simulation_times.items():
         if algorithm.lower() == "baselines":
             continue
@@ -321,7 +371,12 @@ def load_rewards(simulation_times, base_logs_dir, base_dir, network, date):
         for sim_time_wrapper in sim_time_lists:
             sim_time = sim_time_wrapper[0]
             reward_file = os.path.join(
-                base_logs_dir, alg_snake, network, date, sim_time, "average_rewards.npy"
+                base_logs_dir,
+                alg_snake,
+                network,
+                date,
+                sim_time,
+                "average_rewards.npy",
             )
             if not os.path.exists(reward_file):
                 print(f"Warning: Reward file does not exist: {reward_file}")

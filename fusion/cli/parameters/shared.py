@@ -9,10 +9,10 @@ import argparse
 def add_config_args(parser: argparse.ArgumentParser) -> None:
     """
     Add configuration-related arguments to the parser.
-    
+
     Provides common configuration arguments used across all CLI commands,
     including configuration file path and run identification.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -35,10 +35,10 @@ def add_config_args(parser: argparse.ArgumentParser) -> None:
 def add_debug_args(parser: argparse.ArgumentParser) -> None:
     """
     Add debugging and logging arguments to the parser.
-    
+
     Configures debug output control and verbose logging options
     for troubleshooting and development.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -60,10 +60,10 @@ def add_debug_args(parser: argparse.ArgumentParser) -> None:
 def add_output_args(parser: argparse.ArgumentParser) -> None:
     """
     Add output control arguments to the parser.
-    
+
     Configures output directory, file saving options, snapshot settings,
     and result formatting parameters for simulation data management.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -116,22 +116,23 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_plot_format_args(parser: argparse.ArgumentParser) -> None:
+def add_plot_format_args(
+    parser: argparse.ArgumentParser | argparse._ArgumentGroup
+) -> None:
     """
     Add common plot format arguments to the parser.
-    
+
     Provides standardized plot format options used by both analysis
     and plotting commands for consistent output formatting.
-    
-    :param parser: ArgumentParser instance to add arguments to
-    :type parser: argparse.ArgumentParser
+
+    :param parser: ArgumentParser or ArgumentGroup instance to add arguments to
+    :type parser: argparse.ArgumentParser | argparse._ArgumentGroup
     :return: None
     :rtype: None
     """
     parser.add_argument(
         "--plot_format",
         type=str,
-        choices=["png", "pdf", "svg", "eps"],
         default="png",
         help="Output format for generated plots"
     )

@@ -1,19 +1,22 @@
-import numpy as np
+from typing import Any
 
+import numpy as np
 from gymnasium import spaces
 
 from fusion.modules.rl.args.observation_args import OBS_DICT
 from fusion.modules.rl.utils.topology import convert_networkx_topo
 
 
-def get_observation_space(rl_props: object, engine_props: object):
+def get_observation_space(rl_props: Any, engine_props: Any) -> dict[str, spaces.Space]:
     """
     Gets any given observation space for DRL algorithms.
-    
+
     :param rl_props: RL properties object containing configuration
+    :type rl_props: Any
     :param engine_props: Engine properties object containing simulation settings
+    :type engine_props: Any
     :return: Dictionary defining the observation space for the environment
-    :rtype: dict
+    :rtype: dict[str, spaces.Space]
     """
     include_graph = False
     bw_set = {d["bandwidth"] for d in rl_props.arrival_list}
@@ -35,12 +38,22 @@ def get_observation_space(rl_props: object, engine_props: object):
         "source": lambda: spaces.MultiBinary(rl_props.num_nodes),
         "destination": lambda: spaces.MultiBinary(rl_props.num_nodes),
         "request_bandwidth": lambda: spaces.MultiBinary(len(bw_set)),
-        "holding_time": lambda: spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
-        "slots_needed": lambda: spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32),
-        "path_lengths": lambda: spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32),
-        "available_slots": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
+        "holding_time": lambda: spaces.Box(
+            low=0, high=1, shape=(1,), dtype=np.float32
+        ),
+        "slots_needed": lambda: spaces.Box(
+            low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32
+        ),
+        "path_lengths": lambda: spaces.Box(
+            low=0, high=10, shape=(max_paths,), dtype=np.float32
+        ),
+        "available_slots": lambda: spaces.Box(
+            low=0, high=1, shape=(max_paths,), dtype=np.float32
+        ),
         "is_feasible": lambda: spaces.MultiBinary(max_paths),
-        "paths_cong": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
+        "paths_cong": lambda: spaces.Box(
+            low=0, high=1, shape=(max_paths,), dtype=np.float32
+        ),
     }
 
     obs_space_dict = {
@@ -49,7 +62,9 @@ def get_observation_space(rl_props: object, engine_props: object):
         if feature in obs_features
     }
 
-    ei, ea, xf, _ = convert_networkx_topo(engine_props.engine_props['topology'], as_directed=True)
+    ei, ea, xf, _ = convert_networkx_topo(
+        engine_props.engine_props['topology'], as_directed=True
+    )
     num_nodes, num_edges = xf.shape[0], ei.shape[1]
     if include_graph:
         obs_space_dict.update({
@@ -68,20 +83,25 @@ class FragmentationTracker:
     Tracks fragmentation.
     """
 
-    def __init__(self, num_nodes, core_count, spectral_slots):
+    def __init__(self, num_nodes: int, core_count: int, spectral_slots: int) -> None:
         """
         Initializes the fragmentation tracker.
 
-        :param num_nodes: Total number of nodes in the network topology.
-        :param core_count: Number of cores per link.
-        :param spectral_slots: Number of spectral slots per core.
+        :param num_nodes: Total number of nodes in the network topology
+        :type num_nodes: int
+        :param core_count: Number of cores per link
+        :type core_count: int
+        :param spectral_slots: Number of spectral slots per core
+        :type spectral_slots: int
         """
         self.num_nodes = num_nodes
         self.core_count = core_count
         self.spectral_slots = spectral_slots
 
         # Bitmask: [src, dst, core, slots]
-        self.core_masks = np.zeros((num_nodes, num_nodes, core_count, spectral_slots), dtype=np.uint8)
+        self.core_masks = np.zeros(
+            (num_nodes, num_nodes, core_count, spectral_slots), dtype=np.uint8
+        )
 
         # Dirty mask to avoid unnecessary recomputation
         self.dirty_cores = np.zeros((num_nodes, num_nodes, core_count), dtype=bool)
@@ -89,16 +109,30 @@ class FragmentationTracker:
         # Normalize by max possible transitions per core (not including zero-padding)
         self.norm_factor = (spectral_slots // 3) + 1
 
-    def update(self, src: int, dst: int, core_index: int, start_slot: int, end_slot: int, is_allocate: bool = True):
+    def update(
+        self,
+        src: int,
+        dst: int,
+        core_index: int,
+        start_slot: int,
+        end_slot: int,
+        is_allocate: bool = True,
+    ) -> None:
         """
         Updates the core mask for a specific link (src→dst), core, and slot range.
 
         :param src: Source node index
+        :type src: int
         :param dst: Destination node index
+        :type dst: int
         :param core_index: Core used for allocation
+        :type core_index: int
         :param start_slot: First slot index allocated
+        :type start_slot: int
         :param end_slot: Last slot index allocated (inclusive)
+        :type end_slot: int
         :param is_allocate: If True, mark as allocated (1); if False, free (0)
+        :type is_allocate: bool
         """
         slot_indices = np.arange(start_slot, end_slot + 1)
         if is_allocate:
@@ -108,13 +142,18 @@ class FragmentationTracker:
 
         self.dirty_cores[src, dst, core_index] = True
 
-    def get_fragmentation(self, chosen_path: list[int], core_index: int):
+    def get_fragmentation(
+        self, chosen_path: list[int], core_index: int
+    ) -> dict[str, np.ndarray]:
         """
         Computes fragmentation for the specified core and chosen path.
 
-        :param chosen_path: List of node indices representing the path.
-        :param core_index: Core used during allocation.
-        :return: Dictionary with formatted NumPy arrays for Gym observations.
+        :param chosen_path: List of node indices representing the path
+        :type chosen_path: list[int]
+        :param core_index: Core used during allocation
+        :type core_index: int
+        :return: Dictionary with formatted NumPy arrays for Gym observations
+        :rtype: dict[str, np.ndarray]
         """
         # 1. Core-level fragmentation (last link in path)
         core_frag = 0.0
@@ -138,7 +177,9 @@ class FragmentationTracker:
                 path_transitions += np.sum(transitions)
 
         if total_links > 0:
-            path_frag = path_transitions / (2 * self.norm_factor * total_links * self.core_count)
+            path_frag = path_transitions / (
+                2 * self.norm_factor * total_links * self.core_count
+            )
         else:
             path_frag = 0.0
 

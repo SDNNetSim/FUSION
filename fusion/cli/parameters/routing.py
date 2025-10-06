@@ -4,16 +4,17 @@ Handles routing algorithms, spectrum assignment, SNR/modulation, and SDN setting
 """
 
 import argparse
+
 from .snr import add_snr_args
 
 
 def add_routing_args(parser: argparse.ArgumentParser) -> None:
     """
     Add routing algorithm arguments to the parser.
-    
+
     Configures path selection algorithms and routing parameters
     for optical network simulation.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -23,7 +24,6 @@ def add_routing_args(parser: argparse.ArgumentParser) -> None:
     routing_group.add_argument(
         "--route_method",
         type=str,
-        choices=["shortest_path", "k_shortest_path"],
         help="Routing algorithm method"
     )
     routing_group.add_argument(
@@ -37,10 +37,10 @@ def add_routing_args(parser: argparse.ArgumentParser) -> None:
 def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
     """
     Add spectrum assignment arguments to the parser.
-    
+
     Configures spectrum allocation methods, guard slots, and
     priority settings for optical spectrum assignment.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -50,7 +50,6 @@ def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
     spectrum_group.add_argument(
         "--allocation_method",
         type=str,
-        choices=["first_fit", "best_fit", "last_fit"],
         help="Spectrum allocation method"
     )
     spectrum_group.add_argument(
@@ -63,17 +62,17 @@ def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
         "--spectrum_priority",
         type=str,
         choices=["BSC", "CSB"],
-        help="Priority order for multi-band allocation (Band-Sequential-Core or Core-Sequential-Band)"
+        help="Priority order for multi-band allocation (BSC or CSB)"
     )
 
 
 def add_modulation_args(parser: argparse.ArgumentParser) -> None:
     """
     Add SNR and modulation arguments to the parser.
-    
+
     Delegates to the SNR module to avoid code duplication.
     Provides compatibility interface for routing-related modulation settings.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -85,10 +84,10 @@ def add_modulation_args(parser: argparse.ArgumentParser) -> None:
 def add_sdn_args(parser: argparse.ArgumentParser) -> None:
     """
     Add SDN and dynamic switching arguments to the parser.
-    
+
     Configures Software-Defined Networking features including
     dynamic lightpath switching and core allocation policies.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
@@ -110,10 +109,10 @@ def add_sdn_args(parser: argparse.ArgumentParser) -> None:
 def add_all_routing_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all routing-related arguments to the parser.
-    
+
     Convenience function that combines routing algorithms, spectrum assignment,
     modulation settings, and SDN configuration in a single call.
-    
+
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None

@@ -9,7 +9,9 @@ help:
 	@echo "=========================="
 	@echo ""
 	@echo "Setup:"
-	@echo "  install         Install dependencies"
+	@echo "  install         Install all dependencies (automated)"
+	@echo "  install-dev     Install development tools only"
+	@echo "  install-manual  Manual installation (advanced users)"
 	@echo "  check-env       Check if virtual environment is activated"
 	@echo ""
 	@echo "Validation (run before submitting PR):"
@@ -37,20 +39,38 @@ check-env:
 		echo "✅ Virtual environment active: $$VIRTUAL_ENV"; \
 	fi
 
-# Install dependencies
+# Install dependencies using automated script
 install: check-env
-	@echo "Installing dependencies..."
+	@echo "Running automated installation..."
+	./install.sh
+
+# Install for development only (no PyG)
+install-dev: check-env
+	@echo "Installing development dependencies..."
+	python -m pip install --upgrade pip setuptools wheel
+	pip install -e .[dev]
+	@echo "✅ Development dependencies installed"
+
+# Manual installation (legacy)
+install-manual: check-env
+	@echo "Installing dependencies manually..."
 	python -m pip install --upgrade pip setuptools wheel
 	pip install torch==2.2.2
 	# Platform-specific PyG installation
 	@if [ "$$(uname)" = "Darwin" ]; then \
-		echo "Installing PyG packages for macOS..."; \
-		MACOSX_DEPLOYMENT_TARGET=10.15 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html; \
+		if [ "$$(uname -m)" = "arm64" ]; then \
+			echo "Installing PyG packages for Apple Silicon..."; \
+			MACOSX_DEPLOYMENT_TARGET=11.0 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html; \
+		else \
+			echo "Installing PyG packages for Intel Mac..."; \
+			MACOSX_DEPLOYMENT_TARGET=10.15 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html; \
+		fi; \
 	else \
 		echo "Installing PyG packages for Linux..."; \
 		pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html; \
 	fi
-	pip install -r requirements.txt
+	pip install torch-geometric==2.6.1
+	pip install -e .[rl,dev]
 	@echo "✅ Dependencies installed successfully"
 
 # Full PR validation

@@ -8,33 +8,35 @@ architectures.
 """
 
 # Import feature extractors
-from fusion.modules.rl.feat_extrs.path_gnn import PathGNN
-from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN, PathGNNEncoder
-from fusion.modules.rl.feat_extrs.graphormer import GraphTransformerExtractor
-from fusion.modules.rl.feat_extrs.base_feature_extractor import BaseGraphFeatureExtractor
+from fusion.modules.rl.feat_extrs.base_feature_extractor import (
+    BaseGraphFeatureExtractor,
+)
 
 # Import constants
 from fusion.modules.rl.feat_extrs.constants import (
     CACHE_DIR,
     DEFAULT_EMBEDDING_DIMENSION,
-    DEFAULT_NUM_LAYERS,
     DEFAULT_GNN_TYPE,
     DEFAULT_NUM_HEADS,
-    EDGE_EMBEDDING_SCALE_FACTOR
+    DEFAULT_NUM_LAYERS,
+    EDGE_EMBEDDING_SCALE_FACTOR,
 )
+from fusion.modules.rl.feat_extrs.graphormer import GraphTransformerExtractor
+from fusion.modules.rl.feat_extrs.path_gnn import PathGNN
+from fusion.modules.rl.feat_extrs.path_gnn_cached import CachedPathGNN, PathGNNEncoder
 
 __all__ = [
     # Feature extractors
-    'PathGNN',
-    'CachedPathGNN',
-    'PathGNNEncoder',
-    'GraphTransformerExtractor',
-    'BaseGraphFeatureExtractor',
+    "PathGNN",
+    "CachedPathGNN",
+    "PathGNNEncoder",
+    "GraphTransformerExtractor",
+    "BaseGraphFeatureExtractor",
     # Constants
-    'CACHE_DIR',
-    'DEFAULT_EMBEDDING_DIMENSION',
-    'DEFAULT_NUM_LAYERS',
-    'DEFAULT_GNN_TYPE',
-    'DEFAULT_NUM_HEADS',
-    'EDGE_EMBEDDING_SCALE_FACTOR',
+    "CACHE_DIR",
+    "DEFAULT_EMBEDDING_DIMENSION",
+    "DEFAULT_NUM_LAYERS",
+    "DEFAULT_GNN_TYPE",
+    "DEFAULT_NUM_HEADS",
+    "EDGE_EMBEDDING_SCALE_FACTOR",
 ]

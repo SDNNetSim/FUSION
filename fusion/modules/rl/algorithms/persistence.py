@@ -1,11 +1,11 @@
 """Model persistence classes for RL algorithms."""
 
-import os
 import json
-from typing import Dict, Any
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 
-from fusion.utils.os import create_directory  # pylint: disable=unused-import
 from fusion.modules.rl.errors import AlgorithmNotFoundError
 
 
@@ -13,28 +13,34 @@ class BanditModelPersistence:
     """Handles model persistence for bandit algorithms."""
 
     @staticmethod
-    def load_model(train_fp: str) -> Dict[str, Any]:
+    def load_model(train_fp: str) -> dict[str, Any]:
         """
         Load a pre-trained bandit model.
 
         :param train_fp: File path where the model has been saved
         :type train_fp: str
         :return: The state-value functions V(s, a)
-        :rtype: Dict[str, Any]
+        :rtype: dict[str, Any]
         """
-        train_fp = os.path.join('logs', train_fp)
-        with open(train_fp, 'r', encoding='utf-8') as file_obj:
+        full_path = Path('logs') / train_fp
+        with open(full_path, encoding='utf-8') as file_obj:
             state_vals_dict = json.load(file_obj)
         return state_vals_dict
 
     @staticmethod
-    def save_model(state_values_dict: Dict[str, Any], erlang: float, cores_per_link: int,
-                   save_dir: str, is_path: bool, trial: int) -> None:
+    def save_model(
+        state_values_dict: dict[str, Any],
+        erlang: float,
+        cores_per_link: int,
+        save_dir: str,
+        is_path: bool,
+        trial: int
+    ) -> None:
         """
         Save bandit model state values.
 
         :param state_values_dict: Dictionary of state values to save
-        :type state_values_dict: Dict[str, Any]
+        :type state_values_dict: dict[str, Any]
         :param erlang: Erlang traffic value
         :type erlang: float
         :param cores_per_link: Number of cores per link
@@ -51,18 +57,22 @@ class BanditModelPersistence:
             return
 
         # Convert tuples to strings and arrays to lists for JSON format
-        state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
+        state_values_dict = {
+            str(key): value.tolist() for key, value in state_values_dict.items()
+        }
 
         if is_path:
-            state_vals_fp = f"state_vals_e{erlang}_routes_c{cores_per_link}_t{trial + 1}.json"
+            filename = (
+                f"state_vals_e{erlang}_routes_c{cores_per_link}_t{trial + 1}.json"
+            )
         else:
             raise AlgorithmNotFoundError(
                 "Core agent bandit model saving is not yet implemented. "
                 "Only path agent bandit models are currently supported."
             )
 
-        save_fp = os.path.join(os.getcwd(), save_dir, state_vals_fp)
-        with open(save_fp, 'w', encoding='utf-8') as file_obj:
+        save_path = Path.cwd() / save_dir / filename
+        with open(save_path, 'w', encoding='utf-8') as file_obj:
             json.dump(state_values_dict, file_obj)
 
 
@@ -70,14 +80,21 @@ class QLearningModelPersistence:  # pylint: disable=too-few-public-methods
     """Handles model persistence for Q-learning algorithms."""
 
     @staticmethod
-    def save_model(q_dict: Dict[str, list], rewards_avg: np.ndarray, erlang: float,
-                   cores_per_link: int, base_str: str, trial: int, iteration: int,
-                   save_dir: str) -> None:
+    def save_model(
+        q_dict: dict[str, list],
+        rewards_avg: np.ndarray,
+        erlang: float,
+        cores_per_link: int,
+        base_str: str,
+        trial: int,
+        iteration: int,
+        save_dir: str
+    ) -> None:
         """
         Save Q-learning model data.
 
         :param q_dict: Q-values dictionary to save
-        :type q_dict: Dict[str, list]
+        :type q_dict: dict[str, list]
         :param rewards_avg: Average rewards array
         :type rewards_avg: np.ndarray
         :param erlang: Erlang traffic value
@@ -101,12 +118,17 @@ class QLearningModelPersistence:  # pylint: disable=too-few-public-methods
             )
 
         # Save numpy array
-        filename_npy = f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}_iter_{iteration}.npy"
-        save_path_npy = os.path.join(save_dir, filename_npy)
+        filename_npy = (
+            f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}_"
+            f"iter_{iteration}.npy"
+        )
+        save_path_npy = Path(save_dir) / filename_npy
         np.save(save_path_npy, rewards_avg)
 
         # Save JSON dictionary
-        json_filename = f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
-        save_path_json = os.path.join(save_dir, json_filename)
+        json_filename = (
+            f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
+        )
+        save_path_json = Path(save_dir) / json_filename
         with open(save_path_json, 'w', encoding='utf-8') as file_obj:
             json.dump(q_dict, file_obj)

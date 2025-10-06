@@ -62,3 +62,6 @@ htmlcov/
 .hypothesis/
 .pytest_cache/
 cover/
+
+# Python package metadata
+*.egg-info/

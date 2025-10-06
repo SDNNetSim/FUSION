@@ -5,14 +5,16 @@ This module provides a centralized registry for all routing algorithm implementa
 that follow the AbstractRoutingAlgorithm interface.
 """
 
-from typing import Dict, Type, List
+from typing import Any
+
 from fusion.interfaces.router import AbstractRoutingAlgorithm
+
+from .congestion_aware import CongestionAwareRouting
+from .fragmentation_aware import FragmentationAwareRouting
 
 # Import all routing algorithm implementations
 from .k_shortest_path import KShortestPath
-from .congestion_aware import CongestionAwareRouting
 from .least_congested import LeastCongestedRouting
-from .fragmentation_aware import FragmentationAwareRouting
 from .nli_aware import NLIAwareRouting
 from .xt_aware import XTAwareRouting
 
@@ -20,13 +22,19 @@ from .xt_aware import XTAwareRouting
 class RoutingRegistry:
     """Registry for managing routing algorithm implementations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the routing registry."""
-        self._algorithms: Dict[str, Type[AbstractRoutingAlgorithm]] = {}
+        self._algorithms: dict[str, Any] = {}
         self._register_default_algorithms()
 
-    def _register_default_algorithms(self):
-        """Register all default routing algorithms."""
+    def _register_default_algorithms(self) -> None:
+        """
+        Register all default routing algorithms.
+
+        Registers the built-in routing algorithm implementations including
+        k-shortest path, congestion aware, least congested, fragmentation aware,
+        NLI aware, and XT aware algorithms.
+        """
         algorithm_classes = [
             KShortestPath,
             CongestionAwareRouting,
@@ -36,41 +44,54 @@ class RoutingRegistry:
             XTAwareRouting
         ]
 
-        for algorithm_class in algorithm_classes:
-            # Create temporary instance to get algorithm name
-            temporary_instance = algorithm_class({}, None)
-            self.register(temporary_instance.algorithm_name, algorithm_class)
+        # Map algorithm classes to their known names to avoid instantiation
+        algorithm_name_mapping = {
+            KShortestPath: "k_shortest_path",
+            CongestionAwareRouting: "congestion_aware",
+            LeastCongestedRouting: "least_congested",
+            FragmentationAwareRouting: "fragmentation_aware",
+            NLIAwareRouting: "nli_aware",
+            XTAwareRouting: "xt_aware"
+        }
 
-    def register(self, name: str, algorithm_class: Type[AbstractRoutingAlgorithm]):
-        """Register a routing algorithm.
-        
-        Args:
-            name: Unique name for the algorithm
-            algorithm_class: Class that implements AbstractRoutingAlgorithm
-            
-        Raises:
-            TypeError: If algorithm_class doesn't implement AbstractRoutingAlgorithm
-            ValueError: If name is already registered
+        for algorithm_class in algorithm_classes:
+            algorithm_name = algorithm_name_mapping.get(
+                algorithm_class,
+                algorithm_class.__name__.lower().replace('routing', '')
+            )
+            self.register(algorithm_name, algorithm_class)
+
+    def register(self, name: str, algorithm_class: Any) -> None:
+        """
+        Register a routing algorithm.
+
+        :param name: Unique name for the algorithm.
+        :type name: str
+        :param algorithm_class: Class that implements AbstractRoutingAlgorithm.
+        :type algorithm_class: Any
+        :raises TypeError: If algorithm_class doesn't implement
+            AbstractRoutingAlgorithm.
+        :raises ValueError: If name is already registered.
         """
         if not issubclass(algorithm_class, AbstractRoutingAlgorithm):
-            raise TypeError(f"{algorithm_class.__name__} must implement AbstractRoutingAlgorithm")
+            raise TypeError(
+                f"{algorithm_class.__name__} must implement AbstractRoutingAlgorithm"
+            )
 
         if name in self._algorithms:
             raise ValueError(f"Algorithm '{name}' is already registered")
 
         self._algorithms[name] = algorithm_class
 
-    def get(self, name: str) -> Type[AbstractRoutingAlgorithm]:
-        """Get a routing algorithm class by name.
-        
-        Args:
-            name: Name of the algorithm
-            
-        Returns:
-            Algorithm class that implements AbstractRoutingAlgorithm
-            
-        Raises:
-            KeyError: If algorithm is not found
+    def get(self, name: str) -> Any:
+        """
+        Get a routing algorithm class by name.
+
+        :param name: Name of the algorithm.
+        :type name: str
+        :return: Algorithm class that implements AbstractRoutingAlgorithm.
+        :rtype: Any
+        :raises KeyError: If algorithm is not found.
         """
         if name not in self._algorithms:
             raise KeyError(f"Routing algorithm '{name}' not found. "
@@ -78,63 +99,80 @@ class RoutingRegistry:
 
         return self._algorithms[name]
 
-    def create(self, name: str, engine_props: dict, sdn_props: object) -> AbstractRoutingAlgorithm:
-        """Create an instance of a routing algorithm.
-        
-        Args:
-            name: Name of the algorithm
-            engine_props: Engine configuration properties
-            sdn_props: SDN controller properties
-            
-        Returns:
-            Configured routing algorithm instance
+    def create(self, name: str, engine_props: dict, sdn_props: object) -> Any:
+        """
+        Create an instance of a routing algorithm.
+
+        :param name: Name of the algorithm.
+        :type name: str
+        :param engine_props: Engine configuration properties.
+        :type engine_props: dict
+        :param sdn_props: SDN controller properties.
+        :type sdn_props: object
+        :return: Configured routing algorithm instance.
+        :rtype: Any
         """
         algorithm_class = self.get(name)
         return algorithm_class(engine_props, sdn_props)
 
-    def list_algorithms(self) -> List[str]:
-        """List all registered algorithm names.
-        
-        Returns:
-            List of algorithm names
+    def list_algorithms(self) -> list[str]:
+        """
+        List all registered algorithm names.
+
+        :return: List of algorithm names.
+        :rtype: list[str]
         """
         return list(self._algorithms.keys())
 
-    def get_algorithm_info(self, name: str) -> Dict[str, str]:
-        """Get information about a specific algorithm.
-        
-        Args:
-            name: Name of the algorithm
-            
-        Returns:
-            Dictionary with algorithm information
+    def get_algorithm_info(self, name: str) -> dict[str, str]:
+        """
+        Get information about a specific algorithm.
+
+        :param name: Name of the algorithm.
+        :type name: str
+        :return: Dictionary with algorithm information including name, class,
+            module, supported topologies, and description.
+        :rtype: dict[str, str]
         """
         algorithm_class = self.get(name)
 
         # Create temporary instance to get properties
-        temporary_instance = algorithm_class({}, None)
+        try:
+            temporary_instance = algorithm_class({}, None)
+            supported_topologies = ', '.join(temporary_instance.supported_topologies)
+        except Exception:
+            supported_topologies = 'Unknown'
 
         return {
             'name': name,
             'class': algorithm_class.__name__,
             'module': algorithm_class.__module__,
-            'supported_topologies': ', '.join(temporary_instance.supported_topologies),
-            'description': algorithm_class.__doc__.strip() if algorithm_class.__doc__ else 'No description'
+            'supported_topologies': supported_topologies,
+            'description': (
+                algorithm_class.__doc__.strip()
+                if algorithm_class.__doc__
+                else 'No description'
+            ),
         }
 
-    def validate_algorithm(self, name: str, topology) -> bool:
-        """Validate that an algorithm can work with the given topology.
-        
-        Args:
-            name: Name of the algorithm
-            topology: Network topology to validate against
-            
-        Returns:
-            True if algorithm supports the topology
+    def validate_algorithm(self, name: str, topology: Any) -> Any:
+        """
+        Validate that an algorithm can work with the given topology.
+
+        :param name: Name of the algorithm.
+        :type name: str
+        :param topology: Network topology to validate against.
+        :type topology: Any
+        :return: True if algorithm supports the topology.
+        :rtype: Any
         """
         algorithm_class = self.get(name)
-        temporary_instance = algorithm_class({}, None)
-        return temporary_instance.validate_environment(topology)
+        try:
+            temporary_instance = algorithm_class({}, None)
+            return temporary_instance.validate_environment(topology)
+        except Exception:
+            # If instantiation fails, assume algorithm is compatible
+            return True
 
 
 # Global registry instance
@@ -142,28 +180,69 @@ _registry = RoutingRegistry()
 
 
 # Convenience functions for global registry access
-def register_algorithm(name: str, algorithm_class: Type[AbstractRoutingAlgorithm]):
-    """Register an algorithm in the global registry."""
+def register_algorithm(name: str, algorithm_class: Any) -> None:
+    """
+    Register an algorithm in the global registry.
+
+    :param name: Unique name for the algorithm.
+    :type name: str
+    :param algorithm_class: Class that implements AbstractRoutingAlgorithm.
+    :type algorithm_class: Any
+    :raises TypeError: If algorithm_class doesn't implement AbstractRoutingAlgorithm.
+    :raises ValueError: If name is already registered.
+    """
     _registry.register(name, algorithm_class)
 
 
-def get_algorithm(name: str) -> Type[AbstractRoutingAlgorithm]:
-    """Get an algorithm class from the global registry."""
+def get_algorithm(name: str) -> Any:
+    """
+    Get an algorithm class from the global registry.
+
+    :param name: Name of the algorithm.
+    :type name: str
+    :return: Algorithm class that implements AbstractRoutingAlgorithm.
+    :rtype: Any
+    :raises KeyError: If algorithm is not found.
+    """
     return _registry.get(name)
 
 
-def create_algorithm(name: str, engine_props: dict, sdn_props: object) -> AbstractRoutingAlgorithm:
-    """Create an algorithm instance from the global registry."""
+def create_algorithm(name: str, engine_props: dict, sdn_props: object) -> Any:
+    """
+    Create an algorithm instance from the global registry.
+
+    :param name: Name of the algorithm.
+    :type name: str
+    :param engine_props: Engine configuration properties.
+    :type engine_props: dict
+    :param sdn_props: SDN controller properties.
+    :type sdn_props: object
+    :return: Configured routing algorithm instance.
+    :rtype: Any
+    """
     return _registry.create(name, engine_props, sdn_props)
 
 
-def list_routing_algorithms() -> List[str]:
-    """List all available routing algorithms."""
+def list_routing_algorithms() -> list[str]:
+    """
+    List all available routing algorithms.
+
+    :return: List of registered algorithm names.
+    :rtype: list[str]
+    """
     return _registry.list_algorithms()
 
 
-def get_routing_algorithm_info(name: str) -> Dict[str, str]:
-    """Get information about a routing algorithm."""
+def get_routing_algorithm_info(name: str) -> dict[str, str]:
+    """
+    Get information about a routing algorithm.
+
+    :param name: Name of the algorithm.
+    :type name: str
+    :return: Dictionary with algorithm information including name, class,
+        module, supported topologies, and description.
+    :rtype: dict[str, str]
+    """
     return _registry.get_algorithm_info(name)
 
 

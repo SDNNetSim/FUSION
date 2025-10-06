@@ -1,11 +1,14 @@
 
 from fusion.modules.rl.utils.errors import ModelSetupError
 
+
 # NOTE: RL Zoo functionality has been deprecated and replaced by direct algorithm calls
-# This module is maintained for backward compatibility but should not be used in new code
-def run_rl_zoo():
+# This module is maintained for backward compatibility but should not be used in
+# new code
+def run_rl_zoo() -> None:
     """
-    Executes RL Zoo commands for training or running simulations using the specified algorithm.
+    Executes RL Zoo commands for training or running simulations using the
+    specified algorithm.
 
     :raises ModelSetupError: This functionality has been deprecated
     """

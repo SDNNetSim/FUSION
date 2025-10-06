@@ -1,7 +1,7 @@
 name: Code Quality (Modern)
 
 # This is the primary code quality workflow using modern development tools.
-# It complements the legacy workflows (pylint.yml, unittests.yml) and
+# It complements the legacy workflows (unittests.yml) and
 # provides comprehensive quality checks including formatting, linting,
 # type checking, testing with coverage, security scanning, and analysis.
 
@@ -41,7 +41,7 @@ jobs:
         pip install torch==2.2.2
         pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
         pip install -r requirements.txt
-        pip install black mypy pytest-cov pre-commit ruff vulture pydeps graphviz snakeviz py-spy memory-profiler bandit
+        pip install mypy pytest-cov pre-commit ruff vulture pydeps graphviz snakeviz py-spy memory-profiler bandit
 
     - name: Cache pre-commit hooks
       uses: actions/cache@v3
@@ -56,8 +56,7 @@ jobs:
 
     - name: Format check
       run: |
-        black --check --diff fusion/ tests/
-        isort --check-only --diff fusion/ tests/
+        ruff format --check fusion/ tests/
 
     - name: Lint with ruff
       run: |

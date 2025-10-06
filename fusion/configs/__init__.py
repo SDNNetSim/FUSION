@@ -1,11 +1,12 @@
-"""Configuration management system for FUSION.
+"""
+Configuration management system for FUSION.
 
 This module provides comprehensive configuration management for the FUSION simulator,
 including loading, validation, templates, and CLI integration.
 
 Main components:
 - ConfigManager: Core configuration loading and management
-- SchemaValidator: JSON schema-based validation 
+- SchemaValidator: JSON schema-based validation
 - ConfigRegistry: Template and profile management
 - CLIToConfigMapper: CLI argument mapping
 - Error classes: Specific configuration exceptions
@@ -19,7 +20,7 @@ from .errors import (
     ConfigFileNotFoundError,
     ConfigParseError,
     ConfigTypeConversionError,
-    MissingRequiredOptionError
+    MissingRequiredOptionError,
 )
 from .registry import ConfigRegistry
 from .validate import SchemaValidator, ValidationError

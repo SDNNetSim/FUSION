@@ -6,13 +6,19 @@ feature importance, confusion matrices, and data distribution plots.
 """
 
 import os
-from typing import List, Dict, Any
+from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 
 # Optional imports
 try:
@@ -21,22 +27,22 @@ try:
 except ImportError:
     HAS_PERMUTATION_IMPORTANCE = False
 
-from fusion.utils.os import create_directory
 from fusion.utils.logging_config import get_logger
+from fusion.utils.os import create_directory
 
 logger = get_logger(__name__)
 
 
 def plot_data_distributions(
-        simulation_dict: Dict[str, Any],
+        simulation_dict: dict[str, Any],
         input_dataframe: pd.DataFrame,
         erlang: float
 ) -> None:
     """
     Plot data distributions for machine learning simulation runs.
-    
+
     Creates pie charts and histograms for key features in the dataset.
-    
+
     :param simulation_dict: Dictionary containing simulation parameters
     :type simulation_dict: Dict[str, Any]
     :param input_dataframe: DataFrame containing simulation data
@@ -44,13 +50,15 @@ def plot_data_distributions(
     :param erlang: Traffic volume value
     :type erlang: float
     :return: None
-    
+
     Example:
         >>> sim_dict = {'train_file_path': 'experiment_001'}
         >>> data = pd.DataFrame({'bandwidth': [50, 100, 200]})
         >>> plot_data_distributions(sim_dict, data, 1000.0)
     """
-    save_filepath = os.path.join('data', 'plots', simulation_dict['train_file_path'], 'input_analysis')
+    save_filepath = os.path.join(
+        'data', 'plots', simulation_dict['train_file_path'], 'input_analysis'
+    )
     create_directory(directory_path=save_filepath)
 
     _plot_pie_charts(
@@ -75,7 +83,9 @@ def _plot_pie_charts(
 
     for column in categorical_columns:
         if column not in input_dataframe.columns:
-            logger.warning("Column '%s' not found in dataframe, skipping pie chart", column)
+            logger.warning(
+                "Column '%s' not found in dataframe, skipping pie chart", column
+            )
             continue
 
         plt.figure(figsize=(6, 6), dpi=300)
@@ -109,7 +119,9 @@ def _plot_histograms(
 
     for column in continuous_columns:
         if column not in input_dataframe.columns:
-            logger.warning("Column '%s' not found in dataframe, skipping histogram", column)
+            logger.warning(
+                "Column '%s' not found in dataframe, skipping histogram", column
+            )
             continue
 
         plt.figure(figsize=(12, 6), dpi=300)
@@ -134,19 +146,19 @@ def _plot_histograms(
 
 
 def plot_feature_importance(
-        simulation_dict: Dict[str, Any],
+        simulation_dict: dict[str, Any],
         model: Any,
-        feature_names: List[str],
+        feature_names: list[str],
         erlang: float,
         test_features: np.ndarray,
         test_labels: np.ndarray
 ) -> None:
     """
     Plot feature importance for a trained model.
-    
+
     Supports tree-based models, linear models, and uses permutation
     importance for models without built-in importance scores.
-    
+
     :param simulation_dict: Dictionary containing simulation parameters
     :type simulation_dict: Dict[str, Any]
     :param model: Trained machine learning model
@@ -160,7 +172,7 @@ def plot_feature_importance(
     :param test_labels: Test labels
     :type test_labels: np.ndarray
     :return: None
-    
+
     Example:
         >>> features = ['path_length', 'bandwidth', 'congestion']
         >>> plot_feature_importance(sim_dict, model, features, 1000.0, X_test, y_test)
@@ -198,7 +210,7 @@ def plot_feature_importance(
     )
 
     # Add value labels on bars
-    for bar_plot, importance in zip(bars, importances[indices]):
+    for bar_plot, importance in zip(bars, importances[indices], strict=False):
         height = bar_plot.get_height()
         plt.text(
             bar_plot.get_x() + bar_plot.get_width() / 2.,
@@ -228,18 +240,18 @@ def plot_feature_importance(
 
 
 def plot_confusion_matrix(
-        simulation_dict: Dict[str, Any],
+        simulation_dict: dict[str, Any],
         test_labels: np.ndarray,
         predictions: np.ndarray,
         erlang: str,
         algorithm: str
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Plot confusion matrix and calculate classification metrics.
-    
+
     Creates a heatmap visualization of the confusion matrix and
     returns accuracy, precision, recall, and F1 scores.
-    
+
     :param simulation_dict: Dictionary containing simulation parameters
     :type simulation_dict: Dict[str, Any]
     :param test_labels: True labels
@@ -252,9 +264,11 @@ def plot_confusion_matrix(
     :type algorithm: str
     :return: Dictionary of classification metrics
     :rtype: Dict[str, float]
-    
+
     Example:
-        >>> metrics = plot_confusion_matrix(sim_dict, y_test, y_pred, "1000", "RandomForest")
+        >>> metrics = plot_confusion_matrix(
+        ...     sim_dict, y_test, y_pred, "1000", "RandomForest"
+        ... )
         >>> print(f"Accuracy: {metrics['accuracy']:.2%}")
     """
     # Calculate metrics
@@ -285,7 +299,10 @@ def plot_confusion_matrix(
         cbar_kws={'label': 'Count'}
     )
 
-    plt.title(f'Confusion Matrix - {algorithm} ({erlang} Erlang)', weight='bold', fontsize=14)
+    plt.title(
+        f'Confusion Matrix - {algorithm} ({erlang} Erlang)',
+        weight='bold', fontsize=14
+    )
     plt.xlabel('Predicted Class', weight='bold')
     plt.ylabel('Actual Class', weight='bold')
 
@@ -305,7 +322,7 @@ def plot_confusion_matrix(
 def _add_metrics_to_plot(
         test_labels: np.ndarray,
         predictions: np.ndarray,
-        metrics: Dict[str, float]
+        metrics: dict[str, float]
 ) -> None:
     """Add classification metrics as text to the current plot."""
     # Calculate per-class accuracy
@@ -334,18 +351,22 @@ def _add_metrics_to_plot(
              transform=plt.gca().transAxes, fontsize=10, verticalalignment='bottom')
 
 
-def plot_2d_clusters(pca_dataframe: pd.DataFrame, output_path: str = None) -> None:
+def plot_2d_clusters(
+        pca_dataframe: pd.DataFrame, output_path: str | None = None
+) -> None:
     """
     Plot 2D visualization of clusters using PCA-reduced data.
-    
+
     :param pca_dataframe: DataFrame with PCA components and predicted labels
     :type pca_dataframe: pd.DataFrame
     :param output_path: Optional path to save the plot
     :type output_path: str
     :return: None
-    
+
     Example:
-        >>> df_pca = pd.DataFrame({'PC1': [...], 'PC2': [...], 'predicted_label': [...]})
+        >>> df_pca = pd.DataFrame({
+        ...     'PC1': [...], 'PC2': [...], 'predicted_label': [...]
+        ... })
         >>> plot_2d_clusters(df_pca, 'output/clusters_2d.png')
     """
     plt.figure(figsize=(10, 8), dpi=300)
@@ -372,18 +393,22 @@ def plot_2d_clusters(pca_dataframe: pd.DataFrame, output_path: str = None) -> No
     plt.close()
 
 
-def plot_3d_clusters(pca_dataframe: pd.DataFrame, output_path: str = None) -> None:
+def plot_3d_clusters(
+        pca_dataframe: pd.DataFrame, output_path: str | None = None
+) -> None:
     """
     Plot 3D visualization of clusters using PCA-reduced data.
-    
+
     :param pca_dataframe: DataFrame with PCA components and predicted labels
     :type pca_dataframe: pd.DataFrame
     :param output_path: Optional path to save the plot
     :type output_path: str
     :return: None
-    
+
     Example:
-        >>> df_pca = pd.DataFrame({'PC1': [...], 'PC2': [...], 'PC3': [...], 'predicted_label': [...]})
+        >>> df_pca = pd.DataFrame({
+        ...     'PC1': [...], 'PC2': [...], 'PC3': [...], 'predicted_label': [...]
+        ... })
         >>> plot_3d_clusters(df_pca, 'output/clusters_3d.png')
     """
     fig = plt.figure(figsize=(12, 9), dpi=300)
