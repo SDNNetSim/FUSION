@@ -60,8 +60,8 @@ class GetModelParams(BaseCallback):
         obs = self.locals.get('obs_tensor')
         if obs is not None:
             try:
-                values = self.model.policy.predict_values(obs=obs)  # type: ignore[misc]
-                self.value_estimate = values[0][0].item()
+                values = self.model.policy.predict_values(obs=obs)  # type: ignore[misc,operator]
+                self.value_estimate = values[0][0].item()  # type: ignore[index]
             except (AttributeError, IndexError, TypeError):
                 self.value_estimate = 0.0
         else:

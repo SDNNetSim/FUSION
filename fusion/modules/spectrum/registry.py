@@ -110,7 +110,7 @@ class SpectrumRegistry:
         algorithm_class = self.get(name)
 
         # Create temporary instance to get properties
-        temp_instance = algorithm_class({}, None, None)  # type: ignore[abstract]
+        temp_instance = algorithm_class({}, None, None)  # type: ignore[abstract, arg-type]
 
         return {
             "name": name,
@@ -131,7 +131,7 @@ class SpectrumRegistry:
         multiband_algos = []
 
         for name, algorithm_class in self._algorithms.items():
-            temp_instance = algorithm_class({}, None, None)  # type: ignore[abstract]
+            temp_instance = algorithm_class({}, None, None)  # type: ignore[abstract, arg-type]
             if temp_instance.supports_multiband:
                 multiband_algos.append(name)
 

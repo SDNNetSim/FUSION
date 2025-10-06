@@ -24,7 +24,7 @@ def create_environment(
     """
     # Lazy import to avoid circular dependency
     from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
-    
+
     ep_call_obj = EpisodicRewardCallback(verbose=1)
     param_call_obj = LearnRateEntCallback(verbose=1)
     callback_list = CallbackList([ep_call_obj, param_call_obj])

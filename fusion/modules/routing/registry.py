@@ -9,15 +9,6 @@ from typing import Any
 
 from fusion.interfaces.router import AbstractRoutingAlgorithm
 
-from .congestion_aware import CongestionAwareRouting
-from .fragmentation_aware import FragmentationAwareRouting
-
-# Import all routing algorithm implementations
-from .k_shortest_path import KShortestPath
-from .least_congested import LeastCongestedRouting
-from .nli_aware import NLIAwareRouting
-from .xt_aware import XTAwareRouting
-
 
 class RoutingRegistry:
     """Registry for managing routing algorithm implementations."""
@@ -35,6 +26,14 @@ class RoutingRegistry:
         k-shortest path, congestion aware, least congested, fragmentation aware,
         NLI aware, and XT aware algorithms.
         """
+        # Import here to avoid circular dependency issues
+        from .congestion_aware import CongestionAwareRouting
+        from .fragmentation_aware import FragmentationAwareRouting
+        from .k_shortest_path import KShortestPath
+        from .least_congested import LeastCongestedRouting
+        from .nli_aware import NLIAwareRouting
+        from .xt_aware import XTAwareRouting
+
         algorithm_classes = [
             KShortestPath,
             CongestionAwareRouting,
@@ -246,12 +245,42 @@ def get_routing_algorithm_info(name: str) -> dict[str, str]:
     return _registry.get_algorithm_info(name)
 
 
-# Dictionary for backward compatibility
-ROUTING_ALGORITHMS = {
-    'k_shortest_path': KShortestPath,
-    'congestion_aware': CongestionAwareRouting,
-    'least_congested': LeastCongestedRouting,
-    'fragmentation_aware': FragmentationAwareRouting,
-    'nli_aware': NLIAwareRouting,
-    'xt_aware': XTAwareRouting
-}
+# Dictionary for backward compatibility - populated from global registry
+def _get_routing_algorithms_dict() -> dict[str, Any]:
+    """Get dictionary of routing algorithms for backward compatibility."""
+    return {name: _registry.get(name) for name in _registry.list_algorithms()}
+
+
+# Lazy-loaded dictionary using property-like access
+class _RoutingAlgorithmsDict:
+    """Lazy dictionary for backward compatibility with ROUTING_ALGORITHMS."""
+
+    def __getitem__(self, key: str) -> Any:
+        """Get algorithm class by name."""
+        return _registry.get(key)
+
+    def __contains__(self, key: str) -> bool:
+        """Check if algorithm name exists."""
+        return key in _registry.list_algorithms()
+
+    def keys(self) -> list[str]:
+        """Get all algorithm names."""
+        return _registry.list_algorithms()
+
+    def values(self) -> list[Any]:
+        """Get all algorithm classes."""
+        return [_registry.get(name) for name in _registry.list_algorithms()]
+
+    def items(self) -> list[tuple[str, Any]]:
+        """Get all (name, class) pairs."""
+        return [(name, _registry.get(name)) for name in _registry.list_algorithms()]
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get algorithm class with default."""
+        try:
+            return _registry.get(key)
+        except KeyError:
+            return default
+
+
+ROUTING_ALGORITHMS = _RoutingAlgorithmsDict()

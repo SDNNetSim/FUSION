@@ -13,7 +13,6 @@ import shutil
 from pathlib import Path
 
 # Third-party imports
-import gymnasium
 from gymnasium.envs.registration import register
 
 __all__ = [
@@ -111,7 +110,8 @@ def main() -> None:
         )
 
         print("\n=== Registered Environments with Gymnasium ===\n")
-        gymnasium.pprint_registry()
+        # Note: gymnasium.pprint_registry() was removed in newer versions
+        print(f"Environment '{args.env_name}' registered successfully")
         print("\n")
 
         # Copy algorithm configuration to RLZoo3

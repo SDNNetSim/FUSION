@@ -41,7 +41,7 @@ def get_algorithm_instance(
 
     # Get the algorithm registry
     algorithm_registry = get_algorithm_registry()
-    
+
     # Non-DRL case, skip
     if algorithm in VALID_PATH_ALGORITHMS and algorithm not in algorithm_registry:
         engine_props.engine_props['is_drl_agent'] = False

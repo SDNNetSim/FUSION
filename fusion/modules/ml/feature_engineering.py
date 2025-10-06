@@ -11,8 +11,9 @@ import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 
 from fusion.modules.ml.constants import EXPECTED_ML_COLUMNS
-from fusion.utils.network import find_core_congestion, find_path_length as find_path_len
 from fusion.utils.logging_config import get_logger
+from fusion.utils.network import find_core_congestion
+from fusion.utils.network import find_path_length as find_path_len
 
 logger = get_logger(__name__)
 

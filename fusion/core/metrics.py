@@ -6,8 +6,8 @@ import numpy as np
 
 from fusion.analysis.network_analysis import NetworkAnalyzer
 from fusion.core.properties import SNAP_KEYS_LIST, SDNProps, StatsProps
-from fusion.utils.network import find_path_length
 from fusion.utils.logging_config import get_logger
+from fusion.utils.network import find_path_length
 
 logger = get_logger(__name__)
 
@@ -201,9 +201,8 @@ class SimStats:
                 if self.engine_props["save_snapshots"]:
                     self._init_snapshots()
             elif stat_key == "cores_dict":
-                self.stats_props.cores_dict = {
-                    core: 0 for core in range(self.engine_props["cores_per_link"])
-                }
+                cores_range = range(self.engine_props["cores_per_link"])
+                self.stats_props.cores_dict = dict.fromkeys(cores_range, 0)
             elif stat_key == "block_reasons_dict":
                 self.stats_props.block_reasons_dict = {
                     "distance": 0,

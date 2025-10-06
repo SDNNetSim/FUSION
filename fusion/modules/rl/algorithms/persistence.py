@@ -24,12 +24,12 @@ class BanditModelPersistence:
         """
         full_path = Path('logs') / train_fp
         with open(full_path, encoding='utf-8') as file_obj:
-            state_vals_dict = json.load(file_obj)
+            state_vals_dict: dict[str, Any] = json.load(file_obj)
         return state_vals_dict
 
     @staticmethod
     def save_model(
-        state_values_dict: dict[str, Any],
+        state_values_dict: dict[str, Any] | dict[tuple[int, int], Any] | None,
         erlang: float,
         cores_per_link: int,
         save_dir: str,
@@ -40,7 +40,8 @@ class BanditModelPersistence:
         Save bandit model state values.
 
         :param state_values_dict: Dictionary of state values to save
-        :type state_values_dict: dict[str, Any]
+                                  (keys can be strings or tuples)
+        :type state_values_dict: dict[str, Any] | dict[tuple[int, int], Any] | None
         :param erlang: Erlang traffic value
         :type erlang: float
         :param cores_per_link: Number of cores per link

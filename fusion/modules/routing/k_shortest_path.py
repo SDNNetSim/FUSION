@@ -109,6 +109,7 @@ class KShortestPath(AbstractRoutingAlgorithm):
             path_length = find_path_length(path_list=path, topology=topology)
 
             # Get modulation formats
+            modulation_formats_list: list[str]
             chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
             if chosen_bandwidth and not self.engine_props.get(
                 "pre_calc_mod_selection", False
@@ -122,24 +123,31 @@ class KShortestPath(AbstractRoutingAlgorithm):
                         mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
                         path_len=path_length,
                     )
-                    modulation_formats_list = [modulation_format]
+                    modulation_formats_list = [str(modulation_format)]
                 else:
                     # Fallback to mod_formats
                     modulation_formats = getattr(self.sdn_props, "mod_formats", {})
                     modulation_format = get_path_modulation(
                         modulation_formats, path_length
                     )
-                    modulation_formats_list = [modulation_format]
+                    modulation_formats_list = [str(modulation_format)]
             else:
                 # Use all modulation formats sorted by max_length
-                if hasattr(self.sdn_props, "modulation_formats_dict"):
+                has_mod_dict = hasattr(
+                    self.sdn_props, "modulation_formats_dict"
+                )
+                if (
+                    has_mod_dict
+                    and self.sdn_props.modulation_formats_dict is not None
+                ):
                     modulation_formats_dict = sort_nested_dict_values(
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key="max_length",
                     )
                     # Ensure all keys are strings
-                    all_keys = list(modulation_formats_dict.keys())
-                    modulation_formats_list = [str(key) for key in all_keys][::-1]
+                    modulation_formats_list = [
+                        str(key) for key in modulation_formats_dict.keys()
+                    ][::-1]
                 else:
                     # Fallback to simple list
                     modulation_formats_list = ["QPSK"]
