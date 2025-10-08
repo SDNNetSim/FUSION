@@ -183,10 +183,11 @@ class SDNController:
                         average_bandwidth_usage,
                     )
 
-                    average_bw_usage = average_bandwidth_usage(
-                        bw_dict=lp_status["time_bw_usage"],
-                        departure_time=self.sdn_props.depart,
-                    )
+                    if self.sdn_props.depart is not None:
+                        average_bw_usage = average_bandwidth_usage(
+                            bw_dict=lp_status["time_bw_usage"],
+                            departure_time=self.sdn_props.depart,
+                        )
                 except (ImportError, AttributeError):
                     pass
 
