@@ -41,7 +41,7 @@ class Grooming:
 
         logger.debug("Initialized grooming handler")
 
-    def _find_path_max_bw(self, light_id: tuple) -> dict | None:
+    def _find_path_max_bw(self, light_id: tuple) -> dict[str, Any] | None:
         """
         Find the path group with the maximum total remaining bandwidth.
 
@@ -51,9 +51,9 @@ class Grooming:
         :param light_id: Tuple of (source, destination) representing the path ID
         :type light_id: tuple
         :return: Dictionary of the path group with maximum remaining bandwidth or None
-        :rtype: dict | None
+        :rtype: dict[str, Any] | None
         """
-        path_groups = {}
+        path_groups: dict[tuple, dict[str, Any]] = {}
 
         for lp_id, lp_info in self.sdn_props.lightpath_status_dict[light_id].items():
             # Skip lightpaths with degraded SNRs
@@ -86,7 +86,7 @@ class Grooming:
 
         return max(
             path_groups.values(),
-            key=lambda group: group["total_remaining_bandwidth"],
+            key=lambda group: int(group["total_remaining_bandwidth"]),
             default=None,
         )
 
