@@ -153,6 +153,9 @@ class TestSDNProps(unittest.TestCase):
                 "band_list",
                 "start_slot_list",
                 "end_slot_list",
+                "lightpath_bandwidth_list",
+                "lightpath_id_list",
+                "remaining_bw",
             ],
         )
         self.assertEqual(props.bandwidth_list, [])

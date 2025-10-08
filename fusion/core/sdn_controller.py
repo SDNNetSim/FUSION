@@ -247,6 +247,15 @@ class SDNController:
         if bandwidth is not None:
             self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
+            # Skip grooming-specific keys that are tracked directly in SDNProps
+            # (not retrieved from SpectrumProps)
+            if stat_key in (
+                "lightpath_bandwidth_list",
+                "lightpath_id_list",
+                "remaining_bw",
+            ):
+                continue
+
             spectrum_key = stat_key.split("_", maxsplit=1)[0]
             if spectrum_key == "crosstalk":
                 spectrum_key = "crosstalk_cost"
