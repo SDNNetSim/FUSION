@@ -738,12 +738,12 @@ class SnrMeasurements:
 
         return open_slots_list
 
-    def handle_snr(self, path_index: int) -> tuple[bool, float]:
+    def handle_snr(self, path_index: int) -> tuple[bool, float, float]:
         """
         Controls the methods of this class.
 
         :return: Whether snr is acceptable for allocation or not for a given
-                 request and its cost
+                 request, its cost, and lightpath bandwidth
         :rtype: tuple
         """
         if (
@@ -766,7 +766,27 @@ class SnrMeasurements:
                 f"Unexpected snr_type flag got: {self.engine_props_dict['snr_type']}"
             )
 
-        return snr_check, xt_cost
+        # Calculate lightpath bandwidth from modulation format
+        lp_bandwidth = 0.0
+        if self.spectrum_props.modulation is not None:
+            if self.spectrum_props.modulation in self.snr_props.bandwidth_mapping_dict:
+                lp_bandwidth = float(
+                    self.snr_props.bandwidth_mapping_dict[
+                        self.spectrum_props.modulation
+                    ]
+                )
+            elif (
+                self.sdn_props.modulation_formats_dict is not None
+                and self.spectrum_props.modulation
+                in self.sdn_props.modulation_formats_dict
+            ):
+                lp_bandwidth = float(
+                    self.sdn_props.modulation_formats_dict[
+                        self.spectrum_props.modulation
+                    ].get("bandwidth", 0.0)
+                )
+
+        return snr_check, xt_cost, lp_bandwidth
 
     def handle_snr_dynamic_slicing(
         self, path_index: int
