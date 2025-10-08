@@ -1,10 +1,11 @@
 """Tests for grooming utility functions."""
 
 import pytest
+
 from fusion.utils.network import average_bandwidth_usage
 
 
-def test_average_bandwidth_usage_single_period():
+def test_average_bandwidth_usage_single_period() -> None:
     """Test bandwidth calculation with single time period."""
     bw_dict = {0.0: 50.0}
     departure_time = 100.0
@@ -14,13 +15,13 @@ def test_average_bandwidth_usage_single_period():
     assert avg == 50.0
 
 
-def test_average_bandwidth_usage_multiple_periods():
+def test_average_bandwidth_usage_multiple_periods() -> None:
     """Test bandwidth calculation with multiple time periods."""
     bw_dict = {
-        0.0: 0.0,      # Start at 0% utilization
-        100.0: 50.0,   # At t=100, increase to 50%
-        200.0: 75.0,   # At t=200, increase to 75%
-        300.0: 100.0   # At t=300, increase to 100%
+        0.0: 0.0,  # Start at 0% utilization
+        100.0: 50.0,  # At t=100, increase to 50%
+        200.0: 75.0,  # At t=200, increase to 75%
+        300.0: 100.0,  # At t=300, increase to 100%
     }
     departure_time = 400.0
 
@@ -35,9 +36,9 @@ def test_average_bandwidth_usage_multiple_periods():
     assert avg == pytest.approx(56.25, rel=1e-5)
 
 
-def test_average_bandwidth_usage_empty():
+def test_average_bandwidth_usage_empty() -> None:
     """Test with empty bandwidth dictionary."""
-    bw_dict = {}
+    bw_dict: dict[float, float] = {}
     departure_time = 100.0
 
     avg = average_bandwidth_usage(bw_dict, departure_time)
@@ -45,7 +46,7 @@ def test_average_bandwidth_usage_empty():
     assert avg == 0.0
 
 
-def test_average_bandwidth_usage_invalid_time():
+def test_average_bandwidth_usage_invalid_time() -> None:
     """Test with invalid time progression."""
     bw_dict = {100.0: 50.0}
     departure_time = 50.0  # Earlier than start time
@@ -54,7 +55,7 @@ def test_average_bandwidth_usage_invalid_time():
         average_bandwidth_usage(bw_dict, departure_time)
 
 
-def test_average_bandwidth_usage_constant():
+def test_average_bandwidth_usage_constant() -> None:
     """Test with constant bandwidth throughout."""
     bw_dict = {0.0: 80.0}
     departure_time = 500.0
@@ -64,13 +65,13 @@ def test_average_bandwidth_usage_constant():
     assert avg == 80.0
 
 
-def test_average_bandwidth_usage_fluctuating():
+def test_average_bandwidth_usage_fluctuating() -> None:
     """Test with fluctuating bandwidth."""
     bw_dict = {
-        0.0: 100.0,   # Full utilization
-        50.0: 25.0,   # Drop to 25%
+        0.0: 100.0,  # Full utilization
+        50.0: 25.0,  # Drop to 25%
         100.0: 75.0,  # Increase to 75%
-        150.0: 50.0   # Drop to 50%
+        150.0: 50.0,  # Drop to 50%
     }
     departure_time = 200.0
 

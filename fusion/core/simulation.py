@@ -69,6 +69,10 @@ class SimulationEngine:
 
         self.ml_model = None
         self.stop_flag = engine_props.get("stop_flag")
+        self.grooming_stats: dict[str, Any] = {}
+
+        # Validate grooming configuration
+        self._validate_grooming_config()
 
     def update_arrival_params(self, current_time: float) -> None:
         """
@@ -86,6 +90,38 @@ class SimulationEngine:
             sdn_data=sdn_props,
             network_spectrum_dict=self.network_spectrum_dict,
         )
+
+        # Track grooming outcomes if enabled
+        if self.engine_props.get("is_grooming_enabled", False):
+            if not hasattr(self, "grooming_stats"):
+                self.grooming_stats = {
+                    "fully_groomed": 0,
+                    "partially_groomed": 0,
+                    "not_groomed": 0,
+                    "lightpaths_created": 0,
+                    "lightpaths_released": 0,
+                    "avg_lightpath_utilization": [],
+                }
+
+            was_groomed = hasattr(sdn_props, "was_groomed") and sdn_props.was_groomed
+            was_partially = (
+                hasattr(sdn_props, "was_partially_groomed")
+                and sdn_props.was_partially_groomed
+            )
+            if was_groomed:
+                self.grooming_stats["fully_groomed"] += 1
+            elif was_partially:
+                self.grooming_stats["partially_groomed"] += 1
+            else:
+                self.grooming_stats["not_groomed"] += 1
+
+            # Track new lightpaths
+            has_new_lp = hasattr(sdn_props, "was_new_lp_established")
+            if has_new_lp and sdn_props.was_new_lp_established:
+                self.grooming_stats["lightpaths_created"] += len(
+                    sdn_props.was_new_lp_established
+                )
+
         if sdn_props.was_routed:
             if sdn_props.number_of_transponders is not None:
                 self.stats_obj.current_transponders = sdn_props.number_of_transponders
@@ -304,6 +340,31 @@ class SimulationEngine:
                 f"got: {request_type}"
             )
 
+    def reset(self) -> None:
+        """
+        Reset simulation state for new iteration.
+
+        Clears all tracking dictionaries and counters to prepare
+        for a fresh simulation run.
+        """
+        # Reset network spectrum
+        for link_key in self.network_spectrum_dict:
+            self.network_spectrum_dict[link_key]["usage_count"] = 0
+            self.network_spectrum_dict[link_key]["throughput"] = 0
+
+        # Reset request tracking
+        self.reqs_status_dict = {}
+
+        # Reset grooming structures if enabled
+        if self.engine_props.get("is_grooming_enabled", False):
+            self.sdn_obj.sdn_props.reset_lightpath_id_counter()
+            self.sdn_obj.sdn_props.lightpath_status_dict = {}
+            if hasattr(self.sdn_obj, "grooming_obj"):
+                self.sdn_obj.grooming_obj.grooming_props.lightpath_status_dict = {}
+            self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
+
+            logger.debug("Reset grooming structures for new iteration")
+
     def end_iter(
         self, iteration: int, print_flag: bool = True, base_file_path: str | None = None
     ) -> bool:
@@ -321,6 +382,10 @@ class SimulationEngine:
         """
         self.stats_obj.calculate_blocking_statistics()
         self.stats_obj.finalize_iteration_statistics()
+
+        # Collect grooming statistics if enabled
+        if self.engine_props.get("is_grooming_enabled", False):
+            self._collect_grooming_stats()
         # Some form of ML/RL is being used, ignore confidence intervals
         # for training and testing
         if not self.engine_props["is_training"]:
@@ -381,6 +446,10 @@ class SimulationEngine:
         for link_key in self.network_spectrum_dict:
             self.network_spectrum_dict[link_key]["usage_count"] = 0
             self.network_spectrum_dict[link_key]["throughput"] = 0
+
+        # Initialize transponder usage per node if enabled
+        if self.engine_props.get("transponder_usage_per_node", False):
+            self._init_transponder_usage()
 
         # To prevent incomplete saves
         try:
@@ -577,6 +646,95 @@ class SimulationEngine:
             ),
             log_queue=context["log_queue"],
         )
+
+    def _validate_grooming_config(self) -> None:
+        """
+        Validate grooming-related configuration.
+
+        Checks that grooming configuration options are consistent
+        and compatible with other simulation settings.
+        """
+        if not self.engine_props.get("is_grooming_enabled", False):
+            return
+
+        # Check for required settings
+        if "transponders_per_node" not in self.engine_props:
+            logger.warning("transponders_per_node not set, using default value of 10")
+            self.engine_props["transponders_per_node"] = 10
+
+        # Validate SNR rechecking settings
+        if self.engine_props.get("snr_recheck", False):
+            if self.engine_props.get("snr_type") in ["None", None]:
+                logger.warning(
+                    "snr_recheck enabled but snr_type is None - "
+                    "rechecking will be skipped"
+                )
+
+        # Validate partial service setting
+        if self.engine_props.get("can_partially_serve", False):
+            logger.info("Partial service allocation enabled")
+
+        logger.debug("Grooming configuration validated")
+
+    def _init_transponder_usage(self) -> None:
+        """
+        Initialize transponder usage tracking for all nodes.
+
+        Sets up the transponder_usage_dict with initial transponder
+        counts for each node in the network.
+        """
+        if self.sdn_obj.sdn_props.topology is None:
+            logger.warning("Cannot initialize transponder usage: topology not set")
+            return
+
+        self.sdn_obj.sdn_props.transponder_usage_dict = {}
+
+        # Get initial transponder count from config
+        initial_transponders = self.engine_props.get("transponders_per_node", 10)
+
+        for node in self.sdn_obj.sdn_props.topology.nodes():
+            self.sdn_obj.sdn_props.transponder_usage_dict[node] = {
+                "available_transponder": initial_transponders,
+                "total_transponder": initial_transponders,
+            }
+
+        logger.debug(
+            "Initialized transponder usage for %d nodes (%d transponders each)",
+            len(self.sdn_obj.sdn_props.transponder_usage_dict),
+            initial_transponders,
+        )
+
+    def _collect_grooming_stats(self) -> None:
+        """
+        Collect grooming-specific statistics.
+
+        Calculates and stores metrics related to traffic grooming
+        performance including grooming success rate and bandwidth utilization.
+        """
+        if not hasattr(self, "grooming_stats"):
+            self.grooming_stats = {
+                "fully_groomed": 0,
+                "partially_groomed": 0,
+                "not_groomed": 0,
+                "lightpaths_created": 0,
+                "lightpaths_released": 0,
+                "avg_lightpath_utilization": [],
+            }
+
+        # Calculate average lightpath utilization
+        if self.sdn_obj.sdn_props.lp_bw_utilization_dict:
+            utilizations = [
+                lp_info["utilization"]
+                for lp_info in self.sdn_obj.sdn_props.lp_bw_utilization_dict.values()
+            ]
+            avg_util = sum(utilizations) / len(utilizations) if utilizations else 0.0
+            self.grooming_stats["avg_lightpath_utilization"].append(avg_util)
+
+            logger.info(
+                "Grooming stats: %d lightpaths, avg utilization: %.2f%%",
+                len(utilizations),
+                avg_util,
+            )
 
     def _save_all_stats(self, base_file_path: str = "data") -> None:
         """
