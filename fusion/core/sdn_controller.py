@@ -54,6 +54,7 @@ class SDNController:
         self.grooming_obj = Grooming(
             engine_props=self.engine_props, sdn_props=self.sdn_props
         )
+        self.stats = None
 
     def release(
         self, lightpath_id: int | None = None, slicing_flag: bool = False
@@ -380,6 +381,35 @@ class SDNController:
         """Legacy method name for _update_request_statistics."""
         self._update_request_statistics(bandwidth)
 
+    def _update_grooming_stats(self) -> None:
+        """Update grooming statistics after request processing."""
+        if not hasattr(self, "stats") or self.stats is None:
+            return
+
+        if (
+            not hasattr(self.stats, "grooming_stats")
+            or self.stats.grooming_stats is None
+        ):
+            return
+
+        # Determine grooming outcome
+        was_groomed = getattr(self.sdn_props, "was_groomed", False) or False
+        was_partially_groomed = getattr(self.sdn_props, "was_partially_groomed", False)
+
+        # Get bandwidth
+        bandwidth = float(self.sdn_props.bandwidth) if self.sdn_props.bandwidth else 0.0
+
+        # Count new lightpaths established
+        was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+        new_lightpaths = len(was_new_lps) if isinstance(was_new_lps, list) else 0
+
+        self.stats.grooming_stats.update_grooming_outcome(
+            was_groomed=was_groomed,
+            was_partially_groomed=was_partially_groomed,
+            bandwidth=bandwidth,
+            new_lightpaths=new_lightpaths,
+        )
+
     def _handle_slicing_request(
         self,
         path_list: list[Any],
@@ -650,6 +680,10 @@ class SDNController:
             self.sdn_props.is_sliced = False
             self.allocate()
 
+        # Update grooming statistics
+        if self.engine_props.get("is_grooming_enabled", False):
+            self._update_grooming_stats()
+
     def handle_event(
         self,
         request_dict: dict[str, Any],
@@ -724,6 +758,7 @@ class SDNController:
 
             if groom_result:
                 # Fully groomed - done!
+                self._update_grooming_stats()
                 return
 
             # Not groomed or partially groomed
