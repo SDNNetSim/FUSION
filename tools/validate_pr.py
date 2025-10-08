@@ -75,7 +75,7 @@ class ValidationRunner:
         if env is None:
             env = os.environ.copy()
 
-        cmd_str = ' '.join(cmd) if isinstance(cmd, list) else cmd
+        cmd_str = " ".join(cmd) if isinstance(cmd, list) else cmd
         print(f"{Colors.CYAN}Running: {cmd_str}{Colors.END}")
 
         start_time = time.time()
