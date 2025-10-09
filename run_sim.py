@@ -5,6 +5,8 @@
 # TODO: (version 5.5-6) Improve logging output, especially for print statements needed for the GUI, how should we do this?
 import multiprocessing
 import copy
+import concurrent.futures
+import time
 from datetime import datetime
 
 from multiprocessing import Manager, Process
@@ -110,19 +112,39 @@ class NetworkSimulator:
         # We'll track how many iteration units have been completed so far across these Erlangs
         done_units_so_far = 0
 
-        for erlang_index, erlang in enumerate(erlang_list):
-            first_erlang = erlang_index == 0
+        if self.properties.get('thread_erlangs', True):
+            # --- Run Erlangs in parallel threads ---
+            offsets = {i: i * max_iters for i in range(len(erlang_list))}
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = {}
+                for erlang_index, erlang in enumerate(erlang_list):
+                    first_erlang = erlang_index == 0
+                    time.sleep(1.0)  # <<< added sleep before submitting each thread
+                    future = executor.submit(
+                        self._run_generic_sim,
+                        erlang=erlang,
+                        first_erlang=first_erlang,
+                        erlang_index=erlang_index,
+                        progress_dict=progress_dict,
+                        done_offset=offsets[erlang_index],
+                    )
+                    futures[future] = erlang_index
 
-            # We call the helper function that sets 'arrival_rate', calls Engine, etc.
-            done_units_so_far = self._run_generic_sim(
-                erlang=erlang,
-                first_erlang=first_erlang,
-                erlang_index=erlang_index,
-                progress_dict=progress_dict,
-                done_offset=done_units_so_far
-            )
+                for fut in concurrent.futures.as_completed(futures):
+                    done_units_so_far += fut.result()
 
-        # That completes all the Erlangs for this single process
+        else:
+            for erlang_index, erlang in enumerate(erlang_list):
+                first_erlang = erlang_index == 0
+
+                # We call the helper function that sets 'arrival_rate', calls Engine, etc.
+                done_units_so_far = self._run_generic_sim(
+                    erlang=erlang,
+                    first_erlang=first_erlang,
+                    erlang_index=erlang_index,
+                    progress_dict=progress_dict,
+                    done_offset=done_units_so_far
+                )
 
     def run_sim(self, **kwargs):
         """
