@@ -671,8 +671,8 @@ class SimStats:
             ...     recovery_type='protection'
             ... )
         """
-        # Compute recovery duration
-        recovery_duration_ms = (recovery_time - failure_time) * 1000
+        # Compute recovery duration and round to avoid floating-point precision errors
+        recovery_duration_ms = round((recovery_time - failure_time) * 1000, 10)
 
         # Store recovery time
         self.recovery_times_ms.append(recovery_duration_ms)
@@ -769,7 +769,7 @@ class SimStats:
         if window_arrivals == 0:
             return 0.0
 
-        bp_value = window_blocks / window_arrivals
+        bp_value: float = float(window_blocks) / float(window_arrivals)
         self.failure_window_bp.append(bp_value)
 
         logger.info(

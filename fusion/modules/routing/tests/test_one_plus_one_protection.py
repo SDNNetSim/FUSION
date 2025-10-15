@@ -16,7 +16,7 @@ from fusion.modules.routing.one_plus_one_protection import OnePlusOneProtection
 
 
 @pytest.fixture
-def sample_topology():
+def sample_topology() -> nx.Graph:
     """Create a sample topology with multiple disjoint paths."""
     G = nx.Graph()
     G.add_edges_from(
@@ -35,7 +35,7 @@ def sample_topology():
 
 
 @pytest.fixture
-def simple_topology():
+def simple_topology() -> nx.Graph:
     """Create a simple topology for basic tests."""
     G = nx.Graph()
     G.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 4)])
@@ -43,7 +43,7 @@ def simple_topology():
 
 
 @pytest.fixture
-def protection_router(sample_topology):
+def protection_router(sample_topology: nx.Graph) -> OnePlusOneProtection:
     """Create a 1+1 protection router instance."""
     engine_props = {
         "topology": sample_topology,
@@ -60,37 +60,45 @@ def protection_router(sample_topology):
 class TestOnePlusOneProtection:
     """Test suite for OnePlusOneProtection routing algorithm."""
 
-    def test_algorithm_name(self, protection_router):
+    def test_algorithm_name(self, protection_router: OnePlusOneProtection) -> None:
         """Test that algorithm name is correctly set."""
         assert protection_router.algorithm_name == "1plus1_protection"
 
-    def test_supported_topologies(self, protection_router):
+    def test_supported_topologies(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test that supported topologies list is defined."""
         topologies = protection_router.supported_topologies
         assert isinstance(topologies, list)
         assert len(topologies) > 0
         assert "NSFNet" in topologies
 
-    def test_validate_environment_connected(self, sample_topology, protection_router):
+    def test_validate_environment_connected(
+        self, sample_topology: nx.Graph, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test environment validation for connected graph."""
         assert protection_router.validate_environment(sample_topology) is True
 
-    def test_validate_environment_disconnected(self, protection_router):
+    def test_validate_environment_disconnected(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test environment validation fails for disconnected graph."""
         G = nx.Graph()
         G.add_edges_from([(0, 1), (2, 3)])  # Two disconnected components
         assert protection_router.validate_environment(G) is False
 
     def test_validate_environment_low_connectivity(
-        self, simple_topology, protection_router
-    ):
+        self, simple_topology: nx.Graph, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test environment validation for low edge connectivity."""
         # Linear path has edge connectivity of 1
         result = protection_router.validate_environment(simple_topology)
         # Should fail as it requires edge connectivity >= 2
         assert result is False
 
-    def test_disjoint_path_computation(self, protection_router):
+    def test_disjoint_path_computation(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test that primary and backup paths are link-disjoint."""
         primary, backup = protection_router.find_disjoint_paths(0, 3)
 
@@ -106,7 +114,9 @@ class TestOnePlusOneProtection:
             assert link not in primary_links
             assert (link[1], link[0]) not in primary_links
 
-    def test_route_stores_paths_in_sdn_props(self, protection_router):
+    def test_route_stores_paths_in_sdn_props(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test that route() stores paths in SDN properties."""
         sdn_props = protection_router.sdn_props
         primary = protection_router.route(0, 3)
@@ -119,8 +129,8 @@ class TestOnePlusOneProtection:
         assert sdn_props.protection_mode == "1plus1"
 
     def test_route_returns_none_no_disjoint_paths(
-        self, protection_router, simple_topology
-    ):
+        self, protection_router: OnePlusOneProtection, simple_topology: nx.Graph
+    ) -> None:
         """Test that route returns None when disjoint paths don't exist."""
         # Update router topology to simple linear topology
         protection_router.topology = simple_topology
@@ -128,7 +138,9 @@ class TestOnePlusOneProtection:
 
         assert result is None
 
-    def test_handle_failure_switchover(self, protection_router):
+    def test_handle_failure_switchover(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test failure handling switches to backup path."""
         affected_requests = [
             {
@@ -149,7 +161,9 @@ class TestOnePlusOneProtection:
         assert actions[0]["to_path"] == "backup"
         assert actions[0]["recovery_time_ms"] == 50.0
 
-    def test_handle_failure_no_action_unprotected(self, protection_router):
+    def test_handle_failure_no_action_unprotected(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test that unprotected requests don't trigger switchover."""
         affected_requests = [{"id": 42, "is_protected": False, "path": [0, 1, 2, 3]}]
 
@@ -159,7 +173,9 @@ class TestOnePlusOneProtection:
 
         assert len(actions) == 0
 
-    def test_get_paths_returns_both_paths(self, protection_router):
+    def test_get_paths_returns_both_paths(
+        self, protection_router: OnePlusOneProtection
+    ) -> None:
         """Test that get_paths returns primary and backup."""
         paths = protection_router.get_paths(0, 3, k=2)
 
@@ -170,7 +186,9 @@ class TestOnePlusOneProtection:
         for link in backup_links:
             assert link not in primary_links
 
-    def test_update_weights(self, protection_router, sample_topology):
+    def test_update_weights(
+        self, protection_router: OnePlusOneProtection, sample_topology: nx.Graph
+    ) -> None:
         """Test that update_weights sets uniform weights."""
         protection_router.update_weights(sample_topology)
 
@@ -178,7 +196,7 @@ class TestOnePlusOneProtection:
         for u, v in sample_topology.edges():
             assert sample_topology[u][v]["weight"] == 1.0
 
-    def test_get_metrics(self, protection_router):
+    def test_get_metrics(self, protection_router: OnePlusOneProtection) -> None:
         """Test that metrics are returned correctly."""
         # Perform some operations
         protection_router.route(0, 3)
@@ -192,7 +210,7 @@ class TestOnePlusOneProtection:
         assert metrics["disjoint_paths_found"] == 2
         assert "success_rate" in metrics
 
-    def test_reset(self, protection_router):
+    def test_reset(self, protection_router: OnePlusOneProtection) -> None:
         """Test that reset clears metrics."""
         # Perform operations
         protection_router.route(0, 3)
@@ -204,7 +222,9 @@ class TestOnePlusOneProtection:
         assert protection_router._disjoint_paths_found == 0
         assert protection_router._disjoint_paths_failed == 0
 
-    def test_disjoint_k_shortest_fallback(self, protection_router, sample_topology):
+    def test_disjoint_k_shortest_fallback(
+        self, protection_router: OnePlusOneProtection, sample_topology: nx.Graph
+    ) -> None:
         """Test that K-shortest fallback works when Suurballe fails."""
         # This tests the _find_disjoint_k_shortest method
         primary, backup = protection_router._find_disjoint_k_shortest(0, 3, k=10)
@@ -217,7 +237,7 @@ class TestOnePlusOneProtection:
         backup_links = set(zip(backup[:-1], backup[1:], strict=False))
         assert primary_links.isdisjoint(backup_links)
 
-    def test_protection_switchover_time_configurable(self):
+    def test_protection_switchover_time_configurable(self) -> None:
         """Test that protection switchover time is configurable."""
         engine_props = {
             "protection_settings": {
@@ -236,7 +256,7 @@ class TestOnePlusOneProtection:
 class TestDualPathDisjointness:
     """Test suite specifically for path disjointness verification."""
 
-    def test_no_shared_links_simple_topology(self):
+    def test_no_shared_links_simple_topology(self) -> None:
         """Test disjoint paths on a simple topology."""
         G = nx.Graph()
         G.add_edges_from(
@@ -266,7 +286,7 @@ class TestDualPathDisjointness:
             assert p_link not in backup_links
             assert (p_link[1], p_link[0]) not in backup_links
 
-    def test_multiple_disjoint_paths_available(self):
+    def test_multiple_disjoint_paths_available(self) -> None:
         """Test when multiple disjoint path pairs exist."""
         G = nx.Graph()
         # Create a grid-like topology with multiple disjoint paths
@@ -297,7 +317,7 @@ class TestDualPathDisjointness:
         # Verify they are different paths
         assert primary != backup
 
-    def test_no_disjoint_paths_linear(self):
+    def test_no_disjoint_paths_linear(self) -> None:
         """Test that linear topology returns None (no disjoint paths)."""
         G = nx.path_graph(5)  # Linear: 0-1-2-3-4
 
