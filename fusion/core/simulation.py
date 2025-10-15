@@ -52,6 +52,7 @@ def seed_all_rngs(seed: int) -> None:
     """
     # Seed Python's random module
     import random
+
     random.seed(seed)
 
     # Seed NumPy
@@ -61,21 +62,26 @@ def seed_all_rngs(seed: int) -> None:
     try:
         import torch
 
-        torch.manual_seed(seed)
+        # Check if torch is properly loaded (not broken by architecture mismatch)
+        if not hasattr(torch, "manual_seed"):
+            # Torch imported but is broken (e.g., architecture mismatch)
+            pass
+        else:
+            torch.manual_seed(seed)
 
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed(seed)
+                torch.cuda.manual_seed_all(seed)
 
-        # Enforce deterministic behavior
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+            # Enforce deterministic behavior
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
-        # Use deterministic algorithms where possible
-        torch.use_deterministic_algorithms(True, warn_only=True)
+            # Use deterministic algorithms where possible
+            torch.use_deterministic_algorithms(True, warn_only=True)
 
-    except ImportError:
-        # PyTorch not installed, skip
+    except (ImportError, AttributeError, OSError):
+        # PyTorch not installed or broken, skip
         pass
 
 

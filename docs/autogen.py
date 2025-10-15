@@ -17,11 +17,13 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from types import ModuleType
 
 # Add parent directory to path to import FUSION
 sys.path.insert(0, os.path.abspath(".."))
 
 # Import after path modification
+fusion: ModuleType | None
 try:
     import fusion
 except ImportError as e:
@@ -148,7 +150,7 @@ class APIDocGenerator:
             },
         }
 
-    def log(self, message: str):
+    def log(self, message: str) -> None:
         """Print message if verbose mode is enabled."""
         if self.verbose:
             print(f"[APIDocGen] {message}")
@@ -301,7 +303,7 @@ Indices
 
         return rst_content
 
-    def clean_generated_files(self):
+    def clean_generated_files(self) -> None:
         """Remove all previously generated RST files."""
         self.log("Cleaning previously generated files...")
 
@@ -310,7 +312,7 @@ Indices
                 file.unlink()
                 self.log(f"  Removed: {file.name}")
 
-    def generate_all(self):
+    def generate_all(self) -> None:
         """Generate all API documentation files."""
         self.log("Starting API documentation generation...")
 
@@ -334,7 +336,7 @@ Indices
         if fusion is None:
             return {"missing": ["All modules (fusion package not importable)"]}
 
-        results = {"found": [], "missing": []}
+        results: dict[str, list[str]] = {"found": [], "missing": []}
 
         for package_info in self.packages.values():
             for module_path in package_info["modules"]:
@@ -347,7 +349,7 @@ Indices
         return results
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Generate FUSION API documentation")
     parser.add_argument(

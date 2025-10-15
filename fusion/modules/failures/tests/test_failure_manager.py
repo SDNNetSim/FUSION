@@ -9,7 +9,7 @@ from fusion.modules.failures import FailureConfigError, FailureManager
 
 
 @pytest.fixture
-def sample_topology():
+def sample_topology() -> nx.Graph:
     """Create a sample topology for testing."""
     G = nx.Graph()
     G.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 3)])
@@ -17,13 +17,13 @@ def sample_topology():
 
 
 @pytest.fixture
-def failure_manager(sample_topology):
+def failure_manager(sample_topology: nx.Graph) -> FailureManager:
     """Create a FailureManager instance."""
     engine_props = {"seed": 42}
     return FailureManager(engine_props, sample_topology)
 
 
-def test_link_failure_blocks_path(failure_manager):
+def test_link_failure_blocks_path(failure_manager: FailureManager) -> None:
     """Test that a path using a failed link is marked infeasible."""
     # Inject link failure
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
@@ -35,7 +35,7 @@ def test_link_failure_blocks_path(failure_manager):
     assert failure_manager.is_path_feasible([0, 5, 6, 3])
 
 
-def test_failure_repair_restores_path(failure_manager):
+def test_failure_repair_restores_path(failure_manager: FailureManager) -> None:
     """Test that path becomes feasible after repair time."""
     # Inject and repair failure
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
@@ -50,7 +50,7 @@ def test_failure_repair_restores_path(failure_manager):
     assert failure_manager.is_path_feasible([0, 1, 2, 3])
 
 
-def test_srlg_failure_multiple_links(failure_manager):
+def test_srlg_failure_multiple_links(failure_manager: FailureManager) -> None:
     """Test that all SRLG links are failed simultaneously."""
     srlg_links = [(0, 1), (2, 3), (5, 6)]
     failure_manager.inject_failure(
@@ -64,7 +64,9 @@ def test_srlg_failure_multiple_links(failure_manager):
     assert not failure_manager.is_path_feasible([0, 5, 6, 3])
 
 
-def test_geo_failure_radius(failure_manager, sample_topology):
+def test_geo_failure_radius(
+    failure_manager: FailureManager, sample_topology: nx.Graph
+) -> None:
     """Test that links within hop radius are failed, others unaffected."""
     event = failure_manager.inject_failure(
         "geo", t_fail=10.0, t_repair=20.0, center_node=1, hop_radius=1
@@ -80,7 +82,7 @@ def test_geo_failure_radius(failure_manager, sample_topology):
     assert not failure_manager.is_path_feasible([0, 1, 2])
 
 
-def test_failure_history_tracking(failure_manager):
+def test_failure_history_tracking(failure_manager: FailureManager) -> None:
     """Test that failure events are logged with timestamps."""
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(0, 1))
     failure_manager.inject_failure("link", t_fail=15.0, t_repair=25.0, link_id=(2, 3))
@@ -90,7 +92,7 @@ def test_failure_history_tracking(failure_manager):
     assert failure_manager.failure_history[1]["t_fail"] == 15.0
 
 
-def test_invalid_failure_config(failure_manager):
+def test_invalid_failure_config(failure_manager: FailureManager) -> None:
     """Test that invalid configurations raise errors."""
     # Repair before failure
     with pytest.raises(FailureConfigError, match="Repair time.*must be after"):
@@ -105,7 +107,7 @@ def test_invalid_failure_config(failure_manager):
         )
 
 
-def test_node_failure_blocks_adjacent_links(failure_manager):
+def test_node_failure_blocks_adjacent_links(failure_manager: FailureManager) -> None:
     """Test that all links adjacent to a failed node are blocked."""
     event = failure_manager.inject_failure(
         "node", t_fail=10.0, t_repair=20.0, node_id=1
@@ -118,7 +120,7 @@ def test_node_failure_blocks_adjacent_links(failure_manager):
     assert not failure_manager.is_path_feasible([0, 1, 2])
 
 
-def test_get_affected_links(failure_manager):
+def test_get_affected_links(failure_manager: FailureManager) -> None:
     """Test that get_affected_links returns currently failed links."""
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
 
@@ -127,7 +129,7 @@ def test_get_affected_links(failure_manager):
     assert (1, 2) in affected or (2, 1) in affected
 
 
-def test_clear_all_failures(failure_manager):
+def test_clear_all_failures(failure_manager: FailureManager) -> None:
     """Test that clear_all_failures removes all active failures."""
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(3, 4))
@@ -140,13 +142,13 @@ def test_clear_all_failures(failure_manager):
     assert len(failure_manager.scheduled_repairs) == 0
 
 
-def test_path_feasible_with_no_failures(failure_manager):
+def test_path_feasible_with_no_failures(failure_manager: FailureManager) -> None:
     """Test that all paths are feasible when no failures exist."""
     path = [0, 1, 2, 3, 4]
     assert failure_manager.is_path_feasible(path)
 
 
-def test_repair_only_scheduled_failures(failure_manager):
+def test_repair_only_scheduled_failures(failure_manager: FailureManager) -> None:
     """Test that repair only removes failures at exact time."""
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
 
@@ -161,7 +163,7 @@ def test_repair_only_scheduled_failures(failure_manager):
     assert failure_manager.get_failure_count() == 0
 
 
-def test_multiple_failures_at_same_repair_time(failure_manager):
+def test_multiple_failures_at_same_repair_time(failure_manager: FailureManager) -> None:
     """Test that multiple failures can be scheduled for same repair time."""
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(3, 4))
@@ -174,7 +176,7 @@ def test_multiple_failures_at_same_repair_time(failure_manager):
     assert failure_manager.get_failure_count() == 0
 
 
-def test_bidirectional_link_checking(failure_manager):
+def test_bidirectional_link_checking(failure_manager: FailureManager) -> None:
     """Test that path feasibility checks both link directions."""
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
 

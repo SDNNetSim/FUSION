@@ -2,9 +2,10 @@
 K-Path cache for pre-computed shortest paths.
 """
 
-from typing import Any
-import networkx as nx
 import sys
+from typing import Any
+
+import networkx as nx
 
 
 class KPathCache:
@@ -22,12 +23,7 @@ class KPathCache:
     :type ordering: str
     """
 
-    def __init__(
-        self,
-        topology: nx.Graph,
-        k: int = 4,
-        ordering: str = "hops"
-    ) -> None:
+    def __init__(self, topology: nx.Graph, k: int = 4, ordering: str = "hops") -> None:
         """
         Initialize K-Path cache.
 
@@ -79,25 +75,18 @@ class KPathCache:
 
                 try:
                     # Use NetworkX k_shortest_paths
-                    paths = list(nx.shortest_simple_paths(
-                        self.topology,
-                        src,
-                        dst,
-                        weight=weight
-                    ))
+                    paths = list(
+                        nx.shortest_simple_paths(self.topology, src, dst, weight=weight)
+                    )
 
                     # Take up to K paths
-                    self.cache[(src, dst)] = paths[:self.k]
+                    self.cache[(src, dst)] = paths[: self.k]
 
                 except (nx.NetworkXNoPath, nx.NodeNotFound):
                     # No path exists
                     self.cache[(src, dst)] = []
 
-    def get_k_paths(
-        self,
-        source: Any,
-        destination: Any
-    ) -> list[list[int]]:
+    def get_k_paths(self, source: Any, destination: Any) -> list[list[int]]:
         """
         Get K paths from cache.
 
@@ -122,7 +111,7 @@ class KPathCache:
         self,
         path: list[int],
         network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
-        failure_manager: Any = None
+        failure_manager: Any = None,
     ) -> dict[str, Any]:
         """
         Extract features for a candidate path.
@@ -162,7 +151,7 @@ class KPathCache:
         path_hops = len(path) - 1
 
         # Compute min_residual_slots (bottleneck link)
-        min_residual = float('inf')
+        min_residual = float("inf")
         total_free = 0
         largest_contig = 0
 
@@ -172,8 +161,7 @@ class KPathCache:
 
             # Get link spectrum (try both directions)
             link_spectrum = network_spectrum_dict.get(
-                link,
-                network_spectrum_dict.get(reverse_link, {})
+                link, network_spectrum_dict.get(reverse_link, {})
             )
 
             if not link_spectrum:
@@ -181,7 +169,7 @@ class KPathCache:
                 continue
 
             # Compute contiguous free slots
-            slots = link_spectrum.get('slots', [])
+            slots = link_spectrum.get("slots", [])
             free_blocks = self._find_free_blocks(slots)
 
             if free_blocks:
@@ -195,7 +183,7 @@ class KPathCache:
                 min_residual = 0
 
         # Handle case where no free slots found
-        if min_residual == float('inf'):
+        if min_residual == float("inf"):
             min_residual = 0
 
         # Compute fragmentation indicator
@@ -225,9 +213,7 @@ class KPathCache:
                         else:
                             try:
                                 dist = nx.shortest_path_length(
-                                    self.topology,
-                                    node,
-                                    center_node
+                                    self.topology, node, center_node
                                 )
                                 distances.append(dist)
                             except nx.NetworkXNoPath:
@@ -235,15 +221,15 @@ class KPathCache:
 
                     if distances:
                         dist_to_disaster = min(distances)
-                except Exception:
+                except Exception:  # nosec B110  # Defensive: defaults to 0 if topology inconsistent
                     pass
 
         return {
-            'path_hops': path_hops,
-            'min_residual_slots': int(min_residual),
-            'frag_indicator': round(frag_indicator, 4),
-            'failure_mask': failure_mask,
-            'dist_to_disaster_centroid': dist_to_disaster
+            "path_hops": path_hops,
+            "min_residual_slots": int(min_residual),
+            "frag_indicator": round(frag_indicator, 4),
+            "failure_mask": failure_mask,
+            "dist_to_disaster_centroid": dist_to_disaster,
         }
 
     def _find_free_blocks(self, slots: list[int]) -> list[tuple[int, int]]:

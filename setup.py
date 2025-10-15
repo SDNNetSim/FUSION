@@ -64,20 +64,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.11",
-    install_requires=[
-        # Core dependencies that are always needed
-        "networkx>=3.2.1",
-        "numpy>=1.26.3",
-        "pandas>=2.2.0",
-        "scikit-learn>=1.4.0",
-        "scipy>=1.13.0",
-        "matplotlib>=3.8.2",
-        "PyQt5>=5.15.10",
-        "seaborn>=0.13.2",
-        "torch>=2.2.2",
-        "PyYAML>=6.0.1",
-        "requests>=2.32.0",
-    ],
+    install_requires=read_requirements(),
     extras_require={
         "dev": [
             "pytest>=8.3.4",

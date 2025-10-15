@@ -125,7 +125,7 @@ autodoc_default_options = {
 }
 autodoc_typehints = "description"
 autodoc_typehints_description_target = "documented"
-autodoc_mock_imports = []
+autodoc_mock_imports: list[str] = []
 
 # Autosummary settings
 autosummary_generate = True

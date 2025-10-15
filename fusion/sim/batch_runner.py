@@ -334,9 +334,7 @@ def run_batch_simulation(
 
 
 def run_multi_seed_experiment(
-    config: dict[str, Any],
-    seed_list: list[int],
-    output_dir: str = "results"
+    config: dict[str, Any], seed_list: list[int], output_dir: str = "results"
 ) -> list[dict[str, Any]]:
     """
     Run simulation with multiple seeds for statistical analysis.
@@ -361,6 +359,7 @@ def run_multi_seed_experiment(
         5
     """
     from pathlib import Path
+
     from fusion.core.simulation import seed_all_rngs
 
     output_path = Path(output_dir)
@@ -373,7 +372,7 @@ def run_multi_seed_experiment(
 
         # Create seed-specific config
         seed_config = config.copy()
-        seed_config['seed'] = seed
+        seed_config["seed"] = seed
 
         # Seed all RNGs before creating engine
         seed_all_rngs(seed)
@@ -384,14 +383,21 @@ def run_multi_seed_experiment(
 
         # Store results
         result = {
-            'seed': seed,
-            'return_code': return_code,
+            "seed": seed,
+            "return_code": return_code,
             # Add stats if available
-            'stats': engine.stats_obj.to_dict() if hasattr(engine.stats_obj, 'to_dict') else {}
+            "stats": engine.stats_obj.to_dict()
+            if hasattr(engine.stats_obj, "to_dict")
+            else {},
         }
         results.append(result)
 
-        bp = result.get('stats', {}).get('blocking_probability', 0)
+        stats_dict = result.get("stats", {})
+        bp = (
+            stats_dict.get("blocking_probability", 0)
+            if isinstance(stats_dict, dict)
+            else 0
+        )
         log_message(f"Seed {seed} complete: BP={bp:.4f}")
 
     return results

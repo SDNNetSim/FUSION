@@ -15,14 +15,14 @@ from fusion.modules.failures import (
 
 
 @pytest.fixture
-def sample_topology():
+def sample_topology() -> nx.Graph:
     """Create a sample topology for testing."""
     G = nx.Graph()
     G.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 3), (1, 6)])
     return G
 
 
-def test_fail_link_valid(sample_topology):
+def test_fail_link_valid(sample_topology: nx.Graph) -> None:
     """Test that valid link failure works correctly."""
     event = fail_link(sample_topology, link_id=(0, 1), t_fail=10.0, t_repair=20.0)
 
@@ -33,7 +33,7 @@ def test_fail_link_valid(sample_topology):
     assert (0, 1) in event["failed_links"] or (1, 0) in event["failed_links"]
 
 
-def test_fail_link_reverse_direction(sample_topology):
+def test_fail_link_reverse_direction(sample_topology: nx.Graph) -> None:
     """Test that link failure works with reverse direction."""
     # Try reverse direction
     event = fail_link(sample_topology, link_id=(1, 0), t_fail=10.0, t_repair=20.0)
@@ -44,13 +44,13 @@ def test_fail_link_reverse_direction(sample_topology):
     assert link == (1, 0) or link == (0, 1)
 
 
-def test_fail_link_invalid_link(sample_topology):
+def test_fail_link_invalid_link(sample_topology: nx.Graph) -> None:
     """Test that invalid link raises error."""
     with pytest.raises(FailureConfigError, match="does not exist"):
         fail_link(sample_topology, link_id=(99, 100), t_fail=10.0, t_repair=20.0)
 
 
-def test_fail_node_valid(sample_topology):
+def test_fail_node_valid(sample_topology: nx.Graph) -> None:
     """Test that valid node failure works correctly."""
     event = fail_node(sample_topology, node_id=1, t_fail=10.0, t_repair=20.0)
 
@@ -61,13 +61,13 @@ def test_fail_node_valid(sample_topology):
     assert event["meta"]["node_id"] == 1
 
 
-def test_fail_node_invalid_node(sample_topology):
+def test_fail_node_invalid_node(sample_topology: nx.Graph) -> None:
     """Test that invalid node raises error."""
     with pytest.raises(FailureConfigError, match="does not exist"):
         fail_node(sample_topology, node_id=99, t_fail=10.0, t_repair=20.0)
 
 
-def test_fail_node_adjacent_links(sample_topology):
+def test_fail_node_adjacent_links(sample_topology: nx.Graph) -> None:
     """Test that all adjacent links are failed."""
     # Node 1 has edges to 0, 2, and 6
     event = fail_node(sample_topology, node_id=1, t_fail=10.0, t_repair=20.0)
@@ -82,7 +82,7 @@ def test_fail_node_adjacent_links(sample_topology):
         assert (1, neighbor) in failed_links or (neighbor, 1) in failed_links
 
 
-def test_fail_srlg_valid(sample_topology):
+def test_fail_srlg_valid(sample_topology: nx.Graph) -> None:
     """Test that valid SRLG failure works correctly."""
     srlg_links = [(0, 1), (2, 3), (5, 6)]
     event = fail_srlg(
@@ -94,20 +94,20 @@ def test_fail_srlg_valid(sample_topology):
     assert event["meta"]["srlg_size"] == 3
 
 
-def test_fail_srlg_empty_list(sample_topology):
+def test_fail_srlg_empty_list(sample_topology: nx.Graph) -> None:
     """Test that empty SRLG list raises error."""
     with pytest.raises(FailureConfigError, match="cannot be empty"):
         fail_srlg(sample_topology, srlg_links=[], t_fail=10.0, t_repair=20.0)
 
 
-def test_fail_srlg_invalid_link(sample_topology):
+def test_fail_srlg_invalid_link(sample_topology: nx.Graph) -> None:
     """Test that SRLG with invalid link raises error."""
     srlg_links = [(0, 1), (99, 100)]
     with pytest.raises(FailureConfigError, match="does not exist"):
         fail_srlg(sample_topology, srlg_links=srlg_links, t_fail=10.0, t_repair=20.0)
 
 
-def test_fail_srlg_mixed_directions(sample_topology):
+def test_fail_srlg_mixed_directions(sample_topology: nx.Graph) -> None:
     """Test that SRLG handles mixed link directions."""
     # Mix forward and reverse directions
     srlg_links = [(0, 1), (3, 2), (5, 6)]
@@ -118,7 +118,7 @@ def test_fail_srlg_mixed_directions(sample_topology):
     assert len(event["failed_links"]) == 3
 
 
-def test_fail_geo_valid(sample_topology):
+def test_fail_geo_valid(sample_topology: nx.Graph) -> None:
     """Test that valid geographic failure works correctly."""
     event = fail_geo(
         sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
@@ -134,7 +134,7 @@ def test_fail_geo_valid(sample_topology):
     assert 1 in affected_nodes
 
 
-def test_fail_geo_invalid_center_node(sample_topology):
+def test_fail_geo_invalid_center_node(sample_topology: nx.Graph) -> None:
     """Test that invalid center node raises error."""
     with pytest.raises(FailureConfigError, match="does not exist"):
         fail_geo(
@@ -142,7 +142,7 @@ def test_fail_geo_invalid_center_node(sample_topology):
         )
 
 
-def test_fail_geo_invalid_radius(sample_topology):
+def test_fail_geo_invalid_radius(sample_topology: nx.Graph) -> None:
     """Test that non-positive radius raises error."""
     with pytest.raises(FailureConfigError, match="must be positive"):
         fail_geo(
@@ -155,7 +155,7 @@ def test_fail_geo_invalid_radius(sample_topology):
         )
 
 
-def test_fail_geo_radius_calculation(sample_topology):
+def test_fail_geo_radius_calculation(sample_topology: nx.Graph) -> None:
     """Test that geographic failure correctly calculates affected nodes."""
     # Radius 1 from node 1
     event = fail_geo(
@@ -174,7 +174,7 @@ def test_fail_geo_radius_calculation(sample_topology):
     # (but might be included if there are links through node 6)
 
 
-def test_fail_geo_increasing_radius(sample_topology):
+def test_fail_geo_increasing_radius(sample_topology: nx.Graph) -> None:
     """Test that larger radius affects more nodes."""
     event1 = fail_geo(
         sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
@@ -190,7 +190,7 @@ def test_fail_geo_increasing_radius(sample_topology):
     assert affected2 >= affected1
 
 
-def test_fail_geo_links_with_endpoint_in_region(sample_topology):
+def test_fail_geo_links_with_endpoint_in_region(sample_topology: nx.Graph) -> None:
     """Test that links with at least one endpoint in region are failed."""
     event = fail_geo(
         sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
@@ -204,7 +204,7 @@ def test_fail_geo_links_with_endpoint_in_region(sample_topology):
         assert u in affected_nodes or v in affected_nodes
 
 
-def test_failure_event_structure():
+def test_failure_event_structure() -> None:
     """Test that all failure events have consistent structure."""
     G = nx.Graph()
     G.add_edges_from([(0, 1), (1, 2), (2, 3)])

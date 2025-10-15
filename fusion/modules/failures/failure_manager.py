@@ -80,7 +80,7 @@ class FailureManager:
         handler = get_failure_handler(failure_type)
 
         # Execute failure
-        event = handler(
+        event: dict[str, Any] = handler(
             topology=self.topology, t_fail=t_fail, t_repair=t_repair, **kwargs
         )
 
