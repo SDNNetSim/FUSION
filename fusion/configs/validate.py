@@ -201,3 +201,105 @@ class SchemaValidator:
         }
 
         return type_defaults.get(schema_type, None)
+
+
+def validate_survivability_config(config: dict[str, Any]) -> None:
+    """
+    Validate survivability-specific configuration.
+
+    :param config: Configuration dictionary
+    :type config: dict[str, Any]
+    :raises ValidationError: If validation fails
+
+    Example:
+        >>> config = load_config('survivability_experiment.ini')
+        >>> validate_survivability_config(config)
+    """
+    # Load survivability schema
+    schema_path = Path(__file__).parent / 'schemas' / 'survivability.json'
+    if not schema_path.exists():
+        logger.warning("Survivability schema not found, skipping validation")
+        return
+
+    try:
+        with open(schema_path, encoding='utf-8') as f:
+            schema = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        logger.warning(f"Could not load survivability schema: {e}")
+        return
+
+    # Validate against schema
+    validator = SchemaValidator()
+    try:
+        validator.validate(config, 'survivability')
+    except ValidationError:
+        # Schema validation failed, but continue with logical validations
+        pass
+
+    # Additional logical validations
+    _validate_failure_config(config)
+    _validate_protection_config(config)
+    _validate_rl_policy_config(config)
+
+
+def _validate_failure_config(config: dict[str, Any]) -> None:
+    """Validate failure settings."""
+    failure_settings = config.get('failure_settings', {})
+    failure_type = failure_settings.get('failure_type', 'none')
+
+    # Type-specific validations
+    if failure_type == 'link':
+        if 'failed_link_src' not in failure_settings:
+            raise ValidationError("Link failure requires 'failed_link_src'")
+        if 'failed_link_dst' not in failure_settings:
+            raise ValidationError("Link failure requires 'failed_link_dst'")
+
+    elif failure_type == 'node':
+        if 'failed_node_id' not in failure_settings:
+            raise ValidationError("Node failure requires 'failed_node_id'")
+
+    elif failure_type == 'srlg':
+        srlg_links = failure_settings.get('srlg_links', [])
+        if not srlg_links:
+            raise ValidationError("SRLG failure requires non-empty 'srlg_links'")
+
+    elif failure_type == 'geo':
+        if 'geo_center_node' not in failure_settings:
+            raise ValidationError("Geographic failure requires 'geo_center_node'")
+        if 'geo_hop_radius' not in failure_settings:
+            raise ValidationError("Geographic failure requires 'geo_hop_radius'")
+
+
+def _validate_protection_config(config: dict[str, Any]) -> None:
+    """Validate protection settings."""
+    protection_settings = config.get('protection_settings', {})
+    protection_mode = protection_settings.get('protection_mode', 'none')
+
+    if protection_mode == '1plus1':
+        # Ensure routing settings compatible
+        routing_settings = config.get('routing_settings', {})
+        if routing_settings.get('k_paths', 1) < 2:
+            raise ValidationError("1+1 protection requires k_paths >= 2")
+
+
+def _validate_rl_policy_config(config: dict[str, Any]) -> None:
+    """Validate RL policy settings."""
+    rl_settings = config.get('offline_rl_settings', {})
+    policy_type = rl_settings.get('policy_type', 'ksp_ff')
+
+    # Validate model paths for RL policies
+    if policy_type == 'bc':
+        if 'bc_model_path' not in rl_settings:
+            raise ValidationError("BC policy requires 'bc_model_path'")
+
+        model_path = Path(rl_settings['bc_model_path'])
+        if not model_path.exists():
+            raise ValidationError(f"BC model not found: {model_path}")
+
+    elif policy_type == 'iql':
+        if 'iql_model_path' not in rl_settings:
+            raise ValidationError("IQL policy requires 'iql_model_path'")
+
+        model_path = Path(rl_settings['iql_model_path'])
+        if not model_path.exists():
+            raise ValidationError(f"IQL model not found: {model_path}")

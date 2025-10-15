@@ -1,0 +1,202 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FUSION Survivability Configuration Schema",
+  "description": "Configuration schema for survivability experiments",
+  "type": "object",
+  "properties": {
+    "failure_settings": {
+      "type": "object",
+      "description": "Failure injection configuration",
+      "properties": {
+        "failure_type": {
+          "type": "string",
+          "enum": ["none", "link", "node", "srlg", "geo"],
+          "default": "none",
+          "description": "Type of failure to inject"
+        },
+        "t_fail_arrival_index": {
+          "type": "integer",
+          "default": -1,
+          "description": "Arrival index when failure occurs (-1 = midpoint)"
+        },
+        "t_repair_after_arrivals": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "Number of arrivals until repair"
+        },
+        "failed_link_src": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Source node of failed link (F1)"
+        },
+        "failed_link_dst": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Destination node of failed link (F1)"
+        },
+        "failed_node_id": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Node ID for node failure (F2)"
+        },
+        "srlg_links": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {"type": "integer"}
+          },
+          "default": [],
+          "description": "List of link tuples in SRLG (F3)"
+        },
+        "geo_center_node": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Center node for geographic failure (F4)"
+        },
+        "geo_hop_radius": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2,
+          "description": "Hop radius for geographic failure (F4)"
+        }
+      },
+      "required": ["failure_type"]
+    },
+    "protection_settings": {
+      "type": "object",
+      "description": "Protection mechanism configuration",
+      "properties": {
+        "protection_mode": {
+          "type": "string",
+          "enum": ["none", "1plus1"],
+          "default": "none",
+          "description": "Protection mechanism to use"
+        },
+        "protection_switchover_ms": {
+          "type": "number",
+          "minimum": 0,
+          "default": 50.0,
+          "description": "1+1 switchover latency (ms)"
+        },
+        "restoration_latency_ms": {
+          "type": "number",
+          "minimum": 0,
+          "default": 100.0,
+          "description": "Restoration compute + signaling latency (ms)"
+        },
+        "revert_to_primary": {
+          "type": "boolean",
+          "default": false,
+          "description": "Revert to primary path after repair"
+        }
+      }
+    },
+    "offline_rl_settings": {
+      "type": "object",
+      "description": "RL policy configuration",
+      "properties": {
+        "policy_type": {
+          "type": "string",
+          "enum": ["ksp_ff", "one_plus_one", "bc", "iql"],
+          "default": "ksp_ff",
+          "description": "Policy to use for path selection"
+        },
+        "bc_model_path": {
+          "type": "string",
+          "description": "Path to Behavior Cloning model (.pt)"
+        },
+        "iql_model_path": {
+          "type": "string",
+          "description": "Path to IQL model (.pt)"
+        },
+        "device": {
+          "type": "string",
+          "enum": ["cpu", "cuda", "mps"],
+          "default": "cpu",
+          "description": "Compute device for model inference"
+        },
+        "fallback_policy": {
+          "type": "string",
+          "enum": ["ksp_ff", "one_plus_one"],
+          "default": "ksp_ff",
+          "description": "Fallback when all actions masked"
+        }
+      }
+    },
+    "dataset_logging": {
+      "type": "object",
+      "description": "Offline dataset logging configuration",
+      "properties": {
+        "log_offline_dataset": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable offline dataset logging"
+        },
+        "dataset_output_path": {
+          "type": "string",
+          "default": "datasets/offline_data.jsonl",
+          "description": "Output path for JSONL dataset"
+        },
+        "epsilon_mix": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.1,
+          "description": "Probability of selecting second-best path"
+        }
+      }
+    },
+    "recovery_timing": {
+      "type": "object",
+      "description": "Recovery time modeling configuration",
+      "properties": {
+        "protection_switchover_ms": {
+          "type": "number",
+          "minimum": 0,
+          "default": 50.0
+        },
+        "restoration_latency_ms": {
+          "type": "number",
+          "minimum": 0,
+          "default": 100.0
+        },
+        "failure_window_size": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "Number of arrivals for failure window BP"
+        }
+      }
+    },
+    "reporting": {
+      "type": "object",
+      "description": "Results reporting configuration",
+      "properties": {
+        "export_csv": {
+          "type": "boolean",
+          "default": true,
+          "description": "Export results to CSV"
+        },
+        "csv_output_path": {
+          "type": "string",
+          "default": "results/survivability_results.csv",
+          "description": "CSV output path"
+        },
+        "aggregate_seeds": {
+          "type": "boolean",
+          "default": true,
+          "description": "Aggregate results across multiple seeds"
+        },
+        "seed_list": {
+          "type": "array",
+          "items": {"type": "integer"},
+          "default": [42, 43, 44, 45, 46],
+          "description": "List of seeds for multi-seed runs"
+        }
+      }
+    }
+  }
+}
