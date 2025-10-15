@@ -26,6 +26,103 @@ from fusion.utils.logging_config import get_logger, log_message
 logger = get_logger(__name__)
 
 
+def seed_all_rngs(seed: int) -> None:
+    """
+    Seed all random number generators for reproducibility.
+
+    Seeds:
+    - Python's built-in random module
+    - NumPy's random state
+    - PyTorch's random state (CPU and CUDA)
+
+    Also sets PyTorch to deterministic mode to prevent
+    non-deterministic operations.
+
+    :param seed: Random seed (integer)
+    :type seed: int
+
+    Example:
+        >>> seed_all_rngs(42)
+        >>> # All subsequent random operations are reproducible
+        >>> import random
+        >>> random.random()
+        0.6394267984578837
+        >>> np.random.rand()
+        0.3745401188473625
+    """
+    # Seed Python's random module
+    import random
+    random.seed(seed)
+
+    # Seed NumPy
+    np.random.seed(seed)
+
+    # Seed PyTorch (if available)
+    try:
+        import torch
+
+        torch.manual_seed(seed)
+
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+
+        # Enforce deterministic behavior
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+        # Use deterministic algorithms where possible
+        torch.use_deterministic_algorithms(True, warn_only=True)
+
+    except ImportError:
+        # PyTorch not installed, skip
+        pass
+
+
+def generate_seed_from_time() -> int:
+    """
+    Generate a seed from current time.
+
+    Used when no seed is explicitly provided.
+
+    :return: Seed value
+    :rtype: int
+
+    Example:
+        >>> seed = generate_seed_from_time()
+        >>> print(seed)
+        1678901234
+    """
+    return int(time.time() * 1000) % (2**31 - 1)
+
+
+def validate_seed(seed: int) -> int:
+    """
+    Validate and normalize seed value.
+
+    Ensures seed is in valid range for all RNGs.
+
+    :param seed: Seed value
+    :type seed: int
+    :return: Validated seed
+    :rtype: int
+    :raises ValueError: If seed is out of valid range
+
+    Example:
+        >>> validate_seed(42)
+        42
+        >>> validate_seed(-1)
+        ValueError: Seed must be non-negative
+    """
+    if seed < 0:
+        raise ValueError(f"Seed must be non-negative, got {seed}")
+
+    if seed > 2**31 - 1:
+        raise ValueError(f"Seed must be < 2^31, got {seed}")
+
+    return seed
+
+
 class SimulationEngine:
     """
     Controls a single simulation.
