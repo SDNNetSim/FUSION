@@ -20,6 +20,7 @@ from .fragmentation_aware import FragmentationAwareRouting
 from .k_shortest_path import KShortestPath
 from .least_congested import LeastCongestedRouting
 from .nli_aware import NLIAwareRouting
+from .one_plus_one_protection import OnePlusOneProtection
 from .registry import (
     ROUTING_ALGORITHMS,
     RoutingRegistry,
@@ -45,4 +46,5 @@ __all__ = [
     "FragmentationAwareRouting",
     "NLIAwareRouting",
     "XTAwareRouting",
+    "OnePlusOneProtection",
 ]

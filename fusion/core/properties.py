@@ -324,6 +324,26 @@ class SDNProps:
             "end_slot_list",
         ]
 
+        # 1+1 Protection attributes
+        self.protection_mode: str | None = None  # "none" or "1plus1"
+        self.primary_path: list[int] | None = None
+        self.backup_path: list[int] | None = None
+        self.is_protected: bool = False
+        self.active_path: str = "primary"  # "primary" or "backup"
+
+        # Protection timing (milliseconds)
+        self.protection_switchover_ms: float = 50.0
+        self.restoration_latency_ms: float = 100.0
+
+        # Switchover tracking
+        self.switchover_count: int = 0
+        self.last_switchover_time: float | None = None
+
+        # Recovery tracking
+        self.recovery_start_time: float | None = None
+        self.recovery_end_time: float | None = None
+        self.recovery_type: str | None = None  # "protection" or "restoration"
+
     def update_params(
         self,
         key: str,

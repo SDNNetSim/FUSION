@@ -49,6 +49,16 @@ class SimStats:
         self.topology: Any = None
         self.iteration: int | None = None
 
+        # Recovery time tracking (Phase 3 - Survivability)
+        self.recovery_times_ms: list[float] = []
+        self.failure_window_bp: list[float] = []
+        self.recovery_events: list[dict[str, Any]] = []
+
+        # Failure window parameters
+        self.failure_window_size = engine_props.get("recovery_timing", {}).get(
+            "failure_window_size", 1000
+        )
+
     @staticmethod
     def _get_snapshot_info(
         network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
@@ -631,3 +641,180 @@ class SimStats:
             blocking_stats=blocking_stats,
             base_file_path=base_fp,
         )
+
+    # Phase 3 - Survivability: Recovery Time Tracking Methods
+
+    def record_recovery_event(
+        self,
+        failure_time: float,
+        recovery_time: float,
+        affected_requests: int,
+        recovery_type: str,  # "protection" or "restoration"
+    ) -> None:
+        """
+        Record a recovery event.
+
+        :param failure_time: Time of failure occurrence
+        :type failure_time: float
+        :param recovery_time: Time when recovery completed
+        :type recovery_time: float
+        :param affected_requests: Number of affected requests
+        :type affected_requests: int
+        :param recovery_type: Type of recovery mechanism
+        :type recovery_type: str
+
+        Example:
+            >>> stats.record_recovery_event(
+            ...     failure_time=100.0,
+            ...     recovery_time=100.05,  # 50ms later
+            ...     affected_requests=5,
+            ...     recovery_type='protection'
+            ... )
+        """
+        # Compute recovery duration
+        recovery_duration_ms = (recovery_time - failure_time) * 1000
+
+        # Store recovery time
+        self.recovery_times_ms.append(recovery_duration_ms)
+
+        # Store full event details
+        event = {
+            "failure_time": failure_time,
+            "recovery_time": recovery_time,
+            "recovery_duration_ms": recovery_duration_ms,
+            "affected_requests": affected_requests,
+            "recovery_type": recovery_type,
+        }
+        self.recovery_events.append(event)
+
+        logger.info(
+            "Recovery event: type=%s, duration=%.2fms, affected=%d",
+            recovery_type,
+            recovery_duration_ms,
+            affected_requests,
+        )
+
+    def get_recovery_stats(self) -> dict[str, float]:
+        """
+        Get recovery time statistics.
+
+        Computes mean, P95, and max recovery times across all
+        recovery events.
+
+        :return: Dict with recovery statistics
+        :rtype: dict[str, float]
+
+        Example:
+            >>> stats = get_recovery_stats()
+            >>> print(stats)
+            {
+                'mean_ms': 52.3,
+                'p95_ms': 98.5,
+                'max_ms': 105.2,
+                'count': 12
+            }
+        """
+        if not self.recovery_times_ms:
+            return {"mean_ms": 0.0, "p95_ms": 0.0, "max_ms": 0.0, "count": 0}
+
+        return {
+            "mean_ms": float(np.mean(self.recovery_times_ms)),
+            "p95_ms": float(np.percentile(self.recovery_times_ms, 95)),
+            "max_ms": float(np.max(self.recovery_times_ms)),
+            "count": len(self.recovery_times_ms),
+        }
+
+    def compute_failure_window_bp(
+        self,
+        failure_time: float,
+        arrival_times: list[float],
+        blocked_requests: list[int],
+    ) -> float:
+        """
+        Compute blocking probability within failure window.
+
+        Measures BP in the window [failure_time, failure_time + window_size]
+        where window_size is specified in number of arrivals.
+
+        :param failure_time: Failure occurrence time
+        :type failure_time: float
+        :param arrival_times: List of all request arrival times
+        :type arrival_times: list[float]
+        :param blocked_requests: List of blocked request indices
+        :type blocked_requests: list[int]
+        :return: BP within failure window
+        :rtype: float
+
+        Example:
+            >>> bp = stats.compute_failure_window_bp(
+            ...     failure_time=100.0,
+            ...     arrival_times=all_arrivals,
+            ...     blocked_requests=blocked_ids
+            ... )
+            >>> print(f"Failure window BP: {bp:.4f}")
+            0.0823
+        """
+        # Find arrival index at failure time
+        failure_index = np.searchsorted(arrival_times, failure_time)
+
+        # Define window [failure_index, failure_index + window_size]
+        window_end = min(failure_index + self.failure_window_size, len(arrival_times))
+
+        # Count arrivals and blocks in window
+        window_arrivals = window_end - failure_index
+        window_blocks = sum(
+            1 for req_id in blocked_requests if failure_index <= req_id < window_end
+        )
+
+        if window_arrivals == 0:
+            return 0.0
+
+        bp_value = window_blocks / window_arrivals
+        self.failure_window_bp.append(bp_value)
+
+        logger.info(
+            "Failure window BP: %.4f (%d/%d blocked)",
+            bp_value,
+            window_blocks,
+            window_arrivals,
+        )
+
+        return bp_value
+
+    def get_failure_window_stats(self) -> dict[str, float]:
+        """
+        Get failure window BP statistics.
+
+        :return: Dict with mean and P95 failure window BP
+        :rtype: dict[str, float]
+        """
+        if not self.failure_window_bp:
+            return {"mean": 0.0, "p95": 0.0, "count": 0}
+
+        return {
+            "mean": float(np.mean(self.failure_window_bp)),
+            "p95": float(np.percentile(self.failure_window_bp, 95)),
+            "count": len(self.failure_window_bp),
+        }
+
+    def get_recovery_csv_row(self) -> dict[str, Any]:
+        """
+        Export recovery statistics as CSV row.
+
+        :return: Dict with all recovery metric values
+        :rtype: dict[str, Any]
+        """
+        recovery_stats = self.get_recovery_stats()
+        window_stats = self.get_failure_window_stats()
+
+        return {
+            # Recovery metrics
+            "recovery_time_mean_ms": recovery_stats["mean_ms"],
+            "recovery_time_p95_ms": recovery_stats["p95_ms"],
+            "recovery_time_max_ms": recovery_stats["max_ms"],
+            "recovery_event_count": recovery_stats["count"],
+            # Failure window metrics
+            "bp_window_fail_mean": window_stats["mean"],
+            "bp_window_fail_p95": window_stats["p95"],
+            "failure_window_count": window_stats["count"],
+        }
