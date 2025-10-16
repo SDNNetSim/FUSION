@@ -12,7 +12,7 @@ class TestFragmentationMetrics:
     """Test fragmentation computation and tracking."""
 
     @pytest.fixture
-    def sim_stats(self):
+    def sim_stats(self) -> SimStats:
         """Create SimStats instance for testing."""
         engine_props = {
             "num_requests": 1000,
@@ -23,7 +23,9 @@ class TestFragmentationMetrics:
         return SimStats(engine_props, sim_info="test_simulation")
 
     @pytest.fixture
-    def sample_network_spectrum(self):
+    def sample_network_spectrum(
+        self,
+    ) -> dict[tuple[int, int], dict[str, list[np.ndarray]]]:
         """Create sample network spectrum for testing."""
         # Simple network with 2 links
         return {
@@ -49,7 +51,7 @@ class TestFragmentationMetrics:
             },
         }
 
-    def test_find_free_blocks_contiguous(self, sim_stats):
+    def test_find_free_blocks_contiguous(self, sim_stats: SimStats) -> None:
         """Test finding free blocks in contiguous spectrum."""
         slots = np.array([0, 0, 0, 0, 1, 1, 1, 0, 0])
 
@@ -59,7 +61,7 @@ class TestFragmentationMetrics:
         assert (0, 4) in blocks  # First 4 slots
         assert (7, 9) in blocks  # Last 2 slots
 
-    def test_find_free_blocks_all_free(self, sim_stats):
+    def test_find_free_blocks_all_free(self, sim_stats: SimStats) -> None:
         """Test finding free blocks when all slots are free."""
         slots = np.array([0, 0, 0, 0])
 
@@ -68,7 +70,7 @@ class TestFragmentationMetrics:
         assert len(blocks) == 1
         assert blocks[0] == (0, 4)
 
-    def test_find_free_blocks_all_occupied(self, sim_stats):
+    def test_find_free_blocks_all_occupied(self, sim_stats: SimStats) -> None:
         """Test finding free blocks when all slots are occupied."""
         slots = np.array([1, 1, 1, 1])
 
@@ -76,7 +78,11 @@ class TestFragmentationMetrics:
 
         assert len(blocks) == 0
 
-    def test_compute_fragmentation_proxy(self, sim_stats, sample_network_spectrum):
+    def test_compute_fragmentation_proxy(
+        self,
+        sim_stats: SimStats,
+        sample_network_spectrum: dict[tuple[int, int], dict[str, list[np.ndarray]]],
+    ) -> None:
         """Test fragmentation proxy computation."""
         path = [0, 1, 2]
 
@@ -88,7 +94,7 @@ class TestFragmentationMetrics:
         # Since we have fragmented spectrum, frag should be > 0
         assert frag > 0.0
 
-    def test_compute_fragmentation_fully_fragmented(self, sim_stats):
+    def test_compute_fragmentation_fully_fragmented(self, sim_stats: SimStats) -> None:
         """Test fragmentation when spectrum is fully fragmented."""
         # Every other slot occupied
         network_spectrum = {
@@ -102,7 +108,7 @@ class TestFragmentationMetrics:
         # Should have high fragmentation (many small blocks)
         assert frag > 0.5
 
-    def test_compute_fragmentation_no_free_slots(self, sim_stats):
+    def test_compute_fragmentation_no_free_slots(self, sim_stats: SimStats) -> None:
         """Test fragmentation when no free slots available."""
         # All slots occupied
         network_spectrum = {
@@ -116,7 +122,11 @@ class TestFragmentationMetrics:
         # Should return 1.0 (fully fragmented)
         assert frag == 1.0
 
-    def test_record_fragmentation(self, sim_stats, sample_network_spectrum):
+    def test_record_fragmentation(
+        self,
+        sim_stats: SimStats,
+        sample_network_spectrum: dict[tuple[int, int], dict[str, list[np.ndarray]]],
+    ) -> None:
         """Test recording fragmentation scores."""
         path = [0, 1, 2]
 
@@ -127,7 +137,7 @@ class TestFragmentationMetrics:
         assert len(sim_stats.fragmentation_scores) == 2
         assert all(0.0 <= score <= 1.0 for score in sim_stats.fragmentation_scores)
 
-    def test_get_fragmentation_stats(self, sim_stats):
+    def test_get_fragmentation_stats(self, sim_stats: SimStats) -> None:
         """Test fragmentation statistics computation."""
         # Add some scores
         sim_stats.fragmentation_scores = [0.3, 0.4, 0.5, 0.6, 0.7]
@@ -138,7 +148,7 @@ class TestFragmentationMetrics:
         assert stats["count"] == 5
         assert "p95" in stats
 
-    def test_get_fragmentation_stats_empty(self, sim_stats):
+    def test_get_fragmentation_stats_empty(self, sim_stats: SimStats) -> None:
         """Test fragmentation stats when no scores recorded."""
         stats = sim_stats.get_fragmentation_stats()
 
@@ -151,12 +161,12 @@ class TestDecisionTimeMetrics:
     """Test decision time tracking."""
 
     @pytest.fixture
-    def sim_stats(self):
+    def sim_stats(self) -> SimStats:
         """Create SimStats instance for testing."""
         engine_props = {"num_requests": 1000, "erlang": 100}
         return SimStats(engine_props, sim_info="test_simulation")
 
-    def test_record_decision_time(self, sim_stats):
+    def test_record_decision_time(self, sim_stats: SimStats) -> None:
         """Test recording policy decision times."""
         sim_stats.record_decision_time(0.5)
         sim_stats.record_decision_time(0.7)
@@ -165,7 +175,7 @@ class TestDecisionTimeMetrics:
         assert len(sim_stats.decision_times_ms) == 3
         assert sim_stats.decision_times_ms == [0.5, 0.7, 0.3]
 
-    def test_get_decision_time_stats(self, sim_stats):
+    def test_get_decision_time_stats(self, sim_stats: SimStats) -> None:
         """Test decision time statistics computation."""
         sim_stats.decision_times_ms = [0.3, 0.4, 0.5, 0.6, 0.7]
 
@@ -175,7 +185,7 @@ class TestDecisionTimeMetrics:
         assert stats["count"] == 5
         assert "p95" in stats
 
-    def test_get_decision_time_stats_empty(self, sim_stats):
+    def test_get_decision_time_stats_empty(self, sim_stats: SimStats) -> None:
         """Test decision time stats when no times recorded."""
         stats = sim_stats.get_decision_time_stats()
 
@@ -188,7 +198,7 @@ class TestCSVRowExport:
     """Test to_csv_row method."""
 
     @pytest.fixture
-    def sim_stats(self):
+    def sim_stats(self) -> SimStats:
         """Create SimStats instance with data."""
         engine_props = {
             "num_requests": 1000,
@@ -214,7 +224,7 @@ class TestCSVRowExport:
 
         return stats
 
-    def test_to_csv_row_includes_all_metrics(self, sim_stats):
+    def test_to_csv_row_includes_all_metrics(self, sim_stats: SimStats) -> None:
         """Test that CSV row includes all metrics."""
         row = sim_stats.to_csv_row()
 
@@ -239,16 +249,16 @@ class TestCSVRowExport:
         assert "frag_proxy_mean" in row
         assert "decision_time_mean_ms" in row
 
-    def test_to_csv_row_computes_stats(self, sim_stats):
+    def test_to_csv_row_computes_stats(self, sim_stats: SimStats) -> None:
         """Test that CSV row correctly computes derived stats."""
         row = sim_stats.to_csv_row()
 
         # Check computed values
         assert row["recovery_time_mean_ms"] == 51.0
-        assert row["frag_proxy_mean"] == 0.4
-        assert row["decision_time_mean_ms"] == 0.6
+        assert abs(row["frag_proxy_mean"] - 0.4) < 1e-9
+        assert abs(row["decision_time_mean_ms"] - 0.6) < 1e-9
 
-    def test_to_csv_row_handles_missing_data(self):
+    def test_to_csv_row_handles_missing_data(self) -> None:
         """Test CSV row export with minimal data."""
         engine_props = {"num_requests": 100, "erlang": 50}
         stats = SimStats(engine_props, sim_info="test_simulation")

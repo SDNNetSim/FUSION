@@ -2,6 +2,8 @@
 Tests for multi-seed result aggregation.
 """
 
+from typing import Any
+
 from fusion.reporting.aggregation import (
     aggregate_seed_results,
     create_comparison_table,
@@ -12,7 +14,7 @@ from fusion.reporting.aggregation import (
 class TestAggregateSeedResults:
     """Test aggregate_seed_results function."""
 
-    def test_aggregate_simple_metrics(self):
+    def test_aggregate_simple_metrics(self) -> None:
         """Test aggregation of simple metrics across seeds."""
         results = [
             {"bp_overall": 0.05, "recovery_time_mean_ms": 52.3, "seed": 42},
@@ -35,7 +37,7 @@ class TestAggregateSeedResults:
         assert abs(agg["recovery_time_mean_ms"]["mean"] - 52.033) < 0.01
         assert agg["recovery_time_mean_ms"]["n"] == 3
 
-    def test_aggregate_auto_detect_metrics(self):
+    def test_aggregate_auto_detect_metrics(self) -> None:
         """Test auto-detection of numeric metrics."""
         results = [
             {"bp_overall": 0.05, "topology": "NSFNET", "seed": 42},
@@ -50,7 +52,7 @@ class TestAggregateSeedResults:
         assert "topology" not in agg
         assert "seed" not in agg
 
-    def test_aggregate_single_seed(self):
+    def test_aggregate_single_seed(self) -> None:
         """Test aggregation with single seed (std should be 0)."""
         results = [{"bp_overall": 0.05, "seed": 42}]
 
@@ -60,17 +62,17 @@ class TestAggregateSeedResults:
         assert agg["bp_overall"]["std"] == 0.0
         assert agg["bp_overall"]["n"] == 1
 
-    def test_aggregate_empty_results(self):
+    def test_aggregate_empty_results(self) -> None:
         """Test aggregation with empty results."""
-        results = []
+        results: list[dict[str, Any]] = []
 
         agg = aggregate_seed_results(results, ["bp_overall"])
 
         assert len(agg) == 0
 
-    def test_aggregate_missing_metrics(self):
+    def test_aggregate_missing_metrics(self) -> None:
         """Test aggregation when some results missing metrics."""
-        results = [
+        results: list[dict[str, Any]] = [
             {"bp_overall": 0.05, "seed": 42},
             {"bp_overall": 0.06, "seed": 43},
             {"seed": 44},  # Missing bp_overall
@@ -86,7 +88,7 @@ class TestAggregateSeedResults:
 class TestCreateComparisonTable:
     """Test create_comparison_table function."""
 
-    def test_comparison_shows_improvement(self):
+    def test_comparison_shows_improvement(self) -> None:
         """Test that comparison correctly shows improvement."""
         baseline = [
             {"bp_overall": 0.10, "seed": 42},
@@ -107,7 +109,7 @@ class TestCreateComparisonTable:
         assert comp["bp_overall"]["improvement_pct"] > 0
         assert abs(comp["bp_overall"]["improvement_pct"] - 19.048) < 0.01
 
-    def test_comparison_shows_regression(self):
+    def test_comparison_shows_regression(self) -> None:
         """Test that comparison correctly shows regression."""
         baseline = [{"recovery_time_mean_ms": 50.0, "seed": 42}]
         rl = [{"recovery_time_mean_ms": 60.0, "seed": 42}]
@@ -117,7 +119,7 @@ class TestCreateComparisonTable:
         # For recovery time, higher is worse, so this should show negative improvement
         assert comp["recovery_time_mean_ms"]["improvement_pct"] < 0
 
-    def test_comparison_includes_confidence_intervals(self):
+    def test_comparison_includes_confidence_intervals(self) -> None:
         """Test that comparison includes CI95 for both baseline and RL."""
         baseline = [
             {"bp_overall": 0.10, "seed": 42},
@@ -139,7 +141,7 @@ class TestCreateComparisonTable:
 class TestFormatComparisonForDisplay:
     """Test format_comparison_for_display function."""
 
-    def test_format_produces_table(self):
+    def test_format_produces_table(self) -> None:
         """Test that formatting produces readable table."""
         comparison = {
             "bp_overall": {
@@ -160,7 +162,7 @@ class TestFormatComparisonForDisplay:
         assert "Baseline" in formatted
         assert "Improvement" in formatted
 
-    def test_format_empty_comparison(self):
+    def test_format_empty_comparison(self) -> None:
         """Test formatting of empty comparison."""
         formatted = format_comparison_for_display({})
 

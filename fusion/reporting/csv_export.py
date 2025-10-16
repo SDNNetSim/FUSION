@@ -35,7 +35,7 @@ def export_results_to_csv(results: list[dict[str, Any]], output_path: str) -> No
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
     # Get all unique keys from all results
-    all_keys = set()
+    all_keys: set[str] = set()
     for result in results:
         all_keys.update(result.keys())
 
@@ -86,7 +86,7 @@ def export_aggregated_results(
     # Build rows for CSV
     rows = []
     for metric, stats in aggregated.items():
-        row = {"metric": metric}
+        row: dict[str, Any] = {"metric": metric}
         if metadata:
             row.update(metadata)
         row.update(

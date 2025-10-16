@@ -3,6 +3,8 @@ Tests for CSV export functionality.
 """
 
 import csv
+from pathlib import Path
+from typing import Any
 
 from fusion.reporting.csv_export import (
     append_result_to_csv,
@@ -15,7 +17,7 @@ from fusion.reporting.csv_export import (
 class TestExportResultsToCSV:
     """Test export_results_to_csv function."""
 
-    def test_export_creates_file(self, tmp_path):
+    def test_export_creates_file(self, tmp_path: Path) -> None:
         """Test that CSV file is created at specified path."""
         output_path = tmp_path / "results.csv"
         results = [
@@ -27,7 +29,7 @@ class TestExportResultsToCSV:
 
         assert output_path.exists()
 
-    def test_export_includes_all_columns(self, tmp_path):
+    def test_export_includes_all_columns(self, tmp_path: Path) -> None:
         """Test that all columns from results are included."""
         output_path = tmp_path / "results.csv"
         results = [
@@ -42,11 +44,12 @@ class TestExportResultsToCSV:
             reader = csv.DictReader(f)
             fieldnames = reader.fieldnames
 
+            assert fieldnames is not None
             assert "bp_overall" in fieldnames
             assert "seed" in fieldnames
             assert "recovery_time_mean_ms" in fieldnames
 
-    def test_export_correct_row_count(self, tmp_path):
+    def test_export_correct_row_count(self, tmp_path: Path) -> None:
         """Test that correct number of rows are written."""
         output_path = tmp_path / "results.csv"
         results = [
@@ -63,7 +66,7 @@ class TestExportResultsToCSV:
 
             assert len(rows) == 3
 
-    def test_export_priority_columns_first(self, tmp_path):
+    def test_export_priority_columns_first(self, tmp_path: Path) -> None:
         """Test that priority columns appear first."""
         output_path = tmp_path / "results.csv"
         results = [
@@ -82,15 +85,16 @@ class TestExportResultsToCSV:
             fieldnames = reader.fieldnames
 
             # Check that priority columns are early in the list
+            assert fieldnames is not None
             assert fieldnames.index("seed") < fieldnames.index("recovery_time_mean_ms")
             assert fieldnames.index("bp_overall") < fieldnames.index(
                 "recovery_time_mean_ms"
             )
 
-    def test_export_empty_results(self, tmp_path):
+    def test_export_empty_results(self, tmp_path: Path) -> None:
         """Test export with empty results list."""
         output_path = tmp_path / "results.csv"
-        results = []
+        results: list[dict[str, Any]] = []
 
         export_results_to_csv(results, str(output_path))
 
@@ -101,7 +105,7 @@ class TestExportResultsToCSV:
 class TestExportAggregatedResults:
     """Test export_aggregated_results function."""
 
-    def test_export_aggregated_creates_file(self, tmp_path):
+    def test_export_aggregated_creates_file(self, tmp_path: Path) -> None:
         """Test that aggregated results file is created."""
         output_path = tmp_path / "aggregated.csv"
         aggregated = {
@@ -118,7 +122,7 @@ class TestExportAggregatedResults:
 
         assert output_path.exists()
 
-    def test_export_aggregated_includes_metadata(self, tmp_path):
+    def test_export_aggregated_includes_metadata(self, tmp_path: Path) -> None:
         """Test that metadata is included in aggregated export."""
         output_path = tmp_path / "aggregated.csv"
         aggregated = {
@@ -147,7 +151,7 @@ class TestExportAggregatedResults:
 class TestExportComparisonTable:
     """Test export_comparison_table function."""
 
-    def test_export_comparison_creates_file(self, tmp_path):
+    def test_export_comparison_creates_file(self, tmp_path: Path) -> None:
         """Test that comparison table file is created."""
         output_path = tmp_path / "comparison.csv"
         comparison = {
@@ -168,7 +172,7 @@ class TestExportComparisonTable:
 
         assert output_path.exists()
 
-    def test_export_comparison_includes_all_fields(self, tmp_path):
+    def test_export_comparison_includes_all_fields(self, tmp_path: Path) -> None:
         """Test that all comparison fields are exported."""
         output_path = tmp_path / "comparison.csv"
         comparison = {
@@ -203,7 +207,7 @@ class TestExportComparisonTable:
 class TestAppendResultToCSV:
     """Test append_result_to_csv function."""
 
-    def test_append_creates_file_with_header(self, tmp_path):
+    def test_append_creates_file_with_header(self, tmp_path: Path) -> None:
         """Test that append creates file with header on first call."""
         output_path = tmp_path / "results.csv"
         result = {"bp_overall": 0.05, "seed": 42}
@@ -218,11 +222,12 @@ class TestAppendResultToCSV:
             fieldnames = reader.fieldnames
             rows = list(reader)
 
+            assert fieldnames is not None
             assert "bp_overall" in fieldnames
             assert "seed" in fieldnames
             assert len(rows) == 1
 
-    def test_append_adds_rows_without_duplicate_header(self, tmp_path):
+    def test_append_adds_rows_without_duplicate_header(self, tmp_path: Path) -> None:
         """Test that subsequent appends don't duplicate header."""
         output_path = tmp_path / "results.csv"
 
