@@ -64,11 +64,18 @@ class IQLPolicy(PathPolicy):
         :rtype: nn.Module
         """
         try:
-            checkpoint = torch.load(model_path, map_location=self.device)
+            checkpoint = torch.load(
+                model_path,
+                map_location=self.device,
+                weights_only=False,
+            )  # nosec B614 - Loading trusted model files from local filesystem
 
             # Extract actor from checkpoint
             if isinstance(checkpoint, dict) and "actor" in checkpoint:
                 actor = checkpoint["actor"]
+                # If actor is a state_dict, reconstruct the model
+                if isinstance(actor, dict):
+                    actor = self._build_actor_from_state_dict(actor)
             else:
                 actor = checkpoint
 
@@ -77,6 +84,35 @@ class IQLPolicy(PathPolicy):
         except Exception as e:
             logger.error(f"Failed to load IQL model: {e}")
             raise
+
+    def _build_actor_from_state_dict(self, state_dict: dict) -> nn.Module:
+        """
+        Build actor architecture from state dict.
+
+        Infers dimensions from the state dict and creates a simple
+        3-layer MLP with Softmax output.
+
+        :param state_dict: Actor state dictionary
+        :type state_dict: dict
+        :return: Actor model with loaded weights
+        :rtype: nn.Module
+        """
+        # Infer dimensions from state dict
+        # Assumes Sequential with Linear layers at indices 0, 2
+        input_dim = state_dict["0.weight"].shape[1]
+        hidden_dim = state_dict["0.weight"].shape[0]
+        output_dim = state_dict["2.weight"].shape[0]
+
+        # Build actor architecture
+        actor = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim),
+            nn.Softmax(dim=-1),
+        )
+
+        actor.load_state_dict(state_dict)
+        return actor
 
     def _state_to_tensor(self, state: dict[str, Any]) -> torch.Tensor:
         """
@@ -148,6 +184,6 @@ class IQLPolicy(PathPolicy):
             raise AllPathsMaskedError("All paths masked after probability filtering")
 
         # Select action with highest probability
-        selected = torch.argmax(action_probs).item()
+        selected: int = int(torch.argmax(action_probs).item())
 
         return selected

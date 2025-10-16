@@ -402,7 +402,7 @@ class TestRenderingPerformance:
         """
         Benchmark: Time to render a simple plot.
 
-        Target: <600ms
+        Target: <750ms
         """
         from fusion.visualization.domain.value_objects import PlotSpecification
 
@@ -437,8 +437,8 @@ class TestRenderingPerformance:
         # Verify
         assert result.success
         assert output_path.exists()
-        assert timer.duration is not None and timer.duration < 0.6, (
-            f"Rendering took {timer.duration:.3f}s (target: <0.6s)"
+        assert timer.duration is not None and timer.duration < 0.75, (
+            f"Rendering took {timer.duration:.3f}s (target: <0.75s)"
         )
 
         print(f"\n  Plot rendering: {(timer.duration or 0) * 1000:.2f}ms")

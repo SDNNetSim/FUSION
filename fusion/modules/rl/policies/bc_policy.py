@@ -65,7 +65,11 @@ class BCPolicy(PathPolicy):
         :rtype: nn.Module
         """
         try:
-            model = torch.load(model_path, map_location=self.device)
+            model = torch.load(
+                model_path,
+                map_location=self.device,
+                weights_only=False,
+            )  # nosec B614 - Loading trusted model files from local filesystem
 
             if isinstance(model, dict):
                 # Model saved as state dict
@@ -176,6 +180,6 @@ class BCPolicy(PathPolicy):
         logits[~mask_tensor] = float("-inf")  # Mask infeasible actions
 
         # Select action with highest logit
-        selected = torch.argmax(logits).item()
+        selected: int = int(torch.argmax(logits).item())
 
         return selected

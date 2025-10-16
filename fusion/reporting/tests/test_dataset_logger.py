@@ -3,6 +3,7 @@ Tests for DatasetLogger.
 """
 
 import json
+from typing import Any
 
 from fusion.modules.rl.policies import KSPFFPolicy
 from fusion.reporting.dataset_logger import (
@@ -16,7 +17,7 @@ from fusion.reporting.dataset_logger import (
 class TestDatasetLogger:
     """Test cases for DatasetLogger."""
 
-    def test_dataset_logger_creates_file(self, tmp_path):
+    def test_dataset_logger_creates_file(self, tmp_path: Any) -> None:
         """Test that JSONL file created at specified path."""
         output_path = tmp_path / "test_data.jsonl"
         engine_props = {"seed": 42}
@@ -26,7 +27,7 @@ class TestDatasetLogger:
 
         assert output_path.exists()
 
-    def test_transition_logged_correctly(self, tmp_path):
+    def test_transition_logged_correctly(self, tmp_path: Any) -> None:
         """Test that logged transition matches expected schema."""
         output_path = tmp_path / "test_data.jsonl"
         engine_props = {"seed": 42}
@@ -73,7 +74,7 @@ class TestDatasetLogger:
         assert transition["action_mask"] == [True]
         assert transition["meta"]["bp_window_tag"] == "pre"
 
-    def test_multiple_transitions_logged(self, tmp_path):
+    def test_multiple_transitions_logged(self, tmp_path: Any) -> None:
         """Test that multiple transitions are logged correctly."""
         output_path = tmp_path / "test_data.jsonl"
         engine_props = {"seed": 42}
@@ -105,7 +106,7 @@ class TestDatasetLogger:
             assert transition["t"] == i
             assert transition["action"] == i
 
-    def test_action_mask_logged(self, tmp_path):
+    def test_action_mask_logged(self, tmp_path: Any) -> None:
         """Test that action_mask array logged correctly."""
         output_path = tmp_path / "test_data.jsonl"
         logger = DatasetLogger(str(output_path), {"seed": 42})
@@ -129,7 +130,7 @@ class TestDatasetLogger:
 
         assert transition["action_mask"] == action_mask
 
-    def test_meta_fields_populated(self, tmp_path):
+    def test_meta_fields_populated(self, tmp_path: Any) -> None:
         """Test that all meta fields present in logged data."""
         output_path = tmp_path / "test_data.jsonl"
         logger = DatasetLogger(str(output_path), {"seed": 42})
@@ -160,7 +161,7 @@ class TestDatasetLogger:
         assert all(key in transition["meta"] for key in meta.keys())
         assert transition["meta"] == meta
 
-    def test_context_manager(self, tmp_path):
+    def test_context_manager(self, tmp_path: Any) -> None:
         """Test that DatasetLogger works as context manager."""
         output_path = tmp_path / "test_data.jsonl"
 
@@ -181,7 +182,7 @@ class TestDatasetLogger:
             lines = f.readlines()
             assert len(lines) == 1
 
-    def test_directory_creation(self, tmp_path):
+    def test_directory_creation(self, tmp_path: Any) -> None:
         """Test that parent directories are created if needed."""
         output_path = tmp_path / "subdir" / "nested" / "test_data.jsonl"
 
@@ -195,7 +196,7 @@ class TestDatasetLogger:
 class TestEpsilonMix:
     """Test cases for epsilon-mix path selection."""
 
-    def test_epsilon_mix_selects_second_best_with_epsilon_one(self):
+    def test_epsilon_mix_selects_second_best_with_epsilon_one(self) -> None:
         """Test that second-best path selected with epsilon=1.0."""
         policy = KSPFFPolicy()
         state = {"src": 0, "dst": 1, "paths": [{}, {}, {}]}
@@ -205,7 +206,7 @@ class TestEpsilonMix:
         selected = select_path_with_epsilon_mix(policy, state, action_mask, epsilon=1.0)
         assert selected == 1
 
-    def test_epsilon_mix_selects_first_with_epsilon_zero(self):
+    def test_epsilon_mix_selects_first_with_epsilon_zero(self) -> None:
         """Test that first path selected with epsilon=0.0."""
         policy = KSPFFPolicy()
         state = {"src": 0, "dst": 1, "paths": [{}, {}, {}]}
@@ -215,16 +216,16 @@ class TestEpsilonMix:
         selected = select_path_with_epsilon_mix(policy, state, action_mask, epsilon=0.0)
         assert selected == 0
 
-    def test_epsilon_mix_returns_negative_when_all_blocked(self):
+    def test_epsilon_mix_returns_negative_when_all_blocked(self) -> None:
         """Test that -1 returned when all paths blocked."""
         policy = KSPFFPolicy()
         state = {"src": 0, "dst": 1, "paths": []}
-        action_mask = []
+        action_mask: list[bool] = []
 
         selected = select_path_with_epsilon_mix(policy, state, action_mask, epsilon=0.1)
         assert selected == -1
 
-    def test_epsilon_mix_handles_single_feasible_path(self):
+    def test_epsilon_mix_handles_single_feasible_path(self) -> None:
         """Test epsilon-mix with only one feasible path."""
         policy = KSPFFPolicy()
         state = {"src": 0, "dst": 1, "paths": [{}, {}]}
@@ -238,7 +239,7 @@ class TestEpsilonMix:
 class TestLoadDataset:
     """Test cases for dataset loading utilities."""
 
-    def test_load_dataset(self, tmp_path):
+    def test_load_dataset(self, tmp_path: Any) -> None:
         """Test that dataset loads correctly from JSONL."""
         output_path = tmp_path / "test_data.jsonl"
 
@@ -262,7 +263,7 @@ class TestLoadDataset:
             assert trans["t"] == i
             assert trans["action"] == i
 
-    def test_filter_by_window(self, tmp_path):
+    def test_filter_by_window(self, tmp_path: Any) -> None:
         """Test filtering dataset by BP window tag."""
         output_path = tmp_path / "test_data.jsonl"
 

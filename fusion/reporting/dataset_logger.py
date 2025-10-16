@@ -120,11 +120,11 @@ class DatasetLogger:
                 f"Dataset logger closed: {self.transition_count} transitions logged"
             )
 
-    def __enter__(self):
+    def __enter__(self) -> "DatasetLogger":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> None:
         """Context manager exit."""
         self.close()
 
@@ -161,14 +161,15 @@ def select_path_with_epsilon_mix(
         return -1  # All blocked
 
     # With probability epsilon, select second-best
-    if random.random() < epsilon and len(feasible_indices) >= 2:
+    if random.random() < epsilon and len(feasible_indices) >= 2:  # nosec B311 - Simulation randomness, not cryptographic
         return feasible_indices[1]  # Second feasible path
 
     # Otherwise, use policy
-    return policy.select_path(state, action_mask)
+    selected_path: int = policy.select_path(state, action_mask)
+    return selected_path
 
 
-def load_dataset(file_path: str):
+def load_dataset(file_path: str) -> Any:
     """
     Load transitions from JSONL file.
 
