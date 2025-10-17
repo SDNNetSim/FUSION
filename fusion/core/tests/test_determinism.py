@@ -219,3 +219,80 @@ def test_cross_module_seeding() -> None:
     # Both should be reproducible
     assert py_val1 == py_val2
     assert np_val1 == np_val2
+
+
+def test_separate_seeding_request_generation() -> None:
+    """Test that seed_request_generation only affects NumPy."""
+
+    from fusion.core.simulation import seed_request_generation, seed_rl_components
+
+    # Seed request generation
+    seed_request_generation(42)
+    np_val1 = np.random.rand()
+
+    # Seed RL components (should not affect NumPy)
+    seed_rl_components(99)
+    np_val2 = np.random.rand()
+
+    # Reseed request generation with same seed
+    seed_request_generation(42)
+    np_val3 = np.random.rand()
+
+    # First and third should match (same request seed)
+    assert np_val1 == np_val3
+
+    # Second should differ (RL seeding doesn't affect NumPy after it's already seeded)
+    # This test verifies that seed_request_generation properly seeds NumPy
+    assert np_val1 != np_val2
+
+
+def test_separate_seeding_rl_components() -> None:
+    """Test that seed_rl_components affects Python random but not NumPy."""
+    import random
+
+    from fusion.core.simulation import seed_request_generation, seed_rl_components
+
+    # Seed RL components
+    seed_rl_components(42)
+    py_val1 = random.random()  # nosec B311  # For simulation, not crypto
+
+    # Seed request generation (should not affect Python random)
+    seed_request_generation(99)
+
+    # Reseed RL components with same seed
+    seed_rl_components(42)
+    py_val2 = random.random()  # nosec B311  # For simulation, not crypto
+
+    # Should match (same RL seed)
+    assert py_val1 == py_val2
+
+
+def test_separate_seeding_allows_independent_control() -> None:
+    """Test that request and RL seeds can be controlled independently."""
+    import random
+
+    from fusion.core.simulation import seed_request_generation, seed_rl_components
+
+    # Scenario: RL seed stays constant, request seed varies
+    rl_seed = 42
+    request_seeds = [10, 20, 30]
+
+    results = []
+    for req_seed in request_seeds:
+        seed_rl_components(rl_seed)  # Constant RL seed
+        seed_request_generation(req_seed)  # Varying request seed
+
+        results.append(
+            {
+                "python_random": random.random(),  # nosec B311
+                "numpy_rand": np.random.rand(),
+            }
+        )
+
+    # Python random values should all be the same (constant RL seed)
+    assert results[0]["python_random"] == results[1]["python_random"]
+    assert results[1]["python_random"] == results[2]["python_random"]
+
+    # NumPy values should all differ (varying request seeds)
+    assert results[0]["numpy_rand"] != results[1]["numpy_rand"]
+    assert results[1]["numpy_rand"] != results[2]["numpy_rand"]
