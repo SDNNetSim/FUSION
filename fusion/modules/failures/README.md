@@ -216,14 +216,14 @@ except FailureConfigError as e:
 
 ## Performance
 
-- **Failure injection**: O(E) for geographic failures, O(1) for link failures
+- **Failure injection**: O(1) for link failures, O(d) for node failures (d=node degree), O(k) for SRLG failures (k=SRLG size), O(V+E) for geographic failures
 - **Path feasibility**: O(H) where H is path hops
-- **Memory**: O(F) where F is number of active failures
+- **Memory**: O(L) where L is total failed links (note: one node/geo failure can affect multiple links)
 
 ## Dependencies
 
 - **NetworkX**: Graph operations and shortest path algorithms
-- **Python 3.9+**: Type hints and modern syntax
+- **Python 3.11+**: Type hints and modern syntax
 
 ## Version History
 
@@ -234,9 +234,9 @@ except FailureConfigError as e:
 
 ## Related Documentation
 
-- [Phase 2 Specification](../../../docs/survivability-v1/phase2-infrastructure/10-failure-module.md)
 - [FUSION Coding Standards](../../../CODING_STANDARDS.md)
 - [Testing Standards](../../../TESTING_STANDARDS.md)
+- **Note**: Detailed specifications are being migrated to Sphinx documentation
 
 ## Contact
 
