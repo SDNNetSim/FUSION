@@ -20,6 +20,10 @@ def test_reproducibility_with_same_seed() -> None:
     seed_all_rngs(seed)
     result2 = [np.random.rand() for _ in range(10)]
 
+    # Verify results are non-empty
+    assert len(result1) == 10
+    assert len(result2) == 10
+
     # Should be identical
     np.testing.assert_array_equal(result1, result2)
 
@@ -33,6 +37,10 @@ def test_different_results_with_different_seeds() -> None:
     # Run 2 with seed 43
     seed_all_rngs(43)
     result2 = [np.random.rand() for _ in range(10)]
+
+    # Verify results are non-empty
+    assert len(result1) == 10
+    assert len(result2) == 10
 
     # Should be different
     assert not np.allclose(result1, result2)
@@ -81,6 +89,10 @@ def test_python_random_seeding() -> None:
     seed_all_rngs(seed)
     result2 = [random.random() for _ in range(10)]  # nosec B311  # For simulation, not crypto
 
+    # Verify results are non-empty
+    assert len(result1) == 10
+    assert len(result2) == 10
+
     # Should be identical
     assert result1 == result2
 
@@ -97,6 +109,12 @@ def test_numpy_random_seeding() -> None:
     seed_all_rngs(seed)
     result2 = np.random.rand(10)
 
+    # Verify results are non-empty
+    assert result1.shape == (10,)
+    assert result2.shape == (10,)
+    assert len(result1) == 10
+    assert len(result2) == 10
+
     # Should be identical
     np.testing.assert_array_equal(result1, result2)
 
@@ -105,48 +123,52 @@ def test_torch_determinism() -> None:
     """Test that PyTorch operations are deterministic."""
     try:
         import torch
+    except ImportError:
+        pytest.skip("PyTorch not installed")
 
-        # Verify torch is properly functional
-        if not hasattr(torch, "randn") or not callable(torch.randn):
-            pytest.skip("PyTorch is broken or improperly installed")
+    seed = 42
 
-        seed = 42
+    # Run 1
+    seed_all_rngs(seed)
+    x = torch.randn(10, 10)
+    result1 = x @ x.t()
 
-        # Run 1
-        seed_all_rngs(seed)
-        x = torch.randn(10, 10)
+    # Run 2
+    seed_all_rngs(seed)
+    x = torch.randn(10, 10)
+    result2 = x @ x.t()
 
-        # Verify we got a proper tensor, not a list
-        if not hasattr(x, "t"):
-            pytest.skip("PyTorch is broken or improperly installed")
+    # Verify results are non-empty (proper shape)
+    assert result1.shape == (10, 10)
+    assert result2.shape == (10, 10)
 
-        result1 = x @ x.t()
-
-        # Run 2
-        seed_all_rngs(seed)
-        x = torch.randn(10, 10)
-        result2 = x @ x.t()
-
-        # Should be identical
-        assert torch.allclose(result1, result2)
-
-    except (ImportError, AttributeError):
-        pytest.skip("PyTorch not installed or broken")
+    # Should be identical
+    assert torch.allclose(result1, result2)
 
 
 def test_seed_all_rngs_no_torch() -> None:
     """Test that seed_all_rngs works without PyTorch."""
+    import random
+
     # Should not raise even if torch not available
     seed_all_rngs(42)
 
-    # Verify NumPy and Python random are still seeded
-    result1 = np.random.rand()
-    import random
+    # Generate values from seeded RNGs
+    np_val1 = np.random.rand()
+    py_val1 = random.random()  # nosec B311  # For simulation, not crypto
 
-    result2 = random.random()  # nosec B311  # For simulation, not crypto
+    # Reseed and verify reproducibility
+    seed_all_rngs(42)
+    np_val2 = np.random.rand()
+    py_val2 = random.random()  # nosec B311  # For simulation, not crypto
 
-    assert isinstance(result1, (float, np.floating))
-    assert isinstance(result2, float)
+    # Verify values are valid
+    assert isinstance(np_val1, (float, np.floating))
+    assert isinstance(py_val1, float)
+
+    # Verify reproducibility
+    assert np_val1 == np_val2
+    assert py_val1 == py_val2
 
 
 def test_validate_seed_edge_cases() -> None:
@@ -193,6 +215,14 @@ def test_reproducible_random_sequence() -> None:
         "numpy_random": np.random.rand(5).tolist(),
         "numpy_int": np.random.randint(0, 100, 5).tolist(),
     }
+
+    # Verify sequences are non-empty
+    assert len(seq1["python_random"]) == 5
+    assert len(seq1["numpy_random"]) == 5
+    assert len(seq1["numpy_int"]) == 5
+    assert len(seq2["python_random"]) == 5
+    assert len(seq2["numpy_random"]) == 5
+    assert len(seq2["numpy_int"]) == 5
 
     # All should be identical
     assert seq1["python_random"] == seq2["python_random"]
@@ -288,6 +318,12 @@ def test_separate_seeding_allows_independent_control() -> None:
                 "numpy_rand": np.random.rand(),
             }
         )
+
+    # Verify all results were generated (non-None)
+    assert len(results) == 3
+    for result in results:
+        assert isinstance(result["python_random"], float)
+        assert isinstance(result["numpy_rand"], (float, np.floating))
 
     # Python random values should all be the same (constant RL seed)
     assert results[0]["python_random"] == results[1]["python_random"]
