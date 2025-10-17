@@ -21,7 +21,7 @@ import pytest
 from fusion.core.metrics import SimStats
 from fusion.modules.failures import FailureManager
 from fusion.modules.rl.policies import KSPFFPolicy
-from fusion.modules.routing import KPathCache
+from fusion.modules.routing.k_path_cache import KPathCache
 from fusion.reporting import DatasetLogger
 
 
@@ -109,7 +109,12 @@ class TestSurvivabilityPipelineIntegration:
         """Test K-path cache integration with failure manager."""
         # Initialize components
         failure_manager = FailureManager(engine_props, sample_topology)
-        k_path_cache = KPathCache(sample_topology, k=4, failure_manager=failure_manager)
+        k_path_cache = KPathCache(sample_topology, k=4)
+
+        # Create minimal network spectrum for testing
+        network_spectrum = {}
+        for u, v in sample_topology.edges():
+            network_spectrum[(u, v)] = {"slots": [0] * 320}
 
         # Get K paths before failure
         paths_before = k_path_cache.get_k_paths(0, 3)
@@ -122,7 +127,10 @@ class TestSurvivabilityPipelineIntegration:
 
         # Get path features with failure
         paths = k_path_cache.get_k_paths(0, 3)
-        features = k_path_cache.get_path_features(0, 3, slots_needed=5)
+        features = [
+            k_path_cache.get_path_features(path, network_spectrum, failure_manager)
+            for path in paths
+        ]
 
         assert len(features) == len(paths)
         # At least one path should be marked as having failure
@@ -136,7 +144,7 @@ class TestSurvivabilityPipelineIntegration:
         from fusion.modules.rl.policies.action_masking import compute_action_mask
 
         # Create policy
-        policy = KSPFFPolicy(engine_props)
+        KSPFFPolicy()
 
         # Create K-path cache with failures
         failure_manager = FailureManager(engine_props, sample_topology)
@@ -144,11 +152,19 @@ class TestSurvivabilityPipelineIntegration:
             "link", t_fail=10.0, t_repair=20.0, link_id=(1, 2)
         )
 
-        k_path_cache = KPathCache(sample_topology, k=4, failure_manager=failure_manager)
+        k_path_cache = KPathCache(sample_topology, k=4)
+
+        # Create minimal network spectrum for testing
+        network_spectrum = {}
+        for u, v in sample_topology.edges():
+            network_spectrum[(u, v)] = {"slots": [0] * 320}
 
         # Get paths and features
         k_paths = k_path_cache.get_k_paths(0, 3)
-        k_path_features = k_path_cache.get_path_features(0, 3, slots_needed=5)
+        k_path_features = [
+            k_path_cache.get_path_features(path, network_spectrum, failure_manager)
+            for path in k_paths
+        ]
 
         # Compute action mask
         action_mask = compute_action_mask(k_paths, k_path_features, slots_needed=5)
@@ -240,12 +256,17 @@ class TestSurvivabilityPipelineIntegration:
 
         # Initialize components
         failure_manager = FailureManager(engine_props, sample_topology)
-        k_path_cache = KPathCache(sample_topology, k=4, failure_manager=failure_manager)
-        policy = KSPFFPolicy(engine_props)
+        k_path_cache = KPathCache(sample_topology, k=4)
+        KSPFFPolicy()
         dataset_logger = DatasetLogger(str(dataset_path), engine_props)
         stats = SimStats(engine_props, sim_info="e2e_test")
 
         # Simulate workflow
+        # Create minimal network spectrum for testing
+        network_spectrum = {}
+        for u, v in sample_topology.edges():
+            network_spectrum[(u, v)] = {"slots": [0] * 320}
+
         # Step 1: Inject failure at t=100
         failure_event = failure_manager.inject_failure(
             "link", t_fail=100.0, t_repair=200.0, link_id=(0, 1)
@@ -258,7 +279,10 @@ class TestSurvivabilityPipelineIntegration:
 
             # Get K paths and features
             k_paths = k_path_cache.get_k_paths(0, 3)
-            features = k_path_cache.get_path_features(0, 3, slots_needed=5)
+            features = [
+                k_path_cache.get_path_features(path, network_spectrum, failure_manager)
+                for path in k_paths
+            ]
 
             if not k_paths:
                 continue

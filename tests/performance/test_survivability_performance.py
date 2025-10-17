@@ -22,7 +22,7 @@ from fusion.core.metrics import SimStats
 from fusion.modules.failures import FailureManager
 from fusion.modules.rl.policies import KSPFFPolicy
 from fusion.modules.rl.policies.action_masking import compute_action_mask
-from fusion.modules.routing import KPathCache
+from fusion.modules.routing.k_path_cache import KPathCache
 from fusion.reporting import DatasetLogger
 
 
@@ -78,13 +78,22 @@ class TestDecisionTimePerformance:
     ) -> None:
         """Test that path feature extraction takes ≤ 0.5ms."""
         failure_manager = FailureManager(engine_props, sample_topology)
-        k_path_cache = KPathCache(sample_topology, k=4, failure_manager=failure_manager)
+        k_path_cache = KPathCache(sample_topology, k=4)
+
+        # Create minimal network spectrum for testing
+        network_spectrum = {}
+        for u, v in sample_topology.edges():
+            network_spectrum[(u, v)] = {"slots": [0] * 320}
 
         # Measure feature extraction time
         times = []
+        k_paths = k_path_cache.get_k_paths(0, 13)
         for _ in range(100):
             start = time.perf_counter()
-            features = k_path_cache.get_path_features(0, 13, slots_needed=5)
+            [
+                k_path_cache.get_path_features(path, network_spectrum, failure_manager)
+                for path in k_paths
+            ]
             elapsed_ms = (time.perf_counter() - start) * 1000
             times.append(elapsed_ms)
 
@@ -107,16 +116,24 @@ class TestDecisionTimePerformance:
     ) -> None:
         """Test that action mask computation takes ≤ 0.3ms."""
         failure_manager = FailureManager(engine_props, sample_topology)
-        k_path_cache = KPathCache(sample_topology, k=4, failure_manager=failure_manager)
+        k_path_cache = KPathCache(sample_topology, k=4)
+
+        # Create minimal network spectrum for testing
+        network_spectrum = {}
+        for u, v in sample_topology.edges():
+            network_spectrum[(u, v)] = {"slots": [0] * 320}
 
         k_paths = k_path_cache.get_k_paths(0, 13)
-        features = k_path_cache.get_path_features(0, 13, slots_needed=5)
+        features = [
+            k_path_cache.get_path_features(path, network_spectrum, failure_manager)
+            for path in k_paths
+        ]
 
         # Measure action masking time
         times = []
         for _ in range(100):
             start = time.perf_counter()
-            mask = compute_action_mask(k_paths, features, slots_needed=5)
+            compute_action_mask(k_paths, features, slots_needed=5)
             elapsed_ms = (time.perf_counter() - start) * 1000
             times.append(elapsed_ms)
 
@@ -136,7 +153,7 @@ class TestDecisionTimePerformance:
 
     def test_policy_inference_time(self, engine_props: dict[str, Any]) -> None:
         """Test that policy inference takes ≤ 1.2ms."""
-        policy = KSPFFPolicy(engine_props)
+        policy = KSPFFPolicy()
 
         # Create sample state
         k_paths = [[0, 1, 2, 3], [0, 4, 5, 3], [0, 6, 7, 3], [0, 1, 5, 3]]
@@ -152,12 +169,13 @@ class TestDecisionTimePerformance:
         times = []
         for _ in range(100):
             start = time.perf_counter()
-            action = policy.select_path(
-                k_paths=k_paths,
-                k_path_features=features,
-                action_mask=action_mask,
-                request={"source": 0, "destination": 3},
-            )
+            state = {
+                "source": 0,
+                "destination": 3,
+                "k_paths": k_paths,
+                "k_path_features": features,
+            }
+            policy.select_path(state, action_mask)
             elapsed_ms = (time.perf_counter() - start) * 1000
             times.append(elapsed_ms)
 
@@ -178,8 +196,13 @@ class TestDecisionTimePerformance:
     ) -> None:
         """Test that total decision time (features + mask + policy) ≤ 2ms."""
         failure_manager = FailureManager(engine_props, sample_topology)
-        k_path_cache = KPathCache(sample_topology, k=4, failure_manager=failure_manager)
-        policy = KSPFFPolicy(engine_props)
+        k_path_cache = KPathCache(sample_topology, k=4)
+        policy = KSPFFPolicy()
+
+        # Create minimal network spectrum for testing
+        network_spectrum = {}
+        for u, v in sample_topology.edges():
+            network_spectrum[(u, v)] = {"slots": [0] * 320}
 
         # Measure total decision time
         times = []
@@ -188,18 +211,22 @@ class TestDecisionTimePerformance:
 
             # Get paths and features
             k_paths = k_path_cache.get_k_paths(0, 13)
-            features = k_path_cache.get_path_features(0, 13, slots_needed=5)
+            features = [
+                k_path_cache.get_path_features(path, network_spectrum, failure_manager)
+                for path in k_paths
+            ]
 
             # Compute action mask
             action_mask = compute_action_mask(k_paths, features, slots_needed=5)
 
             # Select path
-            action = policy.select_path(
-                k_paths=k_paths,
-                k_path_features=features,
-                action_mask=action_mask,
-                request={"source": 0, "destination": 13},
-            )
+            state = {
+                "source": 0,
+                "destination": 13,
+                "k_paths": k_paths,
+                "k_path_features": features,
+            }
+            policy.select_path(state, action_mask)
 
             elapsed_ms = (time.perf_counter() - start) * 1000
             times.append(elapsed_ms)
@@ -299,7 +326,7 @@ class TestFailureProcessingPerformance:
         times = []
         for _ in range(1000):
             start = time.perf_counter()
-            is_feasible = manager.is_path_feasible(path)
+            manager.is_path_feasible(path)
             elapsed_ms = (time.perf_counter() - start) * 1000
             times.append(elapsed_ms)
 
@@ -346,11 +373,11 @@ class TestInitializationPerformance:
         G.add_edges_from(edges)
 
         engine_props = {"seed": 42}
-        failure_manager = FailureManager(engine_props, G)
+        FailureManager(engine_props, G)
 
         # Measure initialization time
         start = time.time()
-        cache = KPathCache(G, k=4, failure_manager=failure_manager)
+        KPathCache(G, k=4)
         elapsed = time.time() - start
 
         print(f"\nNSFNet K-path cache initialization: {elapsed:.2f}s")
@@ -364,11 +391,11 @@ class TestInitializationPerformance:
         G = nx.random_regular_graph(d=4, n=60, seed=42)
 
         engine_props = {"seed": 42}
-        failure_manager = FailureManager(engine_props, G)
+        FailureManager(engine_props, G)
 
         # Measure initialization time
         start = time.time()
-        cache = KPathCache(G, k=4, failure_manager=failure_manager)
+        KPathCache(G, k=4)
         elapsed = time.time() - start
 
         print(f"\n60-node topology K-path cache initialization: {elapsed:.2f}s")
@@ -476,7 +503,7 @@ class TestFragmentationMetrics:
         times = []
         for _ in range(100):
             start = time.perf_counter()
-            frag_score = stats.compute_fragmentation_proxy(path, network_spectrum)
+            stats.compute_fragmentation_proxy(path, network_spectrum)
             elapsed_ms = (time.perf_counter() - start) * 1000
             times.append(elapsed_ms)
 
@@ -493,6 +520,7 @@ if __name__ == "__main__":
 
     Usage:
         python -m pytest tests/performance/test_survivability_performance.py -v
-        python -m pytest tests/performance/test_survivability_performance.py -v -m "not slow"
+        python -m pytest tests/performance/test_survivability_performance.py \\
+            -v -m "not slow"
     """
     pytest.main([__file__, "-v", "-s"])
