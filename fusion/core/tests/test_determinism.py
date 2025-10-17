@@ -126,6 +126,14 @@ def test_torch_determinism() -> None:
     except ImportError:
         pytest.skip("PyTorch not installed")
 
+    # Verify PyTorch is functional, not just importable
+    try:
+        test_tensor = torch.randn(2, 2)
+        if not hasattr(test_tensor, "t"):
+            pytest.skip("PyTorch is broken or incompatible")
+    except Exception:
+        pytest.skip("PyTorch is not functional")
+
     seed = 42
 
     # Run 1
