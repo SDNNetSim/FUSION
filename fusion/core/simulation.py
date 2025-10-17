@@ -563,12 +563,24 @@ class SimulationEngine:
         # ================================================================
         # SEEDING STRATEGY: Separate request generation from RL components
         # ================================================================
+        # Seed configuration options (in priority order):
+        # 1. seed (int): Single seed for all components (simple use case)
+        # 2. request_seeds (list[int]): Per-iteration seeds for traffic variation
+        # 3. rl_seed (int): Constant seed for RL (used with request_seeds)
+        # 4. seeds (list[int]): Legacy name for request_seeds (backwards compat)
+        #
+        # Example configurations:
+        # - Simple: {"seed": 42} → All components use 42
+        # - Advanced: {"request_seeds": [1,2,3], "rl_seed": 42} → Traffic varies, RL constant
+        # - Batch: run_multi_seed_experiment(config, seed_list=[42,43,44]) → Statistical analysis
+        # ================================================================
+
         # Request generation seed (typically varies per iteration for diverse traffic)
         if seed is not None:
             # Explicit seed parameter overrides everything
             request_seed = seed
         elif self.engine_props.get("request_seeds"):
-            # Use explicit request_seeds list
+            # Use explicit request_seeds list (one seed per iteration)
             request_seed = self.engine_props["request_seeds"][iteration]
             logger.info(
                 "Using request_seed=%d from request_seeds list (iteration=%d)",
@@ -576,7 +588,7 @@ class SimulationEngine:
                 iteration,
             )
         elif self.engine_props.get("seeds"):
-            # Backwards compatibility: use seeds list
+            # Backwards compatibility: use seeds list (deprecated, use request_seeds)
             request_seed = self.engine_props["seeds"][iteration]
             logger.info(
                 "Using request_seed=%d from seeds list (iteration=%d)",

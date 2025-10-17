@@ -19,6 +19,11 @@ def sample_topology() -> nx.Graph:
 @pytest.fixture
 def failure_manager(sample_topology: nx.Graph) -> FailureManager:
     """Create a FailureManager instance."""
+    # Note: seed can be configured in multiple ways:
+    # - Single integer: {"seed": 42}  (used here for simple testing)
+    # - Request seeds list: {"request_seeds": [10, 20, 30]}  (per-iteration seeds)
+    # - Seed list for batch experiments: run_multi_seed_experiment(config, seed_list=[42, 43, 44])
+    # See fusion/core/simulation.py:568-590 for seed resolution logic
     engine_props = {"seed": 42}
     return FailureManager(engine_props, sample_topology)
 
