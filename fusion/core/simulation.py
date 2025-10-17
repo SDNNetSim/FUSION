@@ -571,8 +571,10 @@ class SimulationEngine:
         #
         # Example configurations:
         # - Simple: {"seed": 42} → All components use 42
-        # - Advanced: {"request_seeds": [1,2,3], "rl_seed": 42} → Traffic varies, RL constant
-        # - Batch: run_multi_seed_experiment(config, seed_list=[42,43,44]) → Statistical analysis
+        # - Advanced: {"request_seeds": [1,2,3], "rl_seed": 42}
+        #   → Traffic varies, RL constant
+        # - Batch: run_multi_seed_experiment(config, seed_list=[42,43,44])
+        #   → Statistical analysis
         # ================================================================
 
         # Request generation seed (typically varies per iteration for diverse traffic)
