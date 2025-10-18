@@ -1,5 +1,5 @@
 """
-Tests for Phase 5 metrics and reporting functionality.
+Tests for survivability metrics and reporting functionality.
 """
 
 import numpy as np
