@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from fusion.utils.spectrum import (
+    find_common_channels_on_paths,
     find_free_channels,
     find_free_slots,
     find_taken_channels,
@@ -449,3 +450,223 @@ class TestGetChannelOverlaps:
         # Assert
         assert "c" in result[(1, 2)]["overlapped_dict"]
         assert "l" in result[(1, 2)]["overlapped_dict"]
+
+
+class TestFindCommonChannelsOnPaths:
+    """Tests for find_common_channels_on_paths function (1+1 protection)."""
+
+    def test_find_common_channels_with_common_slots_on_both_paths(self) -> None:
+        """Test finding common available slots on two disjoint paths."""
+        # Arrange - Two paths with common free slots
+        network_spectrum = {
+            # Primary path: 0 -> 1 -> 2
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 0, 0, 1, 1]])}},
+            (1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0, 1, 1, 1]])}},
+            # Backup path: 0 -> 3 -> 2
+            (0, 3): {"cores_matrix": {"c": np.array([[0, 0, 1, 1, 1, 1]])}},
+            (3, 2): {"cores_matrix": {"c": np.array([[0, 0, 0, 0, 0, 1]])}},
+        }
+        primary_path = [0, 1, 2]
+        backup_path = [0, 3, 2]
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum,
+            [primary_path, backup_path],
+            slots_needed=2,
+            band="c",
+            core=0,
+        )
+
+        # Assert - Slots 0-1 are free on all links
+        assert len(result) > 0
+        assert 0 in result  # Starting at slot 0 gives us slots 0-1
+
+    def test_find_common_channels_with_no_common_slots(self) -> None:
+        """Test that no common slots returns empty list."""
+        # Arrange - Primary has slots 0-1 free, backup has slots 2-3 free
+        network_spectrum = {
+            # Primary path: 0 -> 1
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 1, 1]])}},
+            # Backup path: 0 -> 2
+            (0, 2): {"cores_matrix": {"c": np.array([[1, 1, 0, 0]])}},
+        }
+        primary_path = [0, 1]
+        backup_path = [0, 2]
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum,
+            [primary_path, backup_path],
+            slots_needed=2,
+            band="c",
+            core=0,
+        )
+
+        # Assert
+        assert result == []
+
+    def test_find_common_channels_with_single_path(self) -> None:
+        """Test with single path (should work like normal path check)."""
+        # Arrange
+        network_spectrum = {
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 0, 0]])}},
+            (1, 2): {"cores_matrix": {"c": np.array([[0, 0, 1, 1]])}},
+        }
+        path = [0, 1, 2]
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum, [path], slots_needed=2, band="c", core=0
+        )
+
+        # Assert - Only slots 0-1 are free on both links
+        assert len(result) == 1
+        assert 0 in result
+
+    def test_find_common_channels_with_empty_paths_list(self) -> None:
+        """Test that empty paths list returns empty result."""
+        # Arrange
+        network_spectrum = {(0, 1): {"cores_matrix": {"c": np.array([[0, 0]])}}}
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum, [], slots_needed=2, band="c", core=0
+        )
+
+        # Assert
+        assert result == []
+
+    def test_find_common_channels_with_path_too_short(self) -> None:
+        """Test that path with single node returns empty result."""
+        # Arrange
+        network_spectrum = {(0, 1): {"cores_matrix": {"c": np.array([[0, 0]])}}}
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum, [[0]], slots_needed=2, band="c", core=0
+        )
+
+        # Assert
+        assert result == []
+
+    def test_find_common_channels_with_missing_link(self) -> None:
+        """Test that missing link in spectrum dict returns empty result."""
+        # Arrange
+        network_spectrum = {
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 0, 0]])}},
+            # Missing (1, 2)
+        }
+        path = [0, 1, 2]
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum, [path], slots_needed=2, band="c", core=0
+        )
+
+        # Assert
+        assert result == []
+
+    def test_find_common_channels_with_missing_band(self) -> None:
+        """Test that missing band returns empty result."""
+        # Arrange
+        network_spectrum = {
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 0, 0]])}},
+        }
+        path = [0, 1]
+
+        # Act - Request l-band which doesn't exist
+        result = find_common_channels_on_paths(
+            network_spectrum, [path], slots_needed=2, band="l", core=0
+        )
+
+        # Assert
+        assert result == []
+
+    def test_find_common_channels_with_missing_core(self) -> None:
+        """Test that missing core returns empty result."""
+        # Arrange
+        network_spectrum = {
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 0, 0]])}},
+        }
+        path = [0, 1]
+
+        # Act - Request core 1 which doesn't exist
+        result = find_common_channels_on_paths(
+            network_spectrum, [path], slots_needed=2, band="c", core=1
+        )
+
+        # Assert
+        assert result == []
+
+    def test_find_common_channels_returns_sorted_results(self) -> None:
+        """Test that results are returned in sorted order."""
+        # Arrange - Multiple common free ranges
+        network_spectrum = {
+            # Slots 0-1 and 4-5 are free on both paths
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 1, 1, 0, 0]])}},
+            (0, 2): {"cores_matrix": {"c": np.array([[0, 0, 1, 1, 0, 0]])}},
+        }
+        primary_path = [0, 1]
+        backup_path = [0, 2]
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum,
+            [primary_path, backup_path],
+            slots_needed=2,
+            band="c",
+            core=0,
+        )
+
+        # Assert - Should be sorted
+        assert result == sorted(result)
+        assert 0 in result
+        assert 4 in result
+
+    def test_find_common_channels_with_three_paths(self) -> None:
+        """Test finding common slots across three paths (scalability test)."""
+        # Arrange
+        network_spectrum = {
+            # All three paths have slots 2-3 free
+            (0, 1): {"cores_matrix": {"c": np.array([[1, 1, 0, 0, 1, 1]])}},
+            (0, 2): {"cores_matrix": {"c": np.array([[1, 1, 0, 0, 1, 1]])}},
+            (0, 3): {"cores_matrix": {"c": np.array([[1, 1, 0, 0, 1, 1]])}},
+        }
+        path1 = [0, 1]
+        path2 = [0, 2]
+        path3 = [0, 3]
+
+        # Act
+        result = find_common_channels_on_paths(
+            network_spectrum, [path1, path2, path3], slots_needed=2, band="c", core=0
+        )
+
+        # Assert
+        assert len(result) == 1
+        assert 2 in result
+
+    def test_find_common_channels_with_larger_slot_requirement(self) -> None:
+        """Test with larger contiguous slot requirement."""
+        # Arrange
+        network_spectrum = {
+            # Slots 0-4 are free (5 contiguous slots)
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 0, 0, 0, 0, 1, 1, 1]])}},
+            (0, 2): {"cores_matrix": {"c": np.array([[0, 0, 0, 0, 0, 1, 1, 1]])}},
+        }
+        primary_path = [0, 1]
+        backup_path = [0, 2]
+
+        # Act - Need 4 contiguous slots
+        result = find_common_channels_on_paths(
+            network_spectrum,
+            [primary_path, backup_path],
+            slots_needed=4,
+            band="c",
+            core=0,
+        )
+
+        # Assert - Can start at 0 or 1
+        assert len(result) == 2
+        assert 0 in result
+        assert 1 in result
