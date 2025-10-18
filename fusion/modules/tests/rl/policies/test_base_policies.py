@@ -2,10 +2,7 @@
 Tests for baseline policies (KSP-FF and 1+1).
 """
 
-import pytest
-
 from fusion.modules.rl.policies import (
-    AllPathsMaskedError,
     KSPFFPolicy,
     OnePlusOnePolicy,
 )
@@ -24,15 +21,15 @@ class TestKSPFFPolicy:
         selected = policy.select_path(state, action_mask)
         assert selected == 2  # First feasible
 
-    def test_ksp_ff_raises_when_all_masked(self) -> None:
-        """Test that exception raised when all paths masked."""
+    def test_ksp_ff_returns_negative_one_when_all_masked(self) -> None:
+        """Test that -1 returned when all paths masked."""
         policy = KSPFFPolicy()
 
         state: dict[str, int] = {}
         action_mask = [False, False, False, False]
 
-        with pytest.raises(AllPathsMaskedError):
-            policy.select_path(state, action_mask)
+        selected = policy.select_path(state, action_mask)
+        assert selected == -1
 
     def test_ksp_ff_selects_first_when_all_feasible(self) -> None:
         """Test that first path selected when all are feasible."""
@@ -73,15 +70,15 @@ class TestOnePlusOnePolicy:
         selected = policy.select_path(state, action_mask)
         assert selected == 1  # Backup
 
-    def test_one_plus_one_raises_when_both_masked(self) -> None:
-        """Test that exception raised when both paths masked."""
+    def test_one_plus_one_returns_negative_one_when_both_masked(self) -> None:
+        """Test that -1 returned when both paths masked."""
         policy = OnePlusOnePolicy()
 
         state: dict[str, int] = {}
         action_mask = [False, False]
 
-        with pytest.raises(AllPathsMaskedError):
-            policy.select_path(state, action_mask)
+        selected = policy.select_path(state, action_mask)
+        assert selected == -1
 
     def test_one_plus_one_prefers_primary(self) -> None:
         """Test that primary always preferred over backup."""

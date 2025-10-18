@@ -10,7 +10,7 @@ from fusion.modules.rl.policies.action_masking import (
     apply_fallback_policy,
     compute_action_mask,
 )
-from fusion.modules.rl.policies.base import AllPathsMaskedError, PathPolicy
+from fusion.modules.rl.policies.base import PathPolicy
 from fusion.modules.rl.policies.bc_policy import BCPolicy
 from fusion.modules.rl.policies.iql_policy import IQLPolicy
 from fusion.modules.rl.policies.ksp_ff_policy import KSPFFPolicy
@@ -21,7 +21,6 @@ __all__ = [
     "PointerHead",
     "PointerPolicy",
     "PathPolicy",
-    "AllPathsMaskedError",
     "KSPFFPolicy",
     "OnePlusOnePolicy",
     "BCPolicy",

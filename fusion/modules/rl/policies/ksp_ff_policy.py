@@ -8,7 +8,7 @@ K shortest paths.
 
 from typing import Any
 
-from .base import AllPathsMaskedError, PathPolicy
+from .base import PathPolicy
 
 
 class KSPFFPolicy(PathPolicy):
@@ -34,12 +34,11 @@ class KSPFFPolicy(PathPolicy):
         :type state: dict[str, Any]
         :param action_mask: Feasibility mask
         :type action_mask: list[bool]
-        :return: Index of first feasible path
+        :return: Index of first feasible path, or -1 if all paths masked
         :rtype: int
-        :raises AllPathsMaskedError: If all paths masked
         """
         for i, is_feasible in enumerate(action_mask):
             if is_feasible:
                 return i
 
-        raise AllPathsMaskedError("All K paths are infeasible")
+        return -1  # All paths masked - request should be blocked
