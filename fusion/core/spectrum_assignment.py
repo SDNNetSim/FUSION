@@ -164,17 +164,15 @@ class SpectrumAssignment:
             candidate_channels_list=candidate_channels_list
         )
 
-    def _setup_first_last_allocation(
-        self,
-    ) -> tuple[list[list[np.ndarray]], list[int], list[str]]:
+    def _get_cores_and_bands_lists(self) -> tuple[list[int], list[str]]:
         """
-        Setup matrices for first/last allocation strategies.
+        Get core numbers and band lists based on forced values and allocation method.
 
-        :return: Tuple containing cores spectrum matrix, core numbers list, band list
-        :rtype: tuple[list[list[np.ndarray]], list[int], list[str]]
+        This is shared logic used by both normal and protected spectrum allocation.
+
+        :return: Tuple containing core numbers list and available bands list
+        :rtype: tuple[list[int], list[str]]
         """
-        cores_spectrum_matrix = []
-
         if self.spectrum_props.forced_core is not None:
             core_numbers_list = [self.spectrum_props.forced_core]
         elif self.engine_props_dict["allocation_method"] in (
@@ -189,6 +187,21 @@ class SpectrumAssignment:
             available_bands_list = [self.spectrum_props.forced_band]
         else:
             available_bands_list = self.engine_props_dict["band_list"]
+
+        return core_numbers_list, available_bands_list
+
+    def _setup_first_last_allocation(
+        self,
+    ) -> tuple[list[list[np.ndarray]], list[int], list[str]]:
+        """
+        Setup matrices for first/last allocation strategies.
+
+        :return: Tuple containing cores spectrum matrix, core numbers list, band list
+        :rtype: tuple[list[list[np.ndarray]], list[int], list[str]]
+        """
+        cores_spectrum_matrix = []
+
+        core_numbers_list, available_bands_list = self._get_cores_and_bands_lists()
 
         if self.spectrum_props.cores_matrix is None:
             raise ValueError("Cores matrix must be initialized")
@@ -467,10 +480,7 @@ class SpectrumAssignment:
         """
         Find spectrum available on both primary and backup paths for 1+1 protection.
 
-        This method loops over cores and bands (like normal allocation) to find
-        common available spectrum slots across both paths. It uses the
-        find_common_channels_on_paths utility which reuses existing
-        find_free_channels logic.
+        Dispatches to appropriate method based on spectrum_priority configuration.
 
         :param primary_path: Primary path as list of node IDs
         :type primary_path: list[int]
@@ -485,40 +495,63 @@ class SpectrumAssignment:
                 "Slots needed must be set before finding protected spectrum"
             )
 
-        # Get core and band lists (same logic as _setup_first_last_allocation)
-        if self.spectrum_props.forced_core is not None:
-            core_numbers_list = [self.spectrum_props.forced_core]
-        elif self.engine_props_dict["allocation_method"] in (
-            "priority_first",
-            "priority_last",
-        ):
-            core_numbers_list = [0, 2, 4, 1, 3, 5, 6]
-        else:
-            core_numbers_list = list(range(0, self.engine_props_dict["cores_per_link"]))
-
-        if self.spectrum_props.forced_band is not None:
-            available_bands_list = [self.spectrum_props.forced_band]
-        else:
-            available_bands_list = self.engine_props_dict["band_list"]
-
-        # Loop over cores and bands (matching handle_first_last_allocation pattern)
-        # Try BSC priority order if configured
+        # Dispatch based on spectrum priority (same pattern as normal allocation)
         if self.engine_props_dict.get("spectrum_priority") == "BSC":
-            # Band-first priority: iterate bands in outer loop
-            for band in available_bands_list:
-                for core in core_numbers_list:
-                    if self._try_protected_allocation(
-                        primary_path, backup_path, band, core
-                    ):
-                        return
+            self._find_protected_spectrum_bsc(primary_path, backup_path)
         else:
-            # Core-first priority: iterate cores in outer loop
+            self._find_protected_spectrum_band(primary_path, backup_path)
+
+    def _find_protected_spectrum_bsc(
+        self, primary_path: list[int], backup_path: list[int]
+    ) -> None:
+        """
+        Find protected spectrum with band-first priority (BSC).
+
+        Iterates bands in outer loop, cores in inner loop. Matches the pattern
+        of handle_first_last_priority_bsc for consistency.
+
+        :param primary_path: Primary path as list of node IDs
+        :type primary_path: list[int]
+        :param backup_path: Backup path as list of node IDs
+        :type backup_path: list[int]
+        """
+        core_numbers_list, available_bands_list = self._get_cores_and_bands_lists()
+
+        # Band-first priority: iterate bands in outer loop
+        for band in available_bands_list:
             for core in core_numbers_list:
-                for band in available_bands_list:
-                    if self._try_protected_allocation(
-                        primary_path, backup_path, band, core
-                    ):
-                        return
+                if self._try_protected_allocation(
+                    primary_path, backup_path, band, core
+                ):
+                    return
+
+        # No spectrum found on any core/band combination
+        self.spectrum_props.is_free = False
+        self.sdn_props.block_reason = "no_common_spectrum"
+
+    def _find_protected_spectrum_band(
+        self, primary_path: list[int], backup_path: list[int]
+    ) -> None:
+        """
+        Find protected spectrum with core-first priority (non-BSC).
+
+        Iterates cores in outer loop, bands in inner loop. Matches the pattern
+        of handle_first_last_priority_band for consistency.
+
+        :param primary_path: Primary path as list of node IDs
+        :type primary_path: list[int]
+        :param backup_path: Backup path as list of node IDs
+        :type backup_path: list[int]
+        """
+        core_numbers_list, available_bands_list = self._get_cores_and_bands_lists()
+
+        # Core-first priority: iterate cores in outer loop
+        for core in core_numbers_list:
+            for band in available_bands_list:
+                if self._try_protected_allocation(
+                    primary_path, backup_path, band, core
+                ):
+                    return
 
         # No spectrum found on any core/band combination
         self.spectrum_props.is_free = False
