@@ -156,7 +156,6 @@ class TestSDNProps(unittest.TestCase):
                 "end_slot_list",
                 "lightpath_bandwidth_list",
                 "lightpath_id_list",
-                "remaining_bw",
             ],
         )
         self.assertEqual(props.bandwidth_list, [])
@@ -489,7 +488,7 @@ class TestSDNPropsGrooming(unittest.TestCase):
 
         self.assertIn("lightpath_bandwidth_list", props.stat_key_list)
         self.assertIn("lightpath_id_list", props.stat_key_list)
-        self.assertIn("remaining_bw", props.stat_key_list)
+        # Note: remaining_bw is a scalar, not a list, so it's not in stat_key_list
 
 
 class TestSpectrumPropsGrooming(unittest.TestCase):
