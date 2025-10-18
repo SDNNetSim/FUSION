@@ -208,15 +208,15 @@ def generate_grooming_report(stats: GroomingStatistics) -> str:
     if stats.total_requests > 0:
         report.append(
             f"  Fully Groomed: {stats.fully_groomed_count} "
-            f"({stats.fully_groomed_count/stats.total_requests*100:.1f}%)"
+            f"({stats.fully_groomed_count / stats.total_requests * 100:.1f}%)"
         )
         report.append(
             f"  Partially Groomed: {stats.partially_groomed_count} "
-            f"({stats.partially_groomed_count/stats.total_requests*100:.1f}%)"
+            f"({stats.partially_groomed_count / stats.total_requests * 100:.1f}%)"
         )
         report.append(
             f"  Not Groomed: {stats.not_groomed_count} "
-            f"({stats.not_groomed_count/stats.total_requests*100:.1f}%)"
+            f"({stats.not_groomed_count / stats.total_requests * 100:.1f}%)"
         )
     report.append(f"  Grooming Success Rate: {stats.calculate_grooming_rate():.2f}%")
     report.append("")

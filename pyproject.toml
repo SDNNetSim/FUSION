@@ -26,7 +26,8 @@ testpaths = ["fusion"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=fusion --cov-report=html:reports/coverage/htmlcov --cov-report=term-missing --cov-report=xml:reports/coverage/coverage.xml"
+# Coverage disabled temporarily due to venv setup issues
+# addopts = "--cov=fusion --cov-report=html:reports/coverage/htmlcov --cov-report=term-missing --cov-report=xml:reports/coverage/coverage.xml"
 
 [tool.coverage.run]
 source = ["fusion"]

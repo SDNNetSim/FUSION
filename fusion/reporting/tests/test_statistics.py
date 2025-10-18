@@ -15,7 +15,7 @@ from fusion.reporting.statistics import (
 )
 
 
-def test_grooming_statistics_init():
+def test_grooming_statistics_init() -> None:
     """Test grooming statistics initialization."""
     stats = GroomingStatistics()
 
@@ -28,7 +28,7 @@ def test_grooming_statistics_init():
     assert stats.bandwidth_new_lightpath == 0.0
 
 
-def test_update_grooming_outcome_fully_groomed():
+def test_update_grooming_outcome_fully_groomed() -> None:
     """Test grooming outcome update for fully groomed request."""
     stats = GroomingStatistics()
 
@@ -42,7 +42,7 @@ def test_update_grooming_outcome_fully_groomed():
     assert stats.lightpaths_created == 0
 
 
-def test_update_grooming_outcome_partially_groomed():
+def test_update_grooming_outcome_partially_groomed() -> None:
     """Test grooming outcome update for partially groomed request."""
     stats = GroomingStatistics()
 
@@ -58,7 +58,7 @@ def test_update_grooming_outcome_partially_groomed():
     assert stats.lightpaths_created == 1
 
 
-def test_update_grooming_outcome_not_groomed():
+def test_update_grooming_outcome_not_groomed() -> None:
     """Test grooming outcome update for not groomed request."""
     stats = GroomingStatistics()
 
@@ -75,7 +75,7 @@ def test_update_grooming_outcome_not_groomed():
     assert stats.lightpaths_created == 1
 
 
-def test_calculate_grooming_rate():
+def test_calculate_grooming_rate() -> None:
     """Test grooming rate calculation."""
     stats = GroomingStatistics()
 
@@ -88,7 +88,7 @@ def test_calculate_grooming_rate():
     assert rate == pytest.approx(66.67, rel=0.01)  # 2 out of 3 groomed
 
 
-def test_calculate_grooming_rate_zero_requests():
+def test_calculate_grooming_rate_zero_requests() -> None:
     """Test grooming rate calculation with zero requests."""
     stats = GroomingStatistics()
 
@@ -96,7 +96,7 @@ def test_calculate_grooming_rate_zero_requests():
     assert rate == 0.0
 
 
-def test_calculate_bandwidth_savings():
+def test_calculate_bandwidth_savings() -> None:
     """Test bandwidth savings calculation."""
     stats = GroomingStatistics()
 
@@ -107,7 +107,7 @@ def test_calculate_bandwidth_savings():
     assert savings == 75.0  # 300 / (300 + 100) * 100
 
 
-def test_calculate_bandwidth_savings_zero():
+def test_calculate_bandwidth_savings_zero() -> None:
     """Test bandwidth savings calculation with zero bandwidth."""
     stats = GroomingStatistics()
 
@@ -115,7 +115,7 @@ def test_calculate_bandwidth_savings_zero():
     assert savings == 0.0
 
 
-def test_update_lightpath_release():
+def test_update_lightpath_release() -> None:
     """Test lightpath release update."""
     stats = GroomingStatistics()
     stats.active_lightpaths = 5
@@ -128,7 +128,7 @@ def test_update_lightpath_release():
     assert stats.lightpath_utilization_list[0] == 75.5
 
 
-def test_get_average_lightpath_utilization():
+def test_get_average_lightpath_utilization() -> None:
     """Test average lightpath utilization calculation."""
     stats = GroomingStatistics()
 
@@ -138,7 +138,7 @@ def test_get_average_lightpath_utilization():
     assert avg == 60.0
 
 
-def test_get_average_lightpath_utilization_empty():
+def test_get_average_lightpath_utilization_empty() -> None:
     """Test average lightpath utilization with no data."""
     stats = GroomingStatistics()
 
@@ -146,7 +146,7 @@ def test_get_average_lightpath_utilization_empty():
     assert avg == 0.0
 
 
-def test_to_dict():
+def test_to_dict() -> None:
     """Test statistics serialization to dictionary."""
     stats = GroomingStatistics()
     stats.update_grooming_outcome(True, False, 100, 0)
@@ -167,7 +167,7 @@ def test_to_dict():
     assert data["bandwidth"]["new_lightpath"] == 50.0
 
 
-def test_simulation_statistics_with_grooming():
+def test_simulation_statistics_with_grooming() -> None:
     """Test SimulationStatistics initialization with grooming enabled."""
     engine_props = {"is_grooming_enabled": True}
 
@@ -178,7 +178,7 @@ def test_simulation_statistics_with_grooming():
     assert isinstance(stats.grooming_stats, GroomingStatistics)
 
 
-def test_simulation_statistics_without_grooming():
+def test_simulation_statistics_without_grooming() -> None:
     """Test SimulationStatistics initialization with grooming disabled."""
     engine_props = {"is_grooming_enabled": False}
 
@@ -188,7 +188,7 @@ def test_simulation_statistics_without_grooming():
     assert stats.grooming_stats is None
 
 
-def test_generate_grooming_report():
+def test_generate_grooming_report() -> None:
     """Test report generation."""
     stats = GroomingStatistics()
     stats.total_requests = 100
@@ -208,7 +208,7 @@ def test_generate_grooming_report():
     assert "Bandwidth Groomed: 5000.00 Gbps" in report
 
 
-def test_export_grooming_stats_csv():
+def test_export_grooming_stats_csv() -> None:
     """Test CSV export functionality."""
     stats = GroomingStatistics()
     stats.total_requests = 10
@@ -233,7 +233,7 @@ def test_export_grooming_stats_csv():
             os.unlink(temp_path)
 
 
-def test_multiple_grooming_outcomes():
+def test_multiple_grooming_outcomes() -> None:
     """Test statistics with multiple mixed outcomes."""
     stats = GroomingStatistics()
 
