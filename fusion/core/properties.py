@@ -370,7 +370,6 @@ class SDNProps:
             "end_slot_list",
             "lightpath_bandwidth_list",
             "lightpath_id_list",
-            "remaining_bw",
         ]
 
     def update_params(
