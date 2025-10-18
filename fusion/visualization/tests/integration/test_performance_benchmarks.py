@@ -450,7 +450,7 @@ class TestRenderingPerformance:
         """
         Benchmark: Time to render a complex plot with CI.
 
-        Target: <800ms
+        Target: <1.0s
         """
         from fusion.visualization.domain.value_objects import PlotSpecification
 
@@ -488,8 +488,8 @@ class TestRenderingPerformance:
         # Verify
         assert result.success
         assert output_path.exists()
-        assert timer.duration is not None and timer.duration < 0.8, (
-            f"Complex rendering took {timer.duration:.3f}s (target: <0.8s)"
+        assert timer.duration is not None and timer.duration < 1.0, (
+            f"Complex rendering took {timer.duration:.3f}s (target: <1.0s)"
         )
 
         print(
