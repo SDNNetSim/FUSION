@@ -8,7 +8,7 @@ are masked.
 
 from typing import Any
 
-from .base import AllPathsMaskedError, PathPolicy
+from .base import PathPolicy
 
 
 def compute_action_mask(
@@ -83,11 +83,7 @@ def apply_fallback_policy(
         >>> if idx == -1:
         ...     print("Request blocked")
     """
-    try:
-        # Try fallback with full feasibility mask
-        # (fallback may use different logic)
-        return fallback_policy.select_path(state, [True] * len(state["paths"]))
-
-    except AllPathsMaskedError:
-        # Even fallback failed
-        return -1  # Block the request
+    # Try fallback with full feasibility mask
+    # (fallback may use different logic)
+    # Returns -1 if fallback also cannot find a path
+    return fallback_policy.select_path(state, [True] * len(state["paths"]))

@@ -122,7 +122,7 @@ fallback_policy = ksp_ff
 [dataset_logging]
 # Enable offline dataset logging for training
 log_offline_dataset = false
-dataset_output_path = datasets/offline_data.jsonl
+dataset_output_path = data/datasets/offline_data.jsonl
 
 # Epsilon-mix probability (0.0 = no exploration)
 epsilon_mix = 0.1
@@ -297,7 +297,7 @@ snr_type = None
         },
         "dataset_output_path": {
           "type": "string",
-          "default": "datasets/offline_data.jsonl",
+          "default": "data/datasets/offline_data.jsonl",
           "description": "Output path for JSONL dataset"
         },
         "epsilon_mix": {

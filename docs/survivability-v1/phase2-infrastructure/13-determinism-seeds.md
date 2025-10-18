@@ -26,13 +26,27 @@ This module ensures all randomness sources are properly seeded and all non-deter
 
 ## 1. Seed Management
 
-### Core Seeding Function
+### Separate Seeding Strategy
+
+**IMPORTANT**: FUSION uses **separate seeding** for request generation vs RL/ML components.
+
+**Rationale**:
+- **Request Generation (NumPy)**: Should vary per iteration to expose RL agents to diverse traffic patterns
+- **RL/ML Components (PyTorch, random)**: Should remain constant during training for deterministic agent behavior
+
+This separation allows:
+1. RL agents to train deterministically while seeing varied traffic
+2. Proper isolation of traffic variability vs agent exploration
+3. Reproducible RL training across multiple traffic scenarios
+
+### Core Seeding Functions
 
 **Location**: `fusion/core/simulation.py`
 
 ```python
 """
-Seed management for reproducible simulations.
+Seed management for reproducible simulations with separate control
+for request generation vs RL/ML components.
 """
 
 import random
@@ -41,34 +55,53 @@ import time
 from typing import Any
 
 
-def seed_all_rngs(seed: int) -> None:
+def seed_request_generation(seed: int) -> None:
     """
-    Seed all random number generators for reproducibility.
+    Seed random number generators used for request generation.
 
-    Seeds:
-    - Python's built-in random module
-    - NumPy's random state
-    - PyTorch's random state (CPU and CUDA)
-
-    Also sets PyTorch to deterministic mode to prevent
-    non-deterministic operations.
+    This function seeds ONLY NumPy, which is used for generating
+    traffic patterns (arrivals, departures, bandwidth selection, etc.).
+    This allows request generation to vary per iteration while keeping
+    RL/ML models deterministic across iterations.
 
     :param seed: Random seed (integer)
     :type seed: int
 
     Example:
-        >>> seed_all_rngs(42)
-        >>> # All subsequent random operations are reproducible
-        >>> random.random()
-        0.6394267984578837
+        >>> seed_request_generation(42)
+        >>> # NumPy random operations are now deterministic
         >>> np.random.rand()
         0.3745401188473625
     """
+    logger.debug("Seeding request generation (NumPy) with seed=%d", seed)
+    np.random.seed(seed)
+
+
+def seed_rl_components(seed: int) -> None:
+    """
+    Seed random number generators used for RL/ML components.
+
+    This function seeds Python's random module and PyTorch (CPU and CUDA),
+    which are used by RL agents and ML models. This allows RL components
+    to remain deterministic even when request generation seeds vary.
+
+    Also sets PyTorch to deterministic mode to prevent non-deterministic
+    operations in neural network computations.
+
+    :param seed: Random seed (integer)
+    :type seed: int
+
+    Example:
+        >>> seed_rl_components(42)
+        >>> # RL/ML operations are now deterministic
+        >>> import random
+        >>> random.random()
+        0.6394267984578837
+    """
+    logger.debug("Seeding RL components (random, PyTorch) with seed=%d", seed)
+
     # Seed Python's random module
     random.seed(seed)
-
-    # Seed NumPy
-    np.random.seed(seed)
 
     # Seed PyTorch (if available)
     try:
@@ -89,7 +122,24 @@ def seed_all_rngs(seed: int) -> None:
 
     except ImportError:
         # PyTorch not installed, skip
+        logger.debug("PyTorch not available, skipping PyTorch seeding")
         pass
+
+
+def seed_all_rngs(seed: int) -> None:
+    """
+    Seed all random number generators for reproducibility.
+
+    Seeds both request generation and RL components with the same seed.
+    For finer control, use seed_request_generation() and seed_rl_components()
+    separately.
+
+    :param seed: Random seed (integer)
+    :type seed: int
+    """
+    logger.debug("Seeding all RNGs with seed=%d", seed)
+    seed_request_generation(seed)
+    seed_rl_components(seed)
 
 
 def generate_seed_from_time() -> int:
@@ -138,53 +188,106 @@ def validate_seed(seed: int) -> int:
 
 ---
 
-## 2. Integration with SimulationEngine
+## 2. Configuration Options
 
-### Extension to `fusion/core/simulation.py`
+### Seeding Strategies
+
+FUSION supports three configuration approaches:
+
+#### A. Simple Mode (Default)
+All RNGs use the same seed, varying per iteration (iteration + 1).
+
+```ini
+# No seed configuration needed - uses iteration+1 by default
+```
+
+#### B. RL Training Mode (Recommended)
+Constant RL seed, varying traffic patterns.
+
+```ini
+[general_settings]
+seed = 42              # Constant RL behavior across iterations
+# request_seeds = []   # Traffic varies per iteration (iteration+1)
+```
+
+#### C. Full Control Mode
+Explicitly specify both seeds.
+
+```ini
+[general_settings]
+request_seeds = [1, 2, 3, 4, 5]  # Traffic patterns per iteration
+rl_seed = 42                      # Constant RL seed
+```
+
+### Configuration Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `seed` | int | General seed (used as constant RL seed if `rl_seed` not specified) | None (iteration+1) |
+| `request_seeds` | list[int] | List of seeds for request generation (one per iteration) | None (iteration+1) |
+| `rl_seed` | int | Fixed seed for RL/ML components (constant across iterations) | None (uses `seed` or iteration+1) |
+
+### Seeding Logic in `init_iter`
 
 ```python
-class SimulationEngine:
+def init_iter(self, iteration: int, seed: int | None = None, ...) -> None:
     """
-    Main simulation engine with deterministic behavior.
+    Initialize iteration with separate seeding strategy.
     """
+    # ================================================================
+    # SEEDING STRATEGY: Separate request generation from RL components
+    # ================================================================
 
-    def __init__(self, engine_props: dict[str, Any]) -> None:
-        """
-        Initialize simulation engine with seed management.
+    # 1. Determine request generation seed (typically varies per iteration)
+    if seed is not None:
+        request_seed = seed  # Explicit override
+    elif self.engine_props.get("request_seeds"):
+        request_seed = self.engine_props["request_seeds"][iteration]
+    elif self.engine_props.get("seeds"):
+        request_seed = self.engine_props["seeds"][iteration]  # Backwards compat
+    else:
+        request_seed = iteration + 1  # Default: varies per iteration
 
-        :param engine_props: Engine configuration
-        :type engine_props: dict[str, Any]
-        """
-        # Seed management
-        seed = engine_props.get('seed')
+    # 2. Determine RL component seed (typically constant across iterations)
+    if self.engine_props.get("rl_seed") is not None:
+        rl_seed = self.engine_props["rl_seed"]  # Use explicit RL seed
+        seed_rl_components(rl_seed)
+    elif self.engine_props.get("seed") is not None:
+        rl_seed = self.engine_props["seed"]  # Use general seed
+        seed_rl_components(rl_seed)
+    else:
+        # No RL seed - use same as request seed (varies per iteration)
+        seed_rl_components(request_seed)
 
-        if seed is None:
-            # Generate seed from time if not provided
-            seed = generate_seed_from_time()
-            logger.info(f"No seed provided, generated: {seed}")
-        else:
-            # Validate provided seed
-            seed = validate_seed(seed)
-            logger.info(f"Using provided seed: {seed}")
+    # 3. Seed request generation
+    seed_request_generation(request_seed)
 
-        # Store seed in engine props for logging
-        engine_props['seed'] = seed
+    # 4. Generate requests with request seed
+    self.generate_requests(request_seed)
+```
 
-        # Seed all RNGs
-        seed_all_rngs(seed)
-        logger.info("All RNGs seeded for reproducibility")
+---
 
-        # ... rest of initialization ...
-        self.engine_props = engine_props
+## 3. Integration with SimulationEngine
 
-    def get_seed(self) -> int:
-        """
-        Get the seed used for this simulation.
+### Per-Iteration Seeding
 
-        :return: Seed value
-        :rtype: int
-        """
-        return self.engine_props['seed']
+The `init_iter` method applies separate seeding at the start of each iteration:
+
+```python
+# Example: RL training with varying traffic
+engine_props = {
+    "seed": 42,           # Constant RL seed
+    "max_iters": 5,
+    # request_seeds not specified, so uses iteration+1
+}
+
+engine = SimulationEngine(engine_props)
+
+# Iteration 0: RL seed=42, request seed=1
+# Iteration 1: RL seed=42, request seed=2
+# Iteration 2: RL seed=42, request seed=3
+# ...
 ```
 
 ---

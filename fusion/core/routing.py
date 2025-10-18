@@ -183,6 +183,20 @@ class Routing:
 
         :raises NotImplementedError: If routing method is not recognized
         """
+        # TODO(survivability-v1): Optimize routing under failures by removing failed
+        # links from topology BEFORE path computation. Current implementation computes
+        # paths on full topology and validates afterward via is_path_feasible(), which
+        # is correct but may waste computation on infeasible paths.
+        # Example optimization:
+        #     if hasattr(self.sdn_props, 'failure_manager') and
+        #        self.sdn_props.failure_manager:
+        #         topology_view = self.engine_props['topology'].copy()
+        #         for failed_link in self.sdn_props.failure_manager.active_failures:
+        #             u, v = failed_link
+        #             if topology_view.has_edge(u, v):
+        #                 topology_view.remove_edge(u, v)
+        #         self.engine_props['topology'] = topology_view
+        #
         # Initialize route properties
         self._init_route_info()
 

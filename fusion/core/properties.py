@@ -79,6 +79,7 @@ class SpectrumProps:
         """Initialize spectrum properties with default values."""
         # Path and resource requirements
         self.path_list: list[int] | None = None
+        self.backup_path: list[int] | None = None  # For 1+1 protection
         self.slots_needed: int | None = None
         self.modulation: str | None = None
 

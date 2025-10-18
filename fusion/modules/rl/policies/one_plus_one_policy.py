@@ -7,7 +7,7 @@ pre-computed disjoint paths based on failure state.
 
 from typing import Any
 
-from .base import AllPathsMaskedError, PathPolicy
+from .base import PathPolicy
 
 
 class OnePlusOnePolicy(PathPolicy):
@@ -34,9 +34,8 @@ class OnePlusOnePolicy(PathPolicy):
         :type state: dict[str, Any]
         :param action_mask: Feasibility mask
         :type action_mask: list[bool]
-        :return: 0 (primary) or 1 (backup)
+        :return: 0 (primary), 1 (backup), or -1 if both paths masked
         :rtype: int
-        :raises AllPathsMaskedError: If both paths masked
         """
         # Try primary first
         if action_mask[0]:
@@ -46,4 +45,4 @@ class OnePlusOnePolicy(PathPolicy):
         if len(action_mask) > 1 and action_mask[1]:
             return 1
 
-        raise AllPathsMaskedError("Both primary and backup paths infeasible")
+        return -1  # Both paths masked - request should be blocked

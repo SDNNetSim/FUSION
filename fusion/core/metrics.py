@@ -59,7 +59,7 @@ class SimStats:
             "failure_window_size", 1000
         )
 
-        # Phase 5 - Additional survivability metrics
+        # Fragmentation and decision time metrics
         self.fragmentation_scores: list[float] = []
         self.decision_times_ms: list[float] = []
 
@@ -823,7 +823,7 @@ class SimStats:
             "failure_window_count": window_stats["count"],
         }
 
-    # Phase 5 - Metrics & Reporting Methods
+    # Fragmentation and Decision Time Methods
 
     def compute_fragmentation_proxy(
         self,
