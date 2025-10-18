@@ -670,3 +670,163 @@ class TestFindCommonChannelsOnPaths:
         assert len(result) == 2
         assert 0 in result
         assert 1 in result
+
+    def test_find_common_channels_with_multiple_cores(self) -> None:
+        """Test finding common channels across different cores."""
+        # Arrange - Core 0 has no common slots, but core 1 does
+        network_spectrum = {
+            (0, 1): {
+                "cores_matrix": {
+                    "c": np.array(
+                        [
+                            [1, 1, 1, 1],  # Core 0: all occupied
+                            [0, 0, 0, 0],  # Core 1: all free
+                        ]
+                    )
+                }
+            },
+            (0, 2): {
+                "cores_matrix": {
+                    "c": np.array(
+                        [
+                            [0, 0, 1, 1],  # Core 0: slots 0-1 free
+                            [0, 0, 1, 1],  # Core 1: slots 0-1 free (common!)
+                        ]
+                    )
+                }
+            },
+        }
+
+        # Act - Check core 0 (should fail - no common slots)
+        result_core0 = find_common_channels_on_paths(
+            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=0
+        )
+
+        # Act - Check core 1 (should succeed - slots 0-1 common)
+        result_core1 = find_common_channels_on_paths(
+            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=1
+        )
+
+        # Assert
+        assert result_core0 == []
+        assert len(result_core1) == 1
+        assert 0 in result_core1
+
+    def test_find_common_channels_with_multiple_bands(self) -> None:
+        """Test finding common channels across different spectrum bands."""
+        # Arrange - C-band occupied, L-band has common slots
+        network_spectrum = {
+            (0, 1): {
+                "cores_matrix": {
+                    "c": np.array([[1, 1, 1, 1]]),  # C-band: all occupied
+                    "l": np.array([[0, 0, 0, 0]]),  # L-band: all free
+                }
+            },
+            (0, 2): {
+                "cores_matrix": {
+                    "c": np.array([[0, 0, 1, 1]]),  # C-band: slots 0-1 free
+                    "l": np.array([[0, 0, 1, 1]]),  # L-band: slots 0-1 free (common!)
+                }
+            },
+        }
+
+        # Act - Check c-band (should fail)
+        result_c_band = find_common_channels_on_paths(
+            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=0
+        )
+
+        # Act - Check l-band (should succeed)
+        result_l_band = find_common_channels_on_paths(
+            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="l", core=0
+        )
+
+        # Assert
+        assert result_c_band == []
+        assert len(result_l_band) == 1
+        assert 0 in result_l_band
+
+    def test_find_common_channels_with_multi_core_multi_band(self) -> None:
+        """Test comprehensive scenario with multiple cores and bands."""
+        # Arrange - Complex multi-core, multi-band scenario
+        network_spectrum = {
+            (0, 1): {
+                "cores_matrix": {
+                    "c": np.array(
+                        [
+                            [1, 1, 0, 0],  # Core 0, C-band: slots 2-3 free
+                            [0, 0, 0, 0],  # Core 1, C-band: all free
+                            [1, 1, 1, 1],  # Core 2, C-band: all occupied
+                        ]
+                    ),
+                    "l": np.array(
+                        [
+                            [0, 0, 1, 1],  # Core 0, L-band: slots 0-1 free
+                            [1, 0, 0, 1],  # Core 1, L-band: slots 1-2 free
+                            [0, 0, 0, 0],  # Core 2, L-band: all free
+                        ]
+                    ),
+                }
+            },
+            (0, 2): {
+                "cores_matrix": {
+                    "c": np.array(
+                        [
+                            [
+                                0,
+                                0,
+                                0,
+                                0,
+                            ],  # Core 0, C-band: all free (slots 2-3 common!)
+                            [
+                                0,
+                                0,
+                                1,
+                                1,
+                            ],  # Core 1, C-band: slots 0-1 free (all common!)
+                            [0, 0, 0, 0],  # Core 2, C-band: all free
+                        ]
+                    ),
+                    "l": np.array(
+                        [
+                            [
+                                0,
+                                0,
+                                0,
+                                1,
+                            ],  # Core 0, L-band: slots 0-2 free (slots 0-1 common!)
+                            [
+                                0,
+                                0,
+                                0,
+                                0,
+                            ],  # Core 1, L-band: all free (slots 1-2 common!)
+                            [
+                                1,
+                                0,
+                                0,
+                                0,
+                            ],  # Core 2, L-band: slots 1-3 free (all common!)
+                        ]
+                    ),
+                }
+            },
+        }
+
+        # Test all combinations
+        test_cases = [
+            ("c", 0, [2]),  # C-band, Core 0: slot 2 common
+            ("c", 1, [0]),  # C-band, Core 1: slot 0 common
+            ("c", 2, []),  # C-band, Core 2: no common (first link all occupied)
+            ("l", 0, [0]),  # L-band, Core 0: slot 0 common
+            ("l", 1, [1]),  # L-band, Core 1: slot 1 common
+            ("l", 2, [1, 2]),  # L-band, Core 2: slots 1-2 common
+        ]
+
+        for band, core, expected_starts in test_cases:
+            result = find_common_channels_on_paths(
+                network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band=band, core=core
+            )
+            assert result == expected_starts, (
+                f"Failed for band={band}, core={core}: "
+                f"expected {expected_starts}, got {result}"
+            )

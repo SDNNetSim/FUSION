@@ -467,9 +467,10 @@ class SpectrumAssignment:
         """
         Find spectrum available on both primary and backup paths for 1+1 protection.
 
-        This method finds common available spectrum slots across both paths and
-        sets spectrum_props accordingly. It uses the find_common_channels_on_paths
-        utility which reuses existing find_free_channels logic.
+        This method loops over cores and bands (like normal allocation) to find
+        common available spectrum slots across both paths. It uses the
+        find_common_channels_on_paths utility which reuses existing
+        find_free_channels logic.
 
         :param primary_path: Primary path as list of node IDs
         :type primary_path: list[int]
@@ -484,23 +485,67 @@ class SpectrumAssignment:
                 "Slots needed must be set before finding protected spectrum"
             )
 
-        # Get parameters from engine_props (don't hardcode!)
-        # Determine which band to use
-        if self.spectrum_props.forced_band is not None:
-            band = self.spectrum_props.forced_band
-        elif self.engine_props_dict.get("band_list"):
-            # Use first band in band_list
-            band = self.engine_props_dict["band_list"][0]
-        else:
-            # Default to c-band
-            band = "c"
-
-        # Determine which core to use
+        # Get core and band lists (same logic as _setup_first_last_allocation)
         if self.spectrum_props.forced_core is not None:
-            core = self.spectrum_props.forced_core
+            core_numbers_list = [self.spectrum_props.forced_core]
+        elif self.engine_props_dict["allocation_method"] in (
+            "priority_first",
+            "priority_last",
+        ):
+            core_numbers_list = [0, 2, 4, 1, 3, 5, 6]
         else:
-            # TODO: Could use spectrum_helpers.find_best_core() for optimization
-            core = 0
+            core_numbers_list = list(range(0, self.engine_props_dict["cores_per_link"]))
+
+        if self.spectrum_props.forced_band is not None:
+            available_bands_list = [self.spectrum_props.forced_band]
+        else:
+            available_bands_list = self.engine_props_dict["band_list"]
+
+        # Loop over cores and bands (matching handle_first_last_allocation pattern)
+        # Try BSC priority order if configured
+        if self.engine_props_dict.get("spectrum_priority") == "BSC":
+            # Band-first priority: iterate bands in outer loop
+            for band in available_bands_list:
+                for core in core_numbers_list:
+                    if self._try_protected_allocation(
+                        primary_path, backup_path, band, core
+                    ):
+                        return
+        else:
+            # Core-first priority: iterate cores in outer loop
+            for core in core_numbers_list:
+                for band in available_bands_list:
+                    if self._try_protected_allocation(
+                        primary_path, backup_path, band, core
+                    ):
+                        return
+
+        # No spectrum found on any core/band combination
+        self.spectrum_props.is_free = False
+        self.sdn_props.block_reason = "no_common_spectrum"
+
+    def _try_protected_allocation(
+        self, primary_path: list[int], backup_path: list[int], band: str, core: int
+    ) -> bool:
+        """
+        Try to allocate protected spectrum on specific band and core.
+
+        :param primary_path: Primary path as list of node IDs
+        :type primary_path: list[int]
+        :param backup_path: Backup path as list of node IDs
+        :type backup_path: list[int]
+        :param band: Spectrum band identifier
+        :type band: str
+        :param core: Core number
+        :type core: int
+        :return: True if allocation successful, False otherwise
+        :rtype: bool
+        """
+        if (
+            self.sdn_props.network_spectrum_dict is None
+            or self.spectrum_props.slots_needed is None
+        ):
+            return False
 
         # Find common available slot starting indices on both paths
         common_starts = find_common_channels_on_paths(
@@ -512,9 +557,7 @@ class SpectrumAssignment:
         )
 
         if not common_starts:
-            self.spectrum_props.is_free = False
-            self.sdn_props.block_reason = "no_common_spectrum"
-            return
+            return False
 
         # Use first available common slot range
         start_slot = common_starts[0]
@@ -529,6 +572,8 @@ class SpectrumAssignment:
 
         # Store backup path for allocation phase
         self.spectrum_props.backup_path = backup_path
+
+        return True
 
     def get_spectrum(
         self, mod_format_list: list[str], slice_bandwidth: str | None = None

@@ -166,9 +166,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         """
         Find link-disjoint primary and backup paths.
 
-        Uses one of two strategies:
-        1. Suurballe's algorithm (if available in NetworkX)
-        2. Two-pass K-shortest paths with link banning
+        Uses NetworkX's edge_disjoint_paths function for optimal disjoint path finding.
 
         :param source: Source node
         :type source: Any
@@ -185,34 +183,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             >>> assert primary_links.isdisjoint(backup_links)
         """
         try:
-            # Strategy 1: Use Suurballe's algorithm (if available)
-            paths = self._find_disjoint_suurballe(source, destination)
-            if paths:
-                return paths[0], paths[1]
-        except (AttributeError, NotImplementedError):
-            pass
-
-        # Strategy 2: K-shortest paths with link banning
-        try:
-            return self._find_disjoint_k_shortest(source, destination)
-        except nx.NetworkXNoPath:
-            return None, None
-
-    def _find_disjoint_suurballe(
-        self, source: Any, destination: Any
-    ) -> list[list[int]] | None:
-        """
-        Find disjoint paths using Suurballe's algorithm.
-
-        :param source: Source node
-        :type source: Any
-        :param destination: Destination node
-        :type destination: Any
-        :return: List of two disjoint paths or None
-        :rtype: list[list[int]] | None
-        """
-        try:
-            # NetworkX 3.0+ has edge_disjoint_paths
+            # Use NetworkX edge_disjoint_paths (uses max-flow algorithm internally)
             paths = list(
                 nx.edge_disjoint_paths(
                     self.topology,
@@ -223,21 +194,25 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             )
 
             if len(paths) >= 2:
-                return [list(paths[0]), list(paths[1])]
+                return list(paths[0]), list(paths[1])
 
-            return None
+            return None, None
 
-        except (AttributeError, nx.NetworkXNoPath):
-            return None
+        except (AttributeError, nx.NetworkXNoPath, nx.NetworkXError):
+            return None, None
 
-    def _find_disjoint_k_shortest(
+    def find_disjoint_paths_k_shortest(
         self, source: Any, destination: Any, k: int = 10
     ) -> tuple[list[int] | None, list[int] | None]:
         """
-        Find disjoint paths using K-shortest paths.
+        Find disjoint paths using K-shortest paths (alternative method).
 
-        Finds the shortest path as primary, then finds shortest path
-        on graph with primary links removed.
+        This is an alternative to edge_disjoint_paths. It finds the shortest path
+        as primary, then finds the shortest path on a graph with primary links removed.
+
+        Note: This method is retained for potential future use or comparison, but
+        find_disjoint_paths() should be preferred as it uses a max-flow algorithm
+        which is more robust.
 
         :param source: Source node
         :type source: Any
