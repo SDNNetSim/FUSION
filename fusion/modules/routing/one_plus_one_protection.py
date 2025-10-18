@@ -336,13 +336,12 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         """
         primary, backup = self.find_disjoint_paths(source, destination)
 
-        paths = []
+        # Return both paths if available
+        if primary and backup:
+            return [primary, backup]
         if primary:
-            paths.append(primary)
-        if backup:
-            paths.append(backup)
-
-        return paths
+            return [primary]
+        return []
 
     def update_weights(self, topology: nx.Graph) -> None:
         """
