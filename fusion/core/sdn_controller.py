@@ -160,12 +160,94 @@ class SDNController:
         core_matrix[band][core_num][end_slot] = self.sdn_props.request_id * -1
         reverse_core_matrix[band][core_num][end_slot] = self.sdn_props.request_id * -1
 
+    def _allocate_on_path(self, path: list[int]) -> None:
+        """
+        Allocate spectrum on a specific path (bidirectionally).
+
+        This helper method contains the core allocation logic for a single path.
+        It validates spectrum availability, updates usage counts, allocates slots
+        on both forward and reverse links, and handles guard bands.
+
+        :param path: List of node IDs representing the path
+        :type path: list[int]
+        :raises BufferError: If attempting to allocate already taken spectrum
+        :raises ValueError: If no spectrum is detected during allocation
+        """
+        # Get allocation parameters from spectrum_props
+        start_slot = self.spectrum_obj.spectrum_props.start_slot
+        end_slot = self.spectrum_obj.spectrum_props.end_slot
+        core_num = self.spectrum_obj.spectrum_props.core_number
+        band = self.spectrum_obj.spectrum_props.current_band
+
+        # Validate all required parameters are present
+        if start_slot is None or end_slot is None or core_num is None or band is None:
+            raise ValueError("Missing required spectrum allocation parameters")
+        if self.sdn_props.network_spectrum_dict is None:
+            raise ValueError("Network spectrum dictionary is None")
+
+        # Guard slot adjustment
+        if self.engine_props["guard_slots"] != 0:
+            end_slot = end_slot - 1
+        else:
+            end_slot = end_slot + 1
+
+        # Allocate on each link in the path
+        for link_tuple in zip(path, path[1:], strict=False):
+            link_dict = self.sdn_props.network_spectrum_dict[
+                (link_tuple[0], link_tuple[1])
+            ]
+            reverse_link_dict = self.sdn_props.network_spectrum_dict[
+                (link_tuple[1], link_tuple[0])
+            ]
+
+            # Validate spectrum is free on both directions
+            spectrum_slots_set = set(
+                link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
+            )
+            reverse_spectrum_slots_set = set(
+                reverse_link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
+            )
+
+            if spectrum_slots_set == {} or reverse_spectrum_slots_set == {}:
+                raise ValueError("Nothing detected on the spectrum when allocating.")
+
+            if spectrum_slots_set != {0.0} or reverse_spectrum_slots_set != {0.0}:
+                raise BufferError("Attempted to allocate a taken spectrum.")
+
+            # Update usage counts
+            if link_tuple in self.sdn_props.network_spectrum_dict:
+                self.sdn_props.network_spectrum_dict[link_tuple]["usage_count"] += 1
+            self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])][
+                "usage_count"
+            ] += 1
+
+            # Allocate spectrum on both directions
+            core_matrix = link_dict["cores_matrix"]
+            reverse_core_matrix = reverse_link_dict["cores_matrix"]
+            if self.sdn_props.request_id is None:
+                raise ValueError("Request ID is None")
+            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
+            reverse_core_matrix[band][core_num][start_slot:end_slot] = (
+                self.sdn_props.request_id
+            )
+
+            # Handle guard bands
+            if self.engine_props["guard_slots"]:
+                self._allocate_guard_band(
+                    band=band,
+                    core_matrix=core_matrix,
+                    reverse_core_matrix=reverse_core_matrix,
+                    core_num=core_num,
+                    end_slot=end_slot,
+                )
+
     def allocate(self) -> None:
         """
         Allocate spectrum resources for a network request.
 
         Assigns spectrum slots to the current request across all links in the path,
-        including guard bands if configured.
+        including guard bands if configured. For 1+1 protected requests, allocates
+        on both primary and backup paths.
 
         :raises BufferError: If attempting to allocate already taken spectrum
         :raises ValueError: If no spectrum is detected during allocation
@@ -180,62 +262,13 @@ class SDNController:
         ):
             raise ValueError("Missing required spectrum or path information")
 
-        start_slot = self.spectrum_obj.spectrum_props.start_slot
-        end_slot = self.spectrum_obj.spectrum_props.end_slot
-        core_num = self.spectrum_obj.spectrum_props.core_number
-        band = self.spectrum_obj.spectrum_props.current_band
+        # Allocate on primary path
+        self._allocate_on_path(self.sdn_props.path_list)
 
-        if self.engine_props["guard_slots"] != 0:
-            end_slot = end_slot - 1
-        else:
-            end_slot = end_slot + 1
-
-        for link_tuple in zip(
-            self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
-        ):
-            link_dict = self.sdn_props.network_spectrum_dict[
-                (link_tuple[0], link_tuple[1])
-            ]
-            reverse_link_dict = self.sdn_props.network_spectrum_dict[
-                (link_tuple[1], link_tuple[0])
-            ]
-
-            spectrum_slots_set = set(
-                link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
-            )
-            reverse_spectrum_slots_set = set(
-                reverse_link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
-            )
-
-            if spectrum_slots_set == {} or reverse_spectrum_slots_set == {}:
-                raise ValueError("Nothing detected on the spectrum when allocating.")
-
-            if spectrum_slots_set != {0.0} or reverse_spectrum_slots_set != {0.0}:
-                raise BufferError("Attempted to allocate a taken spectrum.")
-
-            if link_tuple in self.sdn_props.network_spectrum_dict:
-                self.sdn_props.network_spectrum_dict[link_tuple]["usage_count"] += 1
-            self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])][
-                "usage_count"
-            ] += 1
-
-            core_matrix = link_dict["cores_matrix"]
-            reverse_core_matrix = reverse_link_dict["cores_matrix"]
-            if self.sdn_props.request_id is None:
-                raise ValueError("Request ID is None")
-            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
-            reverse_core_matrix[band][core_num][start_slot:end_slot] = (
-                self.sdn_props.request_id
-            )
-
-            if self.engine_props["guard_slots"]:
-                self._allocate_guard_band(
-                    band=band,
-                    core_matrix=core_matrix,
-                    reverse_core_matrix=reverse_core_matrix,
-                    core_num=core_num,
-                    end_slot=end_slot,
-                )
+        # If protected, also allocate on backup path
+        backup_path = self.spectrum_obj.spectrum_props.backup_path
+        if backup_path is not None:
+            self._allocate_on_path(backup_path)
 
     def _update_request_statistics(self, bandwidth: float | None) -> None:
         """
