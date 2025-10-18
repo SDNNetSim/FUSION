@@ -208,10 +208,10 @@ protection_switchover_ms = 50.0
 ### Dataset Generation Issues
 ```bash
 # Check dataset format
-head -n 1 datasets/offline_data.jsonl | jq .
+head -n 1 data/datasets/offline_data.jsonl | jq .
 
 # Validate transitions
-python scripts/validate_dataset.py datasets/offline_data.jsonl
+python scripts/validate_dataset.py data/datasets/offline_data.jsonl
 ```
 
 ### Model Loading Issues

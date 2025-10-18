@@ -226,8 +226,8 @@ class TestOnePlusOneProtection:
         self, protection_router: OnePlusOneProtection, sample_topology: nx.Graph
     ) -> None:
         """Test that K-shortest fallback works when Suurballe fails."""
-        # This tests the _find_disjoint_k_shortest method
-        primary, backup = protection_router._find_disjoint_k_shortest(0, 3, k=10)
+        # This tests the find_disjoint_paths_k_shortest method
+        primary, backup = protection_router.find_disjoint_paths_k_shortest(0, 3, k=10)
 
         assert primary is not None
         assert backup is not None
