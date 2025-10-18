@@ -48,6 +48,8 @@ class TestSpectrumAssignment(unittest.TestCase):
             "c_band": 1,
         }
         self.sdn_props = MagicMock()
+        # Explicitly set backup_path to None to prevent MagicMock from creating it
+        self.sdn_props.backup_path = None
         self.sdn_props.network_spectrum_dict = {
             ("source", "dest"): {"cores_matrix": cores_matrix},
             ("dest", "source"): {"cores_matrix": cores_matrix},

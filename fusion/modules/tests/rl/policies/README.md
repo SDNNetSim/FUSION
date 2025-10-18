@@ -44,7 +44,7 @@ The test suite covers:
 - Policy initialization and loading
 - Path selection logic
 - Action masking behavior
-- Error handling (AllPathsMaskedError)
+- Handling of blocked requests (all paths masked returns -1)
 - Model loading from checkpoints
 - State tensor conversion
 - Edge cases and boundary conditions

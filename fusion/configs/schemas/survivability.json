@@ -4,6 +4,25 @@
   "description": "Configuration schema for survivability experiments",
   "type": "object",
   "properties": {
+    "seeding": {
+      "type": "object",
+      "description": "Random seed configuration for reproducibility. Supports separate seeding for request generation vs RL/ML components.",
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "description": "General seed value (used as constant RL seed if rl_seed not specified)"
+        },
+        "request_seeds": {
+          "type": "array",
+          "items": {"type": "integer"},
+          "description": "List of seeds for request generation (one per iteration). Allows varying traffic patterns across iterations."
+        },
+        "rl_seed": {
+          "type": "integer",
+          "description": "Fixed seed for RL/ML components (PyTorch, random module). Keeps RL behavior deterministic across iterations even when traffic varies."
+        }
+      }
+    },
     "failure_settings": {
       "type": "object",
       "description": "Failure injection configuration",
@@ -17,13 +36,13 @@
         "t_fail_arrival_index": {
           "type": "integer",
           "default": -1,
-          "description": "Arrival index when failure occurs (-1 = midpoint)"
+          "description": "Request arrival index when failure occurs. -1 = midpoint (num_requests/2). System converts arrival indices to simulation time internally based on arrival process."
         },
         "t_repair_after_arrivals": {
           "type": "integer",
           "minimum": 1,
           "default": 1000,
-          "description": "Number of arrivals until repair"
+          "description": "Number of arrivals AFTER the failure until repair occurs"
         },
         "failed_link_src": {
           "type": "integer",
@@ -137,7 +156,7 @@
         },
         "dataset_output_path": {
           "type": "string",
-          "default": "datasets/offline_data.jsonl",
+          "default": "data/datasets/offline_data.jsonl",
           "description": "Output path for JSONL dataset"
         },
         "epsilon_mix": {

@@ -12,7 +12,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from .base import AllPathsMaskedError, PathPolicy
+from .base import PathPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -159,13 +159,12 @@ class BCPolicy(PathPolicy):
         :type state: dict[str, Any]
         :param action_mask: Feasibility mask
         :type action_mask: list[bool]
-        :return: Selected path index
+        :return: Selected path index, or -1 if all paths masked
         :rtype: int
-        :raises AllPathsMaskedError: If all paths masked
         """
         # Check if all masked
         if not any(action_mask):
-            raise AllPathsMaskedError("All paths masked")
+            return -1  # All paths masked - request should be blocked
 
         # Convert state to tensor
         state_tensor = self._state_to_tensor(state)

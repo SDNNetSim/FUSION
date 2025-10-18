@@ -55,7 +55,7 @@ class DatasetLogger:
     :type engine_props: dict[str, Any]
 
     Example:
-        >>> logger = DatasetLogger('datasets/offline_data.jsonl', engine_props)
+        >>> logger = DatasetLogger('data/datasets/offline_data.jsonl', engine_props)
         >>> logger.log_transition(state, action, reward, next_state, mask, meta)
         >>> logger.close()
     """
@@ -222,7 +222,7 @@ def __init__(self, engine_props: dict[str, Any]) -> None:
     if engine_props.get('dataset_logging', {}).get('log_offline_dataset', False):
         output_path = engine_props['dataset_logging'].get(
             'dataset_output_path',
-            'datasets/offline_data.jsonl'
+            'data/datasets/offline_data.jsonl'
         )
         self.dataset_logger = DatasetLogger(output_path, engine_props)
 
@@ -378,7 +378,7 @@ def load_dataset(file_path: str) -> Iterator[dict]:
     :rtype: Iterator[dict]
 
     Example:
-        >>> for transition in load_dataset('datasets/offline_data.jsonl'):
+        >>> for transition in load_dataset('data/datasets/offline_data.jsonl'):
         ...     state = transition['state']
         ...     action = transition['action']
         ...     reward = transition['reward']
@@ -424,7 +424,7 @@ def filter_by_window(
 log_offline_dataset = true
 
 # Output path
-dataset_output_path = datasets/offline_data.jsonl
+dataset_output_path = data/datasets/offline_data.jsonl
 
 # Epsilon-mix probability (0.0 = no exploration, 1.0 = always second-best)
 epsilon_mix = 0.1

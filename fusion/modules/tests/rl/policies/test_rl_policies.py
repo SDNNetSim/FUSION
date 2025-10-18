@@ -8,7 +8,6 @@ import pytest
 import torch.nn as nn
 
 from fusion.modules.rl.policies import (
-    AllPathsMaskedError,
     BCPolicy,
     IQLPolicy,
 )
@@ -193,16 +192,16 @@ class TestBCPolicy:
         # Expected: [1, input_dim] where input_dim = 5 + (5 * 3)
         assert tensor.shape == (1, 20)
 
-    def test_bc_policy_raises_when_all_masked(
+    def test_bc_policy_returns_negative_one_when_all_masked(
         self, bc_model: str, sample_state: dict[str, Any]
     ) -> None:
-        """Test that exception raised when all paths masked."""
+        """Test that -1 returned when all paths masked."""
         policy = BCPolicy(bc_model, device="cpu")
 
         action_mask = [False, False, False]
 
-        with pytest.raises(AllPathsMaskedError):
-            policy.select_path(sample_state, action_mask)
+        selected = policy.select_path(sample_state, action_mask)
+        assert selected == -1
 
     def test_bc_policy_forward_pass(
         self, bc_model: str, sample_state: dict[str, Any]
@@ -263,16 +262,16 @@ class TestIQLPolicy:
         # Expected: [1, input_dim] where input_dim = 5 + (5 * 3)
         assert tensor.shape == (1, 20)
 
-    def test_iql_policy_raises_when_all_masked(
+    def test_iql_policy_returns_negative_one_when_all_masked(
         self, iql_model: str, sample_state: dict[str, Any]
     ) -> None:
-        """Test that exception raised when all paths masked."""
+        """Test that -1 returned when all paths masked."""
         policy = IQLPolicy(iql_model, device="cpu")
 
         action_mask = [False, False, False]
 
-        with pytest.raises(AllPathsMaskedError):
-            policy.select_path(sample_state, action_mask)
+        selected = policy.select_path(sample_state, action_mask)
+        assert selected == -1
 
     def test_iql_policy_forward_pass(
         self, iql_model: str, sample_state: dict[str, Any]

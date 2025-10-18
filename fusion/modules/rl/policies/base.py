@@ -16,8 +16,6 @@ class PathPolicy(ABC):
 
     All policies (heuristic and RL-based) must implement this interface
     to ensure consistent integration with the SDN controller.
-
-    :raises AllPathsMaskedError: If all paths are infeasible
     """
 
     @abstractmethod
@@ -29,9 +27,12 @@ class PathPolicy(ABC):
         :type state: dict[str, Any]
         :param action_mask: Feasibility mask for K paths (True = feasible)
         :type action_mask: list[bool]
-        :return: Selected path index (0 to K-1)
+        :return: Selected path index (0 to K-1), or -1 if all paths are masked
         :rtype: int
-        :raises AllPathsMaskedError: If all paths are masked
+
+        When all paths are masked (infeasible), returns -1 to indicate
+        the request should be blocked. This is a normal occurrence in
+        network simulations and contributes to blocking probability metrics.
 
         State format:
             {
@@ -62,9 +63,3 @@ class PathPolicy(ABC):
         :rtype: str
         """
         return self.__class__.__name__
-
-
-class AllPathsMaskedError(Exception):
-    """Raised when all K paths are infeasible."""
-
-    pass

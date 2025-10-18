@@ -125,7 +125,7 @@ except AllPathsMaskedError:
 python run_sim.py --log_offline_dataset true --num_requests 100000
 
 # Check size
-wc -l datasets/offline_data.jsonl  # Should be ~100k lines
+wc -l data/datasets/offline_data.jsonl  # Should be ~100k lines
 ```
 
 ---

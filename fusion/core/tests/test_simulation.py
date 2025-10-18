@@ -531,6 +531,95 @@ class TestSimulationEngineIterationManagement:
             # Assert
             mock_gen.assert_called_once_with(4)  # iteration + 1
 
+    @patch("fusion.core.simulation.seed_request_generation")
+    @patch("fusion.core.simulation.seed_rl_components")
+    def test_init_iter_uses_separate_seeding_with_request_seeds_and_rl_seed(
+        self,
+        mock_seed_rl: Mock,
+        mock_seed_request: Mock,
+        iteration_engine: SimulationEngine,
+    ) -> None:
+        """Test separate seeding when both request_seeds and rl_seed provided."""
+        # Arrange
+        iteration_engine.engine_props["request_seeds"] = [10, 20, 30]
+        iteration_engine.engine_props["rl_seed"] = 99
+        iteration = 1
+
+        with patch.object(iteration_engine, "generate_requests"):
+            # Act
+            iteration_engine.init_iter(iteration)
+
+            # Assert - RL seed should be constant (99)
+            mock_seed_rl.assert_called_once_with(99)
+            # Request seed should vary per iteration (20 for iteration 1)
+            mock_seed_request.assert_called_once_with(20)
+
+    @patch("fusion.core.simulation.seed_request_generation")
+    @patch("fusion.core.simulation.seed_rl_components")
+    def test_init_iter_uses_general_seed_for_rl_when_rl_seed_not_specified(
+        self,
+        mock_seed_rl: Mock,
+        mock_seed_request: Mock,
+        iteration_engine: SimulationEngine,
+    ) -> None:
+        """Test init_iter uses general seed for RL when rl_seed not specified."""
+        # Arrange
+        iteration_engine.engine_props["seed"] = 42
+        iteration_engine.engine_props["request_seeds"] = [10, 20, 30]
+        iteration = 1
+
+        with patch.object(iteration_engine, "generate_requests"):
+            # Act
+            iteration_engine.init_iter(iteration)
+
+            # Assert - RL should use general seed (constant across iterations)
+            mock_seed_rl.assert_called_once_with(42)
+            # Request seed should vary per iteration
+            mock_seed_request.assert_called_once_with(20)
+
+    @patch("fusion.core.simulation.seed_request_generation")
+    @patch("fusion.core.simulation.seed_rl_components")
+    def test_init_iter_varies_both_seeds_when_only_general_seed_specified(
+        self,
+        mock_seed_rl: Mock,
+        mock_seed_request: Mock,
+        iteration_engine: SimulationEngine,
+    ) -> None:
+        """Test both seeds vary when only general seed specified (backward compat)."""
+        # Arrange
+        iteration_engine.engine_props["seed"] = 42
+        iteration = 3
+
+        with patch.object(iteration_engine, "generate_requests"):
+            # Act
+            iteration_engine.init_iter(iteration)
+
+            # Assert - Both should use iteration+1 when no specific seeding
+            # RL uses general seed (constant)
+            mock_seed_rl.assert_called_once_with(42)
+            # Request uses iteration+1 (varies)
+            mock_seed_request.assert_called_once_with(4)
+
+    @patch("fusion.core.simulation.seed_request_generation")
+    @patch("fusion.core.simulation.seed_rl_components")
+    def test_init_iter_uses_same_seed_for_both_when_no_config_specified(
+        self,
+        mock_seed_rl: Mock,
+        mock_seed_request: Mock,
+        iteration_engine: SimulationEngine,
+    ) -> None:
+        """Test init_iter uses same seed (iteration+1) for both when no config."""
+        # Arrange
+        iteration = 2
+
+        with patch.object(iteration_engine, "generate_requests"):
+            # Act
+            iteration_engine.init_iter(iteration)
+
+            # Assert - Both should use iteration+1 as default
+            mock_seed_rl.assert_called_once_with(3)  # iteration + 1
+            mock_seed_request.assert_called_once_with(3)  # iteration + 1
+
     def test_end_iter_calculates_statistics_and_saves_on_save_step(
         self, iteration_engine: SimulationEngine
     ) -> None:
