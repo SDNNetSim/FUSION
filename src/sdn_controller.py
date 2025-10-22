@@ -254,7 +254,7 @@ class SDNController:
         self.sdn_props.is_sliced = False
         self.sdn_props.was_partially_routed = False
         if self.sdn_props.was_partially_groomed:
-            self.sdn_props.remaining_bw = self.sdn_props.lightpath_bandwidth_list
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
         else:
             self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
         self.sdn_props.was_new_lp_established = list()
