@@ -496,10 +496,7 @@ class SDNController:
         self.sdn_props.was_partially_routed = False
 
         if getattr(self.sdn_props, "was_partially_groomed", False):
-            # Type ignore: remaining_bw can be list or int depending on context
-            self.sdn_props.remaining_bw = (
-                self.sdn_props.lightpath_bandwidth_list  # type: ignore[assignment]
-            )
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
         else:
             if self.sdn_props.bandwidth is not None:
                 self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
