@@ -37,7 +37,8 @@ class BatchRunner:
         :type config: dict[str, Any]
         """
         self.config = config
-        self.sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        self.date = datetime.now().strftime("%m%d")
+        self.sim_start = datetime.now().strftime("%H_%M_%S_%f")
         self.manager = multiprocessing.Manager()
         self.progress_dict = self.manager.dict()
         self.results: list[dict] = []
@@ -67,7 +68,7 @@ class BatchRunner:
         if "thread_num" not in sim_params:
             sim_params["thread_num"] = "s1"  # Default thread identifier
         if "date" not in sim_params:
-            sim_params["date"] = self.sim_start.split("_")[0]  # Extract date portion
+            sim_params["date"] = self.date
         if "sim_start" not in sim_params:
             sim_params["sim_start"] = self.sim_start
 
