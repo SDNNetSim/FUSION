@@ -42,6 +42,13 @@ class BatchRunner:
         self.progress_dict = self.manager.dict()
         self.results: list[dict] = []
 
+        # Configure logging based on config settings
+        sim_params = config.get("s1", config)
+        log_level = sim_params.get("log_level", "INFO")
+        if isinstance(log_level, str):
+            from fusion.utils.logging_config import set_global_log_level
+            set_global_log_level(log_level)
+
     def prepare_simulation(self, sim_params: dict) -> dict:
         """
         Prepare simulation parameters and create necessary input files.
