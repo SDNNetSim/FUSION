@@ -136,4 +136,41 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "train_file_path": str,
         "test_size": float,
     },
+    "dataset_logging": {
+        "log_offline_dataset": str_to_bool,
+        "dataset_output_path": str,
+        "epsilon_mix": float,
+    },
+    "offline_rl_settings": {
+        "policy_type": str,
+        "fallback_policy": str,
+        "device": str,
+    },
+    "recovery_timing": {
+        "protection_switchover_ms": float,
+        "restoration_latency_ms": float,
+        "failure_window_size": int,
+    },
+    "protection_settings": {
+        "protection_mode": str,
+    },
+    "routing_settings": {
+        "route_method": str,
+        "k_paths": int,
+        "path_ordering": str,
+        "precompute_paths": str_to_bool,
+    },
+    "failure_settings": {
+        "failure_type": str,
+        "geo_center_node": int,
+        "geo_hop_radius": int,
+        "t_fail_arrival_index": int,
+        "t_repair_after_arrivals": int,
+        "failed_link_src": int,
+        "failed_link_dst": int,
+    },
+    "reporting": {
+        "export_csv": str_to_bool,
+        "csv_output_path": str,
+    },
 }
