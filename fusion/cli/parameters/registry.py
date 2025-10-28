@@ -31,6 +31,15 @@ from .routing import (
 from .shared import add_config_args, add_debug_args, add_output_args
 from .simulation import add_run_sim_args, add_simulation_args, register_run_sim_args
 from .snr import add_snr_args
+from .survivability import (
+    add_dataset_logging_args,
+    add_failure_args,
+    add_offline_rl_args,
+    add_protection_args,
+    add_recovery_timing_args,
+    add_reporting_args,
+    add_survivability_args,
+)
 from .traffic import (
     add_erlang_args,
     add_request_args,
@@ -108,6 +117,13 @@ class ArgumentRegistry:
         self.register_group("erlang", add_erlang_args)
         self.register_group("requests", add_request_args)
         self.register_group("sim_control", add_simulation_control_args)
+        self.register_group("survivability", add_survivability_args)
+        self.register_group("failure", add_failure_args)
+        self.register_group("protection", add_protection_args)
+        self.register_group("offline_rl", add_offline_rl_args)
+        self.register_group("dataset_logging", add_dataset_logging_args)
+        self.register_group("recovery_timing", add_recovery_timing_args)
+        self.register_group("reporting", add_reporting_args)
 
     def _register_training_groups(self) -> None:
         """Register machine learning and reinforcement learning argument groups."""
