@@ -230,7 +230,8 @@ class SimulationEngine:
         self.dataset_logger: DatasetLogger | None = None
         if engine_props.get("log_offline_dataset", False):
             # Build path matching output structure exactly
-            # data/training_data/{network}/{date}/{sim_start}/{thread}/dataset.jsonl
+            # data/training_data/{network}/{date}/{sim_start}/{thread}/dataset_erlang_{erlang}.jsonl
+            erlang_value = int(engine_props["erlang"])
             dataset_dir = os.path.join(
                 "data",
                 "training_data",
@@ -239,10 +240,8 @@ class SimulationEngine:
             )
             create_directory(dataset_dir)
 
-            # Allow custom filename from config, default to dataset.jsonl
-            dataset_filename = os.path.basename(
-                engine_props.get("dataset_output_path", "dataset.jsonl")
-            )
+            # Include erlang value in filename
+            dataset_filename = f"dataset_erlang_{erlang_value}.jsonl"
             output_path = os.path.join(dataset_dir, dataset_filename)
 
             self.dataset_logger = DatasetLogger(output_path, engine_props)
@@ -438,6 +437,8 @@ class SimulationEngine:
         meta = {
             "request_id": request.get("req_id", -1),
             "arrival_time": current_time,
+            "erlang": self.engine_props["erlang"],
+            "iteration": self.iteration,
             "decision_time_ms": (sdn_props.route_time * 1000) if hasattr(sdn_props, 'route_time') and sdn_props.route_time else 0.0,
         }
 
@@ -594,11 +595,12 @@ class SimulationEngine:
                     print_flag=print_flag,
                 )
 
-        if (
-            (iteration + 1) % self.engine_props["save_step"] == 0
-            or iteration == 0
-            or (iteration + 1) == self.engine_props["max_iters"]
-        ):
+        # Always save on first and last iteration, plus every save_step
+        is_first_iter = iteration == 0
+        is_last_iter = (iteration + 1) == self.engine_props["max_iters"]
+        is_save_step = (iteration + 1) % self.engine_props["save_step"] == 0
+
+        if is_first_iter or is_last_iter or is_save_step:
             self._save_all_stats(base_file_path or "data")
 
         return resp
@@ -739,6 +741,8 @@ class SimulationEngine:
         simulation_context = self._setup_simulation_context()
         self._log_simulation_start(simulation_context)
 
+        # Iterations are 0-indexed internally (0, 1, 2, ..., max_iters-1)
+        # max_iters specifies the total count (e.g., max_iters=2 runs iterations 0 and 1)
         for iteration in range(self.engine_props["max_iters"]):
             if self._should_stop_simulation(simulation_context):
                 break
