@@ -3,17 +3,14 @@ contact_links:
   - name: 📚 Configuration Guide
     url: https://github.com/SDNNetSim/FUSION/blob/main/fusion/configs/README.md
     about: Comprehensive guide for configuration system, templates, and troubleshooting
-  - name: 🚀 Architecture Documentation  
-    url: https://github.com/SDNNetSim/FUSION/blob/main/Architecture%20Plan.md
-    about: Review the system architecture and migration plan
-  - name: 💬 GitHub Discussions
-    url: https://github.com/SDNNetSim/FUSION/discussions
-    about: Ask questions, share ideas, and discuss FUSION simulator topics
+  - name: 🚀 Architecture Documentation
+    url: https://github.com/SDNNetSim/FUSION/blob/main/ARCHITECTURE.md
+    about: Review the system architecture, components, and design principles
   - name: 📖 Getting Started Tutorial
     url: https://github.com/SDNNetSim/FUSION/blob/main/fusion/configs/README.md#-quick-start-tutorial
     about: Step-by-step guide for new users to get started with FUSION
-  - name: 🔬 Research Papers & Citations  
-    url: https://github.com/SDNNetSim/FUSION#publications
+  - name: 🔬 Research Papers & Citations
+    url: https://github.com/SDNNetSim/FUSION#-publications
     about: Academic publications and research using FUSION simulator
   - name: 🧪 Testing & Examples
     url: https://github.com/SDNNetSim/FUSION/tree/main/tests

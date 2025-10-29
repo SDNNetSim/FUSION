@@ -231,7 +231,9 @@ This project is brought to you by the efforts of **Arash Rezaee**, **Ryan McCann
 
 ---
 
-## 📖 How to Cite This Work
+## 📚 Publications
+
+### Primary Citation
 
 If you use FUSION in your research, please cite the following paper:
 
@@ -240,7 +242,7 @@ R. McCann, A. Rezaee, and V. M. Vokkarane,
 *2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.
 DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
-### 📄 BibTeX
+### BibTeX
 
 ```bibtex
 @INPROCEEDINGS{10898199,
@@ -252,6 +254,10 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
   doi={10.1109/ANTS63515.2024.10898199}
 }
 ```
+
+### Related Publications
+
+*This section will be updated as research using FUSION is published. If you have published work using FUSION, please open an issue or pull request to add it here.*
 
 ---
 
