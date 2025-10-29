@@ -1,4 +1,4 @@
-name: 🚀 Feature Request
+name: Feature Request
 description: Suggest a new feature or enhancement for FUSION simulator
 title: "[FEATURE] "
 labels: ["enhancement", "needs-discussion"]
@@ -8,8 +8,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 🚀 Feature Request
-        
+        ## Feature Request
+
         Thank you for suggesting a new feature! Please provide detailed information to help us understand and evaluate your request.
 
   - type: input
