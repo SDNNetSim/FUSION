@@ -121,9 +121,9 @@ class ArgumentRegistry:
         self.register_group("failure", add_failure_args)
         self.register_group("protection", add_protection_args)
         self.register_group("offline_rl", add_offline_rl_args)
-        self.register_group("dataset_logging", add_dataset_logging_args)
-        self.register_group("recovery_timing", add_recovery_timing_args)
-        self.register_group("reporting", add_reporting_args)
+        self.register_group("dataset_logging_settings", add_dataset_logging_args)
+        self.register_group("recovery_timing_settings", add_recovery_timing_args)
+        self.register_group("reporting_settings", add_reporting_args)
 
     def _register_training_groups(self) -> None:
         """Register machine learning and reinforcement learning argument groups."""

@@ -170,10 +170,10 @@ class TestProcessOptionalOptions:
 
         assert config_dict[DEFAULT_THREAD_NAME]["optional_test"] == "test_value"
 
-    def test_process_optional_options_with_missing_option_sets_none(
+    def test_process_optional_options_with_missing_option_skips_it(
         self, mock_config_parser: Any, sample_args_dict: dict[str, Any]
     ) -> None:
-        """Test _process_optional_options sets None for missing optional options."""
+        """Test _process_optional_options skips missing optional options."""
         config_dict: dict[str, dict[str, Any]] = {DEFAULT_THREAD_NAME: {}}
         optional_dict = {"sim": {"missing_optional": str}}
         mock_config_parser.__getitem__.return_value = {}
@@ -182,7 +182,9 @@ class TestProcessOptionalOptions:
             mock_config_parser, config_dict, optional_dict, sample_args_dict
         )
 
-        assert config_dict[DEFAULT_THREAD_NAME]["missing_optional"] is None
+        # Missing optional options should not be set at all
+        # This allows .get() with defaults to work correctly
+        assert "missing_optional" not in config_dict[DEFAULT_THREAD_NAME]
 
 
 class TestValidateConfigStructure:

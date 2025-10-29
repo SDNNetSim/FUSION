@@ -136,7 +136,7 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "train_file_path": str,
         "test_size": float,
     },
-    "dataset_logging": {
+    "dataset_logging_settings": {
         "log_offline_dataset": str_to_bool,
         "dataset_output_path": str,
         "epsilon_mix": float,
@@ -146,7 +146,7 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "fallback_policy": str,
         "device": str,
     },
-    "recovery_timing": {
+    "recovery_timing_settings": {
         "protection_switchover_ms": float,
         "restoration_latency_ms": float,
         "failure_window_size": int,
@@ -169,7 +169,7 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "failed_link_src": int,
         "failed_link_dst": int,
     },
-    "reporting": {
+    "reporting_settings": {
         "export_csv": str_to_bool,
         "csv_output_path": str,
     },

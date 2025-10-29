@@ -132,10 +132,15 @@ def _process_optional_options(
     args_dict: dict[str, Any],
 ) -> None:
     for category, options_dict in optional_dict.items():
+        # Check if section exists in config
+        if not config.has_section(category):
+            # If section doesn't exist, skip it entirely
+            # This allows .get() calls with defaults to work correctly
+            continue
+
         for option, type_obj in options_dict.items():
-            if option not in config[category]:
-                config_dict[DEFAULT_THREAD_NAME][option] = None
-            else:
+            # Only process options that are present in the config
+            if option in config[category]:
                 try:
                     config_value = config[category][option]
                     converted_value = safe_type_convert(config_value, type_obj, option)

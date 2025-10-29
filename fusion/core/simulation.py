@@ -232,8 +232,9 @@ class SimulationEngine:
         # Initialize dataset logger if enabled
         self.dataset_logger: DatasetLogger | None = None
         if engine_props.get("log_offline_dataset", False):
-            # Build path matching output structure exactly
-            # data/training_data/{network}/{date}/{sim_start}/{thread}/dataset_erlang_{erlang}.jsonl
+            # Build path matching output structure exactly:
+            # data/training_data/{network}/{date}/{sim_start}/{thread}/
+            # dataset_erlang_{erlang}.jsonl
             erlang_value = int(engine_props["erlang"])
             dataset_dir = os.path.join(
                 "data",
@@ -445,7 +446,9 @@ class SimulationEngine:
             "arrival_time": current_time,
             "erlang": self.engine_props["erlang"],
             "iteration": self.iteration,
-            "decision_time_ms": (sdn_props.route_time * 1000) if hasattr(sdn_props, 'route_time') and sdn_props.route_time else 0.0,
+            "decision_time_ms": (sdn_props.route_time * 1000)
+            if hasattr(sdn_props, "route_time") and sdn_props.route_time
+            else 0.0,
         }
 
         # Log the transition
@@ -732,8 +735,10 @@ class SimulationEngine:
 
         self.generate_requests(request_seed)
 
-        # Schedule failure AFTER requests are generated (only in first iteration)
-        if iteration == 0 and self.failure_manager:
+        # Schedule failure AFTER requests are generated (in every iteration)
+        if self.failure_manager:
+            # Clear any previous failures before scheduling new ones
+            self.failure_manager.clear_all_failures()
             self._schedule_failure()
 
     def _initialize_failure_manager(self) -> None:
@@ -783,8 +788,13 @@ class SimulationEngine:
         failure_type = self.engine_props.get("failure_type", "none")
 
         # Get actual arrival times from generated requests
-        arrival_times = sorted([t for t, req in self.reqs_dict.items()
-                               if req.get("request_type") == "arrival"])
+        arrival_times = sorted(
+            [
+                t
+                for t, req in self.reqs_dict.items()
+                if req.get("request_type") == "arrival"
+            ]
+        )
 
         if not arrival_times:
             logger.warning("No arrival times available to schedule failure")
@@ -812,8 +822,9 @@ class SimulationEngine:
         t_repair = arrival_times[t_repair_arrival_index]
 
         logger.info(
-            f"Scheduling {failure_type} failure at arrival index {t_fail_arrival_index} "
-            f"(t={t_fail:.4f}), repair at index {t_repair_arrival_index} (t={t_repair:.4f})"
+            f"Scheduling {failure_type} failure at arrival index "
+            f"{t_fail_arrival_index} (t={t_fail:.4f}), repair at index "
+            f"{t_repair_arrival_index} (t={t_repair:.4f})"
         )
 
         # Inject failure based on type
@@ -911,7 +922,8 @@ class SimulationEngine:
         self._log_simulation_start(simulation_context)
 
         # Iterations are 0-indexed internally (0, 1, 2, ..., max_iters-1)
-        # max_iters specifies the total count (e.g., max_iters=2 runs iterations 0 and 1)
+        # max_iters specifies the total count
+        # (e.g., max_iters=2 runs iterations 0 and 1)
         for iteration in range(self.engine_props["max_iters"]):
             if self._should_stop_simulation(simulation_context):
                 break
@@ -1025,7 +1037,8 @@ class SimulationEngine:
                 repaired_links = self.failure_manager.repair_failures(current_time)
                 if repaired_links:
                     logger.info(
-                        f"Repaired {len(repaired_links)} link(s) at time {current_time:.2f}: {repaired_links}"
+                        f"Repaired {len(repaired_links)} link(s) at time "
+                        f"{current_time:.2f}: {repaired_links}"
                     )
 
             self.handle_request(

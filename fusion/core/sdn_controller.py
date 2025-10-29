@@ -51,7 +51,8 @@ class SDNController:
             spectrum_obj=self.spectrum_obj,
         )
 
-        # FailureManager reference for path feasibility checking (set by SimulationEngine)
+        # FailureManager reference for path feasibility checking
+        # (set by SimulationEngine)
         self.failure_manager: Any | None = None
 
     def release(self) -> None:
@@ -572,11 +573,13 @@ class SDNController:
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     # Check path feasibility if failures are active
-                    if self.failure_manager and not self.failure_manager.is_path_feasible(
-                        path_list
+                    if (
+                        self.failure_manager
+                        and not self.failure_manager.is_path_feasible(path_list)
                     ):
                         logger.debug(
-                            f"Path {path_list} (index {path_index}) is infeasible due to active failures"
+                            f"Path {path_list} (index {path_index}) is "
+                            f"infeasible due to active failures"
                         )
                         continue  # Skip this path and try next one
 
