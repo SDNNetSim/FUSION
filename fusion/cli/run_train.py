@@ -1,4 +1,5 @@
-"""CLI entry point for training FUSION agents (RL or ML).
+"""
+CLI entry point for training FUSION agents (RL or ML).
 
 This module provides the command-line interface for training machine learning
 and reinforcement learning agents. It supports multiple training algorithms
@@ -15,7 +16,8 @@ logger = get_logger(__name__)
 
 
 def main() -> int:
-    """Train FUSION agents using RL or ML algorithms.
+    """
+    Train FUSION agents using RL or ML algorithms.
 
     Parses command line arguments and delegates training execution to the
     appropriate training pipeline module. Supports both reinforcement learning
@@ -32,30 +34,29 @@ def main() -> int:
 
     except KeyboardInterrupt:
         logger.info("Training interrupted by user")
-        print("\n🛑 Training interrupted by user")  # User-facing message
-        print("💾 Training progress has been saved where possible")
+        print("\nTraining interrupted by user")  # User-facing message
+        print("Training progress has been saved where possible")
         return INTERRUPT_EXIT_CODE
     except (ImportError, ModuleNotFoundError) as e:
         logger.error(f"Missing training dependencies: {e}")
-        print(f"❌ Missing training dependencies: {e}")  # User-facing message
-        print("💡 Try installing ML/RL dependencies with: pip install -e .[ml,rl]")
+        print(f"Missing training dependencies: {e}")  # User-facing message
+        print("Try installing ML/RL dependencies with: pip install -e .[ml,rl]")
         return ERROR_EXIT_CODE
     except OSError as e:
         logger.error(f"File system error during training: {e}")
-        print(f"❌ File system error during training: {e}")  # User-facing message
-        print("💡 Check file permissions and available disk space for model storage")
+        print(f"File system error during training: {e}")  # User-facing message
+        print("Check file permissions and available disk space for model storage")
         return ERROR_EXIT_CODE
     except (ValueError, TypeError) as e:
         logger.error(f"Training configuration error: {e}")
-        print(f"❌ Training configuration error: {e}")  # User-facing message
-        print("💡 Check your training parameters and agent configuration")
+        print(f"Training configuration error: {e}")  # User-facing message
+        print("Check your training parameters and agent configuration")
         return ERROR_EXIT_CODE
     except (RuntimeError, MemoryError) as e:
         logger.error(f"Training runtime error: {e}")
-        print(f"❌ Training runtime error: {e}")  # User-facing message
+        print(f"Training runtime error: {e}")  # User-facing message
         print(
-            "💡 Consider reducing batch size, model complexity, "
-            "or check system resources"
+            "Consider reducing batch size, model complexity, or check system resources"
         )
         return ERROR_EXIT_CODE
 
