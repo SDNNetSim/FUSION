@@ -48,8 +48,8 @@ class NetworkAnalyzer:
 
             processed_links.add(link_key)
             usage_summary[link_key] = {
-                "usage_count": link_data.get("usage_count"),
-                "throughput": link_data.get("throughput"),
+                "usage_count": link_data.get("usage_count", 0),
+                "throughput": link_data.get("throughput", 0),
                 "link_num": link_data.get("link_num"),
             }
 

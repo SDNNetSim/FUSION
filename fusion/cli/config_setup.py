@@ -250,7 +250,8 @@ def load_config(
         )
         _process_optional_options(config, config_dict, OPTIONAL_OPTIONS_DICT, args_dict)
 
-        # Mirror routing_settings and spectrum_settings to root for backward compatibility
+        # Mirror routing_settings and spectrum_settings to root for backward
+        # compatibility
         _mirror_nested_to_flat(config_dict[DEFAULT_THREAD_NAME])
 
         thread_sections = [s for s in config.sections() if s != REQUIRED_SECTION]
@@ -339,8 +340,9 @@ def _mirror_nested_to_flat(config: dict[str, Any]) -> None:
     """
     Mirror values from nested sections to root level for backward compatibility.
 
-    This allows newer code to use nested structure (engine_props["routing_settings"]["k_paths"])
-    while older code can still use flat structure (engine_props["k_paths"]).
+    This allows newer code to use nested structure like
+    engine_props["routing_settings"]["k_paths"] while older code can still
+    use flat structure (engine_props["k_paths"]).
 
     :param config: Configuration dictionary to update in-place
     :type config: dict[str, Any]

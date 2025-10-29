@@ -80,10 +80,8 @@ class TestRoutingRegistry:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return []
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1
@@ -294,10 +292,8 @@ class TestGlobalRegistryFunctions:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return []
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1

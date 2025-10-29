@@ -119,9 +119,8 @@ class TestOnePlusOneProtection:
     ) -> None:
         """Test that route() stores paths in SDN properties."""
         sdn_props = protection_router.sdn_props
-        primary = protection_router.route(0, 3)
+        protection_router.route(0, 3, None)
 
-        assert primary is not None
         assert sdn_props.primary_path is not None
         assert sdn_props.backup_path is not None
         assert sdn_props.is_protected is True
@@ -131,12 +130,15 @@ class TestOnePlusOneProtection:
     def test_route_returns_none_no_disjoint_paths(
         self, protection_router: OnePlusOneProtection, simple_topology: nx.Graph
     ) -> None:
-        """Test that route returns None when disjoint paths don't exist."""
+        """Test that route doesn't set paths when disjoint paths don't exist."""
         # Update router topology to simple linear topology
         protection_router.topology = simple_topology
-        result = protection_router.route(0, 4)
+        protection_router.sdn_props.primary_path = None
+        protection_router.sdn_props.backup_path = None
+        protection_router.route(0, 4, None)
 
-        assert result is None
+        assert protection_router.sdn_props.primary_path is None
+        assert protection_router.sdn_props.backup_path is None
 
     def test_handle_failure_switchover(
         self, protection_router: OnePlusOneProtection
@@ -199,8 +201,8 @@ class TestOnePlusOneProtection:
     def test_get_metrics(self, protection_router: OnePlusOneProtection) -> None:
         """Test that metrics are returned correctly."""
         # Perform some operations
-        protection_router.route(0, 3)
-        protection_router.route(0, 3)
+        protection_router.route(0, 3, None)
+        protection_router.route(0, 3, None)
 
         metrics = protection_router.get_metrics()
 
@@ -213,7 +215,7 @@ class TestOnePlusOneProtection:
     def test_reset(self, protection_router: OnePlusOneProtection) -> None:
         """Test that reset clears metrics."""
         # Perform operations
-        protection_router.route(0, 3)
+        protection_router.route(0, 3, None)
         assert protection_router._disjoint_paths_found == 1
 
         # Reset

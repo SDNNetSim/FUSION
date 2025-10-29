@@ -161,8 +161,8 @@ class TestGuiMain:
         # Verify print was called with user-friendly messages
         assert mock_print.called
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("❌" in call for call in print_calls)
-        assert any("💡" in call for call in print_calls)
+        assert any("Missing GUI dependencies" in call for call in print_calls)
+        assert any("pip install" in call for call in print_calls)
 
     @patch("fusion.cli.run_gui.launch_gui_pipeline")
     @patch("fusion.cli.run_gui.create_gui_argument_parser")
@@ -177,7 +177,7 @@ class TestGuiMain:
         gui_main()
 
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("🛑" in call for call in print_calls)
+        assert any("interrupted" in call.lower() for call in print_calls)
 
     @patch("fusion.cli.run_gui.launch_gui_pipeline")
     @patch("fusion.cli.run_gui.create_gui_argument_parser")
@@ -192,8 +192,11 @@ class TestGuiMain:
         gui_main()
 
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        # Should contain helpful suggestions
-        assert any("💡" in call for call in print_calls)
+        # Should contain helpful suggestions about display or framework
+        assert any(
+            "display" in call.lower() or "framework" in call.lower()
+            for call in print_calls
+        )
 
     @patch("fusion.cli.run_gui.launch_gui_pipeline")
     @patch("fusion.cli.run_gui.create_gui_argument_parser")
@@ -210,6 +213,5 @@ class TestGuiMain:
         print_calls = [call[0][0] for call in mock_print.call_args_list]
         # Should contain installation suggestions
         assert any(
-            "💡" in call and ("install" in call.lower() or "pip" in call.lower())
-            for call in print_calls
+            "install" in call.lower() or "pip" in call.lower() for call in print_calls
         )
