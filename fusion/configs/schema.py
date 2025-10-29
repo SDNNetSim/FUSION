@@ -33,8 +33,6 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "fixed_grid": str_to_bool,
         "pre_calc_mod_selection": str_to_bool,
         "max_segments": int,
-        "route_method": str,
-        "allocation_method": str,
         "save_snapshots": str_to_bool,
         "snapshot_step": int,
         "print_step": int,
@@ -88,6 +86,8 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "e_band": int,
         "s_band": int,
         "l_band": int,
+        "guard_slots": int,
+        "allocation_method": str,
     },
     "file_settings": {
         "run_id": str,

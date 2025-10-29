@@ -140,6 +140,16 @@ def _process_optional_options(
             # This allows .get() calls with defaults to work correctly
             continue
 
+        # Determine if this section should be nested or flattened
+        # general_settings gets flattened (backward compatibility)
+        # Other sections get nested (new architecture)
+        flatten_section = category == "general_settings"
+
+        if not flatten_section:
+            # Initialize nested dict for this section if needed
+            if category not in config_dict[DEFAULT_THREAD_NAME]:
+                config_dict[DEFAULT_THREAD_NAME][category] = {}
+
         for option, type_obj in options_dict.items():
             # Only process options that are present in the config
             if option in config[category]:
@@ -153,9 +163,16 @@ def _process_optional_options(
 
                     # Apply CLI override
                     cli_value = args_dict.get(option)
-                    config_dict[DEFAULT_THREAD_NAME][option] = apply_cli_override(
+                    final_value = apply_cli_override(
                         converted_value, cli_value, type_obj
                     )
+
+                    # Store in appropriate location (flat or nested)
+                    if flatten_section:
+                        config_dict[DEFAULT_THREAD_NAME][option] = final_value
+                    else:
+                        config_dict[DEFAULT_THREAD_NAME][category][option] = final_value
+
                 except ConfigTypeConversionError:
                     # Skip options that can't be converted - they're optional
                     continue
@@ -232,6 +249,9 @@ def load_config(
             args_dict,
         )
         _process_optional_options(config, config_dict, OPTIONAL_OPTIONS_DICT, args_dict)
+
+        # Mirror routing_settings and spectrum_settings to root for backward compatibility
+        _mirror_nested_to_flat(config_dict[DEFAULT_THREAD_NAME])
 
         thread_sections = [s for s in config.sections() if s != REQUIRED_SECTION]
         if thread_sections:
@@ -313,6 +333,41 @@ def _find_category(
         if target_key in subdict:
             return category
     return None
+
+
+def _mirror_nested_to_flat(config: dict[str, Any]) -> None:
+    """
+    Mirror values from nested sections to root level for backward compatibility.
+
+    This allows newer code to use nested structure (engine_props["routing_settings"]["k_paths"])
+    while older code can still use flat structure (engine_props["k_paths"]).
+
+    :param config: Configuration dictionary to update in-place
+    :type config: dict[str, Any]
+    """
+    # Define which nested sections should be mirrored to root
+    # All optional sections that aren't general_settings should be mirrored
+    mirror_sections = [
+        "routing_settings",
+        "spectrum_settings",
+        "ml_settings",
+        "rl_settings",
+        "failure_settings",
+        "protection_settings",
+        "offline_rl_settings",
+        "dataset_logging_settings",
+        "recovery_timing_settings",
+        "reporting_settings",
+    ]
+
+    for section in mirror_sections:
+        if section in config and isinstance(config[section], dict):
+            # Copy all values from nested section to root level
+            for key, value in config[section].items():
+                # Only mirror if not already present at root level
+                # (root level takes precedence for backward compat)
+                if key not in config:
+                    config[key] = value
 
 
 def load_and_validate_config(args: Any) -> dict[str, Any]:
