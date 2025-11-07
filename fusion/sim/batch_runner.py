@@ -331,3 +331,73 @@ def run_batch_simulation(
     """
     runner = BatchRunner(config)
     return runner.run(parallel=parallel, num_processes=num_processes)
+
+
+def run_multi_seed_experiment(
+    config: dict[str, Any], seed_list: list[int], output_dir: str = "results"
+) -> list[dict[str, Any]]:
+    """
+    Run simulation with multiple seeds for statistical analysis.
+
+    Executes the same simulation configuration with different random seeds
+    to enable variance analysis and statistical significance testing.
+
+    :param config: Base configuration
+    :type config: dict[str, Any]
+    :param seed_list: List of seeds to run
+    :type seed_list: list[int]
+    :param output_dir: Output directory for results
+    :type output_dir: str
+    :return: List of result dictionaries
+    :rtype: list[dict[str, Any]]
+
+    Example:
+        >>> config = load_config('survivability_experiment.ini')
+        >>> seeds = [42, 43, 44, 45, 46]
+        >>> results = run_multi_seed_experiment(config, seeds, 'results/')
+        >>> print(len(results))
+        5
+    """
+    from pathlib import Path
+
+    from fusion.core.simulation import seed_all_rngs
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    results = []
+
+    for seed in seed_list:
+        log_message(f"Running simulation with seed {seed}")
+
+        # Create seed-specific config
+        seed_config = config.copy()
+        seed_config["seed"] = seed
+
+        # Seed all RNGs before creating engine
+        seed_all_rngs(seed)
+
+        # Run simulation
+        engine = SimulationEngine(seed_config)
+        return_code = engine.run(seed=seed)
+
+        # Store results
+        result = {
+            "seed": seed,
+            "return_code": return_code,
+            # Add stats if available
+            "stats": engine.stats_obj.to_dict()
+            if hasattr(engine.stats_obj, "to_dict")
+            else {},
+        }
+        results.append(result)
+
+        stats_dict = result.get("stats", {})
+        bp = (
+            stats_dict.get("blocking_probability", 0)
+            if isinstance(stats_dict, dict)
+            else 0
+        )
+        log_message(f"Seed {seed} complete: BP={bp:.4f}")
+
+    return results

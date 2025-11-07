@@ -92,7 +92,7 @@ validate: check-env
 	@echo "Running pre-commit checks on all files..."
 	pre-commit run --all-files
 	@echo "Running unit tests..."
-	pytest
+	python -m pytest
 
 # Lint only - run all pre-commit checks
 lint: check-env
@@ -102,7 +102,7 @@ lint: check-env
 # Test only
 test: check-env
 	@echo "🧪 Running unit tests..."
-	pytest
+	python -m pytest
 
 # Clean up generated files
 clean:
