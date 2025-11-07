@@ -187,7 +187,21 @@ class LightPathSlicingManager:
             self.spectrum_obj.spectrum_props.path_list = path_list
             mod_format_list = [mod_format]
 
-            for _ in range(num_segments):
+            # Check if this is 1+1 protected
+            backup_path_val = getattr(self.sdn_props, "backup_path", None)
+            is_protected = backup_path_val is not None
+
+            # TEMP: Force log to appear
+            logger.warning(
+                f"[DEBUG] Slicing: is_protected={is_protected}, "
+                f"num_segments={num_segments}, bandwidth={bandwidth}"
+            )
+
+            for segment_idx in range(num_segments):
+                logger.debug(
+                    f"Slicing segment {segment_idx + 1}/{num_segments}: "
+                    f"bandwidth={bandwidth}, mod_format={mod_format}"
+                )
                 self.spectrum_obj.get_spectrum(
                     mod_format_list=mod_format_list, slice_bandwidth=bandwidth
                 )

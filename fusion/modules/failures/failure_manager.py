@@ -36,6 +36,9 @@ class FailureManager:
         self.topology = topology
         self.active_failures: set[tuple[Any, Any]] = set()  # Currently failed links
         self.failure_history: list[dict[str, Any]] = []  # Historical failure events
+        self.scheduled_failures: dict[
+            float, list[tuple[Any, Any]]
+        ] = {}  # Failure activation schedule
         self.scheduled_repairs: dict[
             float, list[tuple[Any, Any]]
         ] = {}  # Repair schedule
@@ -79,14 +82,15 @@ class FailureManager:
         # Get failure handler from registry
         handler = get_failure_handler(failure_type)
 
-        # Execute failure
+        # Execute failure handler to get failure details
         event: dict[str, Any] = handler(
             topology=self.topology, t_fail=t_fail, t_repair=t_repair, **kwargs
         )
 
-        # Track active failures
-        for link in event["failed_links"]:
-            self.active_failures.add(link)
+        # Schedule failure activation (not immediate)
+        if t_fail not in self.scheduled_failures:
+            self.scheduled_failures[t_fail] = []
+        self.scheduled_failures[t_fail].extend(event["failed_links"])
 
         # Schedule repairs
         if t_repair not in self.scheduled_repairs:
@@ -97,6 +101,41 @@ class FailureManager:
         self.failure_history.append(event)
 
         return event
+
+    def activate_failures(self, current_time: float) -> list[tuple[Any, Any]]:
+        """
+        Activate all failures scheduled for activation at current_time.
+
+        :param current_time: Current simulation time
+        :type current_time: float
+        :return: List of newly activated link tuples
+        :rtype: list[tuple[Any, Any]]
+
+        Example:
+            >>> manager = FailureManager(props, topology)
+            >>> manager.inject_failure(
+            ...     'link', t_fail=10.0, t_repair=20.0, link_id=(0, 1)
+            ... )
+            >>> activated = manager.activate_failures(10.0)
+            >>> print(activated)
+            [(0, 1)]
+            >>> print(manager.active_failures)
+            {(0, 1)}
+        """
+        if current_time not in self.scheduled_failures:
+            return []
+
+        # Get links to activate
+        links_to_activate = self.scheduled_failures[current_time]
+
+        # Add to active failures
+        for link in links_to_activate:
+            self.active_failures.add(link)
+
+        # Remove from schedule
+        del self.scheduled_failures[current_time]
+
+        return links_to_activate
 
     def is_path_feasible(self, path: list[int]) -> bool:
         """
@@ -186,9 +225,10 @@ class FailureManager:
 
     def clear_all_failures(self) -> None:
         """
-        Clear all active failures (for testing or reset).
+        Clear all active and scheduled failures (for testing or reset).
 
-        This removes all active failures and clears the repair schedule.
+        This removes all active failures and clears both failure and repair schedules.
         """
         self.active_failures.clear()
+        self.scheduled_failures.clear()
         self.scheduled_repairs.clear()

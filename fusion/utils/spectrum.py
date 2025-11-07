@@ -223,3 +223,95 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dic
                     )
 
     return response
+
+
+def find_common_channels_on_paths(
+    network_spectrum_dict: dict[Any, Any],
+    paths: list[list[int]],
+    slots_needed: int,
+    band: str,
+    core: int,
+) -> list[int]:
+    """
+    Find slot indices available on ALL paths simultaneously.
+
+    This function finds starting slot indices where contiguous spectrum
+    is available across all provided paths. Useful for 1+1 protection
+    where spectrum must be reserved on both primary and backup paths.
+
+    :param network_spectrum_dict: Network spectrum database
+    :type network_spectrum_dict: dict[Any, Any]
+    :param paths: List of paths, where each path is a list of node IDs
+    :type paths: list[list[int]]
+    :param slots_needed: Number of contiguous slots needed
+    :type slots_needed: int
+    :param band: Spectrum band identifier
+    :type band: str
+    :param core: Core number
+    :type core: int
+    :return: Sorted list of starting slot indices available on all paths
+    :rtype: list[int]
+
+    Example:
+        >>> primary_path = [0, 1, 2]
+        >>> backup_path = [0, 3, 2]
+        >>> common = find_common_channels_on_paths(
+        ...     spectrum_dict,
+        ...     [primary_path, backup_path],
+        ...     slots_needed=4,
+        ...     band="c",
+        ...     core=0
+        ... )
+        >>> print(common)
+        [10, 20, 35]  # Starting indices where 4 slots are free on both paths
+    """
+    if not paths:
+        return []
+
+    common_starts: set[int] | None = None
+
+    for path in paths:
+        if len(path) < 2:
+            return []
+
+        path_starts: set[int] | None = None
+
+        # Check each link in the path
+        for i in range(len(path) - 1):
+            link = (path[i], path[i + 1])
+
+            if link not in network_spectrum_dict:
+                return []
+
+            # Find free channels on this link using existing utility
+            channels = find_free_channels(
+                network_spectrum_dict=network_spectrum_dict,
+                slots_needed=slots_needed,
+                link_tuple=link,
+            )
+
+            # Extract starting indices for the specified band/core
+            if band not in channels or core not in channels[band]:
+                return []
+
+            # Get set of starting slot indices from channel lists
+            link_starts = {ch[0] for ch in channels[band][core] if len(ch) > 0}
+
+            # Intersection with previous links in this path
+            if path_starts is None:
+                path_starts = link_starts
+            else:
+                path_starts &= link_starts
+
+            # Early exit if no common slots on this path
+            if not path_starts:
+                return []
+
+        # Intersection with previous paths
+        if common_starts is None:
+            common_starts = path_starts
+        else:
+            if path_starts is not None:
+                common_starts &= path_starts
+
+    return sorted(common_starts) if common_starts else []

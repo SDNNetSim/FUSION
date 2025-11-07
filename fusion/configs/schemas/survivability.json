@@ -86,14 +86,8 @@
     },
     "protection_settings": {
       "type": "object",
-      "description": "Protection mechanism configuration",
+      "description": "Protection mechanism configuration (use route_method=1plus1_protection to enable)",
       "properties": {
-        "protection_mode": {
-          "type": "string",
-          "enum": ["none", "1plus1"],
-          "default": "none",
-          "description": "Protection mechanism to use"
-        },
         "protection_switchover_ms": {
           "type": "number",
           "minimum": 0,
@@ -145,7 +139,7 @@
         }
       }
     },
-    "dataset_logging": {
+    "dataset_logging_settings": {
       "type": "object",
       "description": "Offline dataset logging configuration",
       "properties": {
@@ -168,7 +162,7 @@
         }
       }
     },
-    "recovery_timing": {
+    "recovery_timing_settings": {
       "type": "object",
       "description": "Recovery time modeling configuration",
       "properties": {
@@ -190,7 +184,7 @@
         }
       }
     },
-    "reporting": {
+    "reporting_settings": {
       "type": "object",
       "description": "Results reporting configuration",
       "properties": {

@@ -78,9 +78,12 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
             and hasattr(self.sdn_props, "network_spectrum_dict")
         )
 
-    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find the least congested path in the network.
+
+        Results are stored in route_props (paths_matrix, modulation_formats_matrix,
+        weights_list). Consumers should access route_props.paths_matrix for paths.
 
         :param source: Source node identifier.
         :type source: Any
@@ -88,8 +91,6 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         :type destination: Any
         :param request: Request object containing traffic demand details.
         :type request: Any
-        :return: Path with least congested bottleneck link, or None if no path found.
-        :rtype: list[Any] | None
         """
         # Store source/destination in sdn_props for compatibility
         self.sdn_props.source = source
@@ -110,15 +111,8 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
                     best_path = path_data["path_list"]
                     congestion = self._calculate_path_congestion(best_path)
                     self._total_congestion += float(congestion)
-                    return (
-                        list(best_path)
-                        if isinstance(best_path, (list, tuple))
-                        else None
-                    )
-                return None
-            return None
         except (nx.NetworkXNoPath, nx.NodeNotFound):
-            return None
+            pass
 
     def _find_least_congested_paths(self) -> None:
         """
@@ -259,8 +253,14 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         :return: List of k paths ordered by congestion (least congested first).
         :rtype: list[list[Any]]
         """
-        best_path = self.route(source, destination, None)
-        return [best_path] if best_path else []
+        self.route(source, destination, None)
+        if self.route_props.paths_matrix:
+            # Extract path from dict structure if needed
+            path_data = self.route_props.paths_matrix[0]
+            if isinstance(path_data, dict) and "path_list" in path_data:
+                return [path_data["path_list"]]
+            return [path_data]
+        return []
 
     def update_weights(self, topology: Any) -> None:
         """

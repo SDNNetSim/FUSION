@@ -166,7 +166,7 @@ def setup_logger(
     return logger
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str, level: str = "INFO") -> logging.Logger:
     """
     Get an existing logger or create a basic one.
 
@@ -174,12 +174,13 @@ def get_logger(name: str) -> logging.Logger:
     require special configuration.
 
     :param name: Logger name (typically __name__)
+    :param level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     :return: Logger instance
     """
     if name in _loggers:
         return _loggers[name]
 
-    return setup_logger(name)
+    return setup_logger(name, level=level)
 
 
 def configure_simulation_logging(
@@ -287,6 +288,25 @@ class LoggerAdapter(logging.LoggerAdapter):
             return f"[{extra_str}] {msg}", kwargs
         else:
             return str(msg), kwargs
+
+
+def set_global_log_level(level: str) -> None:
+    """
+    Set the log level for all FUSION loggers.
+
+    :param level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    :type level: str
+    """
+    log_level = LOG_LEVELS.get(level.upper(), logging.INFO)
+
+    # Update all existing loggers
+    for logger in _loggers.values():
+        logger.setLevel(log_level)
+        for handler in logger.handlers:
+            handler.setLevel(log_level)
+
+    # Update root logger
+    logging.getLogger().setLevel(log_level)
 
 
 def log_message(message: str, log_queue: Any) -> None:

@@ -37,10 +37,19 @@ class BatchRunner:
         :type config: dict[str, Any]
         """
         self.config = config
-        self.sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
+        self.date = datetime.now().strftime("%m%d")
+        self.sim_start = datetime.now().strftime("%H_%M_%S_%f")
         self.manager = multiprocessing.Manager()
         self.progress_dict = self.manager.dict()
         self.results: list[dict] = []
+
+        # Configure logging based on config settings
+        sim_params = config.get("s1", config)
+        log_level = sim_params.get("log_level", "INFO")
+        if isinstance(log_level, str):
+            from fusion.utils.logging_config import set_global_log_level
+
+            set_global_log_level(log_level)
 
     def prepare_simulation(self, sim_params: dict) -> dict:
         """
@@ -60,7 +69,7 @@ class BatchRunner:
         if "thread_num" not in sim_params:
             sim_params["thread_num"] = "s1"  # Default thread identifier
         if "date" not in sim_params:
-            sim_params["date"] = self.sim_start.split("_")[0]  # Extract date portion
+            sim_params["date"] = self.date
         if "sim_start" not in sim_params:
             sim_params["sim_start"] = self.sim_start
 
@@ -245,35 +254,22 @@ class BatchRunner:
         return results
 
     def _get_erlang_values(self, sim_params: dict) -> list[float]:
-        """Extract Erlang values from configuration."""
-        erlangs_str = sim_params.get("erlangs", "300")
+        """
+        Extract Erlang values from configuration.
 
-        if "," in erlangs_str:
-            # Multiple values specified
-            return [float(e.strip()) for e in erlangs_str.split(",")]
-        if "-" in erlangs_str:
-            # Range specified (start-end:step) or (start-end)
-            parts = erlangs_str.split("-")
-            start = float(parts[0])
+        Uses erlang_start, erlang_stop, and erlang_step parameters.
+        """
+        start = float(sim_params["erlang_start"])
+        stop = float(sim_params["erlang_stop"])
+        step = float(sim_params.get("erlang_step", 100.0))
 
-            if ":" in parts[1]:
-                # Has explicit step
-                end_step = parts[1].split(":")
-                end = float(end_step[0])
-                step = float(end_step[1])
-            else:
-                # Default step
-                end = float(parts[1])
-                step = 100.0
-
-            erlangs = []
-            current = start
-            while current <= end:
-                erlangs.append(current)
-                current += step
-            return erlangs
-        # Single value
-        return [float(erlangs_str)]
+        # Generate erlang list inclusively (stop value is included)
+        erlangs = []
+        current = start
+        while current <= stop:
+            erlangs.append(current)
+            current += step
+        return erlangs
 
     def _validate_bandwidth_config(self, sim_params: dict) -> None:
         """Validate bandwidth configuration consistency."""

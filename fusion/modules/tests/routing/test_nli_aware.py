@@ -130,20 +130,21 @@ class TestNLIAwareRouting:
         """Test that route method finds path with least NLI."""
         # Act
         with patch.object(nli_aware.route_help_obj, "get_nli_cost", return_value=0.2):
-            path = nli_aware.route("A", "C", request=None)
+            nli_aware.route("A", "C", request=None)
 
         # Assert
-        assert path is not None
+        assert len(nli_aware.route_props.paths_matrix) > 0
+        path = nli_aware.route_props.paths_matrix[0]
         assert path[0] == "A"
         assert path[-1] == "C"
 
     def test_route_with_no_path_returns_none(self, nli_aware: Any) -> None:
-        """Test that route returns None when no path exists."""
+        """Test that route sets empty paths_matrix when no path exists."""
         # Act
-        path = nli_aware.route("A", "Z", request=None)
+        nli_aware.route("A", "Z", request=None)
 
         # Assert
-        assert path is None
+        assert len(nli_aware.route_props.paths_matrix) == 0
 
     def test_route_updates_metrics(self, nli_aware: Any) -> None:
         """Test that route method updates internal metrics."""

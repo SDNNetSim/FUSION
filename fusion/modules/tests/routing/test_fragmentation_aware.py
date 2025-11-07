@@ -128,20 +128,21 @@ class TestFragmentationAwareRouting:
         """Test that route method finds path with least fragmentation."""
         # Act
         with patch("fusion.utils.network.find_path_fragmentation", return_value=0.2):
-            path = fragmentation_aware.route("A", "C", request=None)
+            fragmentation_aware.route("A", "C", request=None)
 
         # Assert
-        assert path is not None
+        assert len(fragmentation_aware.route_props.paths_matrix) > 0
+        path = fragmentation_aware.route_props.paths_matrix[0]
         assert path[0] == "A"
         assert path[-1] == "C"
 
     def test_route_with_no_path_returns_none(self, fragmentation_aware: Any) -> None:
-        """Test that route returns None when no path exists."""
+        """Test that route sets empty paths_matrix when no path exists."""
         # Act
-        path = fragmentation_aware.route("A", "Z", request=None)
+        fragmentation_aware.route("A", "Z", request=None)
 
         # Assert
-        assert path is None
+        assert len(fragmentation_aware.route_props.paths_matrix) == 0
 
     def test_route_updates_metrics(self, fragmentation_aware: Any) -> None:
         """Test that route method updates internal metrics."""

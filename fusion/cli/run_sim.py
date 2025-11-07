@@ -1,4 +1,5 @@
-"""CLI entry point for running simulations.
+"""
+CLI entry point for running simulations.
 
 Follows architecture best practice: entry points should have no logic.
 """
@@ -15,7 +16,8 @@ logger = get_logger(__name__)
 
 
 def main(stop_flag: Any = None) -> int:
-    """Entry point for running simulations from the command line.
+    """
+    Entry point for running simulations from the command line.
 
     Delegates all logic to appropriate modules following the clean architecture
     pattern where entry points contain minimal logic and delegate to pipelines.

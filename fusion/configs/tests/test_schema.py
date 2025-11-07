@@ -94,8 +94,6 @@ class TestSchemaConstants:
             "fixed_grid",
             "pre_calc_mod_selection",
             "max_segments",
-            "route_method",
-            "allocation_method",
             "save_snapshots",
             "snapshot_step",
             "print_step",

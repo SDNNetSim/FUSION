@@ -27,7 +27,7 @@ def add_routing_args(parser: argparse.ArgumentParser) -> None:
     routing_group.add_argument(
         "--k_paths",
         type=int,
-        default=3,
+        default=None,
         help="Number of candidate paths for k-shortest path routing",
     )
 
@@ -51,7 +51,7 @@ def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
     spectrum_group.add_argument(
         "--guard_slots",
         type=int,
-        default=1,
+        default=None,
         help="Number of guard slots between allocations",
     )
     spectrum_group.add_argument(

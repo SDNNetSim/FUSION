@@ -43,7 +43,7 @@ class CLIToConfigMapper:
             "num_requests": ("general_settings", "num_requests"),
             "request_distribution": ("general_settings", "request_distribution"),
             "allocation_method": ("general_settings", "allocation_method"),
-            "k_paths": ("general_settings", "k_paths"),
+            "k_paths": ("routing_settings", "k_paths"),
             "route_method": ("general_settings", "route_method"),
             "save_snapshots": ("general_settings", "save_snapshots"),
             "snapshot_step": ("general_settings", "snapshot_step"),
@@ -236,7 +236,8 @@ class CLIToConfigMapper:
         return result
 
     def get_reverse_mapping(self) -> dict[str, str]:
-        """Get reverse mapping from config path to CLI argument name.
+        """
+        Get reverse mapping from config path to CLI argument name.
 
         Creates a reverse lookup dictionary that maps configuration paths
         (in the format 'section.key') to their corresponding CLI argument names.

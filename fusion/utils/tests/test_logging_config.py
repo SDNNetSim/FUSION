@@ -247,7 +247,7 @@ class TestGetLogger:
         result = get_logger("new_logger")
 
         # Assert
-        mock_setup.assert_called_once_with("new_logger")
+        mock_setup.assert_called_once_with("new_logger", level="INFO")
         assert result == mock_logger
 
     def test_get_logger_with_cached_name_returns_cached(self) -> None:

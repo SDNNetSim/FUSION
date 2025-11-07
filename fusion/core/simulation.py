@@ -19,9 +19,12 @@ from fusion.core.ml_metrics import MLMetricsCollector
 from fusion.core.persistence import StatsPersistence
 from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
+from fusion.modules.failures import FailureManager
 from fusion.modules.ml import load_model
+from fusion.reporting.dataset_logger import DatasetLogger
 from fusion.reporting.simulation_reporter import SimulationReporter
 from fusion.utils.logging_config import get_logger, log_message
+from fusion.utils.os import create_directory
 
 logger = get_logger(__name__)
 
@@ -209,6 +212,8 @@ class SimulationEngine:
         )
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
+        # FailureManager reference will be set after topology creation
+        self.sdn_obj.failure_manager = None
         self.stats_obj = SimStats(
             engine_props=self.engine_props, sim_info=self.sim_info
         )
@@ -224,12 +229,37 @@ class SimulationEngine:
             else None
         )
 
+        # Initialize dataset logger if enabled
+        self.dataset_logger: DatasetLogger | None = None
+        if engine_props.get("log_offline_dataset", False):
+            # Build path matching output structure exactly:
+            # data/training_data/{network}/{date}/{sim_start}/{thread}/
+            # dataset_erlang_{erlang}.jsonl
+            erlang_value = int(engine_props["erlang"])
+            dataset_dir = os.path.join(
+                "data",
+                "training_data",
+                self.sim_info,
+                engine_props.get("thread_num", "s1"),
+            )
+            create_directory(dataset_dir)
+
+            # Include erlang value in filename
+            dataset_filename = f"dataset_erlang_{erlang_value}.jsonl"
+            output_path = os.path.join(dataset_dir, dataset_filename)
+
+            self.dataset_logger = DatasetLogger(output_path, engine_props)
+            logger.info(f"Dataset logging enabled: {output_path}")
+
         self.ml_model = None
         self.stop_flag = engine_props.get("stop_flag")
         self.grooming_stats: dict[str, Any] = {}
 
         # Validate grooming configuration
         self._validate_grooming_config()
+
+        # Initialize FailureManager (will be set up after topology is created)
+        self.failure_manager: FailureManager | None = None
 
     def update_arrival_params(self, current_time: float) -> None:
         """
@@ -354,6 +384,9 @@ class SimulationEngine:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
 
+        # Log dataset transition if enabled
+        self._log_dataset_transition(current_time=current_time)
+
     def handle_release(self, current_time: float) -> None:
         """
         Update the SDN controller to handle the release of a request.
@@ -391,6 +424,78 @@ class SimulationEngine:
             if sdn_spectrum_dict is not None:
                 self.network_spectrum_dict = sdn_spectrum_dict
         # Request was blocked, nothing to release
+
+    def _log_dataset_transition(self, current_time: float) -> None:
+        """
+        Log a dataset transition for offline RL training.
+
+        :param current_time: The arrival time of the request
+        :type current_time: float
+        """
+        if not self.dataset_logger or self.reqs_dict is None:
+            return
+
+        if current_time not in self.reqs_dict:
+            return
+
+        request = self.reqs_dict[current_time]
+        sdn_props = self.sdn_obj.sdn_props
+        route_props = self.sdn_obj.route_obj.route_props
+
+        # Extract k-paths from routing
+        k_paths = route_props.paths_matrix if route_props.paths_matrix else []
+
+        # Build state dict with available information
+        state = {
+            "src": request.get("source", sdn_props.source),
+            "dst": request.get("destination", sdn_props.destination),
+            "slots_needed": request.get("slots_needed", 0),
+            "bandwidth": request.get("bandwidth", 0),
+            "k_paths": k_paths,
+            "num_paths": len(k_paths),
+        }
+
+        # Determine selected path index and action mask
+        # Simple approach: mark all paths as feasible initially
+        action_mask = [True] * len(k_paths) if k_paths else [False]
+
+        if sdn_props.was_routed and sdn_props.path_list:
+            # Find which path was selected by matching path_list
+            selected_path_index = -1
+            for idx, path in enumerate(k_paths):
+                if path == sdn_props.path_list:
+                    selected_path_index = idx
+                    break
+            action = selected_path_index
+        else:
+            # Request was blocked
+            action = -1
+            # Mark all paths as infeasible since routing failed
+            action_mask = [False] * len(action_mask)
+
+        # Compute reward
+        reward = 1.0 if sdn_props.was_routed else -1.0
+
+        # Build metadata
+        meta = {
+            "request_id": request.get("req_id", -1),
+            "arrival_time": current_time,
+            "erlang": self.engine_props["erlang"],
+            "iteration": self.iteration,
+            "decision_time_ms": (sdn_props.route_time * 1000)
+            if hasattr(sdn_props, "route_time") and sdn_props.route_time
+            else 0.0,
+        }
+
+        # Log the transition
+        self.dataset_logger.log_transition(
+            state=state,
+            action=action,
+            reward=reward,
+            next_state=None,
+            action_mask=action_mask,
+            meta=meta,
+        )
 
     def create_topology(self) -> None:
         """Create the physical topology of the simulation."""
@@ -564,11 +669,12 @@ class SimulationEngine:
                     print_flag=print_flag,
                 )
 
-        if (
-            (iteration + 1) % self.engine_props["save_step"] == 0
-            or iteration == 0
-            or (iteration + 1) == self.engine_props["max_iters"]
-        ):
+        # Always save on first and last iteration, plus every save_step
+        is_first_iter = iteration == 0
+        is_last_iter = (iteration + 1) == self.engine_props["max_iters"]
+        is_save_step = (iteration + 1) % self.engine_props["save_step"] == 0
+
+        if is_first_iter or is_last_iter or is_save_step:
             self._save_all_stats(base_file_path or "data")
 
         return resp
@@ -629,23 +735,6 @@ class SimulationEngine:
             if self.engine_props["deploy_model"]:
                 self.ml_model = load_model(engine_properties=self.engine_props)
 
-        # ================================================================
-        # SEEDING STRATEGY: Separate request generation from RL components
-        # ================================================================
-        # Seed configuration options (in priority order):
-        # 1. seed (int): Single seed for all components (simple use case)
-        # 2. request_seeds (list[int]): Per-iteration seeds for traffic variation
-        # 3. rl_seed (int): Constant seed for RL (used with request_seeds)
-        # 4. seeds (list[int]): Legacy name for request_seeds (backwards compat)
-        #
-        # Example configurations:
-        # - Simple: {"seed": 42} → All components use 42
-        # - Advanced: {"request_seeds": [1,2,3], "rl_seed": 42}
-        #   → Traffic varies, RL constant
-        # - Batch: run_multi_seed_experiment(config, seed_list=[42,43,44])
-        #   → Statistical analysis
-        # ================================================================
-
         # Request generation seed (typically varies per iteration for diverse traffic)
         if seed is not None:
             # Explicit seed parameter overrides everything
@@ -698,6 +787,189 @@ class SimulationEngine:
 
         self.generate_requests(request_seed)
 
+        # Schedule failure AFTER requests are generated (in every iteration)
+        if self.failure_manager:
+            # Clear any previous failures before scheduling new ones
+            self.failure_manager.clear_all_failures()
+            self._schedule_failure()
+
+    def _initialize_failure_manager(self) -> None:
+        """
+        Initialize FailureManager and schedule failures if configured.
+
+        This method is called after topology creation to set up failure
+        injection based on the failure_settings configuration.
+
+        Note: The actual failure is scheduled after request generation in init_iter()
+        to use real Poisson arrival times rather than indices.
+        """
+        failure_type = self.engine_props.get("failure_type", "none")
+
+        if failure_type == "none":
+            logger.info("No failures configured for this simulation")
+            return
+
+        # Debug: Log topology info
+        logger.info(
+            f"Topology has {self.topology.number_of_nodes()} nodes and "
+            f"{self.topology.number_of_edges()} edges"
+        )
+        logger.debug(f"Topology nodes: {sorted(self.topology.nodes())}")
+        logger.debug(f"Topology edges (first 10): {list(self.topology.edges())[:10]}")
+
+        # Create FailureManager with topology
+        self.failure_manager = FailureManager(self.engine_props, self.topology)
+        logger.info(f"FailureManager initialized for failure type: {failure_type}")
+
+        # Pass FailureManager to SDNController for path feasibility checking
+        self.sdn_obj.failure_manager = self.failure_manager
+
+        # Note: Failure will be scheduled in init_iter() after requests are generated
+
+    def _schedule_failure(self) -> None:
+        """
+        Schedule failure event based on configuration.
+
+        Reads failure settings from engine_props and injects the appropriate
+        failure type at the configured time. Uses actual Poisson arrival times
+        from the generated requests.
+        """
+        if not self.failure_manager or not self.reqs_dict:
+            return
+
+        failure_type = self.engine_props.get("failure_type", "none")
+
+        # Get actual arrival times from generated requests
+        arrival_times = sorted(
+            [
+                t
+                for t, req in self.reqs_dict.items()
+                if req.get("request_type") == "arrival"
+            ]
+        )
+
+        if not arrival_times:
+            logger.warning("No arrival times available to schedule failure")
+            return
+
+        # Determine failure time based on arrival index
+        t_fail_arrival_index = self.engine_props.get("t_fail_arrival_index", -1)
+
+        # If -1, inject at midpoint
+        if t_fail_arrival_index == -1:
+            t_fail_arrival_index = len(arrival_times) // 2
+
+        # Clamp to valid range
+        t_fail_arrival_index = max(0, min(t_fail_arrival_index, len(arrival_times) - 1))
+
+        # Get actual failure time
+        t_fail = arrival_times[t_fail_arrival_index]
+
+        # Determine repair time
+        t_repair_after_arrivals = self.engine_props.get("t_repair_after_arrivals", 2)
+        t_repair_arrival_index = t_fail_arrival_index + t_repair_after_arrivals
+
+        # Validate that repair index is within bounds
+        if t_repair_arrival_index >= len(arrival_times):
+            logger.error(
+                f"Invalid failure configuration: repair would occur at arrival "
+                f"index {t_repair_arrival_index}, but only {len(arrival_times)} "
+                f"requests exist. Increase num_requests or reduce "
+                f"t_fail_arrival_index/t_repair_after_arrivals."
+            )
+            raise ValueError(
+                f"Repair index {t_repair_arrival_index} exceeds number of "
+                f"arrivals ({len(arrival_times)}). Need at least "
+                f"{t_repair_arrival_index + 1} requests."
+            )
+
+        t_repair = arrival_times[t_repair_arrival_index]
+
+        logger.info(
+            f"Scheduling {failure_type} failure at arrival index "
+            f"{t_fail_arrival_index} (t={t_fail:.4f}), repair at index "
+            f"{t_repair_arrival_index} (t={t_repair:.4f})"
+        )
+
+        # Inject failure based on type
+        try:
+            if failure_type == "link":
+                # Convert link node IDs to match topology node type
+                # Topology nodes might be strings, so we need to match that type
+                failed_src = self.engine_props["failed_link_src"]
+                failed_dst = self.engine_props["failed_link_dst"]
+
+                # Try to match the type of nodes in the topology
+                if self.topology.number_of_nodes() > 0:
+                    sample_node = next(iter(self.topology.nodes()))
+                    if isinstance(sample_node, str):
+                        failed_src = str(failed_src)
+                        failed_dst = str(failed_dst)
+
+                event = self.failure_manager.inject_failure(
+                    "link",
+                    t_fail=t_fail,
+                    t_repair=t_repair,
+                    link_id=(failed_src, failed_dst),
+                )
+                logger.info(
+                    f"Link failure scheduled: {event['failed_links']} "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+            elif failure_type == "srlg":
+                srlg_links = self.engine_props.get("srlg_links", [])
+                event = self.failure_manager.inject_failure(
+                    "srlg", t_fail=t_fail, t_repair=t_repair, srlg_links=srlg_links
+                )
+                logger.info(
+                    f"SRLG failure scheduled: {len(event['failed_links'])} links "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+            elif failure_type == "geo":
+                # Convert center node ID to match topology node type
+                center_node = self.engine_props["geo_center_node"]
+                if self.topology.number_of_nodes() > 0:
+                    sample_node = next(iter(self.topology.nodes()))
+                    if isinstance(sample_node, str):
+                        center_node = str(center_node)
+
+                event = self.failure_manager.inject_failure(
+                    "geo",
+                    t_fail=t_fail,
+                    t_repair=t_repair,
+                    center_node=center_node,
+                    hop_radius=self.engine_props["geo_hop_radius"],
+                )
+                logger.info(
+                    f"Geographic failure scheduled: {len(event['failed_links'])} links "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+            elif failure_type == "node":
+                # Convert node ID to match topology node type
+                node_id = self.engine_props.get("failed_node_id")
+                if node_id is not None and self.topology.number_of_nodes() > 0:
+                    sample_node = next(iter(self.topology.nodes()))
+                    if isinstance(sample_node, str):
+                        node_id = str(node_id)
+
+                event = self.failure_manager.inject_failure(
+                    "node",
+                    t_fail=t_fail,
+                    t_repair=t_repair,
+                    node_id=node_id,
+                )
+                logger.info(
+                    f"Node failure scheduled: {len(event['failed_links'])} links "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to schedule {failure_type} failure: {e}")
+            raise
+
     def run(self, seed: int | None = None) -> int:
         """
         Run the simulation by creating the topology and processing requests.
@@ -713,6 +985,9 @@ class SimulationEngine:
         simulation_context = self._setup_simulation_context()
         self._log_simulation_start(simulation_context)
 
+        # Iterations are 0-indexed internally (0, 1, 2, ..., max_iters-1)
+        # max_iters specifies the total count
+        # (e.g., max_iters=2 runs iterations 0 and 1)
         for iteration in range(self.engine_props["max_iters"]):
             if self._should_stop_simulation(simulation_context):
                 break
@@ -735,6 +1010,9 @@ class SimulationEngine:
         :rtype: Dict[str, Any]
         """
         self.create_topology()
+
+        # Initialize FailureManager if failures are configured
+        self._initialize_failure_manager()
 
         return {
             "log_queue": self.engine_props.get("log_queue"),
@@ -812,12 +1090,235 @@ class SimulationEngine:
 
         return int(context["done_units"])
 
+    def _find_affected_requests(
+        self, failed_links: list[tuple[Any, Any]]
+    ) -> list[dict[str, Any]]:
+        """
+        Find all allocated requests affected by failed links.
+
+        A request is affected if any link in its current active path
+        (primary or backup) matches a failed link.
+
+        :param failed_links: List of failed link tuples
+        :type failed_links: list[tuple[Any, Any]]
+        :return: List of affected request info dictionaries
+        :rtype: list[dict[str, Any]]
+        """
+        affected = []
+        failed_links_set = set(failed_links)
+
+        # Also include reverse direction since links are bidirectional
+        for link in failed_links:
+            failed_links_set.add((link[1], link[0]))
+
+        for request_id, request_info in self.sdn.sdn_props.allocated_requests.items():
+            # Determine which path to check based on active_path
+            active_path_key = (
+                "primary_path"
+                if request_info.get("active_path") == "primary"
+                else "backup_path"
+            )
+            active_path = request_info.get(active_path_key)
+
+            if active_path is None:
+                continue
+
+            # Check if any link in the active path is failed
+            for i in range(len(active_path) - 1):
+                link = (active_path[i], active_path[i + 1])
+                if link in failed_links_set:
+                    affected.append(request_info)
+                    break
+
+        return affected
+
+    def _is_path_feasible(self, path: list[int] | None) -> bool:
+        """
+        Check if a path is feasible given current failures.
+
+        :param path: Path to check as list of node IDs
+        :type path: list[int] | None
+        :return: True if path is feasible, False otherwise
+        :rtype: bool
+        """
+        if path is None:
+            return False
+
+        if not self.failure_manager:
+            return True
+
+        return self.failure_manager.is_path_feasible(path)
+
+    def _handle_failure_impact(
+        self, current_time: float, failed_links: list[tuple[Any, Any]]
+    ) -> None:
+        """
+        Handle impact of failures on already-allocated requests.
+
+        For each affected request:
+        - If protected and backup path is viable: switch to backup
+        - Otherwise: release spectrum and count as blocked
+
+        :param current_time: Current simulation time
+        :type current_time: float
+        :param failed_links: List of newly failed links
+        :type failed_links: list[tuple[Any, Any]]
+        """
+        affected_requests = self._find_affected_requests(failed_links)
+
+        if not affected_requests:
+            logger.debug("No allocated requests affected by failures")
+            return
+
+        logger.info(
+            f"Found {len(affected_requests)} allocated request(s) "
+            f"affected by failures at t={current_time:.2f}"
+        )
+
+        switchover_count = 0
+        dropped_count = 0
+
+        for request_info in affected_requests:
+            request_id = request_info["request_id"]
+
+            # Check if this is a protected request with viable backup
+            if (
+                request_info.get("is_protected")
+                and request_info.get("active_path") == "primary"
+            ):
+                backup_path = request_info.get("backup_path")
+
+                if self._is_path_feasible(backup_path):
+                    # Backup path is viable - switch to it
+                    self._switch_to_backup(request_info, current_time)
+                    switchover_count += 1
+                    logger.info(
+                        f"Request {request_id}: Switched to backup path "
+                        f"{backup_path} at t={current_time:.2f}"
+                    )
+                else:
+                    # Backup path also failed - release and count as blocked
+                    self._release_failed_request(request_info, current_time)
+                    dropped_count += 1
+                    logger.warning(
+                        f"Request {request_id}: Both primary and backup paths "
+                        f"failed, releasing at t={current_time:.2f}"
+                    )
+            else:
+                # Unprotected request or already on backup - release
+                self._release_failed_request(request_info, current_time)
+                dropped_count += 1
+                logger.warning(
+                    f"Request {request_id}: Unprotected request failed, "
+                    f"releasing at t={current_time:.2f}"
+                )
+
+        logger.info(
+            f"Failure impact: {switchover_count} switchovers, "
+            f"{dropped_count} dropped requests"
+        )
+
+    def _switch_to_backup(
+        self, request_info: dict[str, Any], current_time: float
+    ) -> None:
+        """
+        Switch a protected request to its backup path.
+
+        :param request_info: Request information dictionary
+        :type request_info: dict[str, Any]
+        :param current_time: Current simulation time
+        :type current_time: float
+        """
+        request_id = request_info["request_id"]
+
+        # Update active path in tracking
+        self.sdn.sdn_props.allocated_requests[request_id]["active_path"] = "backup"
+
+        # Update switchover metrics in SDN props
+        self.sdn.sdn_props.switchover_count += 1
+        self.sdn.sdn_props.last_switchover_time = current_time
+
+        # Update stats metrics
+        self.stats_obj.stats_props.protection_switchovers += 1
+        self.stats_obj.stats_props.switchover_times.append(current_time)
+
+        # Note: Spectrum is already allocated on backup path, no need to reallocate
+
+    def _release_failed_request(
+        self, request_info: dict[str, Any], current_time: float
+    ) -> None:
+        """
+        Release a request that failed due to link failures.
+
+        This releases the spectrum and counts the request as blocked.
+
+        :param request_info: Request information dictionary
+        :type request_info: dict[str, Any]
+        :param current_time: Current simulation time
+        :type current_time: float
+        """
+        request_id = request_info["request_id"]
+
+        # Set up SDN props for release
+        self.sdn.sdn_props.request_id = request_id
+        self.sdn.sdn_props.path_list = request_info.get("primary_path")
+        self.sdn.sdn_props.arrive = request_info.get("arrive_time")
+        self.sdn.sdn_props.depart = current_time  # Use failure time as depart time
+        self.sdn.sdn_props.bandwidth = request_info.get("bandwidth")
+
+        # Release spectrum on primary path
+        self.sdn.release()
+
+        # If protected, also release backup path
+        if request_info.get("is_protected"):
+            if request_info.get("backup_path"):
+                self.sdn.sdn_props.path_list = request_info.get("backup_path")
+                self.sdn.release()
+            # Count as protection failure (both paths failed)
+            self.stats_obj.stats_props.protection_failures += 1
+
+        # Count as blocked due to failure
+        # CRITICAL: Increment the main blocked_requests counter for blocking probability
+        self.stats_obj.blocked_requests += 1
+
+        # Also update failure-specific counters
+        self.stats_obj.stats_props.block_reasons_dict["failure"] = (
+            self.stats_obj.stats_props.block_reasons_dict.get("failure", 0) + 1
+        )
+        self.stats_obj.stats_props.failure_induced_blocks += 1
+
+        # Update bit rate blocking if bandwidth info available
+        if request_info.get("bandwidth") is not None:
+            bandwidth = int(request_info["bandwidth"])
+            self.stats_obj.bit_rate_blocked += bandwidth
+            # Note: bit_rate_request was already incremented when request was initially allocated
+
     def _process_all_requests(self) -> None:
         """Process all requests for the current iteration."""
         request_number = 1
         if self.reqs_dict is None:
             return
         for current_time in self.reqs_dict:
+            # Check for scheduled failure activations at this time
+            if self.failure_manager:
+                activated_links = self.failure_manager.activate_failures(current_time)
+                if activated_links:
+                    logger.info(
+                        f"Activated {len(activated_links)} failed link(s) at time "
+                        f"{current_time:.2f}: {activated_links}"
+                    )
+                    # Handle already-allocated requests affected by failures
+                    self._handle_failure_impact(current_time, activated_links)
+
+            # Check for scheduled repairs at this time
+            if self.failure_manager:
+                repaired_links = self.failure_manager.repair_failures(current_time)
+                if repaired_links:
+                    logger.info(
+                        f"Repaired {len(repaired_links)} link(s) at time "
+                        f"{current_time:.2f}: {repaired_links}"
+                    )
+
             self.handle_request(
                 current_time=current_time, request_number=request_number
             )
@@ -865,6 +1366,11 @@ class SimulationEngine:
             ),
             log_queue=context["log_queue"],
         )
+
+        # Close dataset logger if enabled
+        if self.dataset_logger:
+            self.dataset_logger.close()
+            logger.info("Dataset logger closed")
 
     def _validate_grooming_config(self) -> None:
         """

@@ -25,7 +25,10 @@ def add_topology_args(parser: argparse.ArgumentParser) -> None:
         help="Network topology name (e.g., 'NSFNet', 'USbackbone60')",
     )
     network_group.add_argument(
-        "--cores_per_link", type=int, default=1, help="Number of cores per fiber link"
+        "--cores_per_link",
+        type=int,
+        default=None,
+        help="Number of cores per fiber link",
     )
     network_group.add_argument(
         "--bw_per_slot",
@@ -96,31 +99,31 @@ def add_spectrum_bands_args(parser: argparse.ArgumentParser) -> None:
     spectrum_group.add_argument(
         "--c_band",
         type=int,
-        default=96,
+        default=None,
         help="Number of spectral slots in C-band (1530-1565nm)",
     )
     spectrum_group.add_argument(
         "--l_band",
         type=int,
-        default=0,
+        default=None,
         help="Number of spectral slots in L-band (1565-1625nm)",
     )
     spectrum_group.add_argument(
         "--s_band",
         type=int,
-        default=0,
+        default=None,
         help="Number of spectral slots in S-band (1460-1530nm)",
     )
     spectrum_group.add_argument(
         "--e_band",
         type=int,
-        default=0,
+        default=None,
         help="Number of spectral slots in E-band (1360-1460nm)",
     )
     spectrum_group.add_argument(
         "--o_band",
         type=int,
-        default=0,
+        default=None,
         help="Number of spectral slots in O-band (1260-1360nm)",
     )
 

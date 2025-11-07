@@ -43,6 +43,10 @@ class RoutingProps:
         self.weights_list: list[float] = []
         self.path_index_list: list[int] = []
 
+        # Backup paths for 1+1 protection (corresponds to paths_matrix)
+        self.backup_paths_matrix: list[list[int] | None] = []
+        self.backup_modulation_formats_matrix: list[list[str]] = []
+
         # Physical layer parameters
         self.input_power: float = DEFAULT_INPUT_POWER
         self.frequency_spacing: float = DEFAULT_FREQUENCY_SPACING
@@ -79,6 +83,7 @@ class SpectrumProps:
         """Initialize spectrum properties with default values."""
         # Path and resource requirements
         self.path_list: list[int] | None = None
+        self.backup_path: list[int] | None = None  # For 1+1 protection
         self.slots_needed: int | None = None
         self.modulation: str | None = None
 
@@ -372,6 +377,30 @@ class SDNProps:
             "lightpath_id_list",
         ]
 
+        # 1+1 Protection attributes
+        # Note: Protection is enabled via route_method=1plus1_protection
+        self.primary_path: list[int] | None = None
+        self.backup_path: list[int] | None = None
+        self.is_protected: bool = False
+        self.active_path: str = "primary"  # "primary" or "backup"
+
+        # Protection timing (milliseconds)
+        self.protection_switchover_ms: float = 50.0
+        self.restoration_latency_ms: float = 100.0
+
+        # Switchover tracking
+        self.switchover_count: int = 0
+        self.last_switchover_time: float | None = None
+
+        # Recovery tracking
+        self.recovery_start_time: float | None = None
+        self.recovery_end_time: float | None = None
+        self.recovery_type: str | None = None  # "protection" or "restoration"
+
+        # Request tracking for failure handling
+        # Maps request_id -> request info dict with paths, protection status, etc.
+        self.allocated_requests: dict[int, dict[str, Any]] = {}
+
     def update_params(
         self,
         key: str,
@@ -514,6 +543,7 @@ class StatsProps:
             "distance": None,
             "congestion": None,
             "xt_threshold": None,
+            "failure": None,
         }
 
         # Per-simulation metrics
@@ -532,6 +562,12 @@ class StatsProps:
         self.modulation_list: list[str] = []
         self.bandwidth_list: list[float] = []
         self.path_index_list: list[int] = []
+
+        # Protection and survivability metrics
+        self.protection_switchovers: int = 0  # Number of successful switchovers
+        self.protection_failures: int = 0  # Requests where both paths failed
+        self.failure_induced_blocks: int = 0  # Total requests dropped due to failures
+        self.switchover_times: list[float] = []  # Times when switchovers occurred
 
     def __repr__(self) -> str:
         """

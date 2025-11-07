@@ -103,6 +103,6 @@ def add_plot_format_args(
     parser.add_argument(
         "--plot_format",
         type=str,
-        default="png",
+        default=None,
         help="Output format for generated plots",
     )

@@ -49,6 +49,20 @@ class SimStats:
         self.topology: Any = None
         self.iteration: int | None = None
 
+        # Recovery time tracking (Phase 3 - Survivability)
+        self.recovery_times_ms: list[float] = []
+        self.failure_window_bp: list[float] = []
+        self.recovery_events: list[dict[str, Any]] = []
+
+        # Failure window parameters
+        self.failure_window_size = engine_props.get("recovery_timing_settings", {}).get(
+            "failure_window_size", 1000
+        )
+
+        # Fragmentation and decision time metrics
+        self.fragmentation_scores: list[float] = []
+        self.decision_times_ms: list[float] = []
+
     @staticmethod
     def _get_snapshot_info(
         network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
@@ -631,3 +645,383 @@ class SimStats:
             blocking_stats=blocking_stats,
             base_file_path=base_fp,
         )
+
+    # Phase 3 - Survivability: Recovery Time Tracking Methods
+
+    def record_recovery_event(
+        self,
+        failure_time: float,
+        recovery_time: float,
+        affected_requests: int,
+        recovery_type: str,  # "protection" or "restoration"
+    ) -> None:
+        """
+        Record a recovery event.
+
+        :param failure_time: Time of failure occurrence
+        :type failure_time: float
+        :param recovery_time: Time when recovery completed
+        :type recovery_time: float
+        :param affected_requests: Number of affected requests
+        :type affected_requests: int
+        :param recovery_type: Type of recovery mechanism
+        :type recovery_type: str
+
+        Example:
+            >>> stats.record_recovery_event(
+            ...     failure_time=100.0,
+            ...     recovery_time=100.05,  # 50ms later
+            ...     affected_requests=5,
+            ...     recovery_type='protection'
+            ... )
+        """
+        # Compute recovery duration and round to avoid floating-point precision errors
+        recovery_duration_ms = round((recovery_time - failure_time) * 1000, 10)
+
+        # Store recovery time
+        self.recovery_times_ms.append(recovery_duration_ms)
+
+        # Store full event details
+        event = {
+            "failure_time": failure_time,
+            "recovery_time": recovery_time,
+            "recovery_duration_ms": recovery_duration_ms,
+            "affected_requests": affected_requests,
+            "recovery_type": recovery_type,
+        }
+        self.recovery_events.append(event)
+
+        logger.info(
+            "Recovery event: type=%s, duration=%.2fms, affected=%d",
+            recovery_type,
+            recovery_duration_ms,
+            affected_requests,
+        )
+
+    def get_recovery_stats(self) -> dict[str, float]:
+        """
+        Get recovery time statistics.
+
+        Computes mean, P95, and max recovery times across all
+        recovery events.
+
+        :return: Dict with recovery statistics
+        :rtype: dict[str, float]
+
+        Example:
+            >>> stats = get_recovery_stats()
+            >>> print(stats)
+            {
+                'mean_ms': 52.3,
+                'p95_ms': 98.5,
+                'max_ms': 105.2,
+                'count': 12
+            }
+        """
+        if not self.recovery_times_ms:
+            return {"mean_ms": 0.0, "p95_ms": 0.0, "max_ms": 0.0, "count": 0}
+
+        return {
+            "mean_ms": float(np.mean(self.recovery_times_ms)),
+            "p95_ms": float(np.percentile(self.recovery_times_ms, 95)),
+            "max_ms": float(np.max(self.recovery_times_ms)),
+            "count": len(self.recovery_times_ms),
+        }
+
+    def compute_failure_window_bp(
+        self,
+        failure_time: float,
+        arrival_times: list[float],
+        blocked_requests: list[int],
+    ) -> float:
+        """
+        Compute blocking probability within failure window.
+
+        Measures BP in the window [failure_time, failure_time + window_size]
+        where window_size is specified in number of arrivals.
+
+        :param failure_time: Failure occurrence time
+        :type failure_time: float
+        :param arrival_times: List of all request arrival times
+        :type arrival_times: list[float]
+        :param blocked_requests: List of blocked request indices
+        :type blocked_requests: list[int]
+        :return: BP within failure window
+        :rtype: float
+
+        Example:
+            >>> bp = stats.compute_failure_window_bp(
+            ...     failure_time=100.0,
+            ...     arrival_times=all_arrivals,
+            ...     blocked_requests=blocked_ids
+            ... )
+            >>> print(f"Failure window BP: {bp:.4f}")
+            0.0823
+        """
+        # Find arrival index at failure time
+        failure_index = np.searchsorted(arrival_times, failure_time)
+
+        # Define window [failure_index, failure_index + window_size]
+        window_end = min(failure_index + self.failure_window_size, len(arrival_times))
+
+        # Count arrivals and blocks in window
+        window_arrivals = window_end - failure_index
+        window_blocks = sum(
+            1 for req_id in blocked_requests if failure_index <= req_id < window_end
+        )
+
+        if window_arrivals == 0:
+            return 0.0
+
+        bp_value: float = float(window_blocks) / float(window_arrivals)
+        self.failure_window_bp.append(bp_value)
+
+        logger.info(
+            "Failure window BP: %.4f (%d/%d blocked)",
+            bp_value,
+            window_blocks,
+            window_arrivals,
+        )
+
+        return bp_value
+
+    def get_failure_window_stats(self) -> dict[str, float]:
+        """
+        Get failure window BP statistics.
+
+        :return: Dict with mean and P95 failure window BP
+        :rtype: dict[str, float]
+        """
+        if not self.failure_window_bp:
+            return {"mean": 0.0, "p95": 0.0, "count": 0}
+
+        return {
+            "mean": float(np.mean(self.failure_window_bp)),
+            "p95": float(np.percentile(self.failure_window_bp, 95)),
+            "count": len(self.failure_window_bp),
+        }
+
+    def get_recovery_csv_row(self) -> dict[str, Any]:
+        """
+        Export recovery statistics as CSV row.
+
+        :return: Dict with all recovery metric values
+        :rtype: dict[str, Any]
+        """
+        recovery_stats = self.get_recovery_stats()
+        window_stats = self.get_failure_window_stats()
+
+        return {
+            # Recovery metrics
+            "recovery_time_mean_ms": recovery_stats["mean_ms"],
+            "recovery_time_p95_ms": recovery_stats["p95_ms"],
+            "recovery_time_max_ms": recovery_stats["max_ms"],
+            "recovery_event_count": recovery_stats["count"],
+            # Failure window metrics
+            "bp_window_fail_mean": window_stats["mean"],
+            "bp_window_fail_p95": window_stats["p95"],
+            "failure_window_count": window_stats["count"],
+        }
+
+    # Fragmentation and Decision Time Methods
+
+    def compute_fragmentation_proxy(
+        self,
+        path: list[int],
+        network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
+    ) -> float:
+        """
+        Compute fragmentation proxy for a path.
+
+        Fragmentation = 1 - (largest_contiguous_block / total_free_slots)
+
+        Higher values indicate more fragmentation.
+
+        :param path: Path node list
+        :type path: list[int]
+        :param network_spectrum_dict: Spectrum state
+        :type network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]]
+        :return: Fragmentation score [0, 1]
+        :rtype: float
+
+        Example:
+            >>> frag = stats.compute_fragmentation_proxy(path, spectrum_dict)
+            >>> print(f"Fragmentation: {frag:.3f}")
+            0.347
+        """
+        total_free = 0
+        largest_contig = 0
+
+        for i in range(len(path) - 1):
+            link = (path[i], path[i + 1])
+            reverse_link = (path[i + 1], path[i])
+
+            link_spectrum = network_spectrum_dict.get(
+                link, network_spectrum_dict.get(reverse_link, {})
+            )
+
+            if not link_spectrum:
+                continue
+
+            # Get cores matrix
+            cores_matrix = link_spectrum.get("cores_matrix", [])
+            if not cores_matrix:
+                continue
+
+            # Process first core (for simplicity)
+            slots = cores_matrix[0] if len(cores_matrix) > 0 else []
+
+            # Find free blocks
+            free_blocks = self._find_free_blocks(slots)
+
+            if free_blocks:
+                link_total = sum(block[1] - block[0] for block in free_blocks)
+                link_largest = max(block[1] - block[0] for block in free_blocks)
+
+                total_free += link_total
+                largest_contig = max(largest_contig, link_largest)
+
+        if total_free == 0:
+            return 1.0  # Fully fragmented
+
+        frag = 1.0 - (largest_contig / total_free)
+        return frag
+
+    def _find_free_blocks(self, slots: np.ndarray) -> list[tuple[int, int]]:
+        """
+        Find contiguous free blocks in spectrum.
+
+        :param slots: Spectrum slot array
+        :type slots: np.ndarray
+        :return: List of (start, end) tuples for free blocks
+        :rtype: list[tuple[int, int]]
+        """
+        blocks = []
+        start = None
+
+        for i, slot in enumerate(slots):
+            if slot == 0:  # Free
+                if start is None:
+                    start = i
+            else:  # Occupied
+                if start is not None:
+                    blocks.append((start, i))
+                    start = None
+
+        if start is not None:
+            blocks.append((start, len(slots)))
+
+        return blocks
+
+    def record_fragmentation(
+        self,
+        path: list[int],
+        network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
+    ) -> None:
+        """
+        Record fragmentation score for a path.
+
+        :param path: Path node list
+        :type path: list[int]
+        :param network_spectrum_dict: Spectrum state
+        :type network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]]
+        """
+        frag_score = self.compute_fragmentation_proxy(path, network_spectrum_dict)
+        self.fragmentation_scores.append(frag_score)
+
+    def record_decision_time(self, decision_time_ms: float) -> None:
+        """
+        Record policy decision time.
+
+        :param decision_time_ms: Decision time in milliseconds
+        :type decision_time_ms: float
+        """
+        self.decision_times_ms.append(decision_time_ms)
+
+    def get_fragmentation_stats(self) -> dict[str, float]:
+        """
+        Get fragmentation statistics.
+
+        :return: Dict with mean and P95 fragmentation scores
+        :rtype: dict[str, float]
+        """
+        if not self.fragmentation_scores:
+            return {"mean": 0.0, "p95": 0.0, "count": 0}
+
+        return {
+            "mean": float(np.mean(self.fragmentation_scores)),
+            "p95": float(np.percentile(self.fragmentation_scores, 95)),
+            "count": len(self.fragmentation_scores),
+        }
+
+    def get_decision_time_stats(self) -> dict[str, float]:
+        """
+        Get decision time statistics.
+
+        :return: Dict with mean and P95 decision times
+        :rtype: dict[str, float]
+        """
+        if not self.decision_times_ms:
+            return {"mean": 0.0, "p95": 0.0, "count": 0}
+
+        return {
+            "mean": float(np.mean(self.decision_times_ms)),
+            "p95": float(np.percentile(self.decision_times_ms, 95)),
+            "count": len(self.decision_times_ms),
+        }
+
+    def to_csv_row(self) -> dict[str, Any]:
+        """
+        Export all statistics as CSV row.
+
+        Includes standard metrics plus survivability-specific metrics.
+
+        :return: Dict with all metric values
+        :rtype: dict[str, Any]
+        """
+        # Get survivability stats
+        recovery_stats = self.get_recovery_stats()
+        window_stats = self.get_failure_window_stats()
+        frag_stats = self.get_fragmentation_stats()
+        decision_stats = self.get_decision_time_stats()
+
+        # Get failure settings
+        failure_settings = self.engine_props.get("failure_settings", {})
+        routing_settings = self.engine_props.get("routing_settings", {})
+        rl_settings = self.engine_props.get("offline_rl_settings", {})
+
+        return {
+            # Experiment parameters
+            "topology": self.engine_props.get("network", "unknown"),
+            "load": self.engine_props.get("erlang", 0),
+            "failure_type": failure_settings.get("failure_type", "none"),
+            "k_paths": routing_settings.get("k_paths", 1),
+            "policy": rl_settings.get("policy_type", "ksp_ff"),
+            "seed": self.engine_props.get("seed", 0),
+            # Standard metrics
+            "bp_overall": self.block_mean if self.block_mean is not None else 0.0,
+            "bp_variance": self.block_variance
+            if self.block_variance is not None
+            else 0.0,
+            "bp_ci_percent": (
+                self.block_ci_percent if self.block_ci_percent is not None else 0.0
+            ),
+            "bit_rate_bp": (
+                self.bit_rate_block_mean
+                if self.bit_rate_block_mean is not None
+                else 0.0
+            ),
+            # Failure window metrics
+            "bp_window_fail_mean": window_stats["mean"],
+            "bp_window_fail_p95": window_stats["p95"],
+            # Recovery metrics
+            "recovery_time_mean_ms": recovery_stats["mean_ms"],
+            "recovery_time_p95_ms": recovery_stats["p95_ms"],
+            "recovery_time_max_ms": recovery_stats["max_ms"],
+            # Fragmentation
+            "frag_proxy_mean": frag_stats["mean"],
+            "frag_proxy_p95": frag_stats["p95"],
+            # Decision times
+            "decision_time_mean_ms": decision_stats["mean"],
+            "decision_time_p95_ms": decision_stats["p95"],
+        }

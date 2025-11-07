@@ -1,4 +1,5 @@
-"""fusion.cli: Command-line interface entry points and argument parsing.
+"""
+fusion.cli: Command-line interface entry points and argument parsing.
 
 Provides a clean CLI architecture following the FUSION refactor plan with
 modern Python practices, comprehensive error handling, and maintainable code

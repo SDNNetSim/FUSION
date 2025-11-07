@@ -74,9 +74,12 @@ class KShortestPath(AbstractRoutingAlgorithm):
         except Exception:
             return False
 
-    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find a route from source to destination for the given request.
+
+        Results are stored in route_props (paths_matrix, modulation_formats_matrix,
+        weights_list). Consumers should access route_props.paths_matrix for paths.
 
         :param source: Source node identifier.
         :type source: Any
@@ -84,8 +87,6 @@ class KShortestPath(AbstractRoutingAlgorithm):
         :type destination: Any
         :param request: Request object containing traffic demand details.
         :type request: Any
-        :return: Shortest available path, or None if no path found.
-        :rtype: list[Any] | None
         """
         # Clear previous route properties
         self.route_props.paths_matrix = []
@@ -97,9 +98,9 @@ class KShortestPath(AbstractRoutingAlgorithm):
         paths = self.get_paths(source, destination, k=self.k_paths_count)
 
         if not paths:
-            return None
+            return
 
-        # Populate route_props for legacy compatibility
+        # Populate route_props
         topology = self.engine_props.get(
             "topology", getattr(self.sdn_props, "topology", None)
         )
@@ -151,15 +152,10 @@ class KShortestPath(AbstractRoutingAlgorithm):
             self.route_props.modulation_formats_matrix.append(modulation_formats_list)
             self.route_props.weights_list.append(path_length)
 
-        # Return the first (shortest) path
-        selected_path = paths[0] if paths else None
-
-        # Update metrics
-        if selected_path:
+        # Update metrics based on shortest path
+        if paths:
             self._path_count += 1
-            self._total_hops += len(selected_path) - 1
-
-        return selected_path
+            self._total_hops += len(paths[0]) - 1
 
     def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
         """
