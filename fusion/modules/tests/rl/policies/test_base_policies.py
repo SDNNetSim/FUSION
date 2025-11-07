@@ -1,0 +1,98 @@
+"""
+Tests for baseline policies (KSP-FF and 1+1).
+"""
+
+from fusion.modules.rl.policies import (
+    KSPFFPolicy,
+    OnePlusOnePolicy,
+)
+
+
+class TestKSPFFPolicy:
+    """Test cases for KSP-FF policy."""
+
+    def test_ksp_ff_selects_first_feasible(self) -> None:
+        """Test that KSP-FF always picks first unmasked path."""
+        policy = KSPFFPolicy()
+
+        state: dict[str, int] = {}  # Not used by KSP-FF
+        action_mask = [False, False, True, True]
+
+        selected = policy.select_path(state, action_mask)
+        assert selected == 2  # First feasible
+
+    def test_ksp_ff_returns_negative_one_when_all_masked(self) -> None:
+        """Test that -1 returned when all paths masked."""
+        policy = KSPFFPolicy()
+
+        state: dict[str, int] = {}
+        action_mask = [False, False, False, False]
+
+        selected = policy.select_path(state, action_mask)
+        assert selected == -1
+
+    def test_ksp_ff_selects_first_when_all_feasible(self) -> None:
+        """Test that first path selected when all are feasible."""
+        policy = KSPFFPolicy()
+
+        state: dict[str, int] = {}
+        action_mask = [True, True, True, True]
+
+        selected = policy.select_path(state, action_mask)
+        assert selected == 0
+
+    def test_ksp_ff_get_name(self) -> None:
+        """Test that policy name is correct."""
+        policy = KSPFFPolicy()
+        assert policy.get_name() == "KSPFFPolicy"
+
+
+class TestOnePlusOnePolicy:
+    """Test cases for 1+1 policy."""
+
+    def test_one_plus_one_selects_primary_when_feasible(self) -> None:
+        """Test that primary path selected when feasible."""
+        policy = OnePlusOnePolicy()
+
+        state: dict[str, int] = {}
+        action_mask = [True, True]
+
+        selected = policy.select_path(state, action_mask)
+        assert selected == 0  # Primary
+
+    def test_one_plus_one_selects_backup_when_primary_failed(self) -> None:
+        """Test that backup selected when primary fails."""
+        policy = OnePlusOnePolicy()
+
+        state: dict[str, int] = {}
+        action_mask = [False, True]
+
+        selected = policy.select_path(state, action_mask)
+        assert selected == 1  # Backup
+
+    def test_one_plus_one_returns_negative_one_when_both_masked(self) -> None:
+        """Test that -1 returned when both paths masked."""
+        policy = OnePlusOnePolicy()
+
+        state: dict[str, int] = {}
+        action_mask = [False, False]
+
+        selected = policy.select_path(state, action_mask)
+        assert selected == -1
+
+    def test_one_plus_one_prefers_primary(self) -> None:
+        """Test that primary always preferred over backup."""
+        policy = OnePlusOnePolicy()
+
+        state: dict[str, int] = {}
+        action_mask = [True, True]
+
+        # Run multiple times to ensure consistency
+        for _ in range(10):
+            selected = policy.select_path(state, action_mask)
+            assert selected == 0
+
+    def test_one_plus_one_get_name(self) -> None:
+        """Test that policy name is correct."""
+        policy = OnePlusOnePolicy()
+        assert policy.get_name() == "OnePlusOnePolicy"
