@@ -33,7 +33,8 @@ logger = get_logger(__name__)
 
 
 def normalize_config_path(config_path: str) -> str:
-    """Normalize the config file path.
+    """
+    Normalize the config file path.
 
     :param config_path: Path to config file (relative or absolute)
     :type config_path: str
@@ -55,7 +56,8 @@ def normalize_config_path(config_path: str) -> str:
 
 
 def setup_config_from_cli(args: Any) -> dict[str, Any]:
-    """Set up configuration from command line input.
+    """
+    Set up configuration from command line input.
 
     :param args: Parsed command line arguments
     :type args: Any
@@ -132,10 +134,25 @@ def _process_optional_options(
     args_dict: dict[str, Any],
 ) -> None:
     for category, options_dict in optional_dict.items():
+        # Check if section exists in config
+        if not config.has_section(category):
+            # If section doesn't exist, skip it entirely
+            # This allows .get() calls with defaults to work correctly
+            continue
+
+        # Determine if this section should be nested or flattened
+        # general_settings gets flattened (backward compatibility)
+        # Other sections get nested (new architecture)
+        flatten_section = category == "general_settings"
+
+        if not flatten_section:
+            # Initialize nested dict for this section if needed
+            if category not in config_dict[DEFAULT_THREAD_NAME]:
+                config_dict[DEFAULT_THREAD_NAME][category] = {}
+
         for option, type_obj in options_dict.items():
-            if option not in config[category]:
-                config_dict[DEFAULT_THREAD_NAME][option] = None
-            else:
+            # Only process options that are present in the config
+            if option in config[category]:
                 try:
                     config_value = config[category][option]
                     converted_value = safe_type_convert(config_value, type_obj, option)
@@ -146,9 +163,16 @@ def _process_optional_options(
 
                     # Apply CLI override
                     cli_value = args_dict.get(option)
-                    config_dict[DEFAULT_THREAD_NAME][option] = apply_cli_override(
+                    final_value = apply_cli_override(
                         converted_value, cli_value, type_obj
                     )
+
+                    # Store in appropriate location (flat or nested)
+                    if flatten_section:
+                        config_dict[DEFAULT_THREAD_NAME][option] = final_value
+                    else:
+                        config_dict[DEFAULT_THREAD_NAME][category][option] = final_value
+
                 except ConfigTypeConversionError:
                     # Skip options that can't be converted - they're optional
                     continue
@@ -158,8 +182,8 @@ def _validate_config_structure(config: ConfigParser) -> None:
     if not config.has_section(REQUIRED_SECTION):
         create_directory(CONFIG_DIR_PATH)
         raise ConfigParseError(
-            f"Missing '{REQUIRED_SECTION}' section in config file. "
-            "Ensure config.ini exists in ini/run_ini/."
+            f"Missing required '{REQUIRED_SECTION}' section in config file. "
+            "Ensure your config file exists and contains all required options."
         )
 
 
@@ -187,7 +211,8 @@ def _resolve_config_path(config_path: str | None) -> str:
 def load_config(
     config_path: str | None, args_dict: dict[str, Any] | None = None
 ) -> dict[str, Any]:
-    """Load an existing config from a config file.
+    """
+    Load an existing config from a config file.
 
     This function handles the complete configuration loading process:
     1. Resolves and validates the config file path
@@ -224,6 +249,10 @@ def load_config(
             args_dict,
         )
         _process_optional_options(config, config_dict, OPTIONAL_OPTIONS_DICT, args_dict)
+
+        # Mirror routing_settings and spectrum_settings to root for backward
+        # compatibility
+        _mirror_nested_to_flat(config_dict[DEFAULT_THREAD_NAME])
 
         thread_sections = [s for s in config.sections() if s != REQUIRED_SECTION]
         if thread_sections:
@@ -307,8 +336,45 @@ def _find_category(
     return None
 
 
+def _mirror_nested_to_flat(config: dict[str, Any]) -> None:
+    """
+    Mirror values from nested sections to root level for backward compatibility.
+
+    This allows newer code to use nested structure like
+    engine_props["routing_settings"]["k_paths"] while older code can still
+    use flat structure (engine_props["k_paths"]).
+
+    :param config: Configuration dictionary to update in-place
+    :type config: dict[str, Any]
+    """
+    # Define which nested sections should be mirrored to root
+    # All optional sections that aren't general_settings should be mirrored
+    mirror_sections = [
+        "routing_settings",
+        "spectrum_settings",
+        "ml_settings",
+        "rl_settings",
+        "failure_settings",
+        "protection_settings",
+        "offline_rl_settings",
+        "dataset_logging_settings",
+        "recovery_timing_settings",
+        "reporting_settings",
+    ]
+
+    for section in mirror_sections:
+        if section in config and isinstance(config[section], dict):
+            # Copy all values from nested section to root level
+            for key, value in config[section].items():
+                # Only mirror if not already present at root level
+                # (root level takes precedence for backward compat)
+                if key not in config:
+                    config[key] = value
+
+
 def load_and_validate_config(args: Any) -> dict[str, Any]:
-    """Load and validate configuration from CLI arguments.
+    """
+    Load and validate configuration from CLI arguments.
 
     :param args: Parsed command line arguments
     :type args: Any
@@ -320,7 +386,8 @@ def load_and_validate_config(args: Any) -> dict[str, Any]:
 
 
 class ConfigManager:
-    """Centralized configuration management for FUSION simulator.
+    """
+    Centralized configuration management for FUSION simulator.
 
     Provides a unified interface for accessing configuration from both
     INI files and command-line arguments, with proper validation and
@@ -328,7 +395,8 @@ class ConfigManager:
     """
 
     def __init__(self, config_dict: dict[str, Any], args: Any) -> None:
-        """Initialize ConfigManager with configuration dictionary and arguments.
+        """
+        Initialize ConfigManager with configuration dictionary and arguments.
 
         :param config_dict: Parsed configuration dictionary
         :type config_dict: Dict[str, Any]
@@ -347,7 +415,8 @@ class ConfigManager:
 
     @classmethod
     def from_args(cls, args: Any) -> "ConfigManager":
-        """Load arguments from command line input.
+        """
+        Load arguments from command line input.
 
         :param args: Parsed command line arguments
         :type args: Any
@@ -368,7 +437,8 @@ class ConfigManager:
     def from_file(
         cls, config_path: str, args_dict: dict[str, Any] | None = None
     ) -> "ConfigManager":
-        """Create ConfigManager from config file path.
+        """
+        Create ConfigManager from config file path.
 
         :param config_path: Path to configuration file
         :type config_path: str
@@ -383,7 +453,8 @@ class ConfigManager:
         return cls(config_dict, args)
 
     def as_dict(self) -> dict[str, Any]:
-        """Get config as dict.
+        """
+        Get config as dict.
 
         :return: Configuration dictionary
         :rtype: Dict[str, Any]
@@ -391,7 +462,8 @@ class ConfigManager:
         return self._config
 
     def get(self, thread: str = DEFAULT_THREAD_NAME) -> dict[str, Any]:
-        """Return a single config thread.
+        """
+        Return a single config thread.
 
         :param thread: Thread identifier, defaults to 's1'
         :type thread: str
@@ -404,7 +476,8 @@ class ConfigManager:
     def get_value(
         self, key: str, thread: str = DEFAULT_THREAD_NAME, default: Any = None
     ) -> Any:
-        """Get a specific configuration value.
+        """
+        Get a specific configuration value.
 
         :param key: Configuration key
         :type key: str
@@ -419,7 +492,8 @@ class ConfigManager:
         return thread_config.get(key, default)
 
     def has_thread(self, thread: str) -> bool:
-        """Check if a thread exists in configuration.
+        """
+        Check if a thread exists in configuration.
 
         :param thread: Thread identifier
         :type thread: str
@@ -429,7 +503,8 @@ class ConfigManager:
         return thread in self._config
 
     def get_threads(self) -> list[str]:
-        """Get list of all configured threads.
+        """
+        Get list of all configured threads.
 
         :return: List of thread identifiers
         :rtype: List[str]
@@ -437,7 +512,8 @@ class ConfigManager:
         return list(self._config.keys())
 
     def get_args(self) -> Any:
-        """Get args.
+        """
+        Get args.
 
         :return: Command line arguments
         :rtype: Any

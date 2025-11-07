@@ -138,20 +138,21 @@ class TestXTAwareRouting:
                 xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.2
             ),
         ):
-            path = xt_aware.route("A", "C", request=None)
+            xt_aware.route("A", "C", request=None)
 
         # Assert
-        assert path is not None
+        assert len(xt_aware.route_props.paths_matrix) > 0
+        path = xt_aware.route_props.paths_matrix[0]
         assert path[0] == "A"
         assert path[-1] == "C"
 
     def test_route_with_no_path_returns_none(self, xt_aware: Any) -> None:
-        """Test that route returns None when no path exists."""
+        """Test that route sets empty paths_matrix when no path exists."""
         # Act
-        path = xt_aware.route("A", "Z", request=None)
+        xt_aware.route("A", "Z", request=None)
 
         # Assert
-        assert path is None
+        assert len(xt_aware.route_props.paths_matrix) == 0
 
     def test_route_updates_metrics(self, xt_aware: Any) -> None:
         """Test that route method updates internal metrics."""

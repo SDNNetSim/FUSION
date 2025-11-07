@@ -1,4 +1,4 @@
-name: 🐛 Bug Report
+name: Bug Report
 description: Report a bug to help us improve FUSION simulator
 title: "[BUG] "
 labels: ["bug", "needs-triage"]
@@ -8,8 +8,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 🐛 Bug Report
-        
+        ## Bug Report
+
         Thank you for taking the time to report a bug! Please fill out the form below with as much detail as possible.
 
   - type: textarea

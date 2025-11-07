@@ -21,7 +21,8 @@ AGENT_TYPE_CHOICES: list[str] = ["rl", "ml"]
 
 
 def build_main_argument_parser() -> ArgumentParser:
-    """Build the main CLI argument parser with all subcommands configured.
+    """
+    Build the main CLI argument parser with all subcommands configured.
 
     Creates the primary argument parser that handles all CLI interactions
     for the FUSION simulator, including subcommands for different operations
@@ -34,7 +35,8 @@ def build_main_argument_parser() -> ArgumentParser:
 
 
 def create_training_argument_parser() -> Namespace:
-    """Create and parse arguments for training simulations (RL or ML).
+    """
+    Create and parse arguments for training simulations (RL or ML).
 
     Builds a specialized argument parser configured for machine learning
     and reinforcement learning training workflows. Includes all necessary
@@ -57,7 +59,8 @@ def create_training_argument_parser() -> Namespace:
 
 
 def create_gui_argument_parser() -> Namespace:
-    """Create and parse arguments for GUI-based simulator interface.
+    """
+    Create and parse arguments for GUI-based simulator interface.
 
     Builds a specialized argument parser configured for graphical user
     interface operations. Includes GUI-specific settings, debug options,
@@ -75,7 +78,8 @@ def create_gui_argument_parser() -> Namespace:
 
 # Backward compatibility functions
 def build_parser() -> ArgumentParser:
-    """Legacy function name for building main argument parser.
+    """
+    Legacy function name for building main argument parser.
 
     :return: Configured main parser
     :rtype: ArgumentParser
@@ -85,7 +89,8 @@ def build_parser() -> ArgumentParser:
 
 
 def get_train_args() -> Namespace:
-    """Legacy function name for creating training argument parser.
+    """
+    Legacy function name for creating training argument parser.
 
     :return: Parsed arguments for training
     :rtype: Namespace
@@ -95,7 +100,8 @@ def get_train_args() -> Namespace:
 
 
 def get_gui_args() -> Namespace:
-    """Legacy function name for creating GUI argument parser.
+    """
+    Legacy function name for creating GUI argument parser.
 
     :return: Parsed arguments for GUI
     :rtype: Namespace
