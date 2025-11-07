@@ -162,10 +162,8 @@ class TestAbstractRoutingAlgorithmInitialization:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return None
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1
@@ -213,10 +211,8 @@ class TestConcreteRoutingAlgorithmImplementation:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return [source, destination]
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                self.route_props.paths_matrix = [[source, destination]]
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1
@@ -283,10 +279,8 @@ class TestAbstractRoutingAlgorithmReset:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return None
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1
@@ -369,10 +363,8 @@ class TestAbstractRoutingAlgorithmEdgeCases:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return None
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1
@@ -388,10 +380,10 @@ class TestAbstractRoutingAlgorithmEdgeCases:
         algo = ConcreteRoutingAlgorithm({}, Mock())
 
         # Act
-        result = algo.route(1, 2, Mock())
+        algo.route(1, 2, Mock())
 
-        # Assert
-        assert result is None
+        # Assert - route() returns None, just verify it doesn't raise
+        assert True
 
     def test_get_paths_can_return_empty_list(self) -> None:
         """Test get_paths method can return empty list when no paths exist."""
@@ -409,10 +401,8 @@ class TestAbstractRoutingAlgorithmEdgeCases:
             def validate_environment(self, topology: Any) -> bool:
                 return True
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return None
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1
@@ -449,10 +439,8 @@ class TestAbstractRoutingAlgorithmEdgeCases:
             def validate_environment(self, topology: Any) -> bool:
                 return False
 
-            def route(
-                self, source: Any, destination: Any, request: Any
-            ) -> list[Any] | None:
-                return None
+            def route(self, source: Any, destination: Any, request: Any) -> None:
+                pass
 
             def get_paths(
                 self, source: Any, destination: Any, k: int = 1

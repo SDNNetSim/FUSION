@@ -36,7 +36,7 @@ config = setup_config_from_cli(args)
 ### Entry Point Usage
 ```bash
 # Run simulation
-python -m fusion.cli.run_sim --config_path config.ini
+python -m fusion.cli.run_sim run_sim --config_path config.ini
 
 # Train an agent
 python -m fusion.cli.run_train --agent_type rl --config_path config.ini

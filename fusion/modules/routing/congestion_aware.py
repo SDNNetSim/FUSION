@@ -82,12 +82,15 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             and hasattr(self.sdn_props, "network_spectrum_dict")
         )
 
-    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find a route from source to destination using congestion-aware k-shortest.
 
         For the first k shortest-length candidate paths we compute:
             score = alpha * mean_path_congestion + (1 - alpha) * (path_len / max_len)
+
+        Results are stored in route_props (paths_matrix, modulation_formats_matrix,
+        weights_list). Consumers should access route_props.paths_matrix for paths.
 
         :param source: Source node identifier.
         :type source: Any
@@ -95,8 +98,6 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         :type destination: Any
         :param request: Request object containing traffic demand details.
         :type request: Any
-        :return: Best path based on congestion score, or None if no path found.
-        :rtype: list[Any] | None
         """
         # Store source/destination in sdn_props for compatibility
         self.sdn_props.source = source
@@ -115,10 +116,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
                 best_path = self.route_props.paths_matrix[0]
                 congestion = self._calculate_path_congestion(best_path)
                 self._total_congestion += float(congestion)
-                return list(best_path) if isinstance(best_path, (list, tuple)) else None
-            return None
         except (nx.NetworkXNoPath, nx.NodeNotFound):
-            return None
+            pass
 
     def _find_congestion_aware_paths(self) -> None:
         """
@@ -402,8 +401,10 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         """
         # For congestion-aware routing, we typically return the single best path
         # But we can extend this to return multiple paths ordered by congestion
-        best_path = self.route(source, destination, None)
-        return [best_path] if best_path else []
+        self.route(source, destination, None)
+        if self.route_props.paths_matrix:
+            return [self.route_props.paths_matrix[0]]
+        return []
 
     def update_weights(self, topology: Any) -> None:
         """

@@ -1,14 +1,14 @@
-# 🚀 FUSION Development Quick Start Guide
+# FUSION Development Quick Start Guide
 
 **New to FUSION development?** This guide gets you productive in 5 minutes!
 
-## ✅ Prerequisites
+## Prerequisites
 
 - Python 3.11+ installed
 - Git repository cloned
 - Virtual environment activated
 
-## 🎯 1-Minute Setup
+## 1-Minute Setup
 
 Choose your installation method:
 
@@ -35,7 +35,7 @@ pip install -e .[dev]
 
 The automated installer handles PyTorch Geometric issues automatically!
 
-## 📝 Daily Development Workflow
+## Daily Development Workflow
 
 ### Step 1: Format Your Code
 ```bash
@@ -65,7 +65,7 @@ make check-all
 ```
 **What it does**: Combines format + lint + test + analysis
 
-## 🔧 Essential Commands
+## Essential Commands
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
@@ -76,18 +76,18 @@ make check-all
 | `make analyze` | Generate reports | Weekly/monthly analysis |
 | `make profile` | Performance analysis | When optimizing |
 
-## 🚨 Pre-commit Hooks (Automatic)
+## Pre-commit Hooks (Automatic)
 
 Pre-commit hooks run automatically when you commit:
 
-- ✅ **Code formatting and linting** (ruff)
-- ✅ **Type checking** (mypy)
-- ✅ **Security scanning** (bandit)
-- ✅ **Commit message validation** (conventional commits)
+- Code formatting and linting (ruff)
+- Type checking (mypy)
+- Security scanning (bandit)
+- Commit message validation (conventional commits)
 
 **If hooks fail**: Fix the issues and commit again.
 
-## 📊 Understanding Tool Output
+## Understanding Tool Output
 
 ### Ruff Output
 ```
@@ -107,7 +107,7 @@ TOTAL coverage: 85%
 ```
 **Goal**: Maintain >80% coverage
 
-## 📁 Generated Reports
+## Generated Reports
 
 After running `make check-all`, check these locations:
 
@@ -122,7 +122,7 @@ open reports/diagrams/architecture_overview.png
 snakeviz reports/profiling/profile.prof
 ```
 
-## 🚫 Common Issues & Solutions
+## Common Issues & Solutions
 
 ### "Command not found"
 ```bash
@@ -149,7 +149,7 @@ line_to_ignore  # type: ignore  # Ignore if needed
 pytest tests/test_specific.py -v
 ```
 
-## ⚡ Pro Tips
+## Pro Tips
 
 1. **Use `make format` frequently** - Prevents style issues
 2. **Run `make lint-new` while coding** - Catches issues early
@@ -157,7 +157,7 @@ pytest tests/test_specific.py -v
 4. **Use `make check-all` before PRs** - Comprehensive validation
 5. **Review reports in `reports/`** - Understand code quality trends
 
-## 🆘 Getting Help
+## Getting Help
 
 - **Makefile commands**: `make help`
 - **Detailed workflow**: See `DEVELOPMENT_WORKFLOW.md`
@@ -165,7 +165,7 @@ pytest tests/test_specific.py -v
 - **Reports guide**: See `reports/README.md`
 - **Tool docs**: Each tool has official documentation online
 
-## 🎓 Learning More
+## Learning More
 
 ### Advanced Usage
 - **Custom analysis**: Edit scripts in `scripts/`
@@ -180,6 +180,6 @@ pytest tests/test_specific.py -v
 
 ---
 
-**🎉 You're ready to contribute high-quality code to FUSION!**
+**You're ready to contribute high-quality code to FUSION!**
 
 Run `make check-all` and ensure everything passes before your first PR.

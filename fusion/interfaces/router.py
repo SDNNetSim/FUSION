@@ -5,7 +5,7 @@ Abstract base class for routing algorithms in FUSION.
 from abc import ABC, abstractmethod
 from typing import Any
 
-from fusion.core.properties import SDNProps
+from fusion.core.properties import RoutingProps, SDNProps
 
 
 class AbstractRoutingAlgorithm(ABC):
@@ -14,6 +14,10 @@ class AbstractRoutingAlgorithm(ABC):
 
     This interface defines the contract that all routing algorithms must follow
     to ensure compatibility with the FUSION simulation framework.
+
+    Most routing algorithms store results in route_props (paths_matrix,
+    modulation_formats_matrix, weights_list). Special algorithms like
+    OnePlusOneProtection may use alternative storage mechanisms.
     """
 
     def __init__(self, engine_props: dict, sdn_props: SDNProps):
@@ -27,6 +31,9 @@ class AbstractRoutingAlgorithm(ABC):
         """
         self.engine_props = engine_props
         self.sdn_props = sdn_props
+        # Most routing algorithms use route_props to store results
+        # Subclasses can override this if they have different storage needs
+        self.route_props: RoutingProps = RoutingProps()
 
     @property
     @abstractmethod
@@ -61,9 +68,13 @@ class AbstractRoutingAlgorithm(ABC):
         """
 
     @abstractmethod
-    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find a route from source to destination for the given request.
+
+        Results are stored in the algorithm's route_props attribute (paths_matrix,
+        modulation_formats_matrix, weights_list). This method does not return a value;
+        consumers should access route_props.paths_matrix to retrieve computed paths.
 
         :param source: Source node identifier
         :type source: Any
@@ -71,9 +82,6 @@ class AbstractRoutingAlgorithm(ABC):
         :type destination: Any
         :param request: Request object containing traffic demand details
         :type request: Any
-        :return: List representing the path from source to destination,
-                or None if no path found
-        :rtype: Optional[List[Any]]
         """
 
     @abstractmethod

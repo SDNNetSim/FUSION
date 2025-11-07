@@ -55,7 +55,7 @@ class SimStats:
         self.recovery_events: list[dict[str, Any]] = []
 
         # Failure window parameters
-        self.failure_window_size = engine_props.get("recovery_timing", {}).get(
+        self.failure_window_size = engine_props.get("recovery_timing_settings", {}).get(
             "failure_window_size", 1000
         )
 

@@ -24,6 +24,11 @@
 
 ## Medium Priority
 
+### Machine Learning Support
+- **Issue**: ML functionality is not currently supported and needs verification/implementation
+- **Impact**: Limits ability to use machine learning algorithms for network optimization and decision-making
+- **Solution**: Audit codebase for ML integration points, implement ML module support, verify compatibility with existing systems
+
 ### Multi-Core Configuration Support
 - **Issue**: Cross-talk and SNR calculations limited to 7-core configurations
 - **Files**: `spectrum_assignment.py:216`, `snr_measurements.py:12,213`

@@ -177,8 +177,10 @@ class TestTrainMain:
         # Verify print was called with user-friendly messages
         assert mock_print.called
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("❌" in call for call in print_calls)
-        assert any("💡" in call for call in print_calls)
+        assert any(
+            "dependencies" in call.lower() or "module" in call.lower()
+            for call in print_calls
+        )
 
     @patch("fusion.cli.run_train.run_training_pipeline")
     @patch("fusion.cli.run_train.create_training_argument_parser")
@@ -193,5 +195,4 @@ class TestTrainMain:
         train_main()
 
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("🛑" in call for call in print_calls)
-        assert any("💾" in call for call in print_calls)
+        assert any("interrupted" in call.lower() for call in print_calls)

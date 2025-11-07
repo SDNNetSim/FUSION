@@ -137,20 +137,21 @@ class TestCongestionAwareRouting:
                 return_value=(0.5, 0.3),
             ),
         ):
-            path = congestion_aware.route("A", "C", request=None)
+            congestion_aware.route("A", "C", request=None)
 
         # Assert
-        assert path is not None
+        assert len(congestion_aware.route_props.paths_matrix) > 0
+        path = congestion_aware.route_props.paths_matrix[0]
         assert path[0] == "A"
         assert path[-1] == "C"
 
     def test_route_with_no_path_returns_none(self, congestion_aware: Any) -> None:
-        """Test that route returns None when no path exists."""
+        """Test that route sets empty paths_matrix when no path exists."""
         # Act
-        path = congestion_aware.route("A", "Z", request=None)
+        congestion_aware.route("A", "Z", request=None)
 
         # Assert
-        assert path is None
+        assert len(congestion_aware.route_props.paths_matrix) == 0
 
     def test_route_updates_metrics(self, congestion_aware: Any) -> None:
         """Test that route method updates internal metrics."""
