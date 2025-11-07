@@ -64,7 +64,8 @@ class Engine:
                 "bandwidth_list": sdn_props.bandwidth_list,
                 "lightpath_id_list": sdn_props.lightpath_id_list,
                 "lightpath_bandwidth_list": sdn_props.lightpath_bandwidth_list,
-                "snr_cost": sdn_props.xt_list,
+                "snr_cost": sdn_props.snr_list if self.engine_props["snr_type"] != 'None' else None,
+                "xt_cost": sdn_props.xt_list if self.engine_props["snr_type"] != 'None' else None,
                 "was_partially_routed": sdn_props.was_partially_routed,
                 "was_partially_groomed": sdn_props.was_partially_groomed,
                 "remaining_bw": sdn_props.remaining_bw,
@@ -85,25 +86,27 @@ class Engine:
                     "end_slot":sdn_props.end_slot_list[lp_cnt],
                     "band": sdn_props.band_list[lp_cnt],
                     "mod_format": sdn_props.modulation_list[lp_cnt],
-                    "snr_cost": sdn_props.xt_list[lp_cnt],
+                    "snr_cost": sdn_props.snr_list[lp_cnt] if self.engine_props["snr_type"] != 'None' else None,
+                    "xt_cost": sdn_props.xt_list[lp_cnt] if self.engine_props["snr_type"] != "xt_calculation" else None,
                     "lightpath_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt], # TODO: check
                     "remaining_bandwidth": sdn_props.lightpath_bandwidth_list[lp_cnt] - int(sdn_props.bandwidth_list[lp_cnt]),
                     'requests_dict':{self.reqs_dict[curr_time]['req_id']: int(sdn_props.bandwidth_list[lp_cnt])},
                     'time_bw_usage':{sdn_props.arrive: (int(sdn_props.bandwidth_list[lp_cnt])/sdn_props.lightpath_bandwidth_list[lp_cnt])*100},
                     "path_weight": sdn_props.path_weight,
                 }
-            for node in [sdn_props.source, sdn_props.destination]:
+            if self.engine_props["transponder_usage_per_node"]:
+                for node in [sdn_props.source, sdn_props.destination]:
 
-                if node not in self.transponder_usage_dict:
-                    raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
-                
-                required_transponders = sdn_props.num_trans
-                available = self.transponder_usage_dict[node]["available_transponder"]
-                if available >= required_transponders:
-                    self.transponder_usage_dict[node]["available_transponder"] -= required_transponders
-                else:
-                    self.transponder_usage_dict[node]["available_transponder"] = 0
-                    self.transponder_usage_dict[node]["total_transponder"] += required_transponders - available
+                    if node not in self.transponder_usage_dict:
+                        raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
+                    
+                    required_transponders = sdn_props.num_trans
+                    available = self.transponder_usage_dict[node]["available_transponder"]
+                    if available >= required_transponders:
+                        self.transponder_usage_dict[node]["available_transponder"] -= required_transponders
+                    else:
+                        self.transponder_usage_dict[node]["available_transponder"] = 0
+                        self.transponder_usage_dict[node]["total_transponder"] += required_transponders - available
 
 
     def update_release_param(self, curr_time: float):
@@ -121,6 +124,8 @@ class Engine:
             elif props_key == 'band':
                 props_key = 'band_list'
             elif props_key == 'snr_cost':
+                props_key = 'snr_list'
+            elif props_key == 'xt_cost':
                 props_key = 'xt_list'
             else:
                 props_key = req_key

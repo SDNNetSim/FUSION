@@ -320,8 +320,12 @@ class SnrMeasurements:
         else:
             cross_talk = 10 * math.log10(cross_talk)
             resp = cross_talk < self.engine_props['requested_xt'][self.spectrum_props.modulation]
+        if self.spectrum_props.slicing_flag:
+            bw_resp = None
+        else:
+            bw_resp = int(self.sdn_props.bandwidth)
 
-        return resp, cross_talk
+        return resp, cross_talk, bw_resp
 
     def find_num_adjacent_cores(self):
         """
@@ -379,8 +383,9 @@ class SnrMeasurements:
 
         # Determine response
         resp = compute_response(mod_format, self.snr_props, self.spectrum_props, self.sdn_props)
-
-        return resp, snr_val
+        bandwidth_val = self.snr_props.bw_mapping_dict[self.spectrum_props.modulation] if resp else None
+        
+        return resp, snr_val, bandwidth_val
 
     def check_snr_ext_slicing(self, path_index):
         """
@@ -783,20 +788,20 @@ class SnrMeasurements:
         """
         self.num_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         if self.engine_props['snr_type'] == "snr_calc_nli":
-            snr_check, xt_cost = self.check_snr()
+            snr_check, snr_val = self.check_snr()
         elif self.engine_props['snr_type'] == "xt_calculation":
-            snr_check, xt_cost = self.check_xt()
+            snr_check, snr_val, bw_resp = self.check_xt()
         elif self.engine_props['snr_type'] == "gsnr":
             if self.engine_props['band_list'] == ['c']:
-                snr_check, xt_cost, bw_resp = self.check_gsnr()
+                snr_check, snr_val, bw_resp = self.check_gsnr()
             elif self.engine_props['band_list'] == ['c', 'l']:
-                snr_check, xt_cost, bw_resp = self.check_gsnr_mb()
+                snr_check, snr_val, bw_resp = self.check_gsnr_mb()
         elif self.engine_props['snr_type'] == "snr_e2e_external_resources":
-            snr_check, xt_cost, bw_resp = self.check_snr_ext(path_index)
+            snr_check, snr_val, bw_resp = self.check_snr_ext(path_index)
         else:
             raise NotImplementedError(f"Unexpected snr_type flag got: {self.engine_props['snr_type']}")
 
-        return snr_check, xt_cost, bw_resp
+        return snr_check, snr_val, bw_resp
 
     def handle_snr_dynamic_slicing(self, path_index):
         """

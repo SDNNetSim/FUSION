@@ -23,6 +23,7 @@ class StatsProps:
         self.lengths_list = list()  # Average lengths per simulation
         self.route_times_list = list()  # Average route times per simulation
         self.xt_list = list()  # Average cross-talk per simulation
+        self.snr_list = list()  # Average snr per simulation
         self.bands_list = list()  # Tracks the band allocated in a simulation
         self.start_slot_list = list() # Tracks the end slot allocated in a simulation
         self.end_slot_list = list() # # Tracks the end slot allocated in a simulation

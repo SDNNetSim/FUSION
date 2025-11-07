@@ -285,15 +285,23 @@ class SpectrumAssignment:
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation
                 if self.engine_props['snr_type'] != 'None' and self.engine_props['snr_type'] is not None:
-                    snr_check, xt_cost, lp_bw = self.snr_obj.handle_snr(self.sdn_props.path_index)
-                    self.spectrum_props.xt_cost = xt_cost
+                    snr_check, snr_val, lp_bw = self.snr_obj.handle_snr(self.sdn_props.path_index)
+                    self.spectrum_props.snr_val = snr_val
                     if not snr_check:
                         self.spectrum_props.is_free = False
                         self.sdn_props.block_reason = 'xt_threshold'
                         continue
-                    self.spectrum_props.lightpath_bandwidth = lp_bw
+                    if slice_bandwidth:
+                        self.spectrum_props.lightpath_bandwidth = int(slice_bandwidth)
+                    else:
+                        self.spectrum_props.lightpath_bandwidth = int(self.sdn_props.bandwidth)
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
+                else:
+                    if slice_bandwidth:
+                        self.spectrum_props.lightpath_bandwidth = int(slice_bandwidth)
+                    else:
+                        self.spectrum_props.lightpath_bandwidth = int(self.sdn_props.bandwidth)
 
                 return
 
@@ -318,7 +326,7 @@ class SpectrumAssignment:
                 mod_format, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
                 if mod_format:
                     self.spectrum_props.modulation = mod_format
-                    self.spectrum_props.xt_cost = snr_val
+                    self.spectrum_props.snr_val = snr_val
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
                     return mod_format, bandwidth
@@ -341,7 +349,7 @@ class SpectrumAssignment:
                     resp, bandwidth, snr_val = self.snr_obj.handle_snr_dynamic_slicing(self.sdn_props.path_index)
                     if not resp:
                         continue
-                    self.spectrum_props.xt_cost = snr_val
+                    self.spectrum_props.snr_val = snr_val
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
                     return mod, bandwidth

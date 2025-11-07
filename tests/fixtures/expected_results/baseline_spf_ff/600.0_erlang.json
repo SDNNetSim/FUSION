@@ -3,9 +3,9 @@
         "0": {
             "snapshots_dict": {},
             "cores_dict": {
-                "0": 106,
-                "1": 30,
-                "2": 0
+                "0": 440,
+                "1": 115,
+                "2": 22
             },
             "weights_dict": {
                 "25": {
@@ -50,8 +50,8 @@
                 },
                 "100": {
                     "QPSK": {
-                        "mean": 2904.3478260869565,
-                        "std": 463.3639642892136,
+                        "mean": 3119.318181818182,
+                        "std": 451.37452413595634,
                         "min": 2400.0,
                         "max": 3800.0
                     },
@@ -70,10 +70,10 @@
                 },
                 "200": {
                     "QPSK": {
-                        "mean": 2408.0,
-                        "std": 728.1520482738515,
+                        "mean": 2033.9805825242718,
+                        "std": 383.62394731377043,
                         "min": 1300.0,
-                        "max": 3800.0
+                        "max": 2700.0
                     },
                     "16-QAM": {
                         "mean": 882.3529411764706,
@@ -90,10 +90,10 @@
                 },
                 "400": {
                     "QPSK": {
-                        "mean": 2046.8085106382978,
-                        "std": 888.0489273217432,
+                        "mean": 941.6666666666666,
+                        "std": 284.31203515386636,
                         "min": 600.0,
-                        "max": 3800.0
+                        "max": 1300.0
                     },
                     "16-QAM": {
                         "mean": 300.0,
@@ -130,6 +130,28 @@
                             "max": 3800.0
                         }
                     },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.88,
+                            "std": 0.99,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.88,
+                            "std": 0.99,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
                     "c": 291
                 },
                 "16-QAM": {
@@ -147,6 +169,28 @@
                             "max": 3800.0
                         }
                     },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.34,
+                            "std": 0.95,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.34,
+                            "std": 0.95,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
                     "c": 157
                 },
                 "64-QAM": {
@@ -163,6 +207,28 @@
                             "min": 100.0,
                             "max": 3600.0
                         }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 1.72,
+                            "std": 0.97,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 1.72,
+                            "std": 0.97,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
                     },
                     "c": 129
                 },
@@ -187,12 +253,139 @@
                     "64-QAM": 1
                 }
             },
+            "demand_realization_ratio": {
+                "overall": [],
+                "25": [],
+                "50": [],
+                "100": [],
+                "200": [],
+                "400": []
+            },
             "block_bw_dict": {
                 "25": 0,
                 "50": 0,
                 "100": 0,
                 "200": 0,
                 "400": 0
+            },
+            "frag_dict": {},
+            "lp_bw_utilization_dict": {
+                "25": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "50": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "100": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "200": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "400": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "overall": {
+                    "mean": 100.0,
+                    "std": 0.0,
+                    "min": 100.0,
+                    "max": 100.0
+                }
             },
             "block_reasons_dict": {
                 "distance": 0,
@@ -202,7 +395,12 @@
             "link_usage_dict": {
                 "0-1": {
                     "usage_count": 36,
-                    "throughput": 18.439511284600915,
+                    "throughput": 59.45722526158854,
+                    "link_num": 4
+                },
+                "1-0": {
+                    "usage_count": 36,
+                    "throughput": 59.45722526158854,
                     "link_num": 4
                 },
                 "0-2": {
@@ -210,34 +408,69 @@
                     "throughput": 0.9377908223093925,
                     "link_num": 7
                 },
+                "2-0": {
+                    "usage_count": 12,
+                    "throughput": 0.9377908223093925,
+                    "link_num": 7
+                },
                 "0-7": {
                     "usage_count": 44,
-                    "throughput": 12.00130159193731,
+                    "throughput": 33.08328229373859,
+                    "link_num": 24
+                },
+                "7-0": {
+                    "usage_count": 44,
+                    "throughput": 33.08328229373859,
                     "link_num": 24
                 },
                 "1-3": {
                     "usage_count": 124,
-                    "throughput": 29.43514407785779,
+                    "throughput": 79.29778983703031,
+                    "link_num": 10
+                },
+                "3-1": {
+                    "usage_count": 124,
+                    "throughput": 79.29778983703031,
                     "link_num": 10
                 },
                 "1-2": {
                     "usage_count": 67,
-                    "throughput": 9.367445689598462,
+                    "throughput": 18.212377471783338,
+                    "link_num": 8
+                },
+                "2-1": {
+                    "usage_count": 67,
+                    "throughput": 18.212377471783338,
                     "link_num": 8
                 },
                 "2-5": {
                     "usage_count": 49,
-                    "throughput": 7.066686258982577,
+                    "throughput": 9.566438952447943,
+                    "link_num": 16
+                },
+                "5-2": {
+                    "usage_count": 49,
+                    "throughput": 9.566438952447943,
                     "link_num": 16
                 },
                 "3-4": {
                     "usage_count": 106,
-                    "throughput": 46.71917184007388,
+                    "throughput": 104.22025005531383,
                     "link_num": 13
+                },
+                "4-3": {
+                    "usage_count": 106,
+                    "throughput": 104.22025005531383,
+                    "link_num": 13
+                },
+                "3-10": {
+                    "usage_count": 89,
+                    "throughput": 22.10796455528481,
+                    "link_num": 33
                 },
                 "10-3": {
                     "usage_count": 89,
-                    "throughput": 17.765308780659065,
+                    "throughput": 22.10796455528481,
                     "link_num": 33
                 },
                 "4-5": {
@@ -245,10 +478,25 @@
                     "throughput": 5.230348698462832,
                     "link_num": 17
                 },
+                "5-4": {
+                    "usage_count": 17,
+                    "throughput": 5.230348698462832,
+                    "link_num": 17
+                },
                 "4-6": {
                     "usage_count": 132,
-                    "throughput": 58.104501941087115,
+                    "throughput": 115.60558015632708,
                     "link_num": 20
+                },
+                "6-4": {
+                    "usage_count": 132,
+                    "throughput": 115.60558015632708,
+                    "link_num": 20
+                },
+                "5-13": {
+                    "usage_count": 24,
+                    "throughput": 1.2418499576463815,
+                    "link_num": 42
                 },
                 "13-5": {
                     "usage_count": 24,
@@ -257,7 +505,12 @@
                 },
                 "5-9": {
                     "usage_count": 53,
-                    "throughput": 20.67999129639007,
+                    "throughput": 27.219786113180206,
+                    "link_num": 30
+                },
+                "9-5": {
+                    "usage_count": 53,
+                    "throughput": 27.219786113180206,
                     "link_num": 30
                 },
                 "6-9": {
@@ -265,39 +518,79 @@
                     "throughput": 2.2187990265509643,
                     "link_num": 31
                 },
+                "9-6": {
+                    "usage_count": 24,
+                    "throughput": 2.2187990265509643,
+                    "link_num": 31
+                },
                 "6-7": {
                     "usage_count": 109,
-                    "throughput": 47.42720567921173,
+                    "throughput": 73.01349585850309,
+                    "link_num": 23
+                },
+                "7-6": {
+                    "usage_count": 109,
+                    "throughput": 73.01349585850309,
                     "link_num": 23
                 },
                 "7-8": {
                     "usage_count": 154,
-                    "throughput": 38.25777076405467,
+                    "throughput": 75.52519384313904,
+                    "link_num": 26
+                },
+                "8-7": {
+                    "usage_count": 154,
+                    "throughput": 75.52519384313904,
                     "link_num": 26
                 },
                 "8-9": {
                     "usage_count": 69,
-                    "throughput": 19.00596788276865,
+                    "throughput": 38.180579074668856,
                     "link_num": 32
+                },
+                "9-8": {
+                    "usage_count": 69,
+                    "throughput": 38.180579074668856,
+                    "link_num": 32
+                },
+                "8-12": {
+                    "usage_count": 60,
+                    "throughput": 1.8211904971317587,
+                    "link_num": 40
                 },
                 "12-8": {
                     "usage_count": 60,
                     "throughput": 1.8211904971317587,
                     "link_num": 40
                 },
+                "8-11": {
+                    "usage_count": 75,
+                    "throughput": 62.711291987706055,
+                    "link_num": 37
+                },
                 "11-8": {
                     "usage_count": 75,
-                    "throughput": 41.93186071712291,
+                    "throughput": 62.711291987706055,
                     "link_num": 37
                 },
                 "10-12": {
                     "usage_count": 33,
-                    "throughput": 10.031793181104213,
+                    "throughput": 12.612033609789119,
+                    "link_num": 39
+                },
+                "12-10": {
+                    "usage_count": 33,
+                    "throughput": 12.612033609789119,
                     "link_num": 39
                 },
                 "10-11": {
                     "usage_count": 57,
-                    "throughput": 14.618151788301702,
+                    "throughput": 19.656548427818365,
+                    "link_num": 36
+                },
+                "11-10": {
+                    "usage_count": 57,
+                    "throughput": 19.656548427818365,
                     "link_num": 36
                 },
                 "11-13": {
@@ -305,9 +598,19 @@
                     "throughput": 0,
                     "link_num": 43
                 },
+                "13-11": {
+                    "usage_count": 13,
+                    "throughput": 0,
+                    "link_num": 43
+                },
                 "12-13": {
                     "usage_count": 80,
-                    "throughput": 13.506311996983978,
+                    "throughput": 16.086552425668884,
+                    "link_num": 44
+                },
+                "13-12": {
+                    "usage_count": 80,
+                    "throughput": 16.086552425668884,
                     "link_num": 44
                 }
             },
@@ -332,6 +635,9 @@
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
+            "snr_mean": null,
+            "snr_min": null,
+            "snr_max": null,
             "bands_list": [],
             "start_slot_list": [],
             "end_slot_list": [],
@@ -339,14 +645,1323 @@
             "bandwidth_list": [],
             "path_index_list": [
                 500
+            ],
+            "sim_lp_utilization_list": [
+                100.0
+            ]
+        },
+        "1": {
+            "snapshots_dict": {},
+            "cores_dict": {
+                "0": 444,
+                "1": 143,
+                "2": 0
+            },
+            "weights_dict": {
+                "25": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 3800.0,
+                        "std": 0.0,
+                        "min": 3800.0,
+                        "max": 3800.0
+                    },
+                    "64-QAM": {
+                        "mean": 2067.3469387755104,
+                        "std": 956.6407709406129,
+                        "min": 100.0,
+                        "max": 3600.0
+                    }
+                },
+                "50": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 2854.5454545454545,
+                        "std": 582.872421495699,
+                        "min": 1900.0,
+                        "max": 3800.0
+                    },
+                    "64-QAM": {
+                        "mean": 1125.0,
+                        "std": 481.9904717054216,
+                        "min": 100.0,
+                        "max": 1800.0
+                    }
+                },
+                "100": {
+                    "QPSK": {
+                        "mean": 3160.0,
+                        "std": 464.7801830507633,
+                        "min": 2400.0,
+                        "max": 3800.0
+                    },
+                    "16-QAM": {
+                        "mean": 1600.0,
+                        "std": 394.87456986481914,
+                        "min": 1000.0,
+                        "max": 2300.0
+                    },
+                    "64-QAM": {
+                        "mean": 552.3809523809524,
+                        "std": 220.02006032499017,
+                        "min": 100.0,
+                        "max": 900.0
+                    }
+                },
+                "200": {
+                    "QPSK": {
+                        "mean": 2003.8461538461538,
+                        "std": 418.4861939755842,
+                        "min": 1200.0,
+                        "max": 2700.0
+                    },
+                    "16-QAM": {
+                        "mean": 747.6190476190476,
+                        "std": 160.0595127415038,
+                        "min": 600.0,
+                        "max": 1000.0
+                    },
+                    "64-QAM": {
+                        "mean": 300.0,
+                        "std": 122.47448713915891,
+                        "min": 100.0,
+                        "max": 400.0
+                    }
+                },
+                "400": {
+                    "QPSK": {
+                        "mean": 1014.2857142857143,
+                        "std": 203.54009783964295,
+                        "min": 700.0,
+                        "max": 1300.0
+                    },
+                    "16-QAM": {
+                        "mean": 350.0,
+                        "std": 70.71067811865476,
+                        "min": 300.0,
+                        "max": 400.0
+                    },
+                    "64-QAM": {
+                        "mean": 100.0,
+                        "std": 0.0,
+                        "min": 100.0,
+                        "max": 100.0
+                    }
+                }
+            },
+            "mods_used_dict": {
+                "25": {
+                    "QPSK": 0,
+                    "16-QAM": 1,
+                    "64-QAM": 49
+                },
+                "QPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 2717.97,
+                            "std": 750.19,
+                            "min": 700.0,
+                            "max": 3800.0
+                        },
+                        "c": {
+                            "mean": 2717.97,
+                            "std": 750.19,
+                            "min": 700.0,
+                            "max": 3800.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.87,
+                            "std": 1.04,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.87,
+                            "std": 1.04,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 306
+                },
+                "16-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 1660.65,
+                            "std": 728.68,
+                            "min": 300.0,
+                            "max": 3800.0
+                        },
+                        "c": {
+                            "mean": 1660.65,
+                            "std": 728.68,
+                            "min": 300.0,
+                            "max": 3800.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.33,
+                            "std": 0.99,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.33,
+                            "std": 0.99,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 155
+                },
+                "64-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 1251.59,
+                            "std": 950.85,
+                            "min": 100.0,
+                            "max": 3600.0
+                        },
+                        "c": {
+                            "mean": 1251.59,
+                            "std": 950.85,
+                            "min": 100.0,
+                            "max": 3600.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 1.8,
+                            "std": 0.9,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 1.8,
+                            "std": 0.9,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 126
+                },
+                "50": {
+                    "QPSK": 0,
+                    "16-QAM": 22,
+                    "64-QAM": 28
+                },
+                "100": {
+                    "QPSK": 195,
+                    "16-QAM": 109,
+                    "64-QAM": 42
+                },
+                "200": {
+                    "QPSK": 104,
+                    "16-QAM": 21,
+                    "64-QAM": 5
+                },
+                "400": {
+                    "QPSK": 7,
+                    "16-QAM": 2,
+                    "64-QAM": 2
+                }
+            },
+            "demand_realization_ratio": {
+                "overall": [],
+                "25": [],
+                "50": [],
+                "100": [],
+                "200": [],
+                "400": []
+            },
+            "block_bw_dict": {
+                "25": 0,
+                "50": 0,
+                "100": 0,
+                "200": 0,
+                "400": 0
+            },
+            "frag_dict": {},
+            "lp_bw_utilization_dict": {
+                "25": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "50": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "100": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "200": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "400": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "overall": {
+                    "mean": 100.0,
+                    "std": 0.0,
+                    "min": 100.0,
+                    "max": 100.0
+                }
+            },
+            "block_reasons_dict": {
+                "distance": 0,
+                "congestion": 0,
+                "xt_threshold": 0
+            },
+            "link_usage_dict": {
+                "0-1": {
+                    "usage_count": 23,
+                    "throughput": 4.212856133005402,
+                    "link_num": 4
+                },
+                "1-0": {
+                    "usage_count": 23,
+                    "throughput": 4.212856133005402,
+                    "link_num": 4
+                },
+                "0-2": {
+                    "usage_count": 16,
+                    "throughput": 11.486226895214513,
+                    "link_num": 7
+                },
+                "2-0": {
+                    "usage_count": 16,
+                    "throughput": 11.486226895214513,
+                    "link_num": 7
+                },
+                "0-7": {
+                    "usage_count": 52,
+                    "throughput": 8.475749262212531,
+                    "link_num": 24
+                },
+                "7-0": {
+                    "usage_count": 52,
+                    "throughput": 8.475749262212531,
+                    "link_num": 24
+                },
+                "1-3": {
+                    "usage_count": 129,
+                    "throughput": 83.79854537174948,
+                    "link_num": 10
+                },
+                "3-1": {
+                    "usage_count": 129,
+                    "throughput": 83.79854537174948,
+                    "link_num": 10
+                },
+                "1-2": {
+                    "usage_count": 59,
+                    "throughput": 19.75267246643306,
+                    "link_num": 8
+                },
+                "2-1": {
+                    "usage_count": 59,
+                    "throughput": 19.75267246643306,
+                    "link_num": 8
+                },
+                "2-5": {
+                    "usage_count": 65,
+                    "throughput": 10.783301211538188,
+                    "link_num": 16
+                },
+                "5-2": {
+                    "usage_count": 65,
+                    "throughput": 10.783301211538188,
+                    "link_num": 16
+                },
+                "3-4": {
+                    "usage_count": 108,
+                    "throughput": 38.42768828764296,
+                    "link_num": 13
+                },
+                "4-3": {
+                    "usage_count": 108,
+                    "throughput": 38.42768828764296,
+                    "link_num": 13
+                },
+                "3-10": {
+                    "usage_count": 87,
+                    "throughput": 77.18418526137839,
+                    "link_num": 33
+                },
+                "10-3": {
+                    "usage_count": 87,
+                    "throughput": 77.18418526137839,
+                    "link_num": 33
+                },
+                "4-5": {
+                    "usage_count": 25,
+                    "throughput": 0,
+                    "link_num": 17
+                },
+                "5-4": {
+                    "usage_count": 25,
+                    "throughput": 0,
+                    "link_num": 17
+                },
+                "4-6": {
+                    "usage_count": 136,
+                    "throughput": 35.31865099240134,
+                    "link_num": 20
+                },
+                "6-4": {
+                    "usage_count": 136,
+                    "throughput": 35.31865099240134,
+                    "link_num": 20
+                },
+                "5-13": {
+                    "usage_count": 41,
+                    "throughput": 0.2833502386471375,
+                    "link_num": 42
+                },
+                "13-5": {
+                    "usage_count": 41,
+                    "throughput": 0.2833502386471375,
+                    "link_num": 42
+                },
+                "5-9": {
+                    "usage_count": 44,
+                    "throughput": 17.82135733376053,
+                    "link_num": 30
+                },
+                "9-5": {
+                    "usage_count": 44,
+                    "throughput": 17.82135733376053,
+                    "link_num": 30
+                },
+                "6-9": {
+                    "usage_count": 17,
+                    "throughput": 0.05991443290123792,
+                    "link_num": 31
+                },
+                "9-6": {
+                    "usage_count": 17,
+                    "throughput": 0.05991443290123792,
+                    "link_num": 31
+                },
+                "6-7": {
+                    "usage_count": 103,
+                    "throughput": 27.420503013716985,
+                    "link_num": 23
+                },
+                "7-6": {
+                    "usage_count": 103,
+                    "throughput": 27.420503013716985,
+                    "link_num": 23
+                },
+                "7-8": {
+                    "usage_count": 141,
+                    "throughput": 39.681756849336885,
+                    "link_num": 26
+                },
+                "8-7": {
+                    "usage_count": 141,
+                    "throughput": 39.681756849336885,
+                    "link_num": 26
+                },
+                "8-9": {
+                    "usage_count": 81,
+                    "throughput": 45.15968400380766,
+                    "link_num": 32
+                },
+                "9-8": {
+                    "usage_count": 81,
+                    "throughput": 45.15968400380766,
+                    "link_num": 32
+                },
+                "8-12": {
+                    "usage_count": 64,
+                    "throughput": 31.221678755301273,
+                    "link_num": 40
+                },
+                "12-8": {
+                    "usage_count": 64,
+                    "throughput": 31.221678755301273,
+                    "link_num": 40
+                },
+                "8-11": {
+                    "usage_count": 73,
+                    "throughput": 23.654544122568446,
+                    "link_num": 37
+                },
+                "11-8": {
+                    "usage_count": 73,
+                    "throughput": 23.654544122568446,
+                    "link_num": 37
+                },
+                "10-12": {
+                    "usage_count": 37,
+                    "throughput": 76.7853283337749,
+                    "link_num": 39
+                },
+                "12-10": {
+                    "usage_count": 37,
+                    "throughput": 76.7853283337749,
+                    "link_num": 39
+                },
+                "10-11": {
+                    "usage_count": 75,
+                    "throughput": 23.43720623948044,
+                    "link_num": 36
+                },
+                "11-10": {
+                    "usage_count": 75,
+                    "throughput": 23.43720623948044,
+                    "link_num": 36
+                },
+                "11-13": {
+                    "usage_count": 11,
+                    "throughput": 13.943000306048434,
+                    "link_num": 43
+                },
+                "13-11": {
+                    "usage_count": 11,
+                    "throughput": 13.943000306048434,
+                    "link_num": 43
+                },
+                "12-13": {
+                    "usage_count": 79,
+                    "throughput": 36.94394442872281,
+                    "link_num": 44
+                },
+                "13-12": {
+                    "usage_count": 79,
+                    "throughput": 36.94394442872281,
+                    "link_num": 44
+                }
+            },
+            "sim_block_list": [
+                0.0,
+                0.0
+            ],
+            "sim_br_block_list": [
+                0.0,
+                0.0
+            ],
+            "trans_mean": 1.17,
+            "trans_min": 1.17,
+            "trans_max": 1.17,
+            "hops_mean": 2.41,
+            "hops_min": 1.0,
+            "hops_max": 5.0,
+            "lengths_mean": 1964.2,
+            "lengths_min": 100.0,
+            "lengths_max": 3800.0,
+            "route_times_mean": 0.0,
+            "route_times_min": 0.0,
+            "route_times_max": 0.0,
+            "xt_mean": null,
+            "xt_min": null,
+            "xt_max": null,
+            "snr_mean": null,
+            "snr_min": null,
+            "snr_max": null,
+            "bands_list": [],
+            "start_slot_list": [],
+            "end_slot_list": [],
+            "modulation_list": [],
+            "bandwidth_list": [],
+            "path_index_list": [
+                500
+            ],
+            "sim_lp_utilization_list": [
+                100.0
+            ]
+        },
+        "2": {
+            "snapshots_dict": {},
+            "cores_dict": {
+                "0": 416,
+                "1": 142,
+                "2": 13
+            },
+            "weights_dict": {
+                "25": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": 1866.0,
+                        "std": 784.4431275804278,
+                        "min": 300.0,
+                        "max": 3400.0
+                    }
+                },
+                "50": {
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 2800.0,
+                        "std": 618.5537128270865,
+                        "min": 1900.0,
+                        "max": 3800.0
+                    },
+                    "64-QAM": {
+                        "mean": 1126.923076923077,
+                        "std": 525.0201461336068,
+                        "min": 100.0,
+                        "max": 1800.0
+                    }
+                },
+                "100": {
+                    "QPSK": {
+                        "mean": 3187.1794871794873,
+                        "std": 402.20648664472105,
+                        "min": 2400.0,
+                        "max": 3800.0
+                    },
+                    "16-QAM": {
+                        "mean": 1605.0420168067226,
+                        "std": 377.513887834292,
+                        "min": 1000.0,
+                        "max": 2300.0
+                    },
+                    "64-QAM": {
+                        "mean": 585.1063829787234,
+                        "std": 176.90420326347513,
+                        "min": 100.0,
+                        "max": 800.0
+                    }
+                },
+                "200": {
+                    "QPSK": {
+                        "mean": 2130.769230769231,
+                        "std": 386.4392900175983,
+                        "min": 1400.0,
+                        "max": 2700.0
+                    },
+                    "16-QAM": {
+                        "mean": 881.8181818181819,
+                        "std": 176.30159126409234,
+                        "min": 600.0,
+                        "max": 1100.0
+                    },
+                    "64-QAM": {
+                        "mean": 250.0,
+                        "std": 160.35674514745463,
+                        "min": 100.0,
+                        "max": 400.0
+                    }
+                },
+                "400": {
+                    "QPSK": {
+                        "mean": 871.4285714285714,
+                        "std": 249.39487203589852,
+                        "min": 600.0,
+                        "max": 1300.0
+                    },
+                    "16-QAM": {
+                        "mean": 300.0,
+                        "std": 0.0,
+                        "min": 300.0,
+                        "max": 300.0
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                }
+            },
+            "mods_used_dict": {
+                "25": {
+                    "QPSK": 0,
+                    "16-QAM": 0,
+                    "64-QAM": 50
+                },
+                "QPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 2667.88,
+                            "std": 762.0,
+                            "min": 600.0,
+                            "max": 3800.0
+                        },
+                        "c": {
+                            "mean": 2667.88,
+                            "std": 762.0,
+                            "min": 600.0,
+                            "max": 3800.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.95,
+                            "std": 1.06,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.95,
+                            "std": 1.06,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 274
+                },
+                "16-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 1674.1,
+                            "std": 664.96,
+                            "min": 300.0,
+                            "max": 3800.0
+                        },
+                        "c": {
+                            "mean": 1674.1,
+                            "std": 664.96,
+                            "min": 300.0,
+                            "max": 3800.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.33,
+                            "std": 0.91,
+                            "min": 1.0,
+                            "max": 4.0
+                        },
+                        "c": {
+                            "mean": 2.33,
+                            "std": 0.91,
+                            "min": 1.0,
+                            "max": 4.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 166
+                },
+                "64-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 1161.07,
+                            "std": 812.27,
+                            "min": 100.0,
+                            "max": 3400.0
+                        },
+                        "c": {
+                            "mean": 1161.07,
+                            "std": 812.27,
+                            "min": 100.0,
+                            "max": 3400.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 1.85,
+                            "std": 0.97,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 1.85,
+                            "std": 0.97,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 131
+                },
+                "50": {
+                    "QPSK": 0,
+                    "16-QAM": 24,
+                    "64-QAM": 26
+                },
+                "100": {
+                    "QPSK": 156,
+                    "16-QAM": 119,
+                    "64-QAM": 47
+                },
+                "200": {
+                    "QPSK": 104,
+                    "16-QAM": 22,
+                    "64-QAM": 8
+                },
+                "400": {
+                    "QPSK": 14,
+                    "16-QAM": 1,
+                    "64-QAM": 0
+                }
+            },
+            "demand_realization_ratio": {
+                "overall": [],
+                "25": [],
+                "50": [],
+                "100": [],
+                "200": [],
+                "400": []
+            },
+            "block_bw_dict": {
+                "25": 0,
+                "50": 0,
+                "100": 0,
+                "200": 0,
+                "400": 0
+            },
+            "frag_dict": {},
+            "lp_bw_utilization_dict": {
+                "25": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "50": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "100": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "200": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "400": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "overall": {
+                    "mean": 100.0,
+                    "std": 0.0,
+                    "min": 100.0,
+                    "max": 100.0
+                }
+            },
+            "block_reasons_dict": {
+                "distance": 0,
+                "congestion": 0,
+                "xt_threshold": 0
+            },
+            "link_usage_dict": {
+                "0-1": {
+                    "usage_count": 32,
+                    "throughput": 0,
+                    "link_num": 4
+                },
+                "1-0": {
+                    "usage_count": 32,
+                    "throughput": 0,
+                    "link_num": 4
+                },
+                "0-2": {
+                    "usage_count": 13,
+                    "throughput": 1.7860073288121867,
+                    "link_num": 7
+                },
+                "2-0": {
+                    "usage_count": 13,
+                    "throughput": 1.7860073288121867,
+                    "link_num": 7
+                },
+                "0-7": {
+                    "usage_count": 39,
+                    "throughput": 6.310543603267302,
+                    "link_num": 24
+                },
+                "7-0": {
+                    "usage_count": 39,
+                    "throughput": 6.310543603267302,
+                    "link_num": 24
+                },
+                "1-3": {
+                    "usage_count": 145,
+                    "throughput": 61.01492210526269,
+                    "link_num": 10
+                },
+                "3-1": {
+                    "usage_count": 145,
+                    "throughput": 61.01492210526269,
+                    "link_num": 10
+                },
+                "1-2": {
+                    "usage_count": 43,
+                    "throughput": 44.93394236916039,
+                    "link_num": 8
+                },
+                "2-1": {
+                    "usage_count": 43,
+                    "throughput": 44.93394236916039,
+                    "link_num": 8
+                },
+                "2-5": {
+                    "usage_count": 49,
+                    "throughput": 1.3677895764231478,
+                    "link_num": 16
+                },
+                "5-2": {
+                    "usage_count": 49,
+                    "throughput": 1.3677895764231478,
+                    "link_num": 16
+                },
+                "3-4": {
+                    "usage_count": 113,
+                    "throughput": 64.00224409695537,
+                    "link_num": 13
+                },
+                "4-3": {
+                    "usage_count": 113,
+                    "throughput": 64.00224409695537,
+                    "link_num": 13
+                },
+                "3-10": {
+                    "usage_count": 82,
+                    "throughput": 19.23572607342526,
+                    "link_num": 33
+                },
+                "10-3": {
+                    "usage_count": 82,
+                    "throughput": 19.23572607342526,
+                    "link_num": 33
+                },
+                "4-5": {
+                    "usage_count": 14,
+                    "throughput": 0,
+                    "link_num": 17
+                },
+                "5-4": {
+                    "usage_count": 14,
+                    "throughput": 0,
+                    "link_num": 17
+                },
+                "4-6": {
+                    "usage_count": 124,
+                    "throughput": 95.95112316693525,
+                    "link_num": 20
+                },
+                "6-4": {
+                    "usage_count": 124,
+                    "throughput": 95.95112316693525,
+                    "link_num": 20
+                },
+                "5-13": {
+                    "usage_count": 27,
+                    "throughput": 2.0394762620667533,
+                    "link_num": 42
+                },
+                "13-5": {
+                    "usage_count": 27,
+                    "throughput": 2.0394762620667533,
+                    "link_num": 42
+                },
+                "5-9": {
+                    "usage_count": 57,
+                    "throughput": 51.51710613708457,
+                    "link_num": 30
+                },
+                "9-5": {
+                    "usage_count": 57,
+                    "throughput": 51.51710613708457,
+                    "link_num": 30
+                },
+                "6-9": {
+                    "usage_count": 28,
+                    "throughput": 34.86888501978397,
+                    "link_num": 31
+                },
+                "9-6": {
+                    "usage_count": 28,
+                    "throughput": 34.86888501978397,
+                    "link_num": 31
+                },
+                "6-7": {
+                    "usage_count": 100,
+                    "throughput": 44.854524192447236,
+                    "link_num": 23
+                },
+                "7-6": {
+                    "usage_count": 100,
+                    "throughput": 44.854524192447236,
+                    "link_num": 23
+                },
+                "7-8": {
+                    "usage_count": 148,
+                    "throughput": 87.26102440718965,
+                    "link_num": 26
+                },
+                "8-7": {
+                    "usage_count": 148,
+                    "throughput": 87.26102440718965,
+                    "link_num": 26
+                },
+                "8-9": {
+                    "usage_count": 79,
+                    "throughput": 44.93026708619604,
+                    "link_num": 32
+                },
+                "9-8": {
+                    "usage_count": 79,
+                    "throughput": 44.93026708619604,
+                    "link_num": 32
+                },
+                "8-12": {
+                    "usage_count": 86,
+                    "throughput": 50.45924293419241,
+                    "link_num": 40
+                },
+                "12-8": {
+                    "usage_count": 86,
+                    "throughput": 50.45924293419241,
+                    "link_num": 40
+                },
+                "8-11": {
+                    "usage_count": 71,
+                    "throughput": 8.695060020003242,
+                    "link_num": 37
+                },
+                "11-8": {
+                    "usage_count": 71,
+                    "throughput": 8.695060020003242,
+                    "link_num": 37
+                },
+                "10-12": {
+                    "usage_count": 34,
+                    "throughput": 3.173254172656354,
+                    "link_num": 39
+                },
+                "12-10": {
+                    "usage_count": 34,
+                    "throughput": 3.173254172656354,
+                    "link_num": 39
+                },
+                "10-11": {
+                    "usage_count": 55,
+                    "throughput": 0.11821506918397624,
+                    "link_num": 36
+                },
+                "11-10": {
+                    "usage_count": 55,
+                    "throughput": 0.11821506918397624,
+                    "link_num": 36
+                },
+                "11-13": {
+                    "usage_count": 5,
+                    "throughput": 3.7781567418566904,
+                    "link_num": 43
+                },
+                "13-11": {
+                    "usage_count": 5,
+                    "throughput": 3.7781567418566904,
+                    "link_num": 43
+                },
+                "12-13": {
+                    "usage_count": 93,
+                    "throughput": 20.548061984779217,
+                    "link_num": 44
+                },
+                "13-12": {
+                    "usage_count": 93,
+                    "throughput": 20.548061984779217,
+                    "link_num": 44
+                }
+            },
+            "sim_block_list": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "sim_br_block_list": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "trans_mean": 1.14,
+            "trans_min": 1.14,
+            "trans_max": 1.14,
+            "hops_mean": 2.44,
+            "hops_min": 1.0,
+            "hops_max": 5.0,
+            "lengths_mean": 1914.0,
+            "lengths_min": 100.0,
+            "lengths_max": 3800.0,
+            "route_times_mean": 0.0,
+            "route_times_min": 0.0,
+            "route_times_max": 0.0,
+            "xt_mean": null,
+            "xt_min": null,
+            "xt_max": null,
+            "snr_mean": null,
+            "snr_min": null,
+            "snr_max": null,
+            "bands_list": [],
+            "start_slot_list": [],
+            "end_slot_list": [],
+            "modulation_list": [],
+            "bandwidth_list": [],
+            "path_index_list": [
+                500
+            ],
+            "sim_lp_utilization_list": [
+                100.0
             ]
         },
         "3": {
             "snapshots_dict": {},
             "cores_dict": {
-                "0": 83,
-                "1": 25,
-                "2": 0
+                "0": 426,
+                "1": 129,
+                "2": 8
             },
             "weights_dict": {
                 "25": {
@@ -391,8 +2006,8 @@
                 },
                 "100": {
                     "QPSK": {
-                        "mean": 3004.2735042735044,
-                        "std": 475.32079229192993,
+                        "mean": 3091.5343915343915,
+                        "std": 431.1442903215679,
                         "min": 2400.0,
                         "max": 3800.0
                     },
@@ -411,10 +2026,10 @@
                 },
                 "200": {
                     "QPSK": {
-                        "mean": 2288.8888888888887,
-                        "std": 704.6236745183246,
+                        "mean": 2053.3333333333335,
+                        "std": 418.18226229047787,
                         "min": 1200.0,
-                        "max": 3800.0
+                        "max": 2700.0
                     },
                     "16-QAM": {
                         "mean": 884.2105263157895,
@@ -431,10 +2046,10 @@
                 },
                 "400": {
                     "QPSK": {
-                        "mean": 1913.3333333333333,
-                        "std": 885.6430637472617,
+                        "mean": 994.4444444444445,
+                        "std": 151.3555308934105,
                         "min": 700.0,
-                        "max": 3800.0
+                        "max": 1300.0
                     },
                     "16-QAM": {
                         "mean": 340.0,
@@ -471,6 +2086,28 @@
                             "max": 3800.0
                         }
                     },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.85,
+                            "std": 1.0,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.85,
+                            "std": 1.0,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
                     "c": 297
                 },
                 "16-QAM": {
@@ -488,6 +2125,28 @@
                             "max": 3800.0
                         }
                     },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.26,
+                            "std": 0.93,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 2.26,
+                            "std": 0.93,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
                     "c": 147
                 },
                 "64-QAM": {
@@ -504,6 +2163,28 @@
                             "min": 100.0,
                             "max": 3500.0
                         }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 1.85,
+                            "std": 0.99,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 1.85,
+                            "std": 0.99,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
                     },
                     "c": 119
                 },
@@ -528,12 +2209,139 @@
                     "64-QAM": 0
                 }
             },
+            "demand_realization_ratio": {
+                "overall": [],
+                "25": [],
+                "50": [],
+                "100": [],
+                "200": [],
+                "400": []
+            },
             "block_bw_dict": {
                 "25": 0,
                 "50": 0,
                 "100": 0,
                 "200": 0,
                 "400": 0
+            },
+            "frag_dict": {},
+            "lp_bw_utilization_dict": {
+                "25": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "50": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "100": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "200": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "400": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "1": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        },
+                        "2": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "overall": {
+                    "mean": 100.0,
+                    "std": 0.0,
+                    "min": 100.0,
+                    "max": 100.0
+                }
             },
             "block_reasons_dict": {
                 "distance": 0,
@@ -543,10 +2351,20 @@
             "link_usage_dict": {
                 "0-1": {
                     "usage_count": 51,
-                    "throughput": 23.182377140698986,
+                    "throughput": 71.22195102409826,
+                    "link_num": 4
+                },
+                "1-0": {
+                    "usage_count": 51,
+                    "throughput": 71.22195102409826,
                     "link_num": 4
                 },
                 "0-2": {
+                    "usage_count": 24,
+                    "throughput": 2.9675646838644787,
+                    "link_num": 7
+                },
+                "2-0": {
                     "usage_count": 24,
                     "throughput": 2.9675646838644787,
                     "link_num": 7
@@ -556,12 +2374,27 @@
                     "throughput": 2.6954546590138233,
                     "link_num": 24
                 },
+                "7-0": {
+                    "usage_count": 32,
+                    "throughput": 2.6954546590138233,
+                    "link_num": 24
+                },
                 "1-3": {
                     "usage_count": 155,
-                    "throughput": 39.40736853369427,
+                    "throughput": 104.54707062084232,
+                    "link_num": 10
+                },
+                "3-1": {
+                    "usage_count": 155,
+                    "throughput": 104.54707062084232,
                     "link_num": 10
                 },
                 "1-2": {
+                    "usage_count": 51,
+                    "throughput": 4.508681568192788,
+                    "link_num": 8
+                },
+                "2-1": {
                     "usage_count": 51,
                     "throughput": 4.508681568192788,
                     "link_num": 8
@@ -571,14 +2404,29 @@
                     "throughput": 9.49428769455618,
                     "link_num": 16
                 },
+                "5-2": {
+                    "usage_count": 66,
+                    "throughput": 9.49428769455618,
+                    "link_num": 16
+                },
                 "3-4": {
                     "usage_count": 110,
-                    "throughput": 29.080667737140875,
+                    "throughput": 80.08219643248569,
                     "link_num": 13
+                },
+                "4-3": {
+                    "usage_count": 110,
+                    "throughput": 80.08219643248569,
+                    "link_num": 13
+                },
+                "3-10": {
+                    "usage_count": 85,
+                    "throughput": 68.36636278581364,
+                    "link_num": 33
                 },
                 "10-3": {
                     "usage_count": 85,
-                    "throughput": 37.36233841758322,
+                    "throughput": 68.36636278581364,
                     "link_num": 33
                 },
                 "4-5": {
@@ -586,10 +2434,25 @@
                     "throughput": 11.17591055918901,
                     "link_num": 17
                 },
+                "5-4": {
+                    "usage_count": 17,
+                    "throughput": 11.17591055918901,
+                    "link_num": 17
+                },
                 "4-6": {
                     "usage_count": 120,
-                    "throughput": 35.79276887694816,
+                    "throughput": 94.91194907087248,
                     "link_num": 20
+                },
+                "6-4": {
+                    "usage_count": 120,
+                    "throughput": 94.91194907087248,
+                    "link_num": 20
+                },
+                "5-13": {
+                    "usage_count": 19,
+                    "throughput": 2.1590574394992554,
+                    "link_num": 42
                 },
                 "13-5": {
                     "usage_count": 19,
@@ -601,19 +2464,39 @@
                     "throughput": 12.144101521293734,
                     "link_num": 30
                 },
+                "9-5": {
+                    "usage_count": 68,
+                    "throughput": 12.144101521293734,
+                    "link_num": 30
+                },
                 "6-9": {
+                    "usage_count": 19,
+                    "throughput": 0.4358440821510514,
+                    "link_num": 31
+                },
+                "9-6": {
                     "usage_count": 19,
                     "throughput": 0.4358440821510514,
                     "link_num": 31
                 },
                 "6-7": {
                     "usage_count": 80,
-                    "throughput": 38.54630973106089,
+                    "throughput": 60.64936527299579,
+                    "link_num": 23
+                },
+                "7-6": {
+                    "usage_count": 80,
+                    "throughput": 60.64936527299579,
                     "link_num": 23
                 },
                 "7-8": {
                     "usage_count": 115,
-                    "throughput": 41.07836200295936,
+                    "throughput": 60.21946273294872,
+                    "link_num": 26
+                },
+                "8-7": {
+                    "usage_count": 115,
+                    "throughput": 60.21946273294872,
                     "link_num": 26
                 },
                 "8-9": {
@@ -621,10 +2504,25 @@
                     "throughput": 23.51586847563712,
                     "link_num": 32
                 },
+                "9-8": {
+                    "usage_count": 83,
+                    "throughput": 23.51586847563712,
+                    "link_num": 32
+                },
+                "8-12": {
+                    "usage_count": 62,
+                    "throughput": 34.05327705731669,
+                    "link_num": 40
+                },
                 "12-8": {
                     "usage_count": 62,
-                    "throughput": 25.935625558737158,
+                    "throughput": 34.05327705731669,
                     "link_num": 40
+                },
+                "8-11": {
+                    "usage_count": 70,
+                    "throughput": 15.636584782059213,
+                    "link_num": 37
                 },
                 "11-8": {
                     "usage_count": 70,
@@ -636,9 +2534,19 @@
                     "throughput": 5.44402577290669,
                     "link_num": 39
                 },
+                "12-10": {
+                    "usage_count": 37,
+                    "throughput": 5.44402577290669,
+                    "link_num": 39
+                },
                 "10-11": {
                     "usage_count": 56,
-                    "throughput": 30.62024004989981,
+                    "throughput": 44.52413621438146,
+                    "link_num": 36
+                },
+                "11-10": {
+                    "usage_count": 56,
+                    "throughput": 44.52413621438146,
                     "link_num": 36
                 },
                 "11-13": {
@@ -646,9 +2554,19 @@
                     "throughput": 4.756329377033423,
                     "link_num": 43
                 },
+                "13-11": {
+                    "usage_count": 9,
+                    "throughput": 4.756329377033423,
+                    "link_num": 43
+                },
                 "12-13": {
                     "usage_count": 70,
-                    "throughput": 22.132774751462193,
+                    "throughput": 30.250426250041727,
+                    "link_num": 44
+                },
+                "13-12": {
+                    "usage_count": 70,
+                    "throughput": 30.250426250041727,
                     "link_num": 44
                 }
             },
@@ -679,6 +2597,9 @@
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
+            "snr_mean": null,
+            "snr_min": null,
+            "snr_max": null,
             "bands_list": [],
             "start_slot_list": [],
             "end_slot_list": [],
@@ -686,16 +2607,29 @@
             "bandwidth_list": [],
             "path_index_list": [
                 500
+            ],
+            "sim_lp_utilization_list": [
+                100.0
             ]
         }
     },
     "link_usage": {
         "0-1": {
             "usage_count": 51,
-            "throughput": 23.182377140698986,
+            "throughput": 71.22195102409826,
+            "link_num": 4
+        },
+        "1-0": {
+            "usage_count": 51,
+            "throughput": 71.22195102409826,
             "link_num": 4
         },
         "0-2": {
+            "usage_count": 24,
+            "throughput": 2.9675646838644787,
+            "link_num": 7
+        },
+        "2-0": {
             "usage_count": 24,
             "throughput": 2.9675646838644787,
             "link_num": 7
@@ -705,12 +2639,27 @@
             "throughput": 2.6954546590138233,
             "link_num": 24
         },
+        "7-0": {
+            "usage_count": 32,
+            "throughput": 2.6954546590138233,
+            "link_num": 24
+        },
         "1-3": {
             "usage_count": 155,
-            "throughput": 39.40736853369427,
+            "throughput": 104.54707062084232,
+            "link_num": 10
+        },
+        "3-1": {
+            "usage_count": 155,
+            "throughput": 104.54707062084232,
             "link_num": 10
         },
         "1-2": {
+            "usage_count": 51,
+            "throughput": 4.508681568192788,
+            "link_num": 8
+        },
+        "2-1": {
             "usage_count": 51,
             "throughput": 4.508681568192788,
             "link_num": 8
@@ -720,14 +2669,29 @@
             "throughput": 9.49428769455618,
             "link_num": 16
         },
+        "5-2": {
+            "usage_count": 66,
+            "throughput": 9.49428769455618,
+            "link_num": 16
+        },
         "3-4": {
             "usage_count": 110,
-            "throughput": 29.080667737140875,
+            "throughput": 80.08219643248569,
             "link_num": 13
+        },
+        "4-3": {
+            "usage_count": 110,
+            "throughput": 80.08219643248569,
+            "link_num": 13
+        },
+        "3-10": {
+            "usage_count": 85,
+            "throughput": 68.36636278581364,
+            "link_num": 33
         },
         "10-3": {
             "usage_count": 85,
-            "throughput": 37.36233841758322,
+            "throughput": 68.36636278581364,
             "link_num": 33
         },
         "4-5": {
@@ -735,10 +2699,25 @@
             "throughput": 11.17591055918901,
             "link_num": 17
         },
+        "5-4": {
+            "usage_count": 17,
+            "throughput": 11.17591055918901,
+            "link_num": 17
+        },
         "4-6": {
             "usage_count": 120,
-            "throughput": 35.79276887694816,
+            "throughput": 94.91194907087248,
             "link_num": 20
+        },
+        "6-4": {
+            "usage_count": 120,
+            "throughput": 94.91194907087248,
+            "link_num": 20
+        },
+        "5-13": {
+            "usage_count": 19,
+            "throughput": 2.1590574394992554,
+            "link_num": 42
         },
         "13-5": {
             "usage_count": 19,
@@ -750,19 +2729,39 @@
             "throughput": 12.144101521293734,
             "link_num": 30
         },
+        "9-5": {
+            "usage_count": 68,
+            "throughput": 12.144101521293734,
+            "link_num": 30
+        },
         "6-9": {
+            "usage_count": 19,
+            "throughput": 0.4358440821510514,
+            "link_num": 31
+        },
+        "9-6": {
             "usage_count": 19,
             "throughput": 0.4358440821510514,
             "link_num": 31
         },
         "6-7": {
             "usage_count": 80,
-            "throughput": 38.54630973106089,
+            "throughput": 60.64936527299579,
+            "link_num": 23
+        },
+        "7-6": {
+            "usage_count": 80,
+            "throughput": 60.64936527299579,
             "link_num": 23
         },
         "7-8": {
             "usage_count": 115,
-            "throughput": 41.07836200295936,
+            "throughput": 60.21946273294872,
+            "link_num": 26
+        },
+        "8-7": {
+            "usage_count": 115,
+            "throughput": 60.21946273294872,
             "link_num": 26
         },
         "8-9": {
@@ -770,10 +2769,25 @@
             "throughput": 23.51586847563712,
             "link_num": 32
         },
+        "9-8": {
+            "usage_count": 83,
+            "throughput": 23.51586847563712,
+            "link_num": 32
+        },
+        "8-12": {
+            "usage_count": 62,
+            "throughput": 34.05327705731669,
+            "link_num": 40
+        },
         "12-8": {
             "usage_count": 62,
-            "throughput": 25.935625558737158,
+            "throughput": 34.05327705731669,
             "link_num": 40
+        },
+        "8-11": {
+            "usage_count": 70,
+            "throughput": 15.636584782059213,
+            "link_num": 37
         },
         "11-8": {
             "usage_count": 70,
@@ -785,9 +2799,19 @@
             "throughput": 5.44402577290669,
             "link_num": 39
         },
+        "12-10": {
+            "usage_count": 37,
+            "throughput": 5.44402577290669,
+            "link_num": 39
+        },
         "10-11": {
             "usage_count": 56,
-            "throughput": 30.62024004989981,
+            "throughput": 44.52413621438146,
+            "link_num": 36
+        },
+        "11-10": {
+            "usage_count": 56,
+            "throughput": 44.52413621438146,
             "link_num": 36
         },
         "11-13": {
@@ -795,9 +2819,19 @@
             "throughput": 4.756329377033423,
             "link_num": 43
         },
+        "13-11": {
+            "usage_count": 9,
+            "throughput": 4.756329377033423,
+            "link_num": 43
+        },
         "12-13": {
             "usage_count": 70,
-            "throughput": 22.132774751462193,
+            "throughput": 30.250426250041727,
+            "link_num": 44
+        },
+        "13-12": {
+            "usage_count": 70,
+            "throughput": 30.250426250041727,
             "link_num": 44
         }
     },
@@ -809,5 +2843,6 @@
     "bit_rate_blocking_variance": null,
     "ci_rate_bit_rate_block": null,
     "ci_percent_bit_rate_block": null,
-    "sim_end_time": "0617_11_31_46_348691"
+    "lightpath_utilization": 100.0,
+    "sim_end_time": "1105_17_56_08_719643"
 }

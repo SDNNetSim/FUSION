@@ -31,6 +31,7 @@ class SDNProps:
         self.lightpath_bandwidth_list = []  # List of lightpath bandwidth
         self.lightpath_id_list = []  # List of lightpath id
         self.xt_list = []  # List of crosstalk calculations for a single request
+        self.snr_list = [] # List of SNR calculations for a single request
         self.start_slot_list = []  # List of allocated start slot  index for slicing approach
         self.end_slot_list = []  # List of allocated end slot  index for slicing approach
         self.num_trans = None  # Number of transponders a single request has used
@@ -44,7 +45,7 @@ class SDNProps:
         self.lightpath_counter = 0 # counter to set id t lightpaths
         
 
-        self.stat_key_list = ['modulation_list', 'xt_list', 'core_list', 'band_list', 'start_slot_list', 'end_slot_list', 'lightpath_bandwidth_list', 'lightpath_id_list', 'remaining_bw']  # Statistical keys used to save results
+        self.stat_key_list = ['modulation_list', 'xt_list', 'snr_list', 'core_list', 'band_list', 'start_slot_list', 'end_slot_list', 'lightpath_bandwidth_list', 'lightpath_id_list', 'remaining_bw']  # Statistical keys used to save results
 
     def update_params(self, key: str, spectrum_key: str, spectrum_obj: object, value: int = None):
         """
@@ -73,6 +74,7 @@ class SDNProps:
         self.lp_bw_utilization_dict = dict()
         self.modulation_list = list()
         self.xt_list = list()
+        self.snr_list = list()
         self.core_list = list()
         self.band_list = list()
         self.start_slot_list = list()

@@ -12,6 +12,7 @@ class SpectrumProps:
         self.is_free = False  # Flag to determine if spectrum is free
         self.modulation = None  # Modulation format for current request
         self.xt_cost = None  # XT cost (if considered) for current request
+        self.snr_val = None  # SNR value (if considered) for current request
         self.cores_matrix = None  # The current matrix of cores being evaluated for a single link
         self.rev_cores_matrix = None  # The reverse of cores matrix e.g., if looking at 3-->4 check 4-->3
         self.core_num = None  # Core number selected for current request

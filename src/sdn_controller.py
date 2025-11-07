@@ -59,10 +59,11 @@ class SDNController:
         # Remove lightpath from lightpath_status_dict
         if not slicing_flag:
             # Always update transponders (this should always work)
-            for node in [self.sdn_props.source, self.sdn_props.destination]:
-                if node not in self.sdn_props.transponder_usage_dict:
-                    raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
-                self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
+            if self.engine_props["transponder_usage_per_node"]:
+                for node in [self.sdn_props.source, self.sdn_props.destination]:
+                    if node not in self.sdn_props.transponder_usage_dict:
+                        raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
+                    self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
 
             light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
 
@@ -158,6 +159,8 @@ class SDNController:
             spectrum_key = stat_key.split('_')[0]  # pylint: disable=use-maxsplit-arg
             if spectrum_key == 'xt':
                 spectrum_key = 'xt_cost'
+            elif spectrum_key == 'snr':
+                spectrum_key = 'snr_val'
             elif spectrum_key == 'core':
                 spectrum_key = 'core_num'
             elif spectrum_key == 'band':
@@ -180,24 +183,27 @@ class SDNController:
         self.sdn_props.num_trans = num_segments
         self.spectrum_obj.spectrum_props.path_list = path_list
         mod_format_list = [mod_format]
+        remaining_bw = int(self.sdn_props.bandwidth)
         for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
             if self.spectrum_obj.spectrum_props.is_free:
+                remaining_bw -= int(bandwidth)
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 self.allocate()
-                self._update_req_stats(bandwidth=bandwidth)
+                self._update_req_stats(bandwidth=bandwidth, remaining = str(remaining_bw))
+                self.sdn_props.was_new_lp_established.append(lp_id)
 
                 if not self._check_snr_after_allocation(lp_id):
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = 'snr_recheck_failed'
-                    self.release()
+                    self._handle_congestion(remaining_bw)
                     break
 
             else:
                 self.sdn_props.was_routed = False
                 self.sdn_props.block_reason = 'congestion'
-                self.release()
+                self._handle_congestion(remaining_bw)
                 break
 
     def _handle_slicing(self, path_list: list, forced_segments: int):
@@ -248,6 +254,7 @@ class SDNController:
                 self.sdn_props.core_list.pop(lp_idx)
                 self.sdn_props.end_slot_list.pop(lp_idx)
                 self.sdn_props.xt_list.pop(lp_idx)
+                self.sdn_props.snr_list.pop(lp_idx)
                 self.sdn_props.bandwidth_list.pop(lp_idx)
                 self.sdn_props.modulation_list.pop(lp_idx)
         self.sdn_props.num_trans = 1

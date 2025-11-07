@@ -161,11 +161,14 @@ class SimStats:
                     self.stats_props.mods_used_dict[modulation]['hop']['overall'] = list()
                     self.stats_props.mods_used_dict[modulation]['snr'] = dict()
                     self.stats_props.mods_used_dict[modulation]['snr']['overall'] = list()
+                    self.stats_props.mods_used_dict[modulation]['xt_cost'] = dict()
+                    self.stats_props.mods_used_dict[modulation]['xt_cost']['overall'] = list()
                     for band in self.engine_props['band_list']:
                         self.stats_props.mods_used_dict[modulation][band] = 0
                         self.stats_props.mods_used_dict[modulation]['length'][band] = list()
                         self.stats_props.mods_used_dict[modulation]['hop'][band] = list()
                         self.stats_props.mods_used_dict[modulation]['snr'][band] = list()
+                        self.stats_props.mods_used_dict[modulation]['xt_cost'][band] = list()
 
             self.stats_props.block_bw_dict[bandwidth] = 0
     def _init_frag_vlaue_dict(self):
@@ -254,15 +257,18 @@ class SimStats:
     def _handle_iter_lists(self, sdn_data: object, new_lp_index: list):
         for stat_key in sdn_data.stat_key_list:
             curr_sdn_data = sdn_data.get_data(key=stat_key)
-            if stat_key == 'xt_list':
+            if stat_key in ['snr_list','xt_list']:
                 # (drl_path_agents) fixme
-                if curr_sdn_data == [None]:
-                    break
+                if set(curr_sdn_data) <= {None}:
+                    continue
                 snr_list = list()
                 for cnt in range(0,len(curr_sdn_data)):
                     if cnt in new_lp_index:
                         snr_list.append(curr_sdn_data[cnt])
-                self.stats_props.xt_list.append(mean(snr_list)) # TODO: double-check
+                if stat_key == 'snr_list':
+                    self.stats_props.snr_list.append(mean(snr_list)) # TODO: double-check
+                else:
+                    self.stats_props.xt_list.append(mean(snr_list)) # TODO: double-check
             for i, data in enumerate(curr_sdn_data):
                 if i not in new_lp_index:
                     continue
@@ -275,8 +281,13 @@ class SimStats:
                     self.stats_props.mods_used_dict[data][band] += 1
                     self.stats_props.mods_used_dict[data]['length'][band].append(sdn_data.path_weight)
                     self.stats_props.mods_used_dict[data]['length']['overall'].append(sdn_data.path_weight)
-                    self.stats_props.mods_used_dict[data]['snr'][band].append(sdn_data.xt_list[i])
-                    self.stats_props.mods_used_dict[data]['snr']['overall'].append(sdn_data.xt_list[i])
+                    if self.engine_props["snr_type"] != 'None':
+                        if self.engine_props["snr_type"] == "xt_calculation":
+                            self.stats_props.mods_used_dict[data]['xt_cost'][band].append(sdn_data.snr_list[i])
+                            self.stats_props.mods_used_dict[data]['xt_cost']['overall'].append(sdn_data.snr_list[i])
+                        else:
+                            self.stats_props.mods_used_dict[data]['snr'][band].append(sdn_data.snr_list[i])
+                            self.stats_props.mods_used_dict[data]['snr']['overall'].append(sdn_data.snr_list[i])
                     self.stats_props.mods_used_dict[data]['hop'][band].append(len(sdn_data.path_list)-1)
                     self.stats_props.mods_used_dict[data]['hop']['overall'].append(len(sdn_data.path_list)-1)
                 elif stat_key == 'start_slot_list':
@@ -377,6 +388,8 @@ class SimStats:
                     mod_obj[modulation] = {'mean': mean(data_list), 'std': deviation,
                                            'min': min(data_list), 'max': max(data_list)}
                 for rute_spec in ['length', 'hop', 'snr']:
+                    if self.engine_props["snr_type"] == 'None' and rute_spec == 'snr':
+                        continue
                     for key, value in self.stats_props.mods_used_dict[modulation][rute_spec].items():
                         if not isinstance(value, list):
                             continue
@@ -430,6 +443,9 @@ class SimStats:
         
         if self.engine_props["can_partially_serve"]:
             for bw, bw_obj in self.stats_props.demand_realization_ratio.items():
+                if len(bw_obj) == 0:
+                    self.stats_props.demand_realization_ratio[bw] = {'mean': None, 'std': None, 'min': None, 'max': None}
+                    continue
                 if len(bw_obj) == 1:
                     deviation = 0.0
                 else:
@@ -569,13 +585,14 @@ class SimStats:
         self.save_dict['bit_rate_blocking_mean'] = self.bit_rate_block_mean
         self.save_dict['bit_rate_blocking_variance'] = self.bit_rate_block_variance
         self.save_dict['ci_rate_bit_rate_block'] = self.bit_rate_block_ci
-        self.save_dict['ci_percent_bit_rate_block'] = self.bit_rate_block_ci_percent   
-        self.save_dict['total_transponder_usage']  = round(float(mean(self.stats_props.total_transponder_usage_list)),2)
+        self.save_dict['ci_percent_bit_rate_block'] = self.bit_rate_block_ci_percent
+        if self.engine_props["transponder_usage_per_node"]:
+            self.save_dict['total_transponder_usage']  = round(float(mean(self.stats_props.total_transponder_usage_list)),2)
         self.save_dict["lightpath_utilization"] = mean(self.stats_props.sim_lp_utilization_list)
 
         self.save_dict['iter_stats'][self.iteration] = dict()
         for stat_key in vars(self.stats_props).keys():
-            if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list', 'xt_list'):
+            if stat_key in ('trans_list', 'hops_list', 'lengths_list', 'route_times_list', 'xt_list', 'snr_list'):
                 save_key = f"{stat_key.split('list')[0]}"
                 if stat_key == 'xt_list':
                     stat_array = [0 if stat is None else stat for stat in getattr(self.stats_props, stat_key)]
