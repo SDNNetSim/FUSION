@@ -25,7 +25,7 @@ We need your insight and creativity! The true strength of open-source lies in co
 
 FUSION offers multiple installation methods. Choose the one that best fits your needs:
 
-### 🚀 Automatic Installation (Recommended)
+### Automatic Installation (Recommended)
 
 For the easiest setup experience, use our automated installation script:
 
@@ -43,14 +43,14 @@ source venv/bin/activate
 ```
 
 The script automatically:
-- ✅ Detects your platform (macOS, Linux, Windows)
-- ✅ Handles PyTorch Geometric compilation issues
-- ✅ Installs all dependencies in the correct order
-- ✅ Sets up development tools
-- ✅ Installs and configures pre-commit hooks
-- ✅ Verifies the installation
+- Detects your platform (macOS, Linux, Windows)
+- Handles PyTorch Geometric compilation issues
+- Installs all dependencies in the correct order
+- Sets up development tools
+- Installs and configures pre-commit hooks
+- Verifies the installation
 
-### 📦 Package Installation
+### Package Installation
 
 For a more controlled installation using Python packaging:
 
@@ -87,7 +87,7 @@ pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https:
 pip install torch-geometric==2.6.1
 ```
 
-### 🐍 Legacy Requirements Installation
+### Legacy Requirements Installation
 
 If you prefer using requirements files:
 
@@ -98,7 +98,7 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-**⚠️ Note**: This method may fail on PyTorch Geometric packages. Use the automatic installer instead.
+**Note**: This method may fail on PyTorch Geometric packages. Use the automatic installer instead.
 
 ---
 
@@ -130,7 +130,7 @@ Finally, navigate to `_build/html/` and open `index.html` in a browser of your c
 
 ---
 
-## 🛡️ Survivability Experiments
+## Survivability Experiments
 
 FUSION now supports comprehensive survivability testing with failure injection, protection mechanisms, and offline RL policy evaluation.
 
@@ -231,7 +231,9 @@ This project is brought to you by the efforts of **Arash Rezaee**, **Ryan McCann
 
 ---
 
-## 📖 How to Cite This Work
+## Publications
+
+### Primary Citation
 
 If you use FUSION in your research, please cite the following paper:
 
@@ -240,7 +242,7 @@ R. McCann, A. Rezaee, and V. M. Vokkarane,
 *2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.
 DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
-### 📄 BibTeX
+### BibTeX
 
 ```bibtex
 @INPROCEEDINGS{10898199,
@@ -253,9 +255,13 @@ DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10
 }
 ```
 
+### Related Publications
+
+*This section will be updated as research using FUSION is published. If you have published work using FUSION, please open an issue or pull request to add it here.*
+
 ---
 
-## 🛠️ Development & Contributing
+## Development & Contributing
 
 ### Setting Up Pre-commit Hooks
 
@@ -316,6 +322,6 @@ Pre-commit hooks check:
 3. Stage files: `git add .`
 4. Hooks run automatically on commit, or run manually: `pre-commit run`
 5. Run tests: `make test` or `pytest`
-6. Submit your PR - all checks should pass ✅
+6. Submit your PR - all checks should pass
 
 **Note:** The `fusion/gui` module is excluded from all checks as it's deprecated and requires a revamp.

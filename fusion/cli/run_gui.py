@@ -1,4 +1,5 @@
-"""CLI entry point for launching the FUSION GUI interface.
+"""
+CLI entry point for launching the FUSION GUI interface.
 
 This module provides the command-line interface for launching the graphical
 user interface. It handles GUI dependency validation, display configuration,
@@ -15,7 +16,8 @@ logger = get_logger(__name__)
 
 
 def main() -> int:
-    """Launch the FUSION GUI interface.
+    """
+    Launch the FUSION GUI interface.
 
     Parses command line arguments and delegates GUI launch operations
     to the appropriate GUI pipeline module. Handles user interruptions
@@ -32,21 +34,21 @@ def main() -> int:
 
     except KeyboardInterrupt:
         logger.info("GUI launch interrupted by user")
-        print("\n🛑 GUI launch interrupted by user")  # User-facing message
+        print("\nGUI launch interrupted by user")  # User-facing message
         return INTERRUPT_EXIT_CODE
     except (ImportError, ModuleNotFoundError) as e:
         logger.error(f"Missing GUI dependencies: {e}")
-        print(f"❌ Missing GUI dependencies: {e}")  # User-facing message
-        print("💡 Try installing GUI dependencies with: pip install -e .[gui]")
+        print(f"Missing GUI dependencies: {e}")  # User-facing message
+        print("Try installing GUI dependencies with: pip install -e .[gui]")
         return ERROR_EXIT_CODE
     except (OSError, RuntimeError) as e:
         logger.error(f"GUI framework error: {e}")
-        print(f"❌ GUI framework error: {e}")  # User-facing message
-        print("💡 Check your display settings and GUI framework installation")
+        print(f"GUI framework error: {e}")  # User-facing message
+        print("Check your display settings and GUI framework installation")
         return ERROR_EXIT_CODE
     except (ValueError, TypeError) as e:
         logger.error(f"Configuration error launching GUI: {e}")
-        print(f"❌ Configuration error launching GUI: {e}")  # User-facing message
+        print(f"Configuration error launching GUI: {e}")  # User-facing message
         return ERROR_EXIT_CODE
 
     return SUCCESS_EXIT_CODE

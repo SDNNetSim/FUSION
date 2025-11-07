@@ -1,19 +1,19 @@
-## 🚨 Hotfix Pull Request
+## Hotfix Pull Request
 
-**Related Issue**: 
+**Related Issue**:
 <!-- Link the bug report: Fixes #123 -->
 
-**Hotfix Summary**: 
+**Hotfix Summary**:
 <!-- Brief description of what this hotfix resolves -->
 
 **Urgency Level**:
 - [ ] Critical (production breaking)
-- [ ] High (major functionality impacted)  
+- [ ] High (major functionality impacted)
 - [ ] Medium (important bug fix)
 
 ---
 
-## 🐛 Problem Description
+## Problem Description
 
 **Root Cause Analysis**:
 <!-- Describe the underlying cause of the issue -->
@@ -26,7 +26,7 @@
 
 ---
 
-## 🔧 Hotfix Implementation
+## Implementation
 
 **Files Changed**:
 <!-- List the specific files modified -->
@@ -43,7 +43,7 @@
 
 ---
 
-## ✅ Hotfix Validation
+## Validation
 
 **Testing Performed**:
 - [ ] Reproducer test case created
@@ -66,7 +66,7 @@
 
 ---
 
-## 📊 Risk Assessment
+## Risk Assessment
 
 **Change Risk Level**:
 - [ ] Low (isolated change, well tested)
@@ -81,7 +81,7 @@
 
 ---
 
-## 🚀 Deployment Considerations
+## Deployment Considerations
 
 **Deployment Requirements**:
 - [ ] Safe for immediate deployment
@@ -97,7 +97,7 @@
 
 ---
 
-## 🏁 Hotfix Checklist
+## Checklist
 
 **Code Quality**:
 - [ ] Minimal change to address the specific issue
@@ -125,7 +125,7 @@
 
 ---
 
-## 📝 Additional Notes
+## Additional Notes
 
 **Follow-up Tasks**:
 <!-- Any additional work needed after this hotfix -->

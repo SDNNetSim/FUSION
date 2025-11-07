@@ -24,6 +24,18 @@ This file tracks known issues and future improvements for the FUSION configurati
   2. Ensure save_step aligns with Unity's requirements
   3. Add validation for compatible save_step values
 
+### YAML and JSON Configuration File Input
+- **Issue**: YAML and JSON configuration file input needs implementation and validation
+- **Files**: `cli_to_config.py`
+- **Description**: While the system supports INI files, YAML and JSON configuration file formats have not been fully implemented or validated
+- **Impact**: Limits configuration flexibility and integration with modern tooling that expects YAML/JSON formats
+- **Next Steps**:
+  1. Implement YAML configuration file parser
+  2. Implement JSON configuration file parser
+  3. Validate parsing against existing INI-based configurations
+  4. Add comprehensive tests for both formats
+  5. Update documentation with examples for each format
+
 ## Medium Priority
 
 ### Template System Enhancements
@@ -49,6 +61,30 @@ This file tracks known issues and future improvements for the FUSION configurati
   1. Define validation rules matrix
   2. Implement enhanced schema validation
   3. Add informative error messages
+
+### Schema System Consolidation
+- **Issue**: Redundant schema systems with overlapping responsibilities
+- **Files**: `schema.py`, `schemas/main.json`, `schemas/survivability.json`, `validate.py`
+- **Description**: The codebase has two separate schema systems serving different purposes:
+  - `schema.py`: Python dictionaries mapping fields to type converter functions (e.g., `float`, `str_to_bool`)
+  - `schemas/*.json`: JSON Schema files for validation with constraints (e.g., `minimum: 0`, `enum` values)
+  - This creates redundancy and maintenance burden as changes must be made in both places
+- **Impact**:
+  - Duplication of field definitions across two systems
+  - Increased maintenance overhead when adding/modifying fields
+  - Confusion about which system is authoritative
+  - Risk of inconsistencies between the two schemas
+- **Proposed Solution**: Consolidate to single schema system
+  - **Option A**: Use only JSON Schema as single source of truth, generate type converters from it
+  - **Option B**: Use Python dataclasses with validation decorators (e.g., Pydantic)
+  - **Option C**: Keep JSON Schema for validation, auto-generate `schema.py` from JSON files
+- **Next Steps**:
+  1. Evaluate consolidation options (JSON Schema-only vs dataclasses vs hybrid)
+  2. Choose approach based on maintainability and Python ecosystem best practices
+  3. Design migration path that maintains backward compatibility
+  4. Implement schema generation/consolidation tooling
+  5. Update all configuration loading code to use unified system
+  6. Remove deprecated schema system after validation
 
 ## Low Priority
 
