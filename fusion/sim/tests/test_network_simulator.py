@@ -152,7 +152,7 @@ class TestNetworkSimulator:
             "thread_num": "s1",
         }
         mock_engine = MagicMock()
-        mock_engine.run.side_effect = [100, 200]
+        mock_engine.run.side_effect = [100, 200, 300]
         mock_engine_class.return_value = mock_engine
 
         mock_manager_inst = MagicMock()
@@ -163,8 +163,8 @@ class TestNetworkSimulator:
         simulator.run_generic_sim()
 
         # Assert
-        # Should run for 2 erlangs (100-300 step 100 = [100, 200])
-        assert mock_engine.run.call_count == 2
+        # Should run for 3 erlangs (100-300 step 100 inclusive = [100, 200, 300])
+        assert mock_engine.run.call_count == 3
 
     @patch("fusion.sim.network_simulator.run")
     def test_run_sim_sets_properties_and_calls_run_generic(

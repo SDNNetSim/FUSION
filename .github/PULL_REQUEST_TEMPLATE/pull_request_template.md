@@ -1,28 +1,28 @@
-## 📋 Pull Request Summary
+## Pull Request Summary
 
-**PR Title**: 
+**PR Title**:
 <!-- Use conventional commit format: type(scope): description -->
 <!-- Examples: feat(cli): add new CLI command, fix(routing): resolve path calculation bug -->
 
-**Related Issue(s)**: 
+**Related Issue(s)**:
 <!-- Link related issues: Fixes #123, Closes #456, Relates to #789 -->
 
 **Description**:
 <!-- Provide a clear summary of the changes and motivation -->
 
-## 🔧 Type of Change
+## Type of Change
 
 **Primary Change Type**:
-- [ ] 🐛 **Bug Fix** - Non-breaking change that fixes an issue
-- [ ] ✨ **New Feature** - Non-breaking change that adds functionality  
-- [ ] 💥 **Breaking Change** - Change that would cause existing functionality to break
-- [ ] 🔄 **Refactor** - Code change that neither fixes a bug nor adds a feature
-- [ ] 📚 **Documentation** - Documentation only changes
-- [ ] 🧪 **Tests** - Adding missing tests or correcting existing tests
-- [ ] 🏗️ **Build/CI** - Changes to build process or CI configuration
-- [ ] 🎨 **Style** - Code style changes (formatting, missing semicolons, etc.)
-- [ ] ⚡ **Performance** - Performance improvements
-- [ ] 🔒 **Security** - Security vulnerability fixes
+- [ ] **Bug Fix** - Non-breaking change that fixes an issue
+- [ ] **New Feature** - Non-breaking change that adds functionality
+- [ ] **Breaking Change** - Change that would cause existing functionality to break
+- [ ] **Refactor** - Code change that neither fixes a bug nor adds a feature
+- [ ] **Documentation** - Documentation only changes
+- [ ] **Tests** - Adding missing tests or correcting existing tests
+- [ ] **Build/CI** - Changes to build process or CI configuration
+- [ ] **Style** - Code style changes (formatting, missing semicolons, etc.)
+- [ ] **Performance** - Performance improvements
+- [ ] **Security** - Security vulnerability fixes
 
 **Component(s) Affected**:
 - [ ] CLI Interface (`fusion/cli/`)
@@ -40,7 +40,7 @@
 - [ ] GitHub Workflows (`.github/`)
 - [ ] Build/Dependencies
 
-## 🧪 Testing
+## Testing
 
 **Test Coverage**:
 - [ ] Unit tests added/updated
@@ -71,7 +71,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 - **Python Version**: [e.g., 3.11.5]
 - **Test Environment**: [e.g., local, CI/CD, Docker]
 
-## 📊 Impact Analysis
+## Impact Analysis
 
 **Performance Impact**:
 - [ ] No performance impact
@@ -95,7 +95,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 - [ ] New dependencies added (list in Additional Notes)
 - [ ] Dependencies removed/updated
 
-## 🔄 Migration Guide
+## Migration Guide
 
 <!-- If this PR introduces breaking changes, provide migration instructions -->
 
@@ -114,7 +114,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 # new_code_example()
 ```
 
-## ✅ Code Quality Checklist
+## Code Quality Checklist
 
 **Architecture & Design**:
 - [ ] Follows established architecture patterns
@@ -142,7 +142,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 - [ ] No security vulnerabilities introduced
 - [ ] Dependencies scanned for vulnerabilities
 
-## 📚 Documentation
+## Documentation
 
 **Documentation Updates**:
 - [ ] Code comments added/updated
@@ -158,7 +158,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 - [ ] CLI usage examples
 - [ ] Integration examples
 
-## 🚀 Deployment
+## Deployment
 
 **Deployment Considerations**:
 - [ ] Safe to deploy to all environments
@@ -169,7 +169,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 **Manual Steps Required**:
 <!-- List any manual steps needed during deployment -->
 
-## 🔍 Review Guidelines
+## Review Guidelines
 
 **For Reviewers**:
 - [ ] PR description is clear and complete
@@ -182,7 +182,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 **Review Focus Areas**:
 <!-- Highlight specific areas that need careful review -->
 
-## 📝 Additional Notes
+## Additional Notes
 
 <!-- Any additional context, concerns, or information for reviewers -->
 
@@ -197,7 +197,7 @@ python -m fusion.cli.run_sim run_sim --config_path test_config.ini --run_id test
 
 ---
 
-## 🏁 Final Checklist
+## Final Checklist
 
 Before submitting this PR, confirm:
 

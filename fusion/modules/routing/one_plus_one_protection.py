@@ -110,28 +110,24 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             logger.error(f"Error validating environment: {e}")
             return False
 
-    def route(
-        self, source: Any, destination: Any, request: Any = None
-    ) -> list[int] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find link-disjoint primary and backup paths.
 
-        Returns the primary path, while storing the backup path
-        in SDN properties for later use.
+        Stores primary and backup paths in SDN properties (sdn_props.primary_path,
+        sdn_props.backup_path). Consumers should check these attributes for results.
 
         :param source: Source node ID
         :type source: Any
         :param destination: Destination node ID
         :type destination: Any
         :param request: Request details (optional)
-        :type request: dict[str, Any] | None
-        :return: Primary path (or None if disjoint paths not found)
-        :rtype: list[int] | None
+        :type request: Any
 
         Example:
             >>> router = OnePlusOneProtection(props, sdn_props)
-            >>> primary = router.route(0, 5)
-            >>> print(primary)
+            >>> router.route(0, 5)
+            >>> print(sdn_props.primary_path)
             [0, 1, 3, 5]
             >>> print(sdn_props.backup_path)
             [0, 2, 4, 5]
@@ -143,7 +139,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                 f"Could not find disjoint paths for {source} -> {destination}"
             )
             self._disjoint_paths_failed += 1
-            return None
+            return
 
         # Store paths in SDN properties
         self.sdn_props.primary_path = primary
@@ -157,8 +153,6 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         logger.debug(
             f"1+1 protection: Primary={len(primary)} hops, Backup={len(backup)} hops"
         )
-
-        return primary
 
     def find_disjoint_paths(
         self, source: Any, destination: Any

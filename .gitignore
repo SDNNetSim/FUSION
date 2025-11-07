@@ -12,6 +12,7 @@ misc/
 # Data files
 data/output/*
 data/input/*
+data/training_data/*
 
 ai_scripts/models/*
 
@@ -20,6 +21,7 @@ data/input
 data/output
 data/plots
 data/excel
+data/training_data
 
 logs/*
 

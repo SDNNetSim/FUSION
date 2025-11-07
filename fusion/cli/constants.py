@@ -1,4 +1,5 @@
-"""CLI-specific constants for FUSION command-line interfaces.
+"""
+CLI-specific constants for FUSION command-line interfaces.
 
 Provides shared constants used across CLI entry points including exit codes,
 argument configurations, and common CLI settings to ensure consistency
