@@ -616,6 +616,121 @@ class SpectrumAssignment:
 
         return True
 
+    def _calculate_slots_needed(
+        self, modulation: str, slice_bandwidth: str | None = None
+    ) -> int | None:
+        """
+        Calculate slots needed for modulation and bandwidth.
+
+        Handles special case for partial grooming where remaining bandwidth
+        needs to be rounded up to the next available bandwidth tier.
+
+        :param modulation: Modulation format
+        :type modulation: str
+        :param slice_bandwidth: Bandwidth for slicing
+        :type slice_bandwidth: str | None
+        :return: Number of slots needed, or None if no tier available
+        :rtype: int | None
+        """
+        if self.engine_props_dict["fixed_grid"]:
+            return 1
+
+        # Handle partial grooming
+        if self.sdn_props.was_partially_groomed:
+            if self.sdn_props.remaining_bw is None:
+                raise ValueError("Remaining bandwidth must be set for partial grooming")
+
+            remaining_bw = int(self.sdn_props.remaining_bw)
+
+            # Find next higher bandwidth tier
+            available_bw_tiers = [
+                int(k)
+                for k in self.engine_props_dict["mod_per_bw"].keys()
+                if int(k) >= remaining_bw
+            ]
+
+            if not available_bw_tiers:
+                return None
+
+            bw_tmp = min(available_bw_tiers)
+            slots_needed: int = self.engine_props_dict["mod_per_bw"][str(bw_tmp)][
+                modulation
+            ]["slots_needed"]
+
+            return slots_needed
+
+        # Standard case
+        if slice_bandwidth:
+            result: int = self.engine_props_dict["mod_per_bw"][slice_bandwidth][
+                modulation
+            ]["slots_needed"]
+            return result
+
+        if self.sdn_props.modulation_formats_dict is None:
+            raise ValueError("Modulation formats dict must be initialized")
+
+        return int(self.sdn_props.modulation_formats_dict[modulation]["slots_needed"])
+
+    def _update_lightpath_status(self) -> None:
+        """
+        Update lightpath status dictionary after allocation.
+
+        Called after spectrum is allocated to track the new lightpath
+        for future grooming operations.
+        """
+        if not self.engine_props_dict.get("is_grooming_enabled", False):
+            return
+
+        if self.sdn_props.source is None or self.sdn_props.destination is None:
+            raise ValueError("Source and destination must be initialized")
+
+        light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
+        lp_id = self.spectrum_props.lightpath_id
+
+        if lp_id is None:
+            raise ValueError("Lightpath ID must be initialized")
+
+        # Initialize light_id entry if needed
+        if self.sdn_props.lightpath_status_dict is None:
+            self.sdn_props.lightpath_status_dict = {}
+
+        if light_id not in self.sdn_props.lightpath_status_dict:
+            self.sdn_props.lightpath_status_dict[light_id] = {}
+
+        # Get lightpath bandwidth
+        lp_bandwidth = self.spectrum_props.lightpath_bandwidth
+        if lp_bandwidth is None:
+            # Calculate from modulation and slots if not set by SNR
+            mod = self.spectrum_props.modulation
+            if mod is not None and self.sdn_props.modulation_formats_dict is not None:
+                lp_bandwidth = self.sdn_props.modulation_formats_dict[mod].get(
+                    "bandwidth", 0
+                )
+            else:
+                lp_bandwidth = 0
+
+        if self.sdn_props.path_list is None:
+            raise ValueError("Path list must be initialized")
+
+        # Create lightpath entry
+        self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
+            "path": self.sdn_props.path_list,
+            "path_weight": self.sdn_props.path_weight,
+            "core": self.spectrum_props.core_number,
+            "band": self.spectrum_props.current_band,
+            "start_slot": self.spectrum_props.start_slot,
+            "end_slot": self.spectrum_props.end_slot,
+            "mod_format": self.spectrum_props.modulation,
+            "lightpath_bandwidth": lp_bandwidth,
+            "remaining_bandwidth": lp_bandwidth,  # Initially all available
+            "snr_cost": self.spectrum_props.crosstalk_cost,
+            "is_degraded": False,
+            "requests_dict": {},  # Will be populated when requests are groomed
+            "time_bw_usage": {
+                self.sdn_props.arrive: 0.0
+            },  # Track utilization over time
+        }
+
     def get_spectrum(
         self,
         mod_format_list: list[str],
@@ -669,35 +784,28 @@ class SpectrumAssignment:
                 self.sdn_props.block_reason = "distance"
                 continue
 
+            # Validate modulation format exists in the appropriate dictionary
             if slice_bandwidth:
                 modulation_bandwidth_dict = self.engine_props_dict["mod_per_bw"][
                     slice_bandwidth
                 ]
-                # Validate modulation format exists in bandwidth dict
                 if modulation_format not in modulation_bandwidth_dict:
                     self.sdn_props.block_reason = "distance"
                     continue
-                self.spectrum_props.slots_needed = modulation_bandwidth_dict[
-                    modulation_format
-                ]["slots_needed"]
-            else:
-                if self.engine_props_dict["fixed_grid"]:
-                    self.spectrum_props.slots_needed = 1
-                else:
-                    if self.sdn_props.modulation_formats_dict is None:
-                        raise ValueError("Modulation formats dict must be initialized")
-                    # Validate modulation format exists in dict
-                    if modulation_format not in self.sdn_props.modulation_formats_dict:
-                        self.sdn_props.block_reason = "distance"
-                        continue
-                    self.spectrum_props.slots_needed = (
-                        self.sdn_props.modulation_formats_dict[modulation_format][
-                            "slots_needed"
-                        ]
-                    )
+            elif not self.engine_props_dict["fixed_grid"]:
+                if self.sdn_props.modulation_formats_dict is None:
+                    raise ValueError("Modulation formats dict must be initialized")
+                if modulation_format not in self.sdn_props.modulation_formats_dict:
+                    self.sdn_props.block_reason = "distance"
+                    continue
+
+            # Calculate slots needed using the new method
+            self.spectrum_props.slots_needed = self._calculate_slots_needed(
+                modulation_format, slice_bandwidth
+            )
 
             if self.spectrum_props.slots_needed is None:
-                raise ValueError("Slots needed cannot be none.")
+                continue
 
             # Check if this is a protected (1+1) request
             backup_path = getattr(self.sdn_props, "backup_path", None)
@@ -731,6 +839,8 @@ class SpectrumAssignment:
 
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation_format
+
+                # Handle SNR checks
                 if (
                     self.engine_props_dict["snr_type"] != "None"
                     and self.engine_props_dict["snr_type"] is not None
@@ -739,10 +849,12 @@ class SpectrumAssignment:
                         raise ValueError(
                             "Path index must be initialized for SNR calculations"
                         )
-                    snr_is_acceptable, crosstalk_cost = (
+                    snr_is_acceptable, crosstalk_cost, lp_bw = (
                         self.snr_measurements.handle_snr(self.sdn_props.path_index)
                     )
                     self.spectrum_props.crosstalk_cost = crosstalk_cost
+                    self.spectrum_props.lightpath_bandwidth = lp_bw
+
                     if not snr_is_acceptable:
                         self.spectrum_props.is_free = False
                         self.sdn_props.block_reason = "xt_threshold"
@@ -750,6 +862,17 @@ class SpectrumAssignment:
 
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
+
+                # Generate lightpath ID
+                lp_id = self.sdn_props.get_lightpath_id()
+                self.spectrum_props.lightpath_id = lp_id
+
+                # Mark that a new lightpath was established (for grooming)
+                if self.engine_props_dict.get("is_grooming_enabled", False):
+                    self.sdn_props.was_new_lp_established.append(lp_id)
+
+                # Update lightpath status for grooming
+                self._update_lightpath_status()
 
                 return
 

@@ -16,6 +16,7 @@ from fusion.core.properties import (
     PLANCK_CONSTANT,
     SNAP_KEYS_LIST,
     WORST_CASE_MCI,
+    GroomingProps,
     RoutingProps,
     SDNProps,
     SNRProps,
@@ -153,6 +154,8 @@ class TestSDNProps(unittest.TestCase):
                 "band_list",
                 "start_slot_list",
                 "end_slot_list",
+                "lightpath_bandwidth_list",
+                "lightpath_id_list",
             ],
         )
         self.assertEqual(props.bandwidth_list, [])
@@ -365,6 +368,152 @@ class TestPropertiesValidation(unittest.TestCase):
         self.assertEqual(props.center_frequency, 0.0)
         self.assertEqual(props.center_psd, 0.0)
         self.assertEqual(props.bandwidth, 0.0)
+
+
+class TestGroomingProps(unittest.TestCase):
+    """Unit tests for GroomingProps class."""
+
+    def test_init_creates_instance_with_defaults(self) -> None:
+        """Test GroomingProps initialization with default values."""
+        props = GroomingProps()
+
+        self.assertIsNone(props.grooming_type)
+        self.assertIsNone(props.lightpath_status_dict)
+
+    def test_repr_returns_string_representation(self) -> None:
+        """Test GroomingProps __repr__ returns string with all properties."""
+        props = GroomingProps()
+        repr_str = repr(props)
+
+        self.assertIn("GroomingProps", repr_str)
+        self.assertIn("grooming_type", repr_str)
+        self.assertIn("lightpath_status_dict", repr_str)
+
+    def test_attributes_are_mutable(self) -> None:
+        """Test GroomingProps attributes can be modified."""
+        props = GroomingProps()
+
+        props.grooming_type = "end_to_end"
+        props.lightpath_status_dict = {("A", "B"): {1: {"bandwidth": 100}}}
+
+        self.assertEqual(props.grooming_type, "end_to_end")
+        self.assertEqual(
+            props.lightpath_status_dict, {("A", "B"): {1: {"bandwidth": 100}}}
+        )
+
+
+class TestSDNPropsGrooming(unittest.TestCase):
+    """Unit tests for SDNProps grooming-related attributes."""
+
+    def test_sdn_props_has_grooming_attributes(self) -> None:
+        """Test SDNProps has all grooming-related attributes."""
+        props = SDNProps()
+
+        # Lightpath tracking dictionaries
+        self.assertTrue(hasattr(props, "lightpath_status_dict"))
+        self.assertTrue(hasattr(props, "transponder_usage_dict"))
+        self.assertTrue(hasattr(props, "lp_bw_utilization_dict"))
+
+        # Grooming state flags
+        self.assertTrue(hasattr(props, "was_groomed"))
+        self.assertTrue(hasattr(props, "was_partially_groomed"))
+        self.assertTrue(hasattr(props, "was_partially_routed"))
+        self.assertTrue(hasattr(props, "was_new_lp_established"))
+
+        # Lightpath resource tracking
+        self.assertTrue(hasattr(props, "lightpath_id_list"))
+        self.assertTrue(hasattr(props, "lightpath_bandwidth_list"))
+        self.assertTrue(hasattr(props, "remaining_bw"))
+
+        # Lightpath ID counter
+        self.assertTrue(hasattr(props, "lightpath_counter"))
+
+    def test_get_lightpath_id_increments_counter(self) -> None:
+        """Test get_lightpath_id() increments counter and returns unique IDs."""
+        props = SDNProps()
+
+        lp_id_1 = props.get_lightpath_id()
+        lp_id_2 = props.get_lightpath_id()
+        lp_id_3 = props.get_lightpath_id()
+
+        self.assertEqual(lp_id_1, 1)
+        self.assertEqual(lp_id_2, 2)
+        self.assertEqual(lp_id_3, 3)
+        self.assertEqual(props.lightpath_counter, 3)
+
+    def test_reset_lightpath_id_counter_resets_to_zero(self) -> None:
+        """Test reset_lightpath_id_counter() resets counter to zero."""
+        props = SDNProps()
+
+        # Generate some IDs
+        props.get_lightpath_id()
+        props.get_lightpath_id()
+        props.get_lightpath_id()
+        self.assertEqual(props.lightpath_counter, 3)
+
+        # Reset
+        props.reset_lightpath_id_counter()
+        self.assertEqual(props.lightpath_counter, 0)
+
+        # Next ID should be 1
+        lp_id = props.get_lightpath_id()
+        self.assertEqual(lp_id, 1)
+
+    def test_reset_params_clears_grooming_fields(self) -> None:
+        """Test reset_params() clears grooming-related fields."""
+        props = SDNProps()
+
+        # Set some grooming state
+        props.lightpath_id_list = [1, 2, 3]
+        props.lightpath_bandwidth_list = [100, 200, 150]
+        props.was_groomed = True
+        props.was_partially_groomed = True
+        props.was_new_lp_established = [1, 2]
+        props.remaining_bw = 50
+
+        # Reset
+        props.reset_params()
+
+        # Verify grooming fields are cleared
+        self.assertEqual(props.lightpath_id_list, [])
+        self.assertEqual(props.lightpath_bandwidth_list, [])
+        self.assertIsNone(props.was_groomed)
+        self.assertFalse(props.was_partially_groomed)
+        self.assertEqual(props.was_new_lp_established, [])
+        self.assertIsNone(props.remaining_bw)
+
+    def test_stat_key_list_includes_grooming_keys(self) -> None:
+        """Test stat_key_list includes grooming-related keys."""
+        props = SDNProps()
+
+        self.assertIn("lightpath_bandwidth_list", props.stat_key_list)
+        self.assertIn("lightpath_id_list", props.stat_key_list)
+        # Note: remaining_bw is a scalar, not a list, so it's not in stat_key_list
+
+
+class TestSpectrumPropsGrooming(unittest.TestCase):
+    """Unit tests for SpectrumProps grooming-related attributes."""
+
+    def test_spectrum_props_has_lightpath_tracking(self) -> None:
+        """Test SpectrumProps has lightpath ID and bandwidth attributes."""
+        props = SpectrumProps()
+
+        self.assertTrue(hasattr(props, "lightpath_id"))
+        self.assertTrue(hasattr(props, "lightpath_bandwidth"))
+
+    def test_lightpath_id_can_be_set(self) -> None:
+        """Test lightpath_id can be set and retrieved."""
+        props = SpectrumProps()
+
+        props.lightpath_id = 42
+        self.assertEqual(props.lightpath_id, 42)
+
+    def test_lightpath_bandwidth_can_be_set(self) -> None:
+        """Test lightpath_bandwidth can be set and retrieved."""
+        props = SpectrumProps()
+
+        props.lightpath_bandwidth = 200.0
+        self.assertEqual(props.lightpath_bandwidth, 200.0)
 
 
 class TestModuleConstants(unittest.TestCase):

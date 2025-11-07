@@ -5,6 +5,7 @@ This module provides functionality for calculating SNR, cross-talk interference,
 and other signal quality metrics for optical network requests.
 """
 
+import logging
 import math
 from typing import Any
 
@@ -13,6 +14,8 @@ import numpy as np
 
 from fusion.core.properties import RoutingProps, SDNProps, SNRProps, SpectrumProps
 from fusion.modules.snr.utils import compute_response, get_loaded_files, get_slot_index
+
+logger = logging.getLogger(__name__)
 
 # Constants for calculations
 POWER_CONVERSION_FACTOR = 10**9  # Convert to GHz
@@ -738,12 +741,12 @@ class SnrMeasurements:
 
         return open_slots_list
 
-    def handle_snr(self, path_index: int) -> tuple[bool, float]:
+    def handle_snr(self, path_index: int) -> tuple[bool, float, float]:
         """
         Controls the methods of this class.
 
         :return: Whether snr is acceptable for allocation or not for a given
-                 request and its cost
+                 request, its cost, and lightpath bandwidth
         :rtype: tuple
         """
         if (
@@ -766,7 +769,279 @@ class SnrMeasurements:
                 f"Unexpected snr_type flag got: {self.engine_props_dict['snr_type']}"
             )
 
-        return snr_check, xt_cost
+        # Calculate lightpath bandwidth from modulation format
+        lp_bandwidth = 0.0
+        if self.spectrum_props.modulation is not None:
+            if self.spectrum_props.modulation in self.snr_props.bandwidth_mapping_dict:
+                lp_bandwidth = float(
+                    self.snr_props.bandwidth_mapping_dict[
+                        self.spectrum_props.modulation
+                    ]
+                )
+            elif (
+                self.sdn_props.modulation_formats_dict is not None
+                and self.spectrum_props.modulation
+                in self.sdn_props.modulation_formats_dict
+            ):
+                lp_bandwidth = float(
+                    self.sdn_props.modulation_formats_dict[
+                        self.spectrum_props.modulation
+                    ].get("bandwidth", 0.0)
+                )
+
+        return snr_check, xt_cost, lp_bandwidth
+
+    def recheck_snr_after_allocation(self, lightpath_id: int) -> tuple[bool, float]:
+        """
+        Recheck SNR after spectrum allocation.
+
+        When grooming is enabled, validates that newly allocated spectrum
+        still meets SNR requirements after considering all interference.
+
+        :param lightpath_id: ID of newly allocated lightpath
+        :type lightpath_id: int
+        :return: Tuple of (snr_acceptable, crosstalk_cost)
+        :rtype: tuple[bool, float]
+        """
+        if not self.engine_props_dict.get("snr_recheck", False):
+            # Rechecking disabled, assume OK
+            return True, 0.0
+
+        logger.debug("Rechecking SNR for lightpath %d", lightpath_id)
+
+        # Get allocated spectrum details
+        start_slot = self.spectrum_props.start_slot
+        end_slot = self.spectrum_props.end_slot
+        core_num = self.spectrum_props.core_number
+        band = self.spectrum_props.current_band
+        path_list = self.spectrum_props.path_list
+
+        if (
+            start_slot is None
+            or end_slot is None
+            or core_num is None
+            or band is None
+            or path_list is None
+        ):
+            raise ValueError("Required spectrum properties must be initialized")
+
+        # Calculate interference from adjacent cores
+        adjacent_core_interference = 0.0
+        if self.engine_props_dict.get("recheck_adjacent_cores", False):
+            adjacent_core_interference = self._calculate_adjacent_core_interference(
+                path_list, band, core_num, start_slot, end_slot
+            )
+
+        # Calculate cross-band interference
+        crossband_interference = 0.0
+        if self.engine_props_dict.get("recheck_crossband", False):
+            crossband_interference = self._calculate_crossband_interference(
+                path_list, core_num, start_slot, end_slot
+            )
+
+        # Total interference
+        total_interference = adjacent_core_interference + crossband_interference
+
+        # Re-calculate SNR with interference
+        snr_margin = self._calculate_snr_with_interference(total_interference)
+
+        # Check if SNR is still acceptable
+        required_snr = self.snr_props.request_snr
+        snr_acceptable = snr_margin >= required_snr
+
+        if not snr_acceptable:
+            logger.warning(
+                "SNR recheck failed for lightpath %d: margin=%.2f < required=%.2f",
+                lightpath_id,
+                snr_margin,
+                required_snr,
+            )
+
+        return snr_acceptable, total_interference
+
+    def _calculate_adjacent_core_interference(
+        self, path_list: list, band: str, core_num: int, start_slot: int, end_slot: int
+    ) -> float:
+        """
+        Calculate interference from adjacent cores.
+
+        :param path_list: Path nodes
+        :type path_list: list
+        :param band: Spectral band
+        :type band: str
+        :param core_num: Core number
+        :type core_num: int
+        :param start_slot: Start slot index
+        :type start_slot: int
+        :param end_slot: End slot index
+        :type end_slot: int
+        :return: Adjacent core interference value
+        :rtype: float
+        """
+        interference = 0.0
+
+        # Get adjacent cores (depends on core layout)
+        adjacent_cores = self._get_adjacent_cores(core_num)
+
+        for source, dest in zip(path_list, path_list[1:], strict=False):
+            if self.sdn_props.network_spectrum_dict is None:
+                raise ValueError("network_spectrum_dict must be initialized")
+
+            link_dict = self.sdn_props.network_spectrum_dict[(source, dest)]
+
+            for adj_core in adjacent_cores:
+                if adj_core >= self.engine_props_dict["cores_per_link"]:
+                    continue
+
+                core_array = link_dict["cores_matrix"][band][adj_core]
+
+                # Check for occupied slots in adjacent core
+                occupied_slots = core_array[start_slot:end_slot]
+                if np.any(occupied_slots != 0):
+                    # Add interference (simplified - use actual crosstalk model)
+                    interference += self.engine_props_dict.get(
+                        "adjacent_core_xt_coefficient", 0.01
+                    )
+
+        return interference
+
+    def _calculate_crossband_interference(
+        self, path_list: list, core_num: int, start_slot: int, end_slot: int
+    ) -> float:
+        """
+        Calculate interference from other spectral bands.
+
+        :param path_list: Path nodes
+        :type path_list: list
+        :param core_num: Core number
+        :type core_num: int
+        :param start_slot: Start slot index
+        :type start_slot: int
+        :param end_slot: End slot index
+        :type end_slot: int
+        :return: Cross-band interference value
+        :rtype: float
+        """
+        interference = 0.0
+
+        current_band = self.spectrum_props.current_band
+        if current_band is None:
+            raise ValueError("current_band must be initialized")
+
+        other_bands = [
+            b for b in self.engine_props_dict["band_list"] if b != current_band
+        ]
+
+        for source, dest in zip(path_list, path_list[1:], strict=False):
+            if self.sdn_props.network_spectrum_dict is None:
+                raise ValueError("network_spectrum_dict must be initialized")
+
+            link_dict = self.sdn_props.network_spectrum_dict[(source, dest)]
+
+            for band in other_bands:
+                core_array = link_dict["cores_matrix"][band][core_num]
+
+                # Check for occupied slots in other band
+                occupied_slots = core_array[start_slot:end_slot]
+                if np.any(occupied_slots != 0):
+                    # Add interference (simplified - use actual crosstalk model)
+                    interference += self.engine_props_dict.get(
+                        "crossband_xt_coefficient", 0.005
+                    )
+
+        return interference
+
+    def _get_adjacent_cores(self, core_num: int) -> list[int]:
+        """
+        Get list of cores adjacent to the given core.
+
+        :param core_num: Core number
+        :type core_num: int
+        :return: List of adjacent core numbers
+        :rtype: list[int]
+        """
+        # Simplified adjacency - actual adjacency depends on fiber geometry
+        total_cores = self.engine_props_dict["cores_per_link"]
+
+        if total_cores == 1:
+            return []
+
+        # Simple linear adjacency model
+        adjacent = []
+        if core_num > 0:
+            adjacent.append(core_num - 1)
+        if core_num < total_cores - 1:
+            adjacent.append(core_num + 1)
+
+        return adjacent
+
+    def _calculate_snr_with_interference(self, interference: float) -> float:
+        """
+        Calculate SNR including additional interference.
+
+        :param interference: Additional interference value
+        :type interference: float
+        :return: SNR margin in dB
+        :rtype: float
+        """
+        # Get base SNR calculation
+        # Use existing check_snr logic but adjust for interference
+        if (
+            self.spectrum_props.path_list is None
+            or self.sdn_props.network_spectrum_dict is None
+        ):
+            raise ValueError("Path list and network spectrum dict must be initialized")
+
+        total_snr = 0.0
+        self._init_center_frequency_and_bandwidth()
+
+        for link_num in range(0, len(self.spectrum_props.path_list) - 1):
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
+            self.link_id = self.sdn_props.network_spectrum_dict[(source, dest)][
+                "link_num"
+            ]
+
+            self.snr_props.link_dictionary = self.engine_props_dict["topology_info"][
+                "links"
+            ][self.link_id]["fiber"]
+            self._update_link_parameters(link_number=link_num)
+
+            psd_nli = self._calculate_psd_nli()
+            psd_ase = (
+                self.snr_props.planck_constant
+                * self.snr_props.light_frequency
+                * self.snr_props.noise_spectral_density
+            )
+            psd_ase *= (
+                math.exp(
+                    self.snr_props.link_dictionary["attenuation"]
+                    * self.snr_props.length
+                    * LENGTH_CONVERSION_FACTOR
+                )
+                - 1
+            )
+
+            # Add additional interference from grooming
+            power_xt = interference
+
+            if (
+                self.snr_props.center_psd is None
+                or self.snr_props.bandwidth is None
+                or self.snr_props.number_of_spans is None
+            ):
+                raise ValueError("Required SNR properties are not initialized")
+
+            current_snr = self.snr_props.center_psd * self.snr_props.bandwidth
+            current_snr /= (
+                (psd_ase + psd_nli) * self.snr_props.bandwidth + power_xt
+            ) * self.snr_props.number_of_spans
+
+            total_snr += 1 / current_snr
+
+        total_snr = DB_CONVERSION_FACTOR * math.log10(1 / total_snr)
+
+        return total_snr
 
     def handle_snr_dynamic_slicing(
         self, path_index: int
