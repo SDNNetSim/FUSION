@@ -20,8 +20,10 @@ from fusion.core.persistence import StatsPersistence
 from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
 from fusion.modules.ml import load_model
+from fusion.reporting.dataset_logger import DatasetLogger
 from fusion.reporting.simulation_reporter import SimulationReporter
 from fusion.utils.logging_config import get_logger, log_message
+from fusion.utils.os import create_directory
 
 logger = get_logger(__name__)
 
@@ -224,6 +226,28 @@ class SimulationEngine:
             else None
         )
 
+        # Initialize dataset logger if enabled
+        self.dataset_logger: DatasetLogger | None = None
+        if engine_props.get("log_offline_dataset", False):
+            # Build path matching output structure exactly
+            # data/training_data/{network}/{date}/{sim_start}/{thread}/dataset.jsonl
+            dataset_dir = os.path.join(
+                "data",
+                "training_data",
+                self.sim_info,
+                engine_props.get("thread_num", "s1"),
+            )
+            create_directory(dataset_dir)
+
+            # Allow custom filename from config, default to dataset.jsonl
+            dataset_filename = os.path.basename(
+                engine_props.get("dataset_output_path", "dataset.jsonl")
+            )
+            output_path = os.path.join(dataset_dir, dataset_filename)
+
+            self.dataset_logger = DatasetLogger(output_path, engine_props)
+            logger.info(f"Dataset logging enabled: {output_path}")
+
         self.ml_model = None
         self.stop_flag = engine_props.get("stop_flag")
 
@@ -318,6 +342,9 @@ class SimulationEngine:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
 
+        # Log dataset transition if enabled
+        self._log_dataset_transition(current_time=current_time)
+
     def handle_release(self, current_time: float) -> None:
         """
         Update the SDN controller to handle the release of a request.
@@ -355,6 +382,74 @@ class SimulationEngine:
             if sdn_spectrum_dict is not None:
                 self.network_spectrum_dict = sdn_spectrum_dict
         # Request was blocked, nothing to release
+
+    def _log_dataset_transition(self, current_time: float) -> None:
+        """
+        Log a dataset transition for offline RL training.
+
+        :param current_time: The arrival time of the request
+        :type current_time: float
+        """
+        if not self.dataset_logger or self.reqs_dict is None:
+            return
+
+        if current_time not in self.reqs_dict:
+            return
+
+        request = self.reqs_dict[current_time]
+        sdn_props = self.sdn_obj.sdn_props
+        route_props = self.sdn_obj.route_obj.route_props
+
+        # Extract k-paths from routing
+        k_paths = route_props.paths_matrix if route_props.paths_matrix else []
+
+        # Build state dict with available information
+        state = {
+            "src": request.get("source", sdn_props.source),
+            "dst": request.get("destination", sdn_props.destination),
+            "slots_needed": request.get("slots_needed", 0),
+            "bandwidth": request.get("bandwidth", 0),
+            "k_paths": k_paths,
+            "num_paths": len(k_paths),
+        }
+
+        # Determine selected path index and action mask
+        # Simple approach: mark all paths as feasible initially
+        action_mask = [True] * len(k_paths) if k_paths else [False]
+
+        if sdn_props.was_routed and sdn_props.path_list:
+            # Find which path was selected by matching path_list
+            selected_path_index = -1
+            for idx, path in enumerate(k_paths):
+                if path == sdn_props.path_list:
+                    selected_path_index = idx
+                    break
+            action = selected_path_index
+        else:
+            # Request was blocked
+            action = -1
+            # Mark all paths as infeasible since routing failed
+            action_mask = [False] * len(action_mask)
+
+        # Compute reward
+        reward = 1.0 if sdn_props.was_routed else -1.0
+
+        # Build metadata
+        meta = {
+            "request_id": request.get("req_id", -1),
+            "arrival_time": current_time,
+            "decision_time_ms": (sdn_props.route_time * 1000) if hasattr(sdn_props, 'route_time') and sdn_props.route_time else 0.0,
+        }
+
+        # Log the transition
+        self.dataset_logger.log_transition(
+            state=state,
+            action=action,
+            reward=reward,
+            next_state=None,
+            action_mask=action_mask,
+            meta=meta,
+        )
 
     def create_topology(self) -> None:
         """Create the physical topology of the simulation."""
@@ -796,6 +891,11 @@ class SimulationEngine:
             ),
             log_queue=context["log_queue"],
         )
+
+        # Close dataset logger if enabled
+        if self.dataset_logger:
+            self.dataset_logger.close()
+            logger.info("Dataset logger closed")
 
     def _save_all_stats(self, base_file_path: str = "data") -> None:
         """
