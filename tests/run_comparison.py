@@ -256,8 +256,8 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name in ['epsilon_greedy_bandit']:
-            all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
+        # if case.name in ['epsilon_greedy_bandit']:
+        all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
         LOGGER.info("All %d cases passed ✓", len(cases))

@@ -97,12 +97,11 @@ def run_rl_sim(input_dict: dict = None, is_testing: bool = False, config_path: P
     # TODO: (version 6.0) Three or four different logged times!? Please fix!
     if input_dict is not None:
         env.sim_dict.update(input_dict['s1'])
-        parts = env.engine_obj.sim_info.rsplit("/", 1)
-        parts[-1] = input_dict['s1']['sim_start']
-
-        env.engine_obj.sim_info = "/".join(parts)
-        env.engine_obj.stats_obj.sim_info = "/".join(parts)
-        sim_dict.update(input_dict['s1'])
+        sim_info_norm = os.path.normpath(env.engine_obj.sim_info)
+        head, _ = os.path.split(sim_info_norm)  
+        new_sim_info = os.path.join(head, input_dict['s1']['sim_start'])
+        env.engine_obj.sim_info = new_sim_info                    
+        env.engine_obj.stats_obj.sim_info = new_sim_info 
 
     out_path = Path('data') / 'output' / sim_dict['network'] / sim_dict['date'] / sim_dict['sim_start'] / sim_dict[
         'thread_num']
