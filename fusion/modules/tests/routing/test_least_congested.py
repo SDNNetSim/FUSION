@@ -112,20 +112,22 @@ class TestLeastCongestedRouting:
     def test_route_finds_least_congested_path(self, least_congested: Any) -> None:
         """Test that route method finds path with least congested bottleneck link."""
         # Act
-        path = least_congested.route("A", "C", request=None)
+        least_congested.route("A", "C", request=None)
 
         # Assert
-        assert path is not None
+        assert len(least_congested.route_props.paths_matrix) > 0
+        path_data = least_congested.route_props.paths_matrix[0]
+        path = path_data["path_list"] if isinstance(path_data, dict) else path_data
         assert path[0] == "A"
         assert path[-1] == "C"
 
     def test_route_with_no_path_returns_none(self, least_congested: Any) -> None:
-        """Test that route returns None when no path exists."""
+        """Test that route sets empty paths_matrix when no path exists."""
         # Act
-        path = least_congested.route("A", "Z", request=None)
+        least_congested.route("A", "Z", request=None)
 
         # Assert
-        assert path is None
+        assert len(least_congested.route_props.paths_matrix) == 0
 
     def test_route_updates_metrics(self, least_congested: Any) -> None:
         """Test that route method updates internal metrics."""

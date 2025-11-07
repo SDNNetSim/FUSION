@@ -18,7 +18,7 @@ This directory contains example configurations for common survivability experime
 
 **Run**:
 ```bash
-python -m fusion.cli.run_sim --config_path fusion/configs/examples/link_failure_ksp_ff.ini
+python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/link_failure_ksp_ff.ini
 ```
 
 ---
@@ -37,7 +37,7 @@ python -m fusion.cli.run_sim --config_path fusion/configs/examples/link_failure_
 
 **Run**:
 ```bash
-python -m fusion.cli.run_sim --config_path fusion/configs/examples/geo_failure_protection.ini
+python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/geo_failure_protection.ini
 ```
 
 ---
@@ -57,7 +57,7 @@ python -m fusion.cli.run_sim --config_path fusion/configs/examples/geo_failure_p
 
 **Run**:
 ```bash
-python -m fusion.cli.run_sim --config_path fusion/configs/examples/rl_policy_eval.ini
+python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/rl_policy_eval.ini
 ```
 
 **Note**: Requires trained BC model at `models/bc_model.pt`.
@@ -78,7 +78,7 @@ python -m fusion.cli.run_sim --config_path fusion/configs/examples/rl_policy_eva
 
 **Run**:
 ```bash
-python -m fusion.cli.run_sim --config_path fusion/configs/examples/dataset_generation.ini
+python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/dataset_generation.ini
 ```
 
 **Output**: JSONL dataset at `datasets/training_dataset.jsonl`
@@ -130,7 +130,7 @@ python -m fusion.cli.run_sim --config_path fusion/configs/examples/dataset_gener
 ### Running with Different Seeds
 
 ```bash
-python -m fusion.cli.run_sim \
+python -m fusion.cli.run_sim run_sim \
   --config_path fusion/configs/examples/link_failure_ksp_ff.ini \
   --seed 43
 ```
@@ -138,7 +138,7 @@ python -m fusion.cli.run_sim \
 ### Changing Failure Parameters
 
 ```bash
-python -m fusion.cli.run_sim \
+python -m fusion.cli.run_sim run_sim \
   --config_path fusion/configs/examples/geo_failure_protection.ini \
   --geo_center_node 7 \
   --geo_hop_radius 3
@@ -159,7 +159,7 @@ Run multiple configurations with different seeds for statistical significance:
 ```bash
 #!/bin/bash
 for seed in 42 43 44 45 46; do
-  python -m fusion.cli.run_sim \
+  python -m fusion.cli.run_sim run_sim \
     --config_path fusion/configs/examples/rl_policy_eval.ini \
     --seed $seed
 done

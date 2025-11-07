@@ -139,6 +139,51 @@ config_manager.merge_cli_args({'max_iters': 5})
 | `rl_training.ini` | RL experiments | Epsilon-greedy, medium loads |
 | `cross_platform.ini` | CI/CD | OS-agnostic paths, simple config |
 
+## Templates vs Examples
+
+The `configs/` directory contains both **templates** and **examples** - understanding the difference is important:
+
+### Templates (`templates/`)
+**Generic, reusable base configurations** designed as starting points:
+- Loaded programmatically via `ConfigRegistry.load_template('minimal')`
+- Used with profiles and overrides for customization
+- Broad, general-purpose settings applicable to many scenarios
+- Minimal comments, focused on being a foundation to build upon
+
+**When to use:** Starting a new simulation or creating custom configurations
+
+```python
+# Programmatic usage
+registry = ConfigRegistry()
+config = registry.create_custom_config('minimal', overrides={'erlang_start': 500})
+```
+
+### Examples (`examples/`)
+**Specific, ready-to-run scenarios** demonstrating particular features:
+- Complete configurations for specific use cases (link failures, RL evaluation, etc.)
+- Heavily documented with context explaining the scenario
+- Ready to run without modification
+- Reference implementations showing how to configure advanced features
+
+**When to use:** Learning the system, reproducing specific experiments, or as reference
+
+```bash
+# Direct usage
+python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/link_failure_ksp_ff.ini
+```
+
+### Quick Comparison
+
+| Aspect | Templates | Examples |
+|--------|-----------|----------|
+| **Purpose** | Generic starting points | Specific use cases |
+| **Scope** | Broad, reusable | Narrow, scenario-focused |
+| **Usage** | Customize via code or CLI overrides | Run directly or copy |
+| **Documentation** | Minimal comments | Heavily documented |
+| **Registry support** | Yes (`load_template()`) | No (just files) |
+
+**Analogy:** Templates are like "Basic Soup" recipes you customize; Examples are like "Minestrone Soup" recipes you follow exactly.
+
 ## Migration Notes
 - Legacy INI files work without modification
 - New features (validation, templates) are opt-in

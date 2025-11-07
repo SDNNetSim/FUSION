@@ -77,9 +77,12 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
             and hasattr(self.sdn_props, "network_spectrum_dict")
         )
 
-    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find a route from source to destination considering cross-talk.
+
+        Results are stored in route_props (paths_matrix, modulation_formats_matrix,
+        weights_list). Consumers should access route_props.paths_matrix for paths.
 
         :param source: Source node identifier.
         :type source: Any
@@ -87,8 +90,6 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
         :type destination: Any
         :param request: Request object containing traffic demand details.
         :type request: Any
-        :return: Path with least cross-talk, or None if no path found.
-        :rtype: list[Any] | None
         """
         # Store source/destination in sdn_props for compatibility
         self.sdn_props.source = source
@@ -106,7 +107,6 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
             # Find least XT path
             self._find_least_weight("xt_cost")
 
-            path = None
             if self.route_props.paths_matrix:
                 path = self.route_props.paths_matrix[0]
                 self._path_count += 1
@@ -114,10 +114,8 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
                 # Calculate XT metric for this path
                 xt = self._calculate_path_xt(path)
                 self._total_xt += float(xt)
-
-            return path
         except (nx.NetworkXNoPath, nx.NodeNotFound):
-            return None
+            pass
 
     def _update_xt_costs(self) -> None:
         """

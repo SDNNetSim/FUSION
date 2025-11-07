@@ -161,7 +161,8 @@ class TestProcessOptionalOptions:
     ) -> None:
         """Test _process_optional_options processes optional options correctly."""
         config_dict: dict[str, dict[str, Any]] = {DEFAULT_THREAD_NAME: {}}
-        optional_dict = {"sim": {"optional_test": str}}
+        # Use general_settings section which gets flattened for backward compatibility
+        optional_dict = {"general_settings": {"optional_test": str}}
         mock_config_parser.__getitem__.return_value = {"optional_test": "test_value"}
 
         _process_optional_options(
@@ -206,7 +207,7 @@ class TestValidateConfigStructure:
 
         with pytest.raises(ConfigParseError) as exc_info:
             _validate_config_structure(mock_config_parser)
-        assert f"Missing '{REQUIRED_SECTION}' section" in str(exc_info.value)
+        assert f"Missing required '{REQUIRED_SECTION}' section" in str(exc_info.value)
 
 
 class TestReadConfigFile:

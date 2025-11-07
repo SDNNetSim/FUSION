@@ -284,10 +284,15 @@ class SimulationPipeline:
         if not hasattr(self.routing_algorithm, "route"):
             result["failure_reason"] = "Routing algorithm missing route method"
             return
-        path = self.routing_algorithm.route(source, destination, request)
-        if not path:
+        self.routing_algorithm.route(source, destination, request)
+
+        # Check if routing found a path via route_props
+        if not self.routing_algorithm.route_props.paths_matrix:
             result["failure_reason"] = "No path found"
             return
+
+        # Use the first path from paths_matrix
+        path = self.routing_algorithm.route_props.paths_matrix[0]
         result["path"] = path
 
         # Step 2: Spectrum Assignment
