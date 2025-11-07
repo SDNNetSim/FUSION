@@ -39,6 +39,10 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "spectrum_priority": str,
         "save_step": int,
         "save_start_end_slots": str_to_bool,
+        "is_grooming_enabled": str_to_bool,
+        "can_partially_serve": str_to_bool,
+        "transponder_usage_per_node": str_to_bool,
+        "blocking_type_ci": str_to_bool,
     },
     "topology_settings": {
         "network": str,
@@ -61,6 +65,9 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "xt_noise": str_to_bool,
         "requested_xt": str,
         "phi": str,
+        "snr_recheck": str_to_bool,
+        "recheck_adjacent_cores": str_to_bool,
+        "recheck_crossband": str_to_bool,
     },
     "file_settings": {
         "file_type": str,
@@ -76,6 +83,8 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "k_paths": int,
         "filter_mods": bool,
         "request_distribution": str,
+        "fragmentation_metrics": str,
+        "frag_calc_step": int,
     },
     "topology_settings": {
         "bi_directional": str_to_bool,

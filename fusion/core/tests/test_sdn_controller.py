@@ -116,6 +116,7 @@ class TestSDNController(unittest.TestCase):
         self.assertIsNotNone(controller.route_obj)
         self.assertIsNotNone(controller.spectrum_obj)
         self.assertIsNotNone(controller.slicing_manager)
+        self.assertIsNotNone(controller.grooming_obj)
         self.assertIsNone(controller.ai_obj)
 
     def test_init_creates_proper_component_relationships(self) -> None:
@@ -432,6 +433,155 @@ class TestSDNController(unittest.TestCase):
                 self.assertFalse(self.controller.sdn_props.was_routed)
                 self.assertEqual(self.controller.sdn_props.block_reason, "congestion")
                 self.assertFalse(self.controller.sdn_props.is_sliced)
+
+    def test_sdn_controller_grooming_init(self) -> None:
+        """Test SDN controller has grooming object."""
+        controller = SDNController(engine_props=self.engine_props)
+        self.assertIsNotNone(controller.grooming_obj)
+        self.assertTrue(hasattr(controller, "grooming_obj"))
+
+    def test_release_with_lightpath_id(self) -> None:
+        """Test release with specific lightpath ID."""
+        # Setup network with lightpath ID allocation
+        assert self.controller.sdn_props.network_spectrum_dict is not None
+        spectrum_dict = self.controller.sdn_props.network_spectrum_dict
+        lightpath_id = 100
+        spectrum_dict[(0, 1)]["cores_matrix"]["c"][0][:3] = lightpath_id
+        spectrum_dict[(1, 0)]["cores_matrix"]["c"][0][:3] = lightpath_id
+        spectrum_dict[(1, 2)]["cores_matrix"]["c"][0][:3] = lightpath_id
+        spectrum_dict[(2, 1)]["cores_matrix"]["c"][0][:3] = lightpath_id
+
+        self.controller.release(lightpath_id=lightpath_id)
+
+        # Verify lightpath ID was released
+        assert self.controller.sdn_props.path_list is not None
+        path_list = self.controller.sdn_props.path_list
+        for link in zip(path_list, path_list[1:], strict=False):
+            link_tuple = (link[0], link[1])
+            core_arr = spectrum_dict[link_tuple]["cores_matrix"]["c"][0]
+            self.assertTrue(np.all(core_arr[:3] == 0))
+
+    def test_release_with_slicing_flag(self) -> None:
+        """Test release with slicing_flag (spectrum only)."""
+        # Setup network with lightpath ID allocation
+        assert self.controller.sdn_props.network_spectrum_dict is not None
+        spectrum_dict = self.controller.sdn_props.network_spectrum_dict
+        lightpath_id = 200
+        spectrum_dict[(0, 1)]["cores_matrix"]["c"][0][:3] = lightpath_id
+        spectrum_dict[(1, 0)]["cores_matrix"]["c"][0][:3] = lightpath_id
+
+        # Mock transponder dict and lightpath status
+        self.controller.sdn_props.source = "0"
+        self.controller.sdn_props.destination = "2"
+        self.controller.sdn_props.transponder_usage_dict = {
+            "0": {"available_transponder": 5},
+            "2": {"available_transponder": 5},
+        }
+        self.controller.sdn_props.lightpath_status_dict = {}
+
+        # Release with slicing flag (should not call _release_lightpath_resources)
+        self.controller.release(lightpath_id=lightpath_id, slicing_flag=True)
+
+        # Verify spectrum was released but transponders unchanged
+        self.assertEqual(
+            self.controller.sdn_props.transponder_usage_dict["0"][
+                "available_transponder"
+            ],
+            5,
+        )
+        self.assertEqual(
+            self.controller.sdn_props.transponder_usage_dict["2"][
+                "available_transponder"
+            ],
+            5,
+        )
+
+    def test_allocate_with_lightpath_id(self) -> None:
+        """Test allocate uses lightpath_id from spectrum props."""
+        lightpath_id = 300
+        self.controller.spectrum_obj.spectrum_props.start_slot = 0
+        self.controller.spectrum_obj.spectrum_props.end_slot = 3
+        self.controller.spectrum_obj.spectrum_props.core_number = 0
+        self.controller.spectrum_obj.spectrum_props.current_band = "c"
+        self.controller.spectrum_obj.spectrum_props.lightpath_id = lightpath_id
+
+        self.controller.allocate()
+
+        assert self.controller.sdn_props.path_list is not None
+        assert self.controller.sdn_props.network_spectrum_dict is not None
+        path_list = self.controller.sdn_props.path_list
+        network_dict = self.controller.sdn_props.network_spectrum_dict
+
+        for link in zip(path_list, path_list[1:], strict=False):
+            link_tuple = (link[0], link[1])
+            core_matrix = network_dict[link_tuple]["cores_matrix"]["c"][0]
+            # Verify lightpath_id is used instead of request_id
+            self.assertTrue(np.all(core_matrix[:2] == lightpath_id))
+            self.assertEqual(core_matrix[2], lightpath_id * -1)
+
+    def test_allocate_guard_band_with_lightpath_id(self) -> None:
+        """Test _allocate_guard_band uses lightpath_id parameter."""
+        lightpath_id = 400
+        band = "c"
+        core_num = 0
+        end_slot = 5
+
+        assert self.controller.sdn_props.network_spectrum_dict is not None
+        core_matrix = self.controller.sdn_props.network_spectrum_dict[(0, 1)][
+            "cores_matrix"
+        ]
+        reverse_core_matrix = self.controller.sdn_props.network_spectrum_dict[(1, 0)][
+            "cores_matrix"
+        ]
+
+        self.controller._allocate_guard_band(
+            band=band,
+            core_matrix=core_matrix,
+            reverse_core_matrix=reverse_core_matrix,
+            core_num=core_num,
+            end_slot=end_slot,
+            lightpath_id=lightpath_id,
+        )
+
+        # Verify guard band uses lightpath_id
+        self.assertEqual(core_matrix[band][core_num][end_slot], lightpath_id * -1)
+        self.assertEqual(
+            reverse_core_matrix[band][core_num][end_slot], lightpath_id * -1
+        )
+
+    def test_check_snr_after_allocation_disabled(self) -> None:
+        """Test _check_snr_after_allocation when disabled."""
+        self.controller.engine_props["snr_recheck"] = False
+        result = self.controller._check_snr_after_allocation(lightpath_id=500)
+        self.assertTrue(result)
+
+    def test_handle_congestion_with_grooming(self) -> None:
+        """Test _handle_congestion_with_grooming rollback logic."""
+        # Setup grooming state
+        self.controller.sdn_props.bandwidth = 100.0
+        self.controller.sdn_props.was_new_lp_established = [1000, 1001]
+        self.controller.sdn_props.lightpath_id_list = [1000, 1001]
+        self.controller.sdn_props.lightpath_bandwidth_list = [50, 50]
+        self.controller.sdn_props.start_slot_list = [0, 5]
+        self.controller.sdn_props.band_list = ["c", "c"]
+        self.controller.sdn_props.core_list = [0, 0]
+        self.controller.sdn_props.end_slot_list = [5, 10]
+        self.controller.sdn_props.crosstalk_list = [0, 0]
+        self.controller.sdn_props.bandwidth_list = [50, 50]
+        self.controller.sdn_props.modulation_list = ["QPSK", "QPSK"]
+        self.controller.sdn_props.was_partially_groomed = False
+
+        with patch.object(self.controller, "release") as mock_release:
+            self.controller._handle_congestion_with_grooming(remaining_bw=50)
+
+            # Verify release was called for each new lightpath
+            self.assertEqual(mock_release.call_count, 2)
+            mock_release.assert_any_call(lightpath_id=1000, slicing_flag=True)
+            mock_release.assert_any_call(lightpath_id=1001, slicing_flag=True)
+
+            # Verify lists were cleared
+            self.assertEqual(len(self.controller.sdn_props.was_new_lp_established), 0)
+            self.assertEqual(len(self.controller.sdn_props.lightpath_id_list), 0)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,12 @@ from fusion.reporting.csv_export import (
 )
 from fusion.reporting.dataset_logger import DatasetLogger
 from fusion.reporting.simulation_reporter import SimulationReporter
+from fusion.reporting.statistics import (
+    GroomingStatistics,
+    SimulationStatistics,
+    export_grooming_stats_csv,
+    generate_grooming_report,
+)
 
 __all__ = [
     "SimulationReporter",
@@ -29,4 +35,8 @@ __all__ = [
     "export_aggregated_results",
     "export_comparison_table",
     "append_result_to_csv",
+    "GroomingStatistics",
+    "SimulationStatistics",
+    "generate_grooming_report",
+    "export_grooming_stats_csv",
 ]
