@@ -47,6 +47,15 @@ from .shared import (
 )
 from .simulation import add_run_sim_args, add_simulation_args, register_run_sim_args
 from .snr import add_snr_args
+from .survivability import (
+    add_dataset_logging_args,
+    add_failure_args,
+    add_offline_rl_args,
+    add_protection_args,
+    add_recovery_timing_args,
+    add_reporting_args,
+    add_survivability_args,
+)
 from .traffic import (
     add_erlang_args,
     add_request_args,
@@ -112,4 +121,12 @@ __all__ = [
     # GUI arguments
     "add_gui_args",
     "add_all_gui_args",
+    # Survivability arguments
+    "add_survivability_args",
+    "add_failure_args",
+    "add_protection_args",
+    "add_offline_rl_args",
+    "add_dataset_logging_args",
+    "add_recovery_timing_args",
+    "add_reporting_args",
 ]

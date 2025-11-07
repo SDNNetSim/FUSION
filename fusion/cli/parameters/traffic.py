@@ -49,7 +49,7 @@ def add_simulation_control_args(parser: argparse.ArgumentParser) -> None:
     control_group.add_argument(
         "--max_iters",
         type=int,
-        default=3,
+        default=None,
         help="Maximum number of simulation iterations",
     )
     control_group.add_argument(
