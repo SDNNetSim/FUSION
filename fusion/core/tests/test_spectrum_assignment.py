@@ -46,6 +46,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             "network": "USbackbone60",
             "l_band": 2,
             "c_band": 1,
+            "is_grooming_enabled": False,
         }
         self.sdn_props = MagicMock()
         self.sdn_props.network_spectrum_dict = {
@@ -59,6 +60,11 @@ class TestSpectrumAssignment(unittest.TestCase):
             "QPSK": {"slots_needed": 3},
             "64QAM": {"slots_needed": 4},
         }
+        # Set grooming flags to False to avoid triggering partial grooming logic
+        self.sdn_props.was_partially_groomed = False
+        self.sdn_props.was_new_lp_established = []
+        # Mock get_lightpath_id to return sequential IDs
+        self.sdn_props.get_lightpath_id = MagicMock(side_effect=lambda: 1)
 
         self.route_props = RoutingProps()
         self.spec_assign = SpectrumAssignment(
@@ -257,7 +263,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             patch.object(
                 self.spec_assign.snr_measurements,
                 "handle_snr",
-                return_value=(True, 0.5),
+                return_value=(True, 0.5, 200.0),
             ),
         ):
             self.spec_assign.spectrum_props.is_free = False
@@ -278,7 +284,7 @@ class TestSpectrumAssignment(unittest.TestCase):
             patch.object(
                 self.spec_assign.snr_measurements,
                 "handle_snr",
-                return_value=(True, 0.5),
+                return_value=(True, 0.5, 200.0),
             ),
         ):
             # Mock allocation failure - spectrum remains not free
@@ -450,6 +456,144 @@ class TestSpectrumAssignment(unittest.TestCase):
                     len(called_channels[i - 1]["channel"]),
                     len(called_channels[i]["channel"]),
                 )
+
+    def test_calculate_slots_needed_with_fixed_grid_returns_one(self) -> None:
+        """Test _calculate_slots_needed returns 1 for fixed grid."""
+        self.spec_assign.engine_props_dict["fixed_grid"] = True
+
+        slots = self.spec_assign._calculate_slots_needed("QPSK")
+
+        self.assertEqual(slots, 1)
+
+    def test_calculate_slots_needed_with_partial_grooming_rounds_up(self) -> None:
+        """Test _calculate_slots_needed handles partial grooming bandwidth."""
+        self.spec_assign.engine_props_dict["fixed_grid"] = False
+        self.spec_assign.engine_props_dict["mod_per_bw"] = {
+            "100": {"QPSK": {"slots_needed": 2}},
+            "200": {"QPSK": {"slots_needed": 3}},
+            "300": {"QPSK": {"slots_needed": 4}},
+        }
+        self.spec_assign.sdn_props.was_partially_groomed = True
+        self.spec_assign.sdn_props.remaining_bw = 150
+
+        slots = self.spec_assign._calculate_slots_needed("QPSK")
+
+        # Should round up to 200 bandwidth tier
+        self.assertEqual(slots, 3)
+
+    def test_calculate_slots_needed_with_no_tier_returns_none(self) -> None:
+        """Test _calculate_slots_needed returns None when no tier available."""
+        self.spec_assign.engine_props_dict["fixed_grid"] = False
+        self.spec_assign.engine_props_dict["mod_per_bw"] = {
+            "100": {"QPSK": {"slots_needed": 2}},
+            "200": {"QPSK": {"slots_needed": 3}},
+        }
+        self.spec_assign.sdn_props.was_partially_groomed = True
+        self.spec_assign.sdn_props.remaining_bw = 300  # Higher than any tier
+
+        slots = self.spec_assign._calculate_slots_needed("QPSK")
+
+        self.assertIsNone(slots)
+
+    def test_calculate_slots_needed_with_slice_bandwidth_uses_correct_tier(
+        self,
+    ) -> None:
+        """Test _calculate_slots_needed uses slice_bandwidth tier."""
+        self.spec_assign.engine_props_dict["fixed_grid"] = False
+        self.spec_assign.engine_props_dict["mod_per_bw"] = {
+            "100": {"QPSK": {"slots_needed": 2}},
+            "200": {"QPSK": {"slots_needed": 3}},
+        }
+        self.spec_assign.sdn_props.was_partially_groomed = False
+
+        slots = self.spec_assign._calculate_slots_needed("QPSK", slice_bandwidth="200")
+
+        self.assertEqual(slots, 3)
+
+    def test_lightpath_id_generation_when_spectrum_found(self) -> None:
+        """Test lightpath ID is generated when spectrum is allocated."""
+
+        def mock_get_spectrum_side_effect() -> None:
+            self.spec_assign.spectrum_props.is_free = True
+            self.spec_assign.spectrum_props.start_slot = 0
+            self.spec_assign.spectrum_props.end_slot = 3
+            self.spec_assign.spectrum_props.core_number = 0
+            self.spec_assign.spectrum_props.current_band = "c"
+
+        self.spec_assign.engine_props_dict["is_grooming_enabled"] = True
+
+        with (
+            patch.object(
+                self.spec_assign,
+                "_determine_spectrum_allocation",
+                side_effect=mock_get_spectrum_side_effect,
+            ),
+            patch.object(
+                self.spec_assign.snr_measurements,
+                "handle_snr",
+                return_value=(True, 0.5, 200.0),
+            ),
+            patch.object(self.spec_assign, "_update_lightpath_status") as mock_update,
+            patch.object(
+                self.spec_assign.sdn_props, "get_lightpath_id", return_value=42
+            ),
+        ):
+            self.spec_assign.get_spectrum(["QPSK"])
+
+            self.assertEqual(self.spec_assign.spectrum_props.lightpath_id, 42)
+            self.assertEqual(self.spec_assign.sdn_props.was_new_lp_established, [42])
+            mock_update.assert_called_once()
+
+    def test_update_lightpath_status_populates_dict(self) -> None:
+        """Test _update_lightpath_status populates lightpath status dict."""
+        self.spec_assign.engine_props_dict["is_grooming_enabled"] = True
+        self.spec_assign.sdn_props.lightpath_status_dict = {}
+        self.spec_assign.sdn_props.source = "A"
+        self.spec_assign.sdn_props.destination = "B"
+        self.spec_assign.sdn_props.path_list = [0, 1, 2]  # Use integers
+        self.spec_assign.sdn_props.path_weight = 100.0
+        self.spec_assign.sdn_props.arrive = 1000.0
+        self.spec_assign.sdn_props.modulation_formats_dict = {
+            "QPSK": {"bandwidth": 200, "slots_needed": 3}
+        }
+        self.spec_assign.spectrum_props.lightpath_id = 1
+        self.spec_assign.spectrum_props.lightpath_bandwidth = None
+        self.spec_assign.spectrum_props.modulation = "QPSK"
+        self.spec_assign.spectrum_props.core_number = 0
+        self.spec_assign.spectrum_props.current_band = "c"
+        self.spec_assign.spectrum_props.start_slot = 5
+        self.spec_assign.spectrum_props.end_slot = 8
+        self.spec_assign.spectrum_props.crosstalk_cost = 0.5
+
+        self.spec_assign._update_lightpath_status()
+
+        light_id = ("A", "B")
+        self.assertIn(light_id, self.spec_assign.sdn_props.lightpath_status_dict)
+        self.assertIn(1, self.spec_assign.sdn_props.lightpath_status_dict[light_id])
+
+        lp_entry = self.spec_assign.sdn_props.lightpath_status_dict[light_id][1]
+        self.assertEqual(lp_entry["path"], [0, 1, 2])
+        self.assertEqual(lp_entry["path_weight"], 100.0)
+        self.assertEqual(lp_entry["core"], 0)
+        self.assertEqual(lp_entry["band"], "c")
+        self.assertEqual(lp_entry["start_slot"], 5)
+        self.assertEqual(lp_entry["end_slot"], 8)
+        self.assertEqual(lp_entry["mod_format"], "QPSK")
+        self.assertEqual(lp_entry["lightpath_bandwidth"], 200)
+        self.assertEqual(lp_entry["remaining_bandwidth"], 200)
+        self.assertEqual(lp_entry["snr_cost"], 0.5)
+        self.assertFalse(lp_entry["is_degraded"])
+        self.assertEqual(lp_entry["requests_dict"], {})
+        self.assertIn(1000.0, lp_entry["time_bw_usage"])
+
+    def test_update_lightpath_status_skipped_when_grooming_disabled(self) -> None:
+        """Test _update_lightpath_status is skipped when grooming disabled."""
+        self.spec_assign.engine_props_dict["is_grooming_enabled"] = False
+        self.spec_assign.sdn_props.lightpath_status_dict = {}
+
+        self.spec_assign._update_lightpath_status()
+
+        self.assertEqual(self.spec_assign.sdn_props.lightpath_status_dict, {})
 
 
 if __name__ == "__main__":

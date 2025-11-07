@@ -204,3 +204,64 @@ def find_path_fragmentation(
             fragmentation_ratios.append(fragmentation_ratio)
 
     return float(np.mean(fragmentation_ratios)) if fragmentation_ratios else 1.0
+
+
+def average_bandwidth_usage(
+    bw_dict: dict[float, float], departure_time: float
+) -> float:
+    """
+    Calculate time-weighted average bandwidth utilization.
+
+    Given a dictionary mapping timestamps to bandwidth utilization percentages,
+    calculates the weighted average utilization over the lifetime of a lightpath.
+
+    :param bw_dict: Dictionary mapping arrival times to bandwidth usage percentages
+    :type bw_dict: dict[float, float]
+    :param departure_time: Time when the lightpath is released
+    :type departure_time: float
+    :return: Average bandwidth utilization percentage (0-100)
+    :rtype: float
+
+    Example:
+        >>> bw_dict = {0.0: 50.0, 100.0: 75.0, 200.0: 100.0}
+        >>> average_bandwidth_usage(bw_dict, 300.0)
+        75.0
+    """
+    if not bw_dict:
+        return 0.0
+
+    sorted_times = sorted(bw_dict.keys())
+
+    total_bw_time = 0.0  # Accumulated bandwidth * time
+    total_time = 0.0  # Total time duration
+
+    for i in range(len(sorted_times)):
+        start_time = sorted_times[i]
+        bw = bw_dict[start_time]
+
+        # Determine end time for this period
+        if i < len(sorted_times) - 1:
+            end_time = sorted_times[i + 1]
+        else:
+            end_time = departure_time
+
+        # Calculate duration and weighted bandwidth
+        duration = end_time - start_time
+
+        if duration < 0:
+            # Sanity check
+            raise ValueError(
+                f"Invalid time progression: "
+                f"start_time={start_time}, end_time={end_time}"
+            )
+
+        total_bw_time += bw * duration
+        total_time += duration
+
+    # Calculate weighted average
+    if total_time == 0:
+        return 0.0
+
+    average_utilization = total_bw_time / total_time
+
+    return average_utilization

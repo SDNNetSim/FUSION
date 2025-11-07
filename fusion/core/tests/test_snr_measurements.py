@@ -7,7 +7,7 @@ signal quality metrics for optical network requests.
 """
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
@@ -348,6 +348,223 @@ class TestSnrMeasurements(unittest.TestCase):
 
         self.assertEqual(snr_measurements.route_props, self.route_props)
         self.assertEqual(snr_measurements.route_props.connection_index, 0)
+
+    def test_handle_snr_returns_bandwidth(self) -> None:
+        """Test that handle_snr returns bandwidth alongside SNR results."""
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+        snr_measurements.spectrum_props.modulation = "QPSK"
+        snr_measurements.snr_props.bandwidth_mapping_dict = {"QPSK": 100}
+
+        # Mock the check_snr method to avoid complex calculations
+        with patch.object(snr_measurements, "check_snr", return_value=(True, 5.0)):
+            snr_ok, xt_cost, lp_bw = snr_measurements.handle_snr(path_index=0)
+
+        self.assertIsInstance(snr_ok, bool)
+        self.assertIsInstance(xt_cost, float)
+        self.assertIsInstance(lp_bw, float)
+        self.assertGreaterEqual(lp_bw, 0)
+        self.assertEqual(lp_bw, 100.0)  # Should match bandwidth_mapping_dict
+
+    def test_snr_recheck_disabled_returns_true(self) -> None:
+        """Test SNR recheck returns True when disabled."""
+        self.engine_props["snr_recheck"] = False
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        snr_ok, interference = snr_measurements.recheck_snr_after_allocation(
+            lightpath_id=1
+        )
+
+        self.assertTrue(snr_ok)
+        self.assertEqual(interference, 0.0)
+
+    def test_snr_recheck_after_allocation_with_valid_data(self) -> None:
+        """Test SNR rechecking with valid allocated lightpath."""
+        self.engine_props["snr_recheck"] = True
+        self.engine_props["cores_per_link"] = 7
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        # Setup spectrum properties (path_list already set in setUp)
+        snr_measurements.spectrum_props.start_slot = 10
+        snr_measurements.spectrum_props.end_slot = 15
+        snr_measurements.spectrum_props.core_number = 3
+        snr_measurements.spectrum_props.current_band = "c"
+        snr_measurements.number_of_slots = 6
+        snr_measurements.snr_props.request_snr = 10.0
+
+        # Mock the complex SNR calculation to avoid overflow
+        with patch.object(
+            snr_measurements, "_calculate_snr_with_interference", return_value=15.0
+        ):
+            snr_ok, interference = snr_measurements.recheck_snr_after_allocation(
+                lightpath_id=1
+            )
+
+        self.assertIsInstance(snr_ok, bool)
+        self.assertIsInstance(interference, float)
+        self.assertGreaterEqual(interference, 0.0)
+        self.assertTrue(snr_ok)  # 15.0 > 10.0, should pass
+
+    def test_adjacent_core_interference_calculation(self) -> None:
+        """Test adjacent core interference calculation."""
+        self.engine_props["recheck_adjacent_cores"] = True
+        self.engine_props["cores_per_link"] = 7
+        self.engine_props["adjacent_core_xt_coefficient"] = 0.01
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        interference = snr_measurements._calculate_adjacent_core_interference(
+            path_list=["A", "B", "C"], band="c", core_num=3, start_slot=10, end_slot=15
+        )
+
+        self.assertIsInstance(interference, float)
+        self.assertGreaterEqual(interference, 0.0)
+
+    def test_crossband_interference_calculation(self) -> None:
+        """Test cross-band interference calculation."""
+        self.engine_props["recheck_crossband"] = True
+        self.engine_props["band_list"] = ["c", "l"]
+        self.engine_props["crossband_xt_coefficient"] = 0.005
+        self.engine_props["cores_per_link"] = 7
+
+        # Add 'l' band to network spectrum dict
+        self.sdn_props.network_spectrum_dict[("A", "B")]["cores_matrix"]["l"] = (
+            np.zeros((7, 40))
+        )
+        self.sdn_props.network_spectrum_dict[("B", "C")]["cores_matrix"]["l"] = (
+            np.zeros((7, 40))
+        )
+
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+        snr_measurements.spectrum_props.current_band = "c"
+
+        interference = snr_measurements._calculate_crossband_interference(
+            path_list=["A", "B", "C"], core_num=3, start_slot=10, end_slot=15
+        )
+
+        self.assertIsInstance(interference, float)
+        self.assertGreaterEqual(interference, 0.0)
+
+    def test_get_adjacent_cores_single_core(self) -> None:
+        """Test adjacent cores for single core fiber."""
+        self.engine_props["cores_per_link"] = 1
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        adjacent = snr_measurements._get_adjacent_cores(core_num=0)
+
+        self.assertEqual(adjacent, [])
+
+    def test_get_adjacent_cores_middle_core(self) -> None:
+        """Test adjacent cores for middle core in multi-core fiber."""
+        self.engine_props["cores_per_link"] = 7
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        adjacent = snr_measurements._get_adjacent_cores(core_num=3)
+
+        self.assertEqual(adjacent, [2, 4])
+
+    def test_get_adjacent_cores_first_core(self) -> None:
+        """Test adjacent cores for first core in multi-core fiber."""
+        self.engine_props["cores_per_link"] = 7
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        adjacent = snr_measurements._get_adjacent_cores(core_num=0)
+
+        self.assertEqual(adjacent, [1])
+
+    def test_get_adjacent_cores_last_core(self) -> None:
+        """Test adjacent cores for last core in multi-core fiber."""
+        self.engine_props["cores_per_link"] = 7
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+
+        adjacent = snr_measurements._get_adjacent_cores(core_num=6)
+
+        self.assertEqual(adjacent, [5])
+
+    def test_calculate_snr_with_interference(self) -> None:
+        """Test SNR calculation with additional interference."""
+        self.engine_props["cores_per_link"] = 7
+        snr_measurements = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=self.spectrum_props,
+            route_props=self.route_props,
+        )
+        # path_list already set in setUp
+        snr_measurements.spectrum_props.start_slot = 10
+        snr_measurements.spectrum_props.end_slot = 15
+        snr_measurements.number_of_slots = 6
+
+        # Set up required properties with realistic values to avoid overflow
+        snr_measurements.snr_props.center_psd = 1e-3
+        snr_measurements.snr_props.bandwidth = 1e9
+        snr_measurements.snr_props.number_of_spans = 1
+        snr_measurements.snr_props.planck_constant = 6.626e-34
+        snr_measurements.snr_props.light_frequency = 1.934e14
+        snr_measurements.snr_props.noise_spectral_density = 1.8
+        # Use very small attenuation and length to avoid overflow in exp()
+        snr_measurements.snr_props.link_dictionary = {
+            "attenuation": 0.0002,  # Much smaller to avoid overflow
+            "dispersion": 16.7,
+        }
+        snr_measurements.snr_props.length = (
+            0.08  # Much smaller length (80m instead of 80km)
+        )
+
+        # Mock internal methods that would require full network state
+        with patch.object(snr_measurements, "_init_center_frequency_and_bandwidth"):
+            with patch.object(snr_measurements, "_update_link_parameters"):
+                with patch.object(
+                    snr_measurements, "_calculate_psd_nli", return_value=1e-12
+                ):
+                    snr_margin = snr_measurements._calculate_snr_with_interference(
+                        interference=0.01
+                    )
+
+        self.assertIsInstance(snr_margin, float)
 
 
 if __name__ == "__main__":

@@ -101,6 +101,10 @@ class SpectrumProps:
         # Cost metrics
         self.crosstalk_cost: float | None = None
 
+        # Lightpath tracking (for grooming)
+        self.lightpath_id: int | None = None
+        self.lightpath_bandwidth: float | None = None
+
     def __repr__(self) -> str:
         """
         Return string representation of SpectrumProps.
@@ -264,6 +268,29 @@ class SNRProps:
         return f"SNRProps({self.__dict__})"
 
 
+class GroomingProps:
+    """
+    Main properties used for traffic grooming operations.
+
+    This class manages properties specific to traffic grooming,
+    including grooming type selection and lightpath status tracking.
+    """
+
+    def __init__(self) -> None:
+        """Initialize grooming properties with default values."""
+        self.grooming_type: str | None = None  # Grooming method selection
+        self.lightpath_status_dict: dict | None = None  # Established lightpath status
+
+    def __repr__(self) -> str:
+        """
+        Return string representation of GroomingProps.
+
+        :return: String representation with all properties
+        :rtype: str
+        """
+        return f"GroomingProps({self.__dict__})"
+
+
 class SDNProps:
     """
     Main properties used for SDN controller operations.
@@ -314,6 +341,25 @@ class SDNProps:
         self.spectrum_object: SpectrumProps | None = None
         self.is_sliced: bool | None = None
 
+        # Lightpath tracking dictionaries
+        self.lightpath_status_dict: dict | None = None
+        self.transponder_usage_dict: dict | None = None
+        self.lp_bw_utilization_dict: dict | None = None
+
+        # Grooming state flags
+        self.was_groomed: bool | None = None
+        self.was_partially_groomed: bool = False
+        self.was_partially_routed: bool = False
+        self.was_new_lp_established: list[int] = []
+
+        # Lightpath resource tracking
+        self.lightpath_id_list: list[int] = []
+        self.lightpath_bandwidth_list: list[float] = []
+        self.remaining_bw: int | float | str | None = None
+
+        # Lightpath ID counter
+        self.lightpath_counter: int = 0
+
         # Statistical tracking keys
         self.stat_key_list: list[str] = [
             "modulation_list",
@@ -322,6 +368,8 @@ class SDNProps:
             "band_list",
             "start_slot_list",
             "end_slot_list",
+            "lightpath_bandwidth_list",
+            "lightpath_id_list",
         ]
 
     def update_params(
@@ -362,6 +410,24 @@ class SDNProps:
             else:
                 setattr(self, key, value)
 
+    def get_lightpath_id(self) -> int:
+        """
+        Generate and return a new unique lightpath ID.
+
+        :return: New lightpath ID
+        :rtype: int
+        """
+        self.lightpath_counter += 1
+        return self.lightpath_counter
+
+    def reset_lightpath_id_counter(self) -> None:
+        """
+        Reset the lightpath ID counter to zero.
+
+        Called at the start of each simulation iteration.
+        """
+        self.lightpath_counter = 0
+
     def reset_params(self) -> None:
         """
         Reset statistical tracking lists to empty state.
@@ -369,12 +435,30 @@ class SDNProps:
         This method clears all lists used for tracking per-request statistics,
         typically called before processing a new request.
         """
+        # Existing resets
         self.modulation_list = []
         self.crosstalk_list = []
         self.core_list = []
         self.band_list = []
         self.start_slot_list = []
         self.end_slot_list = []
+        self.bandwidth_list = []
+
+        # Grooming-related resets
+        self.lightpath_bandwidth_list = []
+        self.lightpath_id_list = []
+        self.path_list = []
+        self.was_new_lp_established = []
+        self.lp_bw_utilization_dict = {}
+
+        # Reset flags
+        self.was_routed = None
+        self.was_groomed = None
+        self.was_partially_groomed = False
+        self.was_partially_routed = False
+        self.remaining_bw = None
+        self.is_sliced = None
+        self.path_weight = None
 
     def get_data(self, key: str) -> Any:
         """

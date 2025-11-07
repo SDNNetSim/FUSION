@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 
+from fusion.core.grooming import Grooming
 from fusion.core.properties import SDNProps
 from fusion.core.routing import Routing
 from fusion.core.spectrum_assignment import SpectrumAssignment
@@ -50,16 +51,29 @@ class SDNController:
             sdn_props=self.sdn_props,
             spectrum_obj=self.spectrum_obj,
         )
+        self.grooming_obj = Grooming(
+            engine_props=self.engine_props, sdn_props=self.sdn_props
+        )
+        self.stats = None
 
-    def release(self) -> None:
+    def release(
+        self, lightpath_id: int | None = None, slicing_flag: bool = False
+    ) -> None:
         """
         Remove a previously allocated request from the network.
 
-        Deallocates spectrum resources and updates throughput statistics for
-        the current request across all links in the path.
+        :param lightpath_id: Specific lightpath ID to release (for grooming)
+        :type lightpath_id: int | None
+        :param slicing_flag: If True, only release spectrum, not transponders
+        :type slicing_flag: bool
         """
         if self.sdn_props.path_list is None:
             return
+
+        # Use provided lightpath_id or fall back to request_id
+        release_id = (
+            lightpath_id if lightpath_id is not None else self.sdn_props.request_id
+        )
 
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
@@ -71,14 +85,12 @@ class SDNController:
                     core_array = self.sdn_props.network_spectrum_dict[(source, dest)][
                         "cores_matrix"
                     ][band][core_num]
-                    request_id_indices = np.where(
-                        core_array == self.sdn_props.request_id
-                    )
-                    if self.sdn_props.request_id is None:
+
+                    # Release using lightpath_id instead of request_id
+                    if release_id is None:
                         continue
-                    guard_band_indices = np.where(
-                        core_array == (self.sdn_props.request_id * -1)
-                    )
+                    request_id_indices = np.where(core_array == release_id)
+                    guard_band_indices = np.where(core_array == (release_id * -1))
 
                     for request_index in request_id_indices[0]:
                         self.sdn_props.network_spectrum_dict[(source, dest)][
@@ -87,6 +99,7 @@ class SDNController:
                         self.sdn_props.network_spectrum_dict[(dest, source)][
                             "cores_matrix"
                         ][band][core_num][request_index] = 0
+
                     for guard_band_index in guard_band_indices[0]:
                         self.sdn_props.network_spectrum_dict[(source, dest)][
                             "cores_matrix"
@@ -95,6 +108,7 @@ class SDNController:
                             "cores_matrix"
                         ][band][core_num][guard_band_index] = 0
 
+        # Throughput calculation (existing code)
         try:
             if (
                 self.sdn_props.depart is None
@@ -120,11 +134,89 @@ class SDNController:
                     data_transferred
                 )
         except (TypeError, ValueError) as e:
-            logger.warning(
-                "Throughput update skipped due to missing or invalid "
-                "timing/bandwidth: %s",
-                e,
-            )
+            logger.warning("Throughput update skipped: %s", e)
+
+        # Handle grooming-specific cleanup
+        if not slicing_flag and lightpath_id is not None:
+            self._release_lightpath_resources(lightpath_id)
+
+    def _release_lightpath_resources(self, lightpath_id: int) -> None:
+        """
+        Release transponders and update lightpath status dict.
+
+        :param lightpath_id: ID of lightpath to release
+        :type lightpath_id: int
+        """
+        if (
+            self.sdn_props.transponder_usage_dict is None
+            or self.sdn_props.path_list is None
+            or self.sdn_props.lightpath_status_dict is None
+        ):
+            return
+
+        # Always update transponders
+        for node in [self.sdn_props.source, self.sdn_props.destination]:
+            if node not in self.sdn_props.transponder_usage_dict:
+                logger.warning("Node %s not in transponder usage dict", node)
+                continue
+            self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
+
+        light_id = tuple(
+            sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]])
+        )
+
+        # Handle lightpath status dict
+        if (
+            light_id in self.sdn_props.lightpath_status_dict
+            and lightpath_id in self.sdn_props.lightpath_status_dict[light_id]
+        ):
+            # Calculate bandwidth utilization stats
+            try:
+                if self.sdn_props.lp_bw_utilization_dict is None:
+                    return
+
+                lp_status = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]
+                average_bw_usage = 0.0
+                # Note: average_bandwidth_usage may not exist yet
+                # Skip if not available
+                try:
+                    from fusion.utils.network import (  # type: ignore[attr-defined]
+                        average_bandwidth_usage,
+                    )
+
+                    if self.sdn_props.depart is not None:
+                        average_bw_usage = average_bandwidth_usage(
+                            bw_dict=lp_status["time_bw_usage"],
+                            departure_time=self.sdn_props.depart,
+                        )
+                except (ImportError, AttributeError):
+                    pass
+
+                self.sdn_props.lp_bw_utilization_dict.update(
+                    {
+                        lightpath_id: {
+                            "band": lp_status["band"],
+                            "core": lp_status["core"],
+                            "bit_rate": lp_status["lightpath_bandwidth"],
+                            "utilization": average_bw_usage,
+                        }
+                    }
+                )
+            except (TypeError, ValueError, KeyError) as e:
+                logger.warning("Average BW update skipped: %s", e)
+
+            # Grooming validation - ensure no active requests
+            if (
+                self.sdn_props.lightpath_status_dict[light_id][lightpath_id][
+                    "requests_dict"
+                ]
+                and self.engine_props["is_grooming_enabled"]
+            ):
+                raise ValueError(f"Lightpath {lightpath_id} still has active requests")
+
+            # Remove from status dict
+            self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
+            logger.debug("Released lightpath %d", lightpath_id)
 
     def _allocate_guard_band(
         self,
@@ -133,6 +225,7 @@ class SDNController:
         reverse_core_matrix: dict[str, Any],
         core_num: int,
         end_slot: int,
+        lightpath_id: int,
     ) -> None:
         """
         Allocate guard band slots for spectrum isolation.
@@ -147,6 +240,8 @@ class SDNController:
         :type core_num: int
         :param end_slot: End slot position for guard band
         :type end_slot: int
+        :param lightpath_id: Lightpath ID to use for guard band marking
+        :type lightpath_id: int
         :raises BufferError: If attempting to allocate already taken spectrum
         """
         if (
@@ -155,10 +250,9 @@ class SDNController:
         ):
             raise BufferError("Attempted to allocate a taken spectrum.")
 
-        if self.sdn_props.request_id is None:
-            raise ValueError("Request ID is None")
-        core_matrix[band][core_num][end_slot] = self.sdn_props.request_id * -1
-        reverse_core_matrix[band][core_num][end_slot] = self.sdn_props.request_id * -1
+        # Use lightpath_id with negative sign for guard bands
+        core_matrix[band][core_num][end_slot] = lightpath_id * -1
+        reverse_core_matrix[band][core_num][end_slot] = lightpath_id * -1
 
     def allocate(self) -> None:
         """
@@ -184,6 +278,13 @@ class SDNController:
         end_slot = self.spectrum_obj.spectrum_props.end_slot
         core_num = self.spectrum_obj.spectrum_props.core_number
         band = self.spectrum_obj.spectrum_props.current_band
+        lightpath_id = self.spectrum_obj.spectrum_props.lightpath_id
+
+        # Use lightpath_id if available, otherwise fall back to request_id
+        if lightpath_id is None:
+            lightpath_id = self.sdn_props.request_id
+            if lightpath_id is None:
+                raise ValueError("Neither lightpath_id nor request_id is available")
 
         if self.engine_props["guard_slots"] != 0:
             end_slot = end_slot - 1
@@ -221,12 +322,10 @@ class SDNController:
 
             core_matrix = link_dict["cores_matrix"]
             reverse_core_matrix = reverse_link_dict["cores_matrix"]
-            if self.sdn_props.request_id is None:
-                raise ValueError("Request ID is None")
-            core_matrix[band][core_num][start_slot:end_slot] = self.sdn_props.request_id
-            reverse_core_matrix[band][core_num][start_slot:end_slot] = (
-                self.sdn_props.request_id
-            )
+
+            # Use lightpath_id instead of request_id
+            core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
+            reverse_core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
 
             if self.engine_props["guard_slots"]:
                 self._allocate_guard_band(
@@ -235,6 +334,7 @@ class SDNController:
                     reverse_core_matrix=reverse_core_matrix,
                     core_num=core_num,
                     end_slot=end_slot,
+                    lightpath_id=lightpath_id,
                 )
 
     def _update_request_statistics(self, bandwidth: float | None) -> None:
@@ -247,6 +347,15 @@ class SDNController:
         if bandwidth is not None:
             self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
+            # Skip grooming-specific keys that are tracked directly in SDNProps
+            # (not retrieved from SpectrumProps)
+            if stat_key in (
+                "lightpath_bandwidth_list",
+                "lightpath_id_list",
+                "remaining_bw",
+            ):
+                continue
+
             spectrum_key = stat_key.split("_", maxsplit=1)[0]
             if spectrum_key == "crosstalk":
                 spectrum_key = "crosstalk_cost"
@@ -271,6 +380,35 @@ class SDNController:
     def _update_req_stats(self, bandwidth: float | None = None) -> None:
         """Legacy method name for _update_request_statistics."""
         self._update_request_statistics(bandwidth)
+
+    def _update_grooming_stats(self) -> None:
+        """Update grooming statistics after request processing."""
+        if not hasattr(self, "stats") or self.stats is None:
+            return
+
+        if (
+            not hasattr(self.stats, "grooming_stats")
+            or self.stats.grooming_stats is None
+        ):
+            return
+
+        # Determine grooming outcome
+        was_groomed = getattr(self.sdn_props, "was_groomed", False) or False
+        was_partially_groomed = getattr(self.sdn_props, "was_partially_groomed", False)
+
+        # Get bandwidth
+        bandwidth = float(self.sdn_props.bandwidth) if self.sdn_props.bandwidth else 0.0
+
+        # Count new lightpaths established
+        was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+        new_lightpaths = len(was_new_lps) if isinstance(was_new_lps, list) else 0
+
+        self.stats.grooming_stats.update_grooming_outcome(
+            was_groomed=was_groomed,
+            was_partially_groomed=was_partially_groomed,
+            bandwidth=bandwidth,
+            new_lightpaths=new_lightpaths,
+        )
 
     def _handle_slicing_request(
         self,
@@ -303,6 +441,67 @@ class SDNController:
         return self.slicing_manager.handle_static_slicing_direct(
             path_list=path_list, forced_segments=forced_segments, sdn_controller=self
         )
+
+    def _check_snr_after_allocation(self, lightpath_id: int) -> bool:
+        """
+        Recheck SNR after spectrum allocation (for grooming).
+
+        :param lightpath_id: ID of newly allocated lightpath
+        :type lightpath_id: int
+        :return: True if SNR is acceptable, False otherwise
+        :rtype: bool
+        """
+        if not self.engine_props.get("snr_recheck", False):
+            return True
+
+        # Note: SNR rechecking functionality will be implemented when
+        # SnrMeasurements supports the recheck_snr_after_allocation method
+        # For now, return True (accept all allocations)
+        return True
+
+    def _handle_congestion_with_grooming(self, remaining_bw: int) -> None:
+        """
+        Handle allocation failure with grooming rollback.
+
+        If partial grooming occurred but remaining bandwidth cannot be allocated,
+        rollback the newly created lightpaths but keep the groomed portion.
+
+        :param remaining_bw: Remaining bandwidth that could not be allocated
+        :type remaining_bw: int
+        """
+        if self.sdn_props.bandwidth is not None and remaining_bw != int(
+            self.sdn_props.bandwidth
+        ):
+            # Rollback newly established lightpaths
+            was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+            if isinstance(was_new_lps, list):
+                for lpid in list(was_new_lps):
+                    self.release(lightpath_id=lpid, slicing_flag=True)
+                    was_new_lps.remove(lpid)
+
+                    # Remove from tracking lists
+                    lp_idx = self.sdn_props.lightpath_id_list.index(lpid)
+                    self.sdn_props.lightpath_id_list.pop(lp_idx)
+                    self.sdn_props.lightpath_bandwidth_list.pop(lp_idx)
+                    self.sdn_props.start_slot_list.pop(lp_idx)
+                    self.sdn_props.band_list.pop(lp_idx)
+                    self.sdn_props.core_list.pop(lp_idx)
+                    self.sdn_props.end_slot_list.pop(lp_idx)
+                    self.sdn_props.crosstalk_list.pop(lp_idx)
+                    self.sdn_props.bandwidth_list.pop(lp_idx)
+                    self.sdn_props.modulation_list.pop(lp_idx)
+
+        self.sdn_props.number_of_transponders = 1
+        self.sdn_props.is_sliced = False
+        self.sdn_props.was_partially_routed = False
+
+        if getattr(self.sdn_props, "was_partially_groomed", False):
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
+        else:
+            if self.sdn_props.bandwidth is not None:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+
+        self.sdn_props.was_new_lp_established = []
 
     def _handle_congestion(
         self, remaining_bandwidth: int | None = None, remaining_bw: int | None = None
@@ -478,6 +677,10 @@ class SDNController:
             self.sdn_props.is_sliced = False
             self.allocate()
 
+        # Update grooming statistics
+        if self.engine_props.get("is_grooming_enabled", False):
+            self._update_grooming_stats()
+
     def handle_event(
         self,
         request_dict: dict[str, Any],
@@ -515,12 +718,64 @@ class SDNController:
         :param forced_band: Optional forced spectral band
         :type forced_band: str | None
         """
+        # Handle release requests
+        if request_type == "release":
+            lightpath_id_list: list[int | None] = []
+            if self.engine_props.get("is_grooming_enabled", False):
+                groom_result = self.grooming_obj.handle_grooming(request_type)
+                if isinstance(groom_result, list):
+                    # Convert list[int] to list[int | None]
+                    lightpath_id_list = list(groom_result)
+            else:
+                if hasattr(self.sdn_props, "lightpath_id_list") and isinstance(
+                    self.sdn_props.lightpath_id_list, list
+                ):
+                    # Convert list[int] to list[int | None]
+                    lightpath_id_list = list(self.sdn_props.lightpath_id_list)
+
+            # If no lightpath IDs, release with None (uses request_id)
+            if not lightpath_id_list:
+                self.release(lightpath_id=None)
+            else:
+                for lightpath_id in lightpath_id_list:
+                    self.release(lightpath_id=lightpath_id)
+            return
+
         self._initialize_request_statistics()
         self.sdn_props.number_of_transponders = 1
 
-        if request_type == "release":
-            self.release()
-            return
+        # Try grooming first if enabled
+        if self.engine_props.get("is_grooming_enabled", False):
+            # Set lightpath status dict for grooming object
+            if hasattr(self.grooming_obj, "lightpath_status_dict"):
+                self.grooming_obj.lightpath_status_dict = (
+                    self.sdn_props.lightpath_status_dict
+                )
+            groom_result = self.grooming_obj.handle_grooming(request_type)
+
+            if groom_result:
+                # Fully groomed - done!
+                self._update_grooming_stats()
+                return
+
+            # Not groomed or partially groomed
+            self.sdn_props.was_new_lp_established = []
+
+            if getattr(self.sdn_props, "was_partially_groomed", False):
+                # Force route on same path as groomed portion
+                force_route_matrix = [self.sdn_props.path_list]
+
+                # Get modulation formats for remaining bandwidth
+                from fusion.utils.data import sort_nested_dict_values
+
+                if self.sdn_props.modulation_formats_dict is not None:
+                    mod_formats_dict = sort_nested_dict_values(
+                        original_dict=self.sdn_props.modulation_formats_dict,
+                        nested_key="max_length",
+                    )
+                    force_mod_format = (
+                        list(mod_formats_dict.keys())[0] if mod_formats_dict else None
+                    )
 
         # Setup routing
         route_matrix, route_time = self._setup_routing(
