@@ -79,9 +79,12 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             and hasattr(self.sdn_props, "network_spectrum_dict")
         )
 
-    def route(self, source: Any, destination: Any, request: Any) -> list[Any] | None:
+    def route(self, source: Any, destination: Any, request: Any) -> None:
         """
         Find a route from source to destination considering fragmentation.
+
+        Results are stored in route_props (paths_matrix, modulation_formats_matrix,
+        weights_list). Consumers should access route_props.paths_matrix for paths.
 
         :param source: Source node identifier.
         :type source: Any
@@ -89,8 +92,6 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         :type destination: Any
         :param request: Request object containing traffic demand details.
         :type request: Any
-        :return: Path with least fragmentation, or None if no path found.
-        :rtype: list[Any] | None
         """
         # Store source/destination in sdn_props for compatibility
         self.sdn_props.source = source
@@ -108,7 +109,6 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             # Find least fragmented path
             self._find_least_weight("frag_cost")
 
-            path = None
             if self.route_props.paths_matrix:
                 path = self.route_props.paths_matrix[0]
                 self._path_count += 1
@@ -116,10 +116,8 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
                 # Calculate fragmentation metric for this path
                 fragmentation = self._calculate_path_fragmentation(path)
                 self._total_fragmentation += float(fragmentation)
-
-            return path
         except (nx.NetworkXNoPath, nx.NodeNotFound):
-            return None
+            pass
 
     def _update_fragmentation_costs(self) -> None:
         """

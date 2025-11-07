@@ -18,7 +18,7 @@ def stats_with_recovery() -> SimStats:
     """Create a SimStats instance with recovery tracking enabled."""
     engine_props = {
         "seed": 42,
-        "recovery_timing": {"failure_window_size": 1000},
+        "recovery_timing_settings": {"failure_window_size": 1000},
         "num_requests": 2000,
         "save_snapshots": False,
     }

@@ -138,10 +138,11 @@ class TestKShortestPath:
     def test_route_finds_shortest_path(self, k_shortest_path: Any) -> None:
         """Test that route method finds the shortest path."""
         # Act
-        path = k_shortest_path.route("A", "D", request=None)
+        k_shortest_path.route("A", "D", request=None)
 
         # Assert
-        assert path is not None
+        assert len(k_shortest_path.route_props.paths_matrix) > 0
+        path = k_shortest_path.route_props.paths_matrix[0]
         assert path[0] == "A"
         assert path[-1] == "D"
         assert len(path) >= 2
@@ -157,12 +158,12 @@ class TestKShortestPath:
         assert len(k_shortest_path.route_props.weights_list) > 0
 
     def test_route_with_no_path_returns_none(self, k_shortest_path: Any) -> None:
-        """Test that route returns None when no path exists."""
+        """Test that route sets empty paths_matrix when no path exists."""
         # Act
-        path = k_shortest_path.route("A", "Z", request=None)
+        k_shortest_path.route("A", "Z", request=None)
 
         # Assert
-        assert path is None
+        assert len(k_shortest_path.route_props.paths_matrix) == 0
 
     def test_get_paths_returns_k_paths(self, k_shortest_path: Any) -> None:
         """Test that get_paths returns up to k shortest paths."""
@@ -305,10 +306,11 @@ class TestKShortestPath:
         algorithm = KShortestPath(engine_props, sdn_props)
 
         # Act
-        path = algorithm.route("A", "C", request=None)
+        algorithm.route("A", "C", request=None)
 
         # Assert
-        assert path is not None
+        assert len(algorithm.route_props.paths_matrix) > 0
+        path = algorithm.route_props.paths_matrix[0]
         assert len(path) == 2  # Direct path should be shortest by hops
 
     def test_route_with_modulation_format_selection(self, k_shortest_path: Any) -> None:

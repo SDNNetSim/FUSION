@@ -288,6 +288,10 @@ class TestSimulationPipelineProcessRequestSuccess:
             pipeline.spectrum_algorithm = Mock(spec=AbstractSpectrumAssigner)
             pipeline.snr_algorithm = Mock(spec=AbstractSNRMeasurer)
 
+            # Setup route_props for routing algorithm
+            pipeline.routing_algorithm.route_props = Mock()
+            pipeline.routing_algorithm.route_props.paths_matrix = []
+
             # Setup get_metrics
             pipeline.routing_algorithm.get_metrics.return_value = {}
             pipeline.spectrum_algorithm.get_metrics.return_value = {}
@@ -299,7 +303,8 @@ class TestSimulationPipelineProcessRequestSuccess:
         """Test process_request with successful spectrum allocation."""
         # Arrange
         pipeline = self._create_mock_pipeline()
-        pipeline.routing_algorithm.route.return_value = [1, 2, 3]  # type: ignore[attr-defined]
+        # Setup paths_matrix to contain the path found by routing
+        pipeline.routing_algorithm.route_props.paths_matrix = [[1, 2, 3]]
         pipeline.spectrum_algorithm.assign.return_value = {  # type: ignore[attr-defined]
             "start_slot": 0,
             "end_slot": 5,
@@ -356,6 +361,9 @@ class TestSimulationPipelineProcessRequestFailures:
             pipeline.routing_algorithm = Mock(spec=AbstractRoutingAlgorithm)
             pipeline.spectrum_algorithm = Mock(spec=AbstractSpectrumAssigner)
             pipeline.snr_algorithm = Mock(spec=AbstractSNRMeasurer)
+            # Setup route_props for routing algorithm
+            pipeline.routing_algorithm.route_props = Mock()
+            pipeline.routing_algorithm.route_props.paths_matrix = []
             pipeline.routing_algorithm.get_metrics.return_value = {}
             pipeline.spectrum_algorithm.get_metrics.return_value = {}
             pipeline.snr_algorithm.get_metrics.return_value = {}
@@ -365,7 +373,8 @@ class TestSimulationPipelineProcessRequestFailures:
         """Test process_request when no path is found."""
         # Arrange
         pipeline = self._create_mock_pipeline()
-        pipeline.routing_algorithm.route.return_value = None  # type: ignore[attr-defined]
+        # Empty paths_matrix indicates no path was found
+        pipeline.routing_algorithm.route_props.paths_matrix = []
         request = Mock()
 
         # Act
@@ -380,7 +389,7 @@ class TestSimulationPipelineProcessRequestFailures:
         """Test process_request when no spectrum is available."""
         # Arrange
         pipeline = self._create_mock_pipeline()
-        pipeline.routing_algorithm.route.return_value = [1, 2, 3]  # type: ignore[attr-defined]
+        pipeline.routing_algorithm.route_props.paths_matrix = [[1, 2, 3]]
         pipeline.spectrum_algorithm.assign.return_value = None  # type: ignore[attr-defined]
         request = Mock()
 
@@ -395,7 +404,7 @@ class TestSimulationPipelineProcessRequestFailures:
         """Test process_request when SNR is below threshold."""
         # Arrange
         pipeline = self._create_mock_pipeline()
-        pipeline.routing_algorithm.route.return_value = [1, 2, 3]  # type: ignore[attr-defined]
+        pipeline.routing_algorithm.route_props.paths_matrix = [[1, 2, 3]]
         pipeline.spectrum_algorithm.assign.return_value = {  # type: ignore[attr-defined]
             "start_slot": 0,
             "end_slot": 5,
@@ -428,7 +437,7 @@ class TestSimulationPipelineProcessRequestFailures:
         """Test process_request when spectrum allocation fails."""
         # Arrange
         pipeline = self._create_mock_pipeline()
-        pipeline.routing_algorithm.route.return_value = [1, 2, 3]  # type: ignore[attr-defined]
+        pipeline.routing_algorithm.route_props.paths_matrix = [[1, 2, 3]]
         pipeline.spectrum_algorithm.assign.return_value = {  # type: ignore[attr-defined]
             "start_slot": 0,
             "end_slot": 5,
@@ -660,7 +669,8 @@ class TestSimulationPipelineEdgeCases:
             }
             pipeline = SimulationPipeline(config)
             pipeline.routing_algorithm = Mock(spec=AbstractRoutingAlgorithm)
-            pipeline.routing_algorithm.route.return_value = [1, 2]
+            pipeline.routing_algorithm.route_props = Mock()
+            pipeline.routing_algorithm.route_props.paths_matrix = [[1, 2]]
             pipeline.routing_algorithm.get_metrics.return_value = {}
             pipeline.spectrum_algorithm = Mock(spec=AbstractSpectrumAssigner)
             pipeline.spectrum_algorithm.assign.return_value = {

@@ -19,6 +19,7 @@ from fusion.core.ml_metrics import MLMetricsCollector
 from fusion.core.persistence import StatsPersistence
 from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
+from fusion.modules.failures import FailureManager
 from fusion.modules.ml import load_model
 from fusion.reporting.dataset_logger import DatasetLogger
 from fusion.reporting.simulation_reporter import SimulationReporter
@@ -211,6 +212,8 @@ class SimulationEngine:
         )
 
         self.sdn_obj = SDNController(engine_props=self.engine_props)
+        # FailureManager reference will be set after topology creation
+        self.sdn_obj.failure_manager = None
         self.stats_obj = SimStats(
             engine_props=self.engine_props, sim_info=self.sim_info
         )
@@ -229,8 +232,10 @@ class SimulationEngine:
         # Initialize dataset logger if enabled
         self.dataset_logger: DatasetLogger | None = None
         if engine_props.get("log_offline_dataset", False):
-            # Build path matching output structure exactly
-            # data/training_data/{network}/{date}/{sim_start}/{thread}/dataset.jsonl
+            # Build path matching output structure exactly:
+            # data/training_data/{network}/{date}/{sim_start}/{thread}/
+            # dataset_erlang_{erlang}.jsonl
+            erlang_value = int(engine_props["erlang"])
             dataset_dir = os.path.join(
                 "data",
                 "training_data",
@@ -239,10 +244,8 @@ class SimulationEngine:
             )
             create_directory(dataset_dir)
 
-            # Allow custom filename from config, default to dataset.jsonl
-            dataset_filename = os.path.basename(
-                engine_props.get("dataset_output_path", "dataset.jsonl")
-            )
+            # Include erlang value in filename
+            dataset_filename = f"dataset_erlang_{erlang_value}.jsonl"
             output_path = os.path.join(dataset_dir, dataset_filename)
 
             self.dataset_logger = DatasetLogger(output_path, engine_props)
@@ -250,6 +253,9 @@ class SimulationEngine:
 
         self.ml_model = None
         self.stop_flag = engine_props.get("stop_flag")
+
+        # Initialize FailureManager (will be set up after topology is created)
+        self.failure_manager: FailureManager | None = None
 
     def update_arrival_params(self, current_time: float) -> None:
         """
@@ -438,7 +444,11 @@ class SimulationEngine:
         meta = {
             "request_id": request.get("req_id", -1),
             "arrival_time": current_time,
-            "decision_time_ms": (sdn_props.route_time * 1000) if hasattr(sdn_props, 'route_time') and sdn_props.route_time else 0.0,
+            "erlang": self.engine_props["erlang"],
+            "iteration": self.iteration,
+            "decision_time_ms": (sdn_props.route_time * 1000)
+            if hasattr(sdn_props, "route_time") and sdn_props.route_time
+            else 0.0,
         }
 
         # Log the transition
@@ -594,11 +604,12 @@ class SimulationEngine:
                     print_flag=print_flag,
                 )
 
-        if (
-            (iteration + 1) % self.engine_props["save_step"] == 0
-            or iteration == 0
-            or (iteration + 1) == self.engine_props["max_iters"]
-        ):
+        # Always save on first and last iteration, plus every save_step
+        is_first_iter = iteration == 0
+        is_last_iter = (iteration + 1) == self.engine_props["max_iters"]
+        is_save_step = (iteration + 1) % self.engine_props["save_step"] == 0
+
+        if is_first_iter or is_last_iter or is_save_step:
             self._save_all_stats(base_file_path or "data")
 
         return resp
@@ -655,23 +666,6 @@ class SimulationEngine:
             if self.engine_props["deploy_model"]:
                 self.ml_model = load_model(engine_properties=self.engine_props)
 
-        # ================================================================
-        # SEEDING STRATEGY: Separate request generation from RL components
-        # ================================================================
-        # Seed configuration options (in priority order):
-        # 1. seed (int): Single seed for all components (simple use case)
-        # 2. request_seeds (list[int]): Per-iteration seeds for traffic variation
-        # 3. rl_seed (int): Constant seed for RL (used with request_seeds)
-        # 4. seeds (list[int]): Legacy name for request_seeds (backwards compat)
-        #
-        # Example configurations:
-        # - Simple: {"seed": 42} → All components use 42
-        # - Advanced: {"request_seeds": [1,2,3], "rl_seed": 42}
-        #   → Traffic varies, RL constant
-        # - Batch: run_multi_seed_experiment(config, seed_list=[42,43,44])
-        #   → Statistical analysis
-        # ================================================================
-
         # Request generation seed (typically varies per iteration for diverse traffic)
         if seed is not None:
             # Explicit seed parameter overrides everything
@@ -724,6 +718,177 @@ class SimulationEngine:
 
         self.generate_requests(request_seed)
 
+        # Schedule failure AFTER requests are generated (in every iteration)
+        if self.failure_manager:
+            # Clear any previous failures before scheduling new ones
+            self.failure_manager.clear_all_failures()
+            self._schedule_failure()
+
+    def _initialize_failure_manager(self) -> None:
+        """
+        Initialize FailureManager and schedule failures if configured.
+
+        This method is called after topology creation to set up failure
+        injection based on the failure_settings configuration.
+
+        Note: The actual failure is scheduled after request generation in init_iter()
+        to use real Poisson arrival times rather than indices.
+        """
+        failure_type = self.engine_props.get("failure_type", "none")
+
+        if failure_type == "none":
+            logger.info("No failures configured for this simulation")
+            return
+
+        # Debug: Log topology info
+        logger.info(
+            f"Topology has {self.topology.number_of_nodes()} nodes and "
+            f"{self.topology.number_of_edges()} edges"
+        )
+        logger.debug(f"Topology nodes: {sorted(self.topology.nodes())}")
+        logger.debug(f"Topology edges (first 10): {list(self.topology.edges())[:10]}")
+
+        # Create FailureManager with topology
+        self.failure_manager = FailureManager(self.engine_props, self.topology)
+        logger.info(f"FailureManager initialized for failure type: {failure_type}")
+
+        # Pass FailureManager to SDNController for path feasibility checking
+        self.sdn_obj.failure_manager = self.failure_manager
+
+        # Note: Failure will be scheduled in init_iter() after requests are generated
+
+    def _schedule_failure(self) -> None:
+        """
+        Schedule failure event based on configuration.
+
+        Reads failure settings from engine_props and injects the appropriate
+        failure type at the configured time. Uses actual Poisson arrival times
+        from the generated requests.
+        """
+        if not self.failure_manager or not self.reqs_dict:
+            return
+
+        failure_type = self.engine_props.get("failure_type", "none")
+
+        # Get actual arrival times from generated requests
+        arrival_times = sorted(
+            [
+                t
+                for t, req in self.reqs_dict.items()
+                if req.get("request_type") == "arrival"
+            ]
+        )
+
+        if not arrival_times:
+            logger.warning("No arrival times available to schedule failure")
+            return
+
+        # Determine failure time based on arrival index
+        t_fail_arrival_index = self.engine_props.get("t_fail_arrival_index", -1)
+
+        # If -1, inject at midpoint
+        if t_fail_arrival_index == -1:
+            t_fail_arrival_index = len(arrival_times) // 2
+
+        # Clamp to valid range
+        t_fail_arrival_index = max(0, min(t_fail_arrival_index, len(arrival_times) - 1))
+
+        # Get actual failure time
+        t_fail = arrival_times[t_fail_arrival_index]
+
+        # Determine repair time
+        t_repair_after_arrivals = self.engine_props.get("t_repair_after_arrivals", 2)
+        t_repair_arrival_index = t_fail_arrival_index + t_repair_after_arrivals
+
+        # Clamp repair index and get time
+        t_repair_arrival_index = min(t_repair_arrival_index, len(arrival_times) - 1)
+        t_repair = arrival_times[t_repair_arrival_index]
+
+        logger.info(
+            f"Scheduling {failure_type} failure at arrival index "
+            f"{t_fail_arrival_index} (t={t_fail:.4f}), repair at index "
+            f"{t_repair_arrival_index} (t={t_repair:.4f})"
+        )
+
+        # Inject failure based on type
+        try:
+            if failure_type == "link":
+                # Convert link node IDs to match topology node type
+                # Topology nodes might be strings, so we need to match that type
+                failed_src = self.engine_props["failed_link_src"]
+                failed_dst = self.engine_props["failed_link_dst"]
+
+                # Try to match the type of nodes in the topology
+                if self.topology.number_of_nodes() > 0:
+                    sample_node = next(iter(self.topology.nodes()))
+                    if isinstance(sample_node, str):
+                        failed_src = str(failed_src)
+                        failed_dst = str(failed_dst)
+
+                event = self.failure_manager.inject_failure(
+                    "link",
+                    t_fail=t_fail,
+                    t_repair=t_repair,
+                    link_id=(failed_src, failed_dst),
+                )
+                logger.info(
+                    f"Link failure scheduled: {event['failed_links']} "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+            elif failure_type == "srlg":
+                srlg_links = self.engine_props.get("srlg_links", [])
+                event = self.failure_manager.inject_failure(
+                    "srlg", t_fail=t_fail, t_repair=t_repair, srlg_links=srlg_links
+                )
+                logger.info(
+                    f"SRLG failure scheduled: {len(event['failed_links'])} links "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+            elif failure_type == "geo":
+                # Convert center node ID to match topology node type
+                center_node = self.engine_props["geo_center_node"]
+                if self.topology.number_of_nodes() > 0:
+                    sample_node = next(iter(self.topology.nodes()))
+                    if isinstance(sample_node, str):
+                        center_node = str(center_node)
+
+                event = self.failure_manager.inject_failure(
+                    "geo",
+                    t_fail=t_fail,
+                    t_repair=t_repair,
+                    center_node=center_node,
+                    hop_radius=self.engine_props["geo_hop_radius"],
+                )
+                logger.info(
+                    f"Geographic failure scheduled: {len(event['failed_links'])} links "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+            elif failure_type == "node":
+                # Convert node ID to match topology node type
+                node_id = self.engine_props.get("failed_node_id")
+                if node_id is not None and self.topology.number_of_nodes() > 0:
+                    sample_node = next(iter(self.topology.nodes()))
+                    if isinstance(sample_node, str):
+                        node_id = str(node_id)
+
+                event = self.failure_manager.inject_failure(
+                    "node",
+                    t_fail=t_fail,
+                    t_repair=t_repair,
+                    node_id=node_id,
+                )
+                logger.info(
+                    f"Node failure scheduled: {len(event['failed_links'])} links "
+                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to schedule {failure_type} failure: {e}")
+            raise
+
     def run(self, seed: int | None = None) -> int:
         """
         Run the simulation by creating the topology and processing requests.
@@ -739,6 +904,9 @@ class SimulationEngine:
         simulation_context = self._setup_simulation_context()
         self._log_simulation_start(simulation_context)
 
+        # Iterations are 0-indexed internally (0, 1, 2, ..., max_iters-1)
+        # max_iters specifies the total count
+        # (e.g., max_iters=2 runs iterations 0 and 1)
         for iteration in range(self.engine_props["max_iters"]):
             if self._should_stop_simulation(simulation_context):
                 break
@@ -761,6 +929,9 @@ class SimulationEngine:
         :rtype: Dict[str, Any]
         """
         self.create_topology()
+
+        # Initialize FailureManager if failures are configured
+        self._initialize_failure_manager()
 
         return {
             "log_queue": self.engine_props.get("log_queue"),
@@ -844,6 +1015,15 @@ class SimulationEngine:
         if self.reqs_dict is None:
             return
         for current_time in self.reqs_dict:
+            # Check for scheduled repairs at this time
+            if self.failure_manager:
+                repaired_links = self.failure_manager.repair_failures(current_time)
+                if repaired_links:
+                    logger.info(
+                        f"Repaired {len(repaired_links)} link(s) at time "
+                        f"{current_time:.2f}: {repaired_links}"
+                    )
+
             self.handle_request(
                 current_time=current_time, request_number=request_number
             )
