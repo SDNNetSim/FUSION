@@ -24,7 +24,7 @@ class RoutingRegistry:
 
         Registers the built-in routing algorithm implementations including
         k-shortest path, congestion aware, least congested, fragmentation aware,
-        NLI aware, and XT aware algorithms.
+        NLI aware, XT aware, and 1+1 protection algorithms.
         """
         # Import here to avoid circular dependency issues
         from .congestion_aware import CongestionAwareRouting
@@ -32,6 +32,7 @@ class RoutingRegistry:
         from .k_shortest_path import KShortestPath
         from .least_congested import LeastCongestedRouting
         from .nli_aware import NLIAwareRouting
+        from .one_plus_one_protection import OnePlusOneProtection
         from .xt_aware import XTAwareRouting
 
         algorithm_classes = [
@@ -41,6 +42,7 @@ class RoutingRegistry:
             FragmentationAwareRouting,
             NLIAwareRouting,
             XTAwareRouting,
+            OnePlusOneProtection,
         ]
 
         # Map algorithm classes to their known names to avoid instantiation
@@ -51,6 +53,7 @@ class RoutingRegistry:
             FragmentationAwareRouting: "fragmentation_aware",
             NLIAwareRouting: "nli_aware",
             XTAwareRouting: "xt_aware",
+            OnePlusOneProtection: "1plus1_protection",
         }
 
         for algorithm_class in algorithm_classes:

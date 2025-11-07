@@ -1,3 +1,1 @@
-"""
-Tests for the routing module.
-"""
+"""Tests for routing modules."""
