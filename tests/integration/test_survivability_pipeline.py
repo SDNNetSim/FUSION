@@ -91,6 +91,9 @@ class TestSurvivabilityPipelineIntegration:
         assert len(event["failed_links"]) == 1
         assert (0, 1) in event["failed_links"]
 
+        # Activate the failure
+        manager.activate_failures(10.0)
+
         # Verify path feasibility checking
         path_with_failure = [0, 1, 2]
         path_without_failure = [0, 4, 3]
@@ -125,6 +128,9 @@ class TestSurvivabilityPipelineIntegration:
             "link", t_fail=10.0, t_repair=20.0, link_id=(0, 1)
         )
 
+        # Activate the failure
+        failure_manager.activate_failures(10.0)
+
         # Get path features with failure
         paths = k_path_cache.get_k_paths(0, 3)
         features = [
@@ -151,6 +157,9 @@ class TestSurvivabilityPipelineIntegration:
         failure_manager.inject_failure(
             "link", t_fail=10.0, t_repair=20.0, link_id=(1, 2)
         )
+
+        # Activate the failure
+        failure_manager.activate_failures(10.0)
 
         k_path_cache = KPathCache(sample_topology, k=4)
 
@@ -276,6 +285,10 @@ class TestSurvivabilityPipelineIntegration:
         # Step 2: Process some requests
         for request_id in range(10):
             t = 50.0 + request_id * 10.0
+
+            # Activate failure at t=100
+            if t >= 100.0:
+                failure_manager.activate_failures(100.0)
 
             # Get K paths and features
             k_paths = k_path_cache.get_k_paths(0, 3)

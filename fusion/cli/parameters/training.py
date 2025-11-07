@@ -78,40 +78,40 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     rl_group.add_argument(
         "--learn_rate",
         type=float,
-        default=0.001,
+        default=None,
         help="Learning rate for RL algorithms",
     )
     rl_group.add_argument(
-        "--gamma", type=float, default=0.99, help="Discount factor for future rewards"
+        "--gamma", type=float, default=None, help="Discount factor for future rewards"
     )
     rl_group.add_argument(
         "--epsilon_start",
         type=float,
-        default=1.0,
+        default=None,
         help="Initial epsilon value for epsilon-greedy exploration",
     )
     rl_group.add_argument(
         "--epsilon_end",
         type=float,
-        default=0.01,
+        default=None,
         help="Final epsilon value for epsilon-greedy exploration",
     )
     rl_group.add_argument(
         "--epsilon_update",
         type=str,
         choices=["linear", "exponential", "step", "linear_decay", "exp_decay"],
-        default="linear",
+        default=None,
         help="Epsilon decay strategy",
     )
 
     # Reward configuration
     rl_group.add_argument(
-        "--reward", type=float, default=1.0, help="Reward value for successful actions"
+        "--reward", type=float, default=None, help="Reward value for successful actions"
     )
     rl_group.add_argument(
         "--penalty",
         type=float,
-        default=-1.0,
+        default=None,
         help="Penalty value for unsuccessful actions",
     )
     rl_group.add_argument(
@@ -147,18 +147,18 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
         help="Graph Neural Network architecture type",
     )
     feature_group.add_argument(
-        "--layers", type=int, default=3, help="Number of layers in neural network"
+        "--layers", type=int, default=None, help="Number of layers in neural network"
     )
     feature_group.add_argument(
         "--emb_dim",
         type=int,
-        default=64,
+        default=None,
         help="Embedding dimension for neural networks",
     )
     feature_group.add_argument(
         "--heads",
         type=int,
-        default=8,
+        default=None,
         help="Number of attention heads (for attention-based models)",
     )
     feature_group.add_argument(
@@ -203,7 +203,7 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     ml_group.add_argument(
         "--test_size",
         type=float,
-        default=0.2,
+        default=None,
         help="Fraction of data to use for testing (0.0-1.0)",
     )
     ml_group.add_argument(
@@ -238,20 +238,20 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
     opt_group.add_argument(
         "--optuna_trials",
         type=int,
-        default=100,
+        default=None,
         help="Number of optimization trials for Optuna",
     )
     opt_group.add_argument(
         "--n_trials",
         type=int,
-        default=10,
+        default=None,
         help="Number of trials for grid search or random search",
     )
     opt_group.add_argument(
         "--device",
         type=str,
         choices=["cpu", "cuda", "mps", "auto"],
-        default="auto",
+        default=None,
         help="Computing device for training (cpu/gpu)",
     )
 

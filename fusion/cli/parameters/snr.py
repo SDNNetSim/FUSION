@@ -28,7 +28,7 @@ def add_snr_args(parser: argparse.ArgumentParser) -> None:
         help="SNR calculation method",
     )
     parser.add_argument(
-        "--input_power", type=float, default=1e-3, help="Input power in Watts"
+        "--input_power", type=float, default=None, help="Input power in Watts"
     )
     parser.add_argument(
         "--egn_model",

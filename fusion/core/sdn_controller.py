@@ -65,6 +65,13 @@ class SDNController:
         if self.sdn_props.path_list is None:
             return
 
+        # Remove from allocated requests tracking
+        if (
+            self.sdn_props.request_id is not None
+            and self.sdn_props.request_id in self.sdn_props.allocated_requests
+        ):
+            del self.sdn_props.allocated_requests[self.sdn_props.request_id]
+
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
@@ -189,6 +196,11 @@ class SDNController:
         if self.sdn_props.network_spectrum_dict is None:
             raise ValueError("Network spectrum dictionary is None")
 
+        logger.debug(
+            f"Attempting allocation on path {path}: "
+            f"slots [{start_slot}:{end_slot}], band={band}, core={core_num}"
+        )
+
         # Guard slot adjustment
         if self.engine_props["guard_slots"] != 0:
             end_slot = end_slot - 1
@@ -216,6 +228,11 @@ class SDNController:
                 raise ValueError("Nothing detected on the spectrum when allocating.")
 
             if spectrum_slots_set != {0.0} or reverse_spectrum_slots_set != {0.0}:
+                logger.error(
+                    f"Spectrum already taken on link {link_tuple}: "
+                    f"forward={spectrum_slots_set}, reverse={reverse_spectrum_slots_set}. "
+                    f"Path: {path}, slots [{start_slot}:{end_slot}], band={band}, core={core_num}"
+                )
                 raise BufferError("Attempted to allocate a taken spectrum.")
 
             # Update usage counts
@@ -272,7 +289,52 @@ class SDNController:
         # If protected, also allocate on backup path
         backup_path = self.spectrum_obj.spectrum_props.backup_path
         if backup_path is not None:
+            logger.debug(
+                f"1+1 protection: Allocating spectrum on backup path {backup_path}"
+            )
             self._allocate_on_path(backup_path)
+
+        # Track allocated request for failure handling
+        self._track_allocated_request()
+
+    def _track_allocated_request(self) -> None:
+        """
+        Track an allocated request for failure handling.
+
+        Records request information including paths, protection status, and timing
+        to enable proper handling when failures occur.
+        """
+        if self.sdn_props.request_id is None:
+            return
+
+        # Get backup path if this is a protected request
+        backup_path = self.spectrum_obj.spectrum_props.backup_path
+
+        # Store request information
+        self.sdn_props.allocated_requests[self.sdn_props.request_id] = {
+            "request_id": self.sdn_props.request_id,
+            "primary_path": self.sdn_props.path_list.copy()
+            if self.sdn_props.path_list
+            else None,
+            "backup_path": backup_path.copy() if backup_path else None,
+            "is_protected": self.sdn_props.is_protected,
+            "active_path": self.sdn_props.active_path,
+            "arrive_time": self.sdn_props.arrive,
+            "depart_time": self.sdn_props.depart,
+            "bandwidth": self.sdn_props.bandwidth,
+            "source": self.sdn_props.source,
+            "destination": self.sdn_props.destination,
+            "start_slot": self.spectrum_obj.spectrum_props.start_slot,
+            "end_slot": self.spectrum_obj.spectrum_props.end_slot,
+            "core_number": self.spectrum_obj.spectrum_props.core_number,
+            "current_band": self.spectrum_obj.spectrum_props.current_band,
+        }
+
+        logger.debug(
+            f"Tracked allocated request {self.sdn_props.request_id}: "
+            f"protected={self.sdn_props.is_protected}, "
+            f"primary={self.sdn_props.path_list}, backup={backup_path}"
+        )
 
     def _update_request_statistics(self, bandwidth: float | None) -> None:
         """
@@ -436,6 +498,7 @@ class SDNController:
         forced_index: int | None,
         force_core: int | None,
         forced_band: str | None,
+        backup_mod_format_list: list[str] | None = None,
     ) -> bool:
         """
         Process allocation for a single path.
@@ -444,7 +507,7 @@ class SDNController:
         :type path_list: list[Any]
         :param path_index: Index of the current path
         :type path_index: int
-        :param mod_format_list: List of modulation formats
+        :param mod_format_list: List of modulation formats for primary path
         :type mod_format_list: list[str]
         :param forced_segments: Number of forced segments
         :type forced_segments: float
@@ -458,6 +521,8 @@ class SDNController:
         :type force_core: int | None
         :param forced_band: Optional forced band
         :type forced_band: str | None
+        :param backup_mod_format_list: Optional modulation formats for backup path (1+1)
+        :type backup_mod_format_list: list[str] | None
         :return: True if path processing was successful
         :rtype: bool
         """
@@ -478,7 +543,10 @@ class SDNController:
             self.spectrum_obj.spectrum_props.forced_core = force_core
             self.spectrum_obj.spectrum_props.path_list = path_list
             self.spectrum_obj.spectrum_props.forced_band = forced_band
-            self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list)
+            self.spectrum_obj.get_spectrum(
+                mod_format_list=mod_format_list,
+                backup_mod_format_list=backup_mod_format_list,
+            )
 
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
@@ -583,6 +651,53 @@ class SDNController:
                         )
                         continue  # Skip this path and try next one
 
+                    # Check backup path feasibility for protected requests
+                    # Get corresponding backup path from backup_paths_matrix if available
+                    backup_path = None
+                    if (
+                        hasattr(self.route_obj.route_props, "backup_paths_matrix")
+                        and len(self.route_obj.route_props.backup_paths_matrix)
+                        > path_index
+                    ):
+                        backup_path = self.route_obj.route_props.backup_paths_matrix[
+                            path_index
+                        ]
+                    elif self.sdn_props.backup_path is not None:
+                        # Fallback to sdn_props.backup_path for backward compatibility
+                        backup_path = self.sdn_props.backup_path
+
+                    if (
+                        self.failure_manager
+                        and backup_path is not None
+                        and not self.failure_manager.is_path_feasible(backup_path)
+                    ):
+                        logger.debug(
+                            f"Backup path {backup_path} "
+                            f"(for primary {path_list}) is infeasible due to active failures"
+                        )
+                        continue  # Skip this path pair and try next one
+
+                    # Set backup path in sdn_props for spectrum assignment
+                    backup_mod_format_list = None
+                    if backup_path is not None:
+                        self.sdn_props.backup_path = backup_path
+                        self.sdn_props.is_protected = True
+
+                        # Get backup modulation formats for 1+1 protection validation
+                        if (
+                            hasattr(
+                                self.route_obj.route_props,
+                                "backup_modulation_formats_matrix",
+                            )
+                            and len(
+                                self.route_obj.route_props.backup_modulation_formats_matrix
+                            )
+                            > path_index
+                        ):
+                            backup_mod_format_list = self.route_obj.route_props.backup_modulation_formats_matrix[
+                                path_index
+                            ]
+
                     mod_format_list = (
                         self.route_obj.route_props.modulation_formats_matrix[path_index]
                     )
@@ -598,6 +713,7 @@ class SDNController:
                         forced_index,
                         force_core,
                         forced_band,
+                        backup_mod_format_list,
                     )
 
                     if success:

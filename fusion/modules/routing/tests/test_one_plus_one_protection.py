@@ -117,15 +117,20 @@ class TestOnePlusOneProtection:
     def test_route_stores_paths_in_sdn_props(
         self, protection_router: OnePlusOneProtection
     ) -> None:
-        """Test that route() stores paths in SDN properties."""
+        """Test that route() stores paths in SDN properties and route_props."""
         sdn_props = protection_router.sdn_props
         protection_router.route(0, 3, None)
 
+        # Check SDN properties
         assert sdn_props.primary_path is not None
         assert sdn_props.backup_path is not None
         assert sdn_props.is_protected is True
         assert sdn_props.active_path == "primary"
-        assert sdn_props.protection_mode == "1plus1"
+
+        # Check route_props for SDN controller compatibility
+        assert len(protection_router.route_props.paths_matrix) == 1
+        assert protection_router.route_props.paths_matrix[0] == sdn_props.primary_path
+        assert len(protection_router.route_props.weights_list) == 1
 
     def test_route_returns_none_no_disjoint_paths(
         self, protection_router: OnePlusOneProtection, simple_topology: nx.Graph
@@ -139,6 +144,8 @@ class TestOnePlusOneProtection:
 
         assert protection_router.sdn_props.primary_path is None
         assert protection_router.sdn_props.backup_path is None
+        # Route props should also be empty
+        assert len(protection_router.route_props.paths_matrix) == 0
 
     def test_handle_failure_switchover(
         self, protection_router: OnePlusOneProtection

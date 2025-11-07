@@ -319,6 +319,9 @@ class TestFailureProcessingPerformance:
         # Inject a failure
         manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(0, 1))
 
+        # Activate the failure
+        manager.activate_failures(10.0)
+
         # Test path with 5 hops
         path = [0, 2, 5, 9, 12, 13]
 

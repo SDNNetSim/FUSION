@@ -14,7 +14,10 @@ import numpy as np
 from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
 from fusion.core.snr_measurements import SnrMeasurements
 from fusion.modules.spectrum.utils import SpectrumHelpers
+from fusion.utils.logging_config import get_logger
 from fusion.utils.spectrum import find_common_channels_on_paths
+
+logger = get_logger(__name__)
 
 
 class SpectrumAssignment:
@@ -606,20 +609,53 @@ class SpectrumAssignment:
         # Store backup path for allocation phase
         self.spectrum_props.backup_path = backup_path
 
+        logger.debug(
+            f"1+1 protection: Found common spectrum slots {start_slot}-{end_slot} "
+            f"on band {band}, core {core}"
+        )
+
         return True
 
     def get_spectrum(
-        self, mod_format_list: list[str], slice_bandwidth: str | None = None
+        self,
+        mod_format_list: list[str],
+        slice_bandwidth: str | None = None,
+        backup_mod_format_list: list[str] | None = None,
     ) -> None:
         """
         Find available spectrum for the current request.
 
-        :param mod_format_list: List of modulation formats to attempt allocation
+        For 1+1 protected requests, validates BOTH primary and backup paths
+        have feasible modulation formats before attempting spectrum search.
+
+        :param mod_format_list: List of modulation formats for primary path
         :type mod_format_list: list[str]
         :param slice_bandwidth: Bandwidth used for light-segment slicing
         :type slice_bandwidth: str | None
+        :param backup_mod_format_list: List of modulation formats for backup path (1+1)
+        :type backup_mod_format_list: list[str] | None
         """
         self._initialize_spectrum_information()
+
+        # For 1+1 protection: validate backup path has feasible modulation formats
+        backup_path = getattr(self.sdn_props, "backup_path", None)
+        if backup_path is not None and backup_mod_format_list is not None:
+            # Check if any modulation format in backup list is feasible
+            backup_has_feasible = False
+            for backup_mod in backup_mod_format_list:
+                if backup_mod and backup_mod is not False:
+                    backup_has_feasible = True
+                    break
+
+            if not backup_has_feasible:
+                # Backup path has no feasible modulation formats
+                self.sdn_props.block_reason = "backup_path_distance"
+                logger.debug(
+                    f"1+1 protection: Backup path has no feasible modulation formats. "
+                    f"Backup mods: {backup_mod_format_list}"
+                )
+                return
+
         for modulation_format in mod_format_list:
             # Handle case where modulation_format might be a nested list
             if isinstance(modulation_format, list):
@@ -665,10 +701,29 @@ class SpectrumAssignment:
 
             # Check if this is a protected (1+1) request
             backup_path = getattr(self.sdn_props, "backup_path", None)
+
+            # TEMP: Force log to appear (use warning to ensure it shows)
+            logger.warning(
+                f"[DEBUG] Spectrum search: backup_path={backup_path is not None}, "
+                f"path_list={self.spectrum_props.path_list is not None}, "
+                f"slots_needed={self.spectrum_props.slots_needed}"
+            )
+
             if backup_path is not None and self.spectrum_props.path_list is not None:
                 # Protected request - find spectrum on both paths
+                logger.debug(
+                    f"1+1 protection: Finding common spectrum on primary "
+                    f"{self.spectrum_props.path_list} and backup {backup_path}"
+                )
                 self._find_protected_spectrum(
                     self.spectrum_props.path_list, backup_path
+                )
+                # TEMP: Force log to appear
+                logger.warning(
+                    f"[DEBUG] After 1+1 search - is_free={self.spectrum_props.is_free}, "
+                    f"start_slot={self.spectrum_props.start_slot}, "
+                    f"end_slot={self.spectrum_props.end_slot}, "
+                    f"band={self.spectrum_props.current_band}, core={self.spectrum_props.core_number}"
                 )
             else:
                 # Regular request - use existing logic

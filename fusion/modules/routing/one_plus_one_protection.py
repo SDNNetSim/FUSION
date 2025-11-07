@@ -13,22 +13,35 @@ import networkx as nx
 
 from fusion.core.properties import SDNProps
 from fusion.interfaces.router import AbstractRoutingAlgorithm
+from fusion.utils.data import sort_nested_dict_values
+from fusion.utils.network import find_path_length, get_path_modulation
 
 logger = logging.getLogger(__name__)
 
 
 class OnePlusOneProtection(AbstractRoutingAlgorithm):
     """
-    1+1 disjoint protection routing with automatic switchover.
+    Traditional 1+1 disjoint protection routing for optical networks.
 
-    Computes link-disjoint primary and backup paths at setup time.
-    On failure detection, switches to backup with fixed protection
-    switchover latency (default: 50ms).
+    Implements standard 1+1 protection as used in optical networking:
+    - Each request gets ONE pair of link-disjoint paths (primary + backup)
+    - Uses max-flow algorithm (Suurballe's) for optimal disjoint pair finding
+    - Spectrum allocated on BOTH paths simultaneously with same slots
+    - Traffic transmitted on both paths, receiver uses primary signal
+    - Fast switchover on failure (protection switchover latency: default 50ms)
+
+    Traditional Flow:
+    1. Find ONE optimal disjoint pair using max-flow algorithm
+    2. Validate BOTH paths are feasible (modulation format constraints)
+    3. Allocate spectrum on BOTH paths (shared protection spectrum)
+    4. Transmit on both, receiver monitors primary, switches to backup on failure
 
     Key features:
-    - Link-disjoint path computation (Suurballe's algorithm or K-SP)
-    - Simultaneous spectrum reservation on both paths
-    - Fast switchover on failure (protection)
+    - Max-flow based optimal disjoint path computation
+    - Link-disjoint path validation (no shared links)
+    - Modulation format feasibility check for both paths
+    - Simultaneous dual allocation (shared spectrum)
+    - Automatic failure detection and switchover
     - Optional revert-to-primary after repair
 
     :param engine_props: Engine configuration
@@ -112,10 +125,14 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
 
     def route(self, source: Any, destination: Any, request: Any) -> None:
         """
-        Find link-disjoint primary and backup paths.
+        Find ONE link-disjoint path pair for traditional 1+1 protection.
 
-        Stores primary and backup paths in SDN properties (sdn_props.primary_path,
-        sdn_props.backup_path). Consumers should check these attributes for results.
+        Traditional 1+1 protection flow:
+        1. Use max-flow algorithm to find optimal disjoint pair
+        2. Validate BOTH paths are feasible (modulation format check)
+        3. Pass the single pair to SDN controller
+        4. SDN controller allocates spectrum on BOTH paths simultaneously
+        5. Traffic transmitted on both paths, receiver uses primary (fast switchover)
 
         :param source: Source node ID
         :type source: Any
@@ -127,32 +144,132 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         Example:
             >>> router = OnePlusOneProtection(props, sdn_props)
             >>> router.route(0, 5)
-            >>> print(sdn_props.primary_path)
-            [0, 1, 3, 5]
-            >>> print(sdn_props.backup_path)
-            [0, 2, 4, 5]
+            >>> # route_props contains ONE path pair
+            >>> # SDN controller will allocate on BOTH primary and backup paths
         """
-        primary, backup = self.find_disjoint_paths(source, destination)
+        # Clear previous route properties
+        self.route_props.paths_matrix = []
+        self.route_props.modulation_formats_matrix = []
+        self.route_props.weights_list = []
+        self.route_props.backup_paths_matrix = []
+        self.route_props.backup_modulation_formats_matrix = []
 
-        if primary is None or backup is None:
+        # Find all disjoint paths using max-flow algorithm (Suurballe's)
+        all_disjoint_paths = self.find_all_disjoint_paths(source, destination)
+
+        if len(all_disjoint_paths) < 2:
             logger.warning(
-                f"Could not find disjoint paths for {source} -> {destination}"
+                f"1+1 protection: Could not find at least 2 disjoint paths for "
+                f"{source} -> {destination}"
+            )
+            self._disjoint_paths_failed += 1
+            return
+
+        # Try all possible pairs from disjoint paths, find first feasible pair
+        # Suurballe's returns paths in optimal order (shortest first)
+        # We try pairs in order: (P1,P2), (P1,P3), (P2,P3), ... until both are feasible
+        primary_path = None
+        backup_path = None
+        primary_mods = None
+        backup_mods = None
+
+        for i in range(len(all_disjoint_paths)):
+            for j in range(i + 1, len(all_disjoint_paths)):
+                candidate_primary = all_disjoint_paths[i]
+                candidate_backup = all_disjoint_paths[j]
+
+                # Calculate modulation formats for BOTH paths in this pair
+                temp_primary_mods = self._get_modulation_formats_for_path(
+                    candidate_primary
+                )
+                temp_backup_mods = self._get_modulation_formats_for_path(
+                    candidate_backup
+                )
+
+                # Check if BOTH paths have feasible modulation formats
+                primary_feasible = any(
+                    mod and mod is not False for mod in temp_primary_mods
+                )
+                backup_feasible = any(
+                    mod and mod is not False for mod in temp_backup_mods
+                )
+
+                if primary_feasible and backup_feasible:
+                    # Found a feasible pair!
+                    primary_path = candidate_primary
+                    backup_path = candidate_backup
+                    primary_mods = temp_primary_mods
+                    backup_mods = temp_backup_mods
+                    logger.debug(
+                        f"1+1 protection: Found feasible pair (paths {i + 1}, {j + 1}) "
+                        f"from {len(all_disjoint_paths)} disjoint paths"
+                    )
+                    break
+
+            if primary_path is not None:
+                break  # Found feasible pair, exit outer loop
+
+        # Check if we found a feasible pair
+        if primary_path is None or backup_path is None:
+            logger.warning(
+                f"1+1 protection: Found {len(all_disjoint_paths)} disjoint paths but "
+                f"no pair where BOTH paths are feasible for {source} -> {destination}"
             )
             self._disjoint_paths_failed += 1
             return
 
         # Store paths in SDN properties
-        self.sdn_props.primary_path = primary
-        self.sdn_props.backup_path = backup
+        self.sdn_props.primary_path = primary_path
+        self.sdn_props.backup_path = backup_path
         self.sdn_props.is_protected = True
         self.sdn_props.active_path = "primary"
-        self.sdn_props.protection_mode = "1plus1"
+
+        # Populate route_props with the feasible pair
+        # SDN controller will allocate spectrum on BOTH paths
+        self.route_props.paths_matrix.append(primary_path)
+        self.route_props.backup_paths_matrix.append(backup_path)
+        self.route_props.modulation_formats_matrix.append(primary_mods)
+        self.route_props.backup_modulation_formats_matrix.append(backup_mods)
+        self.route_props.weights_list.append(len(primary_path) - 1)
 
         self._disjoint_paths_found += 1
 
         logger.debug(
-            f"1+1 protection: Primary={len(primary)} hops, Backup={len(backup)} hops"
+            f"1+1 protection: Using feasible pair for {source}->{destination}:\n"
+            f"  Primary: {primary_path} ({len(primary_path) - 1} hops, mods={primary_mods})\n"
+            f"  Backup:  {backup_path} ({len(backup_path) - 1} hops, mods={backup_mods})"
         )
+
+    def find_all_disjoint_paths(self, source: Any, destination: Any) -> list[list[int]]:
+        """
+        Find all link-disjoint paths using max-flow algorithm.
+
+        Uses NetworkX's edge_disjoint_paths which implements Suurballe's algorithm
+        to find all edge-disjoint paths between source and destination.
+
+        :param source: Source node
+        :type source: Any
+        :param destination: Destination node
+        :type destination: Any
+        :return: List of all disjoint paths found (empty if none exist)
+        :rtype: list[list[int]]
+
+        Example:
+            >>> all_paths = router.find_all_disjoint_paths(0, 5)
+            >>> # Returns: [[0,1,5], [0,2,5], [0,3,4,5], ...]
+        """
+        try:
+            paths = list(
+                nx.edge_disjoint_paths(
+                    self.topology,
+                    source,
+                    destination,
+                    flow_func=None,  # Use default (shortest augmenting path)
+                )
+            )
+            return [list(path) for path in paths]
+        except (AttributeError, nx.NetworkXNoPath, nx.NetworkXError):
+            return []
 
     def find_disjoint_paths(
         self, source: Any, destination: Any
@@ -161,6 +278,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         Find link-disjoint primary and backup paths.
 
         Uses NetworkX's edge_disjoint_paths function for optimal disjoint path finding.
+        Returns the first two paths found.
 
         :param source: Source node
         :type source: Any
@@ -176,24 +294,12 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             >>> backup_links = set(zip(backup[:-1], backup[1:]))
             >>> assert primary_links.isdisjoint(backup_links)
         """
-        try:
-            # Use NetworkX edge_disjoint_paths (uses max-flow algorithm internally)
-            paths = list(
-                nx.edge_disjoint_paths(
-                    self.topology,
-                    source,
-                    destination,
-                    flow_func=None,  # Use default (shortest augmenting path)
-                )
-            )
+        all_paths = self.find_all_disjoint_paths(source, destination)
 
-            if len(paths) >= 2:
-                return list(paths[0]), list(paths[1])
+        if len(all_paths) >= 2:
+            return all_paths[0], all_paths[1]
 
-            return None, None
-
-        except (AttributeError, nx.NetworkXNoPath, nx.NetworkXError):
-            return None, None
+        return None, None
 
     def find_disjoint_paths_k_shortest(
         self, source: Any, destination: Any, k: int = 10
@@ -245,6 +351,34 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                 return primary, candidate
 
         return None, None
+
+    def select_best_path_pair(
+        self, path_pairs: list[tuple[list[int], list[int]]]
+    ) -> tuple[list[int], list[int]]:
+        """
+        Select the best path pair from multiple options.
+
+        Currently selects based on shortest combined path length (primary + backup).
+        This minimizes total resource usage while maintaining protection.
+
+        :param path_pairs: List of (primary, backup) path tuples
+        :type path_pairs: list[tuple[list[int], list[int]]]
+        :return: Best (primary, backup) path pair
+        :rtype: tuple[list[int], list[int]]
+
+        Example:
+            >>> pairs = [([0,1,2], [0,3,2]), ([0,4,5,2], [0,3,2])]
+            >>> best = router.select_best_path_pair(pairs)
+            >>> print(best)
+            ([0, 1, 2], [0, 3, 2])  # Shortest combined length
+        """
+        if not path_pairs:
+            raise ValueError("No path pairs to select from")
+
+        # Select pair with shortest combined length
+        best_pair = min(path_pairs, key=lambda pair: len(pair[0]) + len(pair[1]))
+
+        return best_pair
 
     def handle_failure(
         self, current_time: float, affected_requests: list[dict[str, Any]]
@@ -345,6 +479,53 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             "protection_switchover_ms": self.protection_switchover_ms,
             "revert_to_primary": self.revert_to_primary,
         }
+
+    def _get_modulation_formats_for_path(self, path: list[Any]) -> list[str]:
+        """
+        Get modulation formats for a given path.
+
+        Determines appropriate modulation formats based on path length,
+        bandwidth requirements, and available modulation format configurations.
+
+        :param path: List of nodes representing the path
+        :type path: list[Any]
+        :return: List of modulation format strings
+        :rtype: list[str]
+        """
+        path_length = find_path_length(path_list=path, topology=self.topology)
+
+        chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
+        if chosen_bandwidth and not self.engine_props.get(
+            "pre_calc_mod_selection", False
+        ):
+            # Use mod_per_bw if available
+            if (
+                "mod_per_bw" in self.engine_props
+                and chosen_bandwidth in self.engine_props["mod_per_bw"]
+            ):
+                modulation_format = get_path_modulation(
+                    mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
+                    path_len=path_length,
+                )
+                return [str(modulation_format)]
+            else:
+                # Fallback to mod_formats
+                modulation_formats = getattr(self.sdn_props, "mod_formats", {})
+                modulation_format = get_path_modulation(modulation_formats, path_length)
+                return [str(modulation_format)]
+        else:
+            # Use all modulation formats sorted by max_length
+            has_mod_dict = hasattr(self.sdn_props, "modulation_formats_dict")
+            if has_mod_dict and self.sdn_props.modulation_formats_dict is not None:
+                modulation_formats_dict = sort_nested_dict_values(
+                    original_dict=self.sdn_props.modulation_formats_dict,
+                    nested_key="max_length",
+                )
+                # Ensure all keys are strings
+                return [str(key) for key in modulation_formats_dict.keys()][::-1]
+            else:
+                # Fallback to simple list
+                return ["QPSK"]
 
     def reset(self) -> None:
         """

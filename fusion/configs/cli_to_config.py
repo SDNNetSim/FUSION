@@ -43,7 +43,7 @@ class CLIToConfigMapper:
             "num_requests": ("general_settings", "num_requests"),
             "request_distribution": ("general_settings", "request_distribution"),
             "allocation_method": ("general_settings", "allocation_method"),
-            "k_paths": ("general_settings", "k_paths"),
+            "k_paths": ("routing_settings", "k_paths"),
             "route_method": ("general_settings", "route_method"),
             "save_snapshots": ("general_settings", "save_snapshots"),
             "snapshot_step": ("general_settings", "snapshot_step"),

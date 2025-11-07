@@ -88,6 +88,9 @@ def test_failure_mask_set_correctly(sample_topology: nx.Graph) -> None:
     failure_manager = FailureManager(engine_props, sample_topology)
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
 
+    # Activate the failure
+    failure_manager.activate_failures(10.0)
+
     # Mock spectrum dict
     network_spectrum_dict = {}
     for u, v in sample_topology.edges():
@@ -293,6 +296,9 @@ def test_dist_to_disaster_centroid(sample_topology: nx.Graph) -> None:
     engine_props = {"seed": 42}
     failure_manager = FailureManager(engine_props, sample_topology)
     failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Activate the failure
+    failure_manager.activate_failures(10.0)
 
     network_spectrum_dict = {}
     for u, v in sample_topology.edges():

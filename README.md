@@ -151,7 +151,7 @@ python -m fusion.cli.run_sim \
   --failure_type geo \
   --geo_center_node 5 \
   --geo_hop_radius 2 \
-  --protection_mode 1plus1
+  --route_method 1plus1_protection
 ```
 
 ### Example Configurations
@@ -174,8 +174,10 @@ failure_type = geo
 geo_center_node = 5
 geo_hop_radius = 2
 
+[routing_settings]
+route_method = 1plus1_protection
+
 [protection_settings]
-protection_mode = 1plus1
 protection_switchover_ms = 50.0
 ```
 

@@ -86,14 +86,8 @@
     },
     "protection_settings": {
       "type": "object",
-      "description": "Protection mechanism configuration",
+      "description": "Protection mechanism configuration (use route_method=1plus1_protection to enable)",
       "properties": {
-        "protection_mode": {
-          "type": "string",
-          "enum": ["none", "1plus1"],
-          "default": "none",
-          "description": "Protection mechanism to use"
-        },
         "protection_switchover_ms": {
           "type": "number",
           "minimum": 0,

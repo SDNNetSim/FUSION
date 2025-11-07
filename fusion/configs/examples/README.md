@@ -100,9 +100,10 @@ python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/datas
 
 ### Protection Settings
 
+**Note:** Enable 1+1 protection by setting `route_method=1plus1_protection` in routing settings.
+
 | Parameter | Values | Description |
 |-----------|--------|-------------|
-| `protection_mode` | `none`, `1plus1` | Protection mechanism |
 | `protection_switchover_ms` | Float | Switchover latency (ms) |
 | `restoration_latency_ms` | Float | Re-routing latency (ms) |
 | `revert_to_primary` | Boolean | Revert after repair |

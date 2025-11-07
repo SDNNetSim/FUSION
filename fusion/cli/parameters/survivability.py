@@ -80,13 +80,6 @@ def add_protection_args(parser: argparse.ArgumentParser) -> None:
     """
     protection_group = parser.add_argument_group("Protection Settings")
     protection_group.add_argument(
-        "--protection_mode",
-        type=str,
-        choices=["none", "1plus1"],
-        default=None,
-        help="Protection mechanism to use (none, 1plus1)",
-    )
-    protection_group.add_argument(
         "--protection_switchover_ms",
         type=float,
         default=None,

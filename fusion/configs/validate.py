@@ -258,15 +258,13 @@ def _validate_failure_config(config: dict[str, Any]) -> None:
 
 
 def _validate_protection_config(config: dict[str, Any]) -> None:
-    """Validate protection settings."""
-    protection_settings = config.get("protection_settings", {})
-    protection_mode = protection_settings.get("protection_mode", "none")
+    """
+    Validate protection settings.
 
-    if protection_mode == "1plus1":
-        # Ensure routing settings compatible
-        routing_settings = config.get("routing_settings", {})
-        if routing_settings.get("k_paths", 1) < 2:
-            raise ValidationError("1+1 protection requires k_paths >= 2")
+    Note: Protection is enabled via route_method=1plus1_protection.
+    This function is kept for future protection-related validations.
+    """
+    pass  # No validation needed - protection controlled by route_method
 
 
 def _validate_rl_policy_config(config: dict[str, Any]) -> None:

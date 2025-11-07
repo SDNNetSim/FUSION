@@ -200,7 +200,7 @@ class Routing:
         # Initialize route properties
         self._init_route_info()
 
-        route_method = self.engine_props.get("route_method", "shortest_path")
+        route_method = self.engine_props.get("route_method", None)
         logger.debug(
             "Starting %s routing from %s to %s",
             route_method,

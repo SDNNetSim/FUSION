@@ -73,7 +73,6 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
 # Optional configuration options with their type converters
 OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     "general_settings": {
-        "k_paths": int,
         "filter_mods": bool,
         "request_distribution": str,
     },
@@ -152,7 +151,7 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "failure_window_size": int,
     },
     "protection_settings": {
-        "protection_mode": str,
+        "revert_to_primary": str_to_bool,
     },
     "routing_settings": {
         "route_method": str,

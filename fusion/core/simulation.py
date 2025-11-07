@@ -800,8 +800,20 @@ class SimulationEngine:
         t_repair_after_arrivals = self.engine_props.get("t_repair_after_arrivals", 2)
         t_repair_arrival_index = t_fail_arrival_index + t_repair_after_arrivals
 
-        # Clamp repair index and get time
-        t_repair_arrival_index = min(t_repair_arrival_index, len(arrival_times) - 1)
+        # Validate that repair index is within bounds
+        if t_repair_arrival_index >= len(arrival_times):
+            logger.error(
+                f"Invalid failure configuration: repair would occur at arrival "
+                f"index {t_repair_arrival_index}, but only {len(arrival_times)} "
+                f"requests exist. Increase num_requests or reduce "
+                f"t_fail_arrival_index/t_repair_after_arrivals."
+            )
+            raise ValueError(
+                f"Repair index {t_repair_arrival_index} exceeds number of "
+                f"arrivals ({len(arrival_times)}). Need at least "
+                f"{t_repair_arrival_index + 1} requests."
+            )
+
         t_repair = arrival_times[t_repair_arrival_index]
 
         logger.info(
@@ -1009,12 +1021,226 @@ class SimulationEngine:
 
         return int(context["done_units"])
 
+    def _find_affected_requests(
+        self, failed_links: list[tuple[Any, Any]]
+    ) -> list[dict[str, Any]]:
+        """
+        Find all allocated requests affected by failed links.
+
+        A request is affected if any link in its current active path
+        (primary or backup) matches a failed link.
+
+        :param failed_links: List of failed link tuples
+        :type failed_links: list[tuple[Any, Any]]
+        :return: List of affected request info dictionaries
+        :rtype: list[dict[str, Any]]
+        """
+        affected = []
+        failed_links_set = set(failed_links)
+
+        # Also include reverse direction since links are bidirectional
+        for link in failed_links:
+            failed_links_set.add((link[1], link[0]))
+
+        for request_id, request_info in self.sdn.sdn_props.allocated_requests.items():
+            # Determine which path to check based on active_path
+            active_path_key = (
+                "primary_path"
+                if request_info.get("active_path") == "primary"
+                else "backup_path"
+            )
+            active_path = request_info.get(active_path_key)
+
+            if active_path is None:
+                continue
+
+            # Check if any link in the active path is failed
+            for i in range(len(active_path) - 1):
+                link = (active_path[i], active_path[i + 1])
+                if link in failed_links_set:
+                    affected.append(request_info)
+                    break
+
+        return affected
+
+    def _is_path_feasible(self, path: list[int] | None) -> bool:
+        """
+        Check if a path is feasible given current failures.
+
+        :param path: Path to check as list of node IDs
+        :type path: list[int] | None
+        :return: True if path is feasible, False otherwise
+        :rtype: bool
+        """
+        if path is None:
+            return False
+
+        if not self.failure_manager:
+            return True
+
+        return self.failure_manager.is_path_feasible(path)
+
+    def _handle_failure_impact(
+        self, current_time: float, failed_links: list[tuple[Any, Any]]
+    ) -> None:
+        """
+        Handle impact of failures on already-allocated requests.
+
+        For each affected request:
+        - If protected and backup path is viable: switch to backup
+        - Otherwise: release spectrum and count as blocked
+
+        :param current_time: Current simulation time
+        :type current_time: float
+        :param failed_links: List of newly failed links
+        :type failed_links: list[tuple[Any, Any]]
+        """
+        affected_requests = self._find_affected_requests(failed_links)
+
+        if not affected_requests:
+            logger.debug("No allocated requests affected by failures")
+            return
+
+        logger.info(
+            f"Found {len(affected_requests)} allocated request(s) "
+            f"affected by failures at t={current_time:.2f}"
+        )
+
+        switchover_count = 0
+        dropped_count = 0
+
+        for request_info in affected_requests:
+            request_id = request_info["request_id"]
+
+            # Check if this is a protected request with viable backup
+            if (
+                request_info.get("is_protected")
+                and request_info.get("active_path") == "primary"
+            ):
+                backup_path = request_info.get("backup_path")
+
+                if self._is_path_feasible(backup_path):
+                    # Backup path is viable - switch to it
+                    self._switch_to_backup(request_info, current_time)
+                    switchover_count += 1
+                    logger.info(
+                        f"Request {request_id}: Switched to backup path "
+                        f"{backup_path} at t={current_time:.2f}"
+                    )
+                else:
+                    # Backup path also failed - release and count as blocked
+                    self._release_failed_request(request_info, current_time)
+                    dropped_count += 1
+                    logger.warning(
+                        f"Request {request_id}: Both primary and backup paths "
+                        f"failed, releasing at t={current_time:.2f}"
+                    )
+            else:
+                # Unprotected request or already on backup - release
+                self._release_failed_request(request_info, current_time)
+                dropped_count += 1
+                logger.warning(
+                    f"Request {request_id}: Unprotected request failed, "
+                    f"releasing at t={current_time:.2f}"
+                )
+
+        logger.info(
+            f"Failure impact: {switchover_count} switchovers, "
+            f"{dropped_count} dropped requests"
+        )
+
+    def _switch_to_backup(
+        self, request_info: dict[str, Any], current_time: float
+    ) -> None:
+        """
+        Switch a protected request to its backup path.
+
+        :param request_info: Request information dictionary
+        :type request_info: dict[str, Any]
+        :param current_time: Current simulation time
+        :type current_time: float
+        """
+        request_id = request_info["request_id"]
+
+        # Update active path in tracking
+        self.sdn.sdn_props.allocated_requests[request_id]["active_path"] = "backup"
+
+        # Update switchover metrics in SDN props
+        self.sdn.sdn_props.switchover_count += 1
+        self.sdn.sdn_props.last_switchover_time = current_time
+
+        # Update stats metrics
+        self.stats_obj.stats_props.protection_switchovers += 1
+        self.stats_obj.stats_props.switchover_times.append(current_time)
+
+        # Note: Spectrum is already allocated on backup path, no need to reallocate
+
+    def _release_failed_request(
+        self, request_info: dict[str, Any], current_time: float
+    ) -> None:
+        """
+        Release a request that failed due to link failures.
+
+        This releases the spectrum and counts the request as blocked.
+
+        :param request_info: Request information dictionary
+        :type request_info: dict[str, Any]
+        :param current_time: Current simulation time
+        :type current_time: float
+        """
+        request_id = request_info["request_id"]
+
+        # Set up SDN props for release
+        self.sdn.sdn_props.request_id = request_id
+        self.sdn.sdn_props.path_list = request_info.get("primary_path")
+        self.sdn.sdn_props.arrive = request_info.get("arrive_time")
+        self.sdn.sdn_props.depart = current_time  # Use failure time as depart time
+        self.sdn.sdn_props.bandwidth = request_info.get("bandwidth")
+
+        # Release spectrum on primary path
+        self.sdn.release()
+
+        # If protected, also release backup path
+        if request_info.get("is_protected"):
+            if request_info.get("backup_path"):
+                self.sdn.sdn_props.path_list = request_info.get("backup_path")
+                self.sdn.release()
+            # Count as protection failure (both paths failed)
+            self.stats_obj.stats_props.protection_failures += 1
+
+        # Count as blocked due to failure
+        # CRITICAL: Increment the main blocked_requests counter for blocking probability
+        self.stats_obj.blocked_requests += 1
+
+        # Also update failure-specific counters
+        self.stats_obj.stats_props.block_reasons_dict["failure"] = (
+            self.stats_obj.stats_props.block_reasons_dict.get("failure", 0) + 1
+        )
+        self.stats_obj.stats_props.failure_induced_blocks += 1
+
+        # Update bit rate blocking if bandwidth info available
+        if request_info.get("bandwidth") is not None:
+            bandwidth = int(request_info["bandwidth"])
+            self.stats_obj.bit_rate_blocked += bandwidth
+            # Note: bit_rate_request was already incremented when request was initially allocated
+
     def _process_all_requests(self) -> None:
         """Process all requests for the current iteration."""
         request_number = 1
         if self.reqs_dict is None:
             return
         for current_time in self.reqs_dict:
+            # Check for scheduled failure activations at this time
+            if self.failure_manager:
+                activated_links = self.failure_manager.activate_failures(current_time)
+                if activated_links:
+                    logger.info(
+                        f"Activated {len(activated_links)} failed link(s) at time "
+                        f"{current_time:.2f}: {activated_links}"
+                    )
+                    # Handle already-allocated requests affected by failures
+                    self._handle_failure_impact(current_time, activated_links)
+
             # Check for scheduled repairs at this time
             if self.failure_manager:
                 repaired_links = self.failure_manager.repair_failures(current_time)

@@ -29,19 +29,19 @@ def add_statistics_args(parser: argparse.ArgumentParser) -> None:
     stats_group.add_argument(
         "--snapshot_step",
         type=int,
-        default=100,
+        default=None,
         help="Number of requests between snapshots",
     )
     stats_group.add_argument(
         "--save_step",
         type=int,
-        default=1000,
+        default=None,
         help="Number of requests between saving results",
     )
     stats_group.add_argument(
         "--print_step",
         type=int,
-        default=1000,
+        default=None,
         help="Number of requests between progress updates",
     )
     stats_group.add_argument(
@@ -71,7 +71,10 @@ def add_plotting_args(parser: argparse.ArgumentParser) -> None:
     )
     add_plot_format_args(plot_group)
     plot_group.add_argument(
-        "--plot_dpi", type=int, default=300, help="Resolution (DPI) for generated plots"
+        "--plot_dpi",
+        type=int,
+        default=None,
+        help="Resolution (DPI) for generated plots",
     )
     plot_group.add_argument(
         "--show_plots",
@@ -97,7 +100,7 @@ def add_export_args(parser: argparse.ArgumentParser) -> None:
         "--file_type",
         type=str,
         choices=["json", "csv", "excel", "tsv"],
-        default="json",
+        default=None,
         help="Default file format for data export",
     )
 
