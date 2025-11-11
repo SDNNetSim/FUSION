@@ -30,30 +30,25 @@ class NetworkAnalyzer:
         """
         Generate a summary of link usage across the network.
 
-        Creates a canonical representation of bidirectional links and their usage.
+        Records usage for each directional link separately to maintain
+        bidirectional link statistics.
 
         :param network_spectrum: Network spectrum database
         :return: Dictionary mapping link identifiers to usage statistics
         """
         usage_summary = {}
-        processed_links: set[str] = set()
 
         for (src, dst), link_data in network_spectrum.items():
-            # Create a canonical link representation (smaller node first)
-            link_key = f"{min(src, dst)}-{max(src, dst)}"
+            # Create link key for this direction (src-dst format)
+            link_key = f"{src}-{dst}"
 
-            # Skip if we've already processed this bidirectional link
-            if link_key in processed_links:
-                continue
-
-            processed_links.add(link_key)
             usage_summary[link_key] = {
                 "usage_count": link_data.get("usage_count", 0),
                 "throughput": link_data.get("throughput", 0),
                 "link_num": link_data.get("link_num"),
             }
 
-        logger.debug("Processed %d unique links", len(usage_summary))
+        logger.debug("Processed %d directional links", len(usage_summary))
         return usage_summary
 
     @staticmethod

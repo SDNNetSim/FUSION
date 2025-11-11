@@ -466,11 +466,17 @@ def analyze_prediction_errors(
 
         analysis["feature_stats"] = {}
         for column in features.select_dtypes(include=[np.number]).columns:
+            # Handle potentially empty dataframes
+            error_mean = error_features[column].mean() if len(error_features) > 0 else None
+            error_std = error_features[column].std() if len(error_features) > 0 else None
+            correct_mean = correct_features[column].mean() if len(correct_features) > 0 else None
+            correct_std = correct_features[column].std() if len(correct_features) > 0 else None
+
             analysis["feature_stats"][column] = {
-                "error_mean": float(error_features[column].mean()),
-                "correct_mean": float(correct_features[column].mean()),
-                "error_std": float(error_features[column].std()),
-                "correct_std": float(correct_features[column].std()),
+                "error_mean": float(error_mean) if error_mean is not None else None,
+                "correct_mean": float(correct_mean) if correct_mean is not None else None,
+                "error_std": float(error_std) if error_std is not None else None,
+                "correct_std": float(correct_std) if correct_std is not None else None,
             }
 
     return analysis

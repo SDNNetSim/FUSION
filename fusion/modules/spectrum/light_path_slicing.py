@@ -192,7 +192,7 @@ class LightPathSlicingManager:
             is_protected = backup_path_val is not None
 
             # TEMP: Force log to appear
-            logger.warning(
+            logger.debug(
                 f"[DEBUG] Slicing: is_protected={is_protected}, "
                 f"num_segments={num_segments}, bandwidth={bandwidth}"
             )
@@ -244,6 +244,8 @@ class LightPathSlicingManager:
         :rtype: bool
         """
         remaining_bw = int(self.sdn_props.bandwidth)
+
+        # TODO: Not sure what this does in the slightest?
         _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
         _ = sort_dict_keys(self.engine_props["mod_per_bw"])
 
@@ -298,14 +300,16 @@ class LightPathSlicingManager:
         """
         self.sdn_props.number_of_transponders = num_segments
         self.spectrum_obj.spectrum_props.path_list = path_list
+        remaining_bw = int(self.sdn_props.bandwidth)
         mod_format_list = [mod_format]
         for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(
                 mod_format_list=mod_format_list, slice_bandwidth=bandwidth
             )
             if self.spectrum_obj.spectrum_props.is_free:
+                remaining_bw -= int(bandwidth)
                 sdn_controller.allocate()
-                sdn_controller._update_req_stats(bandwidth=bandwidth)
+                sdn_controller._update_req_stats(bandwidth=bandwidth, remaining=str(remaining_bw))
             else:
                 self.sdn_props.was_routed = False
                 self.sdn_props.block_reason = "congestion"

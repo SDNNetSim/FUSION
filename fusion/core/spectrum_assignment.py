@@ -811,7 +811,7 @@ class SpectrumAssignment:
             backup_path = getattr(self.sdn_props, "backup_path", None)
 
             # TEMP: Force log to appear (use warning to ensure it shows)
-            logger.warning(
+            logger.debug(
                 f"[DEBUG] Spectrum search: backup_path={backup_path is not None}, "
                 f"path_list={self.spectrum_props.path_list is not None}, "
                 f"slots_needed={self.spectrum_props.slots_needed}"

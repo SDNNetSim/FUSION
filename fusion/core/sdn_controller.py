@@ -167,11 +167,16 @@ class SDNController:
             return
 
         # Always update transponders
-        for node in [self.sdn_props.source, self.sdn_props.destination]:
-            if node not in self.sdn_props.transponder_usage_dict:
-                logger.warning("Node %s not in transponder usage dict", node)
-                continue
-            self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
+        # for node in [self.sdn_props.source, self.sdn_props.destination]:
+        #     if node not in self.sdn_props.transponder_usage_dict:
+        #         logger.warning("Node %s not in transponder usage dict", node)
+        #         continue
+        #     self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
+        if self.engine_props.get("transponder_usage_per_node", None):
+            for node in [self.sdn_props.source, self.sdn_props.destination]:
+                if node not in self.sdn_props.transponder_usage_dict:
+                    raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
+                self.sdn_props.transponder_usage_dict[node]["throughput"] += 1
 
         light_id = tuple(
             sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]])
