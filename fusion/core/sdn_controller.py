@@ -60,6 +60,41 @@ class SDNController:
         # (set by SimulationEngine)
         self.failure_manager: Any | None = None
 
+    def _update_throughput(self) -> None:
+        """
+        Update throughput statistics for the current request.
+
+        Should be called once per request release, before releasing individual lightpaths.
+        This prevents overcounting throughput when multiple lightpaths are used for a
+        single groomed request.
+        """
+        try:
+            if (
+                self.sdn_props.depart is None
+                or self.sdn_props.arrive is None
+                or self.sdn_props.bandwidth is None
+                or self.sdn_props.path_list is None
+                or self.sdn_props.network_spectrum_dict is None
+            ):
+                logger.warning("Missing data for throughput calculation")
+                return
+
+            duration = self.sdn_props.depart - self.sdn_props.arrive  # seconds
+            bandwidth = int(self.sdn_props.bandwidth)  # Gbps
+            data_transferred = bandwidth * duration  # Gbps·s
+
+            for source, dest in zip(
+                self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
+            ):
+                self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += (
+                    data_transferred
+                )
+                self.sdn_props.network_spectrum_dict[(dest, source)]["throughput"] += (
+                    data_transferred
+                )
+        except (TypeError, ValueError) as e:
+            logger.warning("Throughput update skipped: %s", e)
+
     def release(
         self, lightpath_id: int | None = None, slicing_flag: bool = False
     ) -> None:
@@ -119,34 +154,6 @@ class SDNController:
                         self.sdn_props.network_spectrum_dict[(dest, source)][
                             "cores_matrix"
                         ][band][core_num][guard_band_index] = 0
-
-        # Throughput calculation (existing code)
-        try:
-            if (
-                self.sdn_props.depart is None
-                or self.sdn_props.arrive is None
-                or self.sdn_props.bandwidth is None
-                or self.sdn_props.path_list is None
-                or self.sdn_props.network_spectrum_dict is None
-            ):
-                logger.warning("Missing data for throughput calculation")
-                return
-
-            duration = self.sdn_props.depart - self.sdn_props.arrive  # seconds
-            bandwidth = int(self.sdn_props.bandwidth)  # Gbps
-            data_transferred = bandwidth * duration  # Gbps·s
-
-            for source, dest in zip(
-                self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
-            ):
-                self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += (
-                    data_transferred
-                )
-                self.sdn_props.network_spectrum_dict[(dest, source)]["throughput"] += (
-                    data_transferred
-                )
-        except (TypeError, ValueError) as e:
-            logger.warning("Throughput update skipped: %s", e)
 
         # Handle grooming-specific cleanup
         if not slicing_flag and lightpath_id is not None:
@@ -832,7 +839,13 @@ class SDNController:
         :type forced_band: str | None
         """
         # Handle release requests
+        if request_dict['req_id'] == 47:
+            print('Debug line 837 sdn controller.')
+
         if request_type == "release":
+            # Update throughput once per request (before releasing individual lightpaths)
+            self._update_throughput()
+
             lightpath_id_list: list[int | None] = []
             if self.engine_props.get("is_grooming_enabled", False):
                 groom_result = self.grooming_obj.handle_grooming(request_type)

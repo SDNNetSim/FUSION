@@ -110,36 +110,37 @@ class SimStats:
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
-        occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(
-            network_spectrum_dict=network_spectrum_dict, path_list=path_list
-        )
+        # occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(
+        #     network_spectrum_dict=network_spectrum_dict, path_list=path_list
+        # )
+        print(f"Request ID {request_number}")
         link_usage = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
-        blocking_prob = self.blocked_requests / request_number
-        bit_rate_block_prob = (
-            self.bit_rate_blocked / self.bit_rate_request
-            if self.bit_rate_request > 0
-            else 0
-        )
-
-        self.stats_props.snapshots_dict[request_number]["occupied_slots"].append(
-            occupied_slots
-        )
-        self.stats_props.snapshots_dict[request_number]["guard_slots"].append(
-            guard_slots
-        )
-        self.stats_props.snapshots_dict[request_number]["active_requests"].append(
-            active_reqs
-        )
-        self.stats_props.snapshots_dict[request_number]["blocking_prob"].append(
-            blocking_prob
-        )
-        self.stats_props.snapshots_dict[request_number]["num_segments"].append(
-            self.current_transponders
-        )
-        self.stats_props.snapshots_dict[request_number][
-            "bit_rate_blocking_prob"
-        ].append(bit_rate_block_prob)
-        self.stats_props.snapshots_dict[request_number]["link_usage"] = link_usage
+        # blocking_prob = self.blocked_requests / request_number
+        # bit_rate_block_prob = (
+        #     self.bit_rate_blocked / self.bit_rate_request
+        #     if self.bit_rate_request > 0
+        #     else 0
+        # )
+        #
+        # self.stats_props.snapshots_dict[request_number]["occupied_slots"].append(
+        #     occupied_slots
+        # )
+        # self.stats_props.snapshots_dict[request_number]["guard_slots"].append(
+        #     guard_slots
+        # )
+        # self.stats_props.snapshots_dict[request_number]["active_requests"].append(
+        #     active_reqs
+        # )
+        # self.stats_props.snapshots_dict[request_number]["blocking_prob"].append(
+        #     blocking_prob
+        # )
+        # self.stats_props.snapshots_dict[request_number]["num_segments"].append(
+        #     self.current_transponders
+        # )
+        # self.stats_props.snapshots_dict[request_number][
+        #     "bit_rate_blocking_prob"
+        # ].append(bit_rate_block_prob)
+        # self.stats_props.snapshots_dict[request_number]["link_usage"] = link_usage
 
     def _init_snapshots(self) -> None:
         for req_num in range(
