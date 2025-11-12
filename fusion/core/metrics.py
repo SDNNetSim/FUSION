@@ -113,7 +113,7 @@ class SimStats:
         # occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(
         #     network_spectrum_dict=network_spectrum_dict, path_list=path_list
         # )
-        print(f"Request ID {request_number}")
+        # print(f"Request ID {request_number}")
         link_usage = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
         # blocking_prob = self.blocked_requests / request_number
         # bit_rate_block_prob = (
@@ -347,6 +347,7 @@ class SimStats:
         """
         # Request was blocked
         if not sdn_data.was_routed:
+            # print(f"Req ID blocked:{req_data['req_id']}")
             self.blocked_requests += 1
             if sdn_data.bandwidth is not None:
                 self.bit_rate_blocked += int(sdn_data.bandwidth)

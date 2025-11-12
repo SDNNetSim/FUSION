@@ -703,7 +703,8 @@ class SimulationEngine:
         """
         if trial is not None:
             self.engine_props["thread_num"] = f"s{trial + 1}"
-
+        if iteration == 2:
+            print('debug line 709 in simulation.')
         self.iteration = iteration
 
         self.stats_obj.iteration = iteration

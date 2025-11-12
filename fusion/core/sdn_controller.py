@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 
 
 class SDNController:
+
     """
     Software-defined network controller for managing network requests.
 
@@ -106,22 +107,10 @@ class SDNController:
         :param slicing_flag: If True, only release spectrum, not transponders
         :type slicing_flag: bool
         """
-        if self.sdn_props.path_list is None:
-            return
+        if lightpath_id is None:
+            raise ValueError('Lightpath ID is none')
 
-        # Use provided lightpath_id or fall back to request_id
-        release_id = (
-            lightpath_id if lightpath_id is not None else self.sdn_props.request_id
-        )
-
-        # Remove from allocated requests tracking (only when releasing full request)
-        if (
-            lightpath_id is None
-            and self.sdn_props.request_id is not None
-            and self.sdn_props.request_id in self.sdn_props.allocated_requests
-        ):
-            del self.sdn_props.allocated_requests[self.sdn_props.request_id]
-
+        print('Releasing ID', lightpath_id)
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
@@ -133,11 +122,8 @@ class SDNController:
                         "cores_matrix"
                     ][band][core_num]
 
-                    # Release using lightpath_id instead of request_id
-                    if release_id is None:
-                        continue
-                    request_id_indices = np.where(core_array == release_id)
-                    guard_band_indices = np.where(core_array == (release_id * -1))
+                    request_id_indices = np.where(core_array == lightpath_id)
+                    guard_band_indices = np.where(core_array == (lightpath_id * -1))
 
                     for request_index in request_id_indices[0]:
                         self.sdn_props.network_spectrum_dict[(source, dest)][
@@ -839,7 +825,7 @@ class SDNController:
         :type forced_band: str | None
         """
         # Handle release requests
-        if request_dict['req_id'] == 47:
+        if request_dict['req_id'] == 113:
             print('Debug line 837 sdn controller.')
 
         if request_type == "release":
@@ -853,18 +839,11 @@ class SDNController:
                     # Convert list[int] to list[int | None]
                     lightpath_id_list = list(groom_result)
             else:
-                if hasattr(self.sdn_props, "lightpath_id_list") and isinstance(
-                    self.sdn_props.lightpath_id_list, list
-                ):
-                    # Convert list[int] to list[int | None]
-                    lightpath_id_list = list(self.sdn_props.lightpath_id_list)
+                # Convert list[int] to list[int | None]
+                lightpath_id_list = list(self.sdn_props.lightpath_id_list)
 
-            # If no lightpath IDs, release with None (uses request_id)
-            if not lightpath_id_list:
-                self.release(lightpath_id=None)
-            else:
-                for lightpath_id in lightpath_id_list:
-                    self.release(lightpath_id=lightpath_id)
+            for lightpath_id in lightpath_id_list:
+                self.release(lightpath_id=lightpath_id)
             return
 
         self._initialize_request_statistics()

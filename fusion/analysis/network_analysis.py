@@ -41,7 +41,7 @@ class NetworkAnalyzer:
         for (src, dst), link_data in network_spectrum.items():
             # Create link key for this direction (src-dst format)
             link_key = f"{src}-{dst}"
-            print('Throughput src dest -->', link_data['throughput'], src, dst)
+            # print('Throughput src dest -->', link_data['throughput'], src, dst)
             usage_summary[link_key] = {
                 "usage_count": link_data.get("usage_count", 0),
                 "throughput": link_data.get("throughput", 0),
