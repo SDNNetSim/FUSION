@@ -206,12 +206,17 @@ class LightPathSlicingManager:
                     mod_format_list=mod_format_list, slice_bandwidth=bandwidth
                 )
                 if self.spectrum_obj.spectrum_props.is_free:
+                    # Generate unique lightpath ID for this segment
+                    lp_id = self.sdn_props.get_lightpath_id()
+                    self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                    self.sdn_props.was_new_lp_established.append(lp_id)
+
                     sdn_controller.allocate()
                     sdn_controller._update_req_stats(bandwidth=bandwidth)
                 else:
-                    self.sdn_props.was_routed = False
-                    self.sdn_props.block_reason = "congestion"
-                    sdn_controller.release()
+                    # Rollback previously allocated segments
+                    remaining_bw = int(self.sdn_props.bandwidth) - (segment_idx * int(bandwidth))
+                    sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                     break
 
             if self.sdn_props.was_routed:
@@ -264,6 +269,11 @@ class LightPathSlicingManager:
             )
 
             if self.spectrum_obj.spectrum_props.is_free:
+                # Generate unique lightpath ID for this segment
+                lp_id = self.sdn_props.get_lightpath_id()
+                self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                self.sdn_props.was_new_lp_established.append(lp_id)
+
                 sdn_controller.allocate()
                 dedicated_bw = min(bandwidth, remaining_bw)
                 sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
@@ -308,12 +318,18 @@ class LightPathSlicingManager:
             )
             if self.spectrum_obj.spectrum_props.is_free:
                 remaining_bw -= int(bandwidth)
+
+                # Generate unique lightpath ID for this segment
+                lp_id = self.sdn_props.get_lightpath_id()
+                self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                self.sdn_props.was_new_lp_established.append(lp_id)
+
                 sdn_controller.allocate()
                 sdn_controller._update_req_stats(bandwidth=bandwidth, remaining=str(remaining_bw))
             else:
-                self.sdn_props.was_routed = False
-                self.sdn_props.block_reason = "congestion"
-                sdn_controller.release()
+                # Rollback previously allocated segments
+                remaining_bw_calc = int(self.sdn_props.bandwidth) - (int(self.sdn_props.bandwidth) - remaining_bw)
+                sdn_controller._handle_congestion(remaining_bw=remaining_bw_calc)
                 break
 
     def handle_dynamic_slicing(

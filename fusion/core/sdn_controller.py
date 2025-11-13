@@ -110,7 +110,6 @@ class SDNController:
         if lightpath_id is None:
             raise ValueError('Lightpath ID is none')
 
-        print('Releasing ID', lightpath_id)
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
@@ -169,7 +168,7 @@ class SDNController:
             for node in [self.sdn_props.source, self.sdn_props.destination]:
                 if node not in self.sdn_props.transponder_usage_dict:
                     raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
-                self.sdn_props.transponder_usage_dict[node]["throughput"] += 1
+                self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
 
         light_id = tuple(
             sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]])
@@ -284,11 +283,13 @@ class SDNController:
         band = self.spectrum_obj.spectrum_props.current_band
         lightpath_id = self.spectrum_obj.spectrum_props.lightpath_id
 
-        # Use lightpath_id if available, otherwise fall back to request_id
+        # Lightpath ID must always be set before allocation
         if lightpath_id is None:
-            lightpath_id = self.sdn_props.request_id
-            if lightpath_id is None:
-                raise ValueError("Neither lightpath_id nor request_id is available")
+            raise ValueError(
+                "lightpath_id must be set in spectrum_props before calling allocate(). "
+                "This is a programming error - ensure get_lightpath_id() is called "
+                "and assigned to spectrum_props.lightpath_id before allocation."
+            )
 
         # Validate all required parameters are present
         if start_slot is None or end_slot is None or core_num is None or band is None:
@@ -445,15 +446,11 @@ class SDNController:
         if bandwidth is not None:
             self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
-            # Skip grooming-specific keys that are tracked directly in SDNProps
-            # (not retrieved from SpectrumProps)
-            if stat_key in (
-                "lightpath_bandwidth_list",
-                "lightpath_id_list",
-                "remaining_bw",
-            ):
+            # Skip remaining_bw - it's tracked separately for grooming
+            if stat_key == "remaining_bw":
                 continue
 
+            # Map stat_key to corresponding spectrum_props attribute
             spectrum_key = stat_key.split("_", maxsplit=1)[0]
             if spectrum_key == "crosstalk":
                 spectrum_key = "crosstalk_cost"
@@ -467,6 +464,10 @@ class SDNController:
                 spectrum_key = "end_slot"
             elif spectrum_key == "modulation":
                 spectrum_key = "modulation"
+            elif stat_key == "lightpath_id_list":
+                spectrum_key = "lightpath_id"
+            elif stat_key == "lightpath_bandwidth_list":
+                spectrum_key = "lightpath_bandwidth"
 
             self.sdn_props.update_params(
                 key=stat_key,
@@ -627,7 +628,25 @@ class SDNController:
         if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(
             self.sdn_props.bandwidth
         ):
-            self.release()
+            # Release all newly established lightpaths for this request
+            was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+            if isinstance(was_new_lps, list):
+                for lpid in list(was_new_lps):
+                    self.release(lightpath_id=lpid, slicing_flag=True)
+                    was_new_lps.remove(lpid)
+
+                    # Remove from tracking lists
+                    if lpid in self.sdn_props.lightpath_id_list:
+                        lp_idx = self.sdn_props.lightpath_id_list.index(lpid)
+                        self.sdn_props.lightpath_id_list.pop(lp_idx)
+                        self.sdn_props.lightpath_bandwidth_list.pop(lp_idx)
+                        self.sdn_props.start_slot_list.pop(lp_idx)
+                        self.sdn_props.band_list.pop(lp_idx)
+                        self.sdn_props.core_list.pop(lp_idx)
+                        self.sdn_props.end_slot_list.pop(lp_idx)
+                        self.sdn_props.crosstalk_list.pop(lp_idx)
+                        self.sdn_props.bandwidth_list.pop(lp_idx)
+                        self.sdn_props.modulation_list.pop(lp_idx)
 
         self.sdn_props.is_sliced = False
 
@@ -751,7 +770,19 @@ class SDNController:
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
                 return False
-            self._update_request_statistics(bandwidth=self.sdn_props.bandwidth)
+
+            # Generate and assign unique lightpath ID for this allocation
+            lp_id = self.sdn_props.get_lightpath_id()
+            self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+            self.sdn_props.was_new_lp_established.append(lp_id)
+
+            # Determine bandwidth for statistics (handle partial grooming)
+            if self.sdn_props.was_partially_groomed:
+                allocate_bandwidth = str(self.sdn_props.remaining_bw)
+            else:
+                allocate_bandwidth = self.sdn_props.bandwidth
+
+            self._update_request_statistics(bandwidth=allocate_bandwidth)
 
         return True
 
@@ -825,9 +856,6 @@ class SDNController:
         :type forced_band: str | None
         """
         # Handle release requests
-        if request_dict['req_id'] == 113:
-            print('Debug line 837 sdn controller.')
-
         if request_type == "release":
             # Update throughput once per request (before releasing individual lightpaths)
             self._update_throughput()

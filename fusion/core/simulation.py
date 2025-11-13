@@ -326,6 +326,9 @@ class SimulationEngine:
                         "end_slot_list": sdn_props.end_slot_list,
                         "bandwidth_list": sdn_props.bandwidth_list,
                         "snr_cost": sdn_props.crosstalk_list,
+                        "lightpath_id_list": sdn_props.lightpath_id_list,
+                        "lightpath_bandwidth_list": sdn_props.lightpath_bandwidth_list,
+                        "was_new_lp_established": sdn_props.was_new_lp_established,
                     }
                 }
             )
@@ -414,9 +417,13 @@ class SimulationEngine:
             and current_time in self.reqs_dict
             and self.reqs_dict[current_time]["req_id"] in self.reqs_status_dict
         ):
-            self.sdn_obj.sdn_props.path_list = self.reqs_status_dict[
-                self.reqs_dict[current_time]["req_id"]
-            ]["path"]
+            # Restore request state from reqs_status_dict
+            req_status = self.reqs_status_dict[self.reqs_dict[current_time]["req_id"]]
+            self.sdn_obj.sdn_props.path_list = req_status["path"]
+            self.sdn_obj.sdn_props.lightpath_id_list = req_status.get("lightpath_id_list", [])
+            self.sdn_obj.sdn_props.lightpath_bandwidth_list = req_status.get("lightpath_bandwidth_list", [])
+            self.sdn_obj.sdn_props.was_new_lp_established = req_status.get("was_new_lp_established", [])
+
             self.sdn_obj.handle_event(
                 self.reqs_dict[current_time], request_type="release"
             )
@@ -706,6 +713,9 @@ class SimulationEngine:
         if iteration == 2:
             print('debug line 709 in simulation.')
         self.iteration = iteration
+
+        # Reset state for new iteration (matches v5 pattern)
+        self.reset()
 
         self.stats_obj.iteration = iteration
         self.stats_obj.init_iter_stats()
