@@ -476,8 +476,9 @@ class SDNController:
             )
 
     # Backward compatibility alias for tests
-    def _update_req_stats(self, bandwidth: float | None = None) -> None:
+    def _update_req_stats(self, bandwidth: float | None = None, remaining: str | None = None) -> None:
         """Legacy method name for _update_request_statistics."""
+        # Note: remaining parameter is accepted for compatibility but not currently used
         self._update_request_statistics(bandwidth)
 
     def _update_grooming_stats(self) -> None:

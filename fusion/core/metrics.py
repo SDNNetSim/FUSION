@@ -291,9 +291,11 @@ class SimStats:
             if stat_key == "crosstalk_list":
                 # (drl_path_agents) fixme
                 if curr_sdn_data == [None]:
-                    break
+                    continue  # Skip this stat_key, don't break entire loop
             for i, data in enumerate(curr_sdn_data):
                 if stat_key == "core_list":
+                    if data not in self.stats_props.cores_dict:
+                        self.stats_props.cores_dict[data] = 0
                     self.stats_props.cores_dict[data] += 1
                 elif stat_key == "modulation_list":
                     bandwidth = sdn_data.bandwidth_list[i]
