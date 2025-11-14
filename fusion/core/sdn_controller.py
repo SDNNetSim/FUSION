@@ -225,7 +225,6 @@ class SDNController:
 
             # Remove from status dict
             self.sdn_props.lightpath_status_dict[light_id].pop(lightpath_id)
-            logger.debug("Released lightpath %d", lightpath_id)
 
     def _allocate_guard_band(
         self,

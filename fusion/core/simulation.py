@@ -429,6 +429,32 @@ class SimulationEngine:
             )
 
             # Update lightpath bandwidth utilization statistics
+            # For non-grooming cases, populate utilization from reqs_status_dict
+            if not self.engine_props.get("is_grooming_enabled", False):
+                lightpath_ids = req_status.get("lightpath_id_list", [])
+                bandwidth_list = req_status.get("bandwidth_list", [])
+                core_list = req_status.get("core_list", [])
+                band_list = req_status.get("band", [])
+
+                # Fallback: use request bandwidth if bandwidth_list is not available
+                if not bandwidth_list or all(bw is None for bw in bandwidth_list):
+                    req_bandwidth = self.reqs_dict[current_time].get("bandwidth")
+                    bandwidth_list = [req_bandwidth] * len(lightpath_ids)
+
+                # Initialize dict if needed
+                if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
+                    self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
+
+                # For non-grooming, each lightpath is 100% utilized (one request per LP)
+                for i, lp_id in enumerate(lightpath_ids):
+                    if i < len(bandwidth_list) and i < len(core_list) and i < len(band_list):
+                        self.sdn_obj.sdn_props.lp_bw_utilization_dict[lp_id] = {
+                            "band": band_list[i],
+                            "core": core_list[i],
+                            "bit_rate": bandwidth_list[i],
+                            "utilization": 100.0,  # 100% for non-grooming
+                        }
+
             if (
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None
                 and len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) > 0
