@@ -537,6 +537,10 @@ class StatsProps:
         self.modulations_used_dict: dict[str, Any] = {}
         self.bandwidth_blocking_dict: dict[str | float, int] = {}
         self.link_usage_dict: dict[str, dict[str, Any]] = {}
+        self.demand_realization_ratio: dict[str, Any] = {}
+        self.frag_dict: dict[str, Any] = {}
+        self.lp_bw_utilization_dict: dict[str, Any] = {}
+        self.sim_lp_utilization_list: list[float] = []
 
         # Blocking reasons
         self.block_reasons_dict: dict[str, int | float | None] = {
@@ -554,6 +558,7 @@ class StatsProps:
         self.lengths_list: list[float] = []
         self.route_times_list: list[float] = []
         self.crosstalk_list: list[float] = []
+        self.snr_list: list[float] = []
 
         # Resource allocation tracking
         self.bands_list: list[int] = []

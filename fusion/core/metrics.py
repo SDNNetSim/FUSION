@@ -156,6 +156,11 @@ class SimStats:
             self.stats_props.weights_dict = {}
         if not isinstance(self.stats_props.modulations_used_dict, dict):
             self.stats_props.modulations_used_dict = {}
+        if not isinstance(self.stats_props.demand_realization_ratio, dict):
+            self.stats_props.demand_realization_ratio = {}
+
+        # Initialize demand_realization_ratio with overall key
+        self.stats_props.demand_realization_ratio["overall"] = []
 
         for bandwidth, obj in self.engine_props["mod_per_bw"].items():
             # Convert bandwidth to string to match tracking logic
@@ -165,6 +170,9 @@ class SimStats:
                 self.stats_props.modulations_used_dict[bandwidth_key] = {}
             if bandwidth_key not in self.stats_props.weights_dict:
                 self.stats_props.weights_dict[bandwidth_key] = {}
+
+            # Initialize demand_realization_ratio per bandwidth
+            self.stats_props.demand_realization_ratio[bandwidth_key] = []
 
             for modulation in obj.keys():
                 # Initialize nested dict structure for weights
@@ -194,13 +202,50 @@ class SimStats:
                     self.stats_props.modulations_used_dict[modulation]["length"][
                         "overall"
                     ] = []
+                    self.stats_props.modulations_used_dict[modulation]["hop"] = {}
+                    self.stats_props.modulations_used_dict[modulation]["hop"]["overall"] = []
+                    self.stats_props.modulations_used_dict[modulation]["snr"] = {}
+                    self.stats_props.modulations_used_dict[modulation]["snr"]["overall"] = []
+                    self.stats_props.modulations_used_dict[modulation]["xt_cost"] = {}
+                    self.stats_props.modulations_used_dict[modulation]["xt_cost"]["overall"] = []
                     for band in self.engine_props["band_list"]:
                         self.stats_props.modulations_used_dict[modulation][band] = 0
                         self.stats_props.modulations_used_dict[modulation]["length"][
                             band
                         ] = []
+                        self.stats_props.modulations_used_dict[modulation]["hop"][band] = []
+                        self.stats_props.modulations_used_dict[modulation]["snr"][band] = []
+                        self.stats_props.modulations_used_dict[modulation]["xt_cost"][band] = []
 
             self.stats_props.bandwidth_blocking_dict[bandwidth_key] = 0
+
+    def _init_frag_dict(self) -> None:
+        """Initialize fragmentation dictionary for tracking fragmentation metrics."""
+        if not isinstance(self.stats_props.frag_dict, dict):
+            self.stats_props.frag_dict = {}
+
+        for method in self.engine_props.get("fragmentation_metrics", []):
+            self.stats_props.frag_dict[method] = {}
+            for req_cnt in range(
+                self.engine_props.get("frag_calc_step", 100),
+                self.engine_props["num_requests"] + 1,
+                self.engine_props.get("frag_calc_step", 100),
+            ):
+                self.stats_props.frag_dict[method][req_cnt] = {"arrival": {}, "release": {}}
+
+    def _init_lp_bw_utilization_dict(self) -> None:
+        """Initialize lightpath bandwidth utilization dictionary."""
+        if not isinstance(self.stats_props.lp_bw_utilization_dict, dict):
+            self.stats_props.lp_bw_utilization_dict = {}
+
+        for bandwidth, obj in self.engine_props["mod_per_bw"].items():
+            bandwidth_key = str(bandwidth)
+            self.stats_props.lp_bw_utilization_dict[bandwidth_key] = {}
+            for band in self.engine_props["band_list"]:
+                self.stats_props.lp_bw_utilization_dict[bandwidth_key][band] = {}
+                for core_num in range(self.engine_props["cores_per_link"]):
+                    self.stats_props.lp_bw_utilization_dict[bandwidth_key][band][core_num] = []
+        self.stats_props.lp_bw_utilization_dict["overall"] = []
 
     def _init_stat_dicts(self) -> None:
         for stat_key, data_type in vars(self.stats_props).items():
@@ -210,8 +255,13 @@ class SimStats:
                 "modulations_used_dict",
                 "weights_dict",
                 "bandwidth_blocking_dict",
+                "demand_realization_ratio",
             ):
                 self._init_mods_weights_bws()
+            elif stat_key == "frag_dict":
+                self._init_frag_dict()
+            elif stat_key == "lp_bw_utilization_dict":
+                self._init_lp_bw_utilization_dict()
             elif stat_key == "snapshots_dict":
                 if self.engine_props["save_snapshots"]:
                     self._init_snapshots()
@@ -324,6 +374,35 @@ class SimStats:
                                 length_dict[band].append(sdn_data.path_weight)
                             if "overall" in length_dict:
                                 length_dict["overall"].append(sdn_data.path_weight)
+
+                        # Track hop count
+                        hop_dict = data_mod_dict.get("hop")
+                        if hop_dict and isinstance(hop_dict, dict):
+                            num_hops = len(sdn_data.path_list) - 1
+                            if band in hop_dict:
+                                hop_dict[band].append(num_hops)
+                            if "overall" in hop_dict:
+                                hop_dict["overall"].append(num_hops)
+
+                        # Track SNR or XT cost
+                        if self.engine_props.get("snr_type") != "None":
+                            if i < len(sdn_data.snr_list) and sdn_data.snr_list[i] is not None:
+                                if self.engine_props.get("snr_type") == "xt_calculation":
+                                    # Track xt_cost
+                                    xt_cost_dict = data_mod_dict.get("xt_cost")
+                                    if xt_cost_dict and isinstance(xt_cost_dict, dict):
+                                        if band in xt_cost_dict:
+                                            xt_cost_dict[band].append(sdn_data.snr_list[i])
+                                        if "overall" in xt_cost_dict:
+                                            xt_cost_dict["overall"].append(sdn_data.snr_list[i])
+                                else:
+                                    # Track snr
+                                    snr_dict = data_mod_dict.get("snr")
+                                    if snr_dict and isinstance(snr_dict, dict):
+                                        if band in snr_dict:
+                                            snr_dict[band].append(sdn_data.snr_list[i])
+                                        if "overall" in snr_dict:
+                                            snr_dict["overall"].append(sdn_data.snr_list[i])
                 elif stat_key == "start_slot_list":
                     self.stats_props.start_slot_list.append(int(data))
                 elif stat_key == "end_slot_list":
@@ -413,11 +492,25 @@ class SimStats:
                         self.stats_props.weights_dict[bandwidth_key][mod_format].append(
                             round(float(sdn_data.path_weight), 2)
                         )
+
                     else:
                         # Initialize if not present
                         self.stats_props.weights_dict[bandwidth_key][mod_format] = [
                             round(float(sdn_data.path_weight), 2)
                         ]
+
+            # Track demand realization ratio for partial grooming
+            if self.engine_props.get("can_partially_serve"):
+                bandwidth_key = str(sdn_data.bandwidth) if sdn_data.bandwidth is not None else None
+                if bandwidth_key and bandwidth_key in self.stats_props.demand_realization_ratio:
+                    remaining_bw = getattr(sdn_data, "remaining_bw", 0)
+                    if remaining_bw is None:
+                        remaining_bw = 0
+                    original_bw = int(sdn_data.bandwidth)
+                    served_bw = original_bw - int(remaining_bw)
+                    realization_ratio = served_bw / original_bw
+                    self.stats_props.demand_realization_ratio[bandwidth_key].append(realization_ratio)
+                    self.stats_props.demand_realization_ratio["overall"].append(realization_ratio)
             self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(
                 network_spectrum_dict
             )
@@ -497,6 +590,114 @@ class SimStats:
                                     "min": round(float(min(value)), 2),
                                     "max": round(float(max(value)), 2),
                                 }
+
+                        # Process hop, snr, and xt_cost in the same way
+                        for route_spec in ["hop", "snr", "xt_cost"]:
+                            # Skip SNR if snr_type is None
+                            if self.engine_props.get("snr_type") == "None" and route_spec == "snr":
+                                continue
+
+                            route_dict = mod_entry.get(route_spec, {})
+                            if isinstance(route_dict, dict):
+                                for key, value in route_dict.items():
+                                    if not isinstance(value, list):
+                                        continue
+                                    if len(value) == 0:
+                                        route_dict[key] = {
+                                            "mean": None,
+                                            "std": None,
+                                            "min": None,
+                                            "max": None,
+                                        }
+                                    else:
+                                        deviation = 0.0 if len(value) == 1 else stdev(value)
+                                        self.stats_props.modulations_used_dict[modulation][
+                                            route_spec
+                                        ][key] = {
+                                            "mean": round(float(mean(value)), 2),
+                                            "std": round(float(deviation), 2),
+                                            "min": round(float(min(value)), 2),
+                                            "max": round(float(max(value)), 2),
+                                        }
+
+        # Process demand_realization_ratio
+        if self.engine_props.get("can_partially_serve"):
+            for bw, bw_obj in self.stats_props.demand_realization_ratio.items():
+                if not isinstance(bw_obj, list):
+                    continue
+                if len(bw_obj) == 0:
+                    self.stats_props.demand_realization_ratio[bw] = {
+                        "mean": None,
+                        "std": None,
+                        "min": None,
+                        "max": None,
+                    }
+                    continue
+                deviation = 0.0 if len(bw_obj) == 1 else stdev(bw_obj)
+                num_full_served = sum(1 for val in bw_obj if val == 1)
+                ratio_dict = {
+                    "mean": round(mean(bw_obj), 2),
+                    "std": round(deviation, 2),
+                    "min": min(bw_obj),
+                    "max": max(bw_obj),
+                    "num_full_served": num_full_served,
+                }
+                if bw == "overall":
+                    ratio_dict["ratio_full_served"] = num_full_served / self.engine_props["num_requests"]
+                else:
+                    request_dist = self.engine_props.get("request_distribution", {})
+                    if bw in request_dist:
+                        total_bw_requests = request_dist[bw] * self.engine_props["num_requests"]
+                        ratio_dict["ratio_full_served"] = num_full_served / total_bw_requests if total_bw_requests > 0 else 0
+                self.stats_props.demand_realization_ratio[bw] = ratio_dict
+
+        # Process lp_bw_utilization_dict
+        for bw, bw_obj in self.stats_props.lp_bw_utilization_dict.items():
+            if bw == "overall":
+                if isinstance(bw_obj, list):
+                    if len(bw_obj) == 0:
+                        self.stats_props.lp_bw_utilization_dict[bw] = {
+                            "mean": None,
+                            "std": None,
+                            "min": None,
+                            "max": None,
+                        }
+                    else:
+                        deviation = 0.0 if len(bw_obj) == 1 else stdev(bw_obj)
+                        self.stats_props.lp_bw_utilization_dict[bw] = {
+                            "mean": round(mean(bw_obj), 2),
+                            "std": round(deviation, 2),
+                            "min": min(bw_obj),
+                            "max": max(bw_obj),
+                        }
+            else:
+                if isinstance(bw_obj, dict):
+                    for band, band_obj in bw_obj.items():
+                        if isinstance(band_obj, dict):
+                            for core, data_list in band_obj.items():
+                                if isinstance(data_list, list):
+                                    if len(data_list) == 0:
+                                        band_obj[core] = {
+                                            "mean": None,
+                                            "std": None,
+                                            "min": None,
+                                            "max": None,
+                                        }
+                                    else:
+                                        deviation = 0.0 if len(data_list) == 1 else stdev(data_list)
+                                        band_obj[core] = {
+                                            "mean": round(mean(data_list), 2),
+                                            "std": round(deviation, 2),
+                                            "min": min(data_list),
+                                            "max": max(data_list),
+                                        }
+
+        # Track sim_lp_utilization_list from lp_bw_utilization_dict overall mean
+        if "overall" in self.stats_props.lp_bw_utilization_dict:
+            overall_util = self.stats_props.lp_bw_utilization_dict["overall"]
+            if isinstance(overall_util, dict) and "mean" in overall_util:
+                if overall_util["mean"] is not None:
+                    self.stats_props.sim_lp_utilization_list.append(overall_util["mean"])
 
     def finalize_iteration_statistics(self) -> None:
         """

@@ -95,6 +95,13 @@ class StatsPersistence:
             "bit_rate_block_ci_percent"
         )
 
+        # Add lightpath utilization if available
+        if hasattr(stats_props, "sim_lp_utilization_list") and stats_props.sim_lp_utilization_list:
+            from statistics import mean as stats_mean
+            save_dict["lightpath_utilization"] = stats_mean(stats_props.sim_lp_utilization_list)
+        else:
+            save_dict["lightpath_utilization"] = None
+
         # Prepare iteration statistics
         if "iter_stats" not in save_dict:
             save_dict["iter_stats"] = {}
@@ -147,6 +154,7 @@ class StatsPersistence:
                 "lengths_list",
                 "route_times_list",
                 "crosstalk_list",
+                "snr_list",
             ):
                 # Map new property names to old output key names for backward
                 # compatibility
@@ -154,10 +162,12 @@ class StatsPersistence:
                     save_key = "trans_"
                 elif stat_key == "crosstalk_list":
                     save_key = "xt_"
+                elif stat_key == "snr_list":
+                    save_key = "snr_"
                 else:
                     save_key = f"{stat_key.split('_list')[0]}_"
 
-                if stat_key == "crosstalk_list":
+                if stat_key in ("crosstalk_list", "snr_list"):
                     stat_array = [
                         0 if stat is None else stat
                         for stat in getattr(stats_props, stat_key)
