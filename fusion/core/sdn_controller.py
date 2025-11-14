@@ -782,6 +782,11 @@ class SDNController:
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
 
+            # Set lightpath bandwidth only if not already set by slicing code
+            if not hasattr(self.spectrum_obj.spectrum_props, 'lightpath_bandwidth') or \
+               self.spectrum_obj.spectrum_props.lightpath_bandwidth is None:
+                self.spectrum_obj.spectrum_props.lightpath_bandwidth = allocate_bandwidth
+
             self._update_request_statistics(bandwidth=allocate_bandwidth)
 
         return True
@@ -857,9 +862,6 @@ class SDNController:
         """
         # Handle release requests
         if request_type == "release":
-            # Update throughput once per request (before releasing individual lightpaths)
-            self._update_throughput()
-
             lightpath_id_list: list[int | None] = []
             if self.engine_props.get("is_grooming_enabled", False):
                 groom_result = self.grooming_obj.handle_grooming(request_type)
@@ -870,6 +872,8 @@ class SDNController:
                 # Convert list[int] to list[int | None]
                 lightpath_id_list = list(self.sdn_props.lightpath_id_list)
 
+            # Update throughput once per request, then release each lightpath
+            self._update_throughput()
             for lightpath_id in lightpath_id_list:
                 self.release(lightpath_id=lightpath_id)
             return

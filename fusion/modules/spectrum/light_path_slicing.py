@@ -209,6 +209,7 @@ class LightPathSlicingManager:
                     # Generate unique lightpath ID for this segment
                     lp_id = self.sdn_props.get_lightpath_id()
                     self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                    self.spectrum_obj.spectrum_props.lightpath_bandwidth = bandwidth
                     self.sdn_props.was_new_lp_established.append(lp_id)
 
                     sdn_controller.allocate()
@@ -272,10 +273,11 @@ class LightPathSlicingManager:
                 # Generate unique lightpath ID for this segment
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                dedicated_bw = min(bandwidth, remaining_bw)
+                self.spectrum_obj.spectrum_props.lightpath_bandwidth = str(dedicated_bw)
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
                 sdn_controller.allocate()
-                dedicated_bw = min(bandwidth, remaining_bw)
                 sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
                 remaining_bw -= bandwidth
                 self.sdn_props.number_of_transponders += 1
@@ -322,6 +324,7 @@ class LightPathSlicingManager:
                 # Generate unique lightpath ID for this segment
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                self.spectrum_obj.spectrum_props.lightpath_bandwidth = bandwidth
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
                 sdn_controller.allocate()
