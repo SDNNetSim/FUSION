@@ -1286,7 +1286,7 @@
             "lengths_max": 3800.0,
             "route_times_mean": 0.0,
             "route_times_min": 0.0,
-            "route_times_max": 0.01,
+            "route_times_max": 0.0,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -2856,5 +2856,5 @@
     "ci_rate_bit_rate_block": null,
     "ci_percent_bit_rate_block": null,
     "lightpath_utilization": 100.0,
-    "sim_end_time": "1105_17_24_35_975117"
+    "sim_end_time": "1114_12_40_21_296285"
 }

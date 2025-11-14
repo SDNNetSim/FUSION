@@ -224,7 +224,14 @@ class SimStats:
         if not isinstance(self.stats_props.frag_dict, dict):
             self.stats_props.frag_dict = {}
 
-        for method in self.engine_props.get("fragmentation_metrics", []):
+        frag_metrics = self.engine_props.get("fragmentation_metrics", [])
+        # Handle case where config parsing returns string "[]" instead of empty list
+        if isinstance(frag_metrics, str) and frag_metrics in ("[]", ""):
+            frag_metrics = []
+        elif not isinstance(frag_metrics, list):
+            frag_metrics = []
+
+        for method in frag_metrics:
             self.stats_props.frag_dict[method] = {}
             for req_cnt in range(
                 self.engine_props.get("frag_calc_step", 100),
@@ -463,10 +470,9 @@ class SimStats:
                 self.stats_props.route_times_list.append(sdn_data.route_time)
             if sdn_data.number_of_transponders is not None:
                 self.total_transponders += sdn_data.number_of_transponders
-            bandwidth = sdn_data.bandwidth
-            mod_format = None
+
+            # Track path index from first modulation
             if sdn_data.modulation_list and len(sdn_data.modulation_list) > 0:
-                mod_format = sdn_data.modulation_list[0]
                 if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(
                     self.stats_props.path_index_list
                 ):
@@ -474,30 +480,36 @@ class SimStats:
 
             if sdn_data.bandwidth is not None:
                 self.bit_rate_request += int(sdn_data.bandwidth)
-                bandwidth_key = str(bandwidth) if bandwidth is not None else None
-                weights_dict = self.stats_props.weights_dict
-                bw_weights = (
-                    weights_dict.get(bandwidth_key, {})
-                    if bandwidth_key is not None
-                    else {}
-                )
+
+                # Track weights for NEW lightpaths only (matching grooming-new logic)
+                was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
                 if (
-                    bandwidth_key
-                    and bandwidth_key in weights_dict
-                    and isinstance(bw_weights, dict)
-                    and mod_format
+                    isinstance(was_new_lps, list)
+                    and hasattr(sdn_data, "bandwidth_list")
+                    and hasattr(sdn_data, "lightpath_id_list")
+                    and hasattr(sdn_data, "modulation_list")
                     and sdn_data.path_weight is not None
                 ):
-                    if mod_format in bw_weights:
-                        self.stats_props.weights_dict[bandwidth_key][mod_format].append(
-                            round(float(sdn_data.path_weight), 2)
-                        )
+                    for i in range(len(sdn_data.bandwidth_list)):
+                        # Only track weights for newly established lightpaths
+                        # Check if lightpath_id at this index is in was_new_lp_established
+                        if (
+                            i < len(sdn_data.lightpath_id_list)
+                            and sdn_data.lightpath_id_list[i] in was_new_lps
+                        ):
+                            bandwidth_key = str(sdn_data.bandwidth_list[i])
+                            mod_format = sdn_data.modulation_list[i] if i < len(sdn_data.modulation_list) else None
 
-                    else:
-                        # Initialize if not present
-                        self.stats_props.weights_dict[bandwidth_key][mod_format] = [
-                            round(float(sdn_data.path_weight), 2)
-                        ]
+                            if mod_format and bandwidth_key in self.stats_props.weights_dict:
+                                if mod_format in self.stats_props.weights_dict[bandwidth_key]:
+                                    self.stats_props.weights_dict[bandwidth_key][mod_format].append(
+                                        round(float(sdn_data.path_weight), 2)
+                                    )
+                                else:
+                                    # Initialize if not present
+                                    self.stats_props.weights_dict[bandwidth_key][mod_format] = [
+                                        round(float(sdn_data.path_weight), 2)
+                                    ]
 
             # Track demand realization ratio for partial grooming
             if self.engine_props.get("can_partially_serve"):
@@ -623,8 +635,8 @@ class SimStats:
                                     "max": round(float(max(value)), 2),
                                 }
 
-                        # Process hop, snr, and xt_cost in the same way
-                        for route_spec in ["hop", "snr", "xt_cost"]:
+                        # Process hop and snr (xt_cost remains as empty list like grooming-new)
+                        for route_spec in ["hop", "snr"]:
                             # Skip SNR if snr_type is None
                             if self.engine_props.get("snr_type") == "None" and route_spec == "snr":
                                 continue

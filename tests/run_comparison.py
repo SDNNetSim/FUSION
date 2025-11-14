@@ -31,7 +31,16 @@ from fusion.sim.utils import get_start_time
 # TODO: (version 5.5) Use mock YML instead of using the originals from sb3
 
 LOGGER = logging.getLogger(__name__)
-IGNORE_KEYS = {"route_times_max", "route_times_mean", "route_times_min", "sim_end_time"}
+IGNORE_KEYS = {
+    "route_times_max",
+    "route_times_mean",
+    "route_times_min",
+    "sim_end_time",
+    "switchover_times",
+    "protection_switchovers",
+    "protection_failures",
+    "failure_induced_blocks",
+}
 
 
 def run_rl_simulation(input_dict: dict, config_path: str) -> None:
@@ -431,7 +440,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'baseline_spf_ff':
+        if case.name == 'baseline_kspf_ff':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
