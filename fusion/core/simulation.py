@@ -427,6 +427,16 @@ class SimulationEngine:
             self.sdn_obj.handle_event(
                 self.reqs_dict[current_time], request_type="release"
             )
+
+            # Update lightpath bandwidth utilization statistics
+            if (
+                self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None
+                and len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) > 0
+            ):
+                self.stats_obj.update_utilization_dict(
+                    self.sdn_obj.sdn_props.lp_bw_utilization_dict
+                )
+
             sdn_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
             if sdn_spectrum_dict is not None:
                 self.network_spectrum_dict = sdn_spectrum_dict

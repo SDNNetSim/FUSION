@@ -515,6 +515,38 @@ class SimStats:
                 network_spectrum_dict
             )
 
+    def update_utilization_dict(self, utilization_dict: dict[int, dict[str, Any]]) -> None:
+        """
+        Update lightpath bandwidth utilization statistics.
+
+        Called after lightpath release to track bandwidth utilization metrics
+        per bandwidth/band/core combination.
+
+        :param utilization_dict: Dictionary mapping lightpath_id to utilization info
+            with keys: 'bit_rate', 'band', 'core', 'utilization'
+        """
+        for lp_id in utilization_dict:
+            lp_info = utilization_dict[lp_id]
+            bit_rate_key = str(lp_info["bit_rate"])
+            band = lp_info["band"]
+            core = lp_info["core"]
+            utilization = lp_info["utilization"]
+
+            # Track per-bandwidth/band/core
+            if (
+                bit_rate_key in self.stats_props.lp_bw_utilization_dict
+                and isinstance(self.stats_props.lp_bw_utilization_dict[bit_rate_key], dict)
+                and band in self.stats_props.lp_bw_utilization_dict[bit_rate_key]
+                and core in self.stats_props.lp_bw_utilization_dict[bit_rate_key][band]
+            ):
+                self.stats_props.lp_bw_utilization_dict[bit_rate_key][band][core].append(
+                    utilization
+                )
+
+            # Track overall
+            if isinstance(self.stats_props.lp_bw_utilization_dict.get("overall"), list):
+                self.stats_props.lp_bw_utilization_dict["overall"].append(utilization)
+
     def _get_iter_means(self) -> None:
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
             for snap_key, data_list in curr_snapshot.items():
