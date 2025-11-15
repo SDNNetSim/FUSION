@@ -724,6 +724,7 @@ class SpectrumAssignment:
             "lightpath_bandwidth": lp_bandwidth,
             "remaining_bandwidth": lp_bandwidth,  # Initially all available
             "snr_cost": self.spectrum_props.crosstalk_cost,
+            "xt_cost": self.spectrum_props.crosstalk_cost,
             "is_degraded": False,
             "requests_dict": {},  # Will be populated when requests are groomed
             "time_bw_usage": {

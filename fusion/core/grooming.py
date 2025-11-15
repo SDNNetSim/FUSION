@@ -148,6 +148,8 @@ class Grooming:
             self.sdn_props.modulation_list.append(lp_info["mod_format"])
             self.sdn_props.path_list = lp_info["path"]
             self.sdn_props.crosstalk_list.append(lp_info["snr_cost"])
+            self.sdn_props.snr_list.append(lp_info["snr_cost"])
+            self.sdn_props.xt_list.append(lp_info["xt_cost"])
             self.sdn_props.lightpath_bandwidth_list.append(
                 lp_info["lightpath_bandwidth"]
             )

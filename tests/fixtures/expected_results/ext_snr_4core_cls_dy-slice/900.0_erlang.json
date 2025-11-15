@@ -2142,7 +2142,7 @@
             "lengths_max": 5925.3,
             "route_times_mean": 0.0,
             "route_times_min": 0.0,
-            "route_times_max": 0.01,
+            "route_times_max": 0.0,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -4307,7 +4307,7 @@
             "lengths_max": 5925.3,
             "route_times_mean": 0.0,
             "route_times_min": 0.0,
-            "route_times_max": 0.02,
+            "route_times_max": 0.0,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -5130,5 +5130,5 @@
     "ci_rate_bit_rate_block": 0.0,
     "ci_percent_bit_rate_block": null,
     "lightpath_utilization": 92.91,
-    "sim_end_time": "1106_15_40_22_446353"
+    "sim_end_time": "1115_12_17_31_989717"
 }

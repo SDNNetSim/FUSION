@@ -440,7 +440,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'epsilon_greedy_bandit':
+        if case.name == 'ext_snr_4core_cls_dy-slice':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:

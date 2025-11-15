@@ -453,6 +453,10 @@ class SDNController:
             spectrum_key = stat_key.split("_", maxsplit=1)[0]
             if spectrum_key == "crosstalk":
                 spectrum_key = "crosstalk_cost"
+            elif spectrum_key == "snr":
+                spectrum_key = "crosstalk_cost"  # SNR cost is same as crosstalk_cost
+            elif spectrum_key == "xt":
+                spectrum_key = "crosstalk_cost"  # XT cost is same as crosstalk_cost
             elif spectrum_key == "core":
                 spectrum_key = "core_number"
             elif spectrum_key == "band":

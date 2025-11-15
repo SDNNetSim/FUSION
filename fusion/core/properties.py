@@ -331,6 +331,8 @@ class SDNProps:
         self.core_list: list[int] = []
         self.band_list: list[str] = []
         self.crosstalk_list: list[float] = []
+        self.snr_list: list[float] = []
+        self.xt_list: list[float] = []
         self.start_slot_list: list[int] = []
         self.end_slot_list: list[int] = []
 
@@ -369,6 +371,8 @@ class SDNProps:
         self.stat_key_list: list[str] = [
             "modulation_list",
             "crosstalk_list",
+            "snr_list",
+            "xt_list",
             "core_list",
             "band_list",
             "start_slot_list",
