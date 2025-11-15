@@ -696,9 +696,11 @@ class SimStats:
                 self.stats_props.demand_realization_ratio[bw] = ratio_dict
 
         # Process lp_bw_utilization_dict
+        overall_was_converted = False
         for bw, bw_obj in self.stats_props.lp_bw_utilization_dict.items():
             if bw == "overall":
                 if isinstance(bw_obj, list):
+                    overall_was_converted = True
                     if len(bw_obj) == 0:
                         self.stats_props.lp_bw_utilization_dict[bw] = {
                             "mean": None,
@@ -737,7 +739,8 @@ class SimStats:
                                         }
 
         # Track sim_lp_utilization_list from lp_bw_utilization_dict overall mean
-        if "overall" in self.stats_props.lp_bw_utilization_dict:
+        # Only append if we converted the list to dict in this call (prevents duplicates)
+        if overall_was_converted:
             overall_util = self.stats_props.lp_bw_utilization_dict["overall"]
             if isinstance(overall_util, dict) and "mean" in overall_util:
                 if overall_util["mean"] is not None:
