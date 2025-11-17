@@ -355,13 +355,10 @@ class SimStats:
                         self.stats_props.cores_dict[data] = 0
                     self.stats_props.cores_dict[data] += 1
                 elif stat_key == "modulation_list":
-                    bandwidth = sdn_data.bandwidth_list[i]
-                    lp_bandwidth = sdn_data.lightpath_bandwidth_list[i] if i < len(sdn_data.lightpath_bandwidth_list) else "N/A"
+                    bandwidth = sdn_data.lightpath_bandwidth_list[i]  # Use lightpath bandwidth
                     band = sdn_data.band_list[i]
-                    # DEBUG: Print what's in the lists
-                    print(f"[V6-METRICS] req_id={sdn_data.request_id}, i={i}, mod={data}, bandwidth_list[i]={bandwidth}, lightpath_bandwidth_list[i]={lp_bandwidth}, orig_bw={sdn_data.bandwidth}")
-                    # Ensure the nested dict structure exists
-                    bandwidth_key = str(bandwidth) if bandwidth is not None else None
+                    # Ensure the nested dict structure exists - convert float to int to match dict keys
+                    bandwidth_key = str(int(float(bandwidth))) if bandwidth is not None else None
                     mod_dict = self.stats_props.modulations_used_dict
                     bw_dict = mod_dict.get(bandwidth_key)
                     if bandwidth_key and isinstance(bw_dict, dict):

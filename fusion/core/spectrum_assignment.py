@@ -454,6 +454,17 @@ class SpectrumAssignment:
 
     def _initialize_spectrum_information(self) -> None:
         """Initialize spectrum information for the request."""
+        # Reset properties to prevent carryover from previous requests
+        self.spectrum_props.lightpath_bandwidth = None
+        self.spectrum_props.crosstalk_cost = None
+        self.spectrum_props.lightpath_id = None
+        self.spectrum_props.modulation = None
+        self.spectrum_props.start_slot = None
+        self.spectrum_props.end_slot = None
+        self.spectrum_props.slots_needed = None
+        self.spectrum_props.current_band = None
+        self.spectrum_props.core_number = None
+        self.spectrum_props.is_free = False
         path_list = self.spectrum_props.path_list
         if path_list is None or len(path_list) < 2:
             raise ValueError("Path list must be initialized with at least 2 nodes")
@@ -854,7 +865,8 @@ class SpectrumAssignment:
                         self.snr_measurements.handle_snr(self.sdn_props.path_index)
                     )
                     self.spectrum_props.crosstalk_cost = crosstalk_cost
-                    self.spectrum_props.lightpath_bandwidth = lp_bw
+                    # Don't set lightpath_bandwidth here - let sdn_controller set it to allocated bandwidth
+                    # self.spectrum_props.lightpath_bandwidth = lp_bw
 
                     if not snr_is_acceptable:
                         self.spectrum_props.is_free = False

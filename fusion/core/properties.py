@@ -471,6 +471,8 @@ class SDNProps:
         # Existing resets
         self.modulation_list = []
         self.crosstalk_list = []
+        self.snr_list = []
+        self.xt_list = []
         self.core_list = []
         self.band_list = []
         self.start_slot_list = []

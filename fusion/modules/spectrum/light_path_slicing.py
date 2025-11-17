@@ -274,7 +274,7 @@ class LightPathSlicingManager:
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 dedicated_bw = min(bandwidth, remaining_bw)
-                self.spectrum_obj.spectrum_props.lightpath_bandwidth = str(dedicated_bw)
+                self.spectrum_obj.spectrum_props.lightpath_bandwidth = str(bandwidth)
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
                 # DEBUG: Print what's being allocated
