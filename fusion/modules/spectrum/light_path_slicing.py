@@ -277,6 +277,9 @@ class LightPathSlicingManager:
                 self.spectrum_obj.spectrum_props.lightpath_bandwidth = str(dedicated_bw)
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
+                # DEBUG: Print what's being allocated
+                print(f"[V6-SLICING] req_id={self.sdn_props.request_id}, orig_bw={self.sdn_props.bandwidth}, slice_bw={bandwidth}, dedicated_bw={dedicated_bw}, mod={self.spectrum_obj.spectrum_props.modulation}")
+
                 sdn_controller.allocate()
                 sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
                 remaining_bw -= bandwidth
