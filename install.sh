@@ -17,8 +17,8 @@ fi
 
 echo "✅ Python 3.11 detected"
 
-# Check if virtual environment is active
-if [[ "$VIRTUAL_ENV" == "" ]]; then
+# Check if virtual environment is active (skip in CI environments)
+if [[ "$VIRTUAL_ENV" == "" ]] && [[ "$CI" != "true" ]] && [[ "$GITHUB_ACTIONS" != "true" ]]; then
     echo "❌ Error: No virtual environment detected"
     echo "Please create and activate a virtual environment:"
     echo "  python3.11 -m venv venv"
@@ -26,7 +26,11 @@ if [[ "$VIRTUAL_ENV" == "" ]]; then
     exit 1
 fi
 
-echo "✅ Virtual environment active: $VIRTUAL_ENV"
+if [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "✅ Virtual environment active: $VIRTUAL_ENV"
+else
+    echo "✅ Running in CI environment (virtual environment not required)"
+fi
 
 # Detect platform
 platform=$(python3 -c "import platform; print(platform.system().lower())")

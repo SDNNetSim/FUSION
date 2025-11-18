@@ -3,16 +3,18 @@ name: Documentation
 on:
   push:
     branches:
-      - main
       - develop
+      - main
+      - 'release/**'
     paths:
       - 'docs/**'
       - 'fusion/**/*.py'
       - '.github/workflows/docs.yml'
   pull_request:
     branches:
-      - main
       - develop
+      - main
+      - 'release/**'
     paths:
       - 'docs/**'
       - 'fusion/**/*.py'
