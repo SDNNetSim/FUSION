@@ -832,9 +832,26 @@ class SimStats:
             self.stats_props.simulation_bitrate_blocking_list
         )
 
+        # Calculate bit rate blocking CI separately (always calculate, even when blocking is 0)
+        # When variance is 0, this evaluates to 0.0 (matching v5 behavior)
+        try:
+            bit_rate_block_ci = 1.96 * (
+                math.sqrt(self.bit_rate_block_variance)
+                / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
+            )
+            self.bit_rate_block_ci = bit_rate_block_ci
+            if self.bit_rate_block_mean > 0:
+                bit_rate_block_ci_percent = (
+                    (2 * bit_rate_block_ci) / self.bit_rate_block_mean
+                ) * 100
+                self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
+        except (ZeroDivisionError, ValueError):
+            # If calculation fails, leave as None
+            pass
+
         if self.block_mean == 0.0:
-            # No blocking means no confidence interval to calculate
-            # CI values remain None (initialized state)
+            # No request blocking means no CI to calculate for request blocking
+            # Request blocking CI values remain None (initialized state)
             return False
 
         try:
@@ -846,16 +863,6 @@ class SimStats:
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
-            # Bit rate blocking confidence interval calculation
-            bit_rate_block_ci = 1.96 * (
-                math.sqrt(self.bit_rate_block_variance)
-                / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
-            )
-            self.bit_rate_block_ci = bit_rate_block_ci
-            bit_rate_block_ci_percent = (
-                (2 * bit_rate_block_ci) / self.bit_rate_block_mean
-            ) * 100
-            self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
         except ZeroDivisionError:
             return False
 
