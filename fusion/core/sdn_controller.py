@@ -220,6 +220,9 @@ class SDNController:
                         )
                         # Comparison print for v5/v6 analysis
                         print(f"[COMPARE-RELEASE] lp_id={lightpath_id}, utilization={average_bw_usage:.2f}%, depart={self.sdn_props.depart:.4f}")
+                        # Flag zero utilization for debugging
+                        if average_bw_usage == 0.0:
+                            print(f"[ZERO-UTIL-BUG] lp_id={lightpath_id}, time_bw_usage={lp_status['time_bw_usage']}, depart={self.sdn_props.depart:.4f}, lp_bw={lp_status['lightpath_bandwidth']}")
                 except (ImportError, AttributeError):
                     pass
 

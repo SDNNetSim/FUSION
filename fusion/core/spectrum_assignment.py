@@ -741,6 +741,12 @@ class SpectrumAssignment:
         # Debug: Track initial utilization calculation
         print(f"[DEBUG-INIT-UTIL] req_id={self.sdn_props.request_id}, lp_id={lp_id}, lp_bw={lp_bandwidth}, bw_list_len={len(self.sdn_props.bandwidth_list) if self.sdn_props.bandwidth_list else 0}, dedicated_bw={dedicated_bw:.2f}, initial_util={initial_utilization:.2f}%")
 
+        # Skip creating lightpath entry if bandwidth is 0 or None
+        # This prevents phantom 0-bandwidth lightpaths from being tracked
+        if lp_bandwidth_float == 0:
+            print(f"[DEBUG-SKIP-LP] req_id={self.sdn_props.request_id}, lp_id={lp_id}, skipping 0-bandwidth lightpath")
+            return
+
         # Create lightpath entry
         remaining_bw_calc = lp_bandwidth_float - dedicated_bw
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {

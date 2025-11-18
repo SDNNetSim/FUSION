@@ -587,6 +587,9 @@ class SimStats:
             # Track overall
             if isinstance(self.stats_props.lp_bw_utilization_dict.get("overall"), list):
                 self.stats_props.lp_bw_utilization_dict["overall"].append(utilization)
+                # Flag zero utilization for debugging
+                if utilization == 0.0:
+                    print(f"[ZERO-UTIL-ADDED] lp_id={lp_id}, bit_rate={bit_rate_key}, band={band}, core={core}, util=0.0%")
 
     def _get_iter_means(self) -> None:
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
