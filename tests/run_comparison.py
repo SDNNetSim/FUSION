@@ -43,6 +43,15 @@ IGNORE_KEYS = {
     "failure_induced_blocks",
 }
 
+# Temporary: Only run these specific test cases
+ALLOWED_TEST_CASES = {
+    "baseline_spf_ff",
+    "baseline_kspf_ff",
+    "epsilon_greedy_bandit",
+    "ext_snr_4core_cls_dy-slice",
+    "xtar_slicing_pff",
+}
+
 
 def run_rl_simulation(input_dict: dict, config_path: str) -> None:
     """
@@ -131,11 +140,25 @@ def _build_cli() -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Verbosity level.",
     )
+    parser.add_argument(
+        "--test-case",
+        type=str,
+        default=None,
+        help="Run a specific test case by name (e.g., 'xtar_slicing_pff').",
+    )
     return parser.parse_args()
 
 
-def _discover_cases(fixtures_root: Path) -> list[Path]:
-    """Return all case directories under *fixtures_root*, sorted by name."""
+def _discover_cases(fixtures_root: Path, test_case: str | None = None) -> list[Path]:
+    """Return all case directories under *fixtures_root*, sorted by name.
+
+    Args:
+        fixtures_root: Root directory containing test fixtures
+        test_case: Optional specific test case name to run
+
+    Returns:
+        List of test case directories to run
+    """
 
     looks_like_case = (
         list(fixtures_root.glob("*_config.ini"))
@@ -149,6 +172,29 @@ def _discover_cases(fixtures_root: Path) -> list[Path]:
     if not cases:
         LOGGER.error("No cases found under %s", fixtures_root)
         sys.exit(2)
+
+    # Filter to only allowed test cases (temporary)
+    cases = [c for c in cases if c.name in ALLOWED_TEST_CASES]
+    if not cases:
+        LOGGER.error(
+            "No allowed test cases found under %s. Allowed cases: %s",
+            fixtures_root,
+            ", ".join(sorted(ALLOWED_TEST_CASES)),
+        )
+        sys.exit(2)
+
+    # Filter to specific test case if requested
+    if test_case is not None:
+        matching_cases = [c for c in cases if c.name == test_case]
+        if not matching_cases:
+            LOGGER.error(
+                "Test case '%s' not found in allowed cases. Available cases: %s",
+                test_case,
+                ", ".join(c.name for c in cases),
+            )
+            sys.exit(2)
+        return matching_cases
+
     return cases
 
 
@@ -450,7 +496,7 @@ def main() -> None:
     logging.getLogger("fusion.modules.spectrum.light_path_slicing").setLevel(logging.ERROR)
     logging.getLogger("fusion.core.spectrum_assignment").setLevel(logging.ERROR)
 
-    cases = _discover_cases(fixtures_root)
+    cases = _discover_cases(fixtures_root, test_case=cli.test_case)
 
     # Create a minimal base_args dict for comparison tests
     # We don't need to parse CLI args since the test configs provide all settings
@@ -461,8 +507,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'xtar_slicing_pff':
-            all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
+        all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
         LOGGER.info("All %d cases passed ✓", len(cases))
