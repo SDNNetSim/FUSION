@@ -425,36 +425,44 @@ class SimulationEngine:
             self.sdn_obj.sdn_props.lightpath_bandwidth_list = req_status.get("lightpath_bandwidth_list", [])
             self.sdn_obj.sdn_props.was_new_lp_established = req_status.get("was_new_lp_established", [])
 
+            # Initialize dict before handle_event so sdn_controller can populate it
+            if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
+                self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
+
             self.sdn_obj.handle_event(
                 self.reqs_dict[current_time], request_type="release"
             )
 
             # Update lightpath bandwidth utilization statistics
-            # For non-grooming cases, populate utilization from reqs_status_dict
+            # For non-grooming cases, populate utilization from reqs_status_dict if not already done
             if not self.engine_props.get("is_grooming_enabled", False):
-                lightpath_ids = req_status.get("lightpath_id_list", [])
-                bandwidth_list = req_status.get("bandwidth_list", [])
-                core_list = req_status.get("core_list", [])
-                band_list = req_status.get("band", [])
+                # Check if sdn_controller already populated utilization (e.g., via dynamic slicing)
+                if (
+                    self.sdn_obj.sdn_props.lp_bw_utilization_dict is None
+                    or len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) == 0
+                ):
+                    # Only use 100% fallback if dict is empty (not already calculated)
+                    lightpath_ids = req_status.get("lightpath_id_list", [])
+                    bandwidth_list = req_status.get("bandwidth_list", [])
+                    core_list = req_status.get("core_list", [])
+                    band_list = req_status.get("band", [])
 
-                # Fallback: use request bandwidth if bandwidth_list is not available
-                if not bandwidth_list or all(bw is None for bw in bandwidth_list):
-                    req_bandwidth = self.reqs_dict[current_time].get("bandwidth")
-                    bandwidth_list = [req_bandwidth] * len(lightpath_ids)
+                    # Fallback: use request bandwidth if bandwidth_list is not available
+                    if not bandwidth_list or all(bw is None for bw in bandwidth_list):
+                        req_bandwidth = self.reqs_dict[current_time].get("bandwidth")
+                        bandwidth_list = [req_bandwidth] * len(lightpath_ids)
 
-                # Initialize dict if needed
-                if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
                     self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
-                # For non-grooming, each lightpath is 100% utilized (one request per LP)
-                for i, lp_id in enumerate(lightpath_ids):
-                    if i < len(bandwidth_list) and i < len(core_list) and i < len(band_list):
-                        self.sdn_obj.sdn_props.lp_bw_utilization_dict[lp_id] = {
-                            "band": band_list[i],
-                            "core": core_list[i],
-                            "bit_rate": bandwidth_list[i],
-                            "utilization": 100.0,  # 100% for non-grooming
-                        }
+                    # For non-grooming non-slicing, each lightpath is 100% utilized
+                    for i, lp_id in enumerate(lightpath_ids):
+                        if i < len(bandwidth_list) and i < len(core_list) and i < len(band_list):
+                            self.sdn_obj.sdn_props.lp_bw_utilization_dict[lp_id] = {
+                                "band": band_list[i],
+                                "core": core_list[i],
+                                "bit_rate": bandwidth_list[i],
+                                "utilization": 100.0,  # 100% for non-grooming non-slicing
+                            }
 
             if (
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None
@@ -463,6 +471,8 @@ class SimulationEngine:
                 self.stats_obj.update_utilization_dict(
                     self.sdn_obj.sdn_props.lp_bw_utilization_dict
                 )
+                # Clear the dict after aggregation to prevent duplicate counting
+                self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
             sdn_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
             if sdn_spectrum_dict is not None:

@@ -727,8 +727,8 @@ class SimStats:
                         self.stats_props.lp_bw_utilization_dict[bw] = {
                             "mean": round(mean(bw_obj), 2),
                             "std": round(deviation, 2),
-                            "min": min(bw_obj),
-                            "max": max(bw_obj),
+                            "min": round(min(bw_obj), 2),
+                            "max": round(max(bw_obj), 2),
                         }
             else:
                 if isinstance(bw_obj, dict):
@@ -748,8 +748,8 @@ class SimStats:
                                         band_obj[core] = {
                                             "mean": round(mean(data_list), 2),
                                             "std": round(deviation, 2),
-                                            "min": min(data_list),
-                                            "max": max(data_list),
+                                            "min": round(min(data_list), 2),
+                                            "max": round(max(data_list), 2),
                                         }
 
         # Track sim_lp_utilization_list from lp_bw_utilization_dict overall mean
