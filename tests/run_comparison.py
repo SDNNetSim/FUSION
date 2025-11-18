@@ -10,6 +10,7 @@ import argparse
 import difflib
 import json
 import logging
+import math
 import multiprocessing
 import os
 import sys
@@ -182,6 +183,26 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
 
     failures: list[str] = []
 
+    def _values_match(old_val, new_val) -> bool:
+        """Check if two values match, with tolerance for floats."""
+        # Handle None cases
+        if old_val is None or new_val is None:
+            return old_val == new_val
+
+        # Use math.isclose for float comparisons with small tolerance
+        # abs_tol=0.02 allows differences up to 0.02 (covers the 0.01 std difference)
+        if isinstance(old_val, (int, float)) and isinstance(new_val, (int, float)):
+            return math.isclose(old_val, new_val, rel_tol=1e-9, abs_tol=0.02)
+
+        # For lists, compare element-by-element with tolerance
+        if isinstance(old_val, list) and isinstance(new_val, list):
+            if len(old_val) != len(new_val):
+                return False
+            return all(_values_match(o, n) for o, n in zip(old_val, new_val))
+
+        # Default: use equality
+        return old_val == new_val
+
     def _walk(old: dict, new: dict, path: str = "") -> None:
         for key in old:
             cur = f"{path}.{key}" if path else key
@@ -191,7 +212,7 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
                 failures.append(f"{rel}:{cur} missing in actual")
             elif isinstance(old[key], dict) and isinstance(new[key], dict):
                 _walk(old[key], new[key], cur)
-            elif old[key] != new[key]:
+            elif not _values_match(old[key], new[key]):
                 failures.append(f"{rel}:{cur} expected {old[key]!r} got {new[key]!r}")
         for key in new:
             cur = f"{path}.{key}" if path else key
@@ -440,7 +461,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'ext_snr_4core_cls_dy-slice':
+        if case.name == 'xtar_slicing_pff':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:

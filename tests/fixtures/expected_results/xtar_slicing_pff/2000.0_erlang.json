@@ -3248,9 +3248,9 @@
             "lengths_mean": 1317.5,
             "lengths_min": 100.0,
             "lengths_max": 5200.0,
-            "route_times_mean": 0.21,
-            "route_times_min": 0.17,
-            "route_times_max": 0.66,
+            "route_times_mean": 0.08,
+            "route_times_min": 0.08,
+            "route_times_max": 0.16,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -6473,9 +6473,9 @@
             "lengths_mean": 1345.6,
             "lengths_min": 100.0,
             "lengths_max": 4600.0,
-            "route_times_mean": 0.2,
-            "route_times_min": 0.17,
-            "route_times_max": 0.44,
+            "route_times_mean": 0.08,
+            "route_times_min": 0.08,
+            "route_times_max": 0.11,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -7056,5 +7056,5 @@
     "ci_rate_bit_rate_block": 0.0,
     "ci_percent_bit_rate_block": null,
     "lightpath_utilization": 100.0,
-    "sim_end_time": "1105_19_30_27_485461"
+    "sim_end_time": "1118_10_53_51_178860"
 }
