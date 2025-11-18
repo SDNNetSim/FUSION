@@ -687,9 +687,11 @@ class SpectrumAssignment:
         Update lightpath status dictionary after allocation.
 
         Called after spectrum is allocated to track the new lightpath
-        for future grooming operations.
+        for future grooming operations and dynamic slicing bandwidth tracking.
         """
-        if not self.engine_props_dict.get("is_grooming_enabled", False):
+        # Only skip if both grooming and dynamic_lps are disabled
+        if (not self.engine_props_dict.get("is_grooming_enabled", False) and
+            not self.engine_props_dict.get("dynamic_lps", False)):
             return
 
         if self.sdn_props.source is None or self.sdn_props.destination is None:
@@ -723,7 +725,24 @@ class SpectrumAssignment:
         if self.sdn_props.path_list is None:
             raise ValueError("Path list must be initialized")
 
+        # Calculate initial utilization based on dedicated vs total bandwidth
+        # For dynamic slicing: dedicated_bw might be < lightpath_bandwidth
+        # Convert lp_bandwidth to float for calculations
+        lp_bandwidth_float = float(lp_bandwidth) if lp_bandwidth else 0.0
+        dedicated_bw = lp_bandwidth_float  # Default: full capacity used
+        if self.sdn_props.bandwidth_list and len(self.sdn_props.bandwidth_list) > 0:
+            # Get the most recently allocated bandwidth (the dedicated amount)
+            dedicated_bw = float(self.sdn_props.bandwidth_list[-1])
+
+        initial_utilization = (
+            (dedicated_bw / lp_bandwidth_float) * 100.0 if lp_bandwidth_float > 0 else 0.0
+        )
+
+        # Debug: Track initial utilization calculation
+        print(f"[DEBUG-INIT-UTIL] req_id={self.sdn_props.request_id}, lp_id={lp_id}, lp_bw={lp_bandwidth}, bw_list_len={len(self.sdn_props.bandwidth_list) if self.sdn_props.bandwidth_list else 0}, dedicated_bw={dedicated_bw:.2f}, initial_util={initial_utilization:.2f}%")
+
         # Create lightpath entry
+        remaining_bw_calc = lp_bandwidth_float - dedicated_bw
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
             "path": self.sdn_props.path_list,
             "path_weight": self.sdn_props.path_weight,
@@ -733,15 +752,19 @@ class SpectrumAssignment:
             "end_slot": self.spectrum_props.end_slot,
             "mod_format": self.spectrum_props.modulation,
             "lightpath_bandwidth": lp_bandwidth,
-            "remaining_bandwidth": lp_bandwidth,  # Initially all available
+            "remaining_bandwidth": remaining_bw_calc,  # Account for dedicated bandwidth
             "snr_cost": self.spectrum_props.crosstalk_cost,
             "xt_cost": self.spectrum_props.crosstalk_cost,
             "is_degraded": False,
             "requests_dict": {},  # Will be populated when requests are groomed
             "time_bw_usage": {
-                self.sdn_props.arrive: 0.0
+                self.sdn_props.arrive: initial_utilization  # Correct initial utilization
             },  # Track utilization over time
         }
+
+        # Debug: Track lightpath status entry
+        path_weight_val = f"{self.sdn_props.path_weight:.2f}" if self.sdn_props.path_weight is not None else "None"
+        print(f"[DEBUG-LP-STATUS] req_id={self.sdn_props.request_id}, lp_id={lp_id}, path_weight={path_weight_val}, remaining_bw={remaining_bw_calc:.2f}, mod={self.spectrum_props.modulation}")
 
     def get_spectrum(
         self,

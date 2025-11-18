@@ -281,7 +281,23 @@ class LightPathSlicingManager:
                 print(f"[V6-SLICING] req_id={self.sdn_props.request_id}, orig_bw={self.sdn_props.bandwidth}, slice_bw={bandwidth}, dedicated_bw={dedicated_bw}, mod={self.spectrum_obj.spectrum_props.modulation}")
 
                 sdn_controller.allocate()
+
+                # Comparison print for v5/v6 analysis
+                snr_val = self.sdn_props.snr_list[-1] if self.sdn_props.snr_list else 0.0
+                print(f"[COMPARE-ALLOC] req_id={self.sdn_props.request_id}, lp_id={lp_id}, bw={dedicated_bw}/{bandwidth}, mod={self.spectrum_obj.spectrum_props.modulation}, snr={snr_val:.2f}, arrive={self.sdn_props.arrive:.4f}")
+
+                # Debug: Track bandwidth_list state before and after _update_req_stats
+                print(f"[DEBUG-ORDER] BEFORE update_req_stats: req_id={self.sdn_props.request_id}, lp_id={lp_id}, bw_list_len={len(self.sdn_props.bandwidth_list) if self.sdn_props.bandwidth_list else 0}")
+
+                # Update stats first so bandwidth_list is populated
                 sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
+
+                # Debug: Verify bandwidth_list was updated
+                bw_list_last = self.sdn_props.bandwidth_list[-1] if self.sdn_props.bandwidth_list else "EMPTY"
+                print(f"[DEBUG-ORDER] AFTER update_req_stats: req_id={self.sdn_props.request_id}, lp_id={lp_id}, bw_list_len={len(self.sdn_props.bandwidth_list) if self.sdn_props.bandwidth_list else 0}, bw_list[-1]={bw_list_last}, dedicated_bw={dedicated_bw}")
+
+                # Update lightpath status for bandwidth utilization tracking (reads bandwidth_list[-1])
+                self.spectrum_obj._update_lightpath_status()
                 remaining_bw -= bandwidth
                 self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True

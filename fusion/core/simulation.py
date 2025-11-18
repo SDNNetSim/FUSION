@@ -661,14 +661,18 @@ class SimulationEngine:
         # Reset request tracking
         self.reqs_status_dict = {}
 
+        # Initialize lightpath tracking on first iteration only (must persist across iterations)
+        if self.sdn_obj.sdn_props.lightpath_status_dict is None:
+            self.sdn_obj.sdn_props.lightpath_status_dict = {}
+        if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
+            self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
+        # Reset lightpath ID counter each iteration
+        self.sdn_obj.sdn_props.reset_lightpath_id_counter()
+
         # Reset grooming structures if enabled
         if self.engine_props.get("is_grooming_enabled", False):
-            self.sdn_obj.sdn_props.reset_lightpath_id_counter()
-            self.sdn_obj.sdn_props.lightpath_status_dict = {}
             if hasattr(self.sdn_obj, "grooming_obj"):
                 self.sdn_obj.grooming_obj.grooming_props.lightpath_status_dict = {}
-            self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
-
             logger.debug("Reset grooming structures for new iteration")
 
     def end_iter(

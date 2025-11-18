@@ -497,8 +497,14 @@ class SimStats:
                             i < len(sdn_data.lightpath_id_list)
                             and sdn_data.lightpath_id_list[i] in was_new_lps
                         ):
-                            bandwidth_key = str(sdn_data.bandwidth_list[i])
+                            # FIX: Use lightpath_bandwidth (capacity) not bandwidth (dedicated) for weights_dict key
+                            bandwidth_key = str(sdn_data.lightpath_bandwidth_list[i])
                             mod_format = sdn_data.modulation_list[i] if i < len(sdn_data.modulation_list) else None
+                            lp_id = sdn_data.lightpath_id_list[i]
+
+                            # Debug: Track path weight recording
+                            pw_val = f"{float(sdn_data.path_weight):.2f}" if sdn_data.path_weight is not None else "None"
+                            print(f"[DEBUG-WEIGHT] req_id={sdn_data.request_id}, lp_id={lp_id}, bw_key={bandwidth_key}, mod={mod_format}, path_weight={pw_val}, was_new_lp=True")
 
                             if mod_format and bandwidth_key in self.stats_props.weights_dict:
                                 if mod_format in self.stats_props.weights_dict[bandwidth_key]:
@@ -510,6 +516,14 @@ class SimStats:
                                     self.stats_props.weights_dict[bandwidth_key][mod_format] = [
                                         round(float(sdn_data.path_weight), 2)
                                     ]
+                        else:
+                            # Debug: Track when path weight is NOT recorded
+                            if i < len(sdn_data.lightpath_id_list):
+                                lp_id = sdn_data.lightpath_id_list[i]
+                                bw_key = str(sdn_data.lightpath_bandwidth_list[i]) if i < len(sdn_data.lightpath_bandwidth_list) else "N/A"
+                                mod = sdn_data.modulation_list[i] if i < len(sdn_data.modulation_list) else "N/A"
+                                in_new_lps = lp_id in was_new_lps if was_new_lps else False
+                                print(f"[DEBUG-WEIGHT-SKIP] req_id={sdn_data.request_id}, lp_id={lp_id}, bw_key={bw_key}, mod={mod}, was_new_lp={in_new_lps}")
 
             # Track demand realization ratio for partial grooming
             if self.engine_props.get("can_partially_serve"):

@@ -140,8 +140,8 @@ class SDNController:
                             "cores_matrix"
                         ][band][core_num][guard_band_index] = 0
 
-        # Handle grooming-specific cleanup
-        if not slicing_flag and lightpath_id is not None:
+        # Handle grooming-specific cleanup and dynamic slicing bandwidth tracking
+        if lightpath_id is not None:
             self._release_lightpath_resources(lightpath_id)
 
     def _release_lightpath_resources(self, lightpath_id: int) -> None:
@@ -151,11 +151,10 @@ class SDNController:
         :param lightpath_id: ID of lightpath to release
         :type lightpath_id: int
         """
-        if (
-            self.sdn_props.transponder_usage_dict is None
-            or self.sdn_props.path_list is None
-            or self.sdn_props.lightpath_status_dict is None
-        ):
+        # Early return only if path_list or lightpath_status_dict are None
+        # (transponder_usage_dict is optional and only needed for transponder tracking)
+        if self.sdn_props.path_list is None or self.sdn_props.lightpath_status_dict is None:
+            print(f"[DEBUG-RELEASE-0] lp_id={lightpath_id}, path_list is None: {self.sdn_props.path_list is None}, lightpath_status_dict is None: {self.sdn_props.lightpath_status_dict is None}")
             return
 
         # Always update transponders
@@ -164,7 +163,9 @@ class SDNController:
         #         logger.warning("Node %s not in transponder usage dict", node)
         #         continue
         #     self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
-        if self.engine_props.get("transponder_usage_per_node", None):
+        # Update transponders if tracking is enabled and dict is available
+        if (self.engine_props.get("transponder_usage_per_node", None) and
+            self.sdn_props.transponder_usage_dict is not None):
             for node in [self.sdn_props.source, self.sdn_props.destination]:
                 if node not in self.sdn_props.transponder_usage_dict:
                     raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
@@ -174,17 +175,36 @@ class SDNController:
             sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]])
         )
 
+        print(f"[DEBUG-RELEASE-1] lp_id={lightpath_id}, light_id={light_id}, dict_keys={list(self.sdn_props.lightpath_status_dict.keys())[:5]}")
+
+        # Check if light_id exists
+        if light_id in self.sdn_props.lightpath_status_dict:
+            print(f"[DEBUG-RELEASE-1A] light_id {light_id} FOUND, lp_ids in it: {list(self.sdn_props.lightpath_status_dict[light_id].keys())[:5]}")
+        else:
+            print(f"[DEBUG-RELEASE-1B] light_id {light_id} NOT FOUND in dict")
+            return
+
         # Handle lightpath status dict
         if (
             light_id in self.sdn_props.lightpath_status_dict
             and lightpath_id in self.sdn_props.lightpath_status_dict[light_id]
         ):
+            print(f"[DEBUG-RELEASE-2] lp_id={lightpath_id}, found in lightpath_status_dict")
             # Calculate bandwidth utilization stats
             try:
                 if self.sdn_props.lp_bw_utilization_dict is None:
+                    print(f"[DEBUG-RELEASE-3] lp_id={lightpath_id}, lp_bw_utilization_dict is None - returning")
                     return
 
                 lp_status = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]
+                print(f"[DEBUG-RELEASE-4] lp_id={lightpath_id}, lp_status keys={list(lp_status.keys())}")
+
+                # Debug: Track lightpath details before utilization calculation
+                lp_bw = lp_status.get("lightpath_bandwidth", "N/A")
+                remaining_bw = lp_status.get("remaining_bandwidth", "N/A")
+                time_bw_usage = lp_status.get("time_bw_usage", {})
+                print(f"[DEBUG-UTIL-CALC] lp_id={lightpath_id}, lp_bw={lp_bw}, remaining_bw={remaining_bw}, time_bw_usage_entries={len(time_bw_usage)}")
+
                 average_bw_usage = 0.0
                 # Note: average_bandwidth_usage may not exist yet
                 # Skip if not available
@@ -192,14 +212,19 @@ class SDNController:
                     from fusion.utils.network import (  # type: ignore[attr-defined]
                         average_bandwidth_usage,
                     )
-
+                    print(f"[DEBUG-RELEASE-5] lp_id={lightpath_id}, depart={self.sdn_props.depart}")
                     if self.sdn_props.depart is not None:
                         average_bw_usage = average_bandwidth_usage(
                             bw_dict=lp_status["time_bw_usage"],
                             departure_time=self.sdn_props.depart,
                         )
+                        # Comparison print for v5/v6 analysis
+                        print(f"[COMPARE-RELEASE] lp_id={lightpath_id}, utilization={average_bw_usage:.2f}%, depart={self.sdn_props.depart:.4f}")
                 except (ImportError, AttributeError):
                     pass
+
+                # Debug: Track final utilization dict entry
+                print(f"[DEBUG-UTIL-DICT] lp_id={lightpath_id}, bit_rate={lp_status['lightpath_bandwidth']}, avg_util={average_bw_usage:.2f}%, band={lp_status['band']}, core={lp_status['core']}")
 
                 self.sdn_props.lp_bw_utilization_dict.update(
                     {
