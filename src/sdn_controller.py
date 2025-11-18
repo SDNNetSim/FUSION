@@ -77,6 +77,7 @@ class SDNController:
                         bw_dict=self.sdn_props.lightpath_status_dict[light_id][lightpath_id]['time_bw_usage'],
                         departure_time=self.sdn_props.depart
                     )
+                    print(f"[COMPARE-RELEASE] lp_id={lightpath_id}, utilization={average_bw_usage:.2f}%, depart={self.sdn_props.depart:.4f}")
 
                     self.sdn_props.lp_bw_utilization_dict.update({
                         lightpath_id: {
@@ -192,6 +193,9 @@ class SDNController:
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 self.allocate()
                 self._update_req_stats(bandwidth=bandwidth, remaining = str(remaining_bw))
+                # Get SNR value for comparison print
+                snr_val = self.sdn_props.snr_list[-1] if self.sdn_props.snr_list else 0
+                print(f"[COMPARE-ALLOC] req_id={self.sdn_props.req_id}, lp_id={lp_id}, bw={bandwidth}/{bandwidth}, mod={mod_format}, snr={snr_val:.2f}, arrive={self.sdn_props.arrive:.4f}")
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
                 if not self._check_snr_after_allocation(lp_id):
