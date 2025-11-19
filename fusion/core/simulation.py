@@ -280,7 +280,7 @@ class SimulationEngine:
 
         # Track grooming outcomes if enabled
         if self.engine_props.get("is_grooming_enabled", False):
-            if not hasattr(self, "grooming_stats"):
+            if not self.grooming_stats:
                 self.grooming_stats = {
                     "fully_groomed": 0,
                     "partially_groomed": 0,
@@ -1326,7 +1326,10 @@ class SimulationEngine:
         self.sdn.sdn_props.path_list = request_info.get("primary_path")
         self.sdn.sdn_props.arrive = request_info.get("arrive_time")
         self.sdn.sdn_props.depart = current_time  # Use failure time as depart time
-        self.sdn.sdn_props.bandwidth = request_info.get("bandwidth")
+        # NOTE: Do NOT set bandwidth from request_info during release - it may contain
+        # allocated bandwidth (e.g., 100) instead of original request bandwidth (e.g., 800),
+        # which corrupts sdn_props.bandwidth for subsequent operations.
+        # self.sdn.sdn_props.bandwidth = request_info.get("bandwidth")
 
         # Release spectrum on primary path
         self.sdn.release()
@@ -1498,7 +1501,7 @@ class SimulationEngine:
         Calculates and stores metrics related to traffic grooming
         performance including grooming success rate and bandwidth utilization.
         """
-        if not hasattr(self, "grooming_stats"):
+        if not self.grooming_stats:
             self.grooming_stats = {
                 "fully_groomed": 0,
                 "partially_groomed": 0,

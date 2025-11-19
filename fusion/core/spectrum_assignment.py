@@ -465,6 +465,7 @@ class SpectrumAssignment:
         self.spectrum_props.current_band = None
         self.spectrum_props.core_number = None
         self.spectrum_props.is_free = False
+        self.spectrum_props.slicing_flag = False  # Reset slicing flag for each request
         path_list = self.spectrum_props.path_list
         if path_list is None or len(path_list) < 2:
             raise ValueError("Path list must be initialized with at least 2 nodes")
@@ -699,6 +700,7 @@ class SpectrumAssignment:
 
         light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
         lp_id = self.spectrum_props.lightpath_id
+        print(f"[DEBUG-LP-CREATE-START] req_id={self.sdn_props.request_id}, lp_id={lp_id}, light_id={light_id}, source={self.sdn_props.source}, dest={self.sdn_props.destination}")
 
         if lp_id is None:
             raise ValueError("Lightpath ID must be initialized")
@@ -712,6 +714,7 @@ class SpectrumAssignment:
 
         # Get lightpath bandwidth
         lp_bandwidth = self.spectrum_props.lightpath_bandwidth
+        print(f"[V6-LP-BW-1] req_id={self.sdn_props.request_id}, lp_id={self.spectrum_props.lightpath_id}, lp_bandwidth from spectrum_props={lp_bandwidth}")
         if lp_bandwidth is None:
             # Calculate from modulation and slots if not set by SNR
             mod = self.spectrum_props.modulation
@@ -719,8 +722,10 @@ class SpectrumAssignment:
                 lp_bandwidth = self.sdn_props.modulation_formats_dict[mod].get(
                     "bandwidth", 0
                 )
+                print(f"[V6-LP-BW-2] req_id={self.sdn_props.request_id}, lp_id={self.spectrum_props.lightpath_id}, calculated from mod_dict[{mod}]['bandwidth']={lp_bandwidth}")
             else:
                 lp_bandwidth = 0
+                print(f"[V6-LP-BW-3] req_id={self.sdn_props.request_id}, lp_id={self.spectrum_props.lightpath_id}, defaulting to 0 (mod={mod})")
 
         if self.sdn_props.path_list is None:
             raise ValueError("Path list must be initialized")
@@ -748,7 +753,17 @@ class SpectrumAssignment:
             return
 
         # Create lightpath entry
+        print(f"[DEBUG-LP-CREATED] req_id={self.sdn_props.request_id}, lp_id={lp_id}, light_id={light_id}, lp_bw={lp_bandwidth}, remaining_bw={lp_bandwidth_float - dedicated_bw:.2f}")
+
         remaining_bw_calc = lp_bandwidth_float - dedicated_bw
+
+        # For NEW lightpaths, populate requests_dict with current request
+        # For groomed lightpaths, this will be updated by the grooming module
+        requests_dict_initial = {self.sdn_props.request_id: int(dedicated_bw)}
+
+        # Debug: Show modulation being stored
+        print(f"[DEBUG-LP-STORE-MOD] req_id={self.sdn_props.request_id}, lp_id={lp_id}, mod_format={self.spectrum_props.modulation}, lp_bw={lp_bandwidth}")
+
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
             "path": self.sdn_props.path_list,
             "path_weight": self.sdn_props.path_weight,
@@ -757,12 +772,12 @@ class SpectrumAssignment:
             "start_slot": self.spectrum_props.start_slot,
             "end_slot": self.spectrum_props.end_slot,
             "mod_format": self.spectrum_props.modulation,
-            "lightpath_bandwidth": lp_bandwidth,
+            "lightpath_bandwidth": lp_bandwidth_float,  # Use float version for calculations
             "remaining_bandwidth": remaining_bw_calc,  # Account for dedicated bandwidth
             "snr_cost": self.spectrum_props.crosstalk_cost,
             "xt_cost": self.spectrum_props.crosstalk_cost,
             "is_degraded": False,
-            "requests_dict": {},  # Will be populated when requests are groomed
+            "requests_dict": requests_dict_initial,  # Populated with current request
             "time_bw_usage": {
                 self.sdn_props.arrive: initial_utilization  # Correct initial utilization
             },  # Track utilization over time
@@ -792,6 +807,7 @@ class SpectrumAssignment:
         :type backup_mod_format_list: list[str] | None
         """
         self._initialize_spectrum_information()
+        print(f"[MOD-LIST] req_id={self.sdn_props.request_id}, mod_list={mod_format_list}, slice_bw={slice_bandwidth}")
 
         # For 1+1 protection: validate backup path has feasible modulation formats
         backup_path = getattr(self.sdn_props, "backup_path", None)
@@ -880,6 +896,7 @@ class SpectrumAssignment:
 
             if self.spectrum_props.is_free:
                 self.spectrum_props.modulation = modulation_format
+                print(f"[SET-MOD] req_id={self.sdn_props.request_id}, mod={modulation_format}, slicing_flag={self.spectrum_props.slicing_flag}, slice_bw={slice_bandwidth}")
 
                 # Handle SNR checks
                 if (
@@ -940,6 +957,9 @@ class SpectrumAssignment:
         :rtype: tuple[str | bool, int | bool]
         """
         self._initialize_spectrum_information()
+
+        # Set slicing flag for dynamic slicing mode
+        self.spectrum_props.slicing_flag = True
 
         if self.engine_props_dict["fixed_grid"]:
             self.spectrum_props.slots_needed = 1

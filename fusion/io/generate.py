@@ -28,6 +28,13 @@ def create_pt(
         "mode_coupling_co": 4.0e-4,
         "propagation_const": 4e6,
         "core_pitch": 4e-5,
+        # Optical band frequency ranges (in Hz) - standard ITU-T specifications
+        "frequency_start_c": 191.5e12,  # C-band start: 191.5 THz (~1565 nm)
+        "frequency_end_c": 196.1e12,    # C-band end: 196.1 THz (~1530 nm)
+        "frequency_start_l": 186.5e12,  # L-band start: 186.5 THz (~1625 nm)
+        "frequency_end_l": 191.5e12,    # L-band end: 191.5 THz (~1565 nm)
+        "frequency_start_s": 185.0e12,  # S-band start: 185.0 THz (~1460 nm)
+        "frequency_end_s": 190.0e12,    # S-band end: 190.0 THz (~1530 nm)
     }
 
     topology_dict = {

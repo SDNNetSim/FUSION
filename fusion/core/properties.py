@@ -110,6 +110,9 @@ class SpectrumProps:
         self.lightpath_id: int | None = None
         self.lightpath_bandwidth: float | None = None
 
+        # Slicing configuration
+        self.slicing_flag: bool = False  # Indicates if request uses slicing
+
     def __repr__(self) -> str:
         """
         Return string representation of SpectrumProps.
@@ -138,6 +141,23 @@ class SNRProps:
         self.request_bit_rate: float = 12.5  # Gb/s
         self.request_snr: float = 8.5  # dB
         self.noise_spectral_density: float = 1.8
+        # Band-specific noise spontaneous parameters (for GSNR calculations)
+        self.nsp: dict[str, float] = {
+            "c": 1.8,  # C-band EDFA noise figure
+            "l": 2.0,  # L-band EDFA noise figure
+            "s": 2.0,  # S-band amplifier noise figure
+            "o": 2.0,  # O-band amplifier noise figure
+            "e": 2.0,  # E-band amplifier noise figure
+        }
+        # Required SNR thresholds per modulation format (in dB)
+        self.req_snr: dict[str, float] = {
+            "BPSK": 6.8,    # Binary Phase Shift Keying
+            "QPSK": 8.5,    # Quadrature Phase Shift Keying
+            "8-QAM": 12.6,  # 8-Quadrature Amplitude Modulation
+            "16-QAM": 14.8, # 16-QAM
+            "32-QAM": 17.8, # 32-QAM
+            "64-QAM": 20.8, # 64-QAM
+        }
 
         # Current request parameters
         self.center_frequency: float | None = None
@@ -441,6 +461,9 @@ class SDNProps:
                 else:
                     setattr(self, key, spectrum_value)
             else:
+                # Debug: Track bandwidth changes for debugging corruption issue
+                if key == "bandwidth" and hasattr(self, "request_id"):
+                    print(f"[V6-BW-SET] req_id={self.request_id}, setting bandwidth={value}")
                 setattr(self, key, value)
 
     def get_lightpath_id(self) -> int:

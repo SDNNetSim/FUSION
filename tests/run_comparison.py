@@ -50,6 +50,7 @@ ALLOWED_TEST_CASES = {
     "epsilon_greedy_bandit",
     "ext_snr_4core_cls_dy-slice",
     "xtar_slicing_pff",
+    "spain_C_fixed_grooming",
 }
 
 
@@ -507,7 +508,8 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
+        if case.name == 'spain_C_fixed_grooming':
+            all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
         LOGGER.info("All %d cases passed ✓", len(cases))

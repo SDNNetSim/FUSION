@@ -472,6 +472,7 @@ class SDNController:
         """
         if bandwidth is not None:
             self.sdn_props.bandwidth_list.append(bandwidth)
+            print(f"[V6-BW-LIST-APPEND] req_id={self.sdn_props.request_id}, appended bw={bandwidth}, list_len={len(self.sdn_props.bandwidth_list)}, full_list={self.sdn_props.bandwidth_list}")
         for stat_key in self.sdn_props.stat_key_list:
             # Skip remaining_bw - it's tracked separately for grooming
             if stat_key == "remaining_bw":
@@ -805,21 +806,30 @@ class SDNController:
 
             # Generate and assign unique lightpath ID for this allocation
             lp_id = self.sdn_props.get_lightpath_id()
+            print(f"[DEBUG-LP-ASSIGN] req_id={self.sdn_props.request_id}, lp_id={lp_id}, source={self.sdn_props.source}, dest={self.sdn_props.destination}")
             self.spectrum_obj.spectrum_props.lightpath_id = lp_id
             self.sdn_props.was_new_lp_established.append(lp_id)
 
             # Determine bandwidth for statistics (handle partial grooming)
             if self.sdn_props.was_partially_groomed:
                 allocate_bandwidth = str(self.sdn_props.remaining_bw)
+                print(f"[V6-ALLOC-BW-1] req_id={self.sdn_props.request_id}, lp_id={lp_id}, partially_groomed=True, allocate_bw={allocate_bandwidth} (from remaining_bw)")
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
+                print(f"[V6-ALLOC-BW-2] req_id={self.sdn_props.request_id}, lp_id={lp_id}, partially_groomed=False, allocate_bw={allocate_bandwidth} (from request bandwidth)")
 
             # Set lightpath bandwidth only if not already set by slicing code
             if not hasattr(self.spectrum_obj.spectrum_props, 'lightpath_bandwidth') or \
                self.spectrum_obj.spectrum_props.lightpath_bandwidth is None:
                 self.spectrum_obj.spectrum_props.lightpath_bandwidth = allocate_bandwidth
+                print(f"[V6-ALLOC-BW-3] req_id={self.sdn_props.request_id}, lp_id={lp_id}, setting spectrum_props.lightpath_bandwidth={allocate_bandwidth}")
+            else:
+                print(f"[V6-ALLOC-BW-4] req_id={self.sdn_props.request_id}, lp_id={lp_id}, lightpath_bandwidth already set to {self.spectrum_obj.spectrum_props.lightpath_bandwidth}, not overriding")
 
             self._update_request_statistics(bandwidth=allocate_bandwidth)
+
+            # Create lightpath entry in status dict for grooming/tracking
+            self.spectrum_obj._update_lightpath_status()
 
         return True
 

@@ -100,11 +100,14 @@ def create_network(
 
     network_fp = base_path / network_files[net_name]
 
-    if net_name == "USbackbone60" and not is_only_core_node:
-        core_nodes_fp = base_path / "USB6014_core_nodes.txt"
-        core_nodes_list = assign_core_nodes(core_nodes_fp)
-
-    # Future: Add other core node files here if needed
+    if not is_only_core_node:
+        if net_name == "USbackbone60":
+            core_nodes_fp = base_path / "USB6014_core_nodes.txt"
+            core_nodes_list = assign_core_nodes(core_nodes_fp)
+        elif net_name == "Spainbackbone30":
+            core_nodes_fp = base_path / "SPNB3014_core_nodes.txt"
+            core_nodes_list = assign_core_nodes(core_nodes_fp)
+        # Future: Add other core node files here if needed
 
     network_dict = assign_link_lengths(
         network_fp=network_fp, node_pairs_dict={}, constant_weight=const_weight

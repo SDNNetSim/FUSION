@@ -140,10 +140,16 @@ class KShortestPath(AbstractRoutingAlgorithm):
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key="max_length",
                     )
-                    # Ensure all keys are strings
-                    modulation_formats_list = [
-                        str(key) for key in modulation_formats_dict.keys()
-                    ][::-1]
+                    # Filter modulations by path length feasibility
+                    # Only include modulations that can reach the path distance
+                    modulation_formats_list = []
+                    for mod_format in modulation_formats_dict.keys():
+                        mod_info = self.sdn_props.modulation_formats_dict[mod_format]
+                        print(f"[DEBUG-MODDICT] req_id={self.sdn_props.request_id}, mod={mod_format}, path_len={path_length:.1f}, max_len={mod_info.get('max_length', 0)}, passes={mod_info.get('max_length', 0) >= path_length}")
+                        if mod_info.get("max_length", 0) >= path_length:
+                            modulation_formats_list.append(str(mod_format))
+                        else:
+                            modulation_formats_list.append(False)
                 else:
                     # Fallback to simple list
                     modulation_formats_list = ["QPSK"]

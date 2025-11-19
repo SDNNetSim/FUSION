@@ -86,7 +86,7 @@ class Grooming:
 
         return max(
             path_groups.values(),
-            key=lambda group: int(group["total_remaining_bandwidth"]),
+            key=lambda group: group["total_remaining_bandwidth"],
             default=None,
         )
 
@@ -141,18 +141,19 @@ class Grooming:
 
             # Update SDN properties with this lightpath's allocation
             self.sdn_props.bandwidth_list.append(str(tmp_remaining_bw))
+            print(f"[V6-GROOM-BW-APPEND] req_id={self.sdn_props.request_id}, lp_id={lp_id}, appended bw={tmp_remaining_bw}, list_len={len(self.sdn_props.bandwidth_list)}")
             self.sdn_props.core_list.append(lp_info["core"])
             self.sdn_props.band_list.append(lp_info["band"])
             self.sdn_props.start_slot_list.append(lp_info["start_slot"])
             self.sdn_props.end_slot_list.append(lp_info["end_slot"])
             self.sdn_props.modulation_list.append(lp_info["mod_format"])
             self.sdn_props.path_list = lp_info["path"]
-            self.sdn_props.crosstalk_list.append(lp_info["snr_cost"])
             self.sdn_props.snr_list.append(lp_info["snr_cost"])
             self.sdn_props.xt_list.append(lp_info["xt_cost"])
             self.sdn_props.lightpath_bandwidth_list.append(
                 lp_info["lightpath_bandwidth"]
             )
+            print(f"[DEBUG-LP-GROOMED] req_id={self.sdn_props.request_id}, lp_id={lp_id}, light_id={light_id}, bw_allocated={tmp_remaining_bw}")
             self.sdn_props.lightpath_id_list.append(lp_id)
             self.sdn_props.path_weight = lp_info["path_weight"]
 
@@ -195,7 +196,19 @@ class Grooming:
         release_lp = []
         light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
 
+        # Initialize remaining_bw for release tracking (not restored from arrival)
+        if self.sdn_props.remaining_bw is None:
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+
+        print(f"[DEBUG-LP-RELEASE-START] req_id={self.sdn_props.request_id}, light_id={light_id}, source={self.sdn_props.source}, dest={self.sdn_props.destination}, lightpath_id_list={self.sdn_props.lightpath_id_list}")
+        print(f"[DEBUG-LP-RELEASE-AVAIL] light_ids_in_dict={list(self.sdn_props.lightpath_status_dict.keys())}")
+
         for lp_id in self.sdn_props.lightpath_id_list[:]:
+            if light_id in self.sdn_props.lightpath_status_dict:
+                print(f"[DEBUG-LP-RELEASE-PROCESS] req_id={self.sdn_props.request_id}, lp_id={lp_id}, light_id={light_id}, available_lps={list(self.sdn_props.lightpath_status_dict[light_id].keys())}")
+            else:
+                print(f"[DEBUG-LP-RELEASE-ERROR] req_id={self.sdn_props.request_id}, lp_id={lp_id}, light_id={light_id} NOT IN status_dict!")
+
             index = self.sdn_props.lightpath_id_list.index(lp_id)
             lp_info = self.sdn_props.lightpath_status_dict[light_id][lp_id]
 
@@ -212,12 +225,12 @@ class Grooming:
             self.sdn_props.lightpath_bandwidth_list.pop(index)
 
             # Check if lightpath is now completely unused
-            if lp_info["remaining_bandwidth"] == lp_info["lightpath_bandwidth"]:
+            if lp_info["remaining_bandwidth"] == float(lp_info["lightpath_bandwidth"]):
                 release_lp.append(lp_id)
             else:
                 # Update utilization for partially used lightpath
                 lp_usage = 1 - (
-                    lp_info["remaining_bandwidth"] / lp_info["lightpath_bandwidth"]
+                    lp_info["remaining_bandwidth"] / float(lp_info["lightpath_bandwidth"])
                 )
                 lp_info["time_bw_usage"].update({self.sdn_props.depart: lp_usage * 100})
 

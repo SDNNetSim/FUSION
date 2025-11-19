@@ -740,6 +740,140 @@ class SnrMeasurements:
                 open_slots_list.remove(open_slot)
 
         return open_slots_list
+    def check_gsnr(self) -> tuple[bool | str, float, int]:
+        """
+        Calculate and check the GSNR (Generalized SNR) of Lightpath.
+        
+        Ported from v5 for proper modulation selection based on path quality.
+
+        :return: Whether the SNR threshold can be met, GSNR value, Supported bitrate.
+        :rtype: tuple[bool | str, float, int]
+        """
+        from fusion.utils.data import sort_nested_dict_values
+
+        bw_mapping = {
+            "64-QAM": 800,
+            "32-QAM": 700,
+            "16-QAM": 600,
+            "8-QAM": 500,
+            "QPSK": 400,
+            "BPSK": 200
+        }
+
+        gsnr_path_ase_nli = 0
+        gsnr_link_ase_nli_db = []
+        gsnr_span_ase_nli_db = []
+        
+        for link_num in range(0, len(self.spectrum_props.path_list) - 1):
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
+            self.link_id = self.sdn_props.network_spectrum_dict[(source, dest)]['link_num']
+            self.snr_props.length = self.engine_props_dict['topology_info']['links'][self.link_id]['span_length']
+            self.snr_props.link_dict = self.engine_props_dict['topology_info']['links'][self.link_id]['fiber']
+            center_freq = self.snr_props.link_dict['frequency_start_c'] + self.spectrum_props.start_slot * self.engine_props_dict['bw_per_slot'] * 10 ** 9
+            center_freq += ((self.number_of_slots * self.engine_props_dict['bw_per_slot']) / 2) * 10 ** 9
+            self.snr_props.bandwidth = self.number_of_slots * self.engine_props_dict['bw_per_slot'] * 10 ** 9
+            gsnr_link_ase_nli = 0
+
+            self.snr_props.num_span = math.ceil(self.engine_props_dict['topology_info']['links'][self.link_id]['length'] / self.snr_props.length)
+            p_ase_span = self.snr_props.bandwidth * self.snr_props.planck_constant * center_freq * 2 * self.snr_props.nsp[self.spectrum_props.current_band]
+            p_ase_span *= (math.exp(self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3) - 1)
+            l_eff = (1 - np.exp(-2 * self.snr_props.link_dict['attenuation'] * self.snr_props.length * 10 ** 3)) / (2 * self.snr_props.link_dict['attenuation'])
+            l_eff_a = 1 / (2 * self.snr_props.link_dict['attenuation'])
+
+            for _ in range(self.snr_props.num_span):
+                self.channels_list = []
+                sum_phi = 0
+                for slot_index in range(self.engine_props_dict['c_band']):
+                    curr_link = self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][self.spectrum_props.current_band]
+                    req_id = curr_link[self.spectrum_props.core_number][slot_index]
+
+                    # Spectrum is occupied
+                    if (req_id > 0 and req_id not in self.channels_list) or slot_index == self.spectrum_props.start_slot:
+                        channel_mod = None
+                        if req_id > 0:
+                            for _, lp_dict in self.sdn_props.lightpath_status_dict.items():
+                                if req_id in lp_dict:
+                                    channel_mod = lp_dict[req_id]['mod_format']
+
+                            channel_bw = len(np.where(req_id == curr_link[self.spectrum_props.core_number])[0])
+                            self.channels_list.append(req_id)
+                        else:
+                            channel_bw = self.number_of_slots
+                        
+                        if channel_mod is None and req_id > 0:
+                            if req_id in self.sdn_props.lightpath_id_list:
+                                idx = self.sdn_props.lightpath_id_list.index(req_id)
+                                channel_mod = self.sdn_props.modulation_list[idx]
+                            else:
+                                raise NotImplementedError(f"Unexpected lightpath id: {req_id}")
+                        
+                        channel_bw *= self.engine_props_dict['bw_per_slot']
+                        channel_freq = self.snr_props.link_dict['frequency_start_c'] + ((slot_index * self.engine_props_dict['bw_per_slot']) + (channel_bw / 2)) * 10 ** 9
+                        channel_bw *= 10 ** 9
+                        
+                        if center_freq == channel_freq:
+                            phi = np.arcsinh(np.pi**2 * abs(self.snr_props.link_dict['dispersion']) * self.snr_props.bandwidth **2 / (4 * self.snr_props.link_dict['attenuation']))
+                        else:
+                            phi = (
+                                np.arcsinh((np.pi**2) * abs(self.snr_props.link_dict['dispersion']) * l_eff_a * self.snr_props.bandwidth * (channel_freq - center_freq + (channel_bw * 0.5))) -
+                                np.arcsinh((np.pi**2) * abs(self.snr_props.link_dict['dispersion']) * l_eff_a * self.snr_props.bandwidth * (channel_freq - center_freq - (channel_bw * 0.5))) -
+                                (self.engine_props_dict['phi'][channel_mod] * (channel_bw / abs(channel_freq - center_freq)) * (5 / 3) * (l_eff / (self.snr_props.length * 10 ** 3)))
+                            )
+                        sum_phi += phi
+                
+                p_nli_span = (self.engine_props_dict['input_power'] / self.snr_props.bandwidth)**3 * (8 / (27 * np.pi * abs(self.snr_props.link_dict['dispersion']))) * self.snr_props.link_dict['non_linearity']**2 * l_eff * sum_phi * self.snr_props.bandwidth
+                gsnr_span_ase_nli_db.append(10 * np.log10(self.engine_props_dict['input_power'] / (p_ase_span + p_nli_span)))
+                gsnr_link_ase_nli += (self.engine_props_dict['input_power'] / (p_ase_span + p_nli_span))**-1
+            
+            gsnr_link_ase_nli_db.append(10 * np.log10(gsnr_link_ase_nli**-1))
+            gsnr_path_ase_nli += gsnr_link_ase_nli
+        
+        gsnr_db = 10 * np.log10(1 / gsnr_path_ase_nli)
+
+        # Dynamic modulation selection for slicing with dynamic lightpaths
+        if self.spectrum_props.slicing_flag and self.engine_props_dict['fixed_grid'] and self.engine_props_dict.get('dynamic_lps', False):
+            mod_formats_dict = sort_nested_dict_values(
+                original_dict=self.sdn_props.modulation_formats_dict,
+                nested_key='max_length'
+            )
+            force_mod_format = list(mod_formats_dict.keys())
+            print(f"[DEBUG-GSNR-MOD-ORDER] req_id={self.sdn_props.request_id}, gsnr_db={gsnr_db:.2f}, mod_order={force_mod_format}")
+            resp = False
+            bw_resp = 0
+            for mod in force_mod_format:
+                req_snr_val = self.snr_props.req_snr[mod]
+                meets_req = gsnr_db >= req_snr_val
+                print(f"[DEBUG-GSNR-MOD-CHECK] mod={mod}, req_snr={req_snr_val}, gsnr={gsnr_db:.2f}, meets={meets_req}")
+                if meets_req:
+                    resp = mod
+                    bw_resp = bw_mapping[mod]
+                    print(f"[DEBUG-GSNR-MOD-SELECT] SELECTED mod={mod}, bw={bw_resp}")
+                    break
+        else:
+            # Standard modulation check (modulation must be set)
+            if self.spectrum_props.modulation is None:
+                raise ValueError("Modulation format must be set for non-dynamic slicing")
+
+            resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation]
+            bw_resp = 0
+
+            if resp:
+                if self.engine_props_dict['fixed_grid']:
+                    if not self.spectrum_props.slicing_flag:
+                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                            bw_resp = bw_mapping[self.spectrum_props.modulation]
+                        else:
+                            resp = False
+                    else:
+                        bw_resp = bw_mapping[self.spectrum_props.modulation]
+                else:
+                    if self.spectrum_props.slicing_flag:
+                        bw_resp = 0
+                    else:
+                        bw_resp = int(self.sdn_props.bandwidth)
+        
+        return resp, gsnr_db, bw_resp
 
     def handle_snr(self, path_index: int) -> tuple[bool, float, float]:
         """
@@ -762,6 +896,17 @@ class SnrMeasurements:
             snr_check, xt_cost = self.check_snr()
         elif self.engine_props_dict["snr_type"] == "xt_calculation":
             snr_check, xt_cost = self.check_xt()
+        elif self.engine_props_dict["snr_type"] == "gsnr":
+            # GSNR (Generalized SNR) - proper implementation ported from v5
+            snr_check, xt_cost, lp_bw = self.check_gsnr()
+
+            # Note: check_gsnr can return either a boolean (standard mode) or
+            # a modulation string (dynamic mode with slicing_flag=True).
+            # In handle_snr, we should NOT override the pre-selected modulation.
+            # Dynamic modulation selection is handled by handle_snr_dynamic_slicing.
+            # Here we just need to treat the return value as truthy/falsy.
+            # A modulation string means GSNR check passed (truthy).
+            # False means GSNR check failed.
         elif self.engine_props_dict["snr_type"] == "snr_e2e_external_resources":
             snr_check, xt_cost = self.check_snr_ext(path_index)
         else:
@@ -1066,6 +1211,18 @@ class SnrMeasurements:
             modulation_format, bandwidth, snr_value = self.check_snr_ext_slicing(
                 path_index
             )
+        elif self.engine_props_dict["snr_type"] == "gsnr":
+            # GSNR (Generalized SNR) for dynamic slicing
+            if self.engine_props_dict["band_list"] == ["c"]:
+                modulation_format, snr_value, bandwidth = self.check_gsnr()
+            elif self.engine_props_dict["band_list"] == ["c", "l"]:
+                raise NotImplementedError(
+                    "Multi-band GSNR (check_gsnr_mb) not yet ported to v6"
+                )
+            else:
+                raise ValueError(
+                    f"Unexpected band_list: {self.engine_props_dict['band_list']}"
+                )
         else:
             raise NotImplementedError(
                 f"Unexpected snr_type flag got: {self.engine_props_dict['snr_type']}"
