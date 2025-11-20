@@ -225,10 +225,15 @@ class Grooming:
             self.sdn_props.lightpath_bandwidth_list.pop(index)
 
             # Check if lightpath is now completely unused
+            print(f"[DEBUG-LP-RELEASE-CHECK] req_id={self.sdn_props.request_id}, lp_id={lp_id}, "
+                  f"remaining_bw={lp_info['remaining_bandwidth']}, lp_bw={lp_info['lightpath_bandwidth']}, "
+                  f"equal={lp_info['remaining_bandwidth'] == float(lp_info['lightpath_bandwidth'])}")
             if lp_info["remaining_bandwidth"] == float(lp_info["lightpath_bandwidth"]):
                 release_lp.append(lp_id)
+                print(f"[DEBUG-LP-ADDED-TO-RELEASE] req_id={self.sdn_props.request_id}, lp_id={lp_id}")
             else:
                 # Update utilization for partially used lightpath
+                print(f"[DEBUG-LP-NOT-EMPTY] req_id={self.sdn_props.request_id}, lp_id={lp_id}, still has traffic")
                 lp_usage = 1 - (
                     lp_info["remaining_bandwidth"] / float(lp_info["lightpath_bandwidth"])
                 )
