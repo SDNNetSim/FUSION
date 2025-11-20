@@ -114,6 +114,10 @@ class SDNController:
         print(f"[V6-RELEASE] req_id={self.sdn_props.request_id} "
               f"lightpath_id={lightpath_id} route={self.sdn_props.path_list}")
 
+        # COMPARISON: Match v5 format exactly
+        print(f"[CMP-RELEASE] req_id={self.sdn_props.request_id} lp_id={lightpath_id} "
+              f"path={self.sdn_props.path_list} slicing={slicing_flag}")
+
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
@@ -437,6 +441,16 @@ class SDNController:
               f"slots_needed={self.spectrum_obj.spectrum_props.slots_needed} "
               f"mod_format={self.spectrum_obj.spectrum_props.modulation} "
               f"lightpath_id={self.spectrum_obj.spectrum_props.lightpath_id}")
+
+        # COMPARISON: Match v5 format exactly
+        print(f"[CMP-ALLOC] req_id={self.sdn_props.request_id} "
+              f"lp_id={self.spectrum_obj.spectrum_props.lightpath_id} "
+              f"path={self.sdn_props.path_list} path_len={path_len} "
+              f"core={self.spectrum_obj.spectrum_props.core_number} "
+              f"band={self.spectrum_obj.spectrum_props.current_band} "
+              f"start={self.spectrum_obj.spectrum_props.start_slot} "
+              f"end={self.spectrum_obj.spectrum_props.end_slot} "
+              f"mod={self.spectrum_obj.spectrum_props.modulation}")
 
         # Track allocated request for failure handling
         self._track_allocated_request()
