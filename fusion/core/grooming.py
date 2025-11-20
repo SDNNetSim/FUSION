@@ -214,10 +214,14 @@ class Grooming:
 
             # Get allocated bandwidth for this request
             req_bw = lp_info["requests_dict"][self.sdn_props.request_id]
+            print(f"[DEBUG-LP-RELEASE-BW] req_id={self.sdn_props.request_id}, lp_id={lp_id}, "
+                  f"req_bw={req_bw}, remaining_bw_before={lp_info['remaining_bandwidth']}")
 
             # Remove request from lightpath
             lp_info["requests_dict"].pop(self.sdn_props.request_id)
             lp_info["remaining_bandwidth"] += req_bw
+            print(f"[DEBUG-LP-RELEASE-BW-AFTER] req_id={self.sdn_props.request_id}, lp_id={lp_id}, "
+                  f"remaining_bw_after={lp_info['remaining_bandwidth']}, added={req_bw}")
             self.sdn_props.remaining_bw = int(self.sdn_props.remaining_bw) - req_bw
 
             # Clean up tracking lists
