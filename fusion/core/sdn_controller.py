@@ -110,6 +110,10 @@ class SDNController:
         if lightpath_id is None:
             raise ValueError('Lightpath ID is none')
 
+        # INSTRUMENTATION: Release tracking
+        print(f"[V6-RELEASE] req_id={self.sdn_props.request_id} "
+              f"lightpath_id={lightpath_id} route={self.sdn_props.path_list}")
+
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
@@ -421,6 +425,19 @@ class SDNController:
             )
             self._allocate_on_path(backup_path)
 
+        # INSTRUMENTATION: Allocation tracking
+        path_len = len(self.sdn_props.path_list) - 1 if self.sdn_props.path_list else 0
+        print(f"[V6-ALLOC] req_id={self.sdn_props.request_id} "
+              f"route={self.sdn_props.path_list} "
+              f"path_len={path_len} "
+              f"core={self.spectrum_obj.spectrum_props.core_number} "
+              f"band={self.spectrum_obj.spectrum_props.current_band} "
+              f"start_slot={self.spectrum_obj.spectrum_props.start_slot} "
+              f"end_slot={self.spectrum_obj.spectrum_props.end_slot} "
+              f"slots_needed={self.spectrum_obj.spectrum_props.slots_needed} "
+              f"mod_format={self.spectrum_obj.spectrum_props.modulation} "
+              f"lightpath_id={self.spectrum_obj.spectrum_props.lightpath_id}")
+
         # Track allocated request for failure handling
         self._track_allocated_request()
 
@@ -665,6 +682,17 @@ class SDNController:
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
             if isinstance(was_new_lps, list):
                 for lpid in list(was_new_lps):
+                    # Remove current request from lightpath's requests_dict before releasing
+                    light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
+                    if (light_id in self.sdn_props.lightpath_status_dict and
+                            lpid in self.sdn_props.lightpath_status_dict[light_id]):
+                        lp_info = self.sdn_props.lightpath_status_dict[light_id][lpid]
+                        if self.sdn_props.request_id in lp_info["requests_dict"]:
+                            # Restore remaining bandwidth before removing request
+                            allocated_bw = lp_info["requests_dict"][self.sdn_props.request_id]
+                            lp_info["remaining_bandwidth"] += allocated_bw
+                            lp_info["requests_dict"].pop(self.sdn_props.request_id)
+
                     self.release(lightpath_id=lpid, slicing_flag=True)
                     was_new_lps.remove(lpid)
 
