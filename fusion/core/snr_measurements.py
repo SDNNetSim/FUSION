@@ -855,7 +855,10 @@ class SnrMeasurements:
             if self.spectrum_props.modulation is None:
                 raise ValueError("Modulation format must be set for non-dynamic slicing")
 
-            resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation]
+            req_snr_threshold = self.snr_props.req_snr[self.spectrum_props.modulation]
+            resp = gsnr_db >= req_snr_threshold
+            # INSTRUMENTATION: GSNR threshold comparison
+            print(f"[V6-GSNR-CALC] req_id={self.sdn_props.request_id} mod={self.spectrum_props.modulation} gsnr_db={gsnr_db:.6f} req_snr={req_snr_threshold:.6f} decision={'PASS' if resp else 'FAIL'}")
             bw_resp = 0
 
             if resp:
