@@ -249,7 +249,12 @@ class LightPathSlicingManager:
         :return: True if slicing was successful
         :rtype: bool
         """
-        remaining_bw = int(self.sdn_props.bandwidth)
+        # Use remaining_bw if grooming occurred, otherwise use full bandwidth (matches v5)
+        remaining_bw = (
+            self.sdn_props.remaining_bw
+            if self.sdn_props.was_partially_groomed
+            else int(self.sdn_props.bandwidth)
+        )
 
         # TODO: Not sure what this does in the slightest?
         _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
