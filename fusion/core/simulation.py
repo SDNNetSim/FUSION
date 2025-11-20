@@ -607,6 +607,12 @@ class SimulationEngine:
         # Sort by time (second element of tuple key) to match v5 behavior
         self.reqs_dict = dict(sorted(self.reqs_dict.items(), key=lambda x: x[0][1]))
 
+        # DEBUG: Print first 5 requests to verify generation
+        print(f"[V6-REQ-GEN-SUMMARY] seed={seed} total_requests={len(self.reqs_dict)}")
+        for idx, (time_key, req_data) in enumerate(list(self.reqs_dict.items())[:10]):
+            if req_data.get("request_type") == "arrival":
+                print(f"[V6-REQ-GEN-DETAIL] idx={idx} req_id={req_data.get('req_id')} src={req_data.get('source')} dst={req_data.get('destination')} bw={req_data.get('bandwidth')}")
+
     def handle_request(self, current_time: tuple[int, float], request_number: int) -> None:
         """
         Carry out arrival or departure functions for a given request.
@@ -847,6 +853,9 @@ class SimulationEngine:
 
         # Seed request generation (varies per iteration by default)
         seed_request_generation(request_seed)
+
+        # DEBUG: Print seed info
+        print(f"[V6-SEED] iteration={iteration} request_seed={request_seed}")
 
         self.generate_requests(request_seed)
 
