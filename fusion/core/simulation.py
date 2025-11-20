@@ -336,7 +336,7 @@ class SimulationEngine:
 
     def handle_arrival(
         self,
-        current_time: float,
+        current_time: tuple[int, float],
         force_route_matrix: list[Any] | None = None,
         force_core: int | None = None,
         force_slicing: bool = False,
@@ -391,7 +391,7 @@ class SimulationEngine:
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
 
-    def handle_release(self, current_time: float) -> None:
+    def handle_release(self, current_time: tuple[int, float]) -> None:
         """
         Update the SDN controller to handle the release of a request.
 
@@ -604,9 +604,10 @@ class SimulationEngine:
         :type seed: int
         """
         self.reqs_dict = get_requests(seed=seed, engine_props=self.engine_props)
-        self.reqs_dict = dict(sorted(self.reqs_dict.items()))
+        # Sort by time (second element of tuple key) to match v5 behavior
+        self.reqs_dict = dict(sorted(self.reqs_dict.items(), key=lambda x: x[0][1]))
 
-    def handle_request(self, current_time: float, request_number: int) -> None:
+    def handle_request(self, current_time: tuple[int, float], request_number: int) -> None:
         """
         Carry out arrival or departure functions for a given request.
 

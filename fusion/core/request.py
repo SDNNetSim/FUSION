@@ -156,7 +156,7 @@ def _create_request_entry(
 
 def generate_simulation_requests(
     seed: int, engine_properties: dict[str, Any]
-) -> dict[float, dict[str, Any]]:
+) -> dict[tuple[int, float], dict[str, Any]]:
     """
     Generate requests for a single simulation run.
 
@@ -282,22 +282,20 @@ def generate_simulation_requests(
                 bandwidth_count_dict[candidate_bandwidth] -= 1
                 chosen_bandwidth = candidate_bandwidth
 
-        # Check if times are available (no collision)
-        if arrival_time not in requests_dict and departure_time not in requests_dict:
-            # Create arrival event
-            requests_dict[arrival_time] = _create_request_entry(
-                request_id=request_id,
-                source=source,
-                destination=destination,
-                arrival_time=arrival_time,
-                departure_time=departure_time,
-                request_type=DEFAULT_REQUEST_TYPE_ARRIVAL,
-                bandwidth=chosen_bandwidth,
-                modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
-            )
+        # Create arrival event with tuple key (request_id, time) to allow simultaneous events
+        requests_dict[(request_id, arrival_time)] = _create_request_entry(
+            request_id=request_id,
+            source=source,
+            destination=destination,
+            arrival_time=arrival_time,
+            departure_time=departure_time,
+            request_type=DEFAULT_REQUEST_TYPE_ARRIVAL,
+            bandwidth=chosen_bandwidth,
+            modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
+        )
 
-            # Create departure event
-            requests_dict[departure_time] = _create_request_entry(
+        # Create departure event
+        requests_dict[(request_id, departure_time)] = _create_request_entry(
                 request_id=request_id,
                 source=source,
                 destination=destination,
@@ -306,22 +304,19 @@ def generate_simulation_requests(
                 request_type=DEFAULT_REQUEST_TYPE_RELEASE,
                 bandwidth=chosen_bandwidth,
                 modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
-            )
+        )
 
-            request_id += 1
-            logger.debug(
-                "Generated request %s: %s -> %s (%s)",
-                request_id - 1,
-                source,
-                destination,
-                chosen_bandwidth,
-            )
-        else:
-            # Time collision - return bandwidth to pool
-            bandwidth_count_dict[chosen_bandwidth] += 1
-            logger.debug(
-                "Time collision at %s or %s, retrying", arrival_time, departure_time
-            )
+        request_id += 1
+        logger.debug(
+            "Generated request %s: %s -> %s (%s)",
+            request_id - 1,
+            source,
+            destination,
+            chosen_bandwidth,
+        )
+        # INSTRUMENTATION: Request generation tracking
+        print(f"[V6-REQ-GEN] req_id={request_id - 1} src={source} dst={destination} "
+              f"bw={chosen_bandwidth} arrival={arrival_time:.15f} departure={departure_time:.15f}")
 
     logger.info("Generated %s requests", engine_properties["num_requests"])
     return requests_dict
