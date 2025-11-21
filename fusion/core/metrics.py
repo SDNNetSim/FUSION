@@ -383,7 +383,6 @@ class SimStats:
                         if data in bw_dict:
                             old_bw_count = bw_dict[data]
                             bw_dict[data] += 1
-                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, bw={bandwidth_key}, action=bw_count_increment, old={old_bw_count}, new={bw_dict[data]}")
                             self.mods_dict_updates_log.append({
                                 'req_id': sdn_data.request_id,
                                 'mod': data,
@@ -396,7 +395,6 @@ class SimStats:
                         else:
                             # Initialize if not present
                             bw_dict[data] = 1
-                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, bw={bandwidth_key}, action=bw_count_init, value=1")
                             self.mods_dict_updates_log.append({
                                 'req_id': sdn_data.request_id,
                                 'mod': data,
@@ -410,7 +408,6 @@ class SimStats:
                         if band in data_mod_dict:
                             old_band_count = data_mod_dict[band]
                             data_mod_dict[band] += 1
-                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band={band}, action=band_count_increment, old={old_band_count}, new={data_mod_dict[band]}")
                             self.mods_dict_updates_log.append({
                                 'req_id': sdn_data.request_id,
                                 'mod': data,
@@ -423,7 +420,6 @@ class SimStats:
                         else:
                             # Initialize if not present
                             data_mod_dict[band] = 1
-                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band={band}, action=band_count_init, value=1")
                             self.mods_dict_updates_log.append({
                                 'req_id': sdn_data.request_id,
                                 'mod': data,
@@ -437,7 +433,6 @@ class SimStats:
                         if has_length and isinstance(length_dict, dict):
                             if band in length_dict:
                                 length_dict[band].append(sdn_data.path_weight)
-                                print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band={band}, action=length_append, value={sdn_data.path_weight}")
                                 self.mods_dict_updates_log.append({
                                     'req_id': sdn_data.request_id,
                                     'mod': data,
@@ -448,7 +443,6 @@ class SimStats:
                                 })
                             if "overall" in length_dict:
                                 length_dict["overall"].append(sdn_data.path_weight)
-                                print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band=overall, action=length_append, value={sdn_data.path_weight}")
                                 self.mods_dict_updates_log.append({
                                     'req_id': sdn_data.request_id,
                                     'mod': data,
@@ -464,7 +458,6 @@ class SimStats:
                             num_hops = len(sdn_data.path_list) - 1
                             if band in hop_dict:
                                 hop_dict[band].append(num_hops)
-                                print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band={band}, action=hop_append, value={num_hops}")
                                 self.mods_dict_updates_log.append({
                                     'req_id': sdn_data.request_id,
                                     'mod': data,
@@ -475,7 +468,6 @@ class SimStats:
                                 })
                             if "overall" in hop_dict:
                                 hop_dict["overall"].append(num_hops)
-                                print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band=overall, action=hop_append, value={num_hops}")
                                 self.mods_dict_updates_log.append({
                                     'req_id': sdn_data.request_id,
                                     'mod': data,
@@ -494,7 +486,6 @@ class SimStats:
                                     if xt_cost_dict and isinstance(xt_cost_dict, dict):
                                         if band in xt_cost_dict:
                                             xt_cost_dict[band].append(sdn_data.snr_list[i])
-                                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band={band}, action=xt_cost_append, value={sdn_data.snr_list[i]}")
                                             self.mods_dict_updates_log.append({
                                                 'req_id': sdn_data.request_id,
                                                 'mod': data,
@@ -505,7 +496,6 @@ class SimStats:
                                             })
                                         if "overall" in xt_cost_dict:
                                             xt_cost_dict["overall"].append(sdn_data.snr_list[i])
-                                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band=overall, action=xt_cost_append, value={sdn_data.snr_list[i]}")
                                             self.mods_dict_updates_log.append({
                                                 'req_id': sdn_data.request_id,
                                                 'mod': data,
@@ -520,7 +510,6 @@ class SimStats:
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
                                             snr_dict[band].append(sdn_data.snr_list[i])
-                                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band={band}, action=snr_append, value={sdn_data.snr_list[i]}")
                                             self.mods_dict_updates_log.append({
                                                 'req_id': sdn_data.request_id,
                                                 'mod': data,
@@ -531,7 +520,6 @@ class SimStats:
                                             })
                                         if "overall" in snr_dict:
                                             snr_dict["overall"].append(sdn_data.snr_list[i])
-                                            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mod={data}, band=overall, action=snr_append, value={sdn_data.snr_list[i]}")
                                             self.mods_dict_updates_log.append({
                                                 'req_id': sdn_data.request_id,
                                                 'mod': data,
@@ -615,6 +603,13 @@ class SimStats:
                     self.stats_props.lengths_list.append(round(float(path_len), 2))
 
             self._handle_iter_lists(sdn_data=sdn_data)
+            # Print modulation usage counts for all bandwidths
+            mods_by_bw = {}
+            for bw, bw_data in self.stats_props.modulations_used_dict.items():
+                if isinstance(bw_data, dict):
+                    # Extract only the modulation counts (skip nested dicts like 'length', 'hop', etc.)
+                    mods_by_bw[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
+            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mods={mods_by_bw}")
             if sdn_data.route_time is not None:
                 self.stats_props.route_times_list.append(sdn_data.route_time)
             if sdn_data.number_of_transponders is not None:
