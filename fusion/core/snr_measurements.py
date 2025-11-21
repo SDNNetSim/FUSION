@@ -838,17 +838,14 @@ class SnrMeasurements:
                 nested_key='max_length'
             )
             force_mod_format = list(mod_formats_dict.keys())
-            print(f"[DEBUG-GSNR-MOD-ORDER] req_id={self.sdn_props.request_id}, gsnr_db={gsnr_db:.2f}, mod_order={force_mod_format}")
             resp = False
             bw_resp = 0
             for mod in force_mod_format:
                 req_snr_val = self.snr_props.req_snr[mod]
                 meets_req = gsnr_db >= req_snr_val
-                print(f"[DEBUG-GSNR-MOD-CHECK] mod={mod}, req_snr={req_snr_val}, gsnr={gsnr_db:.2f}, meets={meets_req}")
                 if meets_req:
                     resp = mod
                     bw_resp = bw_mapping[mod]
-                    print(f"[DEBUG-GSNR-MOD-SELECT] SELECTED mod={mod}, bw={bw_resp}")
                     break
         else:
             # Standard modulation check (modulation must be set)
@@ -858,7 +855,6 @@ class SnrMeasurements:
             req_snr_threshold = self.snr_props.req_snr[self.spectrum_props.modulation]
             resp = gsnr_db >= req_snr_threshold
             # INSTRUMENTATION: GSNR threshold comparison
-            print(f"[V6-GSNR-CALC] req_id={self.sdn_props.request_id} mod={self.spectrum_props.modulation} gsnr_db={gsnr_db:.6f} req_snr={req_snr_threshold:.6f} decision={'PASS' if resp else 'FAIL'}")
             bw_resp = 0
 
             if resp:

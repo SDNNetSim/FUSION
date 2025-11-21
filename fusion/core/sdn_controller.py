@@ -110,14 +110,6 @@ class SDNController:
         if lightpath_id is None:
             raise ValueError('Lightpath ID is none')
 
-        # INSTRUMENTATION: Release tracking
-        print(f"[V6-RELEASE] req_id={self.sdn_props.request_id} "
-              f"lightpath_id={lightpath_id} route={self.sdn_props.path_list}")
-
-        # COMPARISON: Match v5 format exactly
-        print(f"[CMP-RELEASE] req_id={self.sdn_props.request_id} lp_id={lightpath_id} "
-              f"path={self.sdn_props.path_list} slicing={slicing_flag}")
-
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
         ):
@@ -162,7 +154,6 @@ class SDNController:
         # Early return only if path_list or lightpath_status_dict are None
         # (transponder_usage_dict is optional and only needed for transponder tracking)
         if self.sdn_props.path_list is None or self.sdn_props.lightpath_status_dict is None:
-            print(f"[DEBUG-RELEASE-0] lp_id={lightpath_id}, path_list is None: {self.sdn_props.path_list is None}, lightpath_status_dict is None: {self.sdn_props.lightpath_status_dict is None}")
             return
 
         # Always update transponders
@@ -183,13 +174,9 @@ class SDNController:
             sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]])
         )
 
-        print(f"[DEBUG-RELEASE-1] lp_id={lightpath_id}, light_id={light_id}, dict_keys={list(self.sdn_props.lightpath_status_dict.keys())[:5]}")
 
         # Check if light_id exists
-        if light_id in self.sdn_props.lightpath_status_dict:
-            print(f"[DEBUG-RELEASE-1A] light_id {light_id} FOUND, lp_ids in it: {list(self.sdn_props.lightpath_status_dict[light_id].keys())[:5]}")
-        else:
-            print(f"[DEBUG-RELEASE-1B] light_id {light_id} NOT FOUND in dict")
+        if light_id not in self.sdn_props.lightpath_status_dict:
             return
 
         # Handle lightpath status dict
@@ -197,21 +184,17 @@ class SDNController:
             light_id in self.sdn_props.lightpath_status_dict
             and lightpath_id in self.sdn_props.lightpath_status_dict[light_id]
         ):
-            print(f"[DEBUG-RELEASE-2] lp_id={lightpath_id}, found in lightpath_status_dict")
             # Calculate bandwidth utilization stats
             try:
                 if self.sdn_props.lp_bw_utilization_dict is None:
-                    print(f"[DEBUG-RELEASE-3] lp_id={lightpath_id}, lp_bw_utilization_dict is None - returning")
                     return
 
                 lp_status = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]
-                print(f"[DEBUG-RELEASE-4] lp_id={lightpath_id}, lp_status keys={list(lp_status.keys())}")
 
                 # Debug: Track lightpath details before utilization calculation
                 lp_bw = lp_status.get("lightpath_bandwidth", "N/A")
                 remaining_bw = lp_status.get("remaining_bandwidth", "N/A")
                 time_bw_usage = lp_status.get("time_bw_usage", {})
-                print(f"[DEBUG-UTIL-CALC] lp_id={lightpath_id}, lp_bw={lp_bw}, remaining_bw={remaining_bw}, time_bw_usage_entries={len(time_bw_usage)}")
 
                 average_bw_usage = 0.0
                 # Note: average_bandwidth_usage may not exist yet
@@ -220,22 +203,15 @@ class SDNController:
                     from fusion.utils.network import (  # type: ignore[attr-defined]
                         average_bandwidth_usage,
                     )
-                    print(f"[DEBUG-RELEASE-5] lp_id={lightpath_id}, depart={self.sdn_props.depart}")
                     if self.sdn_props.depart is not None:
                         average_bw_usage = average_bandwidth_usage(
                             bw_dict=lp_status["time_bw_usage"],
                             departure_time=self.sdn_props.depart,
                         )
-                        # Comparison print for v5/v6 analysis
-                        print(f"[COMPARE-RELEASE] lp_id={lightpath_id}, utilization={average_bw_usage:.2f}%, depart={self.sdn_props.depart:.4f}")
-                        # Flag zero utilization for debugging
-                        if average_bw_usage == 0.0:
-                            print(f"[ZERO-UTIL-BUG] lp_id={lightpath_id}, time_bw_usage={lp_status['time_bw_usage']}, depart={self.sdn_props.depart:.4f}, lp_bw={lp_status['lightpath_bandwidth']}")
                 except (ImportError, AttributeError):
                     pass
 
                 # Debug: Track final utilization dict entry
-                print(f"[DEBUG-UTIL-DICT] lp_id={lightpath_id}, bit_rate={lp_status['lightpath_bandwidth']}, avg_util={average_bw_usage:.2f}%, band={lp_status['band']}, core={lp_status['core']}")
 
                 self.sdn_props.lp_bw_utilization_dict.update(
                     {
@@ -429,29 +405,6 @@ class SDNController:
             )
             self._allocate_on_path(backup_path)
 
-        # INSTRUMENTATION: Allocation tracking
-        path_len = len(self.sdn_props.path_list) - 1 if self.sdn_props.path_list else 0
-        print(f"[V6-ALLOC] req_id={self.sdn_props.request_id} "
-              f"route={self.sdn_props.path_list} "
-              f"path_len={path_len} "
-              f"core={self.spectrum_obj.spectrum_props.core_number} "
-              f"band={self.spectrum_obj.spectrum_props.current_band} "
-              f"start_slot={self.spectrum_obj.spectrum_props.start_slot} "
-              f"end_slot={self.spectrum_obj.spectrum_props.end_slot} "
-              f"slots_needed={self.spectrum_obj.spectrum_props.slots_needed} "
-              f"mod_format={self.spectrum_obj.spectrum_props.modulation} "
-              f"lightpath_id={self.spectrum_obj.spectrum_props.lightpath_id}")
-
-        # COMPARISON: Match v5 format exactly
-        print(f"[CMP-ALLOC] req_id={self.sdn_props.request_id} "
-              f"lp_id={self.spectrum_obj.spectrum_props.lightpath_id} "
-              f"path={self.sdn_props.path_list} path_len={path_len} "
-              f"core={self.spectrum_obj.spectrum_props.core_number} "
-              f"band={self.spectrum_obj.spectrum_props.current_band} "
-              f"start={self.spectrum_obj.spectrum_props.start_slot} "
-              f"end={self.spectrum_obj.spectrum_props.end_slot} "
-              f"mod={self.spectrum_obj.spectrum_props.modulation}")
-
         # Track allocated request for failure handling
         self._track_allocated_request()
 
@@ -503,7 +456,6 @@ class SDNController:
         """
         if bandwidth is not None:
             self.sdn_props.bandwidth_list.append(bandwidth)
-            print(f"[V6-BW-LIST-APPEND] req_id={self.sdn_props.request_id}, appended bw={bandwidth}, list_len={len(self.sdn_props.bandwidth_list)}, full_list={self.sdn_props.bandwidth_list}")
         for stat_key in self.sdn_props.stat_key_list:
             # Skip remaining_bw - it's tracked separately for grooming
             if stat_key == "remaining_bw":
@@ -848,25 +800,19 @@ class SDNController:
 
             # Generate and assign unique lightpath ID for this allocation
             lp_id = self.sdn_props.get_lightpath_id()
-            print(f"[DEBUG-LP-ASSIGN] req_id={self.sdn_props.request_id}, lp_id={lp_id}, source={self.sdn_props.source}, dest={self.sdn_props.destination}")
             self.spectrum_obj.spectrum_props.lightpath_id = lp_id
             self.sdn_props.was_new_lp_established.append(lp_id)
 
             # Determine bandwidth for statistics (handle partial grooming)
             if self.sdn_props.was_partially_groomed:
                 allocate_bandwidth = str(self.sdn_props.remaining_bw)
-                print(f"[V6-ALLOC-BW-1] req_id={self.sdn_props.request_id}, lp_id={lp_id}, partially_groomed=True, allocate_bw={allocate_bandwidth} (from remaining_bw)")
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
-                print(f"[V6-ALLOC-BW-2] req_id={self.sdn_props.request_id}, lp_id={lp_id}, partially_groomed=False, allocate_bw={allocate_bandwidth} (from request bandwidth)")
 
             # Set lightpath bandwidth only if not already set by slicing code
             if not hasattr(self.spectrum_obj.spectrum_props, 'lightpath_bandwidth') or \
                self.spectrum_obj.spectrum_props.lightpath_bandwidth is None:
                 self.spectrum_obj.spectrum_props.lightpath_bandwidth = allocate_bandwidth
-                print(f"[V6-ALLOC-BW-3] req_id={self.sdn_props.request_id}, lp_id={lp_id}, setting spectrum_props.lightpath_bandwidth={allocate_bandwidth}")
-            else:
-                print(f"[V6-ALLOC-BW-4] req_id={self.sdn_props.request_id}, lp_id={lp_id}, lightpath_bandwidth already set to {self.spectrum_obj.spectrum_props.lightpath_bandwidth}, not overriding")
 
             self._update_request_statistics(bandwidth=allocate_bandwidth)
 

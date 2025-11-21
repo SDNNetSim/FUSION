@@ -314,9 +314,6 @@ def generate_simulation_requests(
             destination,
             chosen_bandwidth,
         )
-        # INSTRUMENTATION: Request generation tracking
-        print(f"[V6-REQ-GEN] req_id={request_id - 1} src={source} dst={destination} "
-              f"bw={chosen_bandwidth} arrival={arrival_time:.15f} departure={departure_time:.15f}")
 
     logger.info("Generated %s requests", engine_properties["num_requests"])
     return requests_dict

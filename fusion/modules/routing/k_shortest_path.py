@@ -145,7 +145,6 @@ class KShortestPath(AbstractRoutingAlgorithm):
                     modulation_formats_list = []
                     for mod_format in modulation_formats_dict.keys():
                         mod_info = self.sdn_props.modulation_formats_dict[mod_format]
-                        print(f"[DEBUG-MODDICT] req_id={self.sdn_props.request_id}, mod={mod_format}, path_len={path_length:.1f}, max_len={mod_info.get('max_length', 0)}, passes={mod_info.get('max_length', 0) >= path_length}")
                         if mod_info.get("max_length", 0) >= path_length:
                             modulation_formats_list.append(str(mod_format))
                         else:

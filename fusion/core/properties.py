@@ -463,9 +463,6 @@ class SDNProps:
                 else:
                     setattr(self, key, spectrum_value)
             else:
-                # Debug: Track bandwidth changes for debugging corruption issue
-                if key == "bandwidth" and hasattr(self, "request_id"):
-                    print(f"[V6-BW-SET] req_id={self.request_id}, setting bandwidth={value}")
                 setattr(self, key, value)
 
     def get_lightpath_id(self) -> int:
