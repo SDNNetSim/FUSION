@@ -63,6 +63,9 @@ class SimStats:
         self.fragmentation_scores: list[float] = []
         self.decision_times_ms: list[float] = []
 
+        # Debug: Track mods_dict updates for v5/v6 comparison
+        self.mods_dict_updates_log: list[dict[str, Any]] = []
+
     @staticmethod
     def _get_snapshot_info(
         network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
@@ -378,24 +381,76 @@ class SimStats:
                     bw_dict = mod_dict.get(bandwidth_key)
                     if bandwidth_key and isinstance(bw_dict, dict):
                         if data in bw_dict:
+                            old_bw_count = bw_dict[data]
                             bw_dict[data] += 1
+                            self.mods_dict_updates_log.append({
+                                'req_id': sdn_data.request_id,
+                                'mod': data,
+                                'bw': bandwidth_key,
+                                'band': None,
+                                'action': 'bw_count_increment',
+                                'old': old_bw_count,
+                                'new': bw_dict[data]
+                            })
                         else:
                             # Initialize if not present
                             bw_dict[data] = 1
+                            self.mods_dict_updates_log.append({
+                                'req_id': sdn_data.request_id,
+                                'mod': data,
+                                'bw': bandwidth_key,
+                                'band': None,
+                                'action': 'bw_count_init',
+                                'value': 1
+                            })
                     data_mod_dict = mod_dict.get(data)
                     if isinstance(data_mod_dict, dict):
                         if band in data_mod_dict:
+                            old_band_count = data_mod_dict[band]
                             data_mod_dict[band] += 1
+                            self.mods_dict_updates_log.append({
+                                'req_id': sdn_data.request_id,
+                                'mod': data,
+                                'bw': None,
+                                'band': band,
+                                'action': 'band_count_increment',
+                                'old': old_band_count,
+                                'new': data_mod_dict[band]
+                            })
                         else:
                             # Initialize if not present
                             data_mod_dict[band] = 1
+                            self.mods_dict_updates_log.append({
+                                'req_id': sdn_data.request_id,
+                                'mod': data,
+                                'bw': None,
+                                'band': band,
+                                'action': 'band_count_init',
+                                'value': 1
+                            })
                         length_dict = data_mod_dict.get("length")
                         has_length = "length" in data_mod_dict
                         if has_length and isinstance(length_dict, dict):
                             if band in length_dict:
                                 length_dict[band].append(sdn_data.path_weight)
+                                self.mods_dict_updates_log.append({
+                                    'req_id': sdn_data.request_id,
+                                    'mod': data,
+                                    'bw': None,
+                                    'band': band,
+                                    'action': 'length_append',
+                                    'value': sdn_data.path_weight
+                                })
                             if "overall" in length_dict:
                                 length_dict["overall"].append(sdn_data.path_weight)
+                                self.mods_dict_updates_log.append({
+                                    'req_id': sdn_data.request_id,
+                                    'mod': data,
+                                    'bw': None,
+                                    'band': 'overall',
+                                    'action': 'length_append',
+                                    'value': sdn_data.path_weight
+                                })
 
                         # Track hop count
                         hop_dict = data_mod_dict.get("hop")
@@ -403,8 +458,24 @@ class SimStats:
                             num_hops = len(sdn_data.path_list) - 1
                             if band in hop_dict:
                                 hop_dict[band].append(num_hops)
+                                self.mods_dict_updates_log.append({
+                                    'req_id': sdn_data.request_id,
+                                    'mod': data,
+                                    'bw': None,
+                                    'band': band,
+                                    'action': 'hop_append',
+                                    'value': num_hops
+                                })
                             if "overall" in hop_dict:
                                 hop_dict["overall"].append(num_hops)
+                                self.mods_dict_updates_log.append({
+                                    'req_id': sdn_data.request_id,
+                                    'mod': data,
+                                    'bw': None,
+                                    'band': 'overall',
+                                    'action': 'hop_append',
+                                    'value': num_hops
+                                })
 
                         # Track SNR or XT cost
                         if self.engine_props.get("snr_type") != "None":
@@ -415,16 +486,48 @@ class SimStats:
                                     if xt_cost_dict and isinstance(xt_cost_dict, dict):
                                         if band in xt_cost_dict:
                                             xt_cost_dict[band].append(sdn_data.snr_list[i])
+                                            self.mods_dict_updates_log.append({
+                                                'req_id': sdn_data.request_id,
+                                                'mod': data,
+                                                'bw': None,
+                                                'band': band,
+                                                'action': 'xt_cost_append',
+                                                'value': sdn_data.snr_list[i]
+                                            })
                                         if "overall" in xt_cost_dict:
                                             xt_cost_dict["overall"].append(sdn_data.snr_list[i])
+                                            self.mods_dict_updates_log.append({
+                                                'req_id': sdn_data.request_id,
+                                                'mod': data,
+                                                'bw': None,
+                                                'band': 'overall',
+                                                'action': 'xt_cost_append',
+                                                'value': sdn_data.snr_list[i]
+                                            })
                                 else:
                                     # Track snr
                                     snr_dict = data_mod_dict.get("snr")
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
                                             snr_dict[band].append(sdn_data.snr_list[i])
+                                            self.mods_dict_updates_log.append({
+                                                'req_id': sdn_data.request_id,
+                                                'mod': data,
+                                                'bw': None,
+                                                'band': band,
+                                                'action': 'snr_append',
+                                                'value': sdn_data.snr_list[i]
+                                            })
                                         if "overall" in snr_dict:
                                             snr_dict["overall"].append(sdn_data.snr_list[i])
+                                            self.mods_dict_updates_log.append({
+                                                'req_id': sdn_data.request_id,
+                                                'mod': data,
+                                                'bw': None,
+                                                'band': 'overall',
+                                                'action': 'snr_append',
+                                                'value': sdn_data.snr_list[i]
+                                            })
                 elif stat_key == "start_slot_list":
                     self.stats_props.start_slot_list.append(int(data))
                 elif stat_key == "end_slot_list":
@@ -930,6 +1033,15 @@ class SimStats:
 
         :param base_fp: Base file path for saving
         """
+        # Save mods_dict updates log for debugging
+        import json
+        from pathlib import Path
+        if base_fp:
+            log_fp = str(Path(base_fp).with_name(Path(base_fp).stem + '_mods_dict_log.json'))
+            with open(log_fp, 'w') as f:
+                json.dump(self.mods_dict_updates_log, f, indent=2)
+            print(f"Saved mods_dict updates log to: {log_fp}")
+
         # Import here to avoid circular imports
         from fusion.core.persistence import (
             StatsPersistence,  # pylint: disable=import-outside-toplevel
