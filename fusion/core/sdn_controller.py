@@ -869,8 +869,8 @@ class SDNController:
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
 
-        # Debug print for requests 35, 36, and 37
-        if self.sdn_props.request_id in [35, 36, 37]:
+        # Debug print for request 37 only
+        if self.sdn_props.request_id == 37:
             req_id = self.sdn_props.request_id
             print(f"\n[REQ{req_id}-DEBUG] ===== REQUEST {req_id} ALLOCATED =====")
             print(f"[REQ{req_id}-DEBUG] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
@@ -881,15 +881,19 @@ class SDNController:
             print(f"[REQ{req_id}-DEBUG] Segment slicing: {segment_slicing}, Force slicing: {force_slicing}")
             print(f"[REQ{req_id}-DEBUG] Remaining BW: {self.sdn_props.remaining_bw}")
             print(f"[REQ{req_id}-DEBUG] New lightpaths established: {self.sdn_props.was_new_lp_established}")
-            print(f"[REQ{req_id}-DEBUG] Lightpath IDs: {self.sdn_props.lightpath_id_list}")
-            print(f"[REQ{req_id}-DEBUG] Lightpath Bandwidths: {self.sdn_props.lightpath_bandwidth_list}")
-            print(f"[REQ{req_id}-DEBUG] Modulation formats: {self.sdn_props.modulation_list}")
-            print(f"[REQ{req_id}-DEBUG] Start slots: {self.sdn_props.start_slot_list}")
-            print(f"[REQ{req_id}-DEBUG] End slots: {self.sdn_props.end_slot_list}")
-            print(f"[REQ{req_id}-DEBUG] Bands: {self.sdn_props.band_list}")
-            print(f"[REQ{req_id}-DEBUG] Cores: {self.sdn_props.core_list}")
-            if hasattr(self.sdn_props, 'lp_bw_utilization_dict'):
-                print(f"[REQ{req_id}-DEBUG] LP BW Utilization Dict: {self.sdn_props.lp_bw_utilization_dict}")
+
+            # Print detailed allocation info for each lightpath
+            print(f"[REQ{req_id}-DEBUG] ----- DETAILED LIGHTPATH ALLOCATIONS -----")
+            for i, lp_id in enumerate(self.sdn_props.lightpath_id_list):
+                lp_bw = self.sdn_props.lightpath_bandwidth_list[i] if i < len(self.sdn_props.lightpath_bandwidth_list) else None
+                mod_format = self.sdn_props.modulation_list[i] if i < len(self.sdn_props.modulation_list) else None
+                start_slot = self.sdn_props.start_slot_list[i] if i < len(self.sdn_props.start_slot_list) else None
+                end_slot = self.sdn_props.end_slot_list[i] if i < len(self.sdn_props.end_slot_list) else None
+                band = self.sdn_props.band_list[i] if i < len(self.sdn_props.band_list) else None
+                core = self.sdn_props.core_list[i] if i < len(self.sdn_props.core_list) else None
+                is_new = "NEW" if lp_id in self.sdn_props.was_new_lp_established else "EXISTING"
+                print(f"[REQ{req_id}-DEBUG]   LP #{i}: ID={lp_id} ({is_new}), BW={lp_bw}, MOD={mod_format}, SLOTS=[{start_slot}-{end_slot}], BAND={band}, CORE={core}")
+
             print(f"[REQ{req_id}-DEBUG] =====================================\n")
 
     def handle_event(
