@@ -87,9 +87,16 @@ class LightPathSlicingManager:
             dictionary=self.engine_props["mod_per_bw"]
         )
 
+        # For partial grooming, use remaining_bw instead of original bandwidth
+        effective_bandwidth = (
+            self.sdn_props.remaining_bw
+            if getattr(self.sdn_props, "was_partially_groomed", False)
+            else self.sdn_props.bandwidth
+        )
+
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
-            if int(bandwidth) >= int(self.sdn_props.bandwidth):
+            if int(bandwidth) >= int(effective_bandwidth):
                 continue
 
             path_len = find_path_length(
@@ -102,7 +109,7 @@ class LightPathSlicingManager:
                 continue
 
             self.sdn_props.was_routed = True
-            num_segments = int(int(self.sdn_props.bandwidth) / int(bandwidth))
+            num_segments = int(int(effective_bandwidth) / int(bandwidth))
 
             if num_segments > self.engine_props["max_segments"]:
                 self.sdn_props.was_routed = False
@@ -156,9 +163,16 @@ class LightPathSlicingManager:
             dictionary=self.engine_props["mod_per_bw"]
         )
 
+        # For partial grooming, use remaining_bw instead of original bandwidth
+        effective_bandwidth = (
+            self.sdn_props.remaining_bw
+            if getattr(self.sdn_props, "was_partially_groomed", False)
+            else self.sdn_props.bandwidth
+        )
+
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
-            if int(bandwidth) >= int(self.sdn_props.bandwidth):
+            if int(bandwidth) >= int(effective_bandwidth):
                 continue
 
             path_len = find_path_length(
@@ -171,7 +185,7 @@ class LightPathSlicingManager:
                 continue
 
             self.sdn_props.was_routed = True
-            num_segments = int(int(self.sdn_props.bandwidth) / int(bandwidth))
+            num_segments = int(int(effective_bandwidth) / int(bandwidth))
 
             if num_segments > self.engine_props["max_segments"]:
                 self.sdn_props.was_routed = False
@@ -216,7 +230,7 @@ class LightPathSlicingManager:
                     sdn_controller._update_req_stats(bandwidth=bandwidth)
                 else:
                     # Rollback previously allocated segments
-                    remaining_bw = int(self.sdn_props.bandwidth) - (segment_idx * int(bandwidth))
+                    remaining_bw = int(effective_bandwidth) - (segment_idx * int(bandwidth))
                     sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                     break
 
@@ -279,17 +293,38 @@ class LightPathSlicingManager:
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 dedicated_bw = min(bandwidth, remaining_bw)
-                self.spectrum_obj.spectrum_props.lightpath_bandwidth = str(bandwidth)
+
+                # BUG FIX for partial grooming: select appropriate bandwidth tier
+                # For partial grooming, find smallest tier >= dedicated_bw
+                # For non-grooming, use the original bandwidth (v5 behavior)
+                if self.sdn_props.was_partially_groomed:
+                    bw_tiers = sorted([int(k) for k in self.engine_props["mod_per_bw"].keys()])
+                    selected_tier = None
+                    for tier in bw_tiers:
+                        if tier >= dedicated_bw:
+                            selected_tier = tier
+                            break
+                    if selected_tier is None:
+                        selected_tier = bw_tiers[-1]  # Use largest if none found
+                    lightpath_bw = selected_tier
+                    stats_bw = selected_tier
+                    remaining_bw -= dedicated_bw
+                else:
+                    # Non-grooming case: use original v5 behavior
+                    lightpath_bw = str(bandwidth)
+                    stats_bw = str(dedicated_bw)
+                    remaining_bw -= bandwidth
+
+                self.spectrum_obj.spectrum_props.lightpath_bandwidth = lightpath_bw
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
                 sdn_controller.allocate()
 
                 # Update stats first so bandwidth_list is populated
-                sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
+                sdn_controller._update_req_stats(bandwidth=stats_bw)
 
                 # Update lightpath status for bandwidth utilization tracking (reads bandwidth_list[-1])
                 self.spectrum_obj._update_lightpath_status()
-                remaining_bw -= bandwidth
                 self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True
             else:
