@@ -368,6 +368,12 @@ class SimStats:
                 if curr_sdn_data == [None]:
                     continue  # Skip this stat_key, don't break entire loop
             for i, data in enumerate(curr_sdn_data):
+                # Only process NEW lightpaths (skip EXISTING groomed lightpaths)
+                if i < len(sdn_data.lightpath_id_list):
+                    lp_id = sdn_data.lightpath_id_list[i]
+                    if lp_id not in sdn_data.was_new_lp_established:
+                        continue  # Skip EXISTING lightpaths
+
                 if stat_key == "core_list":
                     if data not in self.stats_props.cores_dict:
                         self.stats_props.cores_dict[data] = 0
