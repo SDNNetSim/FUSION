@@ -702,7 +702,11 @@ class SDNController:
         else:
             route_matrix = force_route_matrix
             if force_mod_format:
-                formats_matrix = [[force_mod_format]]
+                # Handle both string and list formats for force_mod_format
+                if isinstance(force_mod_format, list):
+                    formats_matrix = [force_mod_format]
+                else:
+                    formats_matrix = [[force_mod_format]]
             else:
                 formats_matrix = [[]]
             self.route_obj.route_props.modulation_formats_matrix = formats_matrix
@@ -775,6 +779,9 @@ class SDNController:
         self.sdn_props.path_list = path_list
         self.sdn_props.path_index = path_index
 
+        if self.sdn_props.request_id == 37:
+            print(f"[DIAG-REQ37] _process_single_path called: segment_slicing={segment_slicing}, force_slicing={force_slicing}, forced_segments={forced_segments}, was_partially_groomed={self.sdn_props.was_partially_groomed}")
+
         # Handle slicing scenarios
         if segment_slicing or force_slicing or forced_segments > 1:
             success = self._handle_slicing_request(
@@ -789,12 +796,21 @@ class SDNController:
             self.spectrum_obj.spectrum_props.forced_core = force_core
             self.spectrum_obj.spectrum_props.path_list = path_list
             self.spectrum_obj.spectrum_props.forced_band = forced_band
+
+            if self.sdn_props.request_id == 37:
+                print(f"[DIAG-REQ37] Before get_spectrum: mod_format_list={mod_format_list}, remaining_bw={self.sdn_props.remaining_bw}, bandwidth={self.sdn_props.bandwidth}")
+
             self.spectrum_obj.get_spectrum(
                 mod_format_list=mod_format_list,
                 backup_mod_format_list=backup_mod_format_list,
             )
 
+            if self.sdn_props.request_id == 37:
+                print(f"[DIAG-REQ37] After get_spectrum: is_free={self.spectrum_obj.spectrum_props.is_free}, remaining_bw={self.sdn_props.remaining_bw}")
+
             if self.spectrum_obj.spectrum_props.is_free is not True:
+                if self.sdn_props.request_id == 37:
+                    print(f"[DIAG-REQ37] FAILED: No free spectrum found in standard allocation. is_free={self.spectrum_obj.spectrum_props.is_free}")
                 self.sdn_props.block_reason = "congestion"
                 return False
 
@@ -803,18 +819,34 @@ class SDNController:
             self.spectrum_obj.spectrum_props.lightpath_id = lp_id
             self.sdn_props.was_new_lp_established.append(lp_id)
 
-            # Determine bandwidth for statistics (handle partial grooming)
+            # Determine bandwidth for statistics and lightpath (handle partial grooming)
             if self.sdn_props.was_partially_groomed:
+                # For partial grooming, allocate_bandwidth is the actual bandwidth used
                 allocate_bandwidth = str(self.sdn_props.remaining_bw)
+
+                # Lightpath bandwidth uses original request bandwidth (v5 behavior)
+                # This represents the lightpath capacity, not just what we use
+                # Convert to int for type consistency with grooming bandwidth
+                lightpath_bandwidth = int(self.sdn_props.bandwidth)
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
+                lightpath_bandwidth = self.sdn_props.bandwidth
+
+            if self.sdn_props.request_id == 37:
+                print(f"[DIAG-REQ37] In _process_single_path: allocate_bandwidth={allocate_bandwidth}, lightpath_bandwidth={lightpath_bandwidth}, was_partially_groomed={self.sdn_props.was_partially_groomed}, remaining_bw={self.sdn_props.remaining_bw}")
 
             # Set lightpath bandwidth only if not already set by slicing code
             if not hasattr(self.spectrum_obj.spectrum_props, 'lightpath_bandwidth') or \
                self.spectrum_obj.spectrum_props.lightpath_bandwidth is None:
-                self.spectrum_obj.spectrum_props.lightpath_bandwidth = allocate_bandwidth
+                self.spectrum_obj.spectrum_props.lightpath_bandwidth = lightpath_bandwidth
+                if self.sdn_props.request_id == 37:
+                    print(f"[DIAG-REQ37] Set lightpath_bandwidth to: {lightpath_bandwidth}")
+            elif self.sdn_props.request_id == 37:
+                print(f"[DIAG-REQ37] lightpath_bandwidth already set to: {self.spectrum_obj.spectrum_props.lightpath_bandwidth}")
 
             self._update_request_statistics(bandwidth=allocate_bandwidth)
+            if self.sdn_props.request_id == 37:
+                print(f"[DIAG-REQ37] Updated stats. lightpath_bandwidth_list={self.sdn_props.lightpath_bandwidth_list}")
 
             # Create lightpath entry in status dict for grooming/tracking
             self.spectrum_obj._update_lightpath_status()
@@ -846,12 +878,40 @@ class SDNController:
         self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
         if not segment_slicing and not force_slicing:
-            self.sdn_props.is_sliced = False
+            # Set is_sliced=True for partial grooming (v5 behavior)
+            if self.sdn_props.was_partially_groomed:
+                self.sdn_props.is_sliced = True
+                self.sdn_props.remaining_bw = 0  # Request fully served
+            else:
+                self.sdn_props.is_sliced = False
             self.allocate()
 
         # Update grooming statistics
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
+
+        # Debug print for requests 35, 36, and 37
+        if self.sdn_props.request_id in [35, 36, 37]:
+            req_id = self.sdn_props.request_id
+            print(f"\n[REQ{req_id}-DEBUG] ===== REQUEST {req_id} ALLOCATED =====")
+            print(f"[REQ{req_id}-DEBUG] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
+            print(f"[REQ{req_id}-DEBUG] Source={self.sdn_props.source}, Dest={self.sdn_props.destination}")
+            print(f"[REQ{req_id}-DEBUG] Route: {self.sdn_props.path_list}")
+            print(f"[REQ{req_id}-DEBUG] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
+            print(f"[REQ{req_id}-DEBUG] Was sliced: {self.sdn_props.is_sliced}, Was partially routed: {self.sdn_props.was_partially_routed}")
+            print(f"[REQ{req_id}-DEBUG] Segment slicing: {segment_slicing}, Force slicing: {force_slicing}")
+            print(f"[REQ{req_id}-DEBUG] Remaining BW: {self.sdn_props.remaining_bw}")
+            print(f"[REQ{req_id}-DEBUG] New lightpaths established: {self.sdn_props.was_new_lp_established}")
+            print(f"[REQ{req_id}-DEBUG] Lightpath IDs: {self.sdn_props.lightpath_id_list}")
+            print(f"[REQ{req_id}-DEBUG] Lightpath Bandwidths: {self.sdn_props.lightpath_bandwidth_list}")
+            print(f"[REQ{req_id}-DEBUG] Modulation formats: {self.sdn_props.modulation_list}")
+            print(f"[REQ{req_id}-DEBUG] Start slots: {self.sdn_props.start_slot_list}")
+            print(f"[REQ{req_id}-DEBUG] End slots: {self.sdn_props.end_slot_list}")
+            print(f"[REQ{req_id}-DEBUG] Bands: {self.sdn_props.band_list}")
+            print(f"[REQ{req_id}-DEBUG] Cores: {self.sdn_props.core_list}")
+            if hasattr(self.sdn_props, 'lp_bw_utilization_dict'):
+                print(f"[REQ{req_id}-DEBUG] LP BW Utilization Dict: {self.sdn_props.lp_bw_utilization_dict}")
+            print(f"[REQ{req_id}-DEBUG] =====================================\n")
 
     def handle_event(
         self,
@@ -940,9 +1000,8 @@ class SDNController:
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key="max_length",
                     )
-                    force_mod_format = (
-                        list(mod_formats_dict.keys())[0] if mod_formats_dict else None
-                    )
+                    # Use all modulation formats sorted by max_length (v5 behavior)
+                    force_mod_format = list(mod_formats_dict.keys())
 
         # Setup routing
         route_matrix, route_time = self._setup_routing(
@@ -1034,17 +1093,23 @@ class SDNController:
                     )
 
                     if success:
+                        if self.sdn_props.request_id == 37:
+                            print(f"[DIAG-REQ37] SUCCESS! Finalizing allocation. segment_slicing={segment_slicing}, was_partially_groomed={self.sdn_props.was_partially_groomed}, remaining_bw={self.sdn_props.remaining_bw}")
                         self._finalize_successful_allocation(
                             path_index, route_time, force_slicing, segment_slicing
                         )
                         return
 
             # Try segment slicing if not already tried
+            if self.sdn_props.request_id == 37:
+                print(f"[DIAG-REQ37] Reached segment slicing check. max_segments={self.engine_props['max_segments']}, bandwidth={self.sdn_props.bandwidth}, segment_slicing={segment_slicing}")
             if (
                 self.engine_props["max_segments"] > 1
                 and self.sdn_props.bandwidth != "25"
                 and not segment_slicing
             ):
+                if self.sdn_props.request_id == 37:
+                    print(f"[DIAG-REQ37] TRIGGERING segment slicing retry! was_partially_groomed={self.sdn_props.was_partially_groomed}, remaining_bw={self.sdn_props.remaining_bw}")
                 segment_slicing = True
                 continue
 
