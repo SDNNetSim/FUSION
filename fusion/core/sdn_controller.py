@@ -869,8 +869,8 @@ class SDNController:
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
 
-        # Debug print for request 37 only
-        if self.sdn_props.request_id == 37:
+        # Debug print for request 40 only
+        if self.sdn_props.request_id == 40:
             req_id = self.sdn_props.request_id
             print(f"\n[REQ{req_id}-DEBUG] ===== REQUEST {req_id} ALLOCATED =====")
             print(f"[REQ{req_id}-DEBUG] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
