@@ -780,7 +780,9 @@ class SDNController:
         self.sdn_props.path_index = path_index
 
         # Handle slicing scenarios
+        # Match v5 behavior: set force_slicing=True when segment_slicing is enabled
         if segment_slicing or force_slicing or forced_segments > 1:
+            force_slicing = True
             success = self._handle_slicing_request(
                 path_list, path_index, int(forced_segments), force_slicing
             )
@@ -812,10 +814,9 @@ class SDNController:
                 # For partial grooming, allocate_bandwidth is the actual bandwidth used
                 allocate_bandwidth = str(self.sdn_props.remaining_bw)
 
-                # Lightpath bandwidth uses original request bandwidth (v5 behavior)
-                # This represents the lightpath capacity, not just what we use
-                # Convert to int for type consistency with grooming bandwidth
-                lightpath_bandwidth = int(self.sdn_props.bandwidth)
+                # Lightpath bandwidth should match the remaining bandwidth to allocate
+                # Not the original request bandwidth
+                lightpath_bandwidth = int(self.sdn_props.remaining_bw)
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
                 lightpath_bandwidth = self.sdn_props.bandwidth
@@ -1060,6 +1061,10 @@ class SDNController:
                     mod_format_list = (
                         self.route_obj.route_props.modulation_formats_matrix[path_index]
                     )
+
+                    # Match v5: set force_slicing=True when segment_slicing or forced_segments > 1
+                    if segment_slicing or force_slicing or forced_segments > 1:
+                        force_slicing = True
 
                     # Process the path
                     success = self._process_single_path(

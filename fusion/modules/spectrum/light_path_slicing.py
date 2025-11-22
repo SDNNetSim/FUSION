@@ -294,21 +294,13 @@ class LightPathSlicingManager:
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 dedicated_bw = min(bandwidth, remaining_bw)
 
-                # BUG FIX for partial grooming: select appropriate bandwidth tier
-                # For partial grooming, find smallest tier >= dedicated_bw
-                # For non-grooming, use the original bandwidth (v5 behavior)
+                # BUG FIX for partial grooming: match v5 behavior exactly
+                # For partial grooming, use full modulation format capacity for lightpath
+                # but subtract the full bandwidth (not dedicated_bw) to exit loop (v5 behavior)
                 if self.sdn_props.was_partially_groomed:
-                    bw_tiers = sorted([int(k) for k in self.engine_props["mod_per_bw"].keys()])
-                    selected_tier = None
-                    for tier in bw_tiers:
-                        if tier >= dedicated_bw:
-                            selected_tier = tier
-                            break
-                    if selected_tier is None:
-                        selected_tier = bw_tiers[-1]  # Use largest if none found
-                    lightpath_bw = selected_tier
-                    stats_bw = selected_tier
-                    remaining_bw -= dedicated_bw
+                    lightpath_bw = bandwidth  # Use full modulation format capacity (500)
+                    stats_bw = str(dedicated_bw)  # Track only what's actually used (400)
+                    remaining_bw -= bandwidth  # Subtract full capacity to exit loop (500)
                 else:
                     # Non-grooming case: use original v5 behavior
                     lightpath_bw = str(bandwidth)
@@ -327,6 +319,8 @@ class LightPathSlicingManager:
                 self.spectrum_obj._update_lightpath_status()
                 self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True
+                # Update sdn_props.remaining_bw to reflect the local variable (clamp to 0 if negative)
+                self.sdn_props.remaining_bw = max(0, remaining_bw)
             else:
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                 break
