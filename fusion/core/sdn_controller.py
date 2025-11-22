@@ -811,15 +811,14 @@ class SDNController:
 
             # Determine bandwidth for statistics and lightpath (handle partial grooming)
             if self.sdn_props.was_partially_groomed:
-                # For partial grooming, allocate_bandwidth is the actual bandwidth used
+                # For partial grooming, allocate_bandwidth is the actual bandwidth used for statistics
                 allocate_bandwidth = str(self.sdn_props.remaining_bw)
-
-                # Lightpath bandwidth should match the remaining bandwidth to allocate
-                # Not the original request bandwidth
-                lightpath_bandwidth = int(self.sdn_props.remaining_bw)
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
-                lightpath_bandwidth = self.sdn_props.bandwidth
+
+            # Always use original request bandwidth for lightpath (matches v5 behavior)
+            # This ensures lightpath is tracked in the correct bandwidth tier for modulation statistics
+            lightpath_bandwidth = self.sdn_props.bandwidth
 
             # Set lightpath bandwidth only if not already set by slicing code
             if not hasattr(self.spectrum_obj.spectrum_props, 'lightpath_bandwidth') or \
@@ -869,33 +868,6 @@ class SDNController:
         # Update grooming statistics
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
-
-        # Debug print for request 40 only
-        if self.sdn_props.request_id == 40:
-            req_id = self.sdn_props.request_id
-            print(f"\n[REQ{req_id}-DEBUG] ===== REQUEST {req_id} ALLOCATED =====")
-            print(f"[REQ{req_id}-DEBUG] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
-            print(f"[REQ{req_id}-DEBUG] Source={self.sdn_props.source}, Dest={self.sdn_props.destination}")
-            print(f"[REQ{req_id}-DEBUG] Route: {self.sdn_props.path_list}")
-            print(f"[REQ{req_id}-DEBUG] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
-            print(f"[REQ{req_id}-DEBUG] Was sliced: {self.sdn_props.is_sliced}, Was partially routed: {self.sdn_props.was_partially_routed}")
-            print(f"[REQ{req_id}-DEBUG] Segment slicing: {segment_slicing}, Force slicing: {force_slicing}")
-            print(f"[REQ{req_id}-DEBUG] Remaining BW: {self.sdn_props.remaining_bw}")
-            print(f"[REQ{req_id}-DEBUG] New lightpaths established: {self.sdn_props.was_new_lp_established}")
-
-            # Print detailed allocation info for each lightpath
-            print(f"[REQ{req_id}-DEBUG] ----- DETAILED LIGHTPATH ALLOCATIONS -----")
-            for i, lp_id in enumerate(self.sdn_props.lightpath_id_list):
-                lp_bw = self.sdn_props.lightpath_bandwidth_list[i] if i < len(self.sdn_props.lightpath_bandwidth_list) else None
-                mod_format = self.sdn_props.modulation_list[i] if i < len(self.sdn_props.modulation_list) else None
-                start_slot = self.sdn_props.start_slot_list[i] if i < len(self.sdn_props.start_slot_list) else None
-                end_slot = self.sdn_props.end_slot_list[i] if i < len(self.sdn_props.end_slot_list) else None
-                band = self.sdn_props.band_list[i] if i < len(self.sdn_props.band_list) else None
-                core = self.sdn_props.core_list[i] if i < len(self.sdn_props.core_list) else None
-                is_new = "NEW" if lp_id in self.sdn_props.was_new_lp_established else "EXISTING"
-                print(f"[REQ{req_id}-DEBUG]   LP #{i}: ID={lp_id} ({is_new}), BW={lp_bw}, MOD={mod_format}, SLOTS=[{start_slot}-{end_slot}], BAND={band}, CORE={core}")
-
-            print(f"[REQ{req_id}-DEBUG] =====================================\n")
 
     def handle_event(
         self,

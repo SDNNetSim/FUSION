@@ -87,12 +87,8 @@ class LightPathSlicingManager:
             dictionary=self.engine_props["mod_per_bw"]
         )
 
-        # For partial grooming, use remaining_bw instead of original bandwidth
-        effective_bandwidth = (
-            self.sdn_props.remaining_bw
-            if getattr(self.sdn_props, "was_partially_groomed", False)
-            else self.sdn_props.bandwidth
-        )
+        # Always use original request bandwidth for tier selection (matches v5)
+        effective_bandwidth = self.sdn_props.bandwidth
 
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
@@ -163,12 +159,8 @@ class LightPathSlicingManager:
             dictionary=self.engine_props["mod_per_bw"]
         )
 
-        # For partial grooming, use remaining_bw instead of original bandwidth
-        effective_bandwidth = (
-            self.sdn_props.remaining_bw
-            if getattr(self.sdn_props, "was_partially_groomed", False)
-            else self.sdn_props.bandwidth
-        )
+        # Always use original request bandwidth for tier selection (matches v5)
+        effective_bandwidth = self.sdn_props.bandwidth
 
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
