@@ -69,7 +69,7 @@ class SimStats:
             if path_list is not None and link not in path_list:
                 continue
             link_data = net_spec_dict[link]
-            for core in link_data['cores_matrix']:
+            for core in link_data['cores_matrix']['c']:
                 requests_set = set(core[core > 0])
                 for curr_req in requests_set:
                     active_reqs_set.add(curr_req)
@@ -370,6 +370,8 @@ class SimStats:
     def _get_iter_means(self):
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
             for snap_key, data_list in curr_snapshot.items():
+                if snap_key == 'link_usage':
+                    continue 
                 if data_list:
                     curr_snapshot[snap_key] = mean(data_list)
                 else:

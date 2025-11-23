@@ -37,4 +37,4 @@ class StatsProps:
         return f"StatsProps({self.__dict__})"
 
 
-SNAP_KEYS_LIST = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments']
+SNAP_KEYS_LIST = ['occupied_slots', 'guard_slots', 'active_requests', 'blocking_prob', 'num_segments', 'bit_rate_blocking_prob']
