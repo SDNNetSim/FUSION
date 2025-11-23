@@ -750,6 +750,18 @@ class SpectrumAssignment:
         # For groomed lightpaths, this will be updated by the grooming module
         requests_dict_initial = {self.sdn_props.request_id: int(dedicated_bw)}
 
+        # Debug print for LP #97
+        if lp_id == 97:
+#            print(f"\n[LP97-CREATE] ===== LIGHTPATH #97 CREATED =====")
+#            print(f"[LP97-CREATE] Request ID: {self.sdn_props.request_id}")
+#            print(f"[LP97-CREATE] Light ID: {light_id}")
+#            print(f"[LP97-CREATE] Path: {self.sdn_props.path_list}")
+#            print(f"[LP97-CREATE] Lightpath bandwidth: {lp_bandwidth_float}")
+#            print(f"[LP97-CREATE] Dedicated bandwidth: {dedicated_bw}")
+#            print(f"[LP97-CREATE] Remaining bandwidth: {remaining_bw_calc}")
+#            print(f"[LP97-CREATE] Modulation: {self.spectrum_props.modulation}")
+#            print(f"[LP97-CREATE] =====================================\n")
+
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
             "path": self.sdn_props.path_list,
             "path_weight": self.sdn_props.path_weight,
