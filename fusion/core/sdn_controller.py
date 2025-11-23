@@ -1064,6 +1064,15 @@ class SDNController:
                     # Use all modulation formats sorted by max_length (v5 behavior)
                     force_mod_format = list(mod_formats_dict.keys())
 
+                # Debug print for Request 158
+                if self.sdn_props.request_id == 158:
+                    req_id = self.sdn_props.request_id
+                    print(f"\n[REQ158-PARTIAL-ALLOC] ===== ALLOCATING REMAINING BANDWIDTH =====")
+                    print(f"[REQ158-PARTIAL-ALLOC] Remaining bandwidth: {self.sdn_props.remaining_bw}")
+                    print(f"[REQ158-PARTIAL-ALLOC] Forcing route on groomed path: {force_route_matrix}")
+                    print(f"[REQ158-PARTIAL-ALLOC] Available mod formats: {force_mod_format if force_mod_format else 'default'}")
+                    print(f"[REQ158-PARTIAL-ALLOC] =================================================\n")
+
                 if self.sdn_props.request_id == 4:
                     req_id = self.sdn_props.request_id
                     print(f"[REQ{req_id}-GROOM] Forcing route on groomed path: {force_route_matrix}")
@@ -1182,6 +1191,13 @@ class SDNController:
                     if segment_slicing or force_slicing or forced_segments > 1:
                         force_slicing = True
 
+                    # Debug print for request 158 - before processing
+                    if self.sdn_props.request_id == 158:
+                        req_id = self.sdn_props.request_id
+                        print(f"\n[REQ158-PATH-TRY] Trying path {path_index}: {path_list}")
+                        print(f"[REQ158-PATH-TRY] Modulation formats: {mod_format_list}")
+                        print(f"[REQ158-PATH-TRY] Force slicing: {force_slicing}, Segment slicing: {segment_slicing}")
+
                     # Debug print for request 4 - before processing
                     if self.sdn_props.request_id == 4:
                         req_id = self.sdn_props.request_id
@@ -1201,6 +1217,15 @@ class SDNController:
                         forced_band,
                         backup_mod_format_list,
                     )
+
+                    # Debug print for request 158 - after processing
+                    if self.sdn_props.request_id == 158:
+                        req_id = self.sdn_props.request_id
+                        if success:
+                            print(f"[REQ158-PATH-TRY] Path {path_index} SUCCESS - request will be allocated\n")
+                        else:
+                            print(f"[REQ158-PATH-TRY] Path {path_index} FAILED - trying next path")
+                            print(f"[REQ158-PATH-TRY] Block reason: {self.sdn_props.block_reason}\n")
 
                     # Debug print for request 4 - after processing
                     if self.sdn_props.request_id == 4:
@@ -1232,6 +1257,38 @@ class SDNController:
             # All paths exhausted
             self.sdn_props.block_reason = "distance"
             self.sdn_props.was_routed = False
+
+            # FEATURE: Support partial serving (v5 behavior)
+            # If can_partially_serve is enabled and SOME bandwidth was allocated, accept partial service
+            if self.engine_props.get("can_partially_serve", False):
+                # Check if any bandwidth was allocated (either through grooming or new lightpaths)
+                has_allocated_bandwidth = (
+                    len(self.sdn_props.lightpath_id_list) > 0 or
+                    len(getattr(self.sdn_props, "was_new_lp_established", [])) > 0
+                )
+
+                if has_allocated_bandwidth:
+                    # Check if this is a partially groomed request OR the last path attempt
+                    if (
+                        getattr(self.sdn_props, "was_partially_groomed", False) or
+                        self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
+                    ):
+                        # Accept partial service - mark as successfully routed
+                        self.sdn_props.was_routed = True
+                        self.sdn_props.was_partially_routed = True
+                        self.sdn_props.is_sliced = True
+
+                        # Debug print for Request 158
+                        if self.sdn_props.request_id == 158:
+                            print(f"\n[REQ158-PARTIAL-SERVE] ===== REQUEST 158 PARTIALLY SERVED =====")
+                            print(f"[REQ158-PARTIAL-SERVE] can_partially_serve enabled")
+                            print(f"[REQ158-PARTIAL-SERVE] Accepted partial bandwidth allocation")
+                            print(f"[REQ158-PARTIAL-SERVE] Lightpaths used: {self.sdn_props.lightpath_id_list}")
+                            print(f"[REQ158-PARTIAL-SERVE] New lightpaths: {getattr(self.sdn_props, 'was_new_lp_established', [])}")
+                            print(f"[REQ158-PARTIAL-SERVE] was_partially_routed: True")
+                            print(f"[REQ158-PARTIAL-SERVE] ==================================================\n")
+
+                        return  # Success!
 
             # CRITICAL FIX: Release groomed bandwidth if request was partially groomed but blocked
             if getattr(self.sdn_props, "was_partially_groomed", False):

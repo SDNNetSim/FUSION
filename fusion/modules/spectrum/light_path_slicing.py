@@ -223,6 +223,24 @@ class LightPathSlicingManager:
                 else:
                     # Rollback previously allocated segments
                     remaining_bw = int(effective_bandwidth) - (segment_idx * int(bandwidth))
+
+                    # FEATURE: Support partial serving (v5 behavior)
+                    # If can_partially_serve is enabled and SOME segments were allocated, accept partial service
+                    if self.engine_props.get("can_partially_serve", False):
+                        # Check if any segments were allocated (segment_idx > 0)
+                        if segment_idx > 0:
+                            # Some segments were allocated
+                            if (
+                                self.sdn_props.was_partially_groomed or
+                                self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
+                            ):
+                                # Accept partial service
+                                self.sdn_props.is_sliced = True
+                                self.sdn_props.was_partially_routed = True
+                                self.sdn_props.was_routed = True
+                                self.sdn_props.remaining_bw = remaining_bw
+                                return True
+
                     sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                     break
 
@@ -314,6 +332,23 @@ class LightPathSlicingManager:
                 # Update sdn_props.remaining_bw to reflect the local variable (clamp to 0 if negative)
                 self.sdn_props.remaining_bw = max(0, remaining_bw)
             else:
+                # FEATURE: Support partial serving (v5 behavior)
+                # If can_partially_serve is enabled and SOME bandwidth was allocated, accept partial service
+                if self.engine_props.get("can_partially_serve", False):
+                    # Check if any bandwidth was allocated (remaining_bw changed from initial)
+                    initial_bw = int(self.sdn_props.bandwidth)
+                    if remaining_bw != initial_bw:
+                        # Some bandwidth was allocated
+                        if (
+                            self.sdn_props.was_partially_groomed or
+                            self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
+                        ):
+                            # Accept partial service
+                            self.sdn_props.is_sliced = True
+                            self.sdn_props.was_partially_routed = True
+                            self.sdn_props.remaining_bw = max(0, remaining_bw)
+                            return True
+
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                 break
 
