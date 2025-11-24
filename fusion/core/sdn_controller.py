@@ -1494,6 +1494,14 @@ class SDNController:
 #                print(f"[REQ{req_id}-BLOCKED] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
 #                print(f"[REQ{req_id}-BLOCKED] =====================================\n")
 
+            # Comprehensive request tracking for ALL requests
+            req_id = self.sdn_props.request_id
+            status = "ROUTED" if self.sdn_props.was_routed else "BLOCKED"
+            block_reason = self.sdn_props.block_reason if not self.sdn_props.was_routed else "N/A"
+            was_groomed = getattr(self.sdn_props, "was_groomed", False)
+            was_partial = getattr(self.sdn_props, "was_partially_routed", False)
+            new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+            print(f"[V6-REQ] ID={req_id:3d} {status:7s} block={block_reason:20s} groomed={was_groomed} partial={was_partial} new_lps={new_lps}")
             return
 
     # Backward compatibility methods for tests
