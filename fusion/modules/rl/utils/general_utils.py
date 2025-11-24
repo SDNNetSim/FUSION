@@ -187,14 +187,19 @@ class CoreUtilHelpers:
             if request_object["depart"] > current_time:
                 break
 
-            self.engine_props.handle_release(current_time=request_object["depart"])
+            # Build tuple key (req_id, time) to match v6 reqs_dict structure
+            release_time = (request_object["req_id"], request_object["depart"])
+            self.engine_props.handle_release(current_time=release_time)
             self._last_processed_index += 1
 
     def allocate(self) -> None:
         """
         Attempts to allocate a request.
         """
-        current_time = self.rl_props.arrival_list[self.rl_props.arrival_count]["arrive"]
+        current_request = self.rl_props.arrival_list[self.rl_props.arrival_count]
+        # Build tuple key (req_id, time) to match v6 reqs_dict structure
+        current_time = (current_request["req_id"], current_request["arrive"])
+
         if self.rl_props.forced_index is not None:
             try:
                 forced_index = self.super_channel_indexes[self.rl_props.forced_index][0]
@@ -204,9 +209,7 @@ class CoreUtilHelpers:
                 self.engine_props.stats_obj.stats_props["block_reasons_dict"][
                     "congestion"
                 ] += 1
-                bandwidth = self.rl_props.arrival_list[self.rl_props.arrival_count][
-                    "bandwidth"
-                ]
+                bandwidth = current_request["bandwidth"]
                 self.engine_props.stats_obj.stats_props["block_bw_dict"][bandwidth] += 1
                 return
         else:

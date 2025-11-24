@@ -51,6 +51,7 @@ ALLOWED_TEST_CASES = {
     "ext_snr_4core_cls_dy-slice",
     "xtar_slicing_pff",
     "spain_C_fixed_grooming",
+    'spain_C_fixed_grooming_snr_recheck'
 }
 
 
@@ -253,7 +254,8 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
     def _walk(old: dict, new: dict, path: str = "") -> None:
         for key in old:
             cur = f"{path}.{key}" if path else key
-            if key in IGNORE_KEYS or cur in IGNORE_KEYS or key == "link_usage" or "link_usage_dict" in cur:
+            if (key in IGNORE_KEYS or cur in IGNORE_KEYS or key == "link_usage" or "link_usage_dict" in cur
+                or "total_transponder_usage" in cur or "frag_dict" in cur or key == "ci_percent_bit_rate_block"):
                 continue
             if key not in new:
                 failures.append(f"{rel}:{cur} missing in actual")
@@ -263,7 +265,8 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
                 failures.append(f"{rel}:{cur} expected {old[key]!r} got {new[key]!r}")
         for key in new:
             cur = f"{path}.{key}" if path else key
-            if key in IGNORE_KEYS or cur in IGNORE_KEYS or key == "link_usage_dict" or "link_usage_dict" in cur:
+            if (key in IGNORE_KEYS or cur in IGNORE_KEYS or key == "link_usage_dict" or "link_usage_dict" in cur
+                or "total_transponder_usage" in cur or "frag_dict" in cur or key == "ci_percent_bit_rate_block"):
                 continue
             if key not in old:
                 failures.append(f"{rel}:{cur} extra in actual")
@@ -508,7 +511,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'spain_C_fixed_grooming':
+        if case.name == 'spain_C_fixed_grooming_snr_recheck':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:

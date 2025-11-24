@@ -353,12 +353,17 @@ class SimStats:
             if stat_key == "snr_list":
                 if set(curr_sdn_data) <= {None}:
                     continue  # Skip if all values are None
-                # Filter to only newly established lightpaths
+                # Filter to only newly established lightpaths when grooming is enabled
                 new_lp_values = []
                 for i, value in enumerate(curr_sdn_data):
-                    if i < len(sdn_data.lightpath_id_list):
-                        lp_id = sdn_data.lightpath_id_list[i]
-                        if lp_id in sdn_data.was_new_lp_established and value is not None:
+                    if self.engine_props.get("is_grooming_enabled", False):
+                        if i < len(sdn_data.lightpath_id_list):
+                            lp_id = sdn_data.lightpath_id_list[i]
+                            if lp_id in sdn_data.was_new_lp_established and value is not None:
+                                new_lp_values.append(value)
+                    else:
+                        # When grooming is disabled, include all non-None values
+                        if value is not None:
                             new_lp_values.append(value)
                 # Append mean of new lightpaths to overall statistics list
                 if len(new_lp_values) > 0:
@@ -368,11 +373,12 @@ class SimStats:
                 if curr_sdn_data == [None]:
                     continue  # Skip this stat_key, don't break entire loop
             for i, data in enumerate(curr_sdn_data):
-                # Only process NEW lightpaths (skip EXISTING groomed lightpaths)
-                if i < len(sdn_data.lightpath_id_list):
-                    lp_id = sdn_data.lightpath_id_list[i]
-                    if lp_id not in sdn_data.was_new_lp_established:
-                        continue  # Skip EXISTING lightpaths
+                # Only process NEW lightpaths when grooming is enabled (skip EXISTING groomed lightpaths)
+                if self.engine_props.get("is_grooming_enabled", False):
+                    if i < len(sdn_data.lightpath_id_list):
+                        lp_id = sdn_data.lightpath_id_list[i]
+                        if lp_id not in sdn_data.was_new_lp_established:
+                            continue  # Skip EXISTING lightpaths
 
                 if stat_key == "core_list":
                     if data not in self.stats_props.cores_dict:
@@ -591,12 +597,13 @@ class SimStats:
 
             # For partially groomed requests, track blocked bandwidth
             # and skip stats if no new lightpaths were established
-            remaining_bw = getattr(sdn_data, "remaining_bw", None)
-            if remaining_bw is not None and remaining_bw != "0":
-                self.bit_rate_blocked += int(remaining_bw)
-                was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
-                if not was_new_lps:
-                    return
+            if self.engine_props.get("is_grooming_enabled", False):
+                remaining_bw = getattr(sdn_data, "remaining_bw", None)
+                if remaining_bw is not None and remaining_bw != "0":
+                    self.bit_rate_blocked += int(remaining_bw)
+                    was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
+                    if not was_new_lps:
+                        return
 
             if sdn_data.path_list is not None:
                 num_hops = len(sdn_data.path_list) - 1
@@ -667,26 +674,33 @@ class SimStats:
                 ):
                     self.stats_props.path_index_list[sdn_data.path_index] += 1
 
-            # Track weights for NEW lightpaths only (matching grooming-new logic)
-            was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
+            # Track weights for NEW lightpaths only when grooming is enabled
             if (
-                isinstance(was_new_lps, list)
-                and hasattr(sdn_data, "bandwidth_list")
+                hasattr(sdn_data, "bandwidth_list")
                 and hasattr(sdn_data, "lightpath_id_list")
                 and hasattr(sdn_data, "modulation_list")
                 and sdn_data.path_weight is not None
             ):
+                was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
                 for i in range(len(sdn_data.bandwidth_list)):
-                    # Only track weights for newly established lightpaths
-                    # Check if lightpath_id at this index is in was_new_lp_established
-                    if (
-                        i < len(sdn_data.lightpath_id_list)
-                        and sdn_data.lightpath_id_list[i] in was_new_lps
-                    ):
+                    # Check if this lightpath should be tracked
+                    should_track = False
+                    if self.engine_props.get("is_grooming_enabled", False):
+                        # When grooming is enabled, only track newly established lightpaths
+                        if (
+                            isinstance(was_new_lps, list)
+                            and i < len(sdn_data.lightpath_id_list)
+                            and sdn_data.lightpath_id_list[i] in was_new_lps
+                        ):
+                            should_track = True
+                    else:
+                        # When grooming is disabled, track all lightpaths
+                        should_track = True
+
+                    if should_track:
                         # FIX: Use lightpath_bandwidth (capacity) not bandwidth (dedicated) for weights_dict key
                         bandwidth_key = str(sdn_data.lightpath_bandwidth_list[i])
                         mod_format = sdn_data.modulation_list[i] if i < len(sdn_data.modulation_list) else None
-                        lp_id = sdn_data.lightpath_id_list[i]
 
                         if mod_format and bandwidth_key in self.stats_props.weights_dict:
                             if mod_format in self.stats_props.weights_dict[bandwidth_key]:
@@ -698,12 +712,6 @@ class SimStats:
                                 self.stats_props.weights_dict[bandwidth_key][mod_format] = [
                                     round(float(sdn_data.path_weight), 2)
                                 ]
-                    else:
-                        # Debug: Track when path weight is NOT recorded
-                        if i < len(sdn_data.lightpath_id_list):
-                            lp_id = sdn_data.lightpath_id_list[i]
-                            bw_key = str(sdn_data.lightpath_bandwidth_list[i]) if i < len(sdn_data.lightpath_bandwidth_list) else "N/A"
-                            mod = sdn_data.modulation_list[i] if i < len(sdn_data.modulation_list) else "N/A"
 
             # Track demand realization ratio for partial grooming
             if self.engine_props.get("can_partially_serve"):

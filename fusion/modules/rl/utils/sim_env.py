@@ -321,7 +321,7 @@ class SimEnvObs:
         req_dict = self.sim_env.engine_obj.reqs_dict
         if self.lowest_holding is None or self.highest_holding is None:
             differences = [
-                value["depart"] - arrival for arrival, value in req_dict.items()
+                value["depart"] - arrival[1] for arrival, value in req_dict.items()
             ]
 
             self.lowest_holding = min(differences)
