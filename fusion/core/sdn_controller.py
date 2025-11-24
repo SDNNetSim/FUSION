@@ -721,7 +721,13 @@ class SDNController:
             else:
                 formats_matrix = [[]]
             self.route_obj.route_props.modulation_formats_matrix = formats_matrix
-            self.route_obj.route_props.weights_list = [0]
+
+            # For partially groomed requests, use path_weight from groomed lightpath
+            # This ensures new lightpaths on the same path get the correct weight
+            if getattr(self.sdn_props, "was_partially_groomed", False):
+                self.route_obj.route_props.weights_list = [self.sdn_props.path_weight]
+            else:
+                self.route_obj.route_props.weights_list = [0]
         route_time = time.time() - start_time
         return route_matrix, route_time
 
@@ -1208,6 +1214,11 @@ class SDNController:
                         req_id = self.sdn_props.request_id
 #                        print(f"[REQ{req_id}-ALLOC]   Modulation formats: {mod_format_list}")
 #                        print(f"[REQ{req_id}-ALLOC]   Force slicing: {force_slicing}, Segment slicing: {segment_slicing}")
+
+                    # Set path_weight for this path attempt BEFORE processing
+                    # This ensures any lightpaths created during this attempt (even if it fails
+                    # but is accepted via partial serving) will store the correct path_weight
+                    self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
 
                     # Process the path
                     success = self._process_single_path(
