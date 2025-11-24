@@ -315,6 +315,7 @@ class SimulationEngine:
 
             # Debug print for Request 158
             if self.reqs_dict[current_time]["req_id"] == 158:
+                pass
 #                print(f"\n[REQ158-SAVE] ===== SAVING REQUEST 158 TO reqs_status_dict =====")
 #                print(f"[REQ158-SAVE] lightpath_id_list: {sdn_props.lightpath_id_list}")
 #                print(f"[REQ158-SAVE] was_routed: {sdn_props.was_routed}")
@@ -424,9 +425,11 @@ class SimulationEngine:
         # Debug print for Request 158 departure check
         if self.reqs_dict is not None and current_time in self.reqs_dict:
             if self.reqs_dict[current_time]["req_id"] == 158:
+                pass
 #                print(f"\n[REQ158-CHECK] ===== REQUEST 158 DEPARTURE EVENT =====")
 #                print(f"[REQ158-CHECK] Request 158 in reqs_status_dict: {158 in self.reqs_status_dict}")
                 if 158 in self.reqs_status_dict:
+                    pass
 #                    print(f"[REQ158-CHECK] Stored lightpath_id_list: {self.reqs_status_dict[158].get('lightpath_id_list', 'NOT FOUND')}")
 #                print(f"[REQ158-CHECK] =====================================\n")
 
@@ -444,6 +447,7 @@ class SimulationEngine:
 
             # Debug print for Request 158
             if self.reqs_dict[current_time]["req_id"] == 158:
+                pass
 #                print(f"\n[REQ158-RESTORE] ===== RESTORING REQUEST 158 FROM reqs_status_dict =====")
 #                print(f"[REQ158-RESTORE] lightpath_id_list: {self.sdn_obj.sdn_props.lightpath_id_list}")
 #                print(f"[REQ158-RESTORE] path_list: {self.sdn_obj.sdn_props.path_list}")
@@ -787,6 +791,7 @@ class SimulationEngine:
         if trial is not None:
             self.engine_props["thread_num"] = f"s{trial + 1}"
         if iteration == 2:
+            pass
 #            print('debug line 709 in simulation.')
         self.iteration = iteration
 

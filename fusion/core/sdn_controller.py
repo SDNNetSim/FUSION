@@ -827,6 +827,7 @@ class SDNController:
                 req_id = self.sdn_props.request_id
 #                print(f"[REQ{req_id}-SPEC] Spectrum search result: is_free={self.spectrum_obj.spectrum_props.is_free}")
                 if self.spectrum_obj.spectrum_props.is_free:
+                    pass
 #                    print(f"[REQ{req_id}-SPEC] Found spectrum: slots {self.spectrum_obj.spectrum_props.start_slot}-{self.spectrum_obj.spectrum_props.end_slot}")
 #                    print(f"[REQ{req_id}-SPEC] Modulation: {self.spectrum_obj.spectrum_props.modulation}")
 #                    print(f"[REQ{req_id}-SPEC] =====================================\n")
@@ -1022,6 +1023,7 @@ class SDNController:
 #                print(f"[REQ{req_id}-GROOM] Was groomed: {getattr(self.sdn_props, 'was_groomed', False)}")
 #                print(f"[REQ{req_id}-GROOM] Was partially groomed: {getattr(self.sdn_props, 'was_partially_groomed', False)}")
                 if getattr(self.sdn_props, "was_partially_groomed", False):
+                    pass
 #                    print(f"[REQ{req_id}-GROOM] Groomed bandwidth: {getattr(self.sdn_props, 'groomed_bw', 'N/A')}")
 #                    print(f"[REQ{req_id}-GROOM] Remaining bandwidth: {getattr(self.sdn_props, 'remaining_bw', 'N/A')}")
 #                    print(f"[REQ{req_id}-GROOM] Groomed on path: {self.sdn_props.path_list}")
@@ -1034,6 +1036,7 @@ class SDNController:
 #                print(f"[REQ158-AFTER-GROOM] was_partially_groomed: {getattr(self.sdn_props, 'was_partially_groomed', False)}")
 #                print(f"[REQ158-AFTER-GROOM] was_routed: {getattr(self.sdn_props, 'was_routed', False)}")
                 if getattr(self.sdn_props, "was_partially_groomed", False):
+                    pass
 #                    print(f"[REQ158-AFTER-GROOM] Remaining bandwidth: {getattr(self.sdn_props, 'remaining_bw', 'N/A')}")
 #                print(f"[REQ158-AFTER-GROOM] ==========================================\n")
 
@@ -1099,8 +1102,10 @@ class SDNController:
                     # Check if modulation formats are available
                     if hasattr(self.route_obj.route_props, 'modulation_formats_matrix') and \
                        idx < len(self.route_obj.route_props.modulation_formats_matrix):
+                        pass
 #                        print(f"[REQ{req_id}-ROUTE]   Mod formats: {self.route_obj.route_props.modulation_formats_matrix[idx]}")
                 else:
+                    pass
 #                    print(f"[REQ{req_id}-ROUTE] Route {idx}: False (no route)")
 #            print(f"[REQ{req_id}-ROUTE] =====================================\n")
 
@@ -1222,8 +1227,10 @@ class SDNController:
                     if self.sdn_props.request_id == 158:
                         req_id = self.sdn_props.request_id
                         if success:
+                            pass
 #                            print(f"[REQ158-PATH-TRY] Path {path_index} SUCCESS - request will be allocated\n")
                         else:
+                            pass
 #                            print(f"[REQ158-PATH-TRY] Path {path_index} FAILED - trying next path")
 #                            print(f"[REQ158-PATH-TRY] Block reason: {self.sdn_props.block_reason}\n")
 
@@ -1231,8 +1238,10 @@ class SDNController:
                     if self.sdn_props.request_id == 4:
                         req_id = self.sdn_props.request_id
                         if success:
+                            pass
 #                            print(f"[REQ{req_id}-ALLOC] Path {path_index} SUCCESS - request will be allocated")
                         else:
+                            pass
 #                            print(f"[REQ{req_id}-ALLOC] Path {path_index} FAILED - trying next path")
 #                            print(f"[REQ{req_id}-ALLOC]   Block reason: {self.sdn_props.block_reason}")
 
@@ -1280,6 +1289,7 @@ class SDNController:
 
                         # Debug print for Request 158
                         if self.sdn_props.request_id == 158:
+                            pass
 #                            print(f"\n[REQ158-PARTIAL-SERVE] ===== REQUEST 158 PARTIALLY SERVED =====")
 #                            print(f"[REQ158-PARTIAL-SERVE] can_partially_serve enabled")
 #                            print(f"[REQ158-PARTIAL-SERVE] Accepted partial bandwidth allocation")
@@ -1295,6 +1305,7 @@ class SDNController:
                 if self.sdn_props.lightpath_id_list:
                     # Debug print for Request 158
                     if self.sdn_props.request_id == 158:
+                        pass
 #                        print(f"\n[REQ158-CLEANUP] ===== RELEASING GROOMED BANDWIDTH (BLOCKED) =====")
 #                        print(f"[REQ158-CLEANUP] Request was partially groomed but blocked")
 #                        print(f"[REQ158-CLEANUP] Releasing bandwidth from lightpaths: {self.sdn_props.lightpath_id_list}")
@@ -1314,6 +1325,7 @@ class SDNController:
 
                                     # Debug print for LP #97
                                     if lp_id == 97:
+                                        pass
 #                                        print(f"\n[LP97-CLEANUP] ===== RELEASING LP #97 (BLOCKED REQUEST) =====")
 #                                        print(f"[LP97-CLEANUP] Request ID: {self.sdn_props.request_id}")
 #                                        print(f"[LP97-CLEANUP] Released {req_bw} Gbps back to LP #97")

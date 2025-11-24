@@ -752,6 +752,7 @@ class SpectrumAssignment:
 
         # Debug print for LP #97
         if lp_id == 97:
+            pass
 #            print(f"\n[LP97-CREATE] ===== LIGHTPATH #97 CREATED =====")
 #            print(f"[LP97-CREATE] Request ID: {self.sdn_props.request_id}")
 #            print(f"[LP97-CREATE] Light ID: {light_id}")

@@ -620,32 +620,33 @@ class SimStats:
 
             # Debug print for request 40: show what was modified in mods_used_dict
             if sdn_data.request_id == 40:
-                # Show the actual dictionary state before and after
-                after_mods_dict = {}
-                for bw, bw_data in self.stats_props.modulations_used_dict.items():
-                    if isinstance(bw_data, dict):
-                        after_mods_dict[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
-
-                print(f"\n[REQ40-MODS-DEBUG] ===== MODS_DICT STATE FOR REQUEST 40 =====")
-                print(f"[REQ40-MODS-DEBUG] BEFORE: {before_mods_dict}")
-                print(f"[REQ40-MODS-DEBUG] AFTER:  {after_mods_dict}")
-                print(f"[REQ40-MODS-DEBUG]")
-
-                # Show individual updates
-                req40_updates = [u for u in self.mods_dict_updates_log if u['req_id'] == 40]
-                print(f"[REQ40-MODS-DEBUG] Individual updates:")
-                for update in req40_updates:
-                    if update['action'] in ['bw_count_increment', 'bw_count_init']:
-                        if 'old' in update:
-                            print(f"[REQ40-MODS-DEBUG]   BW={update['bw']}, MOD={update['mod']}: {update['old']} -> {update['new']}")
-                        else:
-                            print(f"[REQ40-MODS-DEBUG]   BW={update['bw']}, MOD={update['mod']}: INIT to {update['value']}")
-                    elif update['action'] in ['band_count_increment', 'band_count_init']:
-                        if 'old' in update:
-                            print(f"[REQ40-MODS-DEBUG]   MOD={update['mod']}, BAND={update['band']}: {update['old']} -> {update['new']}")
-                        else:
-                            print(f"[REQ40-MODS-DEBUG]   MOD={update['mod']}, BAND={update['band']}: INIT to {update['value']}")
-                print(f"[REQ40-MODS-DEBUG] =============================================\n")
+                pass
+#                # Show the actual dictionary state before and after
+#                after_mods_dict = {}
+#                for bw, bw_data in self.stats_props.modulations_used_dict.items():
+#                    if isinstance(bw_data, dict):
+#                        after_mods_dict[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
+#
+#                print(f"\n[REQ40-MODS-DEBUG] ===== MODS_DICT STATE FOR REQUEST 40 =====")
+#                print(f"[REQ40-MODS-DEBUG] BEFORE: {before_mods_dict}")
+#                print(f"[REQ40-MODS-DEBUG] AFTER:  {after_mods_dict}")
+#                print(f"[REQ40-MODS-DEBUG]")
+#
+#                # Show individual updates
+#                req40_updates = [u for u in self.mods_dict_updates_log if u['req_id'] == 40]
+#                print(f"[REQ40-MODS-DEBUG] Individual updates:")
+#                for update in req40_updates:
+#                    if update['action'] in ['bw_count_increment', 'bw_count_init']:
+#                        if 'old' in update:
+#                            print(f"[REQ40-MODS-DEBUG]   BW={update['bw']}, MOD={update['mod']}: {update['old']} -> {update['new']}")
+#                        else:
+#                            print(f"[REQ40-MODS-DEBUG]   BW={update['bw']}, MOD={update['mod']}: INIT to {update['value']}")
+#                    elif update['action'] in ['band_count_increment', 'band_count_init']:
+#                        if 'old' in update:
+#                            print(f"[REQ40-MODS-DEBUG]   MOD={update['mod']}, BAND={update['band']}: {update['old']} -> {update['new']}")
+#                        else:
+#                            print(f"[REQ40-MODS-DEBUG]   MOD={update['mod']}, BAND={update['band']}: INIT to {update['value']}")
+#                print(f"[REQ40-MODS-DEBUG] =============================================\n")
 
             # Print modulation usage counts for all bandwidths
             mods_by_bw = {}
