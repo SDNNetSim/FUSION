@@ -315,3 +315,163 @@ def find_common_channels_on_paths(
                 common_starts &= path_starts
 
     return sorted(common_starts) if common_starts else []
+
+
+def adjacent_core_indices(core_id: int, cores_per_link: int) -> list[int]:
+    """
+    Return list of adjacent core indices based on known core layout.
+
+    :param core_id: Core ID to find adjacencies for
+    :type core_id: int
+    :param cores_per_link: Total number of cores per link
+    :type cores_per_link: int
+    :return: List of adjacent core indices
+    :rtype: list[int]
+    """
+    if cores_per_link == 7:
+        # 7-core layout: ring of 6 cores (0-5) plus center core (6)
+        if core_id == 6:
+            # Center core is adjacent to all outer cores
+            return list(range(6))
+        # Outer cores: adjacent to prev, next (in ring), and center
+        before = 5 if core_id == 0 else core_id - 1
+        after = 0 if core_id == 5 else core_id + 1
+        return [before, after, 6]
+    elif cores_per_link == 4:
+        # 4-core layout: 2x2 grid
+        adjacency_map = {
+            0: [1, 2],    # top-left
+            1: [0, 3],    # top-right
+            2: [0, 3],    # bottom-left
+            3: [1, 2],    # bottom-right
+        }
+        return adjacency_map.get(core_id, [])
+    elif cores_per_link == 13:
+        # 13-core layout: 2 hexagonal rings
+        adjacency_map = {
+            0: [1, 5, 6],
+            1: [0, 2, 6],
+            2: [1, 3, 6],
+            3: [2, 4, 6],
+            4: [3, 5, 6],
+            5: [0, 4, 6],
+            6: [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12],  # center of inner ring
+            7: [6, 8, 12],
+            8: [6, 7, 9],
+            9: [6, 8, 10],
+            10: [6, 9, 11],
+            11: [6, 10, 12],
+            12: [6, 7, 11],
+        }
+        return adjacency_map.get(core_id, [])
+    elif cores_per_link == 19:
+        # 19-core layout: 3 hexagonal rings
+        adjacency_map = {
+            0: [1, 5, 6],
+            1: [0, 2, 6],
+            2: [1, 3, 6],
+            3: [2, 4, 6],
+            4: [3, 5, 6],
+            5: [0, 4, 6],
+            6: [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12],  # center of inner ring
+            7: [6, 8, 12, 13],
+            8: [6, 7, 9, 13],
+            9: [6, 8, 10, 14],
+            10: [6, 9, 11, 15],
+            11: [6, 10, 12, 16],
+            12: [6, 7, 11, 17],
+            13: [7, 8, 14, 18],
+            14: [8, 9, 13, 15],
+            15: [9, 10, 14, 16],
+            16: [10, 11, 15, 17],
+            17: [11, 12, 16, 18],
+            18: [12, 13, 17],
+        }
+        return adjacency_map.get(core_id, [])
+    else:
+        # Default: no adjacency for unknown layouts
+        return []
+
+
+def edge_set(path: list[int], bidirectional: bool = True) -> set[tuple[int, int]]:
+    """
+    Return normalized set of links from a path.
+
+    :param path: List of node IDs representing a path
+    :type path: list[int]
+    :param bidirectional: Whether links are bidirectional
+    :type bidirectional: bool
+    :return: Set of link tuples
+    :rtype: set[tuple[int, int]]
+    """
+    edges = set()
+    for u, v in zip(path, path[1:]):
+        if bidirectional:
+            # Normalize edge to (min, max) for bidirectional links
+            edges.add(tuple(sorted((u, v))))
+        else:
+            edges.add((u, v))
+    return edges
+
+
+def get_overlapping_lightpaths(
+    new_lp: dict,
+    lp_list: list[dict],
+    *,
+    cores_per_link: int,
+    include_adjacent_cores: bool = True,
+    include_all_bands: bool = True,
+    bidirectional_links: bool = True,
+) -> list[dict]:
+    """
+    Return lightpaths that overlap with a new lightpath.
+
+    Two lightpaths overlap if they:
+    1. Share at least one link
+    2. Use the same or adjacent cores (if include_adjacent_cores=True)
+    3. May overlap spectrally (spectrum overlap check not included)
+
+    :param new_lp: New lightpath dict with keys: path, core, spectrum, band
+    :type new_lp: dict
+    :param lp_list: List of existing lightpath dicts
+    :type lp_list: list[dict]
+    :param cores_per_link: Number of cores per fiber link
+    :type cores_per_link: int
+    :param include_adjacent_cores: Whether to include adjacent cores
+    :type include_adjacent_cores: bool
+    :param include_all_bands: Whether to include all bands
+    :type include_all_bands: bool
+    :param bidirectional_links: Whether links are bidirectional
+    :type bidirectional_links: bool
+    :return: List of overlapping lightpaths
+    :rtype: list[dict]
+    """
+    new_edges = edge_set(new_lp["path"], bidirectional_links)
+    new_start, new_end = new_lp["spectrum"]
+    new_core = new_lp["core"]
+    new_band = new_lp.get("band", "c")
+
+    # Get adjacent cores if requested
+    adj_cores = adjacent_core_indices(new_core, cores_per_link) if include_adjacent_cores else []
+
+    affected = []
+    for lp in lp_list:
+        # Check link overlap
+        lp_edges = edge_set(lp["path"], bidirectional_links)
+        if not (lp_edges & new_edges):
+            continue
+
+        # Check core overlap
+        lp_core = lp.get("core")
+        if not (lp_core == new_core or lp_core in adj_cores):
+            continue
+
+        # Check band overlap if requested
+        if not include_all_bands:
+            lp_band = lp.get("band", "c")
+            if lp_band != new_band:
+                continue
+
+        affected.append(lp)
+
+    return affected

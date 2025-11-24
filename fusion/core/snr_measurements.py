@@ -1228,3 +1228,129 @@ class SnrMeasurements:
             )
 
         return modulation_format, bandwidth, snr_value
+
+    def _build_lightpath_list_from_net_spec(self) -> list[dict[str, Any]]:
+        """
+        Build lightpath list using net_spec_dict as primary source.
+
+        Constructs a list of all active lightpaths by combining information from
+        lightpath_status_dict and current lightpath_id_list.
+
+        :return: List of lightpath dictionaries
+        :rtype: list[dict[str, Any]]
+        """
+        lp_list = [
+            {**self.sdn_props.lightpath_status_dict[light_id][lp_id], "id": lp_id}
+            for light_id in self.sdn_props.lightpath_status_dict
+            for lp_id in self.sdn_props.lightpath_status_dict[light_id]
+        ]
+
+        # Add currently being allocated lightpaths (not yet in status dict)
+        if len(self.sdn_props.lightpath_id_list) > 1:
+            for lp_cnt in range(len(self.sdn_props.lightpath_id_list)):
+                # Safely access crosstalk_list with default value if not available
+                snr_cost = (
+                    self.sdn_props.crosstalk_list[lp_cnt]
+                    if lp_cnt < len(self.sdn_props.crosstalk_list)
+                    else 0.0
+                )
+                lp_list.append({
+                    "id": self.sdn_props.lightpath_id_list[lp_cnt],
+                    "path": self.sdn_props.path_list,
+                    "core": self.sdn_props.core_list[lp_cnt],
+                    "start_slot": self.sdn_props.start_slot_list[lp_cnt],
+                    "end_slot": self.sdn_props.end_slot_list[lp_cnt],
+                    "band": self.sdn_props.band_list[lp_cnt],
+                    "mod_format": self.sdn_props.modulation_list[lp_cnt],
+                    "snr_cost": snr_cost,
+                })
+
+        return lp_list
+
+    def load_from_lp_info(self, lp_info: dict[str, Any]) -> None:
+        """
+        Load a specific lightpath's state into this SnrMeasurements object.
+
+        :param lp_info: Lightpath information dictionary
+        :type lp_info: dict[str, Any]
+        """
+        self.spectrum_props.path_list = lp_info["path"]
+        self.spectrum_props.start_slot = lp_info["start_slot"]
+        self.spectrum_props.end_slot = lp_info["end_slot"]
+        self.spectrum_props.core_number = lp_info["core"]
+        self.spectrum_props.current_band = lp_info["band"]
+        self.spectrum_props.modulation = lp_info.get("mod_format", "QPSK")
+        self.number_of_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
+
+    def evaluate_lp(self, lp_info: dict[str, Any]) -> tuple[bool, float]:
+        """
+        Compute SNR for a given lightpath and return whether it meets requirements.
+
+        :param lp_info: Lightpath information dictionary
+        :type lp_info: dict[str, Any]
+        :return: Tuple of (meets_snr_requirement, snr_value_in_dB)
+        :rtype: tuple[bool, float]
+        """
+        self.load_from_lp_info(lp_info)
+
+        if self.engine_props_dict["snr_type"] == "gsnr":
+            if self.engine_props_dict["band_list"] == ["c"]:
+                resp, snr_val, _ = self.check_gsnr()
+            elif self.engine_props_dict["band_list"] == ["c", "l"]:
+                resp, snr_val, _ = self.check_gsnr_mb()
+            else:
+                raise ValueError(
+                    f"Unsupported band_list: {self.engine_props_dict['band_list']}"
+                )
+        else:
+            raise NotImplementedError(
+                f"Unsupported snr_type: {self.engine_props_dict['snr_type']}"
+            )
+
+        return resp, snr_val
+
+    def snr_recheck_after_allocation(
+        self, new_lp_info: dict[str, Any]
+    ) -> tuple[bool, list[tuple[int, float, float]]]:
+        """
+        Re-evaluate all overlapping lightpaths after new allocation.
+
+        After a new lightpath is allocated, this method re-evaluates the SNR
+        of all existing lightpaths that overlap with it (share links and cores).
+        If any existing lightpath no longer meets its SNR requirements, the
+        allocation is rejected.
+
+        :param new_lp_info: New lightpath information dict
+        :type new_lp_info: dict[str, Any]
+        :return: Tuple of (all_pass, violations_list)
+        :rtype: tuple[bool, list[tuple[int, float, float]]]
+        """
+        # Check feature toggle
+        if not self.engine_props_dict.get("snr_recheck", False):
+            return True, []
+
+        # Import here to avoid circular dependency
+        from fusion.utils.spectrum import get_overlapping_lightpaths
+
+        # Build list of all active lightpaths
+        all_active_lps = self._build_lightpath_list_from_net_spec()
+
+        # Find lightpaths that overlap with the new one
+        overlapping_lps = get_overlapping_lightpaths(
+            new_lp=new_lp_info,
+            lp_list=all_active_lps,
+            cores_per_link=self.engine_props_dict["cores_per_link"],
+            include_adjacent_cores=self.engine_props_dict.get("recheck_adjacent_cores", True),
+            include_all_bands=self.engine_props_dict.get("recheck_crossband", True),
+            bidirectional_links=self.engine_props_dict.get("bi_directional", False),
+        )
+
+        # Re-evaluate each overlapping lightpath
+        violations = []
+        for lp in overlapping_lps:
+            resp, observed_snr = self.evaluate_lp(lp)
+            required_snr = self.snr_props.req_snr[lp["mod_format"]]
+            if not resp:
+                violations.append((lp["id"], observed_snr, required_snr))
+
+        return not violations, violations

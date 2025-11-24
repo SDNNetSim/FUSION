@@ -5,6 +5,7 @@ This module provides the main SDN controller functionality for routing and spect
 allocation in software-defined optical networks.
 """
 
+import copy
 import time
 from typing import Any
 
@@ -13,6 +14,7 @@ import numpy as np
 from fusion.core.grooming import Grooming
 from fusion.core.properties import SDNProps
 from fusion.core.routing import Routing
+from fusion.core.snr_measurements import SnrMeasurements
 from fusion.core.spectrum_assignment import SpectrumAssignment
 from fusion.modules.ml import get_ml_obs
 from fusion.modules.spectrum.light_path_slicing import LightPathSlicingManager
@@ -97,7 +99,7 @@ class SDNController:
             logger.warning("Throughput update skipped: %s", e)
 
     def release(
-        self, lightpath_id: int | None = None, slicing_flag: bool = False
+        self, lightpath_id: int | None = None, slicing_flag: bool = False, skip_validation: bool = False
     ) -> None:
         """
         Remove a previously allocated request from the network.
@@ -142,14 +144,16 @@ class SDNController:
 
         # Handle grooming-specific cleanup and dynamic slicing bandwidth tracking
         if lightpath_id is not None:
-            self._release_lightpath_resources(lightpath_id)
+            self._release_lightpath_resources(lightpath_id, skip_validation=skip_validation)
 
-    def _release_lightpath_resources(self, lightpath_id: int) -> None:
+    def _release_lightpath_resources(self, lightpath_id: int, skip_validation: bool = False) -> None:
         """
         Release transponders and update lightpath status dict.
 
         :param lightpath_id: ID of lightpath to release
         :type lightpath_id: int
+        :param skip_validation: Skip validation checks (for rollback scenarios)
+        :type skip_validation: bool
         """
         # Early return only if path_list or lightpath_status_dict are None
         # (transponder_usage_dict is optional and only needed for transponder tracking)
@@ -226,9 +230,10 @@ class SDNController:
             except (TypeError, ValueError, KeyError) as e:
                 logger.warning("Average BW update skipped: %s", e)
 
-            # Grooming validation - ensure no active requests
+            # Grooming validation - ensure no active requests (skip during rollback)
             if (
-                self.sdn_props.lightpath_status_dict[light_id][lightpath_id][
+                not skip_validation
+                and self.sdn_props.lightpath_status_dict[light_id][lightpath_id][
                     "requests_dict"
                 ]
                 and self.engine_props["is_grooming_enabled"]
@@ -569,10 +574,76 @@ class SDNController:
         if not self.engine_props.get("snr_recheck", False):
             return True
 
-        # Note: SNR rechecking functionality will be implemented when
-        # SnrMeasurements supports the recheck_snr_after_allocation method
-        # For now, return True (accept all allocations)
-        return True
+        # Build lightpath info for SNR recheck
+        new_lp_info = {
+            "id": lightpath_id,
+            "path": self.sdn_props.path_list,
+            "spectrum": (
+                self.spectrum_obj.spectrum_props.start_slot,
+                self.spectrum_obj.spectrum_props.end_slot,
+            ),
+            "core": self.spectrum_obj.spectrum_props.core_number,
+            "band": self.spectrum_obj.spectrum_props.current_band,
+            "mod_format": self.spectrum_obj.spectrum_props.modulation,
+        }
+
+        # Create SNR checker instance
+        snr_checker = SnrMeasurements(
+            engine_props_dict=self.engine_props,
+            sdn_props=self.sdn_props,
+            spectrum_props=copy.deepcopy(self.spectrum_obj.spectrum_props),
+            route_props=self.route_obj.route_props,
+        )
+
+        # Perform SNR recheck
+        recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
+
+        if recheck_enable:
+            return True
+
+        # SNR recheck failed - rollback the allocation
+        logger.warning(
+            f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. "
+            f"Violations: {violations}"
+        )
+
+        # Release the lightpath from the network (skip validation for rollback)
+        self.release(lightpath_id=lightpath_id, slicing_flag=True, skip_validation=True)
+
+        # Remove from tracking lists
+        if lightpath_id in self.sdn_props.lightpath_id_list:
+            idx = self.sdn_props.lightpath_id_list.index(lightpath_id)
+
+            # Restore remaining bandwidth
+            if self.sdn_props.remaining_bw is None or self.sdn_props.remaining_bw == 0:
+                self.sdn_props.remaining_bw = int(float(self.sdn_props.bandwidth_list[idx]))
+            else:
+                self.sdn_props.remaining_bw += int(float(self.sdn_props.bandwidth_list[idx]))
+
+            # Remove from all tracking lists (with safety check for list length)
+            for tracking_list in [
+                self.sdn_props.lightpath_id_list,
+                self.sdn_props.lightpath_bandwidth_list,
+                self.sdn_props.start_slot_list,
+                self.sdn_props.band_list,
+                self.sdn_props.core_list,
+                self.sdn_props.end_slot_list,
+                self.sdn_props.crosstalk_list,
+                self.sdn_props.bandwidth_list,
+                self.sdn_props.modulation_list,
+            ]:
+                if idx < len(tracking_list):
+                    tracking_list.pop(idx)
+
+        # Remove from new lightpath list
+        if lightpath_id in self.sdn_props.was_new_lp_established:
+            self.sdn_props.was_new_lp_established.remove(lightpath_id)
+
+        # Mark request as blocked
+        self.sdn_props.was_routed = False
+        self.sdn_props.block_reason = "snr_recheck_failed"
+
+        return False
 
     def _handle_congestion_with_grooming(self, remaining_bw: int) -> None:
         """
@@ -838,6 +909,15 @@ class SDNController:
 #                    print(f"[REQ{req_id}-SPEC] Modulation: {self.spectrum_obj.spectrum_props.modulation}")
 #                    print(f"[REQ{req_id}-SPEC] =====================================\n")
 
+            if self.sdn_props.request_id == 46:
+                if self.spectrum_obj.spectrum_props.is_free:
+                    print(f"[REQ46] Spectrum assignment SUCCESS")
+                    print(f"[REQ46] Assigned slots: start={self.spectrum_obj.spectrum_props.start_slot}, end={self.spectrum_obj.spectrum_props.end_slot}")
+                    print(f"[REQ46] Core: {self.spectrum_obj.spectrum_props.core_number}, Band: {self.spectrum_obj.spectrum_props.current_band}")
+                    print(f"[REQ46] Modulation: {self.spectrum_obj.spectrum_props.modulation}")
+                else:
+                    print(f"[REQ46] Spectrum assignment FAILED - blocked by congestion")
+
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
 
@@ -889,7 +969,7 @@ class SDNController:
         route_time: float,
         force_slicing: bool,
         segment_slicing: bool,
-    ) -> None:
+    ) -> bool:
         """
         Finalize a successful allocation.
 
@@ -901,6 +981,8 @@ class SDNController:
         :type force_slicing: bool
         :param segment_slicing: Whether segment slicing was used
         :type segment_slicing: bool
+        :return: True if finalization succeeded (including SNR recheck), False otherwise
+        :rtype: bool
         """
         self.sdn_props.was_routed = True
         self.sdn_props.route_time = route_time
@@ -916,9 +998,28 @@ class SDNController:
                 self.sdn_props.is_sliced = False
             self.allocate()
 
+            # Check SNR after allocation for newly created lightpaths
+            if self.sdn_props.was_new_lp_established:
+                for lp_id in self.sdn_props.was_new_lp_established:
+                    if self.sdn_props.request_id == 46:
+                        print(f"[REQ46] Checking SNR for lightpath {lp_id}...")
+                    if not self._check_snr_after_allocation(lp_id):
+                        # SNR recheck failed - allocation was rolled back
+                        if self.sdn_props.request_id == 46:
+                            print(f"[REQ46] SNR check FAILED for lightpath {lp_id} - allocation rolled back")
+                        return False
+                    if self.sdn_props.request_id == 46:
+                        print(f"[REQ46] SNR check PASSED for lightpath {lp_id}")
+
         # Update grooming statistics
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
+
+        if self.sdn_props.request_id == 46:
+            print(f"[REQ46] REQUEST 46 SUCCESSFULLY ALLOCATED!")
+            print(f"[REQ46] Final path: {self.sdn_props.path_list}")
+            print(f"[REQ46] Final slots: {list(zip(self.sdn_props.start_slot_list, self.sdn_props.end_slot_list))}")
+            print(f"[REQ46] =====================================\n")
 
         # Debug print for request 4 to track blocking issue
         if self.sdn_props.request_id == 4:
@@ -946,6 +1047,8 @@ class SDNController:
 #                print(f"[REQ{req_id}-DEBUG]   LP #{i}: ID={lp_id} ({is_new}), BW={lp_bw}, MOD={mod_format}, SLOTS=[{start_slot}-{end_slot}], BAND={band}, CORE={core}")
 
 #            print(f"[REQ{req_id}-DEBUG] =====================================\n")
+
+        return True
 
     def handle_event(
         self,
@@ -1005,6 +1108,13 @@ class SDNController:
         self._initialize_request_statistics()
         self.sdn_props.number_of_transponders = 1
 
+        # Debug tracking for request 46
+        if self.sdn_props.request_id == 46:
+            print(f"\n[REQ46] ===== REQUEST 46 START =====")
+            print(f"[REQ46] Source: {self.sdn_props.source}, Dest: {self.sdn_props.destination}")
+            print(f"[REQ46] Bandwidth: {self.sdn_props.bandwidth}, Remaining: {self.sdn_props.remaining_bw}")
+            print(f"[REQ46] Request type: {request_type}")
+
         # Try grooming first if enabled
         if self.engine_props.get("is_grooming_enabled", False):
             # Debug print for request 4
@@ -1052,10 +1162,14 @@ class SDNController:
                     req_id = self.sdn_props.request_id
 #                    print(f"[REQ{req_id}-GROOM] FULLY GROOMED - REQUEST COMPLETE")
 #                    print(f"[REQ{req_id}-GROOM] =====================================\n")
+                if self.sdn_props.request_id == 46:
+                    print(f"[REQ46] Request fully groomed - exiting")
                 self._update_grooming_stats()
                 return
 
             # Not groomed or partially groomed
+            if self.sdn_props.request_id == 46:
+                print(f"[REQ46] Grooming result: partially_groomed={getattr(self.sdn_props, 'was_partially_groomed', False)}")
             self.sdn_props.was_new_lp_established = []
 
             if getattr(self.sdn_props, "was_partially_groomed", False):
@@ -1097,6 +1211,13 @@ class SDNController:
             force_route_matrix, force_mod_format
         )
 
+        if self.sdn_props.request_id == 46:
+            print(f"[REQ46] Routing complete. Route matrix: {route_matrix}")
+            if hasattr(self.route_obj.route_props, 'modulation_formats_matrix'):
+                print(f"[REQ46] Mod formats matrix: {self.route_obj.route_props.modulation_formats_matrix}")
+            if hasattr(self.route_obj.route_props, 'weights_list'):
+                print(f"[REQ46] Weights list: {self.route_obj.route_props.weights_list}")
+
         # Debug print for request 4
         if self.sdn_props.request_id == 4:
             req_id = self.sdn_props.request_id
@@ -1132,6 +1253,11 @@ class SDNController:
                     if self.sdn_props.request_id == 4:
                         req_id = self.sdn_props.request_id
 #                        print(f"[REQ{req_id}-ALLOC] Trying path {path_index}: {path_list}")
+
+                    if self.sdn_props.request_id == 46:
+                        print(f"\n[REQ46] Trying path {path_index}: {path_list}")
+                        if hasattr(self.route_obj.route_props, 'modulation_formats_matrix') and path_index < len(self.route_obj.route_props.modulation_formats_matrix):
+                            print(f"[REQ46] Available modulations: {self.route_obj.route_props.modulation_formats_matrix[path_index]}")
 
                     # Check path feasibility if failures are active
                     if (
@@ -1256,11 +1382,20 @@ class SDNController:
 #                            print(f"[REQ{req_id}-ALLOC] Path {path_index} FAILED - trying next path")
 #                            print(f"[REQ{req_id}-ALLOC]   Block reason: {self.sdn_props.block_reason}")
 
+                    if self.sdn_props.request_id == 46:
+                        if success:
+                            print(f"[REQ46] Path {path_index} processing SUCCESS")
+                        else:
+                            print(f"[REQ46] Path {path_index} processing FAILED - block_reason: {self.sdn_props.block_reason}")
+
                     if success:
-                        self._finalize_successful_allocation(
+                        # Try to finalize - includes SNR recheck
+                        finalize_success = self._finalize_successful_allocation(
                             path_index, route_time, force_slicing, segment_slicing
                         )
-                        return
+                        if finalize_success:
+                            return
+                        # If finalize failed (SNR recheck), continue to next path
 
             # Try segment slicing if not already tried
             if (
@@ -1275,6 +1410,8 @@ class SDNController:
                 continue
 
             # All paths exhausted
+            if self.sdn_props.request_id == 46:
+                print(f"[REQ46] All paths exhausted - setting block_reason to 'distance'")
             self.sdn_props.block_reason = "distance"
             self.sdn_props.was_routed = False
 
