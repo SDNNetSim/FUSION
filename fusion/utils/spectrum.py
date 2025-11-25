@@ -393,25 +393,23 @@ def adjacent_core_indices(core_id: int, cores_per_link: int) -> list[int]:
         return []
 
 
-def edge_set(path: list[int], bidirectional: bool = True) -> set[tuple[int, int]]:
+def edge_set(path: list, bidirectional: bool = True) -> set[tuple]:
     """
     Return normalized set of links from a path.
 
+    Always normalizes edges by sorting node IDs to ensure (A,B) == (B,A).
+    This matches V5 behavior where edges are always normalized regardless
+    of the bidirectional parameter.
+
     :param path: List of node IDs representing a path
-    :type path: list[int]
-    :param bidirectional: Whether links are bidirectional
+    :type path: list
+    :param bidirectional: Whether links are bidirectional (kept for API compat, always normalizes)
     :type bidirectional: bool
-    :return: Set of link tuples
-    :rtype: set[tuple[int, int]]
+    :return: Set of link tuples (always sorted)
+    :rtype: set[tuple]
     """
-    edges = set()
-    for u, v in zip(path, path[1:]):
-        if bidirectional:
-            # Normalize edge to (min, max) for bidirectional links
-            edges.add(tuple(sorted((u, v))))
-        else:
-            edges.add((u, v))
-    return edges
+    # Always normalize edges like V5 - sort to collapse direction
+    return {tuple(sorted((u, v))) for u, v in zip(path, path[1:])}
 
 
 def get_overlapping_lightpaths(
@@ -451,14 +449,36 @@ def get_overlapping_lightpaths(
     new_core = new_lp["core"]
     new_band = new_lp.get("band", "c")
 
+    # DEBUG: Print edge normalization info
+    _debug_req15 = (new_lp.get("id") == 16)
+    if _debug_req15:
+        print(f"[V6-OVERLAP-DEBUG] bidirectional_links={bidirectional_links}")
+        print(f"[V6-OVERLAP-DEBUG] new_lp id={new_lp.get('id')}, path={new_lp['path']}")
+        print(f"[V6-OVERLAP-DEBUG] new_edges={new_edges}")
+
     # Get adjacent cores if requested
     adj_cores = adjacent_core_indices(new_core, cores_per_link) if include_adjacent_cores else []
 
     affected = []
+    new_lp_id = new_lp.get("id")
+
     for lp in lp_list:
+        # Skip the new LP itself - don't check for overlap with self
+        if lp.get("id") == new_lp_id:
+            continue
+
         # Check link overlap
         lp_edges = edge_set(lp["path"], bidirectional_links)
-        if not (lp_edges & new_edges):
+        intersection = lp_edges & new_edges
+
+        # DEBUG: Print for LP 5, 12, and 16 (the ones we're investigating)
+        if _debug_req15 and lp.get('id') in [3, 5, 12, 16]:
+            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} path={lp['path']}")
+            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} edges={lp_edges}")
+            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} intersection with new_edges={intersection}")
+            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} core={lp.get('core')}, new_core={new_core}, adj_cores={adj_cores}")
+
+        if not intersection:
             continue
 
         # Check core overlap
