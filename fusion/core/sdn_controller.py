@@ -6,6 +6,7 @@ allocation in software-defined optical networks.
 """
 
 import copy
+import json
 import time
 from typing import Any
 
@@ -672,13 +673,15 @@ class SDNController:
         else:
             summary["grooming"] = "NONE"
 
-        # Remaining bandwidth
-        summary["remaining_bw"] = str(self.sdn_props.remaining_bw)
+        # Remaining bandwidth - show "None" when 0 or empty (matching V5 format)
+        remaining = self.sdn_props.remaining_bw
+        summary["remaining_bw"] = str(remaining) if remaining not in (None, '', 0, '0') else "None"
 
         # Slicing info
         if self.sdn_props.is_sliced:
             summary["slicing"] = "YES"
-            summary["num_segments"] = len(self.sdn_props.lightpath_id_list) if self.sdn_props.lightpath_id_list else 0
+            # Count only NEW lightpaths created (not groomed existing ones)
+            summary["num_segments"] = len(self.sdn_props.was_new_lp_established) if self.sdn_props.was_new_lp_established else 0
         else:
             summary["slicing"] = "NO"
 
@@ -692,7 +695,9 @@ class SDNController:
             if i < len(self.sdn_props.modulation_list or []):
                 lp_info["mod"] = self.sdn_props.modulation_list[i]
             if i < len(self.sdn_props.lightpath_bandwidth_list or []):
-                lp_info["lp_bw"] = self.sdn_props.lightpath_bandwidth_list[i]
+                # Convert to int to match V5 format (avoid 600.0 vs 600)
+                lp_bw = self.sdn_props.lightpath_bandwidth_list[i]
+                lp_info["lp_bw"] = int(lp_bw) if isinstance(lp_bw, (int, float)) else lp_bw
             if i < len(self.sdn_props.band_list or []):
                 lp_info["band"] = self.sdn_props.band_list[i]
             if i < len(self.sdn_props.core_list or []):
@@ -703,7 +708,7 @@ class SDNController:
         # Path
         summary["path"] = self.sdn_props.path_list
 
-        print(f"[REQ_SUMMARY] {summary}")
+        print(f"[REQ_SUMMARY] {json.dumps(summary)}")
 
     def _handle_congestion_with_grooming(self, remaining_bw: int) -> None:
         """
@@ -1058,18 +1063,18 @@ class SDNController:
                 self.sdn_props.is_sliced = False
             self.allocate()
 
-            # Check SNR after allocation for newly created lightpaths
-            if self.sdn_props.was_new_lp_established:
-                for lp_id in self.sdn_props.was_new_lp_established:
+        # Check SNR after allocation for newly created lightpaths (for both sliced and non-sliced)
+        if self.sdn_props.was_new_lp_established:
+            for lp_id in self.sdn_props.was_new_lp_established:
+                if self.sdn_props.request_id == 46:
+                    print(f"[REQ46] Checking SNR for lightpath {lp_id}...")
+                if not self._check_snr_after_allocation(lp_id):
+                    # SNR recheck failed - allocation was rolled back
                     if self.sdn_props.request_id == 46:
-                        print(f"[REQ46] Checking SNR for lightpath {lp_id}...")
-                    if not self._check_snr_after_allocation(lp_id):
-                        # SNR recheck failed - allocation was rolled back
-                        if self.sdn_props.request_id == 46:
-                            print(f"[REQ46] SNR check FAILED for lightpath {lp_id} - allocation rolled back")
-                        return False
-                    if self.sdn_props.request_id == 46:
-                        print(f"[REQ46] SNR check PASSED for lightpath {lp_id}")
+                        print(f"[REQ46] SNR check FAILED for lightpath {lp_id} - allocation rolled back")
+                    return False
+                if self.sdn_props.request_id == 46:
+                    print(f"[REQ46] SNR check PASSED for lightpath {lp_id}")
 
         # Update grooming statistics
         if self.engine_props.get("is_grooming_enabled", False):
