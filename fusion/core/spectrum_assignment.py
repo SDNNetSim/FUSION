@@ -14,6 +14,7 @@ import numpy as np
 from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
 from fusion.core.snr_measurements import SnrMeasurements
 from fusion.modules.spectrum.utils import SpectrumHelpers
+from fusion.utils.data import sort_nested_dict_values
 from fusion.utils.logging_config import get_logger
 from fusion.utils.spectrum import find_common_channels_on_paths
 
@@ -781,7 +782,6 @@ class SpectrumAssignment:
                 self.sdn_props.arrive: initial_utilization  # Correct initial utilization
             },  # Track utilization over time
         }
-        print(f"[LP_CREATE] req_id={self.sdn_props.request_id} lp_id={lp_id} bw={lp_bandwidth_float} band={self.spectrum_props.current_band} core={self.spectrum_props.core_number}")
 
     def get_spectrum(
         self,
@@ -929,6 +929,7 @@ class SpectrumAssignment:
         _mod_format_list: list[str],
         _slice_bandwidth: str | None = None,
         path_index: int | None = None,
+        mod_format_dict: dict[str, Any] | None = None,
     ) -> tuple[str | bool, int | bool]:
         """
         Find available spectrum for dynamic slicing.
@@ -939,6 +940,8 @@ class SpectrumAssignment:
         :type _slice_bandwidth: str | None
         :param path_index: Index of the path for dynamic slicing
         :type path_index: int | None
+        :param mod_format_dict: Modulation format dictionary for flex-grid slicing
+        :type mod_format_dict: dict[str, Any] | None
         :return: Tuple of modulation format and bandwidth
         :rtype: tuple[str | bool, int | bool]
         """
@@ -972,5 +975,37 @@ class SpectrumAssignment:
             failed_modulation_format, failed_bandwidth = (False, False)
             return failed_modulation_format, failed_bandwidth
 
-        no_allocation_modulation_format, no_allocation_bandwidth = False, False
-        return no_allocation_modulation_format, no_allocation_bandwidth
+        # Flex-grid dynamic slicing
+        if mod_format_dict is None:
+            logger.warning("mod_format_dict is required for flex-grid dynamic slicing")
+            return False, False
+
+        # Sort modulation formats by max_length (highest first for shortest reach)
+        sorted_mod_formats = sort_nested_dict_values(
+            original_dict=mod_format_dict, nested_key="max_length"
+        )
+        mod_format_list = list(sorted_mod_formats.keys())
+
+        for mod in mod_format_list:
+            self.spectrum_props.slots_needed = mod_format_dict[mod]["slots_needed"]
+            self.spectrum_props.modulation = mod
+            self._determine_spectrum_allocation()
+
+            if self.spectrum_props.is_free:
+                if path_index is None:
+                    raise ValueError(
+                        "Path index must be initialized for dynamic slicing "
+                        "SNR calculations"
+                    )
+                resp, bandwidth, snr_value = (
+                    self.snr_measurements.handle_snr_dynamic_slicing(path_index)
+                )
+                if not resp:
+                    continue
+                self.spectrum_props.crosstalk_cost = snr_value
+                self.spectrum_props.is_free = True
+                self.sdn_props.block_reason = None
+                return mod, int(bandwidth)
+
+        self.spectrum_props.is_free = False
+        return False, False

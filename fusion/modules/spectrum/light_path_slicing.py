@@ -280,39 +280,46 @@ class LightPathSlicingManager:
             else int(self.sdn_props.bandwidth)
         )
 
-        # TODO: Not sure what this does in the slightest?
         _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
-        _ = sort_dict_keys(self.engine_props["mod_per_bw"])
+        bw_mod_dict = sort_dict_keys(self.engine_props["mod_per_bw"])
 
         self.spectrum_obj.spectrum_props.path_list = path_list
         self.sdn_props.number_of_transponders = 0
 
-        while remaining_bw > 0:
-            if not self.engine_props["fixed_grid"]:
-                raise NotImplementedError(
-                    "Dynamic slicing for non-fixed grid is not implemented."
-                )
+        if self.engine_props["fixed_grid"]:
+            # Fixed-grid dynamic slicing
+            return self._handle_fixed_grid_dynamic_slicing(
+                remaining_bw, path_index, sdn_controller
+            )
+        else:
+            # Flex-grid dynamic slicing
+            return self._handle_flex_grid_dynamic_slicing(
+                remaining_bw, path_index, bw_mod_dict, sdn_controller
+            )
 
+    def _handle_fixed_grid_dynamic_slicing(
+        self,
+        remaining_bw: int,
+        path_index: int,
+        sdn_controller: Any,
+    ) -> bool:
+        """Handle fixed-grid dynamic slicing."""
+        while remaining_bw > 0:
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
                 _mod_format_list=[], path_index=path_index
             )
 
             if self.spectrum_obj.spectrum_props.is_free:
-                # Generate unique lightpath ID for this segment
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 dedicated_bw = min(bandwidth, remaining_bw)
 
-                # BUG FIX for partial grooming: match v5 behavior exactly
-                # For partial grooming, use full modulation format capacity for lightpath
-                # but subtract the full bandwidth (not dedicated_bw) to exit loop (v5 behavior)
                 if self.sdn_props.was_partially_groomed:
-                    lightpath_bw = bandwidth  # Use full modulation format capacity (500)
-                    stats_bw = str(dedicated_bw)  # Track only what's actually used (400)
-                    remaining_bw -= bandwidth  # Subtract full capacity to exit loop (500)
+                    lightpath_bw = bandwidth
+                    stats_bw = str(dedicated_bw)
+                    remaining_bw -= bandwidth
                 else:
-                    # Non-grooming case: use original v5 behavior
                     lightpath_bw = str(bandwidth)
                     stats_bw = str(dedicated_bw)
                     remaining_bw -= bandwidth
@@ -321,29 +328,20 @@ class LightPathSlicingManager:
                 self.sdn_props.was_new_lp_established.append(lp_id)
 
                 sdn_controller.allocate()
-
-                # Update stats first so bandwidth_list is populated
                 sdn_controller._update_req_stats(bandwidth=stats_bw)
-
-                # Update lightpath status for bandwidth utilization tracking (reads bandwidth_list[-1])
                 self.spectrum_obj._update_lightpath_status()
                 self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True
-                # Update sdn_props.remaining_bw to reflect the local variable (clamp to 0 if negative)
                 self.sdn_props.remaining_bw = max(0, remaining_bw)
             else:
-                # FEATURE: Support partial serving (v5 behavior)
-                # If can_partially_serve is enabled and SOME bandwidth was allocated, accept partial service
                 if self.engine_props.get("can_partially_serve", False):
-                    # Check if any bandwidth was allocated (remaining_bw changed from initial)
                     initial_bw = int(self.sdn_props.bandwidth)
                     if remaining_bw != initial_bw:
-                        # Some bandwidth was allocated
                         if (
-                            self.sdn_props.was_partially_groomed or
-                            self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
+                            self.sdn_props.was_partially_groomed
+                            or self.sdn_props.path_index
+                            >= self.engine_props.get("k_paths", 1) - 1
                         ):
-                            # Accept partial service
                             self.sdn_props.is_sliced = True
                             self.sdn_props.was_partially_routed = True
                             self.sdn_props.remaining_bw = max(0, remaining_bw)
@@ -351,6 +349,82 @@ class LightPathSlicingManager:
 
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                 break
+
+        return bool(self.sdn_props.was_routed)
+
+    def _handle_flex_grid_dynamic_slicing(
+        self,
+        remaining_bw: int,
+        path_index: int,
+        bw_mod_dict: dict[str, Any],
+        sdn_controller: Any,
+    ) -> bool:
+        """Handle flex-grid dynamic slicing."""
+        initial_bw = int(self.sdn_props.bandwidth)
+
+        for bandwidth_str, mods_dict in bw_mod_dict.items():
+            # Skip bandwidth tiers >= request bandwidth
+            if int(bandwidth_str) >= initial_bw:
+                continue
+
+            while remaining_bw > 0:
+                if remaining_bw < int(bandwidth_str):
+                    break
+
+                self.sdn_props.was_routed = True
+                mod_format, _ = self.spectrum_obj.get_spectrum_dynamic_slicing(
+                    _mod_format_list=[],
+                    path_index=path_index,
+                    mod_format_dict=mods_dict,
+                )
+                # In flex-grid slicing, bandwidth is pre-calculated from the tier
+                bw = int(bandwidth_str)
+
+                if self.spectrum_obj.spectrum_props.is_free:
+                    lp_id = self.sdn_props.get_lightpath_id()
+                    self.spectrum_obj.spectrum_props.lightpath_id = lp_id
+                    self.spectrum_obj.spectrum_props.lightpath_bandwidth = bw
+
+                    sdn_controller.allocate()
+
+                    dedicated_bw = bw if remaining_bw > bw else remaining_bw
+                    sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
+                    self.spectrum_obj._update_lightpath_status()
+
+                    remaining_bw -= bw
+                    self.sdn_props.number_of_transponders += 1
+                    self.sdn_props.is_sliced = True
+                    self.sdn_props.was_new_lp_established.append(lp_id)
+                    self.sdn_props.was_partially_routed = False
+                    self.sdn_props.remaining_bw = max(0, remaining_bw)
+                else:
+                    break
+
+            if remaining_bw <= 0:
+                break
+
+        if remaining_bw <= 0:
+            if self.sdn_props.was_routed:
+                self.sdn_props.is_sliced = True
+                return True
+
+        # Handle partial serving if enabled
+        if self.engine_props.get("can_partially_serve", False):
+            if remaining_bw != initial_bw:
+                if (
+                    self.sdn_props.was_partially_groomed
+                    or self.sdn_props.path_index
+                    >= self.engine_props.get("k_paths", 1) - 1
+                ):
+                    self.sdn_props.is_sliced = True
+                    self.sdn_props.was_partially_routed = True
+                    self.sdn_props.remaining_bw = max(0, remaining_bw)
+                    return True
+
+        if remaining_bw > 0:
+            self.sdn_props.was_routed = False
+            self.sdn_props.block_reason = "congestion"
+            sdn_controller._handle_congestion(remaining_bw=remaining_bw)
 
         return bool(self.sdn_props.was_routed)
 

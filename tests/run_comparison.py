@@ -53,6 +53,7 @@ ALLOWED_TEST_CASES = {
     "spain_C_fixed_grooming",
     'spain_C_fixed_grooming_snr_recheck',
     'spain_C_flexi',
+    'spain_C_flexi_snr_recheck',
 }
 
 
@@ -512,7 +513,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'spain_C_flexi':
+        if case.name == 'spain_C_flexi_snr_recheck':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:

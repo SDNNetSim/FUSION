@@ -219,8 +219,6 @@ class SDNController:
                 # Only record utilization for normal releases, not SNR rollbacks
                 # (rolled-back lightpaths never served traffic, so no utilization stats)
                 if not skip_validation:
-                    print(f"[LP_UTIL] req_id={self.sdn_props.request_id} lp_id={lightpath_id} bw={lp_status['lightpath_bandwidth']} util={average_bw_usage:.2f} band={lp_status['band']} core={lp_status['core']}")
-
                     self.sdn_props.lp_bw_utilization_dict.update(
                         {
                             lightpath_id: {
@@ -606,7 +604,6 @@ class SDNController:
             return True
 
         # SNR recheck failed - rollback the allocation
-        print(f"[SNR_ROLLBACK] req_id={self.sdn_props.request_id} lp_id={lightpath_id} violations={violations}")
         logger.warning(
             f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. "
             f"Violations: {violations}"
@@ -812,6 +809,17 @@ class SDNController:
                         self.sdn_props.modulation_list.pop(lp_idx)
 
         self.sdn_props.is_sliced = False
+        self.sdn_props.was_partially_routed = False
+
+        # Reset remaining_bw to match v5 behavior
+        if self.sdn_props.was_partially_groomed:
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
+                map(int, self.sdn_props.bandwidth_list)
+            )
+        else:
+            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+
+        self.sdn_props.was_new_lp_established = []
 
     def _initialize_request_statistics(self) -> None:
         """Initialize request statistics for a new request."""
@@ -1060,7 +1068,6 @@ class SDNController:
         :param forced_band: Optional forced spectral band
         :type forced_band: str | None
         """
-        print(f"[EVENT] req_id={self.sdn_props.request_id} type={request_type}")
         # Handle release requests
         if request_type == "release":
             lightpath_id_list: list[int | None] = []

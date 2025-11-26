@@ -116,7 +116,6 @@ class SimStats:
         # occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(
         #     network_spectrum_dict=network_spectrum_dict, path_list=path_list
         # )
-        # print(f"Request ID {request_number}")
         link_usage = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
         # blocking_prob = self.blocked_requests / request_number
         # bit_rate_block_prob = (
@@ -565,11 +564,11 @@ class SimStats:
         """
         # Request was blocked
         if not sdn_data.was_routed:
-            # print(f"Req ID blocked:{req_data['req_id']}")
             self.blocked_requests += 1
             if sdn_data.bandwidth is not None:
                 self.bit_rate_blocked += int(sdn_data.bandwidth)
                 self.bit_rate_request += int(sdn_data.bandwidth)
+            print(f"[BLOCK_DEBUG] req={req_data.get('req_id')} BLOCKED was_routed={sdn_data.was_routed} bw={sdn_data.bandwidth} remaining_bw={getattr(sdn_data, 'remaining_bw', None)} bit_rate_blocked={self.bit_rate_blocked} bit_rate_request={self.bit_rate_request}")
             if (
                 sdn_data.block_reason is not None
                 and sdn_data.block_reason in self.stats_props.block_reasons_dict
@@ -589,21 +588,23 @@ class SimStats:
             if sdn_data.was_groomed:
                 if sdn_data.bandwidth is not None:
                     self.bit_rate_request += int(sdn_data.bandwidth)
+                print(f"[BLOCK_DEBUG] req={req_data.get('req_id')} GROOMED was_routed={sdn_data.was_routed} bw={sdn_data.bandwidth} remaining_bw={getattr(sdn_data, 'remaining_bw', None)} bit_rate_blocked={self.bit_rate_blocked} bit_rate_request={self.bit_rate_request}")
                 return
 
             # Track bit rate for requests
             if sdn_data.bandwidth is not None:
                 self.bit_rate_request += int(sdn_data.bandwidth)
 
-            # For partially groomed requests, track blocked bandwidth
-            # and skip stats if no new lightpaths were established
-            if self.engine_props.get("is_grooming_enabled", False):
-                remaining_bw = getattr(sdn_data, "remaining_bw", None)
-                if remaining_bw is not None and remaining_bw != "0":
-                    self.bit_rate_blocked += int(remaining_bw)
-                    was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
-                    if not was_new_lps:
-                        return
+            # Track blocked bandwidth for partial allocations (slicing or grooming)
+            # This applies regardless of grooming setting (matches v5 behavior)
+            remaining_bw = getattr(sdn_data, "remaining_bw", None)
+            if remaining_bw is not None and remaining_bw != "0":
+                self.bit_rate_blocked += int(remaining_bw)
+                was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
+                if not was_new_lps:
+                    return
+
+            print(f"[BLOCK_DEBUG] req={req_data.get('req_id')} ROUTED was_routed={sdn_data.was_routed} bw={sdn_data.bandwidth} remaining_bw={getattr(sdn_data, 'remaining_bw', None)} bit_rate_blocked={self.bit_rate_blocked} bit_rate_request={self.bit_rate_request}")
 
             if sdn_data.path_list is not None:
                 num_hops = len(sdn_data.path_list) - 1
@@ -624,36 +625,6 @@ class SimStats:
                         before_mods_dict[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
 
             self._handle_iter_lists(sdn_data=sdn_data)
-
-            # Debug print for request 40: show what was modified in mods_used_dict
-            if sdn_data.request_id == 40:
-                pass
-#                # Show the actual dictionary state before and after
-#                after_mods_dict = {}
-#                for bw, bw_data in self.stats_props.modulations_used_dict.items():
-#                    if isinstance(bw_data, dict):
-#                        after_mods_dict[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
-#
-#                print(f"\n[REQ40-MODS-DEBUG] ===== MODS_DICT STATE FOR REQUEST 40 =====")
-#                print(f"[REQ40-MODS-DEBUG] BEFORE: {before_mods_dict}")
-#                print(f"[REQ40-MODS-DEBUG] AFTER:  {after_mods_dict}")
-#                print(f"[REQ40-MODS-DEBUG]")
-#
-#                # Show individual updates
-#                req40_updates = [u for u in self.mods_dict_updates_log if u['req_id'] == 40]
-#                print(f"[REQ40-MODS-DEBUG] Individual updates:")
-#                for update in req40_updates:
-#                    if update['action'] in ['bw_count_increment', 'bw_count_init']:
-#                        if 'old' in update:
-#                            print(f"[REQ40-MODS-DEBUG]   BW={update['bw']}, MOD={update['mod']}: {update['old']} -> {update['new']}")
-#                        else:
-#                            print(f"[REQ40-MODS-DEBUG]   BW={update['bw']}, MOD={update['mod']}: INIT to {update['value']}")
-#                    elif update['action'] in ['band_count_increment', 'band_count_init']:
-#                        if 'old' in update:
-#                            print(f"[REQ40-MODS-DEBUG]   MOD={update['mod']}, BAND={update['band']}: {update['old']} -> {update['new']}")
-#                        else:
-#                            print(f"[REQ40-MODS-DEBUG]   MOD={update['mod']}, BAND={update['band']}: INIT to {update['value']}")
-#                print(f"[REQ40-MODS-DEBUG] =============================================\n")
 
             # Print modulation usage counts for all bandwidths
             mods_by_bw = {}
@@ -1001,7 +972,7 @@ class SimStats:
         # Calculate bit rate blocking CI separately (always calculate, even when blocking is 0)
         # When variance is 0, this evaluates to 0.0 (matching v5 behavior)
         try:
-            bit_rate_block_ci = 1.96 * (
+            bit_rate_block_ci = 1.645 * (
                 math.sqrt(self.bit_rate_block_variance)
                 / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
             )
@@ -1021,8 +992,8 @@ class SimStats:
             return False
 
         try:
-            # Using 1.96 for 95% confidence level (1.645 for 90%)
-            block_ci_rate = 1.96 * (
+            # Using 1.645 for 90% confidence level (matching v5 behavior)
+            block_ci_rate = 1.645 * (
                 math.sqrt(self.block_variance)
                 / math.sqrt(len(self.stats_props.simulation_blocking_list))
             )
@@ -1085,7 +1056,6 @@ class SimStats:
             log_fp = str(Path(base_fp).with_name(Path(base_fp).stem + '_mods_dict_log.json'))
             with open(log_fp, 'w') as f:
                 json.dump(self.mods_dict_updates_log, f, indent=2)
-            print(f"Saved mods_dict updates log to: {log_fp}")
 
         # Import here to avoid circular imports
         from fusion.core.persistence import (
