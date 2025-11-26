@@ -619,11 +619,13 @@ class SDNController:
         if lightpath_id in self.sdn_props.lightpath_id_list:
             idx = self.sdn_props.lightpath_id_list.index(lightpath_id)
 
-            # Restore remaining bandwidth
-            if self.sdn_props.remaining_bw is None or self.sdn_props.remaining_bw == 0:
-                self.sdn_props.remaining_bw = int(float(self.sdn_props.bandwidth_list[idx]))
-            else:
-                self.sdn_props.remaining_bw += int(float(self.sdn_props.bandwidth_list[idx]))
+            # Only restore remaining bandwidth for sliced/partial requests (v5 behavior)
+            # For non-sliced requests, remaining_bw should stay None/0 since no bandwidth was served
+            if self.sdn_props.is_sliced or self.sdn_props.was_partially_groomed:
+                if self.sdn_props.remaining_bw is None or self.sdn_props.remaining_bw == 0:
+                    self.sdn_props.remaining_bw = int(float(self.sdn_props.bandwidth_list[idx]))
+                else:
+                    self.sdn_props.remaining_bw += int(float(self.sdn_props.bandwidth_list[idx]))
 
             # Remove from all tracking lists (with safety check for list length)
             for tracking_list in [
@@ -1054,6 +1056,14 @@ class SDNController:
         self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
         self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
+        # Debug for REQ 100 before finalization logic
+        if self.sdn_props.request_id == 100:
+            print(f"[REQ100-DEBUG] In _finalize_successful_allocation:")
+            print(f"[REQ100-DEBUG]   segment_slicing: {segment_slicing}")
+            print(f"[REQ100-DEBUG]   force_slicing: {force_slicing}")
+            print(f"[REQ100-DEBUG]   was_partially_groomed: {self.sdn_props.was_partially_groomed}")
+            print(f"[REQ100-DEBUG]   remaining_bw BEFORE finalize: {self.sdn_props.remaining_bw}")
+
         if not segment_slicing and not force_slicing:
             # Set is_sliced=True for partial grooming (v5 behavior)
             if self.sdn_props.was_partially_groomed:
@@ -1061,6 +1071,11 @@ class SDNController:
                 self.sdn_props.remaining_bw = 0  # Request fully served
             else:
                 self.sdn_props.is_sliced = False
+
+            # Debug for REQ 100 after finalization logic
+            if self.sdn_props.request_id == 100:
+                print(f"[REQ100-DEBUG]   remaining_bw AFTER finalize logic: {self.sdn_props.remaining_bw}")
+
             self.allocate()
 
         # Check SNR after allocation for newly created lightpaths (for both sliced and non-sliced)
@@ -1112,6 +1127,12 @@ class SDNController:
 #                print(f"[REQ{req_id}-DEBUG]   LP #{i}: ID={lp_id} ({is_new}), BW={lp_bw}, MOD={mod_format}, SLOTS=[{start_slot}-{end_slot}], BAND={band}, CORE={core}")
 
 #            print(f"[REQ{req_id}-DEBUG] =====================================\n")
+
+        # Debug for REQ 100 before summary
+        if self.sdn_props.request_id == 100:
+            print(f"[REQ100-DEBUG] About to print summary:")
+            print(f"[REQ100-DEBUG]   remaining_bw FINAL: {self.sdn_props.remaining_bw}")
+            print(f"[REQ100-DEBUG] ===== REQUEST 100 END =====\n")
 
         self._print_request_summary("ROUTED")
         return True
@@ -1181,6 +1202,13 @@ class SDNController:
             print(f"[REQ46] Bandwidth: {self.sdn_props.bandwidth}, Remaining: {self.sdn_props.remaining_bw}")
             print(f"[REQ46] Request type: {request_type}")
 
+        # Debug tracking for request 100
+        if self.sdn_props.request_id == 100:
+            print(f"\n[REQ100-DEBUG] ===== REQUEST 100 START =====")
+            print(f"[REQ100-DEBUG] Source: {self.sdn_props.source}, Dest: {self.sdn_props.destination}")
+            print(f"[REQ100-DEBUG] Bandwidth: {self.sdn_props.bandwidth}")
+            print(f"[REQ100-DEBUG] remaining_bw at START: {self.sdn_props.remaining_bw}")
+
         # Try grooming first if enabled
         if self.engine_props.get("is_grooming_enabled", False):
             # Debug print for request 4
@@ -1197,6 +1225,14 @@ class SDNController:
                     self.sdn_props.lightpath_status_dict
                 )
             groom_result = self.grooming_obj.handle_grooming(request_type)
+
+            # Debug for REQ 100 after grooming
+            if self.sdn_props.request_id == 100:
+                print(f"[REQ100-DEBUG] After grooming check:")
+                print(f"[REQ100-DEBUG]   groom_result: {groom_result}")
+                print(f"[REQ100-DEBUG]   was_groomed: {getattr(self.sdn_props, 'was_groomed', False)}")
+                print(f"[REQ100-DEBUG]   was_partially_groomed: {getattr(self.sdn_props, 'was_partially_groomed', False)}")
+                print(f"[REQ100-DEBUG]   remaining_bw AFTER GROOM: {self.sdn_props.remaining_bw}")
 
             # Debug print for request 4
             if self.sdn_props.request_id == 4:
