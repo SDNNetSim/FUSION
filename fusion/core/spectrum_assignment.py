@@ -781,6 +781,7 @@ class SpectrumAssignment:
                 self.sdn_props.arrive: initial_utilization  # Correct initial utilization
             },  # Track utilization over time
         }
+        print(f"[LP_CREATE] req_id={self.sdn_props.request_id} lp_id={lp_id} bw={lp_bandwidth_float} band={self.spectrum_props.current_band} core={self.spectrum_props.core_number}")
 
     def get_spectrum(
         self,

@@ -1355,14 +1355,6 @@ class SnrMeasurements:
         if new_lp_id is not None:
             all_active_lps = [lp for lp in all_active_lps if lp.get("id") != new_lp_id]
 
-        # Debug for request 15
-        _debug_req15 = (self.sdn_props.request_id == 15)
-        if _debug_req15:
-            print(f"[V6-SNR-RECHECK] new_lp_info: {new_lp_info}")
-            print(f"[V6-SNR-RECHECK] all_active_lps count: {len(all_active_lps)}")
-            for lp in all_active_lps:
-                print(f"[V6-SNR-RECHECK]   LP {lp.get('id')}: path={lp.get('path')}, slots={lp.get('start_slot')}-{lp.get('end_slot')}, core={lp.get('core')}, band={lp.get('band')}, mod={lp.get('mod_format')}")
-
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
             new_lp=new_lp_info,
@@ -1373,18 +1365,11 @@ class SnrMeasurements:
             bidirectional_links=self.engine_props_dict.get("bi_directional", False),
         )
 
-        if _debug_req15:
-            print(f"[V6-SNR-RECHECK] overlapping_lps count: {len(overlapping_lps)}")
-            for lp in overlapping_lps:
-                print(f"[V6-SNR-RECHECK]   OVERLAPPING LP {lp.get('id')}: path={lp.get('path')}, slots={lp.get('start_slot')}-{lp.get('end_slot')}, core={lp.get('core')}, band={lp.get('band')}, mod={lp.get('mod_format')}")
-
         # Re-evaluate each overlapping lightpath (excluding new LP's interference)
         violations = []
         for lp in overlapping_lps:
             resp, observed_snr = self.evaluate_lp(lp, exclude_lp_id=new_lp_id)
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
-            if _debug_req15:
-                print(f"[V6-SNR-RECHECK]   LP {lp['id']} eval: resp={resp}, observed_snr={observed_snr}, required_snr={required_snr}")
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 

@@ -217,6 +217,7 @@ class SDNController:
                     pass
 
                 # Debug: Track final utilization dict entry
+                print(f"[LP_UTIL] req_id={self.sdn_props.request_id} lp_id={lightpath_id} bw={lp_status['lightpath_bandwidth']} util={average_bw_usage:.2f} band={lp_status['band']} core={lp_status['core']}")
 
                 self.sdn_props.lp_bw_utilization_dict.update(
                     {
@@ -603,6 +604,7 @@ class SDNController:
             return True
 
         # SNR recheck failed - rollback the allocation
+        print(f"[SNR_ROLLBACK] req_id={self.sdn_props.request_id} lp_id={lightpath_id} violations={violations}")
         logger.warning(
             f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. "
             f"Violations: {violations}"
@@ -705,8 +707,6 @@ class SDNController:
 
         # Path
         summary["path"] = self.sdn_props.path_list
-
-        print(f"[REQ_SUMMARY] {json.dumps(summary)}")
 
     def _handle_congestion_with_grooming(self, remaining_bw: int) -> None:
         """
@@ -1058,6 +1058,7 @@ class SDNController:
         :param forced_band: Optional forced spectral band
         :type forced_band: str | None
         """
+        print(f"[EVENT] req_id={self.sdn_props.request_id} type={request_type}")
         # Handle release requests
         if request_type == "release":
             lightpath_id_list: list[int | None] = []

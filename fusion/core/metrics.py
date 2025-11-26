@@ -661,7 +661,6 @@ class SimStats:
                 if isinstance(bw_data, dict):
                     # Extract only the modulation counts (skip nested dicts like 'length', 'hop', etc.)
                     mods_by_bw[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
-            print(f"[MODS_DICT_UPDATE] req_id={sdn_data.request_id}, mods={mods_by_bw}")
             if sdn_data.route_time is not None:
                 self.stats_props.route_times_list.append(sdn_data.route_time)
             if sdn_data.number_of_transponders is not None:

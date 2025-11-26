@@ -449,13 +449,6 @@ def get_overlapping_lightpaths(
     new_core = new_lp["core"]
     new_band = new_lp.get("band", "c")
 
-    # DEBUG: Print edge normalization info
-    _debug_req15 = (new_lp.get("id") == 16)
-    if _debug_req15:
-        print(f"[V6-OVERLAP-DEBUG] bidirectional_links={bidirectional_links}")
-        print(f"[V6-OVERLAP-DEBUG] new_lp id={new_lp.get('id')}, path={new_lp['path']}")
-        print(f"[V6-OVERLAP-DEBUG] new_edges={new_edges}")
-
     # Get adjacent cores if requested
     adj_cores = adjacent_core_indices(new_core, cores_per_link) if include_adjacent_cores else []
 
@@ -470,13 +463,6 @@ def get_overlapping_lightpaths(
         # Check link overlap
         lp_edges = edge_set(lp["path"], bidirectional_links)
         intersection = lp_edges & new_edges
-
-        # DEBUG: Print for LP 5, 12, and 16 (the ones we're investigating)
-        if _debug_req15 and lp.get('id') in [3, 5, 12, 16]:
-            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} path={lp['path']}")
-            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} edges={lp_edges}")
-            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} intersection with new_edges={intersection}")
-            print(f"[V6-OVERLAP-DEBUG] LP {lp.get('id')} core={lp.get('core')}, new_core={new_core}, adj_cores={adj_cores}")
 
         if not intersection:
             continue
