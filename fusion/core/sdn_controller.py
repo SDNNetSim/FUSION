@@ -599,10 +599,6 @@ class SDNController:
         # Perform SNR recheck
         recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
 
-        # Debug for request 15 (any src/dst)
-        if self.sdn_props.request_id == 15:
-            print(f"[V6-REQ15] SNR RECHECK for LP {lightpath_id}: passed={recheck_enable}, violations={violations}, src={self.sdn_props.source}, dst={self.sdn_props.destination}")
-
         if recheck_enable:
             return True
 
@@ -779,17 +775,6 @@ class SDNController:
         self.sdn_props.block_reason = "congestion"
         self.sdn_props.number_of_transponders = 1
 
-        # Debug print for blocked request 4 in handle_congestion
-        # if self.sdn_props.request_id == 4:
-        #     req_id = self.sdn_props.request_id
-        #     print(f"\n[REQ{req_id}-BLOCKED] ===== REQUEST {req_id} BLOCKED (HANDLE_CONGESTION) =====")
-        #     print(f"[REQ{req_id}-BLOCKED] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
-        #     print(f"[REQ{req_id}-BLOCKED] Source={self.sdn_props.source}, Dest={self.sdn_props.destination}")
-        #     print(f"[REQ{req_id}-BLOCKED] Block reason: {self.sdn_props.block_reason}")
-        #     print(f"[REQ{req_id}-BLOCKED] Remaining bandwidth: {remaining_bandwidth}")
-        #     print(f"[REQ{req_id}-BLOCKED] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
-        #     print(f"[REQ{req_id}-BLOCKED] =====================================\n")
-
         if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(
             self.sdn_props.bandwidth
         ):
@@ -946,17 +931,6 @@ class SDNController:
                 return False
         else:
             # Handle standard allocation
-            # Debug print for request 4
-            # if self.sdn_props.request_id == 4:
-            #     req_id = self.sdn_props.request_id
-            #     print(f"\n[REQ{req_id}-SPEC] ===== ATTEMPTING SPECTRUM ALLOCATION =====")
-            #     print(f"[REQ{req_id}-SPEC] Path: {path_list}")
-            #     print(f"[REQ{req_id}-SPEC] Modulation formats to try: {mod_format_list}")
-            #     if self.sdn_props.was_partially_groomed:
-            #         print(f"[REQ{req_id}-SPEC] Partially groomed - allocating for remaining_bw: {self.sdn_props.remaining_bw}")
-            #     else:
-            #         print(f"[REQ{req_id}-SPEC] Standard allocation - allocating for bandwidth: {self.sdn_props.bandwidth}")
-
             self.spectrum_obj.spectrum_props.forced_index = forced_index
             self.spectrum_obj.spectrum_props.forced_core = force_core
             self.spectrum_obj.spectrum_props.path_list = path_list
@@ -966,40 +940,8 @@ class SDNController:
                 backup_mod_format_list=backup_mod_format_list,
             )
 
-            # Debug print for request 4
-            if self.sdn_props.request_id == 4:
-                req_id = self.sdn_props.request_id
-#                print(f"[REQ{req_id}-SPEC] Spectrum search result: is_free={self.spectrum_obj.spectrum_props.is_free}")
-                if self.spectrum_obj.spectrum_props.is_free:
-                    pass
-#                    print(f"[REQ{req_id}-SPEC] Found spectrum: slots {self.spectrum_obj.spectrum_props.start_slot}-{self.spectrum_obj.spectrum_props.end_slot}")
-#                    print(f"[REQ{req_id}-SPEC] Modulation: {self.spectrum_obj.spectrum_props.modulation}")
-#                    print(f"[REQ{req_id}-SPEC] =====================================\n")
-
-            if self.sdn_props.request_id == 46:
-                if self.spectrum_obj.spectrum_props.is_free:
-                    print(f"[REQ46] Spectrum assignment SUCCESS")
-                    print(f"[REQ46] Assigned slots: start={self.spectrum_obj.spectrum_props.start_slot}, end={self.spectrum_obj.spectrum_props.end_slot}")
-                    print(f"[REQ46] Core: {self.spectrum_obj.spectrum_props.core_number}, Band: {self.spectrum_obj.spectrum_props.current_band}")
-                    print(f"[REQ46] Modulation: {self.spectrum_obj.spectrum_props.modulation}")
-                else:
-                    print(f"[REQ46] Spectrum assignment FAILED - blocked by congestion")
-
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
-
-                # Debug print for blocked request 4
-                if self.sdn_props.request_id == 4:
-                    req_id = self.sdn_props.request_id
-#                    print(f"\n[REQ{req_id}-BLOCKED] ===== REQUEST {req_id} BLOCKED (CONGESTION) =====")
-#                    print(f"[REQ{req_id}-BLOCKED] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
-#                    print(f"[REQ{req_id}-BLOCKED] Source={self.sdn_props.source}, Dest={self.sdn_props.destination}")
-#                    print(f"[REQ{req_id}-BLOCKED] Block reason: {self.sdn_props.block_reason}")
-#                    print(f"[REQ{req_id}-BLOCKED] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
-#                    print(f"[REQ{req_id}-BLOCKED] Path being tried: {path_list}")
-#                    print(f"[REQ{req_id}-BLOCKED] Path index: {self.sdn_props.path_index}")
-#                    print(f"[REQ{req_id}-BLOCKED] =====================================\n")
-
                 return False
 
             # Generate and assign unique lightpath ID for this allocation
@@ -1056,14 +998,6 @@ class SDNController:
         self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
         self.sdn_props.spectrum_object = self.spectrum_obj.spectrum_props
 
-        # Debug for REQ 100 before finalization logic
-        if self.sdn_props.request_id == 100:
-            print(f"[REQ100-DEBUG] In _finalize_successful_allocation:")
-            print(f"[REQ100-DEBUG]   segment_slicing: {segment_slicing}")
-            print(f"[REQ100-DEBUG]   force_slicing: {force_slicing}")
-            print(f"[REQ100-DEBUG]   was_partially_groomed: {self.sdn_props.was_partially_groomed}")
-            print(f"[REQ100-DEBUG]   remaining_bw BEFORE finalize: {self.sdn_props.remaining_bw}")
-
         if not segment_slicing and not force_slicing:
             # Set is_sliced=True for partial grooming (v5 behavior)
             if self.sdn_props.was_partially_groomed:
@@ -1071,68 +1005,18 @@ class SDNController:
                 self.sdn_props.remaining_bw = 0  # Request fully served
             else:
                 self.sdn_props.is_sliced = False
-
-            # Debug for REQ 100 after finalization logic
-            if self.sdn_props.request_id == 100:
-                print(f"[REQ100-DEBUG]   remaining_bw AFTER finalize logic: {self.sdn_props.remaining_bw}")
-
             self.allocate()
 
         # Check SNR after allocation for newly created lightpaths (for both sliced and non-sliced)
         if self.sdn_props.was_new_lp_established:
             for lp_id in self.sdn_props.was_new_lp_established:
-                if self.sdn_props.request_id == 46:
-                    print(f"[REQ46] Checking SNR for lightpath {lp_id}...")
                 if not self._check_snr_after_allocation(lp_id):
                     # SNR recheck failed - allocation was rolled back
-                    if self.sdn_props.request_id == 46:
-                        print(f"[REQ46] SNR check FAILED for lightpath {lp_id} - allocation rolled back")
                     return False
-                if self.sdn_props.request_id == 46:
-                    print(f"[REQ46] SNR check PASSED for lightpath {lp_id}")
 
         # Update grooming statistics
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
-
-        if self.sdn_props.request_id == 46:
-            print(f"[REQ46] REQUEST 46 SUCCESSFULLY ALLOCATED!")
-            print(f"[REQ46] Final path: {self.sdn_props.path_list}")
-            print(f"[REQ46] Final slots: {list(zip(self.sdn_props.start_slot_list, self.sdn_props.end_slot_list))}")
-            print(f"[REQ46] =====================================\n")
-
-        # Debug print for request 4 to track blocking issue
-        if self.sdn_props.request_id == 4:
-            req_id = self.sdn_props.request_id
-#            print(f"\n[REQ{req_id}-DEBUG] ===== REQUEST {req_id} ALLOCATED =====")
-#            print(f"[REQ{req_id}-DEBUG] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
-#            print(f"[REQ{req_id}-DEBUG] Source={self.sdn_props.source}, Dest={self.sdn_props.destination}")
-#            print(f"[REQ{req_id}-DEBUG] Route: {self.sdn_props.path_list}")
-#            print(f"[REQ{req_id}-DEBUG] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
-#            print(f"[REQ{req_id}-DEBUG] Was sliced: {self.sdn_props.is_sliced}, Was partially routed: {self.sdn_props.was_partially_routed}")
-#            print(f"[REQ{req_id}-DEBUG] Segment slicing: {segment_slicing}, Force slicing: {force_slicing}")
-#            print(f"[REQ{req_id}-DEBUG] Remaining BW: {self.sdn_props.remaining_bw}")
-#            print(f"[REQ{req_id}-DEBUG] New lightpaths established: {self.sdn_props.was_new_lp_established}")
-
-            # Print detailed allocation info for each lightpath
-#            print(f"[REQ{req_id}-DEBUG] ----- DETAILED LIGHTPATH ALLOCATIONS -----")
-            for i, lp_id in enumerate(self.sdn_props.lightpath_id_list):
-                lp_bw = self.sdn_props.lightpath_bandwidth_list[i] if i < len(self.sdn_props.lightpath_bandwidth_list) else None
-                mod_format = self.sdn_props.modulation_list[i] if i < len(self.sdn_props.modulation_list) else None
-                start_slot = self.sdn_props.start_slot_list[i] if i < len(self.sdn_props.start_slot_list) else None
-                end_slot = self.sdn_props.end_slot_list[i] if i < len(self.sdn_props.end_slot_list) else None
-                band = self.sdn_props.band_list[i] if i < len(self.sdn_props.band_list) else None
-                core = self.sdn_props.core_list[i] if i < len(self.sdn_props.core_list) else None
-                is_new = "NEW" if lp_id in self.sdn_props.was_new_lp_established else "EXISTING"
-#                print(f"[REQ{req_id}-DEBUG]   LP #{i}: ID={lp_id} ({is_new}), BW={lp_bw}, MOD={mod_format}, SLOTS=[{start_slot}-{end_slot}], BAND={band}, CORE={core}")
-
-#            print(f"[REQ{req_id}-DEBUG] =====================================\n")
-
-        # Debug for REQ 100 before summary
-        if self.sdn_props.request_id == 100:
-            print(f"[REQ100-DEBUG] About to print summary:")
-            print(f"[REQ100-DEBUG]   remaining_bw FINAL: {self.sdn_props.remaining_bw}")
-            print(f"[REQ100-DEBUG] ===== REQUEST 100 END =====\n")
 
         self._print_request_summary("ROUTED")
         return True
@@ -1195,30 +1079,8 @@ class SDNController:
         self._initialize_request_statistics()
         self.sdn_props.number_of_transponders = 1
 
-        # Debug tracking for request 46
-        if self.sdn_props.request_id == 46:
-            print(f"\n[REQ46] ===== REQUEST 46 START =====")
-            print(f"[REQ46] Source: {self.sdn_props.source}, Dest: {self.sdn_props.destination}")
-            print(f"[REQ46] Bandwidth: {self.sdn_props.bandwidth}, Remaining: {self.sdn_props.remaining_bw}")
-            print(f"[REQ46] Request type: {request_type}")
-
-        # Debug tracking for request 100
-        if self.sdn_props.request_id == 100:
-            print(f"\n[REQ100-DEBUG] ===== REQUEST 100 START =====")
-            print(f"[REQ100-DEBUG] Source: {self.sdn_props.source}, Dest: {self.sdn_props.destination}")
-            print(f"[REQ100-DEBUG] Bandwidth: {self.sdn_props.bandwidth}")
-            print(f"[REQ100-DEBUG] remaining_bw at START: {self.sdn_props.remaining_bw}")
-
         # Try grooming first if enabled
         if self.engine_props.get("is_grooming_enabled", False):
-            # Debug print for request 4
-            if self.sdn_props.request_id == 4:
-                req_id = self.sdn_props.request_id
-#                print(f"\n[REQ{req_id}-GROOM] ===== ATTEMPTING GROOMING FOR REQUEST {req_id} =====")
-#                print(f"[REQ{req_id}-GROOM] Request: {self.sdn_props.source} -> {self.sdn_props.destination}")
-#                print(f"[REQ{req_id}-GROOM] Bandwidth needed: {self.sdn_props.bandwidth}")
-#                print(f"[REQ{req_id}-GROOM] Arrive: {self.sdn_props.arrive}, Depart: {self.sdn_props.depart}")
-
             # Set lightpath status dict for grooming object
             if hasattr(self.grooming_obj, "lightpath_status_dict"):
                 self.grooming_obj.lightpath_status_dict = (
@@ -1226,52 +1088,12 @@ class SDNController:
                 )
             groom_result = self.grooming_obj.handle_grooming(request_type)
 
-            # Debug for REQ 100 after grooming
-            if self.sdn_props.request_id == 100:
-                print(f"[REQ100-DEBUG] After grooming check:")
-                print(f"[REQ100-DEBUG]   groom_result: {groom_result}")
-                print(f"[REQ100-DEBUG]   was_groomed: {getattr(self.sdn_props, 'was_groomed', False)}")
-                print(f"[REQ100-DEBUG]   was_partially_groomed: {getattr(self.sdn_props, 'was_partially_groomed', False)}")
-                print(f"[REQ100-DEBUG]   remaining_bw AFTER GROOM: {self.sdn_props.remaining_bw}")
-
-            # Debug print for request 4
-            if self.sdn_props.request_id == 4:
-                req_id = self.sdn_props.request_id
-#                print(f"[REQ{req_id}-GROOM] Grooming result: {groom_result}")
-#                print(f"[REQ{req_id}-GROOM] Was groomed: {getattr(self.sdn_props, 'was_groomed', False)}")
-#                print(f"[REQ{req_id}-GROOM] Was partially groomed: {getattr(self.sdn_props, 'was_partially_groomed', False)}")
-                if getattr(self.sdn_props, "was_partially_groomed", False):
-                    pass
-#                    print(f"[REQ{req_id}-GROOM] Groomed bandwidth: {getattr(self.sdn_props, 'groomed_bw', 'N/A')}")
-#                    print(f"[REQ{req_id}-GROOM] Remaining bandwidth: {getattr(self.sdn_props, 'remaining_bw', 'N/A')}")
-#                    print(f"[REQ{req_id}-GROOM] Groomed on path: {self.sdn_props.path_list}")
-
-            # Debug print for Request 158
-            if self.sdn_props.request_id == 158:
-#                print(f"\n[REQ158-AFTER-GROOM] ===== REQUEST 158 AFTER GROOMING =====")
-#                print(f"[REQ158-AFTER-GROOM] Groom result: {groom_result}")
-#                print(f"[REQ158-AFTER-GROOM] was_groomed: {getattr(self.sdn_props, 'was_groomed', False)}")
-#                print(f"[REQ158-AFTER-GROOM] was_partially_groomed: {getattr(self.sdn_props, 'was_partially_groomed', False)}")
-#                print(f"[REQ158-AFTER-GROOM] was_routed: {getattr(self.sdn_props, 'was_routed', False)}")
-                if getattr(self.sdn_props, "was_partially_groomed", False):
-                    pass
-#                    print(f"[REQ158-AFTER-GROOM] Remaining bandwidth: {getattr(self.sdn_props, 'remaining_bw', 'N/A')}")
-#                print(f"[REQ158-AFTER-GROOM] ==========================================\n")
-
             if groom_result:
                 # Fully groomed - done!
-                if self.sdn_props.request_id == 4:
-                    req_id = self.sdn_props.request_id
-#                    print(f"[REQ{req_id}-GROOM] FULLY GROOMED - REQUEST COMPLETE")
-#                    print(f"[REQ{req_id}-GROOM] =====================================\n")
-                if self.sdn_props.request_id == 46:
-                    print(f"[REQ46] Request fully groomed - exiting")
                 self._update_grooming_stats()
                 return
 
             # Not groomed or partially groomed
-            if self.sdn_props.request_id == 46:
-                print(f"[REQ46] Grooming result: partially_groomed={getattr(self.sdn_props, 'was_partially_groomed', False)}")
             self.sdn_props.was_new_lp_established = []
 
             if getattr(self.sdn_props, "was_partially_groomed", False):
@@ -1289,57 +1111,10 @@ class SDNController:
                     # Use all modulation formats sorted by max_length (v5 behavior)
                     force_mod_format = list(mod_formats_dict.keys())
 
-                # Debug print for Request 158
-                if self.sdn_props.request_id == 158:
-                    req_id = self.sdn_props.request_id
-#                    print(f"\n[REQ158-PARTIAL-ALLOC] ===== ALLOCATING REMAINING BANDWIDTH =====")
-#                    print(f"[REQ158-PARTIAL-ALLOC] Remaining bandwidth: {self.sdn_props.remaining_bw}")
-#                    print(f"[REQ158-PARTIAL-ALLOC] Forcing route on groomed path: {force_route_matrix}")
-#                    print(f"[REQ158-PARTIAL-ALLOC] Available mod formats: {force_mod_format if force_mod_format else 'default'}")
-#                    print(f"[REQ158-PARTIAL-ALLOC] =================================================\n")
-
-                if self.sdn_props.request_id == 4:
-                    req_id = self.sdn_props.request_id
-#                    print(f"[REQ{req_id}-GROOM] Forcing route on groomed path: {force_route_matrix}")
-#                    print(f"[REQ{req_id}-GROOM] Available mod formats: {force_mod_format if force_mod_format else 'default'}")
-            else:
-                if self.sdn_props.request_id == 4:
-                    req_id = self.sdn_props.request_id
-#                    print(f"[REQ{req_id}-GROOM] NOT GROOMED - Will try standard allocation")
-#                    print(f"[REQ{req_id}-GROOM] =====================================\n")
-
         # Setup routing
         route_matrix, route_time = self._setup_routing(
             force_route_matrix, force_mod_format
         )
-
-        # Debug for request 15 (any src/dst)
-        _debug_req15 = (self.sdn_props.request_id == 15)
-        if _debug_req15:
-            print(f"[V6-REQ15] === REQUEST 15 ROUTING === src={self.sdn_props.source}, dst={self.sdn_props.destination}")
-            print(f"[V6-REQ15] All candidate paths: {route_matrix}")
-            if hasattr(self.route_obj.route_props, 'modulation_formats_matrix'):
-                print(f"[V6-REQ15] Mod formats matrix: {self.route_obj.route_props.modulation_formats_matrix}")
-            if hasattr(self.route_obj.route_props, 'weights_list'):
-                print(f"[V6-REQ15] Weights: {self.route_obj.route_props.weights_list}")
-
-        # Debug print for request 4
-        if self.sdn_props.request_id == 4:
-            req_id = self.sdn_props.request_id
-#            print(f"\n[REQ{req_id}-ROUTE] ===== ROUTING COMPLETED FOR REQUEST {req_id} =====")
-#            print(f"[REQ{req_id}-ROUTE] Number of routes found: {len(route_matrix)}")
-            for idx, route in enumerate(route_matrix):
-                if route is not False:
-#                    print(f"[REQ{req_id}-ROUTE] Route {idx}: {route}")
-                    # Check if modulation formats are available
-                    if hasattr(self.route_obj.route_props, 'modulation_formats_matrix') and \
-                       idx < len(self.route_obj.route_props.modulation_formats_matrix):
-                        pass
-#                        print(f"[REQ{req_id}-ROUTE]   Mod formats: {self.route_obj.route_props.modulation_formats_matrix[idx]}")
-                else:
-                    pass
-#                    print(f"[REQ{req_id}-ROUTE] Route {idx}: False (no route)")
-#            print(f"[REQ{req_id}-ROUTE] =====================================\n")
 
         # Get ML prediction if available
         forced_segments = self._get_ml_prediction(ml_model, request_dict)
@@ -1347,23 +1122,8 @@ class SDNController:
         # Try allocation with different strategies
         segment_slicing = False
         while True:
-            # Debug print for request 4
-            if self.sdn_props.request_id == 4:
-                req_id = self.sdn_props.request_id
-#                print(f"\n[REQ{req_id}-ALLOC] ===== TRYING PATH ALLOCATION (segment_slicing={segment_slicing}) =====")
-
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
-                    # Debug print for request 4
-                    if self.sdn_props.request_id == 4:
-                        req_id = self.sdn_props.request_id
-#                        print(f"[REQ{req_id}-ALLOC] Trying path {path_index}: {path_list}")
-
-                    if self.sdn_props.request_id == 46:
-                        print(f"\n[REQ46] Trying path {path_index}: {path_list}")
-                        if hasattr(self.route_obj.route_props, 'modulation_formats_matrix') and path_index < len(self.route_obj.route_props.modulation_formats_matrix):
-                            print(f"[REQ46] Available modulations: {self.route_obj.route_props.modulation_formats_matrix[path_index]}")
-
                     # Check path feasibility if failures are active
                     if (
                         self.failure_manager
@@ -1373,9 +1133,6 @@ class SDNController:
                             f"Path {path_list} (index {path_index}) is "
                             f"infeasible due to active failures"
                         )
-                        if self.sdn_props.request_id == 4:
-                            req_id = self.sdn_props.request_id
-#                            print(f"[REQ{req_id}-ALLOC] Path {path_index} SKIPPED: infeasible due to failures")
                         continue  # Skip this path and try next one
 
                     # Check backup path feasibility for protected requests
@@ -1433,19 +1190,6 @@ class SDNController:
                     if segment_slicing or force_slicing or forced_segments > 1:
                         force_slicing = True
 
-                    # Debug print for request 158 - before processing
-                    if self.sdn_props.request_id == 158:
-                        req_id = self.sdn_props.request_id
-#                        print(f"\n[REQ158-PATH-TRY] Trying path {path_index}: {path_list}")
-#                        print(f"[REQ158-PATH-TRY] Modulation formats: {mod_format_list}")
-#                        print(f"[REQ158-PATH-TRY] Force slicing: {force_slicing}, Segment slicing: {segment_slicing}")
-
-                    # Debug print for request 4 - before processing
-                    if self.sdn_props.request_id == 4:
-                        req_id = self.sdn_props.request_id
-#                        print(f"[REQ{req_id}-ALLOC]   Modulation formats: {mod_format_list}")
-#                        print(f"[REQ{req_id}-ALLOC]   Force slicing: {force_slicing}, Segment slicing: {segment_slicing}")
-
                     # Set path_weight for this path attempt BEFORE processing
                     # This ensures any lightpaths created during this attempt (even if it fails
                     # but is accepted via partial serving) will store the correct path_weight
@@ -1465,41 +1209,6 @@ class SDNController:
                         backup_mod_format_list,
                     )
 
-                    # Debug print for request 158 - after processing
-                    if self.sdn_props.request_id == 158:
-                        req_id = self.sdn_props.request_id
-                        if success:
-                            pass
-#                            print(f"[REQ158-PATH-TRY] Path {path_index} SUCCESS - request will be allocated\n")
-                        else:
-                            pass
-#                            print(f"[REQ158-PATH-TRY] Path {path_index} FAILED - trying next path")
-#                            print(f"[REQ158-PATH-TRY] Block reason: {self.sdn_props.block_reason}\n")
-
-                    # Debug print for request 4 - after processing
-                    if self.sdn_props.request_id == 4:
-                        req_id = self.sdn_props.request_id
-                        if success:
-                            pass
-#                            print(f"[REQ{req_id}-ALLOC] Path {path_index} SUCCESS - request will be allocated")
-                        else:
-                            pass
-#                            print(f"[REQ{req_id}-ALLOC] Path {path_index} FAILED - trying next path")
-#                            print(f"[REQ{req_id}-ALLOC]   Block reason: {self.sdn_props.block_reason}")
-
-                    if self.sdn_props.request_id == 46:
-                        if success:
-                            print(f"[REQ46] Path {path_index} processing SUCCESS")
-                        else:
-                            print(f"[REQ46] Path {path_index} processing FAILED - block_reason: {self.sdn_props.block_reason}")
-
-                    # Debug for request 15
-                    if _debug_req15:
-                        if success:
-                            print(f"[V6-REQ15] Path {path_index} processing SUCCESS")
-                        else:
-                            print(f"[V6-REQ15] Path {path_index} processing FAILED - block_reason: {self.sdn_props.block_reason}")
-
                     if success:
                         # Try to finalize - includes SNR recheck
                         finalize_success = self._finalize_successful_allocation(
@@ -1516,14 +1225,9 @@ class SDNController:
                 and not segment_slicing
             ):
                 segment_slicing = True
-                if self.sdn_props.request_id == 4:
-                    req_id = self.sdn_props.request_id
-#                    print(f"\n[REQ{req_id}-ALLOC] All paths failed - RETRYING with segment_slicing=True")
                 continue
 
             # All paths exhausted
-            if self.sdn_props.request_id == 46:
-                print(f"[REQ46] All paths exhausted - setting block_reason to 'distance'")
             self.sdn_props.block_reason = "distance"
             self.sdn_props.was_routed = False
 
@@ -1547,31 +1251,12 @@ class SDNController:
                         self.sdn_props.was_partially_routed = True
                         self.sdn_props.is_sliced = True
 
-                        # Debug print for Request 158
-                        if self.sdn_props.request_id == 158:
-                            pass
-#                            print(f"\n[REQ158-PARTIAL-SERVE] ===== REQUEST 158 PARTIALLY SERVED =====")
-#                            print(f"[REQ158-PARTIAL-SERVE] can_partially_serve enabled")
-#                            print(f"[REQ158-PARTIAL-SERVE] Accepted partial bandwidth allocation")
-#                            print(f"[REQ158-PARTIAL-SERVE] Lightpaths used: {self.sdn_props.lightpath_id_list}")
-#                            print(f"[REQ158-PARTIAL-SERVE] New lightpaths: {getattr(self.sdn_props, 'was_new_lp_established', [])}")
-#                            print(f"[REQ158-PARTIAL-SERVE] was_partially_routed: True")
-#                            print(f"[REQ158-PARTIAL-SERVE] ==================================================\n")
-
                         self._print_request_summary("PARTIAL_SERVE")
                         return  # Success!
 
             # CRITICAL FIX: Release groomed bandwidth if request was partially groomed but blocked
             if getattr(self.sdn_props, "was_partially_groomed", False):
                 if self.sdn_props.lightpath_id_list:
-                    # Debug print for Request 158
-                    if self.sdn_props.request_id == 158:
-                        pass
-#                        print(f"\n[REQ158-CLEANUP] ===== RELEASING GROOMED BANDWIDTH (BLOCKED) =====")
-#                        print(f"[REQ158-CLEANUP] Request was partially groomed but blocked")
-#                        print(f"[REQ158-CLEANUP] Releasing bandwidth from lightpaths: {self.sdn_props.lightpath_id_list}")
-#                        print(f"[REQ158-CLEANUP] ================================================\n")
-
                     # Release groomed bandwidth from all lightpaths
                     light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
                     for lp_id in self.sdn_props.lightpath_id_list[:]:
@@ -1584,28 +1269,9 @@ class SDNController:
                                     lp_info["requests_dict"].pop(self.sdn_props.request_id)
                                     lp_info["remaining_bandwidth"] += req_bw
 
-                                    # Debug print for LP #97
-                                    if lp_id == 97:
-                                        pass
-#                                        print(f"\n[LP97-CLEANUP] ===== RELEASING LP #97 (BLOCKED REQUEST) =====")
-#                                        print(f"[LP97-CLEANUP] Request ID: {self.sdn_props.request_id}")
-#                                        print(f"[LP97-CLEANUP] Released {req_bw} Gbps back to LP #97")
-#                                        print(f"[LP97-CLEANUP] Remaining bandwidth now: {lp_info['remaining_bandwidth']}")
-#                                        print(f"[LP97-CLEANUP] =====================================\n")
-
                     # Clear the lightpath tracking lists
                     self.sdn_props.lightpath_id_list = []
                     self.sdn_props.lightpath_bandwidth_list = []
-
-            # Debug print for blocked request 4
-            if self.sdn_props.request_id == 4:
-                req_id = self.sdn_props.request_id
-#                print(f"\n[REQ{req_id}-BLOCKED] ===== REQUEST {req_id} BLOCKED =====")
-#                print(f"[REQ{req_id}-BLOCKED] Request Info: arrive={self.sdn_props.arrive}, depart={self.sdn_props.depart}, bandwidth={self.sdn_props.bandwidth}")
-#                print(f"[REQ{req_id}-BLOCKED] Source={self.sdn_props.source}, Dest={self.sdn_props.destination}")
-#                print(f"[REQ{req_id}-BLOCKED] Block reason: {self.sdn_props.block_reason}")
-#                print(f"[REQ{req_id}-BLOCKED] Was groomed: {self.sdn_props.was_groomed}, Was partially groomed: {self.sdn_props.was_partially_groomed}")
-#                print(f"[REQ{req_id}-BLOCKED] =====================================\n")
 
             self._print_request_summary("BLOCKED")
             return
