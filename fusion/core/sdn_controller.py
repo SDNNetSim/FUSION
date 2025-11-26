@@ -216,19 +216,21 @@ class SDNController:
                 except (ImportError, AttributeError):
                     pass
 
-                # Debug: Track final utilization dict entry
-                print(f"[LP_UTIL] req_id={self.sdn_props.request_id} lp_id={lightpath_id} bw={lp_status['lightpath_bandwidth']} util={average_bw_usage:.2f} band={lp_status['band']} core={lp_status['core']}")
+                # Only record utilization for normal releases, not SNR rollbacks
+                # (rolled-back lightpaths never served traffic, so no utilization stats)
+                if not skip_validation:
+                    print(f"[LP_UTIL] req_id={self.sdn_props.request_id} lp_id={lightpath_id} bw={lp_status['lightpath_bandwidth']} util={average_bw_usage:.2f} band={lp_status['band']} core={lp_status['core']}")
 
-                self.sdn_props.lp_bw_utilization_dict.update(
-                    {
-                        lightpath_id: {
-                            "band": lp_status["band"],
-                            "core": lp_status["core"],
-                            "bit_rate": lp_status["lightpath_bandwidth"],
-                            "utilization": average_bw_usage,
+                    self.sdn_props.lp_bw_utilization_dict.update(
+                        {
+                            lightpath_id: {
+                                "band": lp_status["band"],
+                                "core": lp_status["core"],
+                                "bit_rate": lp_status["lightpath_bandwidth"],
+                                "utilization": average_bw_usage,
+                            }
                         }
-                    }
-                )
+                    )
             except (TypeError, ValueError, KeyError) as e:
                 logger.warning("Average BW update skipped: %s", e)
 
