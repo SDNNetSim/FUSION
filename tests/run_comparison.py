@@ -51,7 +51,8 @@ ALLOWED_TEST_CASES = {
     "ext_snr_4core_cls_dy-slice",
     "xtar_slicing_pff",
     "spain_C_fixed_grooming",
-    'spain_C_fixed_grooming_snr_recheck'
+    'spain_C_fixed_grooming_snr_recheck',
+    'spain_C_flexi',
 }
 
 
@@ -511,7 +512,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'spain_C_fixed_grooming_snr_recheck':
+        if case.name == 'spain_C_flexi':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
