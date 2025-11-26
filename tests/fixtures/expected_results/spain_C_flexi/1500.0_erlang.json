@@ -9473,7 +9473,7 @@
             "lengths_max": 944.0,
             "route_times_mean": 0.0,
             "route_times_min": 0.0,
-            "route_times_max": 0.02,
+            "route_times_max": 0.0,
             "xt_mean": null,
             "xt_min": null,
             "xt_max": null,
@@ -19565,5 +19565,5 @@
     "ci_percent_bit_rate_block": 22.953488372093027,
     "total_transponder_usage": 365.0,
     "lightpath_utilization": 100.0,
-    "sim_end_time": "1106_12_35_21_879448"
+    "sim_end_time": "1126_12_31_25_029173"
 }
