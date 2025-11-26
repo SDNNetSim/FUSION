@@ -1017,12 +1017,15 @@ class SDNController:
                 self.sdn_props.is_sliced = False
             self.allocate()
 
-        # Check SNR after allocation for newly created lightpaths (for both sliced and non-sliced)
-        if self.sdn_props.was_new_lp_established:
-            for lp_id in self.sdn_props.was_new_lp_established:
-                if not self._check_snr_after_allocation(lp_id):
-                    # SNR recheck failed - allocation was rolled back
-                    return False
+        # Check SNR after allocation for newly created lightpaths
+        # For sliced requests, SNR recheck is done in the slicing loop (v5 behavior)
+        # to prevent orphaned allocations. Only do finalize SNR recheck for non-sliced.
+        if not segment_slicing and not force_slicing:
+            if self.sdn_props.was_new_lp_established:
+                for lp_id in self.sdn_props.was_new_lp_established:
+                    if not self._check_snr_after_allocation(lp_id):
+                        # SNR recheck failed - allocation was rolled back
+                        return False
 
         # Update grooming statistics
         if self.engine_props.get("is_grooming_enabled", False):

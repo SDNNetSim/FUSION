@@ -333,6 +333,17 @@ class LightPathSlicingManager:
                 self.sdn_props.number_of_transponders += 1
                 self.sdn_props.is_sliced = True
                 self.sdn_props.remaining_bw = max(0, remaining_bw)
+
+                # SNR recheck after allocation (v5 behavior)
+                # This ensures lightpaths are validated immediately and rolled back
+                # if SNR requirements are not met, preventing orphaned allocations
+                if not sdn_controller._check_snr_after_allocation(lp_id):
+                    # Rollback this lightpath and stop (matches v5 behavior)
+                    self.sdn_props.was_routed = False
+                    self.sdn_props.block_reason = "snr_recheck_failed"
+                    remaining_bw += bandwidth
+                    sdn_controller._handle_congestion(remaining_bw)
+                    break
             else:
                 if self.engine_props.get("can_partially_serve", False):
                     initial_bw = int(self.sdn_props.bandwidth)
@@ -397,6 +408,17 @@ class LightPathSlicingManager:
                     self.sdn_props.was_new_lp_established.append(lp_id)
                     self.sdn_props.was_partially_routed = False
                     self.sdn_props.remaining_bw = max(0, remaining_bw)
+
+                    # SNR recheck after allocation (v5 behavior)
+                    # This ensures lightpaths are validated immediately and rolled back
+                    # if SNR requirements are not met, preventing orphaned allocations
+                    if not sdn_controller._check_snr_after_allocation(lp_id):
+                        # Rollback this lightpath and stop (matches v5 behavior)
+                        self.sdn_props.was_routed = False
+                        self.sdn_props.block_reason = "snr_recheck_failed"
+                        remaining_bw += bw
+                        sdn_controller._handle_congestion(remaining_bw)
+                        break
                 else:
                     break
 
