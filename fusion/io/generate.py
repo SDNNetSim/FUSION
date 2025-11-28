@@ -21,7 +21,7 @@ def create_pt(
     fiber_props_dict = {
         "attenuation": 0.2 / 4.343 * 1e-3,
         "non_linearity": 1.3e-3,
-        "dispersion": (16e-6 * 1550e-9**2) / (2 * math.pi * 3e8),
+        "dispersion": -21.3e-27,  # Match v5 value (-2.13e-26)
         "num_cores": cores_per_link,
         "fiber_type": 0,
         "bending_radius": 0.05,
@@ -29,7 +29,7 @@ def create_pt(
         "propagation_const": 4e6,
         "core_pitch": 4e-5,
         # Optical band frequency ranges (in Hz) - standard ITU-T specifications
-        "frequency_start_c": 191.5e12,  # C-band start: 191.5 THz (~1565 nm)
+        "frequency_start_c": 3e8 / 1565e-9,  # C-band start from 1565nm wavelength (~191.69 THz)
         "frequency_end_c": 196.1e12,    # C-band end: 196.1 THz (~1530 nm)
         "frequency_start_l": 186.5e12,  # L-band start: 186.5 THz (~1625 nm)
         "frequency_end_l": 191.5e12,    # L-band end: 191.5 THz (~1565 nm)
