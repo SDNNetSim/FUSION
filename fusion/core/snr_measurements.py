@@ -741,16 +741,13 @@ class SnrMeasurements:
 
         return open_slots_list
     def check_gsnr(
-        self, exclude_lp_id: int | None = None
+        self
     ) -> tuple[bool | str, float, int]:
         """
         Calculate and check the GSNR (Generalized SNR) of Lightpath.
 
         Ported from v5 for proper modulation selection based on path quality.
 
-        :param exclude_lp_id: LP ID to exclude from interference calculation.
-            Used during SNR recheck to exclude the new LP's interference.
-        :type exclude_lp_id: int | None
         :return: Whether the SNR threshold can be met, GSNR value, Supported bitrate.
         :rtype: tuple[bool | str, float, int]
         """
@@ -792,10 +789,6 @@ class SnrMeasurements:
                 for slot_index in range(self.engine_props_dict['c_band']):
                     curr_link = self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][self.spectrum_props.current_band]
                     req_id = curr_link[self.spectrum_props.core_number][slot_index]
-
-                    # Skip excluded LP's interference (used during SNR recheck)
-                    if exclude_lp_id is not None and req_id == exclude_lp_id:
-                        continue
 
                     # Spectrum is occupied
                     if (req_id > 0 and req_id not in self.channels_list) or slot_index == self.spectrum_props.start_slot:
@@ -1292,16 +1285,13 @@ class SnrMeasurements:
         self.number_of_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
 
     def evaluate_lp(
-        self, lp_info: dict[str, Any], exclude_lp_id: int | None = None
+        self, lp_info: dict[str, Any]
     ) -> tuple[bool, float]:
         """
         Compute SNR for a given lightpath and return whether it meets requirements.
 
         :param lp_info: Lightpath information dictionary
         :type lp_info: dict[str, Any]
-        :param exclude_lp_id: LP ID to exclude from interference calculation.
-            Used during SNR recheck to exclude the new LP's interference.
-        :type exclude_lp_id: int | None
         :return: Tuple of (meets_snr_requirement, snr_value_in_dB)
         :rtype: tuple[bool, float]
         """
@@ -1309,7 +1299,7 @@ class SnrMeasurements:
 
         if self.engine_props_dict["snr_type"] == "gsnr":
             if self.engine_props_dict["band_list"] == ["c"]:
-                resp, snr_val, _ = self.check_gsnr(exclude_lp_id=exclude_lp_id)
+                resp, snr_val, _ = self.check_gsnr()
             elif self.engine_props_dict["band_list"] == ["c", "l"]:
                 resp, snr_val, _ = self.check_gsnr_mb()
             else:
@@ -1346,14 +1336,11 @@ class SnrMeasurements:
         # Import here to avoid circular dependency
         from fusion.utils.spectrum import get_overlapping_lightpaths
 
-        # Build list of all active lightpaths, excluding the new LP
-        # (In V6, allocation happens before SNR recheck, so new LP is already in
-        # lightpath_status_dict. We must exclude it to match V5 behavior where
-        # SNR recheck only considers EXISTING lightpaths, not the new one.)
+        # Build list of all active lightpaths (include new LP for interference calculation)
         all_active_lps = self._build_lightpath_list_from_net_spec()
         new_lp_id = new_lp_info.get("id")
-        if new_lp_id is not None:
-            all_active_lps = [lp for lp in all_active_lps if lp.get("id") != new_lp_id]
+        spectrum = new_lp_info.get('spectrum', (None, None))
+        print(f"[V6][SNR] LP {new_lp_id} checking: slots={spectrum} core={new_lp_info.get('core')} mod={new_lp_info.get('mod_format')}")
 
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
@@ -1364,13 +1351,16 @@ class SnrMeasurements:
             include_all_bands=self.engine_props_dict.get("recheck_crossband", True),
             bidirectional_links=self.engine_props_dict.get("bi_directional", False),
         )
+        print(f"[V6][SNR] LP {new_lp_id} overlapping={len(overlapping_lps)} ids={[lp.get('id') for lp in overlapping_lps]}")
 
-        # Re-evaluate each overlapping lightpath (excluding new LP's interference)
+        # Re-evaluate each overlapping lightpath (include new LP's interference)
         violations = []
         for lp in overlapping_lps:
-            resp, observed_snr = self.evaluate_lp(lp, exclude_lp_id=new_lp_id)
+            resp, observed_snr = self.evaluate_lp(lp)
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
+            print(f"[V6][SNR] LP {new_lp_id} eval existing LP {lp['id']}: snr={observed_snr:.2f} req={required_snr:.2f} pass={resp}")
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 
+        print(f"[V6][SNR] LP {new_lp_id} RESULT={not violations} violations={violations}")
         return not violations, violations
