@@ -1339,8 +1339,6 @@ class SnrMeasurements:
         # Build list of all active lightpaths (include new LP for interference calculation)
         all_active_lps = self._build_lightpath_list_from_net_spec()
         new_lp_id = new_lp_info.get("id")
-        spectrum = new_lp_info.get('spectrum', (None, None))
-        print(f"[V6][SNR] LP {new_lp_id} checking: slots={spectrum} core={new_lp_info.get('core')} mod={new_lp_info.get('mod_format')}")
 
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
@@ -1351,16 +1349,13 @@ class SnrMeasurements:
             include_all_bands=self.engine_props_dict.get("recheck_crossband", True),
             bidirectional_links=self.engine_props_dict.get("bi_directional", False),
         )
-        print(f"[V6][SNR] LP {new_lp_id} overlapping={len(overlapping_lps)} ids={[lp.get('id') for lp in overlapping_lps]}")
 
         # Re-evaluate each overlapping lightpath (include new LP's interference)
         violations = []
         for lp in overlapping_lps:
             resp, observed_snr = self.evaluate_lp(lp)
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
-            print(f"[V6][SNR] LP {new_lp_id} eval existing LP {lp['id']}: snr={observed_snr:.2f} req={required_snr:.2f} pass={resp}")
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 
-        print(f"[V6][SNR] LP {new_lp_id} RESULT={not violations} violations={violations}")
         return not violations, violations

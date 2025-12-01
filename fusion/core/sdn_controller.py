@@ -735,7 +735,9 @@ class SDNController:
                     self.sdn_props.band_list.pop(lp_idx)
                     self.sdn_props.core_list.pop(lp_idx)
                     self.sdn_props.end_slot_list.pop(lp_idx)
+                    self.sdn_props.xt_list.pop(lp_idx)
                     self.sdn_props.crosstalk_list.pop(lp_idx)
+                    self.sdn_props.snr_list.pop(lp_idx)
                     self.sdn_props.bandwidth_list.pop(lp_idx)
                     self.sdn_props.modulation_list.pop(lp_idx)
 
@@ -804,7 +806,9 @@ class SDNController:
                         self.sdn_props.band_list.pop(lp_idx)
                         self.sdn_props.core_list.pop(lp_idx)
                         self.sdn_props.end_slot_list.pop(lp_idx)
+                        self.sdn_props.xt_list.pop(lp_idx)
                         self.sdn_props.crosstalk_list.pop(lp_idx)
+                        self.sdn_props.snr_list.pop(lp_idx)
                         self.sdn_props.bandwidth_list.pop(lp_idx)
                         self.sdn_props.modulation_list.pop(lp_idx)
 

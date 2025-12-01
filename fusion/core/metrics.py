@@ -568,7 +568,6 @@ class SimStats:
             if sdn_data.bandwidth is not None:
                 self.bit_rate_blocked += int(sdn_data.bandwidth)
                 self.bit_rate_request += int(sdn_data.bandwidth)
-            print(f"[BLOCK_DEBUG] req={req_data.get('req_id')} BLOCKED was_routed={sdn_data.was_routed} bw={sdn_data.bandwidth} remaining_bw={getattr(sdn_data, 'remaining_bw', None)} bit_rate_blocked={self.bit_rate_blocked} bit_rate_request={self.bit_rate_request}")
             if (
                 sdn_data.block_reason is not None
                 and sdn_data.block_reason in self.stats_props.block_reasons_dict
@@ -588,7 +587,6 @@ class SimStats:
             if sdn_data.was_groomed:
                 if sdn_data.bandwidth is not None:
                     self.bit_rate_request += int(sdn_data.bandwidth)
-                print(f"[BLOCK_DEBUG] req={req_data.get('req_id')} GROOMED was_routed={sdn_data.was_routed} bw={sdn_data.bandwidth} remaining_bw={getattr(sdn_data, 'remaining_bw', None)} bit_rate_blocked={self.bit_rate_blocked} bit_rate_request={self.bit_rate_request}")
                 return
 
             # Track bit rate for requests
@@ -603,8 +601,6 @@ class SimStats:
                 was_new_lps = getattr(sdn_data, "was_new_lp_established", [])
                 if not was_new_lps:
                     return
-
-            print(f"[BLOCK_DEBUG] req={req_data.get('req_id')} ROUTED was_routed={sdn_data.was_routed} bw={sdn_data.bandwidth} remaining_bw={getattr(sdn_data, 'remaining_bw', None)} bit_rate_blocked={self.bit_rate_blocked} bit_rate_request={self.bit_rate_request}")
 
             if sdn_data.path_list is not None:
                 num_hops = len(sdn_data.path_list) - 1
