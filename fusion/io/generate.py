@@ -30,11 +30,16 @@ def create_pt(
         "core_pitch": 4e-5,
         # Optical band frequency ranges (in Hz) - standard ITU-T specifications
         "frequency_start_c": 3e8 / 1565e-9,  # C-band start from 1565nm wavelength (~191.69 THz)
-        "frequency_end_c": 196.1e12,    # C-band end: 196.1 THz (~1530 nm)
-        "frequency_start_l": 186.5e12,  # L-band start: 186.5 THz (~1625 nm)
-        "frequency_end_l": 191.5e12,    # L-band end: 191.5 THz (~1565 nm)
+        "frequency_end_c": (3e8 / 1565e-9) + 6.0e12,  # C-band end (match v5)
+        "frequency_start_l": 3e8 / 1620e-9,  # L-band start: from 1620nm wavelength
+        "frequency_end_l": (3e8 / 1620e-9) + 6.0e12,  # L-band end (match v5)
         "frequency_start_s": 185.0e12,  # S-band start: 185.0 THz (~1460 nm)
         "frequency_end_s": 190.0e12,    # S-band end: 190.0 THz (~1530 nm)
+        "c_band_bw": 6.0e12,
+        # Multi-band GSNR parameters (ported from v5 for C+L band calculations)
+        "raman_gain_slope": 0.028 / 1e3 / 1e12,  # C_r Raman gain slope
+        "gvd": -22.6 * (1e-12 * 1e-12) / 1e3,    # beta2 - Group velocity dispersion
+        "gvd_slope": 0.14 * (1e-12 * 1e-12 * 1e-12) / 1e3,  # beta3 - GVD slope
     }
 
     topology_dict = {

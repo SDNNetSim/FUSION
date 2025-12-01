@@ -876,6 +876,272 @@ class SnrMeasurements:
         
         return resp, gsnr_db, bw_resp
 
+    def _compute_nli_mb(
+        self, source: str, dest: str, p_total: float
+    ) -> float:
+        """
+        Compute nonlinear interference GSNR (SNR_NLI) for multi-band EON.
+
+        Uses Eq. (3) in https://doi.org/10.1049/cp.2019.0892
+
+        :param source: Link start node
+        :type source: str
+        :param dest: Link end node
+        :type dest: str
+        :param p_total: Link's power profile
+        :type p_total: float
+        :return: Inverse nonlinear SNR value of given link
+        :rtype: float
+        """
+        if self.snr_props.link_dictionary is None:
+            raise ValueError("link_dictionary must be initialized")
+        if self.spectrum_props.current_band is None:
+            raise ValueError("current_band must be initialized")
+        if self.spectrum_props.start_slot is None:
+            raise ValueError("start_slot must be initialized")
+        if self.number_of_slots is None:
+            raise ValueError("number_of_slots must be initialized")
+
+        link_dict = self.snr_props.link_dictionary
+        f_c = (link_dict['frequency_end_c'] + link_dict['frequency_start_l']) / 2
+        gamma = link_dict['non_linearity']
+        alpha_i = link_dict['attenuation']
+        alpha_bar_i = link_dict['attenuation']
+        c_ri = link_dict['raman_gain_slope']
+        beta_2 = link_dict['gvd']
+        beta_3 = link_dict['gvd_slope']
+        p_i = self.engine_props_dict['input_power']
+        pi = np.pi
+        bi = (self.number_of_slots * self.engine_props_dict['bw_per_slot']) * 10 ** 9
+        f_i = link_dict['frequency_start_' + self.spectrum_props.current_band] + self.spectrum_props.start_slot * self.engine_props_dict['bw_per_slot'] * 10 ** 9
+        f_i += (bi / 2)
+        ti = (alpha_i + alpha_bar_i - p_total * c_ri * (f_i - f_c)) ** 2
+        ai = alpha_i + alpha_bar_i
+        phi_i = (1.5 * pi ** 2) * (beta_2 + 2 * beta_3 * (f_i - f_c))
+        self.channels_list = []
+        spm = 0.0
+        xpm = 0.0
+        epsilon = 0.0001
+
+        for band in self.engine_props_dict['band_list']:
+            for slot_index in range(self.engine_props_dict[band + '_band']):
+                if self.sdn_props.network_spectrum_dict is None:
+                    raise ValueError("network_spectrum_dict must be initialized")
+                curr_link = self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][band]
+                req_id = curr_link[self.spectrum_props.core_number][slot_index]
+                self.link_id = self.sdn_props.network_spectrum_dict[(source, dest)]['link_num']
+                self.snr_props.length = self.engine_props_dict['topology_info']['links'][self.link_id]['span_length']
+                length_m = self.snr_props.length * 1000
+
+                if (req_id > 0 and req_id not in self.channels_list) or (slot_index == self.spectrum_props.start_slot and band == self.spectrum_props.current_band):
+                    ch_k_mod = None
+                    if req_id > 0:
+                        for _, lp_dict in self.sdn_props.lightpath_status_dict.items():
+                            if req_id in lp_dict:
+                                ch_k_mod = lp_dict[req_id]['mod_format']
+
+                        b_k = len(np.where(req_id == curr_link[self.spectrum_props.core_number])[0])
+                        p_k = self.engine_props_dict['input_power']
+                        self.channels_list.append(req_id)
+                    else:
+                        b_k = self.number_of_slots
+
+                    if ch_k_mod is None and req_id > 0:
+                        if req_id in self.sdn_props.lightpath_id_list:
+                            idx = self.sdn_props.lightpath_id_list.index(req_id)
+                            ch_k_mod = self.sdn_props.modulation_list[idx]
+                        else:
+                            raise NotImplementedError(f"Unexpected lightpath id: {req_id}")
+
+                    alpha_k = link_dict['attenuation']
+                    alpha_bar_k = link_dict['attenuation']
+                    b_k *= self.engine_props_dict['bw_per_slot']
+                    f_k = link_dict['frequency_start_' + band] + ((slot_index * self.engine_props_dict['bw_per_slot']) + (b_k / 2)) * 10 ** 9
+                    b_k *= 10 ** 9
+
+                    if f_i == f_k:
+                        spm += (4 / 9) * ((pi * (gamma ** 2) * (self.snr_props.number_of_spans ** (1 + epsilon)) * (p_i ** 2)) / ((bi ** 2) * phi_i * alpha_bar_i * (2 * alpha_i + alpha_bar_i))) * (
+                            ((ti - (alpha_i ** 2)) / alpha_i) * np.arcsinh((phi_i * (bi ** 2)) / (pi * alpha_i)) +
+                            ((ai ** 2 - ti) / ai) * np.arcsinh((phi_i * (bi ** 2)) / (pi * ai))
+                        )
+                    else:
+                        fk_fi = abs(f_k - f_i)
+                        tk = (alpha_k + alpha_bar_k - p_total * c_ri * (f_k - f_c)) ** 2
+                        ak = alpha_k + alpha_bar_k
+                        n_tilde = 0 if self.snr_props.number_of_spans == 1 else self.snr_props.number_of_spans
+                        phi_i_k = (-4 * pi ** 2 * (f_k - f_i)) * (beta_2 + pi * beta_3 * (f_i + f_k - 2 * f_c))
+                        phi = (-4 * pi ** 2 * (beta_2 + pi * beta_3 * (f_i + f_k))) * length_m
+                        xpm += (32 / 27) * (((gamma ** 2) * (p_k ** 2)) / b_k) * (
+                            ((self.snr_props.number_of_spans + (5 / 6) * (-1 * self.engine_props_dict['phi'][ch_k_mod])) / (phi_i_k * alpha_bar_k * (2 * alpha_k + alpha_bar_k))) * (
+                                ((tk - (alpha_k ** 2)) / alpha_k) * np.arctan((phi_i_k * bi) / alpha_k) +
+                                (((ak ** 2) - tk) / ak) * np.arctan((phi_i_k * bi) / ak)
+                            ) +
+                            (5 / 3) * ((-1 * self.engine_props_dict['phi'][ch_k_mod] * pi * n_tilde * tk) / (abs(phi) * (b_k ** 2) * (alpha_k ** 2) * (ak ** 2))) * (
+                                (2 * fk_fi - b_k) * math.log((2 * fk_fi - b_k) / (2 * fk_fi + b_k)) + 2 * b_k
+                            )
+                        )
+
+        snr_nli_inv = spm + xpm
+        return snr_nli_inv
+
+    def _compute_ase_mb(
+        self, source: str, dest: str, p_total: float
+    ) -> float:
+        """
+        Compute ASE SNR (P_ASE) for multi-band EONs.
+
+        Uses Eq. (5) in https://doi.org/10.1364/JOCN.515081
+
+        :param source: Link start node
+        :type source: str
+        :param dest: Link end node
+        :type dest: str
+        :param p_total: Link's power profile
+        :type p_total: float
+        :return: Inverse ASE SNR value of given link
+        :rtype: float
+        """
+        if self.snr_props.link_dictionary is None:
+            raise ValueError("link_dictionary must be initialized")
+        if self.spectrum_props.current_band is None:
+            raise ValueError("current_band must be initialized")
+        if self.spectrum_props.start_slot is None:
+            raise ValueError("start_slot must be initialized")
+        if self.number_of_slots is None:
+            raise ValueError("number_of_slots must be initialized")
+
+        link_dict = self.snr_props.link_dictionary
+        p_ase_link = 0.0
+        c_ri = link_dict['raman_gain_slope']
+        b_i = (self.number_of_slots * self.engine_props_dict['bw_per_slot']) * 10 ** 9
+        f_i = link_dict['frequency_start_' + self.spectrum_props.current_band] + self.spectrum_props.start_slot * self.engine_props_dict['bw_per_slot'] * 10 ** 9
+        f_i += (b_i / 2)
+        alpha = link_dict['attenuation']
+        self.channels_list = []
+        p_profile = 0.0
+        l_eff = (1 - np.exp(-alpha * self.snr_props.length * 10 ** 3)) / alpha
+        p_profile += (2 / b_i) * np.exp(-p_total * c_ri * l_eff * f_i) * np.sinh(p_total * c_ri * l_eff * (b_i / 2))
+
+        for band in self.engine_props_dict['band_list']:
+            for slot_index in range(self.engine_props_dict[band + '_band']):
+                if self.sdn_props.network_spectrum_dict is None:
+                    raise ValueError("network_spectrum_dict must be initialized")
+                curr_link = self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][band]
+                req_id = curr_link[self.spectrum_props.core_number][slot_index]
+                if req_id > 0 and req_id not in self.channels_list:
+                    b_k = len(np.where(req_id == curr_link[self.spectrum_props.core_number])[0]) * self.engine_props_dict['bw_per_slot']
+                    f_k = link_dict['frequency_start_' + band] + ((slot_index * self.engine_props_dict['bw_per_slot']) + (b_k / 2)) * 10 ** 9
+                    b_k *= 10 ** 9
+                    p_profile += (2 / b_k) * np.exp(-p_total * c_ri * l_eff * f_k) * np.sinh(p_total * c_ri * l_eff * (b_k / 2))
+                    self.channels_list.append(req_id)
+
+        p_profile = (p_total ** 2 * c_ri * l_eff * np.exp((-alpha * self.snr_props.length * 10 ** 3) - (p_total * c_ri * l_eff * f_i))) / p_profile
+        p_ase_span = 2 * self.snr_props.nsp[self.spectrum_props.current_band] * self.snr_props.planck_constant * f_i * b_i * ((self.engine_props_dict['input_power'] / p_profile) - 1)
+        p_ase_link = p_ase_span * self.snr_props.number_of_spans
+
+        snr_ase_inv = p_ase_link / self.engine_props_dict['input_power']
+        return snr_ase_inv
+
+    def _gsnr_calc_mb(self) -> float:
+        """
+        Calculate GSNR for multi-band EON (C+L band) for single request.
+
+        :return: GSNR value of given resources
+        :rtype: float
+        """
+        if self.spectrum_props.path_list is None:
+            raise ValueError("path_list must be initialized")
+
+        snr_nli_inv = 0.0
+        snr_ase_inv = 0.0
+        snr_lp_inv = 0.0
+
+        for link_num in range(len(self.spectrum_props.path_list) - 1):
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
+            if self.sdn_props.network_spectrum_dict is None:
+                raise ValueError("network_spectrum_dict must be initialized")
+            self.link_id = self.sdn_props.network_spectrum_dict[(source, dest)]['link_num']
+            self.snr_props.link_dictionary = self.engine_props_dict['topology_info']['links'][self.link_id]['fiber']
+            self.snr_props.length = self.engine_props_dict['topology_info']['links'][self.link_id]['span_length']
+            self.snr_props.number_of_spans = math.ceil(self.engine_props_dict['topology_info']['links'][self.link_id]['length'] / self.snr_props.length)
+
+            # Calculate total power
+            p_total = 1
+            number_lp: set = set()
+            for band in self.engine_props_dict['band_list']:
+                curr_link = self.sdn_props.network_spectrum_dict[(source, dest)]['cores_matrix'][band][self.spectrum_props.core_number]
+                number_lp.update(np.unique(curr_link[curr_link > 0]))
+            p_total += len(number_lp)
+            p_total *= self.engine_props_dict['input_power']
+
+            snr_nli_inv_l = self._compute_nli_mb(source, dest, p_total)
+            snr_ase_inv_l = self._compute_ase_mb(source, dest, p_total)
+            snr_nli_inv += snr_nli_inv_l
+            snr_ase_inv += snr_ase_inv_l
+
+        snr_lp_inv += (snr_nli_inv + snr_ase_inv)
+        gsnr = 1 / snr_lp_inv
+        return gsnr
+
+    def check_gsnr_mb(self) -> tuple[bool | str, float, int]:
+        """
+        Check GSNR of multiband and create response based on request and modulation type.
+
+        Ported from v5 for multi-band (C+L) GSNR calculations.
+
+        :return: Whether GSNR is acceptable for allocation or not for a given
+                 request, GSNR value, and supported bandwidth
+        :rtype: tuple[bool | str, float, int]
+        """
+        from fusion.utils.data import sort_nested_dict_values
+
+        bw_mapping = {
+            "64-QAM": 800,
+            "32-QAM": 700,
+            "16-QAM": 600,
+            "8-QAM": 500,
+            "QPSK": 400,
+            "BPSK": 200
+        }
+
+        gsnr = self._gsnr_calc_mb()
+        gsnr_db = 10 * np.log10(gsnr)
+
+        # v5 used snr_margin=0, so we just check against req_snr
+        resp: bool | str = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation]
+        bw_resp = 0
+
+        if resp:
+            if self.engine_props_dict['fixed_grid']:
+                if not self.spectrum_props.slicing_flag:
+                    if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        bw_resp = bw_mapping[self.spectrum_props.modulation]
+                    else:
+                        resp = False
+                else:
+                    bw_resp = bw_mapping[self.spectrum_props.modulation]
+            else:
+                if self.spectrum_props.slicing_flag:
+                    bw_resp = 0
+                else:
+                    bw_resp = int(self.sdn_props.bandwidth)
+
+        # Dynamic modulation selection for slicing with dynamic lightpaths
+        if self.spectrum_props.slicing_flag and self.engine_props_dict['fixed_grid'] and self.engine_props_dict.get('dynamic_lps', False):
+            mod_formats_dict = sort_nested_dict_values(
+                original_dict=self.sdn_props.modulation_formats_dict,
+                nested_key='max_length'
+            )
+            force_mod_format = list(mod_formats_dict.keys())
+            for mod in force_mod_format:
+                if gsnr_db >= self.snr_props.req_snr[mod]:
+                    resp = mod
+                    bw_resp = bw_mapping[mod]
+                    break
+
+        return resp, gsnr_db, bw_resp
+
     def handle_snr(self, path_index: int) -> tuple[bool, float, float]:
         """
         Controls the methods of this class.
@@ -899,9 +1165,16 @@ class SnrMeasurements:
             snr_check, xt_cost = self.check_xt()
         elif self.engine_props_dict["snr_type"] == "gsnr":
             # GSNR (Generalized SNR) - proper implementation ported from v5
-            snr_check, xt_cost, lp_bw = self.check_gsnr()
+            if self.engine_props_dict["band_list"] == ["c"]:
+                snr_check, xt_cost, lp_bw = self.check_gsnr()
+            elif self.engine_props_dict["band_list"] == ["c", "l"]:
+                snr_check, xt_cost, lp_bw = self.check_gsnr_mb()
+            else:
+                raise ValueError(
+                    f"Unsupported band_list: {self.engine_props_dict['band_list']}"
+                )
 
-            # Note: check_gsnr can return either a boolean (standard mode) or
+            # Note: check_gsnr/check_gsnr_mb can return either a boolean (standard mode) or
             # a modulation string (dynamic mode with slicing_flag=True).
             # In handle_snr, we should NOT override the pre-selected modulation.
             # Dynamic modulation selection is handled by handle_snr_dynamic_slicing.
@@ -1217,9 +1490,7 @@ class SnrMeasurements:
             if self.engine_props_dict["band_list"] == ["c"]:
                 modulation_format, snr_value, bandwidth = self.check_gsnr()
             elif self.engine_props_dict["band_list"] == ["c", "l"]:
-                raise NotImplementedError(
-                    "Multi-band GSNR (check_gsnr_mb) not yet ported to v6"
-                )
+                modulation_format, snr_value, bandwidth = self.check_gsnr_mb()
             else:
                 raise ValueError(
                     f"Unexpected band_list: {self.engine_props_dict['band_list']}"
