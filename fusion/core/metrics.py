@@ -352,17 +352,12 @@ class SimStats:
             if stat_key == "snr_list":
                 if set(curr_sdn_data) <= {None}:
                     continue  # Skip if all values are None
-                # Filter to only newly established lightpaths when grooming is enabled
+                # Filter to only newly established lightpaths (always filter like v5)
                 new_lp_values = []
                 for i, value in enumerate(curr_sdn_data):
-                    if self.engine_props.get("is_grooming_enabled", False):
-                        if i < len(sdn_data.lightpath_id_list):
-                            lp_id = sdn_data.lightpath_id_list[i]
-                            if lp_id in sdn_data.was_new_lp_established and value is not None:
-                                new_lp_values.append(value)
-                    else:
-                        # When grooming is disabled, include all non-None values
-                        if value is not None:
+                    if i < len(sdn_data.lightpath_id_list):
+                        lp_id = sdn_data.lightpath_id_list[i]
+                        if lp_id in sdn_data.was_new_lp_established and value is not None:
                             new_lp_values.append(value)
                 # Append mean of new lightpaths to overall statistics list
                 if len(new_lp_values) > 0:
