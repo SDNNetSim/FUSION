@@ -705,6 +705,12 @@ class SpectrumAssignment:
         if lp_id is None:
             raise ValueError("Lightpath ID must be initialized")
 
+        # Only track NEW lightpaths (matching v5 behavior)
+        # Groomed requests reuse existing lightpaths and shouldn't create new entries
+        was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+        if lp_id not in was_new_lps:
+            return
+
         # Initialize light_id entry if needed
         if self.sdn_props.lightpath_status_dict is None:
             self.sdn_props.lightpath_status_dict = {}

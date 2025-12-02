@@ -613,10 +613,6 @@ class SDNController:
             return True
 
         # SNR recheck failed - rollback the allocation
-        erlang = self.engine_props.get("erlang", "?")
-        iteration = self.engine_props.get("current_iteration", "?")
-        print(f"[SNR_RECHECK_FAIL] erlang={erlang}, iter={iteration}, req={self.sdn_props.request_id}, lp_id={lightpath_id}, "
-              f"new_lp_info={new_lp_info}, violations={violations}")
         logger.warning(
             f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. "
             f"Violations: {violations}"
@@ -734,11 +730,11 @@ class SDNController:
         if self.sdn_props.bandwidth is not None and remaining_bw != int(
             self.sdn_props.bandwidth
         ):
-            # Rollback newly established lightpaths
+            # Rollback newly established lightpaths (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
             if isinstance(was_new_lps, list):
                 for lpid in list(was_new_lps):
-                    self.release(lightpath_id=lpid, slicing_flag=True)
+                    self.release(lightpath_id=lpid, slicing_flag=True, skip_validation=True)
                     was_new_lps.remove(lpid)
 
                     # Remove from tracking lists
@@ -793,7 +789,7 @@ class SDNController:
         if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(
             self.sdn_props.bandwidth
         ):
-            # Release all newly established lightpaths for this request
+            # Release all newly established lightpaths for this request (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
             if isinstance(was_new_lps, list):
                 for lpid in list(was_new_lps):
@@ -808,7 +804,7 @@ class SDNController:
                             lp_info["remaining_bandwidth"] += allocated_bw
                             lp_info["requests_dict"].pop(self.sdn_props.request_id)
 
-                    self.release(lightpath_id=lpid, slicing_flag=True)
+                    self.release(lightpath_id=lpid, slicing_flag=True, skip_validation=True)
                     was_new_lps.remove(lpid)
 
                     # Remove from tracking lists

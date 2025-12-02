@@ -400,12 +400,12 @@ class LightPathSlicingManager:
 
                     dedicated_bw = bw if remaining_bw > bw else remaining_bw
                     sdn_controller._update_req_stats(bandwidth=str(dedicated_bw))
+                    self.sdn_props.was_new_lp_established.append(lp_id)
                     self.spectrum_obj._update_lightpath_status()
 
                     remaining_bw -= bw
                     self.sdn_props.number_of_transponders += 1
                     self.sdn_props.is_sliced = True
-                    self.sdn_props.was_new_lp_established.append(lp_id)
                     self.sdn_props.was_partially_routed = False
                     self.sdn_props.remaining_bw = max(0, remaining_bw)
 

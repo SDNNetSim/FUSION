@@ -710,9 +710,6 @@ class SimStats:
             core = lp_info["core"]
             utilization = lp_info["utilization"]
 
-            if erlang == 1525.0:
-                print(f"[UTIL] e=1525 i={iteration} lp={lp_id} bw={bit_rate_key} util={utilization:.2f}")
-
             # Track per-bandwidth/band/core (match grooming-new: direct append)
             # If keys don't exist, KeyError will surface the configuration issue
             self.stats_props.lp_bw_utilization_dict[bit_rate_key][band][core].append(
