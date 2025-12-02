@@ -262,6 +262,7 @@ def average_bandwidth_usage(
     if total_time == 0:
         return 0.0
 
-    average_utilization = total_bw_time / total_time
+    # Round to 2 decimal places to match v5 behavior
+    average_utilization = round(total_bw_time / total_time, 2)
 
     return average_utilization

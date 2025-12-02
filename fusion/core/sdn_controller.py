@@ -576,6 +576,10 @@ class SDNController:
         if not self.engine_props.get("snr_recheck", False):
             return True
 
+        # DEBUG: Track req=145 specifically
+        if self.sdn_props.request_id == 145:
+            print(f"[REQ145_DEBUG] Entering _check_snr_after_allocation for lp_id={lightpath_id}")
+
         # Build lightpath info for SNR recheck
         new_lp_info = {
             "id": lightpath_id,
@@ -599,6 +603,11 @@ class SDNController:
 
         # Perform SNR recheck
         recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
+
+        # DEBUG: Track req=145 specifically
+        if self.sdn_props.request_id == 145:
+            print(f"[REQ145_DEBUG] snr_recheck result: recheck_enable={recheck_enable}, violations={violations}")
+            print(f"[REQ145_DEBUG] new_lp_info={new_lp_info}")
 
         if recheck_enable:
             return True

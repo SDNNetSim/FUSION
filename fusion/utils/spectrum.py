@@ -420,6 +420,7 @@ def get_overlapping_lightpaths(
     include_adjacent_cores: bool = True,
     include_all_bands: bool = True,
     bidirectional_links: bool = True,
+    debug_req_145: bool = False,
 ) -> list[dict]:
     """
     Return lightpaths that overlap with a new lightpath.
@@ -449,10 +450,17 @@ def get_overlapping_lightpaths(
     new_core = new_lp["core"]
     new_band = new_lp.get("band", "c")
 
+    if debug_req_145:
+        print(f"[REQ145_OVERLAP] new_edges: {new_edges}")
+        print(f"[REQ145_OVERLAP] new_core: {new_core}, new_band: {new_band}, include_all_bands: {include_all_bands}")
+
     # Get adjacent cores if requested
     adj_cores = adjacent_core_indices(new_core, cores_per_link) if include_adjacent_cores else []
 
     affected = []
+    link_fail_count = 0
+    core_fail_count = 0
+    band_fail_count = 0
 
     for lp in lp_list:
         # Note: v5 includes the new LP in slicing mode (multiple LPs in request)
@@ -463,19 +471,30 @@ def get_overlapping_lightpaths(
         intersection = lp_edges & new_edges
 
         if not intersection:
+            link_fail_count += 1
+            if debug_req_145 and lp["id"] in [9, 10, 50]:  # Check a few known failing IDs from v5
+                print(f"[REQ145_OVERLAP] LP {lp['id']} FAILED link check: lp_edges={lp_edges}, intersection={intersection}")
             continue
 
         # Check core overlap
         lp_core = lp.get("core")
         if not (lp_core == new_core or lp_core in adj_cores):
+            core_fail_count += 1
             continue
 
         # Check band overlap if requested
-        if not include_all_bands:
-            lp_band = lp.get("band", "c")
-            if lp_band != new_band:
-                continue
+        # NOTE: Commented out to mirror v5 behavior (v5 has this disabled)
+        # if not include_all_bands:
+        #     lp_band = lp.get("band", "c")
+        #     if lp_band != new_band:
+        #         band_fail_count += 1
+        #         if debug_req_145 and band_fail_count <= 3:
+        #             print(f"[REQ145_OVERLAP] LP {lp['id']} FAILED band check: lp_band={lp_band}, new_band={new_band}")
+        #         continue
 
         affected.append(lp)
+
+    if debug_req_145:
+        print(f"[REQ145_OVERLAP] link_fail_count: {link_fail_count}, core_fail_count: {core_fail_count}, band_fail_count: {band_fail_count}, affected: {len(affected)}")
 
     return affected

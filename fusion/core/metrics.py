@@ -700,6 +700,8 @@ class SimStats:
         :param utilization_dict: Dictionary mapping lightpath_id to utilization info
             with keys: 'bit_rate', 'band', 'core', 'utilization'
         """
+        erlang = self.engine_props.get('erlang', 0)
+        iteration = self.iteration
         for lp_id in utilization_dict:
             lp_info = utilization_dict[lp_id]
             # Convert to int first to match initialization keys (e.g., '600' not '600.0')
@@ -707,6 +709,9 @@ class SimStats:
             band = lp_info["band"]
             core = lp_info["core"]
             utilization = lp_info["utilization"]
+
+            if erlang == 1525.0:
+                print(f"[UTIL] e=1525 i={iteration} lp={lp_id} bw={bit_rate_key} util={utilization:.2f}")
 
             # Track per-bandwidth/band/core (match grooming-new: direct append)
             # If keys don't exist, KeyError will surface the configuration issue

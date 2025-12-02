@@ -1633,6 +1633,10 @@ class SnrMeasurements:
         # Import here to avoid circular dependency
         from fusion.utils.spectrum import get_overlapping_lightpaths
 
+        # DEBUG: Track req=145 specifically
+        req_id = self.sdn_props.request_id
+        debug_145 = (req_id == 145)
+
         new_lp_id = new_lp_info.get("id")
 
         # Build list of all active lightpaths, EXCLUDING the new LP
@@ -1640,6 +1644,17 @@ class SnrMeasurements:
         # but v6 updates it during slicing, so we must explicitly exclude it)
         all_active_lps = self._build_lightpath_list_from_net_spec(exclude_lp_id=new_lp_id)
         new_lp_mod = new_lp_info.get("mod_format", "UNKNOWN")
+
+        if debug_145:
+            print(f"[REQ145_DEBUG] all_active_lps count: {len(all_active_lps)}")
+            # Print a summary of active LP IDs
+            active_ids = [lp['id'] for lp in all_active_lps]
+            print(f"[REQ145_DEBUG] active LP IDs: {sorted(active_ids)}")
+            # Print path format comparison
+            print(f"[REQ145_DEBUG] new_lp path: {new_lp_info['path']} (types: {[type(n).__name__ for n in new_lp_info['path']]})")
+            # Show first 3 active LP paths for comparison
+            for lp in all_active_lps[:3]:
+                print(f"[REQ145_DEBUG] active LP {lp['id']} path: {lp['path']} (types: {[type(n).__name__ for n in lp['path']]})")
 
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
@@ -1649,8 +1664,13 @@ class SnrMeasurements:
             include_adjacent_cores=self.engine_props_dict.get("recheck_adjacent_cores", True),
             include_all_bands=self.engine_props_dict.get("recheck_crossband", True),
             bidirectional_links=self.engine_props_dict.get("bi_directional", False),
+            debug_req_145=debug_145,
         )
 
+        if debug_145:
+            print(f"[REQ145_DEBUG] overlapping_lps count: {len(overlapping_lps)}")
+            overlapping_ids = [lp['id'] for lp in overlapping_lps]
+            print(f"[REQ145_DEBUG] overlapping LP IDs: {sorted(overlapping_ids)}")
 
         # Re-evaluate each overlapping lightpath (include new LP's interference)
         violations = []
@@ -1658,6 +1678,8 @@ class SnrMeasurements:
             resp, observed_snr = self.evaluate_lp(lp)
 
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
+            if debug_145:
+                print(f"[REQ145_DEBUG] evaluate_lp(id={lp['id']}): resp={resp}, observed_snr={observed_snr}, required_snr={required_snr}")
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 
