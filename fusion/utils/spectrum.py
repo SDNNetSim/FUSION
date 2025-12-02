@@ -453,12 +453,10 @@ def get_overlapping_lightpaths(
     adj_cores = adjacent_core_indices(new_core, cores_per_link) if include_adjacent_cores else []
 
     affected = []
-    new_lp_id = new_lp.get("id")
 
     for lp in lp_list:
-        # Skip the new LP itself - don't check for overlap with self
-        if lp.get("id") == new_lp_id:
-            continue
+        # Note: v5 includes the new LP in slicing mode (multiple LPs in request)
+        # The exclusion is handled at the source in _build_lightpath_list_from_net_spec
 
         # Check link overlap
         lp_edges = edge_set(lp["path"], bidirectional_links)

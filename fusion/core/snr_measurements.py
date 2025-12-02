@@ -1108,9 +1108,17 @@ class SnrMeasurements:
         gsnr = self._gsnr_calc_mb()
         gsnr_db = 10 * np.log10(gsnr)
 
+        # Dynamic modulation flag
+        _is_dyn = self.spectrum_props.slicing_flag and self.engine_props_dict['fixed_grid'] and self.engine_props_dict.get('dynamic_lps', False)
+
         # v5 used snr_margin=0, so we just check against req_snr
-        resp: bool | str = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation]
-        bw_resp = 0
+        # When _is_dyn is True and modulation is None, skip this check - dynamic selection will handle it
+        if self.spectrum_props.modulation is None and _is_dyn:
+            resp = False
+            bw_resp = 0
+        else:
+            resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation]
+            bw_resp = 0
 
         if resp:
             if self.engine_props_dict['fixed_grid']:
@@ -1128,7 +1136,7 @@ class SnrMeasurements:
                     bw_resp = int(self.sdn_props.bandwidth)
 
         # Dynamic modulation selection for slicing with dynamic lightpaths
-        if self.spectrum_props.slicing_flag and self.engine_props_dict['fixed_grid'] and self.engine_props_dict.get('dynamic_lps', False):
+        if _is_dyn:
             mod_formats_dict = sort_nested_dict_values(
                 original_dict=self.sdn_props.modulation_formats_dict,
                 nested_key='max_length'
@@ -1502,13 +1510,17 @@ class SnrMeasurements:
 
         return modulation_format, bandwidth, snr_value
 
-    def _build_lightpath_list_from_net_spec(self) -> list[dict[str, Any]]:
+    def _build_lightpath_list_from_net_spec(
+        self, exclude_lp_id: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Build lightpath list using net_spec_dict as primary source.
 
         Constructs a list of all active lightpaths by combining information from
         lightpath_status_dict and current lightpath_id_list.
 
+        :param exclude_lp_id: Optional LP ID to exclude from the list (e.g., the new LP being allocated)
+        :type exclude_lp_id: int | None
         :return: List of lightpath dictionaries
         :rtype: list[dict[str, Any]]
         """
@@ -1516,11 +1528,26 @@ class SnrMeasurements:
             {**self.sdn_props.lightpath_status_dict[light_id][lp_id], "id": lp_id}
             for light_id in self.sdn_props.lightpath_status_dict
             for lp_id in self.sdn_props.lightpath_status_dict[light_id]
+            if lp_id != exclude_lp_id  # Exclude the new LP (v6 updates dict DURING slicing)
         ]
 
-        # Add currently being allocated lightpaths (not yet in status dict)
+        # Track IDs already in list from dict to avoid duplicates
+        # (v6 updates lightpath_status_dict DURING slicing, so LPs may already be there)
+        ids_in_dict = {lp["id"] for lp in lp_list}
+
+
+        # Add currently being allocated lightpaths from lightpath_id_list
+        # v5 adds ALL LPs from lightpath_id_list when len > 1 (slicing mode),
+        # including the new LP. Only exclude from dict to avoid v6's early update.
         if len(self.sdn_props.lightpath_id_list) > 1:
             for lp_cnt in range(len(self.sdn_props.lightpath_id_list)):
+                lp_id = self.sdn_props.lightpath_id_list[lp_cnt]
+
+                # Skip if already in dict (avoid duplicates)
+                # But DO NOT skip the excluded LP here - v5 includes it from the list
+                if lp_id in ids_in_dict:
+                    continue
+
                 # Safely access crosstalk_list with default value if not available
                 snr_cost = (
                     self.sdn_props.crosstalk_list[lp_cnt]
@@ -1528,7 +1555,7 @@ class SnrMeasurements:
                     else 0.0
                 )
                 lp_list.append({
-                    "id": self.sdn_props.lightpath_id_list[lp_cnt],
+                    "id": lp_id,
                     "path": self.sdn_props.path_list,
                     "core": self.sdn_props.core_list[lp_cnt],
                     "start_slot": self.sdn_props.start_slot_list[lp_cnt],
@@ -1537,7 +1564,6 @@ class SnrMeasurements:
                     "mod_format": self.sdn_props.modulation_list[lp_cnt],
                     "snr_cost": snr_cost,
                 })
-
         return lp_list
 
     def load_from_lp_info(self, lp_info: dict[str, Any]) -> None:
@@ -1607,9 +1633,13 @@ class SnrMeasurements:
         # Import here to avoid circular dependency
         from fusion.utils.spectrum import get_overlapping_lightpaths
 
-        # Build list of all active lightpaths (include new LP for interference calculation)
-        all_active_lps = self._build_lightpath_list_from_net_spec()
         new_lp_id = new_lp_info.get("id")
+
+        # Build list of all active lightpaths, EXCLUDING the new LP
+        # (v5 doesn't have the new LP in lightpath_status_dict yet at this point,
+        # but v6 updates it during slicing, so we must explicitly exclude it)
+        all_active_lps = self._build_lightpath_list_from_net_spec(exclude_lp_id=new_lp_id)
+        new_lp_mod = new_lp_info.get("mod_format", "UNKNOWN")
 
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
@@ -1621,10 +1651,12 @@ class SnrMeasurements:
             bidirectional_links=self.engine_props_dict.get("bi_directional", False),
         )
 
+
         # Re-evaluate each overlapping lightpath (include new LP's interference)
         violations = []
         for lp in overlapping_lps:
             resp, observed_snr = self.evaluate_lp(lp)
+
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
