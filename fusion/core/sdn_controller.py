@@ -604,7 +604,9 @@ class SDNController:
             return True
 
         # SNR recheck failed - rollback the allocation
-        print(f"[SNR_RECHECK_FAIL] req={self.sdn_props.request_id}, lp_id={lightpath_id}, "
+        erlang = self.engine_props.get("erlang", "?")
+        iteration = self.engine_props.get("current_iteration", "?")
+        print(f"[SNR_RECHECK_FAIL] erlang={erlang}, iter={iteration}, req={self.sdn_props.request_id}, lp_id={lightpath_id}, "
               f"new_lp_info={new_lp_info}, violations={violations}")
         logger.warning(
             f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. "

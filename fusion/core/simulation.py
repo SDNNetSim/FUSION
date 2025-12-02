@@ -794,6 +794,7 @@ class SimulationEngine:
             pass
 #            print('debug line 709 in simulation.')
         self.iteration = iteration
+        self.engine_props["current_iteration"] = iteration
 
         # Reset state for new iteration (matches v5 pattern)
         self.reset()
