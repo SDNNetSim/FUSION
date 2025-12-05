@@ -25,6 +25,7 @@ get_path_mod = get_path_modulation
 sort_nested_dict_vals = sort_nested_dict_values
 
 # Legacy method mappings to new algorithm names
+# TODO: Legacy mapping to be removed
 LEGACY_METHOD_MAPPING = {
     "shortest_path": "k_shortest_path",  # k=1 shortest path
     "k_shortest_path": "k_shortest_path",
@@ -153,6 +154,7 @@ class Routing:
         :param algorithm: Algorithm instance with results
         :type algorithm: Any
         """
+        # TODO: We shouldn't have to copy like this, bad design identified by actions
         if hasattr(algorithm, "route_props"):
             self.route_props.paths_matrix = algorithm.route_props.paths_matrix
             self.route_props.modulation_formats_matrix = (
@@ -239,6 +241,7 @@ class Routing:
             logger.warning("No paths found by routing algorithm")
 
     # Legacy methods for backward compatibility
+    # TODO: Legacy method
     def find_least_weight(self, weight: str) -> None:
         """
         Legacy method: Find path with minimum weight.
@@ -363,6 +366,7 @@ class Routing:
         self.engine_props["route_method"] = "frag_aware"
         self.get_route()
 
+    # Util function or no?
     def _find_most_cong_link(self, path_list: list) -> None:
         """Find the most congested link along a path (backward compatibility)."""
 

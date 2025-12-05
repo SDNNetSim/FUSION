@@ -30,6 +30,7 @@ def create_entry_point_wrapper(
     :rtype: tuple[Callable[[], int], Callable[[], None]]
     """
 
+    # TODO: Legacy code
     def legacy_main() -> int:
         """
         Legacy function name for main entry point.

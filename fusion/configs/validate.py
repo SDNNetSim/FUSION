@@ -273,6 +273,7 @@ def _validate_rl_policy_config(config: dict[str, Any]) -> None:
     policy_type = rl_settings.get("policy_type", "ksp_ff")
 
     # Validate model paths for RL policies
+    # TODO: Variable naming...
     if policy_type == "bc":
         if "bc_model_path" not in rl_settings:
             raise ValidationError("BC policy requires 'bc_model_path'")

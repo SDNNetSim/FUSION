@@ -55,6 +55,7 @@ def normalize_config_path(config_path: str) -> str:
     return config_path
 
 
+# TODO: Type is any
 def setup_config_from_cli(args: Any) -> dict[str, Any]:
     """
     Set up configuration from command line input.
@@ -68,6 +69,8 @@ def setup_config_from_cli(args: Any) -> dict[str, Any]:
     config_path = args_dict.get("config_path")
 
     try:
+        # TODO (variable naming registry)
+        # TODO (document data structs)
         config_data = load_config(config_path, args_dict)
         return config_data
     except (
@@ -83,6 +86,10 @@ def setup_config_from_cli(args: Any) -> dict[str, Any]:
         return {}
 
 
+# TODO (variable naming registry)
+# TODO (document data structs)
+# TODO: Type is any
+# TODO: It is not clear why this does what it does and how to new users
 def _process_required_options(
     config: ConfigParser,
     config_dict: dict[str, Any],
@@ -127,6 +134,9 @@ def _process_required_options(
             config_dict[DEFAULT_THREAD_NAME][option] = final_value
 
 
+# TODO (variable naming registry)
+# TODO (document data structs)
+# TODO: Type is any
 def _process_optional_options(
     config: ConfigParser,
     config_dict: dict[str, Any],
@@ -280,6 +290,9 @@ def load_config(
         return {}
 
 
+# TODO (variable naming registry)
+# TODO (document data structs)
+# TODO: Type is any
 def _setup_threads(
     config: ConfigParser,
     config_dict: dict[str, Any],
@@ -322,11 +335,12 @@ def _setup_threads(
     return config_dict
 
 
+# TODO: Can be moved to a helper function or util most likely
 def _copy_dict_vals(dest_key: str, dictionary: dict[str, Any]) -> dict[str, Any]:
     dictionary[dest_key] = dict(dictionary[DEFAULT_THREAD_NAME].items())
     return dictionary
 
-
+# TODO: Can be moved to a helper function or util most likely
 def _find_category(
     category_dict: dict[str, dict[str, Any]], target_key: str
 ) -> str | None:
@@ -336,6 +350,10 @@ def _find_category(
     return None
 
 
+# TODO: Can be moved to a helper or util most likely
+# TODO (variable naming registry)
+# TODO (document data structs)
+# TODO: Type is any
 def _mirror_nested_to_flat(config: dict[str, Any]) -> None:
     """
     Mirror values from nested sections to root level for backward compatibility.

@@ -25,6 +25,7 @@ class NetworkAnalyzer:
     def __init__(self) -> None:
         """Initialize the network analyzer."""
 
+    # TODO (centralized state): network_spectrum
     @staticmethod
     def get_link_usage_summary(network_spectrum: dict) -> dict[str, dict[str, Any]]:
         """
@@ -36,6 +37,7 @@ class NetworkAnalyzer:
         :param network_spectrum: Network spectrum database
         :return: Dictionary mapping link identifiers to usage statistics
         """
+        # TODO (return consistency)
         usage_summary = {}
 
         for (src, dst), link_data in network_spectrum.items():
@@ -82,6 +84,7 @@ class NetworkAnalyzer:
                 total_occupied_slots += len(np.where(core != 0)[0])
                 total_guard_slots += len(np.where(core < 0)[0])
 
+        # TODO (return consistency)
         return {
             "total_occupied_slots": total_occupied_slots,
             "total_guard_slots": total_guard_slots,
@@ -95,6 +98,7 @@ class NetworkAnalyzer:
             ),
         }
 
+    # TODO (centralized state): network_spectrum
     @staticmethod
     def get_network_utilization_stats(network_spectrum: dict) -> dict[str, float]:
         """
@@ -129,6 +133,7 @@ class NetworkAnalyzer:
                 if core_total > 0:
                     link_utilization_list.append(core_occupied / core_total)
 
+        # TODO (return consistency): It's not obvious what overall utilization is, contains, how it's used, etc.
         overall_utilization = occupied_slots / total_slots if total_slots > 0 else 0.0
 
         return {
@@ -147,6 +152,7 @@ class NetworkAnalyzer:
             "links_processed": len(processed_links),
         }
 
+    # TODO (centralized state): network_spectrum
     @staticmethod
     def identify_bottleneck_links(
         network_spectrum: dict, threshold: float = 0.8
@@ -194,4 +200,5 @@ class NetworkAnalyzer:
             len(bottleneck_links),
             threshold * 100,
         )
+        # TODO (return consistency)
         return bottleneck_links

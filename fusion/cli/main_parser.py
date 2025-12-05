@@ -4,6 +4,7 @@ from argparse import ArgumentParser, Namespace
 
 from .parameters.registry import args_registry
 
+# TODO: Shouldn't these be in constants?
 # Argument group configurations
 TRAINING_GROUP_NAMES: list[str] = [
     "config",

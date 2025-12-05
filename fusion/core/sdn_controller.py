@@ -652,6 +652,123 @@ class SDNController:
         if lightpath_id in self.sdn_props.was_new_lp_established:
             self.sdn_props.was_new_lp_established.remove(lightpath_id)
 
+
+        """
+        Grooming
+        
+        (Before)
+        --> Request ID comes in to SDN controller
+        --> Multiple Lightpath ID is mapped to a request ID
+            --> When we slice multiple lightpath IDs
+            --> When we groom/partially groom in each lighpath, more than one request ID
+        --> SDN controller calling on grooming/slicing which interacts with routing and spectrum assignment
+            --> Much of the logic is in SDN controller or needs to change SDN controller
+            
+        (After)
+        --> Request Object
+            --> Information, could be slicing, nothing, grooming, etc. it could have a lightpath objects tied to it
+        --> SDN controller (wrapper/helper function)
+            --> Send to grooming?
+                --> Routing and Spectrum Assignment
+                    --> Grooming interacts with routing and spectrum assignment uniquely
+                    --> Grooming module that correctly interacts with the base Routing and Spectrum Assignment
+                        --> Finds a path, finds a spectrum (Network Spectrum Dict/Database)
+                        --> Conclusion: SDN, Routing, Spectrum Assignment, literally do not know what happened detail by detail for grooming
+                            --> What does each section know happened?
+                                --> SDN section says, go to grooming logic
+                                --> Grooming called on routes from Routing when it needed it, handled updating request ID and lighpath objects
+                                --> Grooming called on spectrum from Spectrum when it needed it
+                                --> Grooming updated the Request Object and returned to SDN
+                                --> SDN understood that grooming is done, pass to statistics logic, then call on next request
+                                    --> Stats does the SAME!
+                            --> We wouldn't have to change every centralized core script, rather, create a new module with standardized input and output
+                            
+        A PROBLEM: If the modules need to interact?
+        --> Grooming + Slicing + SNR interacting with routing? (Question for GPT/ChatGPT)
+            --> Existing problem: Change whole simulator so they can interact (impossible)
+            --> Potential solution with an example of grooming
+                1.) Request shows up
+                2.) Request is groomed (k = 1 (forced path), 50% of req is groomed (200 Gbps) of 400 Gbps)
+                    --> Why? A lightpath exists with 400 Gbps and 200 Gbps is free (previous request)
+                3.) Allocate 200 Gbps with RSA on that previous lightpath
+                
+                1.) Second option for a request (k = 2 (option of paths), 400 Gbps) - Another possible algorithm for example
+                2.) Decide on which one is better to select, should I partially groom or should I fully allocate? k = 1, partially groom, k = 2 fully allocate
+                3.) In this algorithm, we want to know which is better
+                
+                What I (Ryan) would like to do based on the above example, know that interacting between modules can be tough
+                --> Grooming Algorithm 1 & Grooming Algorithm 2
+                --> Pass Current Request Object, Class of Request Objects (Central Request Class) to SDN
+                    --> SDN Wrapper passes to where? Grooming Module
+                        --> Within grooming module (SDN doesn't know this) we call on Algorithm 1 or 2
+                        --> Grooming (A new SDN module but this is a different script) Handles
+                            --> Algorithm 1 & 2
+                            
+                            
+                        --> Engine --> SDN (grooming) --> Route --> Spectrum
+                        --> Engine --> SDN Wrapper
+                                                    --> Grooming SDN logic
+                                                    --> Slicing SDN logic
+                                                    --> ...
+                                                    --> Slicing + Grooming SDN logic
+                                                        --> Slicing + Grooming Wrapper
+                                                    
+                                                    
+                                                    
+                                                    Dynamic Slicing + Grooming
+                                                    1.) Check grooming
+                                                    2.) Then RSA
+                                                    3.) Then if need slicing
+                                                    
+                                                    
+                                                    Hierarchy (Combination)
+                                                    --> Connection between slicing and grooming
+                                                    --> Slicing logic is the same
+                                                    --> Slicing called alone (slicing logic)
+                                                    --> Grooming called...Tells slicing to behave a certain way
+                                                        --> PROBLEM ? Will we duplicate logic interlinking these?
+                                                        
+                                                    E.g., Solution
+                                                    --> Routing, Spectrum Allocation (RSA) - single function
+                                                    --> 
+                                                    
+                                                    
+                
+            --> Request object comes back
+                --> SDN sends to stats logic
+                --> SDN triggers it's ready for next request object
+        
+        RL Integration?
+        --> Specifically developed to interact with Engine to pick paths with essentially static actions, rewards, etc.
+            --> RL knows everything, too separate
+        --> RL doesn't have general connections (wrapper) to SDN
+            --> In the future, ideally RL core logic doesn't know what's happening
+            --> There's some RL wrapper (similar to that SDN wrapper):
+                --> Information comes in
+                --> Standardized/Normalized/Etc. (Similar Object to Request Object Maybe?)
+                --> Passed to RL
+                --> What does RL know?
+                    --> I need to create a state action space mxnxp
+                    --> I need to try and select the best action, I don't care what it is
+                    --> If I do well, reward myself, if not, penalize myself
+                    --> Next
+                    
+                    
+        WHAT DOES RL DO NOW??
+        --> Literally clones a simulation
+        --> Acts entirely independently
+        --> Therefor, all the state issues, etc. happen in RL
+        
+        --> SB3 calls X, Y, and Z...I need to run via command line, no control over what SB3 calls
+            ---> Wrote the functions as I saw them in the tutorial
+            --> Call on SB3 and it calls specific functions based on ONE SCRIPT
+        
+        --> What will have to happen now?
+            --> run via command line normally
+                --> Call SB3 as like an OS command in some script and interlink them
+                    
+        """
+
         # Mark request as blocked
         self.sdn_props.was_routed = False
         self.sdn_props.block_reason = "snr_recheck_failed"

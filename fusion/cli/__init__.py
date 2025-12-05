@@ -45,6 +45,7 @@ from .main_parser import (
 # Core functionality imports
 from .parameters.registry import args_registry
 
+# TODO (removal of legacy)
 __all__ = [
     # Modern function names
     "build_main_argument_parser",

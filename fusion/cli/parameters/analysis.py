@@ -168,6 +168,7 @@ def add_comparison_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO: Function name should be standardized across all parameters (I believe it is)
 def add_all_analysis_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all analysis-related argument groups to the parser.

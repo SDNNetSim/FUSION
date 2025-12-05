@@ -146,6 +146,7 @@ def add_network_args(parser: argparse.ArgumentParser) -> None:
     add_spectrum_bands_args(parser)
 
 
+# TODO: This function seems useless
 def add_all_network_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all network-related argument groups to the parser.

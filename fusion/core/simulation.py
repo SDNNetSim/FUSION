@@ -313,15 +313,6 @@ class SimulationEngine:
             if sdn_props.number_of_transponders is not None:
                 self.stats_obj.current_transponders = sdn_props.number_of_transponders
 
-            # Debug print for Request 158
-            if self.reqs_dict[current_time]["req_id"] == 158:
-                pass
-#                print(f"\n[REQ158-SAVE] ===== SAVING REQUEST 158 TO reqs_status_dict =====")
-#                print(f"[REQ158-SAVE] lightpath_id_list: {sdn_props.lightpath_id_list}")
-#                print(f"[REQ158-SAVE] was_routed: {sdn_props.was_routed}")
-#                print(f"[REQ158-SAVE] was_groomed: {sdn_props.was_groomed}")
-#                print(f"[REQ158-SAVE] ==============================================\n")
-
             self.reqs_status_dict.update(
                 {
                     self.reqs_dict[current_time]["req_id"]: {
@@ -422,17 +413,6 @@ class SimulationEngine:
                 value=request_value,
             )
 
-        # Debug print for Request 158 departure check
-        if self.reqs_dict is not None and current_time in self.reqs_dict:
-            if self.reqs_dict[current_time]["req_id"] == 158:
-                pass
-#                print(f"\n[REQ158-CHECK] ===== REQUEST 158 DEPARTURE EVENT =====")
-#                print(f"[REQ158-CHECK] Request 158 in reqs_status_dict: {158 in self.reqs_status_dict}")
-                if 158 in self.reqs_status_dict:
-                    pass
-#                    print(f"[REQ158-CHECK] Stored lightpath_id_list: {self.reqs_status_dict[158].get('lightpath_id_list', 'NOT FOUND')}")
-#                print(f"[REQ158-CHECK] =====================================\n")
-
         if (
             self.reqs_dict is not None
             and current_time in self.reqs_dict
@@ -444,14 +424,6 @@ class SimulationEngine:
             self.sdn_obj.sdn_props.lightpath_id_list = req_status.get("lightpath_id_list", [])
             self.sdn_obj.sdn_props.lightpath_bandwidth_list = req_status.get("lightpath_bandwidth_list", [])
             self.sdn_obj.sdn_props.was_new_lp_established = req_status.get("was_new_lp_established", [])
-
-            # Debug print for Request 158
-            if self.reqs_dict[current_time]["req_id"] == 158:
-                pass
-#                print(f"\n[REQ158-RESTORE] ===== RESTORING REQUEST 158 FROM reqs_status_dict =====")
-#                print(f"[REQ158-RESTORE] lightpath_id_list: {self.sdn_obj.sdn_props.lightpath_id_list}")
-#                print(f"[REQ158-RESTORE] path_list: {self.sdn_obj.sdn_props.path_list}")
-#                print(f"[REQ158-RESTORE] ================================================\n")
 
             # Initialize dict before handle_event so sdn_controller can populate it
             if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
