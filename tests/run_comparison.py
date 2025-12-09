@@ -525,8 +525,8 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'usbackbone_mb_CL_fixed_grooming_snr_recheck':
-            all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
+        # if case.name == 'usbackbone_mb_CL_fixed_grooming_snr_recheck':
+        all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
         LOGGER.info("All %d cases passed ✓", len(cases))
