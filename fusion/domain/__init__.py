@@ -11,7 +11,19 @@ All domain objects support legacy conversion via from_legacy_dict/to_legacy_dict
 """
 
 from fusion.domain.config import SimulationConfig
+from fusion.domain.request import (
+    BlockReason,
+    ProtectionStatus,
+    Request,
+    RequestStatus,
+    RequestType,
+)
 
 __all__ = [
     "SimulationConfig",
+    "Request",
+    "RequestType",
+    "RequestStatus",
+    "BlockReason",
+    "ProtectionStatus",
 ]
