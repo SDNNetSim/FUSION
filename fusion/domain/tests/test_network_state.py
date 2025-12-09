@@ -2,6 +2,7 @@
 Unit tests for NetworkState and LinkSpectrum.
 
 Phase: P2.1 - NetworkState Core
+Phase: P2.2 - Write Methods & Legacy Compatibility
 Coverage Target: 90%+
 
 Tests cover:
@@ -9,6 +10,11 @@ Tests cover:
 - NetworkState initialization, spectrum queries, lightpath queries
 - Multi-band and multi-core support
 - Edge cases and error handling
+- P2.2: create_lightpath, release_lightpath write methods
+- P2.2: Protected lightpath (1+1) creation and release
+- P2.2: Bandwidth management (allocate_request_bandwidth, release_request_bandwidth)
+- P2.2: Legacy compatibility properties (network_spectrum_dict, lightpath_status_dict)
+- P2.2: Lightpath query methods with created lightpaths
 """
 
 from __future__ import annotations
@@ -921,3 +927,1052 @@ class TestNetworkStateLightpathsOnLink:
 
         result = state.get_lightpaths_on_link(("A", "B"))
         assert result == []
+
+
+# =============================================================================
+# P2.2 Tests - Write Methods
+# =============================================================================
+
+
+class TestCreateLightpath:
+    """Tests for create_lightpath method."""
+
+    def test_create_simple_lightpath(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Test creating a basic lightpath."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        assert lp.lightpath_id == 1
+        assert lp.path == ["A", "B"]
+        assert lp.start_slot == 0
+        assert lp.end_slot == 10
+        assert state.lightpath_count == 1
+        assert state.get_lightpath(1) is lp
+
+    def test_create_lightpath_allocates_spectrum(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Creating a lightpath should allocate spectrum."""
+        state = NetworkState(simple_topology, simple_config)
+
+        state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        # Spectrum should be occupied
+        assert not state.is_spectrum_available(["A", "B"], 0, 10, 0, "c")
+        # Adjacent slots should still be free
+        assert state.is_spectrum_available(["A", "B"], 10, 20, 0, "c")
+
+    def test_create_lightpath_with_guard_band(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Guard band slots should be allocated with negative ID."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=12,  # 10 data + 2 guard
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+            guard_slots=2,
+        )
+
+        # Lightpath end_slot should be data slots only
+        assert lp.end_slot == 10  # 12 - 2 guard slots
+
+        # Verify spectrum allocation
+        ls = state.get_link_spectrum(("A", "B"))
+        spectrum = ls.cores_matrix["c"]
+
+        # Data slots should have positive ID
+        assert all(spectrum[0, i] == 1 for i in range(10))
+        # Guard slots should have negative ID
+        assert all(spectrum[0, i] == -1 for i in range(10, 12))
+
+    def test_create_lightpath_increments_id(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Each lightpath should get unique incrementing ID."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp1 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+        lp2 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=10,
+            end_slot=20,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        assert lp1.lightpath_id == 1
+        assert lp2.lightpath_id == 2
+        assert state.next_lightpath_id == 3
+
+    def test_create_lightpath_multi_hop(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Lightpath across multiple links should allocate on all links."""
+        state = NetworkState(simple_topology, simple_config)
+
+        state.create_lightpath(
+            path=["A", "B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=250.0,
+        )
+
+        # Both links should be occupied
+        assert not state.is_spectrum_available(["A", "B"], 0, 10, 0, "c")
+        assert not state.is_spectrum_available(["B", "C"], 0, 10, 0, "c")
+
+    def test_create_lightpath_fails_if_spectrum_unavailable(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Creating overlapping lightpath should fail."""
+        state = NetworkState(simple_topology, simple_config)
+
+        state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        with pytest.raises(ValueError, match="not available"):
+            state.create_lightpath(
+                path=["A", "B"],
+                start_slot=5,
+                end_slot=15,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                bandwidth_gbps=100,
+                path_weight_km=100.0,
+            )
+
+    def test_create_lightpath_validation_errors(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Invalid parameters should raise ValueError."""
+        state = NetworkState(simple_topology, simple_config)
+
+        # Path too short
+        with pytest.raises(ValueError, match="at least 2 nodes"):
+            state.create_lightpath(
+                path=["A"],
+                start_slot=0,
+                end_slot=10,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                bandwidth_gbps=100,
+                path_weight_km=100.0,
+            )
+
+        # Invalid slot range
+        with pytest.raises(ValueError, match="Invalid slot range"):
+            state.create_lightpath(
+                path=["A", "B"],
+                start_slot=10,
+                end_slot=5,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                bandwidth_gbps=100,
+                path_weight_km=100.0,
+            )
+
+        # Zero bandwidth
+        with pytest.raises(ValueError, match="Bandwidth must be positive"):
+            state.create_lightpath(
+                path=["A", "B"],
+                start_slot=0,
+                end_slot=10,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                bandwidth_gbps=0,
+                path_weight_km=100.0,
+            )
+
+    def test_create_lightpath_with_snr_xt(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Test creating lightpath with SNR and crosstalk values."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+            snr_db=15.5,
+            xt_cost=0.001,
+        )
+
+        assert lp.snr_db == 15.5
+        assert lp.xt_cost == 0.001
+
+
+class TestCreateProtectedLightpath:
+    """Tests for creating lightpaths with 1+1 protection."""
+
+    def test_create_protected_lightpath(
+        self,
+        ring_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Test creating lightpath with backup path."""
+        state = NetworkState(ring_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=200.0,
+            backup_path=["A", "D", "C"],
+            backup_start_slot=0,
+            backup_end_slot=10,
+            backup_core=0,
+            backup_band="c",
+        )
+
+        assert lp.is_protected
+        assert lp.backup_path == ["A", "D", "C"]
+
+        # Both paths should have spectrum allocated
+        assert not state.is_spectrum_available(["A", "B", "C"], 0, 10, 0, "c")
+        assert not state.is_spectrum_available(["A", "D", "C"], 0, 10, 0, "c")
+
+    def test_incomplete_protection_fails(
+        self,
+        ring_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Partial protection specification should fail."""
+        state = NetworkState(ring_topology, simple_config)
+
+        with pytest.raises(ValueError, match="Incomplete protection"):
+            state.create_lightpath(
+                path=["A", "B", "C"],
+                start_slot=0,
+                end_slot=10,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                bandwidth_gbps=100,
+                path_weight_km=200.0,
+                backup_path=["A", "D", "C"],
+                # Missing other backup fields
+            )
+
+    def test_protected_lightpath_backup_unavailable(
+        self,
+        ring_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Creating protected lightpath should fail if backup path spectrum unavailable."""
+        state = NetworkState(ring_topology, simple_config)
+
+        # Pre-allocate on backup path
+        ls = state.get_link_spectrum(("A", "D"))
+        ls.allocate_range(0, 10, 0, "c", lightpath_id=99)
+
+        with pytest.raises(ValueError, match="not available on backup path"):
+            state.create_lightpath(
+                path=["A", "B", "C"],
+                start_slot=0,
+                end_slot=10,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                bandwidth_gbps=100,
+                path_weight_km=200.0,
+                backup_path=["A", "D", "C"],
+                backup_start_slot=0,
+                backup_end_slot=10,
+                backup_core=0,
+                backup_band="c",
+            )
+
+
+class TestReleaseLightpath:
+    """Tests for release_lightpath method."""
+
+    def test_release_frees_spectrum(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Releasing lightpath should free spectrum."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        success = state.release_lightpath(lp.lightpath_id)
+
+        assert success
+        assert state.lightpath_count == 0
+        assert state.get_lightpath(lp.lightpath_id) is None
+        assert state.is_spectrum_available(["A", "B"], 0, 10, 0, "c")
+
+    def test_release_with_guard_band(
+        self,
+        simple_topology: nx.Graph,
+    ) -> None:
+        """Releasing lightpath should free guard band slots too."""
+        config = create_test_config(guard_slots=2)
+        state = NetworkState(simple_topology, config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=12,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+            guard_slots=2,
+        )
+
+        state.release_lightpath(lp.lightpath_id)
+
+        # All slots including guards should be free
+        assert state.is_spectrum_available(["A", "B"], 0, 12, 0, "c")
+
+    def test_release_nonexistent_returns_false(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Releasing non-existent lightpath should return False."""
+        state = NetworkState(simple_topology, simple_config)
+
+        success = state.release_lightpath(999)
+
+        assert not success
+
+    def test_release_protected_lightpath(
+        self,
+        ring_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Releasing protected lightpath should free both paths."""
+        state = NetworkState(ring_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=200.0,
+            backup_path=["A", "D", "C"],
+            backup_start_slot=0,
+            backup_end_slot=10,
+            backup_core=0,
+            backup_band="c",
+        )
+
+        state.release_lightpath(lp.lightpath_id)
+
+        # Both paths should be free
+        assert state.is_spectrum_available(["A", "B", "C"], 0, 10, 0, "c")
+        assert state.is_spectrum_available(["A", "D", "C"], 0, 10, 0, "c")
+
+    def test_release_multi_hop_lightpath(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Releasing multi-hop lightpath should free all links."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=250.0,
+        )
+
+        state.release_lightpath(lp.lightpath_id)
+
+        # All links should be free
+        assert state.is_spectrum_available(["A", "B"], 0, 10, 0, "c")
+        assert state.is_spectrum_available(["B", "C"], 0, 10, 0, "c")
+
+
+# =============================================================================
+# P2.2 Tests - Bandwidth Management
+# =============================================================================
+
+
+class TestBandwidthManagement:
+    """Tests for bandwidth allocation and release methods."""
+
+    def test_allocate_request_bandwidth(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Test allocating bandwidth to a request."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        state.allocate_request_bandwidth(lp.lightpath_id, request_id=42, bandwidth_gbps=25)
+
+        assert lp.remaining_bandwidth_gbps == 75
+        assert lp.request_allocations[42] == 25
+
+    def test_allocate_insufficient_bandwidth_raises(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Allocating more than available should raise ValueError."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        with pytest.raises(ValueError, match="Insufficient bandwidth"):
+            state.allocate_request_bandwidth(lp.lightpath_id, request_id=42, bandwidth_gbps=150)
+
+    def test_allocate_nonexistent_lightpath_raises(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Allocating on non-existent lightpath should raise KeyError."""
+        state = NetworkState(simple_topology, simple_config)
+
+        with pytest.raises(KeyError):
+            state.allocate_request_bandwidth(999, request_id=42, bandwidth_gbps=25)
+
+    def test_release_request_bandwidth(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Test releasing bandwidth from a request."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        state.allocate_request_bandwidth(lp.lightpath_id, request_id=42, bandwidth_gbps=25)
+        released = state.release_request_bandwidth(lp.lightpath_id, request_id=42)
+
+        assert released == 25
+        assert lp.remaining_bandwidth_gbps == 100
+        assert 42 not in lp.request_allocations
+
+    def test_release_nonexistent_request_raises(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Releasing non-existent request should raise KeyError."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        with pytest.raises(KeyError):
+            state.release_request_bandwidth(lp.lightpath_id, request_id=999)
+
+
+# =============================================================================
+# P2.2 Tests - Legacy Compatibility Properties
+# =============================================================================
+
+
+class TestNetworkSpectrumDictProperty:
+    """Tests for network_spectrum_dict legacy property."""
+
+    def test_contains_all_links(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Should contain entries for all links."""
+        state = NetworkState(simple_topology, simple_config)
+        nsd = state.network_spectrum_dict
+
+        assert ("A", "B") in nsd
+        assert ("B", "A") in nsd
+        assert ("B", "C") in nsd
+        assert ("C", "B") in nsd
+
+    def test_bidirectional_same_object(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Both directions should reference same dict object."""
+        state = NetworkState(simple_topology, simple_config)
+        nsd = state.network_spectrum_dict
+
+        assert nsd[("A", "B")] is nsd[("B", "A")]
+
+    def test_contains_required_fields(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Each entry should have required legacy fields."""
+        state = NetworkState(simple_topology, simple_config)
+        nsd = state.network_spectrum_dict
+
+        entry = nsd[("A", "B")]
+        assert "cores_matrix" in entry
+        assert "usage_count" in entry
+        assert "throughput" in entry
+        assert "link_num" in entry
+
+    def test_cores_matrix_direct_reference(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """cores_matrix should be direct reference to LinkSpectrum arrays."""
+        state = NetworkState(simple_topology, simple_config)
+        nsd = state.network_spectrum_dict
+
+        ls = state.get_link_spectrum(("A", "B"))
+        assert nsd[("A", "B")]["cores_matrix"] is ls.cores_matrix
+
+    def test_includes_edge_attributes(
+        self,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Edge attributes from topology should be included."""
+        g = nx.Graph()
+        g.add_edge("A", "B", length=100.0, dispersion=16.0)
+
+        state = NetworkState(g, simple_config)
+        nsd = state.network_spectrum_dict
+
+        assert nsd[("A", "B")]["length"] == 100.0
+        assert nsd[("A", "B")]["dispersion"] == 16.0
+
+    def test_modifications_affect_state(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Modifications through legacy property should affect NetworkState."""
+        state = NetworkState(simple_topology, simple_config)
+        nsd = state.network_spectrum_dict
+
+        # Modify through legacy property
+        nsd[("A", "B")]["cores_matrix"]["c"][0, 50] = 99
+
+        # Should be visible in NetworkState
+        ls = state.get_link_spectrum(("A", "B"))
+        assert ls.cores_matrix["c"][0, 50] == 99
+
+
+class TestLightpathStatusDictProperty:
+    """Tests for lightpath_status_dict legacy property."""
+
+    def test_empty_when_no_lightpaths(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Should be empty dict when no lightpaths exist."""
+        state = NetworkState(simple_topology, simple_config)
+
+        assert state.lightpath_status_dict == {}
+
+    def test_sorted_tuple_key(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Keys should be sorted endpoint tuples."""
+        state = NetworkState(simple_topology, simple_config)
+
+        # Create lightpath from C to A (reverse alphabetical)
+        state.create_lightpath(
+            path=["C", "B", "A"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=250.0,
+        )
+
+        lsd = state.lightpath_status_dict
+
+        # Key should be sorted: ("A", "C")
+        assert ("A", "C") in lsd
+        assert ("C", "A") not in lsd
+
+    def test_contains_required_fields(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Each lightpath entry should have required legacy fields."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        lsd = state.lightpath_status_dict
+        entry = lsd[("A", "B")][lp.lightpath_id]
+
+        assert entry["path"] == ["A", "B"]
+        assert entry["lightpath_bandwidth"] == 100.0
+        assert entry["remaining_bandwidth"] == 100.0
+        assert entry["band"] == "c"
+        assert entry["core"] == 0
+        assert entry["modulation"] == "QPSK"
+        assert entry["mod_format"] == "QPSK"  # Alternate key
+        assert entry["requests_dict"] == {}
+        assert entry["time_bw_usage"] == {}
+        assert entry["is_degraded"] is False
+
+    def test_contains_gap_analysis_fields(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Entry should contain additional fields from gap analysis."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=123.5,
+            snr_db=15.5,
+            xt_cost=0.001,
+        )
+
+        lsd = state.lightpath_status_dict
+        entry = lsd[("A", "B")][lp.lightpath_id]
+
+        assert entry["path_weight"] == 123.5
+        assert entry["snr_cost"] == 15.5
+        assert entry["xt_cost"] == 0.001
+
+    def test_bandwidth_values_are_float(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Bandwidth values should be float (legacy format)."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        lsd = state.lightpath_status_dict
+        entry = lsd[("A", "B")][lp.lightpath_id]
+
+        assert isinstance(entry["lightpath_bandwidth"], float)
+        assert isinstance(entry["remaining_bandwidth"], float)
+
+    def test_reflects_lightpath_changes(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Property should reflect current lightpath state."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        # Modify lightpath via NetworkState
+        state.allocate_request_bandwidth(lp.lightpath_id, request_id=1, bandwidth_gbps=25)
+
+        lsd = state.lightpath_status_dict
+        entry = lsd[("A", "B")][lp.lightpath_id]
+
+        assert entry["remaining_bandwidth"] == 75.0
+        assert entry["requests_dict"] == {1: 25.0}
+
+    def test_multiple_lightpaths_same_endpoints(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """Multiple lightpaths between same endpoints should be grouped."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp1 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+        lp2 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=20,
+            end_slot=30,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        lsd = state.lightpath_status_dict
+
+        assert ("A", "B") in lsd
+        assert lp1.lightpath_id in lsd[("A", "B")]
+        assert lp2.lightpath_id in lsd[("A", "B")]
+
+
+# =============================================================================
+# P2.2 Tests - Lightpath Query Methods with Created Lightpaths
+# =============================================================================
+
+
+class TestLightpathQueriesWithData:
+    """Tests for lightpath query methods after creating lightpaths."""
+
+    def test_get_lightpath_returns_created(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """get_lightpath should return created lightpath."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        retrieved = state.get_lightpath(lp.lightpath_id)
+        assert retrieved is lp
+
+    def test_has_lightpath_true(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """has_lightpath should return True for existing lightpath."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+
+        assert state.has_lightpath(lp.lightpath_id)
+
+    def test_get_lightpaths_between(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """get_lightpaths_between should return matching lightpaths."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp1 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+        lp2 = state.create_lightpath(
+            path=["B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=150.0,
+        )
+
+        ab_lightpaths = state.get_lightpaths_between("A", "B")
+        assert len(ab_lightpaths) == 1
+        assert ab_lightpaths[0] is lp1
+
+        bc_lightpaths = state.get_lightpaths_between("B", "C")
+        assert len(bc_lightpaths) == 1
+        assert bc_lightpaths[0] is lp2
+
+    def test_get_lightpaths_with_capacity(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """get_lightpaths_with_capacity should filter by available bandwidth."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp1 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+        lp2 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=20,
+            end_slot=30,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=50,
+            path_weight_km=100.0,
+        )
+
+        # Exhaust lp1's capacity
+        state.allocate_request_bandwidth(lp1.lightpath_id, request_id=1, bandwidth_gbps=100)
+
+        # Only lp2 should have capacity
+        with_capacity = state.get_lightpaths_with_capacity("A", "B", min_bandwidth_gbps=25)
+        assert len(with_capacity) == 1
+        assert with_capacity[0] is lp2
+
+    def test_iter_lightpaths(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """iter_lightpaths should yield all lightpaths."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp1 = state.create_lightpath(
+            path=["A", "B"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=100.0,
+        )
+        lp2 = state.create_lightpath(
+            path=["B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=150.0,
+        )
+
+        all_lightpaths = list(state.iter_lightpaths())
+        assert len(all_lightpaths) == 2
+        assert lp1 in all_lightpaths
+        assert lp2 in all_lightpaths
+
+    def test_get_lightpaths_on_link(
+        self,
+        simple_topology: nx.Graph,
+        simple_config: SimulationConfig,
+    ) -> None:
+        """get_lightpaths_on_link should return lightpaths traversing the link."""
+        state = NetworkState(simple_topology, simple_config)
+
+        lp1 = state.create_lightpath(
+            path=["A", "B", "C"],
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=250.0,
+        )
+        lp2 = state.create_lightpath(
+            path=["B", "C"],
+            start_slot=20,
+            end_slot=30,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            bandwidth_gbps=100,
+            path_weight_km=150.0,
+        )
+
+        # Link A-B is only in lp1
+        ab_lightpaths = state.get_lightpaths_on_link(("A", "B"))
+        assert len(ab_lightpaths) == 1
+        assert ab_lightpaths[0] is lp1
+
+        # Link B-C is in both
+        bc_lightpaths = state.get_lightpaths_on_link(("B", "C"))
+        assert len(bc_lightpaths) == 2

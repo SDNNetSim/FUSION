@@ -5,7 +5,8 @@ This module provides:
 - LinkSpectrum: Per-link spectrum state management
 - NetworkState: Single source of truth for network state during simulation
 
-Phase: P2.1 - NetworkState Core
+Phase: P2.1 - NetworkState Core (read methods)
+Phase: P2.2 - Write Methods & Legacy Compatibility (write methods, legacy properties)
 
 Design Principles:
     - NetworkState is a state container, NOT a routing algorithm
@@ -31,7 +32,8 @@ import numpy.typing as npt
 
 if TYPE_CHECKING:
     from fusion.domain.config import SimulationConfig
-    from fusion.domain.lightpath import Lightpath
+
+from fusion.domain.lightpath import Lightpath
 
 
 # =============================================================================
@@ -851,3 +853,483 @@ class NetworkState:
             f"NetworkState(nodes={self.node_count}, links={self.link_count}, "
             f"lightpaths={self.lightpath_count}, next_id={self._next_lightpath_id})"
         )
+
+    # =========================================================================
+    # Write Methods (P2.2)
+    # =========================================================================
+
+    def create_lightpath(
+        self,
+        path: list[str],
+        start_slot: int,
+        end_slot: int,
+        core: int,
+        band: str,
+        modulation: str,
+        bandwidth_gbps: int,
+        path_weight_km: float,
+        guard_slots: int = 0,
+        *,
+        backup_path: list[str] | None = None,
+        backup_start_slot: int | None = None,
+        backup_end_slot: int | None = None,
+        backup_core: int | None = None,
+        backup_band: str | None = None,
+        snr_db: float | None = None,
+        xt_cost: float | None = None,
+    ) -> Lightpath:
+        """
+        Create and register a new lightpath, allocating spectrum.
+
+        Args:
+            path: Ordered list of node IDs (minimum 2 nodes)
+            start_slot: First spectrum slot (inclusive)
+            end_slot: Last spectrum slot (exclusive, includes guard slots)
+            core: Core index for allocation
+            band: Band identifier ("c", "l", "s")
+            modulation: Modulation format name
+            bandwidth_gbps: Total lightpath capacity
+            path_weight_km: Path length/weight in kilometers
+            guard_slots: Number of guard band slots at end (default 0)
+            backup_path: Optional backup path for 1+1 protection
+            backup_start_slot: Backup path start slot
+            backup_end_slot: Backup path end slot
+            backup_core: Backup path core index
+            backup_band: Backup path band
+            snr_db: Measured SNR value (optional)
+            xt_cost: Crosstalk cost (optional)
+
+        Returns:
+            Newly created Lightpath with assigned lightpath_id
+
+        Raises:
+            ValueError: If parameters are invalid or spectrum unavailable
+            KeyError: If any link in path doesn't exist in topology
+        """
+        # Validate parameters
+        self._validate_create_lightpath_params(
+            path=path,
+            start_slot=start_slot,
+            end_slot=end_slot,
+            bandwidth_gbps=bandwidth_gbps,
+            backup_path=backup_path,
+            backup_start_slot=backup_start_slot,
+            backup_end_slot=backup_end_slot,
+            backup_core=backup_core,
+            backup_band=backup_band,
+        )
+
+        # Check primary path spectrum availability
+        if not self.is_spectrum_available(path, start_slot, end_slot, core, band):
+            msg = f"Spectrum [{start_slot}:{end_slot}] not available on primary path"
+            raise ValueError(msg)
+
+        # Check backup path spectrum availability (if protected)
+        is_protected = backup_path is not None
+        if is_protected:
+            assert backup_start_slot is not None
+            assert backup_end_slot is not None
+            assert backup_core is not None
+            assert backup_band is not None
+
+            if not self.is_spectrum_available(
+                backup_path, backup_start_slot, backup_end_slot, backup_core, backup_band
+            ):
+                msg = f"Spectrum [{backup_start_slot}:{backup_end_slot}] not available on backup path"
+                raise ValueError(msg)
+
+        # Allocate primary path spectrum
+        lightpath_id = self._next_lightpath_id
+        self._allocate_spectrum_on_path(
+            path=path,
+            start_slot=start_slot,
+            end_slot=end_slot,
+            core=core,
+            band=band,
+            lightpath_id=lightpath_id,
+            guard_slots=guard_slots,
+        )
+
+        # Allocate backup path spectrum (if protected)
+        if is_protected:
+            self._allocate_spectrum_on_path(
+                path=backup_path,  # type: ignore[arg-type]
+                start_slot=backup_start_slot,  # type: ignore[arg-type]
+                end_slot=backup_end_slot,  # type: ignore[arg-type]
+                core=backup_core,  # type: ignore[arg-type]
+                band=backup_band,  # type: ignore[arg-type]
+                lightpath_id=lightpath_id,
+                guard_slots=guard_slots,
+            )
+
+        # Create Lightpath object
+        # Note: Lightpath stores data slot range (excludes guard slots)
+        data_end_slot = end_slot - guard_slots
+        backup_data_end_slot = (
+            backup_end_slot - guard_slots if backup_end_slot is not None else None
+        )
+
+        lightpath = Lightpath(
+            lightpath_id=lightpath_id,
+            path=path,
+            start_slot=start_slot,
+            end_slot=data_end_slot,
+            core=core,
+            band=band,
+            modulation=modulation,
+            total_bandwidth_gbps=bandwidth_gbps,
+            remaining_bandwidth_gbps=bandwidth_gbps,
+            path_weight_km=path_weight_km,
+            request_allocations={},
+            snr_db=snr_db,
+            xt_cost=xt_cost,
+            is_degraded=False,
+            backup_path=backup_path,
+            backup_start_slot=backup_start_slot,
+            backup_end_slot=backup_data_end_slot,
+            backup_core=backup_core,
+            backup_band=backup_band,
+            is_protected=is_protected,
+            active_path="primary",
+        )
+
+        # Register lightpath
+        self._lightpaths[lightpath_id] = lightpath
+        self._next_lightpath_id += 1
+
+        return lightpath
+
+    def release_lightpath(self, lightpath_id: int) -> bool:
+        """
+        Release a lightpath and free its spectrum.
+
+        Args:
+            lightpath_id: ID of lightpath to release
+
+        Returns:
+            True if lightpath was found and released, False if not found
+        """
+        lightpath = self._lightpaths.get(lightpath_id)
+        if lightpath is None:
+            return False
+
+        # Calculate actual end slot (including guard bands)
+        # Guard slots = total allocated - data slots stored in lightpath
+        guard_slots = getattr(self._config, "guard_slots", 0)
+        primary_end_with_guards = lightpath.end_slot + guard_slots
+
+        # Release primary path spectrum
+        self._release_spectrum_on_path(
+            path=lightpath.path,
+            start_slot=lightpath.start_slot,
+            end_slot=primary_end_with_guards,
+            core=lightpath.core,
+            band=lightpath.band,
+        )
+
+        # Release backup path spectrum (if protected)
+        if lightpath.is_protected and lightpath.backup_path is not None:
+            assert lightpath.backup_start_slot is not None
+            assert lightpath.backup_end_slot is not None
+            assert lightpath.backup_core is not None
+            assert lightpath.backup_band is not None
+
+            backup_end_with_guards = lightpath.backup_end_slot + guard_slots
+            self._release_spectrum_on_path(
+                path=lightpath.backup_path,
+                start_slot=lightpath.backup_start_slot,
+                end_slot=backup_end_with_guards,
+                core=lightpath.backup_core,
+                band=lightpath.backup_band,
+            )
+
+        # Remove from registry
+        del self._lightpaths[lightpath_id]
+
+        return True
+
+    # =========================================================================
+    # Bandwidth Management Methods (P2.2)
+    # =========================================================================
+
+    def allocate_request_bandwidth(
+        self,
+        lightpath_id: int,
+        request_id: int,
+        bandwidth_gbps: int,
+    ) -> None:
+        """
+        Allocate bandwidth on existing lightpath to a request.
+
+        Used by grooming to share lightpath capacity among requests.
+
+        Args:
+            lightpath_id: ID of the lightpath
+            request_id: ID of the request
+            bandwidth_gbps: Bandwidth to allocate
+
+        Raises:
+            KeyError: If lightpath not found
+            ValueError: If insufficient remaining bandwidth or request already allocated
+        """
+        lightpath = self._lightpaths.get(lightpath_id)
+        if lightpath is None:
+            msg = f"Lightpath {lightpath_id} not found"
+            raise KeyError(msg)
+
+        # Delegate to Lightpath's allocate_bandwidth method
+        success = lightpath.allocate_bandwidth(request_id, bandwidth_gbps)
+        if not success:
+            msg = (
+                f"Insufficient bandwidth: need {bandwidth_gbps}, "
+                f"have {lightpath.remaining_bandwidth_gbps}"
+            )
+            raise ValueError(msg)
+
+    def release_request_bandwidth(
+        self,
+        lightpath_id: int,
+        request_id: int,
+    ) -> int:
+        """
+        Release bandwidth allocated to a request.
+
+        Args:
+            lightpath_id: ID of the lightpath
+            request_id: ID of the request to release
+
+        Returns:
+            Amount of bandwidth released
+
+        Raises:
+            KeyError: If lightpath or request not found
+        """
+        lightpath = self._lightpaths.get(lightpath_id)
+        if lightpath is None:
+            msg = f"Lightpath {lightpath_id} not found"
+            raise KeyError(msg)
+
+        # Delegate to Lightpath's release_bandwidth method
+        return lightpath.release_bandwidth(request_id)
+
+    # =========================================================================
+    # Private Helpers for Write Methods (P2.2)
+    # =========================================================================
+
+    def _validate_create_lightpath_params(
+        self,
+        *,
+        path: list[str],
+        start_slot: int,
+        end_slot: int,
+        bandwidth_gbps: int,
+        backup_path: list[str] | None,
+        backup_start_slot: int | None,
+        backup_end_slot: int | None,
+        backup_core: int | None,
+        backup_band: str | None,
+    ) -> None:
+        """Validate create_lightpath parameters."""
+        if len(path) < 2:
+            msg = "Path must have at least 2 nodes"
+            raise ValueError(msg)
+
+        if start_slot >= end_slot:
+            msg = f"Invalid slot range: start={start_slot} >= end={end_slot}"
+            raise ValueError(msg)
+
+        if bandwidth_gbps <= 0:
+            msg = f"Bandwidth must be positive, got {bandwidth_gbps}"
+            raise ValueError(msg)
+
+        # Protection validation: all or nothing
+        protection_fields = [
+            backup_path,
+            backup_start_slot,
+            backup_end_slot,
+            backup_core,
+            backup_band,
+        ]
+        has_any_protection = any(f is not None for f in protection_fields)
+        has_all_protection = all(f is not None for f in protection_fields)
+
+        if has_any_protection and not has_all_protection:
+            msg = "Incomplete protection specification: provide all backup fields or none"
+            raise ValueError(msg)
+
+        if backup_path is not None and len(backup_path) < 2:
+            msg = "Backup path must have at least 2 nodes"
+            raise ValueError(msg)
+
+    def _allocate_spectrum_on_path(
+        self,
+        path: list[str],
+        start_slot: int,
+        end_slot: int,
+        core: int,
+        band: str,
+        lightpath_id: int,
+        guard_slots: int = 0,
+    ) -> None:
+        """
+        Allocate spectrum range on all links in path.
+
+        Assumes spectrum availability has already been verified.
+        """
+        for link in self._get_path_links(path):
+            link_spectrum = self.get_link_spectrum(link)
+            link_spectrum.allocate_range(
+                start_slot=start_slot,
+                end_slot=end_slot,
+                core=core,
+                band=band,
+                lightpath_id=lightpath_id,
+                guard_slots=guard_slots,
+            )
+
+    def _release_spectrum_on_path(
+        self,
+        path: list[str],
+        start_slot: int,
+        end_slot: int,
+        core: int,
+        band: str,
+    ) -> None:
+        """Release spectrum range on all links in path."""
+        for link in self._get_path_links(path):
+            link_spectrum = self.get_link_spectrum(link)
+            link_spectrum.release_range(
+                start_slot=start_slot,
+                end_slot=end_slot,
+                core=core,
+                band=band,
+            )
+
+    # =========================================================================
+    # Legacy Compatibility Properties (P2.2)
+    # WARNING: These properties are TEMPORARY MIGRATION SHIMS.
+    # They will be removed in Phase 5.
+    # =========================================================================
+
+    @property
+    def network_spectrum_dict(self) -> dict[tuple[str, str], dict[str, Any]]:
+        """
+        Legacy compatibility: Returns spectrum state in sdn_props format.
+
+        WARNING: This property is a TEMPORARY MIGRATION SHIM.
+        It will be removed in Phase 5.
+
+        Returns:
+            Dictionary mapping link tuples to link state dicts.
+            Format matches sdn_props.network_spectrum_dict exactly.
+
+        Notes:
+            - Both (u,v) and (v,u) return the SAME dict object
+            - cores_matrix arrays are direct references (not copies)
+            - Edge attributes from topology are included
+
+        LEGACY_COMPAT: Phase 5 Removal Checklist
+        Before removing this property, verify:
+        [ ] All spectrum reads use NetworkState.is_spectrum_available()
+        [ ] All spectrum writes use NetworkState.create_lightpath()
+        [ ] No direct numpy array access outside NetworkState
+        [ ] run_comparison.py passes without this property
+        [ ] grep 'network_spectrum_dict' returns only this definition
+        """
+        result: dict[tuple[str, str], dict[str, Any]] = {}
+        seen: set[frozenset[str]] = set()
+
+        for link, link_spectrum in self._spectrum.items():
+            # Avoid duplicate processing for bidirectional links
+            link_set = frozenset(link)
+            if link_set in seen:
+                # Add reverse direction pointing to same dict
+                reverse = (link[1], link[0])
+                if link in result and reverse not in result:
+                    result[reverse] = result[link]
+                continue
+            seen.add(link_set)
+
+            # Build legacy format dict
+            u, v = link
+            link_dict: dict[str, Any] = {
+                "cores_matrix": link_spectrum.cores_matrix,  # Direct reference
+                "usage_count": link_spectrum.usage_count,
+                "throughput": link_spectrum.throughput,
+                "link_num": link_spectrum.link_num,
+            }
+
+            # Add edge attributes from topology
+            if self._topology.has_edge(u, v):
+                edge_data = self._topology.edges[u, v]
+                for attr in ["length", "dispersion", "attenuation", "fiber_type"]:
+                    if attr in edge_data:
+                        link_dict[attr] = edge_data[attr]
+
+            # Both directions point to same dict
+            result[(u, v)] = link_dict
+            result[(v, u)] = link_dict
+
+        return result
+
+    @property
+    def lightpath_status_dict(self) -> dict[tuple[str, str], dict[int, dict[str, Any]]]:
+        """
+        Legacy compatibility: Returns lightpath state in sdn_props format.
+
+        WARNING: This property is a TEMPORARY MIGRATION SHIM.
+        It will be removed in Phase 5.
+
+        Returns:
+            Dictionary mapping sorted endpoint tuples to lightpath dicts.
+            Format matches sdn_props.lightpath_status_dict exactly.
+
+        Notes:
+            - Keys are SORTED tuples: ("A", "C") not ("C", "A")
+            - Bandwidth values are float (legacy format)
+            - time_bw_usage is empty dict by default
+            - Rebuilds dict on each access (not cached)
+
+        LEGACY_COMPAT: Phase 5 Removal Checklist
+        Before removing this property, verify:
+        [ ] Grooming uses NetworkState.get_lightpaths_with_capacity()
+        [ ] Statistics use NetworkState.iter_lightpaths()
+        [ ] No manual sorted tuple key construction
+        [ ] run_comparison.py passes without this property
+        [ ] grep 'lightpath_status_dict' returns only this definition
+        """
+        result: dict[tuple[str, str], dict[int, dict[str, Any]]] = {}
+
+        for lp_id, lp in self._lightpaths.items():
+            # Key is SORTED tuple
+            sorted_endpoints = sorted([lp.source, lp.destination])
+            key: tuple[str, str] = (sorted_endpoints[0], sorted_endpoints[1])
+
+            # Initialize group if needed
+            if key not in result:
+                result[key] = {}
+
+            # Build legacy format entry with all fields from gap analysis
+            result[key][lp_id] = {
+                "path": lp.path,
+                "lightpath_bandwidth": float(lp.total_bandwidth_gbps),
+                "remaining_bandwidth": float(lp.remaining_bandwidth_gbps),
+                "band": lp.band,
+                "core": lp.core,
+                "start_slot": lp.start_slot,
+                "end_slot": lp.end_slot,
+                "modulation": lp.modulation,
+                "mod_format": lp.modulation,  # Alternate key for modulation
+                "requests_dict": {
+                    req_id: float(bw)
+                    for req_id, bw in lp.request_allocations.items()
+                },
+                "time_bw_usage": {},  # Empty by default, populated during simulation
+                "is_degraded": lp.is_degraded,
+                # Additional fields from gap analysis
+                "path_weight": lp.path_weight_km,
+                "snr_cost": lp.snr_db,
+                "xt_cost": lp.xt_cost,
+            }
+
+        return result
