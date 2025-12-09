@@ -19,13 +19,33 @@ from fusion.domain.request import (
     RequestStatus,
     RequestType,
 )
+from fusion.domain.results import (
+    AllocationResult,
+    GroomingResult,
+    ProtectionResult,
+    RouteResult,
+    SlicingResult,
+    SNRResult,
+    SpectrumResult,
+)
 
 __all__ = [
+    # Config
     "SimulationConfig",
+    # Request
     "Request",
     "RequestType",
     "RequestStatus",
     "BlockReason",
     "ProtectionStatus",
+    # Lightpath
     "Lightpath",
+    # Results
+    "RouteResult",
+    "SpectrumResult",
+    "GroomingResult",
+    "SlicingResult",
+    "SNRResult",
+    "ProtectionResult",
+    "AllocationResult",
 ]
