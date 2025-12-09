@@ -26,6 +26,7 @@ from fusion.domain.results import (
     ProtectionResult,
     RouteResult,
     SlicingResult,
+    SNRRecheckResult,
     SNRResult,
     SpectrumResult,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "GroomingResult",
     "SlicingResult",
     "SNRResult",
+    "SNRRecheckResult",
     "ProtectionResult",
     "AllocationResult",
 ]

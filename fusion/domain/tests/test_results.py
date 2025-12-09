@@ -11,6 +11,7 @@ from fusion.domain.results import (
     ProtectionResult,
     RouteResult,
     SlicingResult,
+    SNRRecheckResult,
     SNRResult,
     SpectrumResult,
 )
@@ -512,6 +513,90 @@ class TestSNRResult:
         result = SNRResult.skipped()
         with pytest.raises(AttributeError):
             result.passed = False  # type: ignore[misc]
+
+
+# =============================================================================
+# SNRRecheckResult Tests
+# =============================================================================
+
+
+class TestSNRRecheckResult:
+    """Test SNRRecheckResult dataclass."""
+
+    def test_snr_recheck_success(self) -> None:
+        """Test successful SNR recheck (all lightpaths pass)."""
+        result = SNRRecheckResult.success(checked_count=5)
+        assert result.all_pass
+        assert result.num_degraded == 0
+        assert not result.has_violations
+        assert result.degraded_lightpath_ids == ()
+        assert result.checked_count == 5
+
+    def test_snr_recheck_success_no_count(self) -> None:
+        """Test successful SNR recheck without explicit count."""
+        result = SNRRecheckResult.success()
+        assert result.all_pass
+        assert result.checked_count == 0
+
+    def test_snr_recheck_degraded(self) -> None:
+        """Test SNR recheck with degraded lightpaths."""
+        violations = {10: -2.5, 20: -0.5}
+        result = SNRRecheckResult.degraded(
+            degraded_ids=[10, 20],
+            violations=violations,
+            checked_count=5,
+        )
+        assert not result.all_pass
+        assert result.num_degraded == 2
+        assert result.has_violations
+        assert result.degraded_lightpath_ids == (10, 20)
+        assert result.violations == violations
+        assert result.checked_count == 5
+
+    def test_snr_recheck_degraded_default_count(self) -> None:
+        """Test degraded result defaults count to degraded count."""
+        result = SNRRecheckResult.degraded(
+            degraded_ids=[10],
+            violations={10: -1.0},
+        )
+        assert result.checked_count == 1
+
+    def test_snr_recheck_get_worst_violation(self) -> None:
+        """Test get_worst_violation method."""
+        violations = {10: -2.5, 20: -0.5, 30: -3.0}
+        result = SNRRecheckResult.degraded(
+            degraded_ids=[10, 20, 30],
+            violations=violations,
+        )
+        worst = result.get_worst_violation()
+        assert worst == (30, -3.0)  # Most negative is worst
+
+    def test_snr_recheck_get_worst_violation_empty(self) -> None:
+        """Test get_worst_violation when no violations."""
+        result = SNRRecheckResult.success()
+        assert result.get_worst_violation() is None
+
+    def test_snr_recheck_validation_all_pass_with_degraded(self) -> None:
+        """Test validation catches all_pass with degraded lightpaths."""
+        with pytest.raises(ValueError, match="all_pass=True requires no degraded"):
+            SNRRecheckResult(
+                all_pass=True,
+                degraded_lightpath_ids=(10,),
+            )
+
+    def test_snr_recheck_validation_not_pass_without_degraded(self) -> None:
+        """Test validation catches all_pass=False without degraded lightpaths."""
+        with pytest.raises(ValueError, match="all_pass=False requires at least one"):
+            SNRRecheckResult(
+                all_pass=False,
+                degraded_lightpath_ids=(),
+            )
+
+    def test_snr_recheck_immutable(self) -> None:
+        """Test SNR recheck result is frozen."""
+        result = SNRRecheckResult.success()
+        with pytest.raises(AttributeError):
+            result.all_pass = False  # type: ignore[misc]
 
 
 # =============================================================================

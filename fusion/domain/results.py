@@ -642,6 +642,97 @@ class SNRResult:
 
 
 # =============================================================================
+# SNRRecheckResult
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class SNRRecheckResult:
+    """
+    Result of SNR recheck after new lightpath allocation.
+
+    When a new lightpath is allocated, it may cause interference with
+    existing lightpaths. This result captures the outcome of rechecking
+    SNR for affected lightpaths.
+
+    Attributes:
+        all_pass: True if all affected lightpaths still meet SNR threshold
+        degraded_lightpath_ids: IDs of lightpaths now below threshold
+        violations: Mapping of lightpath_id to SNR shortfall in dB
+        checked_count: Number of lightpaths that were checked
+
+    Invariants:
+        - If all_pass=True: degraded_lightpath_ids is empty
+        - If all_pass=False: len(degraded_lightpath_ids) > 0
+
+    Example:
+        >>> result = SNRRecheckResult.all_pass()
+        >>> result.all_pass
+        True
+        >>> result.num_degraded
+        0
+    """
+
+    all_pass: bool
+    degraded_lightpath_ids: tuple[int, ...] = ()
+    violations: dict[int, float] = field(default_factory=dict)
+    checked_count: int = 0
+
+    def __post_init__(self) -> None:
+        """Validate SNR recheck result after creation."""
+        if self.all_pass and len(self.degraded_lightpath_ids) > 0:
+            raise ValueError("all_pass=True requires no degraded lightpaths")
+        if not self.all_pass and len(self.degraded_lightpath_ids) == 0:
+            raise ValueError("all_pass=False requires at least one degraded lightpath")
+
+    @property
+    def num_degraded(self) -> int:
+        """Number of lightpaths that are now degraded."""
+        return len(self.degraded_lightpath_ids)
+
+    @property
+    def has_violations(self) -> bool:
+        """True if any lightpaths are degraded."""
+        return len(self.degraded_lightpath_ids) > 0
+
+    def get_worst_violation(self) -> tuple[int, float] | None:
+        """
+        Get lightpath with largest SNR shortfall.
+
+        Returns:
+            Tuple of (lightpath_id, shortfall_db) or None if no violations
+        """
+        if not self.violations:
+            return None
+        return min(self.violations.items(), key=lambda x: x[1])
+
+    @classmethod
+    def success(cls, checked_count: int = 0) -> "SNRRecheckResult":
+        """Create result when all affected lightpaths still pass."""
+        return cls(
+            all_pass=True,
+            degraded_lightpath_ids=(),
+            violations={},
+            checked_count=checked_count,
+        )
+
+    @classmethod
+    def degraded(
+        cls,
+        degraded_ids: list[int],
+        violations: dict[int, float],
+        checked_count: int = 0,
+    ) -> "SNRRecheckResult":
+        """Create result when some lightpaths are now degraded."""
+        return cls(
+            all_pass=False,
+            degraded_lightpath_ids=tuple(degraded_ids),
+            violations=violations,
+            checked_count=checked_count if checked_count > 0 else len(degraded_ids),
+        )
+
+
+# =============================================================================
 # AllocationResult - FINAL AUTHORITY
 # =============================================================================
 
