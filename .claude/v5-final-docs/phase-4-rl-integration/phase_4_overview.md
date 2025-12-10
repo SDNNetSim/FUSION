@@ -44,7 +44,7 @@ Phase 4 covers migration for all existing RL paths in the codebase:
 
 **Critical Invariant:** Adapter uses SAME pipeline instances as orchestrator.
 
-**Files:** 6 (1 index, 1 shared context, 4 micro-tasks)
+**Files:** 8 (1 index, 1 shared context, 6 micro-tasks including P4.1.f gap-filling)
 
 ### P4.2: UnifiedSimEnv Wiring
 
@@ -57,7 +57,7 @@ Phase 4 covers migration for all existing RL paths in the codebase:
 
 **Critical Feature:** Action mask in `info["action_mask"]` for SB3 MaskablePPO.
 
-**Files:** 6 (1 index, 1 shared context, 4 micro-tasks)
+**Files:** 8 (1 index, 1 shared context, 6 micro-tasks including P4.2.f gap-filling)
 
 ### P4.3: Migrate Existing RL Experiments
 
@@ -70,7 +70,7 @@ Phase 4 covers migration for all existing RL paths in the codebase:
 
 **Critical Constraint:** Existing experiments must work unchanged.
 
-**Files:** 5 (1 index, 1 shared context, 3 micro-tasks)
+**Files:** 7 (1 index, 1 shared context, 5 micro-tasks including P4.3.e gap-filling)
 
 ### P4.4: Parity Validation & Differences Documentation
 
@@ -84,7 +84,7 @@ Phase 4 covers migration for all existing RL paths in the codebase:
 
 **Critical Metric:** Blocking probability within 5% of legacy.
 
-**Files:** 5 (1 index, 1 shared context, 3 micro-tasks)
+**Files:** 7 (1 index, 1 shared context, 5 micro-tasks including P4.4.e gap-filling)
 
 ## File Inventory
 
@@ -128,7 +128,7 @@ Phase 4 covers migration for all existing RL paths in the codebase:
     └── P4.4.e_per_algorithm_differences.md      # Gap-filling (NEW)
 ```
 
-**Total Files:** 30 (4 index, 4 shared context, 20 micro-tasks, 1 overview, 1 gap analysis)
+**Total Files:** 32 (4 index, 4 shared context, 22 micro-tasks, 1 overview, 1 gap analysis)
 
 ## Implementation Order
 
@@ -266,3 +266,51 @@ while True:
 5. Mark task complete, move to next task
 
 Each task is designed to be self-contained with 3-5 context files maximum.
+
+## V3 Architecture Compliance
+
+Phase 4 aligns with the ARCHITECTURE_REFACTOR_PLAN_V3.md principles:
+
+### Unified Execution Path
+- RL uses SAME `RoutingPipeline` and `SpectrumPipeline` instances as non-RL simulation
+- No `mock_handle_arrival()` duplication
+- Feasibility checks come from real spectrum availability
+
+### Domain Object Integration
+- Observations built from `Request`, `PathOption`, `NetworkState`
+- Rewards computed from `AllocationResult`
+- Action masks derived from `PathOption.is_feasible`
+
+### Pipeline Protocol Compliance
+- `RLSimulationAdapter` respects pipeline protocols
+- Read-only queries through `get_path_options()`
+- Mutations only through `SDNOrchestrator.handle_arrival()`
+
+### Backward Compatibility
+- Factory function for gradual migration
+- Feature flags for environment selection
+- Deprecation warnings guide users to new patterns
+- Rollback to legacy env with single flag
+
+## Cross-References
+
+### Related V4 Documentation
+- `v4-docs/architecture/rl_integration.md` - Original RL architecture design
+- `v4-docs/architecture/ml_policies.md` - ML policy architecture
+- `v4-docs/decisions/0004-rl-ml-integration.md` - RL/ML integration decisions
+- `v4-docs/decisions/0009-rl-env-design.md` - RL environment design decisions
+- `v4-docs/decisions/0011-ml-control-policy.md` - ML control policy decisions
+
+### Related V5 Phases
+- Phase 1 provides: `SimulationConfig`, `Request`, `Lightpath`, result types
+- Phase 2 provides: `NetworkState`, pipeline protocols
+- Phase 3 provides: `SDNOrchestrator`, `PipelineFactory`
+
+## Quick Reference: Gap-Filling Documents
+
+| Document | Purpose | Key Classes/Features |
+|----------|---------|---------------------|
+| P4.1.f | Offline RL compatibility | `DisasterState`, `OfflinePolicyAdapter`, `build_offline_state()` |
+| P4.2.f | Graph observations | `PathEncoder`, graph obs space, configurable obs_1-obs_8 |
+| P4.3.e | Algorithm migration | Per-algorithm guides (PPO, A2C, DQN, Q-Learning, BC, IQL) |
+| P4.4.e | Per-algorithm differences | Compatibility matrix, retraining requirements, adapters |
