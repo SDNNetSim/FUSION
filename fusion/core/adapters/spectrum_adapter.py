@@ -158,9 +158,6 @@ class SpectrumAdapter(SpectrumPipeline):
             return SpectrumResult.not_found(slots_needed)
 
         try:
-            # DEBUG
-            print(f"[P3.3-DEBUG] SpectrumAdapter.find_spectrum: path={path}, mod={modulation}, bw={bandwidth_gbps}")
-
             # Get source and destination from path
             source = str(path[0])
             destination = str(path[-1])
@@ -170,11 +167,6 @@ class SpectrumAdapter(SpectrumPipeline):
             mod_per_bw = self._config.mod_per_bw
             bw_key = str(bandwidth_gbps)
             modulation_formats = mod_per_bw.get(bw_key, {})
-
-            # DEBUG
-            print(f"[P3.3-DEBUG] mod_per_bw keys: {list(mod_per_bw.keys())[:5] if mod_per_bw else 'EMPTY'}")
-            print(f"[P3.3-DEBUG] mod_formats for bw={bw_key}: {list(modulation_formats.keys()) if modulation_formats else 'EMPTY'}")
-            print(f"[P3.3-DEBUG] fixed_grid={self._engine_props.get('fixed_grid')}, spectrum_priority={self._engine_props.get('spectrum_priority')}")
 
             # Create proxies
             sdn_props = SDNPropsProxyForSpectrum.from_network_state(
@@ -213,16 +205,13 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
             # Convert results
-            result = self._convert_spectrum_props(
+            return self._convert_spectrum_props(
                 legacy_spectrum.spectrum_props,
                 sdn_props,
                 modulation,
             )
-            print(f"[P3.3-DEBUG] SpectrumAdapter result: is_free={result.is_free}, slots={result.start_slot}-{result.end_slot}, core={result.core}, band={result.band}")
-            return result
 
         except Exception as e:
-            print(f"[P3.3-DEBUG] SpectrumAdapter.find_spectrum FAILED: {e}")
             logger.warning("SpectrumAdapter.find_spectrum failed: %s", e)
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)

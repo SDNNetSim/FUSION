@@ -220,13 +220,15 @@ class StandardSlicingPipeline:
 
         allocated_lightpaths: list[int] = []
 
-        # Determine valid modulation for slice bandwidth if not provided
-        slice_modulation = modulation
+        # ALWAYS determine modulation based on SLICE bandwidth (matches legacy behavior)
+        # Legacy slicing uses mod_per_bw[slice_bandwidth] to find modulation,
+        # NOT the routing modulation for the full request bandwidth.
+        # This is critical for spectral efficiency - a 50 Gbps slice may use
+        # a higher-order modulation (16-QAM) than a 100 Gbps request (QPSK).
+        slice_modulation = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
         if not slice_modulation:
-            slice_modulation = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
-            if not slice_modulation:
-                logger.debug(f"No valid modulation for slice bandwidth {slice_bandwidth}")
-                return None
+            logger.debug(f"No valid modulation for slice bandwidth {slice_bandwidth}")
+            return None
 
         try:
             for i in range(num_slices):
@@ -257,6 +259,7 @@ class StandardSlicingPipeline:
                     modulation=slice_modulation,
                     bandwidth_gbps=slice_bandwidth,
                     path_weight_km=path_weight_km,
+                    guard_slots=getattr(self._config, "guard_slots", 0),
                 )
                 lightpath_id = lightpath.lightpath_id
 

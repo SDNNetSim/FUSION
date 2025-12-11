@@ -614,18 +614,12 @@ class SimulationEngine:
         if request is None:
             return
 
-        # DEBUG: Print before orchestrator call
-        print(f"[P3.3-DEBUG] Calling orchestrator for req {request.request_id}: {request.source}->{request.destination}, bw={request.bandwidth_gbps}")
-
         # Call orchestrator
         result = self._orchestrator.handle_arrival(
             request,
             self._network_state,
             forced_path=forced_path,
         )
-
-        # DEBUG: Print result
-        print(f"[P3.3-DEBUG] Result req {request.request_id}: success={result.success}, block_reason={result.block_reason}, lps={result.lightpaths_created if result.success else 'N/A'}")
 
         # Update stats from result
         self._update_stats_from_result(current_time, request, result)

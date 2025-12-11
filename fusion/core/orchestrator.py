@@ -154,20 +154,39 @@ class SDNOrchestrator:
                 request, groomed_lightpaths, BlockReason.NO_PATH, network_state
             )
 
-        # Stage 3: Try each path
+        # Stage 3: Try standard allocation on ALL paths first (no slicing)
+        # This matches legacy behavior: try all paths with standard allocation,
+        # then only if all fail, try slicing on all paths
         for path_idx, path in enumerate(route_result.paths):
             modulations = route_result.modulations[path_idx]
             weight_km = route_result.weights_km[path_idx]
 
             result = self._try_allocate_on_path(
-                request, path, modulations, weight_km, remaining_bw, network_state
+                request, path, modulations, weight_km, remaining_bw, network_state,
+                allow_slicing=False,  # Don't try slicing yet
             )
             if result is not None:
                 return self._combine_results(
                     request, groomed_lightpaths, result, route_result
                 )
 
-        # Stage 4: All paths failed
+        # Stage 4: Try slicing on ALL paths (only if standard allocation failed)
+        if self.slicing and self.config.slicing_enabled:
+            for path_idx, path in enumerate(route_result.paths):
+                modulations = route_result.modulations[path_idx]
+                weight_km = route_result.weights_km[path_idx]
+
+                result = self._try_allocate_on_path(
+                    request, path, modulations, weight_km, remaining_bw, network_state,
+                    allow_slicing=True,  # Now try slicing
+                    slicing_only=True,   # Skip standard allocation (already tried)
+                )
+                if result is not None:
+                    return self._combine_results(
+                        request, groomed_lightpaths, result, route_result
+                    )
+
+        # Stage 5: All paths failed
         return self._handle_failure(
             request, groomed_lightpaths, BlockReason.CONGESTION, network_state
         )
@@ -265,6 +284,7 @@ class SDNOrchestrator:
             modulation=working_spectrum.modulation,
             bandwidth_gbps=request.bandwidth_gbps,
             path_weight_km=working_weight,
+            guard_slots=self.config.guard_slots,
         )
 
         # Find spectrum for backup path
@@ -286,6 +306,7 @@ class SDNOrchestrator:
             modulation=backup_spectrum.modulation,
             bandwidth_gbps=request.bandwidth_gbps,
             path_weight_km=backup_weight,
+            guard_slots=self.config.guard_slots,
         )
 
         # SNR validation for both (if enabled)
@@ -325,31 +346,46 @@ class SDNOrchestrator:
         weight_km: float,
         bandwidth_gbps: int,
         network_state: NetworkState,
+        allow_slicing: bool = True,
+        slicing_only: bool = False,
     ) -> AllocationResult | None:
-        """Try to allocate on a single path."""
+        """
+        Try to allocate on a single path.
+
+        Args:
+            request: The request to allocate
+            path: Path to try allocation on
+            modulations: Valid modulations for this path
+            weight_km: Path weight in km
+            bandwidth_gbps: Bandwidth to allocate
+            network_state: Current network state
+            allow_slicing: Whether slicing fallback is allowed
+            slicing_only: Skip standard allocation (only try slicing)
+        """
         # Try standard allocation with first valid modulation
         # Skip False/None values (modulations that don't reach path distance)
-        for mod in modulations:
-            if not mod or mod is False:
-                continue
-            spectrum_result = self.spectrum.find_spectrum(
-                list(path), mod, bandwidth_gbps, network_state
-            )
-
-            if spectrum_result.is_free:
-                alloc_result = self._allocate_and_validate(
-                    request,
-                    path,
-                    spectrum_result,
-                    weight_km,
-                    bandwidth_gbps,
-                    network_state,
+        if not slicing_only:
+            for mod in modulations:
+                if not mod or mod is False:
+                    continue
+                spectrum_result = self.spectrum.find_spectrum(
+                    list(path), mod, bandwidth_gbps, network_state
                 )
-                if alloc_result is not None:
-                    return alloc_result
 
-        # Fallback to slicing (if enabled)
-        if self.slicing and self.config.slicing_enabled:
+                if spectrum_result.is_free:
+                    alloc_result = self._allocate_and_validate(
+                        request,
+                        path,
+                        spectrum_result,
+                        weight_km,
+                        bandwidth_gbps,
+                        network_state,
+                    )
+                    if alloc_result is not None:
+                        return alloc_result
+
+        # Fallback to slicing (if enabled and allowed)
+        if allow_slicing and self.slicing and self.config.slicing_enabled:
             # Get first valid modulation for slicing
             first_valid_mod = next((m for m in modulations if m and m is not False), "")
             slicing_result = self.slicing.try_slice(
@@ -387,6 +423,8 @@ class SDNOrchestrator:
         from fusion.domain.results import AllocationResult
 
         # Create lightpath
+        # Note: end_slot from spectrum_result includes guard slots,
+        # so we must pass guard_slots for correct release behavior
         lightpath = network_state.create_lightpath(
             path=path,
             start_slot=spectrum_result.start_slot,
@@ -396,6 +434,7 @@ class SDNOrchestrator:
             modulation=spectrum_result.modulation,
             bandwidth_gbps=bandwidth_gbps,
             path_weight_km=weight_km,
+            guard_slots=self.config.guard_slots,
         )
 
         # Stage 1: Validate SNR for new lightpath
