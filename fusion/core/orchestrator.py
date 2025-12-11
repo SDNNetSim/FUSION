@@ -347,7 +347,7 @@ class SDNOrchestrator:
 
         # Fallback to slicing (if enabled)
         if self.slicing and self.config.slicing_enabled:
-            return self.slicing.try_slice(
+            slicing_result = self.slicing.try_slice(
                 request,
                 list(path),
                 modulations[0] if modulations else "",
@@ -356,6 +356,16 @@ class SDNOrchestrator:
                 spectrum_pipeline=self.spectrum,
                 snr_pipeline=self.snr,
             )
+            # Convert SlicingResult to AllocationResult
+            if slicing_result.success:
+                from fusion.domain.results import AllocationResult
+
+                return AllocationResult(
+                    success=True,
+                    lightpaths_created=slicing_result.lightpaths_created,
+                    is_sliced=slicing_result.is_sliced,
+                    total_bandwidth_allocated_gbps=slicing_result.total_bandwidth_gbps,
+                )
 
         return None
 
@@ -404,8 +414,9 @@ class SDNOrchestrator:
                 network_state.release_lightpath(lightpath.lightpath_id)
                 return None
 
-        # Success: link request to lightpath
+        # Success: link request to lightpath and update remaining bandwidth
         lightpath.request_allocations[request.request_id] = bandwidth_gbps
+        lightpath.remaining_bandwidth_gbps -= bandwidth_gbps
         request.lightpath_ids.append(lightpath.lightpath_id)
 
         return AllocationResult(

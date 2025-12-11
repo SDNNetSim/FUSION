@@ -42,6 +42,14 @@ class SDNPropsProxy:
     lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
         default_factory=dict
     )
+    # Required for modulation format selection in routing algorithms
+    modulation_formats_dict: dict[str, dict[str, Any]] = field(
+        default_factory=dict
+    )
+    # Alias used by some routing algorithms
+    mod_formats: dict[str, dict[str, Any]] = field(
+        default_factory=dict
+    )
 
     @classmethod
     def from_network_state(
@@ -50,8 +58,10 @@ class SDNPropsProxy:
         source: str,
         destination: str,
         bandwidth: float,
+        modulation_formats_dict: dict[str, dict[str, Any]] | None = None,
     ) -> SDNPropsProxy:
         """Create proxy from NetworkState with request context."""
+        mod_dict = modulation_formats_dict or {}
         return cls(
             topology=network_state.topology,
             source=source,
@@ -59,6 +69,8 @@ class SDNPropsProxy:
             bandwidth=bandwidth,
             network_spectrum_dict=network_state.network_spectrum_dict,
             lightpath_status_dict=network_state.lightpath_status_dict,
+            modulation_formats_dict=mod_dict,
+            mod_formats=mod_dict,  # Alias for backwards compatibility
         )
 
 
@@ -130,9 +142,17 @@ class RoutingAdapter(RoutingPipeline):
             return self._handle_forced_path(forced_path, network_state)
 
         try:
+            # Get modulation formats dict for routing algorithms
+            # Use mod_per_bw for bandwidth-specific modulations, or global modulation_formats
+            mod_formats_dict = self._get_modulation_formats_for_bandwidth(bandwidth_gbps)
+
             # Create proxy for legacy code
             sdn_props = SDNPropsProxy.from_network_state(
-                network_state, source, destination, float(bandwidth_gbps)
+                network_state,
+                source,
+                destination,
+                float(bandwidth_gbps),
+                modulation_formats_dict=mod_formats_dict,
             )
 
             # Make a copy of engine_props with topology from network_state
@@ -157,6 +177,38 @@ class RoutingAdapter(RoutingPipeline):
             logger.warning("RoutingAdapter.find_routes failed: %s", e)
             return RouteResult.empty("legacy_error")
 
+    def _get_modulation_formats_for_bandwidth(
+        self, bandwidth_gbps: int
+    ) -> dict[str, dict[str, Any]]:
+        """
+        Get modulation formats dict for the given bandwidth.
+
+        Checks mod_per_bw first for bandwidth-specific modulations,
+        then falls back to global modulation_formats.
+
+        Args:
+            bandwidth_gbps: Requested bandwidth in Gbps
+
+        Returns:
+            Dict of modulation format name to format info (with max_length key)
+        """
+        # Try bandwidth-specific modulation formats first
+        mod_per_bw = self._config.mod_per_bw
+        bw_key = str(bandwidth_gbps)
+        if bw_key in mod_per_bw:
+            bw_mods = mod_per_bw[bw_key]
+            # Convert to format expected by routing: {mod: {"max_length": X}}
+            # mod_per_bw structure is {bw: {mod: {slots_needed: X, max_length: Y}}}
+            result = {}
+            for mod_name, mod_info in bw_mods.items():
+                if isinstance(mod_info, dict):
+                    result[mod_name] = mod_info
+            if result:
+                return result
+
+        # Fall back to global modulation formats
+        return self._config.modulation_formats
+
     def _handle_forced_path(
         self,
         forced_path: list[str],
@@ -177,7 +229,12 @@ class RoutingAdapter(RoutingPipeline):
         modulations = self._get_modulations_for_weight(weight)
 
         if not modulations:
-            modulations = ("QPSK",)  # Fallback default
+            # No valid modulations for this path length - return empty result
+            logger.warning(
+                "No valid modulation formats for forced path with weight %.2f km",
+                weight,
+            )
+            return RouteResult.empty("no_modulation")
 
         return RouteResult(
             paths=(tuple(forced_path),),
@@ -212,8 +269,9 @@ class RoutingAdapter(RoutingPipeline):
 
         for mod_name, mod_info in mod_formats.items():
             if isinstance(mod_info, dict):
-                max_reach = mod_info.get("max_reach_km", float("inf"))
-                if weight_km <= max_reach:
+                # Check both legacy key (max_length) and new key (max_reach_km)
+                max_reach = mod_info.get("max_length", mod_info.get("max_reach_km"))
+                if max_reach is not None and weight_km <= max_reach:
                     modulations.append(mod_name)
 
         # Sort by efficiency (higher order first)
@@ -241,8 +299,12 @@ class RoutingAdapter(RoutingPipeline):
                 tuple(mods) for mods in route_props.modulation_formats_matrix
             )
         else:
-            # Provide default modulations if missing
-            modulations = tuple(("QPSK",) for _ in paths)
+            # No modulation formats from routing - this is an error condition
+            logger.error(
+                "Routing returned paths but no modulation_formats_matrix. "
+                "Check that modulation_formats_dict is properly configured."
+            )
+            return RouteResult.empty("no_modulation_formats")
 
         # Handle backup paths if present
         backup_paths = None
