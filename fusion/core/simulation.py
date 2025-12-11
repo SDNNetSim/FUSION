@@ -3,13 +3,21 @@ Simulation engine module for running optical network simulations.
 
 This module provides the main simulation engine functionality for running
 optical network simulations with support for ML/RL models and various metrics.
+
+v5 Architecture Support (P3.3):
+    - Feature flag `use_orchestrator` enables dual-path operation
+    - Legacy path: SDNController (default, use_orchestrator=False)
+    - New path: SDNOrchestrator with pipelines (use_orchestrator=True)
+    - Flag priority: FUSION_USE_ORCHESTRATOR env var > engine_props > default(False)
 """
+
+from __future__ import annotations
 
 import copy
 import os
 import signal
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 import numpy as np
@@ -26,7 +34,147 @@ from fusion.reporting.simulation_reporter import SimulationReporter
 from fusion.utils.logging_config import get_logger, log_message
 from fusion.utils.os import create_directory
 
+if TYPE_CHECKING:
+    from fusion.core.orchestrator import SDNOrchestrator
+    from fusion.domain.config import SimulationConfig
+    from fusion.domain.network_state import NetworkState
+    from fusion.domain.request import Request
+    from fusion.domain.results import AllocationResult
+
 logger = get_logger(__name__)
+
+# =============================================================================
+# Feature Flag Constants (P3.3.b)
+# =============================================================================
+ENV_VAR_USE_ORCHESTRATOR = "FUSION_USE_ORCHESTRATOR"
+DEFAULT_USE_ORCHESTRATOR = False
+
+# Invalid feature flag combinations (P3.3.e)
+# These combinations are invalid when use_orchestrator=True
+INVALID_ORCHESTRATOR_COMBINATIONS = [
+    ("protection_enabled", "slicing_enabled"),  # Protection + Slicing not supported yet
+]
+
+
+def _resolve_use_orchestrator(engine_props: dict[str, Any]) -> bool:
+    """
+    Resolve the use_orchestrator feature flag.
+
+    Priority (P3.3.b):
+        1. Environment variable FUSION_USE_ORCHESTRATOR (if set)
+        2. engine_props["use_orchestrator"] (if present)
+        3. Default: False
+
+    Args:
+        engine_props: Engine configuration dictionary
+
+    Returns:
+        True if orchestrator path should be used, False for legacy path
+
+    Example:
+        >>> os.environ["FUSION_USE_ORCHESTRATOR"] = "true"
+        >>> _resolve_use_orchestrator({})
+        True
+        >>> del os.environ["FUSION_USE_ORCHESTRATOR"]
+        >>> _resolve_use_orchestrator({"use_orchestrator": True})
+        True
+        >>> _resolve_use_orchestrator({})
+        False
+    """
+    # Priority 1: Environment variable
+    env_value = os.environ.get(ENV_VAR_USE_ORCHESTRATOR)
+    if env_value is not None:
+        resolved = env_value.lower() in ("true", "1", "yes", "on")
+        logger.debug(
+            "use_orchestrator resolved from env var %s=%s -> %s",
+            ENV_VAR_USE_ORCHESTRATOR,
+            env_value,
+            resolved,
+        )
+        return resolved
+
+    # Priority 2: engine_props
+    if "use_orchestrator" in engine_props:
+        resolved = bool(engine_props["use_orchestrator"])
+        logger.debug(
+            "use_orchestrator resolved from engine_props -> %s",
+            resolved,
+        )
+        return resolved
+
+    # Priority 3: Default
+    logger.debug(
+        "use_orchestrator using default -> %s",
+        DEFAULT_USE_ORCHESTRATOR,
+    )
+    return DEFAULT_USE_ORCHESTRATOR
+
+
+def _validate_orchestrator_config(engine_props: dict[str, Any]) -> None:
+    """
+    Validate configuration for orchestrator mode (P3.3.e).
+
+    Checks for invalid feature flag combinations when use_orchestrator=True.
+    Logs warnings for suboptimal but allowed configurations.
+
+    Args:
+        engine_props: Engine configuration dictionary
+
+    Raises:
+        ValueError: If invalid combination detected
+
+    Valid combinations and their behavior are documented in P3.3.e_feature_flag_interactions.md
+    """
+    # Extract feature flags
+    protection_enabled = engine_props.get("route_method") == "1plus1_protection"
+    slicing_enabled = engine_props.get("max_segments", 1) > 1
+    grooming_enabled = engine_props.get("is_grooming_enabled", False)
+    snr_enabled = engine_props.get("snr_type") is not None
+    snr_recheck = engine_props.get("snr_recheck", False)
+    node_disjoint = engine_props.get("node_disjoint_protection", False)
+
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    # ERROR: protection + slicing (P3.3.e - Combination 2)
+    if protection_enabled and slicing_enabled:
+        errors.append(
+            "protection_enabled and slicing_enabled cannot both be True. "
+            "Protection requires single lightpath per request."
+        )
+
+    # ERROR: node_disjoint without protection
+    if node_disjoint and not protection_enabled:
+        errors.append(
+            "node_disjoint_protection requires protection_enabled=True "
+            "(route_method='1plus1_protection')"
+        )
+
+    # WARNING: slicing without grooming (P3.3.e - Combination 1)
+    if slicing_enabled and not grooming_enabled:
+        warnings.append(
+            "slicing_enabled without grooming_enabled may cause inefficient "
+            "allocations (slices may use different paths)"
+        )
+
+    # WARNING: congestion check (snr_recheck) without SNR (P3.3.e - Combination 3)
+    if snr_recheck and not snr_enabled:
+        warnings.append(
+            "snr_recheck has no effect without snr_enabled (snr_type must be set)"
+        )
+
+    # Log warnings
+    for warning in warnings:
+        logger.warning("Config warning: %s", warning)
+
+    # Raise on errors
+    if errors:
+        error_msg = "Invalid orchestrator configuration:\n" + "\n".join(
+            f"  - {e}" for e in errors
+        )
+        raise ValueError(error_msg)
+
+    logger.debug("Orchestrator configuration validation passed")
 
 
 def seed_request_generation(seed: int) -> None:
@@ -193,6 +341,13 @@ class SimulationEngine:
     This class manages the execution of a single optical network simulation,
     including topology creation, request processing, and statistics collection.
 
+    v5 Architecture Support (P3.3):
+        The engine supports dual-path operation controlled by `use_orchestrator`:
+        - False (default): Legacy path using SDNController
+        - True: New path using SDNOrchestrator with pipelines
+
+        Feature flag priority: env var > engine_props > default(False)
+
     :param engine_props: Engine configuration properties
     :type engine_props: dict[str, Any]
     """
@@ -211,6 +366,26 @@ class SimulationEngine:
             self.engine_props["sim_start"],
         )
 
+        # =====================================================================
+        # v5 Feature Flag Resolution (P3.3.b)
+        # =====================================================================
+        self.use_orchestrator = _resolve_use_orchestrator(engine_props)
+
+        # Validate config if orchestrator mode enabled (P3.3.e)
+        if self.use_orchestrator:
+            _validate_orchestrator_config(engine_props)
+
+        # =====================================================================
+        # v5 Domain Objects (initialized in create_topology if orchestrator mode)
+        # =====================================================================
+        self._sim_config: SimulationConfig | None = None
+        self._network_state: NetworkState | None = None
+        self._orchestrator: SDNOrchestrator | None = None
+        self._v5_requests: dict[tuple[int, float], Request] | None = None
+
+        # =====================================================================
+        # Legacy Path Initialization (always needed for backwards compatibility)
+        # =====================================================================
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         # FailureManager reference will be set after topology creation
         self.sdn_obj.failure_manager = None
@@ -260,6 +435,12 @@ class SimulationEngine:
 
         # Initialize FailureManager (will be set up after topology is created)
         self.failure_manager: FailureManager | None = None
+
+        # Log mode selection
+        if self.use_orchestrator:
+            logger.info("SimulationEngine initialized in ORCHESTRATOR mode (v5)")
+        else:
+            logger.debug("SimulationEngine initialized in LEGACY mode")
 
     def update_arrival_params(self, current_time: float) -> None:
         """
@@ -346,6 +527,9 @@ class SimulationEngine:
         """
         Update the SDN controller to handle an arrival request.
 
+        In orchestrator mode (v5), delegates to _handle_arrival_orchestrator.
+        In legacy mode, uses SDNController.
+
         :param current_time: The arrival time of the request
         :type current_time: float
         :param force_route_matrix: Passes forced routes to the SDN controller
@@ -362,6 +546,16 @@ class SimulationEngine:
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
 
+        # =====================================================================
+        # v5 Orchestrator Path (P3.3.c)
+        # =====================================================================
+        if self.use_orchestrator:
+            self._handle_arrival_orchestrator(current_time, force_route_matrix)
+            return
+
+        # =====================================================================
+        # Legacy Path
+        # =====================================================================
         for request_key, request_value in self.reqs_dict[current_time].items():
             if request_key == "mod_formats":
                 request_key = "modulation_formats_dict"
@@ -391,9 +585,180 @@ class SimulationEngine:
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
 
+    def _handle_arrival_orchestrator(
+        self,
+        current_time: tuple[int, float],
+        forced_path: list[str] | None = None,
+    ) -> None:
+        """
+        Handle arrival using v5 orchestrator path.
+
+        Converts legacy request dict to v5 Request domain object,
+        calls orchestrator.handle_arrival(), and updates stats from result.
+
+        Args:
+            current_time: Tuple of (request_id, time)
+            forced_path: Optional forced path for allocation
+        """
+        from fusion.domain.request import Request
+
+        if self.reqs_dict is None or current_time not in self.reqs_dict:
+            return
+
+        if self._orchestrator is None or self._network_state is None:
+            logger.error("Orchestrator not initialized, falling back to legacy")
+            return
+
+        # Get or create v5 Request from legacy dict
+        request = self._get_or_create_v5_request(current_time)
+        if request is None:
+            return
+
+        # DEBUG: Print before orchestrator call
+        print(f"[P3.3-DEBUG] Calling orchestrator for req {request.request_id}: {request.source}->{request.destination}, bw={request.bandwidth_gbps}")
+
+        # Call orchestrator
+        result = self._orchestrator.handle_arrival(
+            request,
+            self._network_state,
+            forced_path=forced_path,
+        )
+
+        # DEBUG: Print result
+        print(f"[P3.3-DEBUG] Result req {request.request_id}: success={result.success}, block_reason={result.block_reason}, lps={result.lightpaths_created if result.success else 'N/A'}")
+
+        # Update stats from result
+        self._update_stats_from_result(current_time, request, result)
+
+        # Sync network state back to legacy dict for compatibility
+        if self._network_state is not None:
+            self.network_spectrum_dict = self._network_state.network_spectrum_dict
+
+    def _get_or_create_v5_request(
+        self, current_time: tuple[int, float]
+    ) -> Request | None:
+        """
+        Get or create a v5 Request domain object from legacy request dict.
+
+        Args:
+            current_time: Tuple of (request_id, time)
+
+        Returns:
+            Request object or None if request not found
+        """
+        from fusion.domain.request import Request
+
+        if self.reqs_dict is None or current_time not in self.reqs_dict:
+            return None
+
+        # Initialize request cache if needed
+        if self._v5_requests is None:
+            self._v5_requests = {}
+
+        # Check cache first
+        if current_time in self._v5_requests:
+            return self._v5_requests[current_time]
+
+        # Create new Request from legacy dict
+        legacy_dict = self.reqs_dict[current_time]
+        request = Request.from_legacy_dict(current_time, legacy_dict)
+
+        # Cache it
+        self._v5_requests[current_time] = request
+
+        return request
+
+    def _update_stats_from_result(
+        self,
+        current_time: tuple[int, float],
+        request: Request,
+        result: AllocationResult,
+    ) -> None:
+        """
+        Update statistics from orchestrator AllocationResult.
+
+        Uses the new P3.4 record_arrival method for stats tracking,
+        which addresses P3.6 gaps including SNR_RECHECK_FAIL support
+        and rollback-aware utilization tracking.
+
+        Args:
+            current_time: Request time key
+            request: The v5 Request that was processed
+            result: AllocationResult from orchestrator
+        """
+        if self.reqs_dict is None or current_time not in self.reqs_dict:
+            return
+
+        # =====================================================================
+        # P3.4: Use new record_arrival method for stats tracking
+        # This method handles:
+        # - SNR_RECHECK_FAIL block reason (P3.6 Gap 5)
+        # - Rollback-aware utilization tracking (P3.6 Gap 5)
+        # - Grooming rollback handling (P3.6 Gap 1)
+        # =====================================================================
+        self.stats_obj.record_arrival(
+            request=request,
+            result=result,
+            network_state=self._network_state,
+            was_rollback=False,  # Will be set by orchestrator if rollback occurred
+        )
+
+        if result.success:
+            # Track in reqs_status_dict for release handling
+            self.reqs_status_dict[request.request_id] = {
+                "mod_format": list(result.modulations) if result.modulations else [],
+                "path": self._get_paths_from_result(result),
+                "is_sliced": result.is_sliced,
+                "was_routed": True,
+                "core_list": list(result.cores) if result.cores else [],
+                "band": list(result.bands) if result.bands else [],
+                "start_slot_list": list(result.start_slots) if result.start_slots else [],
+                "end_slot_list": list(result.end_slots) if result.end_slots else [],
+                "bandwidth_list": list(result.bandwidth_allocations) if result.bandwidth_allocations else [request.bandwidth_gbps],
+                "lightpath_id_list": list(result.all_lightpath_ids) if result.all_lightpath_ids else [],
+                "lightpath_bandwidth_list": list(result.lightpath_bandwidths) if result.lightpath_bandwidths else [],
+                "was_new_lp_established": list(result.lightpaths_created) if result.lightpaths_created else [],
+            }
+
+            # Track grooming if applicable
+            if result.is_groomed or result.is_partially_groomed:
+                if self.grooming_stats:
+                    if result.is_groomed and not result.is_partially_groomed:
+                        self.grooming_stats["fully_groomed"] += 1
+                    elif result.is_partially_groomed:
+                        self.grooming_stats["partially_groomed"] += 1
+        else:
+            # For blocked requests, grooming stats tracking
+            if self.grooming_stats:
+                self.grooming_stats["not_groomed"] += 1
+
+    def _get_paths_from_result(self, result: AllocationResult) -> list[list[str]]:
+        """
+        Extract paths from AllocationResult lightpath IDs.
+
+        Args:
+            result: The allocation result
+
+        Returns:
+            List of paths (each path is a list of node IDs)
+        """
+        paths: list[list[str]] = []
+        if not result.all_lightpath_ids or self._network_state is None:
+            return paths
+
+        for lp_id in result.all_lightpath_ids:
+            lp = self._network_state.get_lightpath(lp_id)
+            if lp and lp.path:
+                paths.append(list(lp.path))
+
+        return paths
+
     def handle_release(self, current_time: tuple[int, float]) -> None:
         """
         Update the SDN controller to handle the release of a request.
+
+        In orchestrator mode (v5), delegates to _handle_release_orchestrator.
+        In legacy mode, uses SDNController.
 
         :param current_time: The arrival time of the request
         :type current_time: float
@@ -401,6 +766,16 @@ class SimulationEngine:
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
 
+        # =====================================================================
+        # v5 Orchestrator Path (P3.3.c)
+        # =====================================================================
+        if self.use_orchestrator:
+            self._handle_release_orchestrator(current_time)
+            return
+
+        # =====================================================================
+        # Legacy Path
+        # =====================================================================
         for request_key, request_value in self.reqs_dict[current_time].items():
             if request_key == "mod_formats":
                 request_key = "modulation_formats_dict"
@@ -479,6 +854,82 @@ class SimulationEngine:
                 self.network_spectrum_dict = sdn_spectrum_dict
         # Request was blocked, nothing to release
 
+    def _handle_release_orchestrator(
+        self,
+        current_time: tuple[int, float],
+    ) -> None:
+        """
+        Handle release using v5 orchestrator path.
+
+        Retrieves the v5 Request from cache and calls orchestrator.handle_release().
+
+        Args:
+            current_time: Tuple of (request_id, time)
+        """
+        if self.reqs_dict is None or current_time not in self.reqs_dict:
+            return
+
+        if self._orchestrator is None or self._network_state is None:
+            logger.error("Orchestrator not initialized for release")
+            return
+
+        # Get the arrival time key for this request
+        req_id = self.reqs_dict[current_time]["req_id"]
+
+        # Check if request was routed (exists in reqs_status_dict)
+        if req_id not in self.reqs_status_dict:
+            # Request was blocked, nothing to release
+            return
+
+        # Find the corresponding Request object in cache
+        request = None
+        if self._v5_requests:
+            for time_key, cached_req in self._v5_requests.items():
+                if cached_req.request_id == req_id:
+                    request = cached_req
+                    break
+
+        if request is None:
+            logger.warning(
+                "Request %d not found in v5 cache for release", req_id
+            )
+            return
+
+        # Collect utilization stats before release
+        req_status = self.reqs_status_dict[req_id]
+        lightpath_ids = req_status.get("lightpath_id_list", [])
+
+        utilization_dict: dict[int, dict[str, Any]] = {}
+        for lp_id in lightpath_ids:
+            lp = self._network_state.get_lightpath(lp_id)
+            if lp:
+                utilization = (
+                    (lp.total_bandwidth_gbps - lp.remaining_bandwidth_gbps)
+                    / lp.total_bandwidth_gbps
+                    * 100.0
+                    if lp.total_bandwidth_gbps > 0
+                    else 0.0
+                )
+                utilization_dict[lp_id] = {
+                    "band": lp.band,
+                    "core": lp.core,
+                    "bit_rate": lp.total_bandwidth_gbps,
+                    "utilization": utilization,
+                }
+
+        # Call orchestrator release
+        self._orchestrator.handle_release(request, self._network_state)
+
+        # Update utilization stats
+        if utilization_dict:
+            self.stats_obj.update_utilization_dict(utilization_dict)
+
+        # Sync network state back to legacy dict for compatibility
+        self.network_spectrum_dict = self._network_state.network_spectrum_dict
+
+        # Clean up from reqs_status_dict
+        del self.reqs_status_dict[req_id]
+
     def _log_dataset_transition(self, current_time: float) -> None:
         """
         Log a dataset transition for offline RL training.
@@ -552,7 +1003,14 @@ class SimulationEngine:
         )
 
     def create_topology(self) -> None:
-        """Create the physical topology of the simulation."""
+        """
+        Create the physical topology of the simulation.
+
+        In orchestrator mode (v5), also initializes:
+            - SimulationConfig from engine_props
+            - NetworkState with topology
+            - SDNOrchestrator with pipelines
+        """
         self.network_spectrum_dict = {}
         self.topology.add_nodes_from(self.engine_props["topology_info"]["nodes"])
 
@@ -595,6 +1053,53 @@ class SimulationEngine:
         self.stats_obj.topology = self.topology
         self.sdn_obj.sdn_props.network_spectrum_dict = self.network_spectrum_dict
         self.sdn_obj.sdn_props.topology = self.topology
+
+        # =====================================================================
+        # v5 Orchestrator Path Initialization (P3.3.c)
+        # =====================================================================
+        if self.use_orchestrator:
+            self._init_orchestrator_path()
+
+    def _init_orchestrator_path(self) -> None:
+        """
+        Initialize v5 orchestrator path components.
+
+        Creates:
+            - SimulationConfig from engine_props
+            - NetworkState with current topology
+            - PipelineSet via PipelineFactory
+            - SDNOrchestrator with pipelines
+
+        Called from create_topology() when use_orchestrator=True.
+        """
+        from fusion.core.orchestrator import SDNOrchestrator
+        from fusion.core.pipeline_factory import PipelineFactory
+        from fusion.domain.config import SimulationConfig
+        from fusion.domain.network_state import NetworkState
+
+        # Create SimulationConfig from engine_props
+        self._sim_config = SimulationConfig.from_engine_props(self.engine_props)
+        logger.debug(
+            "Created SimulationConfig: network=%s, k_paths=%d, grooming=%s",
+            self._sim_config.network_name,
+            self._sim_config.k_paths,
+            self._sim_config.grooming_enabled,
+        )
+
+        # Create NetworkState with topology
+        self._network_state = NetworkState(self.topology, self._sim_config)
+        logger.debug(
+            "Created NetworkState: nodes=%d, links=%d",
+            self._network_state.node_count,
+            self._network_state.link_count,
+        )
+
+        # Create orchestrator with pipelines via factory
+        self._orchestrator = PipelineFactory.create_orchestrator(self._sim_config)
+        logger.info(
+            "Orchestrator path initialized: %s",
+            type(self._orchestrator).__name__,
+        )
 
     def generate_requests(self, seed: int) -> None:
         """
@@ -663,6 +1168,8 @@ class SimulationEngine:
 
         Clears all tracking dictionaries and counters to prepare
         for a fresh simulation run.
+
+        In orchestrator mode, also resets NetworkState.
         """
         # Reset network spectrum
         for link_key in self.network_spectrum_dict:
@@ -672,6 +1179,27 @@ class SimulationEngine:
         # Reset request tracking
         self.reqs_status_dict = {}
 
+        # =====================================================================
+        # v5 Orchestrator Path Reset (P3.3.c)
+        # =====================================================================
+        if self.use_orchestrator:
+            # Clear v5 request cache
+            self._v5_requests = {}
+
+            # Re-create NetworkState with fresh spectrum (if topology exists)
+            if self._sim_config is not None and self.topology.number_of_nodes() > 0:
+                from fusion.domain.network_state import NetworkState
+
+                self._network_state = NetworkState(self.topology, self._sim_config)
+                logger.debug(
+                    "Reset NetworkState for new iteration: nodes=%d, links=%d",
+                    self._network_state.node_count,
+                    self._network_state.link_count,
+                )
+
+        # =====================================================================
+        # Legacy Path Reset
+        # =====================================================================
         # Initialize lightpath tracking on first iteration only (must persist across iterations)
         if self.sdn_obj.sdn_props.lightpath_status_dict is None:
             self.sdn_obj.sdn_props.lightpath_status_dict = {}

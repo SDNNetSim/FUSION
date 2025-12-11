@@ -336,6 +336,9 @@ class BlockReason(Enum):
     SNR_THRESHOLD = "snr_fail"
     """SNR below required threshold."""
 
+    SNR_RECHECK_FAIL = "snr_recheck_fail"
+    """SNR recheck failed for existing lightpaths after new allocation (congestion)."""
+
     XT_THRESHOLD = "xt_threshold"
     """Crosstalk exceeds allowed threshold."""
 
@@ -390,6 +393,7 @@ class BlockReason(Enum):
             "no_route": cls.NO_PATH,
             "snr_fail": cls.SNR_THRESHOLD,
             "snr_failure": cls.SNR_THRESHOLD,
+            "snr_recheck_fail": cls.SNR_RECHECK_FAIL,
             "grooming_fail": cls.GROOMING_FAIL,
             "slicing_fail": cls.SLICING_FAIL,
             "protection_fail": cls.PROTECTION_FAIL,
@@ -428,7 +432,11 @@ class BlockReason(Enum):
 
     def is_quality_related(self) -> bool:
         """Check if blocking is quality-related."""
-        return self in {BlockReason.SNR_THRESHOLD, BlockReason.XT_THRESHOLD}
+        return self in {
+            BlockReason.SNR_THRESHOLD,
+            BlockReason.SNR_RECHECK_FAIL,
+            BlockReason.XT_THRESHOLD,
+        }
 
     def is_feature_related(self) -> bool:
         """Check if blocking is feature-related."""

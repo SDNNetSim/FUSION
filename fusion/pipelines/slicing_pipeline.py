@@ -206,7 +206,7 @@ class StandardSlicingPipeline:
         Args:
             request: The request being processed
             path: Route to use
-            modulation: Modulation format
+            modulation: Modulation format (may be empty, will determine from config)
             slice_bandwidth: Bandwidth per slice
             num_slices: Number of slices
             network_state: Current network state
@@ -220,12 +220,20 @@ class StandardSlicingPipeline:
 
         allocated_lightpaths: list[int] = []
 
+        # Determine valid modulation for slice bandwidth if not provided
+        slice_modulation = modulation
+        if not slice_modulation:
+            slice_modulation = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
+            if not slice_modulation:
+                logger.debug(f"No valid modulation for slice bandwidth {slice_bandwidth}")
+                return None
+
         try:
             for i in range(num_slices):
                 # Find spectrum for this slice
                 spectrum_result = spectrum_pipeline.find_spectrum(
                     path=path,
-                    modulation=modulation,
+                    modulation=slice_modulation,
                     bandwidth_gbps=slice_bandwidth,
                     network_state=network_state,
                 )
@@ -237,16 +245,25 @@ class StandardSlicingPipeline:
                     return None
 
                 # Create lightpath for this slice
-                lightpath_id = network_state.create_lightpath(
-                    request_id=request.request_id,
+                # Calculate path weight for lightpath
+                path_weight_km = self._calculate_path_weight(path, network_state)
+
+                lightpath = network_state.create_lightpath(
                     path=path,
                     start_slot=spectrum_result.start_slot,
                     end_slot=spectrum_result.end_slot,
                     core=spectrum_result.core,
                     band=spectrum_result.band,
-                    modulation=modulation,
+                    modulation=slice_modulation,
                     bandwidth_gbps=slice_bandwidth,
+                    path_weight_km=path_weight_km,
                 )
+                lightpath_id = lightpath.lightpath_id
+
+                # Link request to lightpath and update remaining bandwidth
+                lightpath.request_allocations[request.request_id] = slice_bandwidth
+                lightpath.remaining_bandwidth_gbps -= slice_bandwidth
+                request.lightpath_ids.append(lightpath_id)
 
                 # Validate SNR if pipeline provided
                 if snr_pipeline is not None:
@@ -347,3 +364,80 @@ class StandardSlicingPipeline:
             min_available = min(min_available, available)
 
         return int(min_available) if min_available != float("inf") else 0
+
+    def _calculate_path_weight(
+        self,
+        path: list[str],
+        network_state: NetworkState,
+    ) -> float:
+        """Calculate total path weight (distance) in km."""
+        total = 0.0
+        topology = network_state.topology
+
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            if topology.has_edge(u, v):
+                edge_data = topology.edges[u, v]
+                total += float(edge_data.get("length", edge_data.get("weight", 0.0)))
+
+        return total
+
+    def _get_modulation_for_slice(
+        self,
+        slice_bandwidth: int,
+        path: list[str],
+        network_state: NetworkState,
+    ) -> str:
+        """
+        Determine valid modulation for slice bandwidth and path.
+
+        Looks up mod_per_bw for the slice bandwidth and finds a modulation
+        that can reach the path length.
+
+        Args:
+            slice_bandwidth: Bandwidth of the slice in Gbps
+            path: Route to use
+            network_state: Network state for path length calculation
+
+        Returns:
+            Valid modulation format name, or empty string if none found
+        """
+        # Calculate path length
+        path_length = 0.0
+        topology = network_state.topology
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            if topology.has_edge(u, v):
+                edge_data = topology.edges[u, v]
+                path_length += float(edge_data.get("length", edge_data.get("weight", 0.0)))
+
+        # Look up modulation formats for slice bandwidth
+        mod_per_bw = getattr(self._config, "mod_per_bw", {})
+        bw_key = str(slice_bandwidth)
+
+        if bw_key not in mod_per_bw:
+            logger.debug(f"No mod_per_bw entry for bandwidth {slice_bandwidth}")
+            return ""
+
+        bw_mods = mod_per_bw[bw_key]
+
+        # Find first modulation that can reach the path
+        # Sort by efficiency (highest order first for spectral efficiency)
+        mod_order = ["64-QAM", "32-QAM", "16-QAM", "8-QAM", "QPSK", "BPSK"]
+
+        for mod_name in mod_order:
+            if mod_name in bw_mods:
+                mod_info = bw_mods[mod_name]
+                if isinstance(mod_info, dict):
+                    max_length = mod_info.get("max_length", 0)
+                    if max_length >= path_length:
+                        logger.debug(
+                            f"Slice modulation for {slice_bandwidth} Gbps: {mod_name} "
+                            f"(max_length={max_length}, path_length={path_length:.1f})"
+                        )
+                        return mod_name
+
+        logger.debug(
+            f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}"
+        )
+        return ""

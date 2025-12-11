@@ -168,6 +168,8 @@ class SimulationConfig:
     snr_type: str | None = None  # "snr_e2e", "snr_segment", or None
     snr_recheck: bool = False
     can_partially_serve: bool = False
+    fixed_grid: bool = True  # True for fixed grid, False for flexi-grid
+    spectrum_priority: str | None = None  # Band selection priority: "BSC", "CSB", or None
 
     # =========================================================================
     # Protection Configuration (from SDNProps)
@@ -366,6 +368,8 @@ class SimulationConfig:
             snr_type=snr_type if snr_enabled else None,
             snr_recheck=engine_props.get("snr_recheck", False),
             can_partially_serve=engine_props.get("can_partially_serve", False),
+            fixed_grid=engine_props.get("fixed_grid", True),
+            spectrum_priority=engine_props.get("spectrum_priority"),
             # Protection
             protection_switchover_ms=engine_props.get(
                 "protection_switchover_ms", 50.0
@@ -430,6 +434,8 @@ class SimulationConfig:
             "snr_type": self.snr_type,
             "snr_recheck": self.snr_recheck,
             "can_partially_serve": self.can_partially_serve,
+            "fixed_grid": self.fixed_grid,
+            "spectrum_priority": self.spectrum_priority,
             # Protection
             "protection_switchover_ms": self.protection_switchover_ms,
             "restoration_latency_ms": self.restoration_latency_ms,

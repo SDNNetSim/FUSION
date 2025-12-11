@@ -328,7 +328,10 @@ class SDNOrchestrator:
     ) -> AllocationResult | None:
         """Try to allocate on a single path."""
         # Try standard allocation with first valid modulation
+        # Skip False/None values (modulations that don't reach path distance)
         for mod in modulations:
+            if not mod or mod is False:
+                continue
             spectrum_result = self.spectrum.find_spectrum(
                 list(path), mod, bandwidth_gbps, network_state
             )
@@ -347,10 +350,12 @@ class SDNOrchestrator:
 
         # Fallback to slicing (if enabled)
         if self.slicing and self.config.slicing_enabled:
+            # Get first valid modulation for slicing
+            first_valid_mod = next((m for m in modulations if m and m is not False), "")
             slicing_result = self.slicing.try_slice(
                 request,
                 list(path),
-                modulations[0] if modulations else "",
+                first_valid_mod,
                 bandwidth_gbps,
                 network_state,
                 spectrum_pipeline=self.spectrum,

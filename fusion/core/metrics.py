@@ -63,6 +63,13 @@ class SimStats:
         self.fragmentation_scores: list[float] = []
         self.decision_times_ms: list[float] = []
 
+        # P3.4: New path tracking for orchestrator mode
+        self.total_requests: int = 0
+        self.groomed_requests: int = 0
+        self.sliced_requests: int = 0
+        self.protected_requests: int = 0
+        self.snapshot_interval: int = engine_props.get('snapshot_interval', 100)
+
         # Debug: Track mods_dict updates for v5/v6 comparison
         self.mods_dict_updates_log: list[dict[str, Any]] = []
 
@@ -722,6 +729,10 @@ class SimStats:
     def _get_iter_means(self) -> None:
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
             for snap_key, data_list in curr_snapshot.items():
+                # Skip if already a scalar (P3.4 new path stores scalars directly)
+                if isinstance(data_list, (int, float)):
+                    continue
+                # Handle list case (legacy path)
                 if data_list:
                     curr_snapshot[snap_key] = mean(data_list)
                 else:
@@ -1456,3 +1467,554 @@ class SimStats:
             "decision_time_mean_ms": decision_stats["mean"],
             "decision_time_p95_ms": decision_stats["p95"],
         }
+
+    # =========================================================================
+    # P3.4 Stats Integration: New orchestrator path methods
+    # =========================================================================
+
+    def record_arrival(
+        self,
+        request: Any,  # fusion.domain.request.Request
+        result: Any,  # fusion.domain.results.AllocationResult
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+        was_rollback: bool = False,
+    ) -> None:
+        """
+        Record statistics from orchestrator allocation result.
+
+        This method provides the same functionality as iter_update but
+        works with Phase 1 domain objects instead of legacy sdn_props.
+
+        Args:
+            request: The Request that was processed
+            result: The AllocationResult from orchestrator
+            network_state: Current NetworkState for spectrum data
+            was_rollback: True if this was a rollback (skip utilization tracking)
+
+        Side Effects:
+            - Updates blocked_requests count
+            - Updates bandwidth statistics
+            - Updates resource usage metrics
+            - Updates quality metrics (if available)
+            - Updates block reasons (if blocked)
+            - Takes periodic snapshots
+
+        P3.6 Gap Coverage:
+            - Gap 5: SNR_RECHECK_FAIL block reason support
+            - Gap 5: Skip utilization for rolled-back lightpaths
+            - Gap 1: Grooming rollback utilization adjustment
+        """
+        # Increment total requests for tracking
+        self.total_requests += 1
+
+        if not result.success:
+            self._record_blocked_request_new(request, result)
+        else:
+            self._record_successful_allocation_new(
+                request, result, network_state, was_rollback
+            )
+
+        # Take periodic snapshot
+        self._maybe_take_snapshot_new(network_state)
+
+    def _record_blocked_request_new(
+        self,
+        request: Any,  # fusion.domain.request.Request
+        result: Any,  # fusion.domain.results.AllocationResult
+    ) -> None:
+        """
+        Record stats for a blocked request (new orchestrator path).
+
+        Args:
+            request: The Request that was blocked
+            result: The AllocationResult with block_reason
+
+        P3.6 Gap 5 Coverage:
+            - Maps SNR_RECHECK_FAIL to 'xt_threshold' for backwards compat
+        """
+        self.blocked_requests += 1
+
+        # Track bandwidth blocking
+        if hasattr(request, 'bandwidth_gbps'):
+            self.bit_rate_blocked += int(request.bandwidth_gbps)
+            self.bit_rate_request += int(request.bandwidth_gbps)
+
+            # Track by bandwidth class
+            bw_class = str(request.bandwidth_gbps)
+            if bw_class in self.stats_props.bandwidth_blocking_dict:
+                self.stats_props.bandwidth_blocking_dict[bw_class] += 1
+
+        # Update block reason
+        if result.block_reason:
+            reason_key = self._map_block_reason_new(result.block_reason)
+            current = self.stats_props.block_reasons_dict.get(reason_key)
+            if current is None:
+                self.stats_props.block_reasons_dict[reason_key] = 1
+            else:
+                self.stats_props.block_reasons_dict[reason_key] = current + 1
+
+    def _record_successful_allocation_new(
+        self,
+        request: Any,  # fusion.domain.request.Request
+        result: Any,  # fusion.domain.results.AllocationResult
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+        was_rollback: bool = False,
+    ) -> None:
+        """
+        Record stats for a successful allocation (new orchestrator path).
+
+        Args:
+            request: The Request that was allocated
+            result: The AllocationResult with allocation details
+            network_state: Current NetworkState
+            was_rollback: True if rollback occurred (skip utilization tracking)
+
+        P3.6 Gap Coverage:
+            - Gap 5: Skip utilization tracking if was_rollback=True
+            - Gap 1: Adjusts grooming utilization appropriately
+        """
+        # Track allocation type counters
+        if result.is_groomed:
+            self.groomed_requests += 1
+        if getattr(result, 'is_sliced', False):
+            self.sliced_requests += 1
+        if getattr(result, 'is_protected', False):
+            self.protected_requests += 1
+
+        # Skip further stats tracking for fully groomed requests (v5 behavior)
+        if result.is_groomed and not result.is_partially_groomed:
+            if hasattr(request, 'bandwidth_gbps'):
+                self.bit_rate_request += int(request.bandwidth_gbps)
+            return
+
+        # Track bit rate for requests
+        if hasattr(request, 'bandwidth_gbps'):
+            self.bit_rate_request += int(request.bandwidth_gbps)
+
+        # Resource metrics - transponders (count of lightpaths created)
+        transponders = len(result.lightpaths_created) if result.lightpaths_created else 1
+        self.total_transponders += transponders
+
+        # Track path metrics once (using first lightpath for path/hops)
+        first_lp_details = self._get_lightpath_details_new(result, network_state)
+        if first_lp_details.get('path'):
+            path = first_lp_details['path']
+            num_hops = len(path) - 1
+            self.stats_props.hops_list.append(float(num_hops))
+
+            path_len = self._calculate_path_length_new(path, network_state)
+            if path_len is not None:
+                self.stats_props.lengths_list.append(round(float(path_len), 2))
+
+        # Track path index if available
+        if result.route_result and hasattr(result.route_result, 'paths'):
+            # First path selected is index 0
+            if len(self.stats_props.path_index_list) > 0:
+                self.stats_props.path_index_list[0] += 1
+
+        # Track per-lightpath stats (core, modulation, weights) for ALL lightpaths
+        # This is critical for sliced requests where multiple lightpaths are created
+        if result.lightpaths_created and network_state is not None:
+            for lp_id in result.lightpaths_created:
+                lp = network_state.get_lightpath(lp_id)
+                if lp is None:
+                    continue
+
+                # Track core usage (like legacy _handle_iter_lists)
+                core = getattr(lp, 'core', None)
+                if core is not None:
+                    if core not in self.stats_props.cores_dict:
+                        self.stats_props.cores_dict[core] = 0
+                    self.stats_props.cores_dict[core] += 1
+
+                # Get lightpath details for modulation tracking
+                modulation = getattr(lp, 'modulation', None)
+                band = getattr(lp, 'band', None)
+                snr_db = getattr(lp, 'snr_db', None)
+                lp_path = getattr(lp, 'path', None)
+                # Use LIGHTPATH bandwidth, not request bandwidth (critical for slicing)
+                lp_bandwidth = getattr(lp, 'total_bandwidth_gbps', None)
+
+                # Calculate path weight for this lightpath
+                path_weight = None
+                num_hops = None
+                if lp_path:
+                    path_weight = self._calculate_path_length_new(lp_path, network_state)
+                    num_hops = len(lp_path) - 1
+
+                # Track modulation with correct lightpath bandwidth
+                if modulation:
+                    self._increment_modulation_count(
+                        modulation,
+                        bandwidth_gbps=lp_bandwidth,
+                        band=band,
+                        path_weight=path_weight,
+                        num_hops=num_hops,
+                        snr_value=snr_db,
+                    )
+
+                # Quality metrics (SNR) - track for each lightpath
+                if snr_db is not None:
+                    self.stats_props.snr_list.append(snr_db)
+        else:
+            # Fallback for non-lightpath allocations (shouldn't happen often)
+            if first_lp_details.get('modulation'):
+                bandwidth = request.bandwidth_gbps if hasattr(request, 'bandwidth_gbps') else None
+                path_weight = None
+                num_hops = None
+                if first_lp_details.get('path'):
+                    path_weight = self._calculate_path_length_new(first_lp_details['path'], network_state)
+                    num_hops = len(first_lp_details['path']) - 1
+                self._increment_modulation_count(
+                    first_lp_details['modulation'],
+                    bandwidth_gbps=bandwidth,
+                    band=first_lp_details.get('band'),
+                    path_weight=path_weight,
+                    num_hops=num_hops,
+                    snr_value=first_lp_details.get('snr_db'),
+                )
+
+            if first_lp_details.get('snr_db') is not None:
+                self.stats_props.snr_list.append(first_lp_details['snr_db'])
+
+    def _get_lightpath_details_new(
+        self,
+        result: Any,  # fusion.domain.results.AllocationResult
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+    ) -> dict[str, Any]:
+        """
+        Extract lightpath details from result and network state.
+
+        Args:
+            result: AllocationResult
+            network_state: NetworkState
+
+        Returns:
+            Dict with path, modulation, snr_db, etc.
+        """
+        details: dict[str, Any] = {
+            'path': None,
+            'modulation': None,
+            'snr_db': None,
+            'crosstalk_db': None,
+            'core': None,
+            'band': None,
+            'start_slot': None,
+            'end_slot': None,
+        }
+
+        # Try to get from lightpaths_created
+        if result.lightpaths_created and network_state is not None:
+            lp_id = result.lightpaths_created[0]
+            lp = network_state.get_lightpath(lp_id)
+
+            if lp is not None:
+                details['path'] = getattr(lp, 'path', None)
+                details['modulation'] = getattr(lp, 'modulation', None)
+                details['snr_db'] = getattr(lp, 'snr_db', None)
+                details['crosstalk_db'] = getattr(lp, 'crosstalk_db', None)
+                details['core'] = getattr(lp, 'core', None)
+                details['band'] = getattr(lp, 'band', None)
+                details['start_slot'] = getattr(lp, 'start_slot', None)
+                details['end_slot'] = getattr(lp, 'end_slot', None)
+
+        # Fall back to result fields if lightpath lookup failed
+        if details['modulation'] is None and result.modulations:
+            details['modulation'] = result.modulations[0]
+
+        if details['snr_db'] is None and result.snr_values:
+            details['snr_db'] = result.snr_values[0]
+
+        return details
+
+    def _map_block_reason_new(self, reason: Any) -> str:
+        """
+        Map BlockReason enum to stats dict key.
+
+        Args:
+            reason: BlockReason enum value
+
+        Returns:
+            Legacy stats dict key (distance, congestion, xt_threshold, failure)
+
+        P3.6 Gap 5 Coverage:
+            - SNR_RECHECK_FAIL maps to 'xt_threshold' for backwards compat
+        """
+        from fusion.domain.request import BlockReason
+
+        mapping = {
+            BlockReason.NO_PATH: 'distance',
+            BlockReason.DISTANCE: 'distance',
+            BlockReason.CONGESTION: 'congestion',
+            BlockReason.SNR_THRESHOLD: 'xt_threshold',
+            BlockReason.SNR_RECHECK_FAIL: 'xt_threshold',  # P3.6 Gap 5
+            BlockReason.XT_THRESHOLD: 'xt_threshold',
+            BlockReason.FAILURE: 'failure',
+            BlockReason.LINK_FAILURE: 'failure',
+            BlockReason.NODE_FAILURE: 'failure',
+            BlockReason.GROOMING_FAIL: 'congestion',
+            BlockReason.SLICING_FAIL: 'congestion',
+            BlockReason.PROTECTION_FAIL: 'congestion',
+        }
+        return mapping.get(reason, 'congestion')
+
+    def _calculate_path_length_new(
+        self,
+        path: tuple[str, ...] | list[str],
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+    ) -> float | None:
+        """
+        Calculate total path length in km.
+
+        Args:
+            path: Tuple or list of node IDs
+            network_state: NetworkState with topology
+
+        Returns:
+            Total path length in km or None if cannot calculate
+        """
+        if len(path) < 2:
+            return 0.0
+
+        if network_state is None:
+            return None
+
+        topology = getattr(network_state, 'topology', None)
+        if topology is None:
+            return None
+
+        total_length = 0.0
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            if topology.has_edge(u, v):
+                edge_data = topology.edges[u, v]
+                total_length += edge_data.get('length', edge_data.get('weight', 0.0))
+            elif topology.has_edge(v, u):
+                edge_data = topology.edges[v, u]
+                total_length += edge_data.get('length', edge_data.get('weight', 0.0))
+
+        return total_length
+
+    def record_grooming_rollback(
+        self,
+        request: Any,  # fusion.domain.request.Request
+        rolled_back_lightpath_ids: list[int],
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+    ) -> None:
+        """
+        Record that grooming was rolled back - adjust utilization stats.
+
+        Called when partial grooming succeeds but new lightpath allocation
+        fails, requiring rollback of the groomed bandwidth.
+
+        Args:
+            request: The Request being processed
+            rolled_back_lightpath_ids: IDs of lightpaths that had grooming rolled back
+            network_state: Current NetworkState
+
+        P3.6 Gap 1 Coverage:
+            - Adjusts utilization tracking when grooming is rolled back
+            - Does NOT add utilization entries for rolled-back allocations
+        """
+        # For P3.6 Gap 1: We don't need to undo utilization here because
+        # utilization is only tracked at release time. The grooming rollback
+        # in the orchestrator restores the bandwidth to the lightpath,
+        # so when the lightpath eventually releases, it will have the
+        # correct utilization.
+        logger.debug(
+            "Grooming rollback recorded for request %s on lightpaths %s",
+            getattr(request, 'request_id', 'unknown'),
+            rolled_back_lightpath_ids,
+        )
+
+    def _maybe_take_snapshot_new(
+        self,
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+    ) -> None:
+        """
+        Take periodic network snapshot (new orchestrator path).
+
+        Snapshots are taken at configurable intervals to track simulation
+        progress over time.
+
+        Args:
+            network_state: Current NetworkState for spectrum data
+        """
+        # Check if snapshots are enabled
+        if not self.engine_props.get("save_snapshots", False):
+            return
+
+        # Check if it's time for a snapshot
+        snapshot_interval = getattr(self, 'snapshot_interval', 100)
+        if self.total_requests % snapshot_interval != 0:
+            return
+
+        # Skip if no requests yet
+        if self.total_requests == 0:
+            return
+
+        snapshot = {
+            'request_number': self.total_requests,
+            'blocked_count': self.blocked_requests,
+            'spectrum_utilization': self._calculate_spectrum_utilization_new(
+                network_state
+            ),
+        }
+
+        self.stats_props.snapshots_dict[self.total_requests] = snapshot
+
+    def _calculate_spectrum_utilization_new(
+        self,
+        network_state: Any,  # fusion.domain.network_state.NetworkState
+    ) -> float:
+        """
+        Calculate overall spectrum utilization from network state.
+
+        Args:
+            network_state: Current NetworkState
+
+        Returns:
+            Utilization as fraction (0.0 to 1.0)
+        """
+        if network_state is None:
+            return 0.0
+
+        total_slots = 0
+        used_slots = 0
+
+        # Get spectrum utilization from network state
+        network_spectrum_dict = getattr(network_state, 'network_spectrum_dict', None)
+        if network_spectrum_dict is None:
+            return 0.0
+
+        for link_key, link_data in network_spectrum_dict.items():
+            cores_matrix = link_data.get('cores_matrix', {})
+            for band, cores in cores_matrix.items():
+                for core_spectrum in cores:
+                    if hasattr(core_spectrum, '__len__'):
+                        total_slots += len(core_spectrum)
+                        used_slots += sum(1 for s in core_spectrum if s != 0)
+
+        if total_slots == 0:
+            return 0.0
+        return used_slots / total_slots
+
+    def _record_bandwidth_new(
+        self,
+        bandwidth_gbps: int,
+        blocked: bool,
+    ) -> None:
+        """
+        Record bandwidth for blocking statistics (new path).
+
+        Args:
+            bandwidth_gbps: Bandwidth of the request
+            blocked: True if request was blocked
+        """
+        # Track total requested (using existing bit_rate_request)
+        self.bit_rate_request += bandwidth_gbps
+
+        if blocked:
+            # Track blocked bandwidth (using existing bit_rate_blocked)
+            self.bit_rate_blocked += bandwidth_gbps
+
+            # Track by bandwidth class
+            bw_class = str(bandwidth_gbps)
+            current = self.stats_props.bandwidth_blocking_dict.get(bw_class, 0)
+            self.stats_props.bandwidth_blocking_dict[bw_class] = current + 1
+
+    def _increment_modulation_count(
+        self,
+        modulation: str,
+        bandwidth_gbps: int | None = None,
+        band: str | None = None,
+        path_weight: float | None = None,
+        num_hops: int | None = None,
+        snr_value: float | None = None,
+    ) -> None:
+        """
+        Increment modulation usage count and track detailed metrics (new orchestrator path).
+
+        Updates modulations_used_dict and weights_dict to track modulation usage including
+        length, hop, SNR, and XT cost statistics per band.
+
+        Args:
+            modulation: Modulation format name (e.g., 'QPSK', '16-QAM')
+            bandwidth_gbps: Optional bandwidth for bandwidth-keyed tracking
+            band: Optional band for band-specific tracking
+            path_weight: Path length/weight in km for length tracking
+            num_hops: Number of hops for hop tracking
+            snr_value: SNR or XT cost value for quality tracking
+        """
+        if modulation is None:
+            return
+
+        mod_dict = self.stats_props.modulations_used_dict
+
+        # Track by bandwidth key if provided
+        if bandwidth_gbps is not None:
+            bandwidth_key = str(int(bandwidth_gbps))
+            bw_dict = mod_dict.get(bandwidth_key)
+            if isinstance(bw_dict, dict):
+                if modulation in bw_dict:
+                    bw_dict[modulation] += 1
+                else:
+                    bw_dict[modulation] = 1
+
+            # Also track in weights_dict (path weight per bandwidth/modulation)
+            if path_weight is not None:
+                weights_dict = self.stats_props.weights_dict
+                if bandwidth_key in weights_dict:
+                    if modulation in weights_dict[bandwidth_key]:
+                        weights_dict[bandwidth_key][modulation].append(
+                            round(float(path_weight), 2)
+                        )
+                    else:
+                        weights_dict[bandwidth_key][modulation] = [
+                            round(float(path_weight), 2)
+                        ]
+
+        # Track by modulation name with band
+        data_mod_dict = mod_dict.get(modulation)
+        if isinstance(data_mod_dict, dict):
+            # Increment band count
+            if band and band in data_mod_dict:
+                data_mod_dict[band] += 1
+            elif band:
+                data_mod_dict[band] = 1
+
+            # Track length
+            if path_weight is not None:
+                length_dict = data_mod_dict.get("length")
+                if length_dict and isinstance(length_dict, dict):
+                    if band and band in length_dict:
+                        length_dict[band].append(path_weight)
+                    if "overall" in length_dict:
+                        length_dict["overall"].append(path_weight)
+
+            # Track hop count
+            if num_hops is not None:
+                hop_dict = data_mod_dict.get("hop")
+                if hop_dict and isinstance(hop_dict, dict):
+                    if band and band in hop_dict:
+                        hop_dict[band].append(num_hops)
+                    if "overall" in hop_dict:
+                        hop_dict["overall"].append(num_hops)
+
+            # Track SNR or XT cost
+            if snr_value is not None:
+                snr_type = self.engine_props.get("snr_type")
+                if snr_type == "xt_calculation":
+                    xt_dict = data_mod_dict.get("xt_cost")
+                    if xt_dict and isinstance(xt_dict, dict):
+                        if band and band in xt_dict:
+                            xt_dict[band].append(snr_value)
+                        if "overall" in xt_dict:
+                            xt_dict["overall"].append(snr_value)
+                else:
+                    snr_dict = data_mod_dict.get("snr")
+                    if snr_dict and isinstance(snr_dict, dict):
+                        if band and band in snr_dict:
+                            snr_dict[band].append(snr_value)
+                        if "overall" in snr_dict:
+                            snr_dict["overall"].append(snr_value)

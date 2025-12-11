@@ -46,6 +46,16 @@ class SDNPropsProxyForSpectrum:
     )
     block_reason: str | None = None
 
+    # Grooming fields
+    was_partially_groomed: bool = False
+    remaining_bw: float | None = None
+    bandwidth_list: list[float] = field(default_factory=list)
+
+    # Path/lightpath tracking fields
+    path_list: list[str] | None = None
+    path_weight: float = 0.0
+    arrive: float = 0.0  # Arrival time for lightpath tracking
+
     # 1+1 Protection fields
     backup_path: list[str] | None = None
 
@@ -148,9 +158,23 @@ class SpectrumAdapter(SpectrumPipeline):
             return SpectrumResult.not_found(slots_needed)
 
         try:
+            # DEBUG
+            print(f"[P3.3-DEBUG] SpectrumAdapter.find_spectrum: path={path}, mod={modulation}, bw={bandwidth_gbps}")
+
             # Get source and destination from path
             source = str(path[0])
             destination = str(path[-1])
+
+            # Look up modulation formats from mod_per_bw for this bandwidth
+            # mod_per_bw structure: {bandwidth_str: {modulation: {slots_needed: X, ...}}}
+            mod_per_bw = self._config.mod_per_bw
+            bw_key = str(bandwidth_gbps)
+            modulation_formats = mod_per_bw.get(bw_key, {})
+
+            # DEBUG
+            print(f"[P3.3-DEBUG] mod_per_bw keys: {list(mod_per_bw.keys())[:5] if mod_per_bw else 'EMPTY'}")
+            print(f"[P3.3-DEBUG] mod_formats for bw={bw_key}: {list(modulation_formats.keys()) if modulation_formats else 'EMPTY'}")
+            print(f"[P3.3-DEBUG] fixed_grid={self._engine_props.get('fixed_grid')}, spectrum_priority={self._engine_props.get('spectrum_priority')}")
 
             # Create proxies
             sdn_props = SDNPropsProxyForSpectrum.from_network_state(
@@ -158,7 +182,7 @@ class SpectrumAdapter(SpectrumPipeline):
                 source=source,
                 destination=destination,
                 bandwidth=float(bandwidth_gbps),
-                modulation_formats=self._config.modulation_formats,
+                modulation_formats=modulation_formats,
             )
 
             route_props = RoutePropsProxy(
@@ -189,13 +213,16 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
             # Convert results
-            return self._convert_spectrum_props(
+            result = self._convert_spectrum_props(
                 legacy_spectrum.spectrum_props,
                 sdn_props,
                 modulation,
             )
+            print(f"[P3.3-DEBUG] SpectrumAdapter result: is_free={result.is_free}, slots={result.start_slot}-{result.end_slot}, core={result.core}, band={result.band}")
+            return result
 
         except Exception as e:
+            print(f"[P3.3-DEBUG] SpectrumAdapter.find_spectrum FAILED: {e}")
             logger.warning("SpectrumAdapter.find_spectrum failed: %s", e)
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)
@@ -236,13 +263,18 @@ class SpectrumAdapter(SpectrumPipeline):
             source = str(primary_path[0])
             destination = str(primary_path[-1])
 
+            # Look up modulation formats from mod_per_bw for this bandwidth
+            mod_per_bw = self._config.mod_per_bw
+            bw_key = str(bandwidth_gbps)
+            modulation_formats = mod_per_bw.get(bw_key, {})
+
             # Create proxies with backup path
             sdn_props = SDNPropsProxyForSpectrum.from_network_state(
                 network_state=network_state,
                 source=source,
                 destination=destination,
                 bandwidth=float(bandwidth_gbps),
-                modulation_formats=self._config.modulation_formats,
+                modulation_formats=modulation_formats,
                 backup_path=list(backup_path),
             )
 
