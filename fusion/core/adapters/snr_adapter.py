@@ -67,6 +67,7 @@ class RoutePropsProxyForSNR:
 
     paths_matrix: list[list[str]] = field(default_factory=list)
     weights_list: list[float] = field(default_factory=list)
+    connection_index: int | None = None
 
 
 @dataclass
@@ -161,6 +162,7 @@ class SNRAdapter(SNRPipeline):
             route_props = RoutePropsProxyForSNR(
                 paths_matrix=[list(lightpath.path)],
                 weights_list=[lightpath.path_weight_km],
+                connection_index=lightpath.connection_index,
             )
 
             spectrum_props = SpectrumPropsProxyForSNR(

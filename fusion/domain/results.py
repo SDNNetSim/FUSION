@@ -260,6 +260,10 @@ class SpectrumResult:
     modulation: str = ""
     slots_needed: int = 0
 
+    # Achieved bandwidth in dynamic_lps mode (may be less than requested)
+    # When None, assumed to equal the requested bandwidth
+    achieved_bandwidth_gbps: int | None = None
+
     # Backup allocation (for 1+1 protection)
     backup_start_slot: int | None = None
     backup_end_slot: int | None = None

@@ -303,6 +303,7 @@ class SDNOrchestrator:
             bandwidth_gbps=request.bandwidth_gbps,
             path_weight_km=working_weight,
             guard_slots=self.config.guard_slots,
+            connection_index=connection_index,
         )
 
         # Find spectrum for backup path
@@ -327,6 +328,7 @@ class SDNOrchestrator:
             bandwidth_gbps=request.bandwidth_gbps,
             path_weight_km=backup_weight,
             guard_slots=self.config.guard_slots,
+            connection_index=connection_index,
         )
 
         # SNR validation for both (if enabled)
@@ -398,20 +400,40 @@ class SDNOrchestrator:
                     connection_index=connection_index,
                     path_index=path_index,
                 )
-                print(f"[V5_ORCH] find_spectrum result: is_free={spectrum_result.is_free}, slots={spectrum_result.start_slot}-{spectrum_result.end_slot}")
+                print(f"[V5_ORCH] find_spectrum result: is_free={spectrum_result.is_free}, slots={spectrum_result.start_slot}-{spectrum_result.end_slot}, achieved_bw={spectrum_result.achieved_bandwidth_gbps}")
 
                 if spectrum_result.is_free:
-                    alloc_result = self._allocate_and_validate(
-                        request,
-                        path,
-                        spectrum_result,
-                        weight_km,
-                        bandwidth_gbps,
-                        network_state,
-                    )
-                    print(f"[V5_ORCH] _allocate_and_validate returned: {alloc_result is not None}")
-                    if alloc_result is not None:
-                        return alloc_result
+                    # Handle dynamic_lps mode: achieved_bandwidth may be < requested
+                    achieved_bw = spectrum_result.achieved_bandwidth_gbps
+                    if self.config.dynamic_lps and achieved_bw is not None and achieved_bw < bandwidth_gbps:
+                        # Dynamic slicing: create multiple lightpaths
+                        result = self._allocate_dynamic_slices(
+                            request=request,
+                            path=path,
+                            weight_km=weight_km,
+                            remaining_bw=bandwidth_gbps,
+                            slice_bw=achieved_bw,
+                            first_spectrum_result=spectrum_result,
+                            network_state=network_state,
+                            connection_index=connection_index,
+                            path_index=path_index,
+                        )
+                        if result is not None:
+                            return result
+                    else:
+                        # Standard allocation: single lightpath
+                        alloc_result = self._allocate_and_validate(
+                            request,
+                            path,
+                            spectrum_result,
+                            weight_km,
+                            bandwidth_gbps,
+                            network_state,
+                            connection_index=connection_index,
+                        )
+                        print(f"[V5_ORCH] _allocate_and_validate returned: {alloc_result is not None}")
+                        if alloc_result is not None:
+                            return alloc_result
 
         # Fallback to slicing (if enabled and allowed)
         if allow_slicing and self.slicing and self.config.slicing_enabled:
@@ -449,6 +471,7 @@ class SDNOrchestrator:
         weight_km: float,
         bandwidth_gbps: int,
         network_state: NetworkState,
+        connection_index: int | None = None,
     ) -> AllocationResult | None:
         """Allocate lightpath and validate SNR with congestion handling."""
         from fusion.domain.results import AllocationResult
@@ -466,6 +489,7 @@ class SDNOrchestrator:
             bandwidth_gbps=bandwidth_gbps,
             path_weight_km=weight_km,
             guard_slots=self.config.guard_slots,
+            connection_index=connection_index,
         )
 
         # Stage 1: Validate SNR for new lightpath
@@ -500,6 +524,117 @@ class SDNOrchestrator:
             total_bandwidth_allocated_gbps=bandwidth_gbps,
             spectrum_result=spectrum_result,
         )
+
+    def _allocate_dynamic_slices(
+        self,
+        request: Request,
+        path: tuple[str, ...],
+        weight_km: float,
+        remaining_bw: int,
+        slice_bw: int,
+        first_spectrum_result: SpectrumResult,
+        network_state: NetworkState,
+        connection_index: int | None = None,
+        path_index: int = 0,
+    ) -> AllocationResult | None:
+        """
+        Allocate multiple lightpaths for dynamic_lps mode.
+
+        When dynamic slicing returns achieved_bandwidth < requested_bandwidth,
+        create multiple lightpaths to satisfy the full request.
+
+        Args:
+            request: The request being processed
+            path: Path for all lightpaths
+            weight_km: Path weight in km
+            remaining_bw: Total bandwidth still needed
+            slice_bw: Bandwidth per lightpath (from dynamic slicing)
+            first_spectrum_result: First spectrum result to use
+            network_state: Current network state
+            connection_index: External routing index
+            path_index: Path index for SNR lookup
+        """
+        from fusion.domain.results import AllocationResult
+
+        allocated_lightpaths: list[int] = []
+        total_allocated = 0
+        spectrum_result = first_spectrum_result
+        max_iterations = 20  # Safety limit
+
+        print(f"[V5_ORCH] _allocate_dynamic_slices: remaining={remaining_bw}, slice_bw={slice_bw}")
+
+        iteration = 0
+        while remaining_bw > 0 and iteration < max_iterations:
+            iteration += 1
+
+            if not spectrum_result.is_free:
+                # No more spectrum available
+                print(f"[V5_ORCH] dynamic slice {iteration}: no spectrum")
+                break
+
+            # Get actual slice bandwidth (use achieved_bw if available, else slice_bw)
+            actual_slice_bw = spectrum_result.achieved_bandwidth_gbps or slice_bw
+
+            # Create lightpath for this slice
+            lightpath = network_state.create_lightpath(
+                path=path,
+                start_slot=spectrum_result.start_slot,
+                end_slot=spectrum_result.end_slot,
+                core=spectrum_result.core,
+                band=spectrum_result.band,
+                modulation=spectrum_result.modulation,
+                bandwidth_gbps=actual_slice_bw,
+                path_weight_km=weight_km,
+                guard_slots=self.config.guard_slots,
+                connection_index=connection_index,
+            )
+
+            # Validate SNR if enabled
+            if self.snr and self.config.snr_enabled:
+                snr_result = self.snr.validate(lightpath, network_state)
+                if not snr_result.passed:
+                    # Rollback this lightpath
+                    network_state.release_lightpath(lightpath.lightpath_id)
+                    print(f"[V5_ORCH] dynamic slice {iteration}: SNR failed")
+                    break
+
+            # Success: link request to lightpath
+            lightpath.request_allocations[request.request_id] = actual_slice_bw
+            lightpath.remaining_bandwidth_gbps -= actual_slice_bw
+            request.lightpath_ids.append(lightpath.lightpath_id)
+            allocated_lightpaths.append(lightpath.lightpath_id)
+
+            total_allocated += actual_slice_bw
+            remaining_bw -= actual_slice_bw
+
+            print(f"[V5_ORCH] dynamic slice {iteration}: allocated {actual_slice_bw}, remaining={remaining_bw}")
+
+            if remaining_bw > 0:
+                # Find spectrum for next slice
+                spectrum_result = self.spectrum.find_spectrum(
+                    list(path),
+                    spectrum_result.modulation,
+                    remaining_bw,
+                    network_state,
+                    connection_index=connection_index,
+                    path_index=path_index,
+                )
+
+        if total_allocated > 0:
+            print(f"[V5_ORCH] dynamic slices complete: {len(allocated_lightpaths)} lightpaths, total_bw={total_allocated}")
+            return AllocationResult(
+                success=True,
+                lightpaths_created=tuple(allocated_lightpaths),
+                is_sliced=len(allocated_lightpaths) > 1,
+                total_bandwidth_allocated_gbps=total_allocated,
+                spectrum_result=first_spectrum_result,
+            )
+
+        # Complete failure - rollback any allocated lightpaths
+        for lp_id in allocated_lightpaths:
+            network_state.release_lightpath(lp_id)
+
+        return None
 
     def _handle_failure(
         self,

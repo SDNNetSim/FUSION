@@ -877,6 +877,7 @@ class NetworkState:
         backup_band: str | None = None,
         snr_db: float | None = None,
         xt_cost: float | None = None,
+        connection_index: int | None = None,
     ) -> Lightpath:
         """
         Create and register a new lightpath, allocating spectrum.
@@ -984,6 +985,7 @@ class NetworkState:
             snr_db=snr_db,
             xt_cost=xt_cost,
             is_degraded=False,
+            connection_index=connection_index,
             backup_path=backup_path,
             backup_start_slot=backup_start_slot,
             backup_end_slot=backup_data_end_slot,

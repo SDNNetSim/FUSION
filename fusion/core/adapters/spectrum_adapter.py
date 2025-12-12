@@ -378,7 +378,15 @@ class SpectrumAdapter(SpectrumPipeline):
         sdn_props: SDNPropsProxyForSpectrum,
         modulation: str,
     ) -> SpectrumResult:
-        """Convert legacy spectrum_props to SpectrumResult."""
+        """Convert legacy spectrum_props to SpectrumResult.
+
+        Important: Legacy code uses INCLUSIVE end_slot (last slot index allocated),
+        while new domain objects use EXCLUSIVE end_slot (first slot NOT allocated).
+        - Legacy: range(start_slot, end_slot + 1) to iterate over allocated slots
+        - New: spectrum[start_slot:end_slot] using Python slice notation
+
+        This method converts from legacy inclusive to new exclusive convention.
+        """
         from fusion.domain.results import SpectrumResult
 
         # Calculate slots needed for empty result
@@ -388,21 +396,31 @@ class SpectrumAdapter(SpectrumPipeline):
         if not spectrum_props.is_free:
             return SpectrumResult.not_found(slots_needed)
 
-        # Extract primary allocation
+        # Extract primary allocation (legacy uses inclusive end_slot)
         start_slot = spectrum_props.start_slot
-        end_slot = spectrum_props.end_slot
+        legacy_end_slot = spectrum_props.end_slot
         core = spectrum_props.core_number
         band = spectrum_props.current_band
         mod = spectrum_props.modulation or modulation
 
-        if start_slot is None or end_slot is None:
+        if start_slot is None or legacy_end_slot is None:
             return SpectrumResult.not_found(slots_needed)
+
+        # Convert from legacy inclusive to new exclusive end_slot
+        end_slot = legacy_end_slot + 1
 
         # Handle backup allocation (if 1+1 protection)
         backup_start = getattr(spectrum_props, "backup_start_slot", None)
-        backup_end = getattr(spectrum_props, "backup_end_slot", None)
+        legacy_backup_end = getattr(spectrum_props, "backup_end_slot", None)
         backup_core = getattr(spectrum_props, "backup_core_number", None)
         backup_band = getattr(spectrum_props, "backup_band", None)
+
+        # Convert backup end_slot too (if present)
+        backup_end = legacy_backup_end + 1 if legacy_backup_end is not None else None
+
+        # Get achieved bandwidth from dynamic slicing (may be less than requested)
+        achieved_bw = getattr(spectrum_props, "lightpath_bandwidth", None)
+        achieved_bandwidth_gbps = int(achieved_bw) if achieved_bw is not None else None
 
         return SpectrumResult(
             is_free=True,
@@ -412,6 +430,7 @@ class SpectrumAdapter(SpectrumPipeline):
             band=band if band is not None else "c",
             modulation=mod,
             slots_needed=slots_needed if slots_needed > 0 else (end_slot - start_slot),
+            achieved_bandwidth_gbps=achieved_bandwidth_gbps,
             # Backup fields
             backup_start_slot=backup_start,
             backup_end_slot=backup_end,

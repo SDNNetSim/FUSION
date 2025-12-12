@@ -272,6 +272,7 @@ class StandardSlicingPipeline:
                     bandwidth_gbps=slice_bandwidth,
                     path_weight_km=path_weight_km,
                     guard_slots=getattr(self._config, "guard_slots", 0),
+                    connection_index=connection_index,
                 )
                 lightpath_id = lightpath.lightpath_id
 
