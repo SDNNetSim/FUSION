@@ -365,12 +365,14 @@ class SpectrumAdapter(SpectrumPipeline):
     ) -> SpectrumResult:
         """Convert legacy spectrum_props to SpectrumResult.
 
-        Important: Legacy code uses INCLUSIVE end_slot (last slot index allocated),
-        while new domain objects use EXCLUSIVE end_slot (first slot NOT allocated).
-        - Legacy: range(start_slot, end_slot + 1) to iterate over allocated slots
-        - New: spectrum[start_slot:end_slot] using Python slice notation
+        Important: Legacy end_slot semantics depend on guard_slots:
+        - end_index = start + slots_needed + guard_slots - 1 (last slot, inclusive)
+        - end_slot = end_index + guard_slots
 
-        This method converts from legacy inclusive to new exclusive convention.
+        When guard_slots > 0: end_slot is effectively exclusive (end_index + guard > end_index)
+        When guard_slots == 0: end_slot is inclusive (end_index + 0 = end_index)
+
+        New domain objects use EXCLUSIVE end_slot (Python slice notation).
         """
         from fusion.domain.results import SpectrumResult
 
@@ -381,7 +383,7 @@ class SpectrumAdapter(SpectrumPipeline):
         if not spectrum_props.is_free:
             return SpectrumResult.not_found(slots_needed)
 
-        # Extract primary allocation (legacy uses inclusive end_slot)
+        # Extract primary allocation
         start_slot = spectrum_props.start_slot
         legacy_end_slot = spectrum_props.end_slot
         core = spectrum_props.core_number
@@ -391,8 +393,18 @@ class SpectrumAdapter(SpectrumPipeline):
         if start_slot is None or legacy_end_slot is None:
             return SpectrumResult.not_found(slots_needed)
 
-        # Convert from legacy inclusive to new exclusive end_slot
-        end_slot = legacy_end_slot + 1
+        # Get guard_slots to determine end_slot semantics
+        guard_slots = self._config.guard_slots
+
+        # Legacy end_slot conversion:
+        # - When guard_slots > 0: end_slot = end_index + guard_slots (already exclusive)
+        # - When guard_slots == 0: end_slot = end_index (inclusive, need +1)
+        if guard_slots == 0:
+            # Inclusive end_slot - convert to exclusive
+            end_slot = legacy_end_slot + 1
+        else:
+            # Already exclusive - no conversion needed
+            end_slot = legacy_end_slot
 
         # Handle backup allocation (if 1+1 protection)
         backup_start = getattr(spectrum_props, "backup_start_slot", None)
@@ -400,8 +412,14 @@ class SpectrumAdapter(SpectrumPipeline):
         backup_core = getattr(spectrum_props, "backup_core_number", None)
         backup_band = getattr(spectrum_props, "backup_band", None)
 
-        # Convert backup end_slot too (if present)
-        backup_end = legacy_backup_end + 1 if legacy_backup_end is not None else None
+        # Backup end_slot uses same convention as primary
+        if legacy_backup_end is not None:
+            if guard_slots == 0:
+                backup_end = legacy_backup_end + 1
+            else:
+                backup_end = legacy_backup_end
+        else:
+            backup_end = None
 
         # Get achieved bandwidth from dynamic slicing (may be less than requested)
         achieved_bw = getattr(spectrum_props, "lightpath_bandwidth", None)
