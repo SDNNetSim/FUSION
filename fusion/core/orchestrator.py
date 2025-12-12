@@ -522,18 +522,21 @@ class SDNOrchestrator:
             connection_index=connection_index,
         )
 
-        # Stage 1: Validate SNR for new lightpath (only if snr_recheck enabled)
-        # Legacy behavior: SNR validation only happens when snr_recheck=True
-        if self.snr and self.config.snr_recheck:
+        # Stage 1: Calculate and optionally validate SNR for new lightpath
+        # Always calculate SNR for metrics tracking when snr_enabled=True
+        # Only reject based on SNR when snr_recheck=True (legacy behavior)
+        if self.snr and self.config.snr_enabled:
             snr_result = self.snr.validate(lightpath, network_state)
-            if not snr_result.passed:
+            # Store SNR value in lightpath for metrics tracking (always)
+            lightpath.snr_db = snr_result.snr_db
+            # Only reject if snr_recheck is enabled
+            if self.config.snr_recheck and not snr_result.passed:
                 network_state.release_lightpath(lightpath.lightpath_id)
                 return None
-            # Store SNR value in lightpath for metrics tracking
-            lightpath.snr_db = snr_result.snr_db
 
         # Stage 2: Congestion check - recheck affected existing LPs (P3.2.h)
-        if self.snr and self.config.snr_recheck:
+        # Only do this when snr_recheck is enabled
+        if self.snr and self.config.snr_enabled and self.config.snr_recheck:
             recheck_result = self.snr.recheck_affected(
                 lightpath.lightpath_id, network_state
             )
@@ -619,28 +622,32 @@ class SDNOrchestrator:
                 connection_index=connection_index,
             )
 
-            # Validate SNR if snr_recheck enabled (legacy behavior)
-            if self.snr and self.config.snr_recheck:
+            # Calculate and optionally validate SNR
+            # Always calculate SNR for metrics tracking when snr_enabled=True
+            # Only reject based on SNR when snr_recheck=True (legacy behavior)
+            if self.snr and self.config.snr_enabled:
                 snr_result = self.snr.validate(lightpath, network_state)
-                if not snr_result.passed:
+                # Store SNR value in lightpath for metrics tracking (always)
+                lightpath.snr_db = snr_result.snr_db
+                # Only reject if snr_recheck is enabled
+                if self.config.snr_recheck and not snr_result.passed:
                     # Rollback this lightpath
                     network_state.release_lightpath(lightpath.lightpath_id)
                     break
-                # Store SNR value in lightpath for metrics tracking
-                lightpath.snr_db = snr_result.snr_db
 
-                # Also do SNR recheck for affected existing lightpaths
-                recheck_result = self.snr.recheck_affected(
-                    lightpath.lightpath_id, network_state
-                )
-                if not recheck_result.all_pass:
-                    # Rollback: existing LP would fail SNR
-                    logger.debug(
-                        f"Dynamic slice SNR recheck failed for request {request.request_id}: "
-                        f"affected LPs {recheck_result.degraded_lightpath_ids}"
+                # Also do SNR recheck for affected existing lightpaths (only if snr_recheck)
+                if self.config.snr_recheck:
+                    recheck_result = self.snr.recheck_affected(
+                        lightpath.lightpath_id, network_state
                     )
-                    network_state.release_lightpath(lightpath.lightpath_id)
-                    break
+                    if not recheck_result.all_pass:
+                        # Rollback: existing LP would fail SNR
+                        logger.debug(
+                            f"Dynamic slice SNR recheck failed for request {request.request_id}: "
+                            f"affected LPs {recheck_result.degraded_lightpath_ids}"
+                        )
+                        network_state.release_lightpath(lightpath.lightpath_id)
+                        break
 
             # Calculate how much bandwidth to dedicate to this lightpath
             # Don't over-allocate: only use what the request actually needs
