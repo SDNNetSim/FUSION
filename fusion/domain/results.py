@@ -79,6 +79,9 @@ class RouteResult:
     strategy_name: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    # External routing index (for pre-calculated SNR data lookup)
+    connection_index: int | None = None
+
     def __post_init__(self) -> None:
         """Validate route result after creation."""
         # Length consistency

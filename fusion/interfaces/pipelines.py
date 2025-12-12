@@ -176,6 +176,9 @@ class SpectrumPipeline(Protocol):
         modulation: str,
         bandwidth_gbps: int,
         network_state: NetworkState,
+        *,
+        connection_index: int | None = None,
+        path_index: int = 0,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
@@ -185,6 +188,8 @@ class SpectrumPipeline(Protocol):
             modulation: Modulation format name (e.g., "QPSK", "16-QAM")
             bandwidth_gbps: Required bandwidth in Gbps
             network_state: Current network state
+            connection_index: External routing index for pre-calculated SNR lookup
+            path_index: Index of which k-path is being tried (0, 1, 2...)
 
         Returns:
             SpectrumResult containing:
@@ -499,6 +504,8 @@ class SlicingPipeline(Protocol):
         max_slices: int | None = None,
         spectrum_pipeline: SpectrumPipeline | None = None,
         snr_pipeline: SNRPipeline | None = None,
+        connection_index: int | None = None,
+        path_index: int = 0,
     ) -> SlicingResult:
         """
         Attempt to slice request into multiple smaller allocations.
@@ -514,6 +521,8 @@ class SlicingPipeline(Protocol):
                 When provided, allows full allocation rather than feasibility check.
             snr_pipeline: Pipeline for validating each slice (optional).
                 When provided with spectrum_pipeline, enables SNR validation.
+            connection_index: External routing index for pre-calculated SNR lookup.
+            path_index: Index of which k-path is being tried (0, 1, 2...).
 
         Returns:
             SlicingResult containing:

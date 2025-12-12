@@ -170,6 +170,8 @@ class SimulationConfig:
     can_partially_serve: bool = False
     fixed_grid: bool = True  # True for fixed grid, False for flexi-grid
     spectrum_priority: str | None = None  # Band selection priority: "BSC", "CSB", or None
+    multi_fiber: bool = False  # True for multi-fiber (MF), False for multi-core fiber (MCF)
+    dynamic_lps: bool = False  # True for dynamic lightpath slicing mode
 
     # =========================================================================
     # Protection Configuration (from SDNProps)
@@ -370,6 +372,8 @@ class SimulationConfig:
             can_partially_serve=engine_props.get("can_partially_serve", False),
             fixed_grid=engine_props.get("fixed_grid", True),
             spectrum_priority=engine_props.get("spectrum_priority"),
+            multi_fiber=engine_props.get("multi_fiber", False),
+            dynamic_lps=engine_props.get("dynamic_lps", False),
             # Protection
             protection_switchover_ms=engine_props.get(
                 "protection_switchover_ms", 50.0
@@ -436,6 +440,8 @@ class SimulationConfig:
             "can_partially_serve": self.can_partially_serve,
             "fixed_grid": self.fixed_grid,
             "spectrum_priority": self.spectrum_priority,
+            "multi_fiber": self.multi_fiber,
+            "dynamic_lps": self.dynamic_lps,
             # Protection
             "protection_switchover_ms": self.protection_switchover_ms,
             "restoration_latency_ms": self.restoration_latency_ms,

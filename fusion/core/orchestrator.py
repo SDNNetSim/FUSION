@@ -149,6 +149,14 @@ class SDNOrchestrator:
             forced_path=forced_path,
         )
 
+        # DEBUG: Print routing result
+        print(f"[DEBUG] Orchestrator routing result:")
+        print(f"  request_id={request.request_id}, src={request.source}, dst={request.destination}")
+        print(f"  paths={route_result.paths}")
+        print(f"  modulations={route_result.modulations}")
+        print(f"  connection_index={route_result.connection_index}")
+        print(f"  is_empty={route_result.is_empty}")
+
         if route_result.is_empty:
             return self._handle_failure(
                 request, groomed_lightpaths, BlockReason.NO_PATH, network_state
@@ -164,6 +172,8 @@ class SDNOrchestrator:
             result = self._try_allocate_on_path(
                 request, path, modulations, weight_km, remaining_bw, network_state,
                 allow_slicing=False,  # Don't try slicing yet
+                connection_index=route_result.connection_index,
+                path_index=path_idx,
             )
             if result is not None:
                 return self._combine_results(
@@ -180,6 +190,8 @@ class SDNOrchestrator:
                     request, path, modulations, weight_km, remaining_bw, network_state,
                     allow_slicing=True,  # Now try slicing
                     slicing_only=True,   # Skip standard allocation (already tried)
+                    connection_index=route_result.connection_index,
+                    path_index=path_idx,
                 )
                 if result is not None:
                     return self._combine_results(
@@ -242,6 +254,8 @@ class SDNOrchestrator:
                 working_routes.weights_km[idx],
                 working_routes.backup_weights_km[idx] if working_routes.backup_weights_km else working_routes.weights_km[idx],
                 network_state,
+                connection_index=working_routes.connection_index,
+                path_index=idx,
             )
             if result is not None and result.success:
                 request.status = RequestStatus.ALLOCATED
@@ -263,13 +277,17 @@ class SDNOrchestrator:
         working_weight: float,
         backup_weight: float,
         network_state: NetworkState,
+        connection_index: int | None = None,
+        path_index: int = 0,
     ) -> AllocationResult | None:
         """Try to allocate both working and backup paths atomically."""
         from fusion.domain.results import AllocationResult
 
         # Find spectrum for working path
         working_spectrum = self.spectrum.find_spectrum(
-            list(working_path), working_mods[0], request.bandwidth_gbps, network_state
+            list(working_path), working_mods[0], request.bandwidth_gbps, network_state,
+            connection_index=connection_index,
+            path_index=path_index,
         )
         if not working_spectrum.is_free:
             return None
@@ -289,7 +307,9 @@ class SDNOrchestrator:
 
         # Find spectrum for backup path
         backup_spectrum = self.spectrum.find_spectrum(
-            list(backup_path), backup_mods[0], request.bandwidth_gbps, network_state
+            list(backup_path), backup_mods[0], request.bandwidth_gbps, network_state,
+            connection_index=connection_index,
+            path_index=path_index,
         )
         if not backup_spectrum.is_free:
             # Rollback working
@@ -348,6 +368,8 @@ class SDNOrchestrator:
         network_state: NetworkState,
         allow_slicing: bool = True,
         slicing_only: bool = False,
+        connection_index: int | None = None,
+        path_index: int = 0,
     ) -> AllocationResult | None:
         """
         Try to allocate on a single path.
@@ -361,16 +383,22 @@ class SDNOrchestrator:
             network_state: Current network state
             allow_slicing: Whether slicing fallback is allowed
             slicing_only: Skip standard allocation (only try slicing)
+            connection_index: External routing index for pre-calculated SNR lookup
+            path_index: Index of which k-path is being tried (0, 1, 2...)
         """
         # Try standard allocation with first valid modulation
         # Skip False/None values (modulations that don't reach path distance)
+        print(f"[V5_ORCH] _try_allocate_on_path: bw_gbps={bandwidth_gbps}, dynamic_lps={self.config.dynamic_lps}")
         if not slicing_only:
             for mod in modulations:
                 if not mod or mod is False:
                     continue
                 spectrum_result = self.spectrum.find_spectrum(
-                    list(path), mod, bandwidth_gbps, network_state
+                    list(path), mod, bandwidth_gbps, network_state,
+                    connection_index=connection_index,
+                    path_index=path_index,
                 )
+                print(f"[V5_ORCH] find_spectrum result: is_free={spectrum_result.is_free}, slots={spectrum_result.start_slot}-{spectrum_result.end_slot}")
 
                 if spectrum_result.is_free:
                     alloc_result = self._allocate_and_validate(
@@ -381,6 +409,7 @@ class SDNOrchestrator:
                         bandwidth_gbps,
                         network_state,
                     )
+                    print(f"[V5_ORCH] _allocate_and_validate returned: {alloc_result is not None}")
                     if alloc_result is not None:
                         return alloc_result
 
@@ -396,6 +425,8 @@ class SDNOrchestrator:
                 network_state,
                 spectrum_pipeline=self.spectrum,
                 snr_pipeline=self.snr,
+                connection_index=connection_index,
+                path_index=path_index,
             )
             # Convert SlicingResult to AllocationResult
             if slicing_result.success:

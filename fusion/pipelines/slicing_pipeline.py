@@ -75,6 +75,8 @@ class StandardSlicingPipeline:
         max_slices: int | None = None,
         spectrum_pipeline: SpectrumPipeline | None = None,
         snr_pipeline: SNRPipeline | None = None,
+        connection_index: int | None = None,
+        path_index: int = 0,
     ) -> SlicingResult:
         """
         Attempt to slice request into multiple smaller allocations.
@@ -91,6 +93,8 @@ class StandardSlicingPipeline:
             max_slices: Override config max_slices (optional)
             spectrum_pipeline: Pipeline for finding spectrum (optional)
             snr_pipeline: Pipeline for SNR validation (optional)
+            connection_index: External routing index for pre-calculated SNR lookup
+            path_index: Index of which k-path is being tried (0, 1, 2...)
 
         Returns:
             SlicingResult indicating success/failure and slice details
@@ -128,6 +132,8 @@ class StandardSlicingPipeline:
                     network_state=network_state,
                     spectrum_pipeline=spectrum_pipeline,
                     snr_pipeline=snr_pipeline,
+                    connection_index=connection_index,
+                    path_index=path_index,
                 )
                 if result is not None:
                     return result
@@ -199,6 +205,8 @@ class StandardSlicingPipeline:
         network_state: NetworkState,
         spectrum_pipeline: SpectrumPipeline,
         snr_pipeline: SNRPipeline | None,
+        connection_index: int | None = None,
+        path_index: int = 0,
     ) -> SlicingResult | None:
         """
         Attempt to actually allocate all slices.
@@ -212,6 +220,8 @@ class StandardSlicingPipeline:
             network_state: Current network state
             spectrum_pipeline: Pipeline for spectrum assignment
             snr_pipeline: Pipeline for SNR validation (optional)
+            connection_index: External routing index for pre-calculated SNR lookup
+            path_index: Index of which k-path is being tried (0, 1, 2...)
 
         Returns:
             SlicingResult if successful, None if any slice fails
@@ -238,6 +248,8 @@ class StandardSlicingPipeline:
                     modulation=slice_modulation,
                     bandwidth_gbps=slice_bandwidth,
                     network_state=network_state,
+                    connection_index=connection_index,
+                    path_index=path_index,
                 )
 
                 if not spectrum_result.is_free:
