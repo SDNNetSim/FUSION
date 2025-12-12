@@ -947,6 +947,9 @@ class AllocationResult:
     snr_values: tuple[float, ...] = ()
     lightpath_bandwidths: tuple[int, ...] = ()
 
+    # Path tracking
+    path_index: int = 0  # Which k-path was selected (0, 1, 2...)
+
     # Nested results (for debugging/tracing)
     route_result: RouteResult | None = None
     spectrum_result: SpectrumResult | None = None

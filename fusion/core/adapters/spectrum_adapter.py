@@ -141,6 +141,7 @@ class SpectrumAdapter(SpectrumPipeline):
         *,
         connection_index: int | None = None,
         path_index: int = 0,
+        use_dynamic_slicing: bool = False,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
@@ -207,14 +208,14 @@ class SpectrumAdapter(SpectrumPipeline):
             # Set path in spectrum_props
             legacy_spectrum.spectrum_props.path_list = list(path)
 
-            # Choose method based on dynamic_lps mode
-            if self._config.dynamic_lps:
+            # Choose method based on whether we're in slicing mode
+            # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
+            if use_dynamic_slicing and self._config.dynamic_lps:
                 # Dynamic slicing mode: spectrum determines modulation/bandwidth
                 result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
                     _mod_format_list=[modulation] if modulation else [],
                     path_index=path_index,
                 )
-                print(f"[DEBUG] dynamic_slicing returned: mod={result_mod}, bw={result_bw}")
                 # Update modulation from dynamic result
                 if result_mod and result_mod is not False:
                     modulation = str(result_mod)
@@ -227,19 +228,6 @@ class SpectrumAdapter(SpectrumPipeline):
                     mod_format_list=[modulation],
                 )
 
-            # DEBUG: Print legacy spectrum_props values
-            sp = legacy_spectrum.spectrum_props
-            print(f"[DEBUG] SpectrumAdapter.find_spectrum (dynamic_lps={self._config.dynamic_lps}):")
-            print(f"  path={path}, mod={modulation}, bw={bandwidth_gbps}")
-            print(f"  connection_index={connection_index}, path_index={path_index}")
-            print(f"  sdn_props.path_index={sdn_props.path_index}")
-            print(f"  spectrum_props.is_free={sp.is_free}")
-            print(f"  spectrum_props.start_slot={sp.start_slot}")
-            print(f"  spectrum_props.end_slot={sp.end_slot}")
-            print(f"  spectrum_props.slots_needed={sp.slots_needed}")
-            print(f"  spectrum_props.core_number={sp.core_number}")
-            print(f"  spectrum_props.current_band={sp.current_band}")
-
             # Convert results
             return self._convert_spectrum_props(
                 legacy_spectrum.spectrum_props,
@@ -248,10 +236,7 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
         except Exception as e:
-            import traceback
             logger.warning("SpectrumAdapter.find_spectrum failed: %s", e)
-            print(f"[DEBUG] SpectrumAdapter.find_spectrum EXCEPTION: {e}")
-            traceback.print_exc()
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)
 

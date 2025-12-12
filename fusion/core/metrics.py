@@ -1606,11 +1606,10 @@ class SimStats:
             if path_len is not None:
                 self.stats_props.lengths_list.append(round(float(path_len), 2))
 
-        # Track path index if available
-        if result.route_result and hasattr(result.route_result, 'paths'):
-            # First path selected is index 0
-            if len(self.stats_props.path_index_list) > 0:
-                self.stats_props.path_index_list[0] += 1
+        # Track path index from allocation result
+        path_idx = getattr(result, 'path_index', 0)
+        if 0 <= path_idx < len(self.stats_props.path_index_list):
+            self.stats_props.path_index_list[path_idx] += 1
 
         # Track per-lightpath stats (core, modulation, weights) for ALL lightpaths
         # This is critical for sliced requests where multiple lightpaths are created

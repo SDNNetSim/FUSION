@@ -170,14 +170,6 @@ class RoutingAdapter(RoutingPipeline):
             # Call legacy method
             legacy_routing.get_route()
 
-            # DEBUG: Print what legacy routing returned
-            rp = legacy_routing.route_props
-            print(f"[DEBUG] RoutingAdapter.find_routes - after get_route:")
-            print(f"  source={source}, dest={destination}")
-            print(f"  route_props.paths_matrix={rp.paths_matrix}")
-            print(f"  route_props.connection_index={rp.connection_index}")
-            print(f"  route_props.path_index={getattr(rp, 'path_index', 'NOT SET')}")
-
             # Convert to Phase 1 result
             return self._convert_route_props(legacy_routing.route_props)
 
@@ -339,12 +331,6 @@ class RoutingAdapter(RoutingPipeline):
 
         # Capture connection_index for external SNR lookup
         connection_index = getattr(route_props, "connection_index", None)
-
-        # DEBUG: Print routing conversion
-        print(f"[DEBUG] RoutingAdapter._convert_route_props:")
-        print(f"  connection_index={connection_index}")
-        print(f"  route_props has connection_index={hasattr(route_props, 'connection_index')}")
-        print(f"  paths count={len(paths)}")
 
         return RouteResult(
             paths=paths,

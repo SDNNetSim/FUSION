@@ -1359,6 +1359,7 @@ class SDNController:
                             path_index, route_time, force_slicing, segment_slicing
                         )
                         if finalize_success:
+                            print(f"[LEGACY] req={self.sdn_props.request_id} path_idx={path_index} lp_ids={self.sdn_props.lightpath_id_list}")
                             return
                         # If finalize failed (SNR recheck), continue to next path
 

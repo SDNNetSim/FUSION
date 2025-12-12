@@ -191,20 +191,24 @@ class SNRAdapter(SNRPipeline):
             )
 
             # Call legacy handle_snr
-            snr_acceptable, xt_cost, lp_bandwidth = legacy_snr.handle_snr(0)
+            # Returns: (snr_acceptable, snr_value_db, lp_bandwidth)
+            snr_acceptable, snr_value_db, lp_bandwidth = legacy_snr.handle_snr(0)
 
             # Get required SNR threshold for modulation
             snr_thresholds = self._config.snr_thresholds
             required_snr = snr_thresholds.get(lightpath.modulation, 0.0)
 
+            # Convert snr_value_db to float (may be numpy type)
+            snr_db = float(snr_value_db) if snr_value_db is not None else 0.0
+
             if snr_acceptable:
                 return SNRResult.success(
-                    snr_db=0.0,  # Legacy doesn't return raw SNR value
+                    snr_db=snr_db,
                     required_snr_db=required_snr,
                 )
             else:
                 return SNRResult.failure(
-                    snr_db=0.0,
+                    snr_db=snr_db,
                     required_snr_db=required_snr,
                     reason="SNR below threshold",
                 )
