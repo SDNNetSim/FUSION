@@ -1614,6 +1614,10 @@ class SimStats:
         # Track per-lightpath stats (core, modulation, weights) for ALL lightpaths
         # This is critical for sliced requests where multiple lightpaths are created
         if result.lightpaths_created and network_state is not None:
+            # Collect SNR values for all lightpaths in this request
+            # Legacy behavior: append mean of all lightpaths' SNR for a single request
+            request_snr_values: list[float] = []
+
             for lp_id in result.lightpaths_created:
                 lp = network_state.get_lightpath(lp_id)
                 if lp is None:
@@ -1652,9 +1656,13 @@ class SimStats:
                         snr_value=snr_db,
                     )
 
-                # Quality metrics (SNR) - track for each lightpath
+                # Collect SNR for this lightpath
                 if snr_db is not None:
-                    self.stats_props.snr_list.append(snr_db)
+                    request_snr_values.append(snr_db)
+
+            # Append mean of all lightpaths' SNR for this request (legacy behavior)
+            if request_snr_values:
+                self.stats_props.snr_list.append(mean(request_snr_values))
         else:
             # Fallback for non-lightpath allocations (shouldn't happen often)
             if first_lp_details.get('modulation'):

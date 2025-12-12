@@ -407,6 +407,12 @@ class SpectrumAdapter(SpectrumPipeline):
         achieved_bw = getattr(spectrum_props, "lightpath_bandwidth", None)
         achieved_bandwidth_gbps = int(achieved_bw) if achieved_bw is not None else None
 
+        # Get SNR value from spectrum assignment (crosstalk_cost)
+        # This is calculated during spectrum assignment, not after lightpath creation
+        snr_db = getattr(spectrum_props, "crosstalk_cost", None)
+        if snr_db is not None:
+            snr_db = float(snr_db)
+
         return SpectrumResult(
             is_free=True,
             start_slot=start_slot,
@@ -416,6 +422,7 @@ class SpectrumAdapter(SpectrumPipeline):
             modulation=mod,
             slots_needed=slots_needed if slots_needed > 0 else (end_slot - start_slot),
             achieved_bandwidth_gbps=achieved_bandwidth_gbps,
+            snr_db=snr_db,
             # Backup fields
             backup_start_slot=backup_start,
             backup_end_slot=backup_end,

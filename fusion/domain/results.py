@@ -264,6 +264,10 @@ class SpectrumResult:
     # When None, assumed to equal the requested bandwidth
     achieved_bandwidth_gbps: int | None = None
 
+    # SNR value calculated during spectrum assignment (for metrics tracking)
+    # This is the value from legacy spectrum_props.crosstalk_cost
+    snr_db: float | None = None
+
     # Backup allocation (for 1+1 protection)
     backup_start_slot: int | None = None
     backup_end_slot: int | None = None
