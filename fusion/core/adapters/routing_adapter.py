@@ -275,8 +275,8 @@ class RoutingAdapter(RoutingPipeline):
                 if max_reach is not None and weight_km <= max_reach:
                     modulations.append(mod_name)
 
-        # Sort by efficiency (higher order first)
-        return tuple(sorted(modulations, reverse=True)) if modulations else ()
+        # Sort by efficiency (higher bits_per_symbol first)
+        return self._sort_modulations_by_efficiency(modulations)
 
     def _get_all_modulation_names(self) -> tuple[str, ...]:
         """
@@ -295,16 +295,70 @@ class RoutingAdapter(RoutingPipeline):
         # If empty, collect from mod_per_bw (fixed_grid mode)
         if not modulations:
             mod_per_bw = self._config.mod_per_bw
-            mod_set: set[str] = set()
+            # Use a list to preserve deterministic order (avoid set() which has non-deterministic iteration)
+            seen: set[str] = set()
             for bw_mods in mod_per_bw.values():
                 if isinstance(bw_mods, dict):
                     for mod_name, mod_info in bw_mods.items():
-                        if isinstance(mod_info, dict):
-                            mod_set.add(mod_name)
-            modulations = list(mod_set)
+                        if isinstance(mod_info, dict) and mod_name not in seen:
+                            modulations.append(mod_name)
+                            seen.add(mod_name)
 
-        # Sort by efficiency (higher order first)
-        return tuple(sorted(modulations, reverse=True)) if modulations else ()
+        # Sort by efficiency (higher bits_per_symbol first)
+        return self._sort_modulations_by_efficiency(modulations)
+
+    def _sort_modulations_by_efficiency(self, modulations: list[str]) -> tuple[str, ...]:
+        """
+        Sort modulation formats by efficiency (bits_per_symbol) in descending order.
+
+        Higher-order modulations (e.g., 64-QAM) should be tried first as they
+        use fewer spectrum slots for the same bandwidth.
+
+        Args:
+            modulations: List of modulation format names
+
+        Returns:
+            Tuple of modulation names sorted by bits_per_symbol (descending)
+        """
+        if not modulations:
+            return ()
+
+        # Get bits_per_symbol for each modulation from config
+        mod_formats = self._config.modulation_formats
+        mod_per_bw = self._config.mod_per_bw
+
+        def get_bits_per_symbol(mod_name: str) -> int:
+            # Try global modulation_formats first
+            if mod_name in mod_formats:
+                info = mod_formats[mod_name]
+                if isinstance(info, dict):
+                    return info.get("bits_per_symbol", 0)
+
+            # Try mod_per_bw (check first bandwidth key)
+            for bw_mods in mod_per_bw.values():
+                if isinstance(bw_mods, dict) and mod_name in bw_mods:
+                    info = bw_mods[mod_name]
+                    if isinstance(info, dict):
+                        return info.get("bits_per_symbol", 0)
+
+            # Fallback: infer from name (common patterns)
+            name_upper = mod_name.upper()
+            if "64-QAM" in name_upper or "64QAM" in name_upper:
+                return 6
+            if "32-QAM" in name_upper or "32QAM" in name_upper:
+                return 5
+            if "16-QAM" in name_upper or "16QAM" in name_upper:
+                return 4
+            if "8-QAM" in name_upper or "8QAM" in name_upper:
+                return 3
+            if "QPSK" in name_upper:
+                return 2
+            if "BPSK" in name_upper:
+                return 1
+            return 0
+
+        # Sort by bits_per_symbol descending (higher efficiency first)
+        return tuple(sorted(modulations, key=get_bits_per_symbol, reverse=True))
 
     def _convert_route_props(self, route_props: Any) -> RouteResult:
         """Convert legacy RoutingProps to RouteResult."""
