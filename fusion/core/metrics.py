@@ -1598,8 +1598,16 @@ class SimStats:
         if hasattr(request, 'bandwidth_gbps'):
             self.bit_rate_request += int(request.bandwidth_gbps)
 
+        # Match legacy behavior: early return if remaining bandwidth but no new LPs created
+        # (partial grooming succeeded but new allocation failed)
+        remaining_bw = request.bandwidth_gbps - (result.total_bandwidth_allocated_gbps or 0)
+        if remaining_bw > 0:
+            self.bit_rate_blocked += remaining_bw
+            if not result.lightpaths_created:
+                return
+
         # Resource metrics - transponders (count of lightpaths created)
-        transponders = len(result.lightpaths_created) if result.lightpaths_created else 1
+        transponders = len(result.lightpaths_created) if result.lightpaths_created else 0
         self.total_transponders += transponders
 
         # Track path metrics once (using first lightpath for path/hops)
