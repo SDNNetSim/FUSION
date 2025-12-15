@@ -742,6 +742,8 @@ class SDNOrchestrator:
             # Only return success if we actually allocated some bandwidth
             if groomed_bw > 0:
                 request.status = RequestStatus.PARTIALLY_GROOMED
+                # CRITICAL: Add groomed lightpath IDs so release can return bandwidth
+                request.lightpath_ids.extend(groomed_lightpaths)
                 return AllocationResult(
                     success=True,
                     lightpaths_groomed=tuple(groomed_lightpaths),

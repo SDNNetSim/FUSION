@@ -788,7 +788,8 @@ class SimulationEngine:
             and self.reqs_dict[current_time]["req_id"] in self.reqs_status_dict
         ):
             # Restore request state from reqs_status_dict
-            req_status = self.reqs_status_dict[self.reqs_dict[current_time]["req_id"]]
+            req_id = self.reqs_dict[current_time]["req_id"]
+            req_status = self.reqs_status_dict[req_id]
             self.sdn_obj.sdn_props.path_list = req_status["path"]
             self.sdn_obj.sdn_props.lightpath_id_list = req_status.get("lightpath_id_list", [])
             self.sdn_obj.sdn_props.lightpath_bandwidth_list = req_status.get("lightpath_bandwidth_list", [])
@@ -889,7 +890,7 @@ class SimulationEngine:
             )
             return
 
-        # Collect utilization stats before release
+        # Collect utilization stats before release (need LP objects to exist)
         req_status = self.reqs_status_dict[req_id]
         lightpath_ids = req_status.get("lightpath_id_list", [])
 
@@ -899,7 +900,8 @@ class SimulationEngine:
         # Import average_bandwidth_usage for time-weighted calculation
         from fusion.utils.network import average_bandwidth_usage
 
-        utilization_dict: dict[int, dict[str, Any]] = {}
+        # Collect utilization data BEFORE release (LP objects still exist)
+        pre_release_util: dict[int, dict[str, Any]] = {}
         for lp_id in lightpath_ids:
             lp = self._network_state.get_lightpath(lp_id)
             if lp:
@@ -913,7 +915,7 @@ class SimulationEngine:
                     # Fallback to point-in-time if no history
                     utilization = lp.utilization * 100.0
 
-                utilization_dict[lp_id] = {
+                pre_release_util[lp_id] = {
                     "band": lp.band,
                     "core": lp.core,
                     "bit_rate": lp.total_bandwidth_gbps,
@@ -922,6 +924,15 @@ class SimulationEngine:
 
         # Call orchestrator release
         self._orchestrator.handle_release(request, self._network_state)
+
+        # Only record utilization for LPs that are fully released (match legacy behavior)
+        # Legacy only records utilization when LP has no remaining users
+        utilization_dict: dict[int, dict[str, Any]] = {}
+        for lp_id in lightpath_ids:
+            lp_after = self._network_state.get_lightpath(lp_id)
+            is_fully_released = lp_after is None
+            if is_fully_released and lp_id in pre_release_util:
+                utilization_dict[lp_id] = pre_release_util[lp_id]
 
         # Update utilization stats
         if utilization_dict:
