@@ -183,8 +183,10 @@ class SDNOrchestrator:
                 snr_bandwidth=snr_bw,
             )
             if result is not None:
+                groomed_bw = request.bandwidth_gbps - remaining_bw
                 return self._combine_results(
-                    request, groomed_lightpaths, result, route_result, path_index=path_idx
+                    request, groomed_lightpaths, result, route_result,
+                    path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                 )
 
         # Stage 4: Try dynamic_lps slicing on ALL paths
@@ -204,8 +206,10 @@ class SDNOrchestrator:
                     snr_bandwidth=snr_bw,
                 )
                 if result is not None:
+                    groomed_bw = request.bandwidth_gbps - remaining_bw
                     return self._combine_results(
-                        request, groomed_lightpaths, result, route_result, path_index=path_idx
+                        request, groomed_lightpaths, result, route_result,
+                        path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
 
         # Stage 5: Try segment slicing pipeline on ALL paths (only if standard allocation failed)
@@ -224,8 +228,10 @@ class SDNOrchestrator:
                     snr_bandwidth=snr_bw,
                 )
                 if result is not None:
+                    groomed_bw = request.bandwidth_gbps - remaining_bw
                     return self._combine_results(
-                        request, groomed_lightpaths, result, route_result, path_index=path_idx
+                        request, groomed_lightpaths, result, route_result,
+                        path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
 
         # Stage 6: All paths failed
@@ -778,6 +784,7 @@ class SDNOrchestrator:
         alloc_result: AllocationResult,
         route_result: "RouteResult | None" = None,
         path_index: int = 0,
+        groomed_bandwidth_gbps: int = 0,
     ) -> AllocationResult:
         """Combine groomed and allocated results."""
         from fusion.domain.request import RequestStatus
@@ -790,6 +797,9 @@ class SDNOrchestrator:
         else:
             request.status = RequestStatus.ALLOCATED
 
+        # Total bandwidth = groomed + newly allocated
+        total_bw = groomed_bandwidth_gbps + alloc_result.total_bandwidth_allocated_gbps
+
         return AllocationResult(
             success=True,
             lightpaths_created=alloc_result.lightpaths_created,
@@ -800,7 +810,7 @@ class SDNOrchestrator:
                 and len(alloc_result.lightpaths_created) > 0
             ),
             is_sliced=alloc_result.is_sliced,
-            total_bandwidth_allocated_gbps=alloc_result.total_bandwidth_allocated_gbps,
+            total_bandwidth_allocated_gbps=total_bw,
             path_index=path_index,
             route_result=route_result,
             spectrum_result=alloc_result.spectrum_result,

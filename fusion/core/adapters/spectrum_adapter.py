@@ -175,8 +175,12 @@ class SpectrumAdapter(SpectrumPipeline):
 
             # Look up modulation formats from mod_per_bw for this bandwidth
             # mod_per_bw structure: {bandwidth_str: {modulation: {slots_needed: X, ...}}}
+            # IMPORTANT: Use snr_bandwidth (original request bandwidth) for lookup if provided.
+            # For partial grooming, remaining_bw is passed as bandwidth_gbps, but modulation
+            # formats should be looked up using the ORIGINAL request bandwidth (like legacy).
             mod_per_bw = self._config.mod_per_bw
-            bw_key = str(bandwidth_gbps)
+            lookup_bw = snr_bandwidth if snr_bandwidth is not None else bandwidth_gbps
+            bw_key = str(lookup_bw)
             modulation_formats = mod_per_bw.get(bw_key, {})
 
             # Create proxies
