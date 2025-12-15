@@ -158,6 +158,12 @@ class SimulationConfig:
     single_core: bool = False
 
     # =========================================================================
+    # Topology Info (physical topology from create_pt)
+    # Contains link/node info needed by SNR calculations
+    # =========================================================================
+    topology_info: dict[str, Any] = field(default_factory=dict)
+
+    # =========================================================================
     # Feature Flags
     # =========================================================================
     grooming_enabled: bool = False
@@ -182,6 +188,7 @@ class SimulationConfig:
     # =========================================================================
     # Physical Layer Parameters (from RoutingProps, SNRProps)
     # =========================================================================
+    bw_per_slot: float = 12.5  # Bandwidth per slot in GHz
     input_power: float = DEFAULT_INPUT_POWER
     frequency_spacing: float = DEFAULT_FREQUENCY_SPACING
     light_frequency: float = DEFAULT_LIGHT_FREQUENCY
@@ -198,6 +205,14 @@ class SimulationConfig:
     request_bit_rate: float = 12.5  # Gb/s
     request_snr: float = 8.5  # dB
     snr_thresholds: dict[str, float] = field(default_factory=dict)
+    phi: dict[str, float] = field(default_factory=dict)  # SNR phi per modulation
+    egn_model: bool = False  # Use EGN model for SNR
+    xt_type: str | None = None  # Crosstalk type
+    beta: float = 0.5  # SNR beta parameter
+    theta: float = 0.0  # SNR theta parameter
+    bi_directional: bool = True  # Bi-directional SNR calculation
+    xt_noise: bool = False  # Include crosstalk noise
+    requested_xt: dict[str, float] = field(default_factory=dict)  # Requested crosstalk
 
     # =========================================================================
     # Modulation Configuration
@@ -353,6 +368,8 @@ class SimulationConfig:
             max_span=engine_props.get("max_span"),
             max_transponders=engine_props.get("number_of_transponders"),
             single_core=engine_props.get("single_core", False),
+            # Topology info (physical topology for SNR calculations)
+            topology_info=engine_props.get("topology_info", {}),
             # Traffic
             num_requests=engine_props.get("num_requests", 1000),
             erlang=erlang,
@@ -380,6 +397,7 @@ class SimulationConfig:
             ),
             restoration_latency_ms=engine_props.get("restoration_latency_ms", 100.0),
             # Physical layer
+            bw_per_slot=engine_props.get("bw_per_slot", 12.5),
             input_power=engine_props.get("input_power", DEFAULT_INPUT_POWER),
             frequency_spacing=engine_props.get(
                 "frequency_spacing", DEFAULT_FREQUENCY_SPACING
@@ -397,6 +415,14 @@ class SimulationConfig:
             request_bit_rate=engine_props.get("request_bit_rate", 12.5),
             request_snr=engine_props.get("request_snr", 8.5),
             snr_thresholds=snr_thresholds,
+            phi=engine_props.get("phi", {}),
+            egn_model=engine_props.get("egn_model", False),
+            xt_type=engine_props.get("xt_type"),
+            beta=engine_props.get("beta", 0.5),
+            theta=engine_props.get("theta", 0.0),
+            bi_directional=engine_props.get("bi_directional", True),
+            xt_noise=engine_props.get("xt_noise", False),
+            requested_xt=engine_props.get("requested_xt", {}),
             # Modulation
             modulation_formats=modulation_formats,
             mod_per_bw=mod_per_bw,
@@ -423,6 +449,8 @@ class SimulationConfig:
             "max_span": self.max_span,
             "number_of_transponders": self.max_transponders,
             "single_core": self.single_core,
+            # Topology info (physical topology for SNR calculations)
+            "topology_info": self.topology_info,
             # Traffic
             "num_requests": self.num_requests,
             "arrival_rate": self.arrival_rate,  # Computed property
@@ -446,6 +474,7 @@ class SimulationConfig:
             "protection_switchover_ms": self.protection_switchover_ms,
             "restoration_latency_ms": self.restoration_latency_ms,
             # Physical layer
+            "bw_per_slot": self.bw_per_slot,
             "input_power": self.input_power,
             "frequency_spacing": self.frequency_spacing,
             "light_frequency": self.light_frequency,
@@ -457,6 +486,14 @@ class SimulationConfig:
             "request_bit_rate": self.request_bit_rate,
             "request_snr": self.request_snr,
             "snr_thresholds": self.snr_thresholds,
+            "phi": self.phi,
+            "egn_model": self.egn_model,
+            "xt_type": self.xt_type,
+            "beta": self.beta,
+            "theta": self.theta,
+            "bi_directional": self.bi_directional,
+            "xt_noise": self.xt_noise,
+            "requested_xt": self.requested_xt,
             # Modulation
             "modulation_formats": self.modulation_formats,
             "mod_per_bw": self.mod_per_bw,

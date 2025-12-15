@@ -90,6 +90,7 @@ class Lightpath:
     remaining_bandwidth_gbps: int
     path_weight_km: float = 0.0
     request_allocations: dict[int, int] = field(default_factory=dict)
+    time_bw_usage: dict[float, float] = field(default_factory=dict)
 
     # =========================================================================
     # Quality Metrics
@@ -217,13 +218,16 @@ class Lightpath:
         """
         return self.remaining_bandwidth_gbps >= bandwidth_gbps
 
-    def allocate_bandwidth(self, request_id: int, bandwidth_gbps: int) -> bool:
+    def allocate_bandwidth(
+        self, request_id: int, bandwidth_gbps: int, timestamp: float | None = None
+    ) -> bool:
         """
         Allocate bandwidth to a request.
 
         Args:
             request_id: ID of the request
             bandwidth_gbps: Bandwidth to allocate
+            timestamp: Optional arrival time for utilization tracking
 
         Returns:
             True if allocation successful, False if insufficient capacity
@@ -244,14 +248,22 @@ class Lightpath:
 
         self.request_allocations[request_id] = bandwidth_gbps
         self.remaining_bandwidth_gbps -= bandwidth_gbps
+
+        # Record utilization at this timestamp for time-weighted average
+        if timestamp is not None:
+            self.time_bw_usage[timestamp] = self.utilization * 100.0
+
         return True
 
-    def release_bandwidth(self, request_id: int) -> int:
+    def release_bandwidth(
+        self, request_id: int, timestamp: float | None = None
+    ) -> int:
         """
         Release bandwidth from a request.
 
         Args:
             request_id: ID of the request to release
+            timestamp: Optional departure time for utilization tracking
 
         Returns:
             Amount of bandwidth released
@@ -264,6 +276,11 @@ class Lightpath:
 
         bandwidth = self.request_allocations.pop(request_id)
         self.remaining_bandwidth_gbps += bandwidth
+
+        # Record utilization at this timestamp for time-weighted average
+        if timestamp is not None:
+            self.time_bw_usage[timestamp] = self.utilization * 100.0
+
         return bandwidth
 
     def get_allocation(self, request_id: int) -> int | None:

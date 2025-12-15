@@ -196,7 +196,6 @@ class SDNController:
 
                 lp_status = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]
 
-                # Debug: Track lightpath details before utilization calculation
                 lp_bw = lp_status.get("lightpath_bandwidth", "N/A")
                 remaining_bw = lp_status.get("remaining_bandwidth", "N/A")
                 time_bw_usage = lp_status.get("time_bw_usage", {})
@@ -576,10 +575,6 @@ class SDNController:
         if not self.engine_props.get("snr_recheck", False):
             return True
 
-        # DEBUG: Track req=145 specifically
-        if self.sdn_props.request_id == 145:
-            print(f"[REQ145_DEBUG] Entering _check_snr_after_allocation for lp_id={lightpath_id}")
-
         # Build lightpath info for SNR recheck
         new_lp_info = {
             "id": lightpath_id,
@@ -603,11 +598,6 @@ class SDNController:
 
         # Perform SNR recheck
         recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
-
-        # DEBUG: Track req=145 specifically
-        if self.sdn_props.request_id == 145:
-            print(f"[REQ145_DEBUG] snr_recheck result: recheck_enable={recheck_enable}, violations={violations}")
-            print(f"[REQ145_DEBUG] new_lp_info={new_lp_info}")
 
         if recheck_enable:
             return True
@@ -1076,6 +1066,7 @@ class SDNController:
             self.spectrum_obj.spectrum_props.forced_core = force_core
             self.spectrum_obj.spectrum_props.path_list = path_list
             self.spectrum_obj.spectrum_props.forced_band = forced_band
+
             self.spectrum_obj.get_spectrum(
                 mod_format_list=mod_format_list,
                 backup_mod_format_list=backup_mod_format_list,
@@ -1359,7 +1350,6 @@ class SDNController:
                             path_index, route_time, force_slicing, segment_slicing
                         )
                         if finalize_success:
-                            print(f"[LEGACY] req={self.sdn_props.request_id} path_idx={path_index} lp_ids={self.sdn_props.lightpath_id_list}")
                             return
                         # If finalize failed (SNR recheck), continue to next path
 
@@ -1375,6 +1365,7 @@ class SDNController:
             # All paths exhausted
             self.sdn_props.block_reason = "distance"
             self.sdn_props.was_routed = False
+
 
             # FEATURE: Support partial serving (v5 behavior)
             # If can_partially_serve is enabled and SOME bandwidth was allocated, accept partial service
@@ -1418,7 +1409,6 @@ class SDNController:
                     self.sdn_props.lightpath_id_list = []
                     self.sdn_props.lightpath_bandwidth_list = []
 
-            self._print_request_summary("BLOCKED")
             return
 
     # Backward compatibility methods for tests

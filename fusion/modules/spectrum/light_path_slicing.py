@@ -304,7 +304,10 @@ class LightPathSlicingManager:
         sdn_controller: Any,
     ) -> bool:
         """Handle fixed-grid dynamic slicing."""
+        initial_remaining = remaining_bw
+        iteration = 0
         while remaining_bw > 0:
+            iteration += 1
             self.sdn_props.was_routed = True
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
                 _mod_format_list=[], path_index=path_index
@@ -361,6 +364,7 @@ class LightPathSlicingManager:
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                 break
 
+        total_allocated = initial_remaining - remaining_bw
         return bool(self.sdn_props.was_routed)
 
     def _handle_flex_grid_dynamic_slicing(

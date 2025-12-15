@@ -765,7 +765,7 @@ class SnrMeasurements:
         gsnr_path_ase_nli = 0
         gsnr_link_ase_nli_db = []
         gsnr_span_ase_nli_db = []
-        
+
         for link_num in range(0, len(self.spectrum_props.path_list) - 1):
             source = self.spectrum_props.path_list[link_num]
             dest = self.spectrum_props.path_list[link_num + 1]
@@ -794,17 +794,21 @@ class SnrMeasurements:
                     if (req_id > 0 and req_id not in self.channels_list) or slot_index == self.spectrum_props.start_slot:
                         channel_mod = None
                         if req_id > 0:
-                            for _, lp_dict in self.sdn_props.lightpath_status_dict.items():
+                            # DEBUG: track lightpath lookup
+                            found_in_status = False
+                            for ep_key, lp_dict in self.sdn_props.lightpath_status_dict.items():
                                 if req_id in lp_dict:
                                     channel_mod = lp_dict[req_id]['mod_format']
+                                    found_in_status = True
+                                    break
 
                             channel_bw = len(np.where(req_id == curr_link[self.spectrum_props.core_number])[0])
                             self.channels_list.append(req_id)
                         else:
                             channel_bw = self.number_of_slots
-                        
+
                         if channel_mod is None and req_id > 0:
-                            if req_id in self.sdn_props.lightpath_id_list:
+                            if hasattr(self.sdn_props, 'lightpath_id_list') and req_id in self.sdn_props.lightpath_id_list:
                                 idx = self.sdn_props.lightpath_id_list.index(req_id)
                                 channel_mod = self.sdn_props.modulation_list[idx]
                             else:
@@ -832,6 +836,10 @@ class SnrMeasurements:
             gsnr_path_ase_nli += gsnr_link_ase_nli
         
         gsnr_db = 10 * np.log10(1 / gsnr_path_ase_nli)
+
+        # DEBUG: Print GSNR value and threshold for comparison
+        import sys
+        sys.stdout.flush()
 
         # Dynamic modulation selection for slicing with dynamic lightpaths
         if self.spectrum_props.slicing_flag and self.engine_props_dict['fixed_grid'] and self.engine_props_dict.get('dynamic_lps', False):
@@ -1158,6 +1166,9 @@ class SnrMeasurements:
                  request, its cost, and lightpath bandwidth
         :rtype: tuple
         """
+        import sys
+        sys.stdout.flush()
+
         if (
             self.spectrum_props.end_slot is None
             or self.spectrum_props.start_slot is None
@@ -1645,17 +1656,6 @@ class SnrMeasurements:
         all_active_lps = self._build_lightpath_list_from_net_spec(exclude_lp_id=new_lp_id)
         new_lp_mod = new_lp_info.get("mod_format", "UNKNOWN")
 
-        if debug_145:
-            print(f"[REQ145_DEBUG] all_active_lps count: {len(all_active_lps)}")
-            # Print a summary of active LP IDs
-            active_ids = [lp['id'] for lp in all_active_lps]
-            print(f"[REQ145_DEBUG] active LP IDs: {sorted(active_ids)}")
-            # Print path format comparison
-            print(f"[REQ145_DEBUG] new_lp path: {new_lp_info['path']} (types: {[type(n).__name__ for n in new_lp_info['path']]})")
-            # Show first 3 active LP paths for comparison
-            for lp in all_active_lps[:3]:
-                print(f"[REQ145_DEBUG] active LP {lp['id']} path: {lp['path']} (types: {[type(n).__name__ for n in lp['path']]})")
-
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
             new_lp=new_lp_info,
@@ -1667,19 +1667,12 @@ class SnrMeasurements:
             debug_req_145=debug_145,
         )
 
-        if debug_145:
-            print(f"[REQ145_DEBUG] overlapping_lps count: {len(overlapping_lps)}")
-            overlapping_ids = [lp['id'] for lp in overlapping_lps]
-            print(f"[REQ145_DEBUG] overlapping LP IDs: {sorted(overlapping_ids)}")
-
         # Re-evaluate each overlapping lightpath (include new LP's interference)
         violations = []
         for lp in overlapping_lps:
             resp, observed_snr = self.evaluate_lp(lp)
 
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
-            if debug_145:
-                print(f"[REQ145_DEBUG] evaluate_lp(id={lp['id']}): resp={resp}, observed_snr={observed_snr}, required_snr={required_snr}")
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 

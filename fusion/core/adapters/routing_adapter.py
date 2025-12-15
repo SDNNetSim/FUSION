@@ -174,6 +174,9 @@ class RoutingAdapter(RoutingPipeline):
             return self._convert_route_props(legacy_routing.route_props)
 
         except Exception as e:
+            import traceback
+            print(f"[ROUTING-ERROR] find_routes exception: {e}")
+            traceback.print_exc()
             logger.warning("RoutingAdapter.find_routes failed: %s", e)
             return RouteResult.empty("legacy_error")
 
@@ -219,22 +222,20 @@ class RoutingAdapter(RoutingPipeline):
 
         When grooming partially succeeds, it specifies a forced path
         for the new lightpath that must be co-located with groomed traffic.
+
+        Legacy behavior: return ALL modulation formats and let spectrum
+        assignment determine which one works. This is important because
+        the existing lightpath already has a valid modulation.
         """
         from fusion.domain.results import RouteResult
 
         # Calculate path weight
         weight = self._calculate_path_weight(forced_path, network_state)
 
-        # Get modulation formats for this path length
-        modulations = self._get_modulations_for_weight(weight)
-
-        if not modulations:
-            # No valid modulations for this path length - return empty result
-            logger.warning(
-                "No valid modulation formats for forced path with weight %.2f km",
-                weight,
-            )
-            return RouteResult.empty("no_modulation")
+        # For forced paths (partial grooming), return ALL modulation formats
+        # Legacy behavior: spectrum assignment determines the valid modulation
+        # This matches v5 behavior where force_mod_format = list(mod_formats_dict.keys())
+        modulations = self._get_all_modulation_names()
 
         return RouteResult(
             paths=(tuple(forced_path),),
@@ -273,6 +274,34 @@ class RoutingAdapter(RoutingPipeline):
                 max_reach = mod_info.get("max_length", mod_info.get("max_reach_km"))
                 if max_reach is not None and weight_km <= max_reach:
                     modulations.append(mod_name)
+
+        # Sort by efficiency (higher order first)
+        return tuple(sorted(modulations, reverse=True)) if modulations else ()
+
+    def _get_all_modulation_names(self) -> tuple[str, ...]:
+        """
+        Get all modulation format names without filtering by weight.
+
+        Used for forced paths (partial grooming) where spectrum assignment
+        determines which modulation works based on the existing lightpath.
+        """
+        # First try global modulation_formats
+        mod_formats = self._config.modulation_formats
+        modulations = [
+            name for name, info in mod_formats.items()
+            if isinstance(info, dict)
+        ]
+
+        # If empty, collect from mod_per_bw (fixed_grid mode)
+        if not modulations:
+            mod_per_bw = self._config.mod_per_bw
+            mod_set: set[str] = set()
+            for bw_mods in mod_per_bw.values():
+                if isinstance(bw_mods, dict):
+                    for mod_name, mod_info in bw_mods.items():
+                        if isinstance(mod_info, dict):
+                            mod_set.add(mod_name)
+            modulations = list(mod_set)
 
         # Sort by efficiency (higher order first)
         return tuple(sorted(modulations, reverse=True)) if modulations else ()

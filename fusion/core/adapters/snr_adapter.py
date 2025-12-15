@@ -38,6 +38,9 @@ class SDNPropsProxyForSNR:
     network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(
         default_factory=dict
     )
+    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
+        default_factory=dict
+    )
 
     @classmethod
     def from_network_state(
@@ -56,6 +59,7 @@ class SDNPropsProxyForSNR:
             bandwidth=bandwidth,
             path_index=path_index,
             network_spectrum_dict=network_state.network_spectrum_dict,
+            lightpath_status_dict=network_state.lightpath_status_dict,
         )
 
 
@@ -86,6 +90,7 @@ class SpectrumPropsProxyForSNR:
     is_free: bool = True
     crosstalk_cost: float | None = None
     lightpath_bandwidth: float | None = None
+    slicing_flag: bool = False
 
 
 class SNRAdapter(SNRPipeline):
@@ -214,6 +219,9 @@ class SNRAdapter(SNRPipeline):
                 )
 
         except Exception as e:
+            import traceback
+            print(f"[SNR-ERROR] validate exception: {e}")
+            traceback.print_exc()
             logger.warning("SNRAdapter.validate failed: %s", e)
             # On error, skip SNR check (fail open)
             return SNRResult.skipped()

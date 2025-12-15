@@ -456,27 +456,56 @@ class NetworkState:
         self._init_spectrum()
 
     def _init_spectrum(self) -> None:
-        """Initialize LinkSpectrum for all edges in topology."""
-        link_num = 0
-        for u, v, edge_data in self._topology.edges(data=True):
-            # Get link length from edge data (try multiple common attribute names)
-            length_km = float(
-                edge_data.get("length", edge_data.get("weight", edge_data.get("distance", 0.0)))
-            )
+        """Initialize LinkSpectrum for all edges in topology.
 
-            # Create single LinkSpectrum for both directions
-            link_spectrum = LinkSpectrum.from_config(
-                link=(str(u), str(v)),
-                config=self._config,
-                link_num=link_num,
-                length_km=length_km,
-            )
+        Uses topology_info["links"] for link_num assignment to match legacy
+        behavior where link_num corresponds to entries in the topology JSON.
+        Falls back to edge iteration order if topology_info is not available.
+        """
+        topology_info = self._config.topology_info
+        links_info = topology_info.get("links", {}) if topology_info else {}
 
-            # Both directions point to same object (bidirectional)
-            self._spectrum[(str(u), str(v))] = link_spectrum
-            self._spectrum[(str(v), str(u))] = link_spectrum
+        if links_info:
+            # Use topology_info links for link_num assignment (matches legacy)
+            for link_num_key, link_data in links_info.items():
+                link_num = int(link_num_key)
+                source = str(link_data["source"])
+                dest = str(link_data["destination"])
+                length_km = float(link_data.get("length", 0.0))
 
-            link_num += 1
+                # Create single LinkSpectrum for both directions
+                link_spectrum = LinkSpectrum.from_config(
+                    link=(source, dest),
+                    config=self._config,
+                    link_num=link_num,
+                    length_km=length_km,
+                )
+
+                # Both directions point to same object (bidirectional)
+                self._spectrum[(source, dest)] = link_spectrum
+                self._spectrum[(dest, source)] = link_spectrum
+        else:
+            # Fallback: iterate over topology edges (original behavior)
+            link_num = 0
+            for u, v, edge_data in self._topology.edges(data=True):
+                # Get link length from edge data (try multiple common attribute names)
+                length_km = float(
+                    edge_data.get("length", edge_data.get("weight", edge_data.get("distance", 0.0)))
+                )
+
+                # Create single LinkSpectrum for both directions
+                link_spectrum = LinkSpectrum.from_config(
+                    link=(str(u), str(v)),
+                    config=self._config,
+                    link_num=link_num,
+                    length_km=length_km,
+                )
+
+                # Both directions point to same object (bidirectional)
+                self._spectrum[(str(u), str(v))] = link_spectrum
+                self._spectrum[(str(v), str(u))] = link_spectrum
+
+                link_num += 1
 
     # =========================================================================
     # Read-Only Properties
@@ -878,6 +907,7 @@ class NetworkState:
         snr_db: float | None = None,
         xt_cost: float | None = None,
         connection_index: int | None = None,
+        arrive_time: float | None = None,
     ) -> Lightpath:
         """
         Create and register a new lightpath, allocating spectrum.
@@ -899,6 +929,8 @@ class NetworkState:
             backup_band: Backup path band
             snr_db: Measured SNR value (optional)
             xt_cost: Crosstalk cost (optional)
+            connection_index: External routing index for SNR lookup (optional)
+            arrive_time: Request arrival time for utilization tracking (optional)
 
         Returns:
             Newly created Lightpath with assigned lightpath_id
@@ -970,6 +1002,12 @@ class NetworkState:
             backup_end_slot - guard_slots if backup_end_slot is not None else None
         )
 
+        # Set initial time_bw_usage for utilization tracking
+        # New lightpaths start with 0% utilization (no requests allocated yet)
+        initial_time_bw_usage: dict[float, float] = {}
+        if arrive_time is not None:
+            initial_time_bw_usage[arrive_time] = 0.0
+
         lightpath = Lightpath(
             lightpath_id=lightpath_id,
             path=path,
@@ -982,6 +1020,7 @@ class NetworkState:
             remaining_bandwidth_gbps=bandwidth_gbps,
             path_weight_km=path_weight_km,
             request_allocations={},
+            time_bw_usage=initial_time_bw_usage,
             snr_db=snr_db,
             xt_cost=xt_cost,
             is_degraded=False,
@@ -1059,6 +1098,7 @@ class NetworkState:
         lightpath_id: int,
         request_id: int,
         bandwidth_gbps: int,
+        timestamp: float | None = None,
     ) -> None:
         """
         Allocate bandwidth on existing lightpath to a request.
@@ -1069,6 +1109,7 @@ class NetworkState:
             lightpath_id: ID of the lightpath
             request_id: ID of the request
             bandwidth_gbps: Bandwidth to allocate
+            timestamp: Optional arrival time for utilization tracking
 
         Raises:
             KeyError: If lightpath not found
@@ -1080,7 +1121,7 @@ class NetworkState:
             raise KeyError(msg)
 
         # Delegate to Lightpath's allocate_bandwidth method
-        success = lightpath.allocate_bandwidth(request_id, bandwidth_gbps)
+        success = lightpath.allocate_bandwidth(request_id, bandwidth_gbps, timestamp)
         if not success:
             msg = (
                 f"Insufficient bandwidth: need {bandwidth_gbps}, "
@@ -1092,6 +1133,7 @@ class NetworkState:
         self,
         lightpath_id: int,
         request_id: int,
+        timestamp: float | None = None,
     ) -> int:
         """
         Release bandwidth allocated to a request.
@@ -1099,6 +1141,7 @@ class NetworkState:
         Args:
             lightpath_id: ID of the lightpath
             request_id: ID of the request to release
+            timestamp: Optional departure time for utilization tracking
 
         Returns:
             Amount of bandwidth released
@@ -1112,7 +1155,7 @@ class NetworkState:
             raise KeyError(msg)
 
         # Delegate to Lightpath's release_bandwidth method
-        return lightpath.release_bandwidth(request_id)
+        return lightpath.release_bandwidth(request_id, timestamp)
 
     # =========================================================================
     # Private Helpers for Write Methods (P2.2)

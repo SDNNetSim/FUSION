@@ -966,6 +966,13 @@ class SimStats:
             self.stats_props.simulation_bitrate_blocking_list
         )
         if len(self.stats_props.simulation_blocking_list) <= 1:
+            # With only 1 data point, variance is 0.0 (no variation)
+            self.block_variance = 0.0
+            self.bit_rate_block_variance = 0.0
+            self.block_ci = 0.0
+            self.block_ci_percent = 0.0
+            self.bit_rate_block_ci = 0.0
+            self.bit_rate_block_ci_percent = 0.0
             return False
 
         self.block_variance = variance(self.stats_props.simulation_blocking_list)
@@ -1607,9 +1614,21 @@ class SimStats:
                 self.stats_props.lengths_list.append(round(float(path_len), 2))
 
         # Track path index from allocation result
+        # Only count when NEW lightpaths are created (matches legacy behavior with modulation_list check)
         path_idx = getattr(result, 'path_index', 0)
-        if 0 <= path_idx < len(self.stats_props.path_index_list):
+        if result.lightpaths_created and 0 <= path_idx < len(self.stats_props.path_index_list):
             self.stats_props.path_index_list[path_idx] += 1
+
+        # Track demand realization ratio for partial grooming (matches legacy behavior)
+        if self.engine_props.get("can_partially_serve"):
+            bandwidth_key = str(request.bandwidth_gbps) if hasattr(request, 'bandwidth_gbps') else None
+            if bandwidth_key and bandwidth_key in self.stats_props.demand_realization_ratio:
+                original_bw = int(request.bandwidth_gbps)
+                # Calculate served bandwidth from allocation result
+                served_bw = int(result.total_bandwidth_allocated_gbps) if result.total_bandwidth_allocated_gbps else original_bw
+                realization_ratio = served_bw / original_bw if original_bw > 0 else 0
+                self.stats_props.demand_realization_ratio[bandwidth_key].append(realization_ratio)
+                self.stats_props.demand_realization_ratio["overall"].append(realization_ratio)
 
         # Track per-lightpath stats (core, modulation, weights) for ALL lightpaths
         # This is critical for sliced requests where multiple lightpaths are created

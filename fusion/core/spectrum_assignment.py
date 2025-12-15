@@ -789,6 +789,7 @@ class SpectrumAssignment:
             },  # Track utilization over time
         }
 
+
     def get_spectrum(
         self,
         mod_format_list: list[str],
@@ -911,8 +912,8 @@ class SpectrumAssignment:
                         self.snr_measurements.handle_snr(self.sdn_props.path_index)
                     )
                     self.spectrum_props.crosstalk_cost = crosstalk_cost
-                    # Don't set lightpath_bandwidth here - let sdn_controller set it to allocated bandwidth
-                    # self.spectrum_props.lightpath_bandwidth = lp_bw
+                    # Don't set lightpath_bandwidth here - LEGACY calculates LP capacity
+                    # from modulation_formats_dict in _create_lightpath_info, not from SNR lp_bw
 
                     if not snr_is_acceptable:
                         self.spectrum_props.is_free = False

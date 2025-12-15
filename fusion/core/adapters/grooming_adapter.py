@@ -188,12 +188,24 @@ class GroomingAdapter(GroomingPipeline):
             # Call legacy handle_grooming for arrival
             was_fully_groomed = legacy_grooming.handle_grooming("arrival")
 
+            # CRITICAL: Sync grooming changes back to actual Lightpath objects
+            # The legacy grooming code modifies lightpath_status_dict in place,
+            # but in new architecture this is a rebuilt property. We must sync
+            # remaining_bandwidth and requests_dict back to the domain model.
+            if was_fully_groomed or sdn_props.was_partially_groomed:
+                self._sync_grooming_changes(
+                    network_state, sdn_props, request.request_id
+                )
+
             # Convert results
             return self._convert_grooming_result(
                 sdn_props, was_fully_groomed, request.bandwidth_gbps
             )
 
         except Exception as e:
+            import traceback
+            print(f"[GROOM-ERROR] req={request.request_id} exception: {e}")
+            traceback.print_exc()
             logger.warning("GroomingAdapter.try_groom failed: %s", e)
             return GroomingResult.no_grooming(request.bandwidth_gbps)
 
@@ -238,6 +250,9 @@ class GroomingAdapter(GroomingPipeline):
             legacy_grooming.handle_grooming("release")
 
         except Exception as e:
+            import traceback
+            print(f"[GROOM-ERROR] rollback exception: {e}")
+            traceback.print_exc()
             logger.warning("GroomingAdapter.rollback_groom failed: %s", e)
 
     def _convert_grooming_result(
@@ -285,3 +300,47 @@ class GroomingAdapter(GroomingPipeline):
         else:
             # Not groomed - no existing lightpaths available
             return GroomingResult.no_grooming(original_bandwidth)
+
+    def _sync_grooming_changes(
+        self,
+        network_state: NetworkState,
+        sdn_props: SDNPropsProxyForGrooming,
+        request_id: int,
+    ) -> None:
+        """
+        Sync grooming changes back to actual Lightpath objects.
+
+        The legacy grooming code modifies lightpath_status_dict in place.
+        Since NetworkState.lightpath_status_dict is a property that rebuilds
+        from _lightpaths, those changes are lost. This method syncs the
+        changes back to the actual Lightpath domain objects.
+        """
+        # Iterate through lightpaths that were used for grooming
+        for lp_id in sdn_props.lightpath_id_list:
+            # Find the lightpath in network_state
+            lightpath = network_state.get_lightpath(lp_id)
+            if lightpath is None:
+                continue
+
+            # Find the modified entry in lightpath_status_dict
+            # The dict was modified in place by legacy grooming code
+            for light_id, lp_dict in sdn_props.lightpath_status_dict.items():
+                if lp_id in lp_dict:
+                    lp_info = lp_dict[lp_id]
+
+                    # Sync remaining_bandwidth
+                    new_remaining = float(lp_info.get("remaining_bandwidth", 0))
+                    lightpath.remaining_bandwidth_gbps = int(new_remaining)
+
+                    # Sync requests_dict (which requests are using this LP)
+                    requests_dict = lp_info.get("requests_dict", {})
+                    if request_id in requests_dict:
+                        bw_used = int(float(requests_dict[request_id]))
+                        lightpath.request_allocations[request_id] = bw_used
+
+                    # Sync time_bw_usage for utilization tracking
+                    time_bw_usage = lp_info.get("time_bw_usage", {})
+                    if time_bw_usage:
+                        lightpath.time_bw_usage.update(time_bw_usage)
+
+                    break

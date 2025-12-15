@@ -135,13 +135,14 @@ class SpectrumAdapter(SpectrumPipeline):
     def find_spectrum(
         self,
         path: list[str],
-        modulation: str,
+        modulation: str | list[str],
         bandwidth_gbps: int,
         network_state: NetworkState,
         *,
         connection_index: int | None = None,
         path_index: int = 0,
         use_dynamic_slicing: bool = False,
+        snr_bandwidth: int | None = None,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
@@ -153,6 +154,9 @@ class SpectrumAdapter(SpectrumPipeline):
             network_state: Current network state
             connection_index: External routing index for pre-calculated SNR lookup
             path_index: Index of which k-path is being tried (0, 1, 2...)
+            snr_bandwidth: Bandwidth to use for SNR checks (if different from bandwidth_gbps).
+                Used for partial grooming where slots are for remaining_bw but SNR check
+                should use original request bandwidth.
 
         Returns:
             SpectrumResult with slot allocation or is_free=False on failure
@@ -176,18 +180,23 @@ class SpectrumAdapter(SpectrumPipeline):
             modulation_formats = mod_per_bw.get(bw_key, {})
 
             # Create proxies
+            # Use snr_bandwidth for SNR checks if provided (partial grooming case),
+            # otherwise use bandwidth_gbps
+            proxy_bandwidth = snr_bandwidth if snr_bandwidth is not None else bandwidth_gbps
             sdn_props = SDNPropsProxyForSpectrum.from_network_state(
                 network_state=network_state,
                 source=source,
                 destination=destination,
-                bandwidth=float(bandwidth_gbps),
+                bandwidth=float(proxy_bandwidth),
                 modulation_formats=modulation_formats,
                 path_index=path_index,
             )
 
+            # Handle both single modulation and list of modulations
+            mod_list = [modulation] if isinstance(modulation, str) else list(modulation)
             route_props = RoutePropsProxy(
                 paths_matrix=[list(path)],
-                modulation_formats_matrix=[[modulation]],
+                modulation_formats_matrix=[mod_list],
                 weights_list=[0.0],  # Weight not needed for spectrum search
                 connection_index=connection_index,
             )
@@ -208,6 +217,9 @@ class SpectrumAdapter(SpectrumPipeline):
             # Set path in spectrum_props
             legacy_spectrum.spectrum_props.path_list = list(path)
 
+            # NOTE: Don't pre-set lightpath_bandwidth here - get_spectrum may clear it.
+            # We set it AFTER get_spectrum as a fallback (matching legacy sdn_controller behavior).
+
             # Choose method based on whether we're in slicing mode
             # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
             if use_dynamic_slicing and self._config.dynamic_lps:
@@ -224,9 +236,17 @@ class SpectrumAdapter(SpectrumPipeline):
                     legacy_spectrum.spectrum_props.lightpath_bandwidth = int(result_bw)
             else:
                 # Standard mode: modulation/bandwidth specified upfront
+                # Support both single modulation and list of modulations (like legacy)
+                mod_list = [modulation] if isinstance(modulation, str) else list(modulation)
                 legacy_spectrum.get_spectrum(
-                    mod_format_list=[modulation],
+                    mod_format_list=mod_list,
                 )
+
+            # LEGACY fallback: If lightpath_bandwidth not set by get_spectrum (e.g., fixed grid),
+            # use proxy_bandwidth (original request bw for partial grooming, or bandwidth_gbps).
+            # This matches sdn_controller.py lines 1110-1113 fallback behavior.
+            if legacy_spectrum.spectrum_props.lightpath_bandwidth is None:
+                legacy_spectrum.spectrum_props.lightpath_bandwidth = proxy_bandwidth
 
             # Convert results
             return self._convert_spectrum_props(
@@ -236,6 +256,9 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
         except Exception as e:
+            import traceback
+            print(f"[SPECTRUM-ERROR] find_spectrum exception: {e}")
+            traceback.print_exc()
             logger.warning("SpectrumAdapter.find_spectrum failed: %s", e)
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)
@@ -329,18 +352,23 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
         except Exception as e:
+            import traceback
+            print(f"[SPECTRUM-ERROR] find_protected_spectrum exception: {e}")
+            traceback.print_exc()
             logger.warning("SpectrumAdapter.find_protected_spectrum failed: %s", e)
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)
 
     def _calculate_slots_needed(
         self,
-        modulation: str,
+        modulation: str | list[str],
         bandwidth_gbps: float,
     ) -> int:
         """Calculate number of spectrum slots needed."""
+        # Handle list of modulations - use first one
+        mod_str = modulation[0] if isinstance(modulation, list) else modulation
         # Get modulation info from config
-        mod_info = self._config.modulation_formats.get(modulation, {})
+        mod_info = self._config.modulation_formats.get(mod_str, {})
 
         if isinstance(mod_info, dict):
             bits_per_symbol = mod_info.get("bits_per_symbol", 2)  # Default QPSK

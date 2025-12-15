@@ -893,17 +893,26 @@ class SimulationEngine:
         req_status = self.reqs_status_dict[req_id]
         lightpath_ids = req_status.get("lightpath_id_list", [])
 
+        # Get departure time for time-weighted average calculation
+        departure_time = self.reqs_dict[current_time].get("depart", current_time[1])
+
+        # Import average_bandwidth_usage for time-weighted calculation
+        from fusion.utils.network import average_bandwidth_usage
+
         utilization_dict: dict[int, dict[str, Any]] = {}
         for lp_id in lightpath_ids:
             lp = self._network_state.get_lightpath(lp_id)
             if lp:
-                utilization = (
-                    (lp.total_bandwidth_gbps - lp.remaining_bandwidth_gbps)
-                    / lp.total_bandwidth_gbps
-                    * 100.0
-                    if lp.total_bandwidth_gbps > 0
-                    else 0.0
-                )
+                # Calculate time-weighted average utilization using history
+                # Don't add entry at departure_time here - release_bandwidth() handles that
+                if lp.time_bw_usage:
+                    utilization = average_bandwidth_usage(
+                        lp.time_bw_usage, departure_time
+                    )
+                else:
+                    # Fallback to point-in-time if no history
+                    utilization = lp.utilization * 100.0
+
                 utilization_dict[lp_id] = {
                     "band": lp.band,
                     "core": lp.core,
