@@ -309,7 +309,10 @@ class RoutingAdapter(RoutingPipeline):
 
     def _sort_modulations_by_efficiency(self, modulations: list[str]) -> tuple[str, ...]:
         """
-        Sort modulation formats by efficiency (bits_per_symbol) in descending order.
+        Sort modulation formats by efficiency in descending order.
+
+        Uses max_length (ascending = higher efficiency) to match legacy behavior,
+        or falls back to bits_per_symbol or name-based inference.
 
         Higher-order modulations (e.g., 64-QAM) should be tried first as they
         use fewer spectrum slots for the same bandwidth.
@@ -318,47 +321,68 @@ class RoutingAdapter(RoutingPipeline):
             modulations: List of modulation format names
 
         Returns:
-            Tuple of modulation names sorted by bits_per_symbol (descending)
+            Tuple of modulation names sorted by efficiency (descending)
         """
         if not modulations:
             return ()
 
-        # Get bits_per_symbol for each modulation from config
+        # Get sorting key for each modulation from config
         mod_formats = self._config.modulation_formats
         mod_per_bw = self._config.mod_per_bw
 
-        def get_bits_per_symbol(mod_name: str) -> int:
+        def get_sort_key(mod_name: str) -> tuple[int, int]:
+            """
+            Return (max_length, -bits_per_symbol) for sorting.
+
+            Lower max_length = higher efficiency (tried first).
+            This matches legacy sort_nested_dict_values behavior.
+            """
+            max_length = None
+            bits_per_symbol = None
+
             # Try global modulation_formats first
             if mod_name in mod_formats:
                 info = mod_formats[mod_name]
                 if isinstance(info, dict):
-                    return info.get("bits_per_symbol", 0)
+                    max_length = info.get("max_length")
+                    bits_per_symbol = info.get("bits_per_symbol")
 
-            # Try mod_per_bw (check first bandwidth key)
-            for bw_mods in mod_per_bw.values():
-                if isinstance(bw_mods, dict) and mod_name in bw_mods:
-                    info = bw_mods[mod_name]
-                    if isinstance(info, dict):
-                        return info.get("bits_per_symbol", 0)
+            # Try mod_per_bw (check first bandwidth key that has this mod)
+            if max_length is None:
+                for bw_mods in mod_per_bw.values():
+                    if isinstance(bw_mods, dict) and mod_name in bw_mods:
+                        info = bw_mods[mod_name]
+                        if isinstance(info, dict):
+                            max_length = info.get("max_length")
+                            bits_per_symbol = info.get("bits_per_symbol")
+                            break
 
-            # Fallback: infer from name (common patterns)
+            # If we have max_length, use it (lower = better = sorted first)
+            if max_length is not None:
+                return (max_length, 0)
+
+            # Fallback to bits_per_symbol (higher = better, so negate for ascending sort)
+            if bits_per_symbol is not None:
+                return (0, -bits_per_symbol)
+
+            # Final fallback: infer from name (common patterns)
             name_upper = mod_name.upper()
             if "64-QAM" in name_upper or "64QAM" in name_upper:
-                return 6
+                return (0, -6)
             if "32-QAM" in name_upper or "32QAM" in name_upper:
-                return 5
+                return (0, -5)
             if "16-QAM" in name_upper or "16QAM" in name_upper:
-                return 4
+                return (0, -4)
             if "8-QAM" in name_upper or "8QAM" in name_upper:
-                return 3
+                return (0, -3)
             if "QPSK" in name_upper:
-                return 2
+                return (0, -2)
             if "BPSK" in name_upper:
-                return 1
-            return 0
+                return (0, -1)
+            return (999999, 0)
 
-        # Sort by bits_per_symbol descending (higher efficiency first)
-        return tuple(sorted(modulations, key=get_bits_per_symbol, reverse=True))
+        # Sort by key (ascending max_length means higher efficiency first)
+        return tuple(sorted(modulations, key=get_sort_key))
 
     def _convert_route_props(self, route_props: Any) -> RouteResult:
         """Convert legacy RoutingProps to RouteResult."""
