@@ -1362,7 +1362,10 @@ class NetworkState:
                 "band": lp.band,
                 "core": lp.core,
                 "start_slot": lp.start_slot,
-                "end_slot": lp.end_slot,
+                # Convert exclusive end_slot to inclusive (legacy format)
+                # Legacy uses inclusive when guard_slots=0, exclusive-like when guard_slots>0
+                # v5 Lightpath always uses exclusive. For legacy compat, subtract 1.
+                "end_slot": lp.end_slot - 1,
                 "modulation": lp.modulation,
                 "mod_format": lp.modulation,  # Alternate key for modulation
                 "requests_dict": {

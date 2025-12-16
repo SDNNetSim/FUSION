@@ -90,6 +90,8 @@ class SimulationConfig:
             snr_enabled: Enable SNR validation
             snr_type: SNR calculation method or None
             snr_recheck: Re-validate SNR after allocation
+            recheck_adjacent_cores: Include adjacent cores in SNR recheck
+            recheck_crossband: Include crossband in SNR recheck
             can_partially_serve: Allow partial bandwidth fulfillment
 
         Protection Configuration:
@@ -173,6 +175,8 @@ class SimulationConfig:
     snr_enabled: bool = False
     snr_type: str | None = None  # "snr_e2e", "snr_segment", or None
     snr_recheck: bool = False
+    recheck_adjacent_cores: bool = True  # Check adjacent cores during SNR recheck
+    recheck_crossband: bool = True  # Check crossband during SNR recheck
     can_partially_serve: bool = False
     fixed_grid: bool = True  # True for fixed grid, False for flexi-grid
     spectrum_priority: str | None = None  # Band selection priority: "BSC", "CSB", or None
@@ -386,6 +390,8 @@ class SimulationConfig:
             snr_enabled=snr_enabled,
             snr_type=snr_type if snr_enabled else None,
             snr_recheck=engine_props.get("snr_recheck", False),
+            recheck_adjacent_cores=engine_props.get("recheck_adjacent_cores", True),
+            recheck_crossband=engine_props.get("recheck_crossband", True),
             can_partially_serve=engine_props.get("can_partially_serve", False),
             fixed_grid=engine_props.get("fixed_grid", True),
             spectrum_priority=engine_props.get("spectrum_priority"),
@@ -465,6 +471,8 @@ class SimulationConfig:
             "max_segments": self.max_slices,
             "snr_type": self.snr_type,
             "snr_recheck": self.snr_recheck,
+            "recheck_adjacent_cores": self.recheck_adjacent_cores,
+            "recheck_crossband": self.recheck_crossband,
             "can_partially_serve": self.can_partially_serve,
             "fixed_grid": self.fixed_grid,
             "spectrum_priority": self.spectrum_priority,

@@ -45,6 +45,8 @@ class SDNPropsProxyForSNR:
     lightpath_id_list: list[int] = field(default_factory=list)
     request_id: int | None = None
     path_list: list[str] = field(default_factory=list)
+    # Required for dynamic modulation selection in SNR recheck
+    modulation_formats_dict: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @classmethod
     def from_network_state(
@@ -57,6 +59,7 @@ class SDNPropsProxyForSNR:
         lightpath_id: int | None = None,
         path_list: list[str] | None = None,
         request_id: int | None = None,
+        modulation_formats_dict: dict[str, dict[str, Any]] | None = None,
     ) -> SDNPropsProxyForSNR:
         """Create proxy from NetworkState."""
         return cls(
@@ -70,6 +73,7 @@ class SDNPropsProxyForSNR:
             lightpath_id_list=[lightpath_id] if lightpath_id is not None else [],
             request_id=request_id,
             path_list=list(path_list) if path_list else [],
+            modulation_formats_dict=modulation_formats_dict or {},
         )
 
 
@@ -290,6 +294,14 @@ class SNRAdapter(SNRPipeline):
             }
 
             # Create proxies for legacy SnrMeasurements
+            # Get modulation_formats_dict from mod_per_bw (pick any bandwidth's formats)
+            mod_per_bw = self._engine_props.get('mod_per_bw', {})
+            # Use first available bandwidth's modulation formats
+            modulation_formats_dict = {}
+            if mod_per_bw:
+                first_bw = next(iter(mod_per_bw.keys()), None)
+                if first_bw:
+                    modulation_formats_dict = mod_per_bw[first_bw]
             sdn_props = SDNPropsProxyForSNR.from_network_state(
                 network_state=network_state,
                 source=new_lp.source,
@@ -299,6 +311,7 @@ class SNRAdapter(SNRPipeline):
                 lightpath_id=new_lightpath_id,
                 path_list=list(new_lp.path),
                 request_id=None,  # Not needed for recheck
+                modulation_formats_dict=modulation_formats_dict,
             )
 
             route_props = RoutePropsProxyForSNR(
@@ -315,6 +328,10 @@ class SNRAdapter(SNRPipeline):
                 modulation=new_lp.modulation,
                 slots_needed=new_lp.num_slots,
                 is_free=True,
+                # Match legacy: spectrum_props is deepcopied from spectrum_obj which has
+                # slicing_flag=True when dynamic slicing mode is used. This ensures check_gsnr
+                # takes the dynamic branch which returns modulation string instead of bool.
+                slicing_flag=True,
             )
 
             # Make engine_props copy with topology

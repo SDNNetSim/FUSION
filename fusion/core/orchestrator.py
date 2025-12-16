@@ -476,6 +476,7 @@ class SDNOrchestrator:
                             network_state,
                             connection_index=connection_index,
                             lp_capacity_override=lp_capacity_override,
+                            path_index=path_index,
                         )
                         if alloc_result is not None:
                             return alloc_result
@@ -518,6 +519,7 @@ class SDNOrchestrator:
         network_state: NetworkState,
         connection_index: int | None = None,
         lp_capacity_override: int | None = None,
+        path_index: int = 0,
     ) -> AllocationResult | None:
         """Allocate lightpath and validate SNR with congestion handling."""
         from fusion.domain.results import AllocationResult
@@ -562,19 +564,18 @@ class SDNOrchestrator:
         # 1. SNR was already validated during spectrum assignment (if snr_type is set)
         # 2. Legacy snr_recheck_after_allocation only checks EXISTING lightpaths
         # 3. Modulations are chosen for capacity, not SNR margin after allocation
-        # DISABLED: SNR recheck causes cascade failures - need to investigate legacy behavior
-        # if self.snr and self.config.snr_recheck:
-        #     recheck_result = self.snr.recheck_affected(
-        #         lightpath.lightpath_id, network_state
-        #     )
-        #     if not recheck_result.all_pass:
-        #         # Rollback: existing LP would fail SNR
-        #         logger.debug(
-        #             f"Congestion rollback for request {request.request_id}: "
-        #             f"affected LPs {recheck_result.degraded_lightpath_ids}"
-        #         )
-        #         network_state.release_lightpath(lightpath.lightpath_id)
-        #         return None
+        if self.snr and self.config.snr_recheck:
+            recheck_result = self.snr.recheck_affected(
+                lightpath.lightpath_id, network_state
+            )
+            if not recheck_result.all_pass:
+                # Rollback: existing LP would fail SNR
+                logger.debug(
+                    f"SNR recheck failed for request {request.request_id}: "
+                    f"affected LPs {recheck_result.degraded_lightpath_ids}"
+                )
+                network_state.release_lightpath(lightpath.lightpath_id)
+                return None
 
         # Success: link request to lightpath and update remaining bandwidth
         # Use allocate_bandwidth to properly track time_bw_usage for utilization stats
@@ -582,6 +583,9 @@ class SDNOrchestrator:
             request.request_id, bandwidth_gbps, timestamp=request.arrive_time
         )
         request.lightpath_ids.append(lightpath.lightpath_id)
+
+        # Log path_index for comparison
+        print(f"[V5] req={request.request_id} lp={lightpath.lightpath_id} path_index={path_index}")
 
         return AllocationResult(
             success=True,
@@ -657,27 +661,20 @@ class SDNOrchestrator:
             if spectrum_result.snr_db is not None:
                 lightpath.snr_db = spectrum_result.snr_db
 
-            # Validate SNR if snr_recheck enabled (legacy behavior)
-            # DISABLED: SNR recheck causes cascade failures - need to investigate legacy behavior
-            # if self.snr and self.config.snr_recheck:
-            #     snr_result = self.snr.validate(lightpath, network_state)
-            #     if not snr_result.passed:
-            #         # Rollback this lightpath
-            #         network_state.release_lightpath(lightpath.lightpath_id)
-            #         break
-            #
-            #     # Also do SNR recheck for affected existing lightpaths
-            #     recheck_result = self.snr.recheck_affected(
-            #         lightpath.lightpath_id, network_state
-            #     )
-            #     if not recheck_result.all_pass:
-            #         # Rollback: existing LP would fail SNR
-            #         logger.debug(
-            #             f"Dynamic slice SNR recheck failed for request {request.request_id}: "
-            #             f"affected LPs {recheck_result.degraded_lightpath_ids}"
-            #         )
-            #         network_state.release_lightpath(lightpath.lightpath_id)
-            #         break
+            # SNR recheck for affected existing lightpaths (legacy behavior)
+            # NOTE: Legacy does NOT re-validate the new LP's SNR here - only checks existing LPs
+            if self.snr and self.config.snr_recheck:
+                recheck_result = self.snr.recheck_affected(
+                    lightpath.lightpath_id, network_state
+                )
+                if not recheck_result.all_pass:
+                    # Rollback: existing LP would fail SNR
+                    logger.debug(
+                        f"Dynamic slice SNR recheck failed for request {request.request_id}: "
+                        f"affected LPs {recheck_result.degraded_lightpath_ids}"
+                    )
+                    network_state.release_lightpath(lightpath.lightpath_id)
+                    break
 
             # Calculate how much bandwidth to dedicate to this lightpath
             # Don't over-allocate: only use what the request actually needs

@@ -1081,6 +1081,9 @@ class SDNController:
             self.spectrum_obj.spectrum_props.lightpath_id = lp_id
             self.sdn_props.was_new_lp_established.append(lp_id)
 
+            # Log path_index for comparison
+            print(f"[LEGACY] req={self.sdn_props.request_id} lp={lp_id} path_index={self.sdn_props.path_index}")
+
             # Determine bandwidth for statistics and lightpath (handle partial grooming)
             if self.sdn_props.was_partially_groomed:
                 # For partial grooming, allocate_bandwidth is the actual bandwidth used for statistics

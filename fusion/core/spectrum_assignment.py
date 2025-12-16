@@ -869,13 +869,6 @@ class SpectrumAssignment:
             # Check if this is a protected (1+1) request
             backup_path = getattr(self.sdn_props, "backup_path", None)
 
-            # TEMP: Force log to appear (use warning to ensure it shows)
-            logger.debug(
-                f"[DEBUG] Spectrum search: backup_path={backup_path is not None}, "
-                f"path_list={self.spectrum_props.path_list is not None}, "
-                f"slots_needed={self.spectrum_props.slots_needed}"
-            )
-
             if backup_path is not None and self.spectrum_props.path_list is not None:
                 # Protected request - find spectrum on both paths
                 logger.debug(
@@ -884,13 +877,6 @@ class SpectrumAssignment:
                 )
                 self._find_protected_spectrum(
                     self.spectrum_props.path_list, backup_path
-                )
-                # TEMP: Force log to appear
-                logger.warning(
-                    f"[DEBUG] After 1+1 search - is_free={self.spectrum_props.is_free}, "
-                    f"start_slot={self.spectrum_props.start_slot}, "
-                    f"end_slot={self.spectrum_props.end_slot}, "
-                    f"band={self.spectrum_props.current_band}, core={self.spectrum_props.core_number}"
                 )
             else:
                 # Regular request - use existing logic

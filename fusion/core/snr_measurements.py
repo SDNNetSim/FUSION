@@ -837,10 +837,6 @@ class SnrMeasurements:
         
         gsnr_db = 10 * np.log10(1 / gsnr_path_ase_nli)
 
-        # DEBUG: Print GSNR value and threshold for comparison
-        import sys
-        sys.stdout.flush()
-
         # Dynamic modulation selection for slicing with dynamic lightpaths
         if self.spectrum_props.slicing_flag and self.engine_props_dict['fixed_grid'] and self.engine_props_dict.get('dynamic_lps', False):
             mod_formats_dict = sort_nested_dict_values(
@@ -1644,17 +1640,10 @@ class SnrMeasurements:
         # Import here to avoid circular dependency
         from fusion.utils.spectrum import get_overlapping_lightpaths
 
-        # DEBUG: Track req=145 specifically
-        req_id = self.sdn_props.request_id
-        debug_145 = (req_id == 145)
-
         new_lp_id = new_lp_info.get("id")
 
         # Build list of all active lightpaths, EXCLUDING the new LP
-        # (v5 doesn't have the new LP in lightpath_status_dict yet at this point,
-        # but v6 updates it during slicing, so we must explicitly exclude it)
         all_active_lps = self._build_lightpath_list_from_net_spec(exclude_lp_id=new_lp_id)
-        new_lp_mod = new_lp_info.get("mod_format", "UNKNOWN")
 
         # Find lightpaths that overlap with the new one
         overlapping_lps = get_overlapping_lightpaths(
@@ -1664,11 +1653,11 @@ class SnrMeasurements:
             include_adjacent_cores=self.engine_props_dict.get("recheck_adjacent_cores", True),
             include_all_bands=self.engine_props_dict.get("recheck_crossband", True),
             bidirectional_links=self.engine_props_dict.get("bi_directional", False),
-            debug_req_145=debug_145,
         )
 
         # Re-evaluate each overlapping lightpath (include new LP's interference)
         violations = []
+
         for lp in overlapping_lps:
             resp, observed_snr = self.evaluate_lp(lp)
 
