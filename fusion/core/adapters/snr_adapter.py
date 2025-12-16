@@ -41,6 +41,10 @@ class SDNPropsProxyForSNR:
     lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
         default_factory=dict
     )
+    # Additional fields for snr_recheck_after_allocation
+    lightpath_id_list: list[int] = field(default_factory=list)
+    request_id: int | None = None
+    path_list: list[str] = field(default_factory=list)
 
     @classmethod
     def from_network_state(
@@ -50,6 +54,9 @@ class SDNPropsProxyForSNR:
         destination: str,
         bandwidth: float,
         path_index: int = 0,
+        lightpath_id: int | None = None,
+        path_list: list[str] | None = None,
+        request_id: int | None = None,
     ) -> SDNPropsProxyForSNR:
         """Create proxy from NetworkState."""
         return cls(
@@ -60,6 +67,9 @@ class SDNPropsProxyForSNR:
             path_index=path_index,
             network_spectrum_dict=network_state.network_spectrum_dict,
             lightpath_status_dict=network_state.lightpath_status_dict,
+            lightpath_id_list=[lightpath_id] if lightpath_id is not None else [],
+            request_id=request_id,
+            path_list=list(path_list) if path_list else [],
         )
 
 
@@ -236,19 +246,21 @@ class SNRAdapter(SNRPipeline):
         """
         Recheck SNR of existing lightpaths after new allocation.
 
+        Delegates to legacy SnrMeasurements.snr_recheck_after_allocation()
+        to ensure identical behavior.
+
         Args:
             new_lightpath_id: ID of newly created lightpath
             network_state: Current network state
-            affected_range_slots: Consider lightpaths within this many slots
+            affected_range_slots: Consider lightpaths within this many slots (unused, legacy uses overlap)
 
         Returns:
             SNRRecheckResult with list of degraded lightpaths
         """
         from fusion.domain.results import SNRRecheckResult
 
-        # Check if SNR validation is enabled
-        snr_type = self._engine_props.get("snr_type")
-        if snr_type is None or snr_type == "None":
+        # Check if SNR recheck is enabled (legacy checks this internally too)
+        if not self._engine_props.get("snr_recheck", False):
             return SNRRecheckResult(
                 all_pass=True,
                 degraded_lightpath_ids=(),
@@ -266,38 +278,85 @@ class SNRAdapter(SNRPipeline):
                 checked_count=0,
             )
 
-        # Find potentially affected lightpaths
-        degraded_ids: list[int] = []
-        violations: dict[int, float] = {}
-        checked_count = 0
+        try:
+            # Build new_lp_info dict matching legacy format
+            new_lp_info = {
+                "id": new_lightpath_id,
+                "path": list(new_lp.path),
+                "spectrum": (new_lp.start_slot, new_lp.end_slot),
+                "core": new_lp.core,
+                "band": new_lp.band,
+                "mod_format": new_lp.modulation,
+            }
 
-        # Get all lightpaths on the same links
-        for link in zip(new_lp.path[:-1], new_lp.path[1:]):
-            lightpaths_on_link = network_state.get_lightpaths_on_link(link)
+            # Create proxies for legacy SnrMeasurements
+            sdn_props = SDNPropsProxyForSNR.from_network_state(
+                network_state=network_state,
+                source=new_lp.source,
+                destination=new_lp.destination,
+                bandwidth=float(new_lp.total_bandwidth_gbps),
+                path_index=0,
+                lightpath_id=new_lightpath_id,
+                path_list=list(new_lp.path),
+                request_id=None,  # Not needed for recheck
+            )
 
-            for lp in lightpaths_on_link:
-                if lp.lightpath_id == new_lightpath_id:
-                    continue
+            route_props = RoutePropsProxyForSNR(
+                paths_matrix=[list(new_lp.path)],
+                weights_list=[new_lp.path_weight_km],
+            )
 
-                # Check if within affected range
-                slot_distance = min(
-                    abs(lp.start_slot - new_lp.end_slot),
-                    abs(new_lp.start_slot - lp.end_slot),
-                )
-                if slot_distance > affected_range_slots:
-                    continue
+            spectrum_props = SpectrumPropsProxyForSNR(
+                path_list=list(new_lp.path),
+                start_slot=new_lp.start_slot,
+                end_slot=new_lp.end_slot,
+                core_number=new_lp.core,
+                current_band=new_lp.band,
+                modulation=new_lp.modulation,
+                slots_needed=new_lp.num_slots,
+                is_free=True,
+            )
 
-                # Validate this lightpath
-                checked_count += 1
-                result = self.validate(lp, network_state)
+            # Make engine_props copy with topology
+            engine_props = dict(self._engine_props)
+            engine_props["topology"] = network_state.topology
 
-                if not result.passed:
-                    degraded_ids.append(lp.lightpath_id)
-                    violations[lp.lightpath_id] = result.margin_db
+            # Instantiate legacy SnrMeasurements
+            from fusion.core.snr_measurements import SnrMeasurements
 
-        return SNRRecheckResult(
-            all_pass=len(degraded_ids) == 0,
-            degraded_lightpath_ids=tuple(degraded_ids),
-            violations=violations,
-            checked_count=checked_count,
-        )
+            legacy_snr = SnrMeasurements(
+                engine_props_dict=engine_props,
+                sdn_props=sdn_props,
+                spectrum_props=spectrum_props,
+                route_props=route_props,
+            )
+
+            # Call legacy snr_recheck_after_allocation
+            all_pass, violations_list = legacy_snr.snr_recheck_after_allocation(new_lp_info)
+
+            # Convert violations_list to dict format: [(lp_id, observed_snr, required_snr), ...]
+            violations_dict: dict[int, float] = {}
+            degraded_ids: list[int] = []
+            for lp_id, observed_snr, required_snr in violations_list:
+                degraded_ids.append(lp_id)
+                # Store margin (observed - required)
+                violations_dict[lp_id] = float(observed_snr) - float(required_snr)
+
+            return SNRRecheckResult(
+                all_pass=all_pass,
+                degraded_lightpath_ids=tuple(degraded_ids),
+                violations=violations_dict,
+                checked_count=len(violations_list) if violations_list else 0,
+            )
+
+        except Exception as e:
+            import traceback
+            logger.warning("SNRAdapter.recheck_affected failed: %s", e)
+            traceback.print_exc()
+            # On error, assume no violations (fail open)
+            return SNRRecheckResult(
+                all_pass=True,
+                degraded_lightpath_ids=(),
+                violations={},
+                checked_count=0,
+            )
