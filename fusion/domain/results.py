@@ -370,6 +370,8 @@ class GroomingResult:
         remaining_bandwidth_gbps: Amount still needing new lightpath
         lightpaths_used: IDs of lightpaths used for grooming
         forced_path: Required path for new lightpath (if partial)
+        snr_list: SNR values from grooming attempts (for Legacy compatibility)
+        modulation_list: Modulation formats from grooming attempts
 
     Invariants:
         - fully_groomed and partially_groomed are mutually exclusive
@@ -391,6 +393,9 @@ class GroomingResult:
     remaining_bandwidth_gbps: int = 0
     lightpaths_used: tuple[int, ...] = ()
     forced_path: tuple[str, ...] | None = None
+    # Legacy compatibility: SNR/modulation values from grooming attempts
+    snr_list: tuple[float, ...] = ()
+    modulation_list: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         """Validate grooming result after creation."""
@@ -425,7 +430,13 @@ class GroomingResult:
         )
 
     @classmethod
-    def full(cls, bandwidth_gbps: int, lightpath_ids: list[int]) -> GroomingResult:
+    def full(
+        cls,
+        bandwidth_gbps: int,
+        lightpath_ids: list[int],
+        snr_list: list[float] | None = None,
+        modulation_list: list[str] | None = None,
+    ) -> GroomingResult:
         """Create result for fully groomed request."""
         return cls(
             fully_groomed=True,
@@ -433,6 +444,8 @@ class GroomingResult:
             bandwidth_groomed_gbps=bandwidth_gbps,
             remaining_bandwidth_gbps=0,
             lightpaths_used=tuple(lightpath_ids),
+            snr_list=tuple(snr_list) if snr_list else (),
+            modulation_list=tuple(modulation_list) if modulation_list else (),
         )
 
     @classmethod
@@ -442,6 +455,8 @@ class GroomingResult:
         remaining: int,
         lightpath_ids: list[int],
         forced_path: list[str] | None = None,
+        snr_list: list[float] | None = None,
+        modulation_list: list[str] | None = None,
     ) -> GroomingResult:
         """Create result for partially groomed request."""
         return cls(
@@ -451,6 +466,8 @@ class GroomingResult:
             remaining_bandwidth_gbps=remaining,
             lightpaths_used=tuple(lightpath_ids),
             forced_path=tuple(forced_path) if forced_path else None,
+            snr_list=tuple(snr_list) if snr_list else (),
+            modulation_list=tuple(modulation_list) if modulation_list else (),
         )
 
 
@@ -950,6 +967,10 @@ class AllocationResult:
     xt_values: tuple[float, ...] = ()  # From legacy xt_list
     snr_values: tuple[float, ...] = ()
     lightpath_bandwidths: tuple[int, ...] = ()
+
+    # Legacy compatibility: SNR values from failed allocation attempts
+    # (allocations that passed initially but failed SNR recheck)
+    failed_attempt_snr_values: tuple[float, ...] = ()
 
     # Path tracking
     path_index: int = 0  # Which k-path was selected (0, 1, 2...)

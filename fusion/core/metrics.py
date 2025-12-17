@@ -388,6 +388,12 @@ class SimStats:
                 elif stat_key == "modulation_list":
                     bandwidth = sdn_data.lightpath_bandwidth_list[i]  # Use lightpath bandwidth
                     band = sdn_data.band_list[i]
+                    # DEBUG: Track specific LP for comparison with V5
+                    if i < len(sdn_data.lightpath_id_list):
+                        lp_id_debug = sdn_data.lightpath_id_list[i]
+                        snr_val_debug = sdn_data.snr_list[i] if i < len(sdn_data.snr_list) else None
+                        if lp_id_debug == 126 and data == "16-QAM":
+                            print(f"[LEGACY_LP126_DEBUG] req={sdn_data.request_id} lp={lp_id_debug} mod={data} snr={snr_val_debug} bw={bandwidth}")
                     # Ensure the nested dict structure exists - convert float to int to match dict keys
                     bandwidth_key = str(int(float(bandwidth))) if bandwidth is not None else None
                     mod_dict = self.stats_props.modulations_used_dict
@@ -519,27 +525,35 @@ class SimStats:
                                             })
                                 else:
                                     # Track snr
+                                    snr_val = sdn_data.snr_list[i]
+                                    # DEBUG: Track ALL 16-QAM SNR values
+                                    lp_bw = sdn_data.lightpath_bandwidth_list[i] if i < len(sdn_data.lightpath_bandwidth_list) else None
+                                    if data == "16-QAM":
+                                        print(f"[LEGACY_16QAM_SNR] mod={data} snr={snr_val:.2f} band={band} bw={lp_bw} req={sdn_data.request_id}")
+                                    # DEBUG: Track high SNR values
+                                    if snr_val > 17.0:
+                                        print(f"[LEGACY_SNR_TRACK] mod={data} snr={snr_val:.2f} band={band} bw={lp_bw} req={sdn_data.request_id}")
                                     snr_dict = data_mod_dict.get("snr")
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
-                                            snr_dict[band].append(sdn_data.snr_list[i])
+                                            snr_dict[band].append(snr_val)
                                             self.mods_dict_updates_log.append({
                                                 'req_id': sdn_data.request_id,
                                                 'mod': data,
                                                 'bw': None,
                                                 'band': band,
                                                 'action': 'snr_append',
-                                                'value': sdn_data.snr_list[i]
+                                                'value': snr_val
                                             })
                                         if "overall" in snr_dict:
-                                            snr_dict["overall"].append(sdn_data.snr_list[i])
+                                            snr_dict["overall"].append(snr_val)
                                             self.mods_dict_updates_log.append({
                                                 'req_id': sdn_data.request_id,
                                                 'mod': data,
                                                 'bw': None,
                                                 'band': 'overall',
                                                 'action': 'snr_append',
-                                                'value': sdn_data.snr_list[i]
+                                                'value': snr_val
                                             })
                 elif stat_key == "start_slot_list":
                     self.stats_props.start_slot_list.append(int(data))
@@ -1645,7 +1659,13 @@ class SimStats:
             # Legacy behavior: append mean of all lightpaths' SNR for a single request
             request_snr_values: list[float] = []
 
-            for lp_id in result.lightpaths_created:
+            # Legacy compatibility: Build snr_list with failed attempt values first
+            # Legacy's _update_request_statistics adds SNR to snr_list before SNR recheck,
+            # and if recheck fails, the value stays. This causes snr_list[i] to return
+            # "wrong" values from failed attempts.
+            failed_snr = list(getattr(result, 'failed_attempt_snr_values', ()) or ())
+
+            for lp_idx, lp_id in enumerate(result.lightpaths_created):
                 lp = network_state.get_lightpath(lp_id)
                 if lp is None:
                     continue
@@ -1665,6 +1685,20 @@ class SimStats:
                 # Use LIGHTPATH bandwidth, not request bandwidth (critical for slicing)
                 lp_bandwidth = getattr(lp, 'total_bandwidth_gbps', None)
 
+                # Legacy compatibility: Use failed attempt SNR if available
+                # Legacy's snr_list has failed attempt values at lower indices
+                # When iterating modulation_list (which has only successful values),
+                # Legacy reads snr_list[i] which may be from a failed attempt
+                snr_for_tracking = snr_db
+                if failed_snr and lp_idx < len(failed_snr):
+                    # Use failed attempt SNR (matches Legacy's buggy index behavior)
+                    snr_for_tracking = failed_snr[lp_idx]
+
+                # DEBUG: Track SNR for specific LP IDs to compare with Legacy
+                if lp_id == 126 and modulation == "16-QAM":
+                    req_id = getattr(request, 'request_id', None)
+                    print(f"[V5_LP126_DEBUG] req={req_id} lp={lp_id} mod={modulation} snr_db={snr_db} snr_for_tracking={snr_for_tracking} failed_snr={failed_snr} bw={lp_bandwidth}")
+
                 # Calculate path weight for this lightpath
                 path_weight = None
                 num_hops = None
@@ -1680,12 +1714,12 @@ class SimStats:
                         band=band,
                         path_weight=path_weight,
                         num_hops=num_hops,
-                        snr_value=snr_db,
+                        snr_value=snr_for_tracking,
                     )
 
-                # Collect SNR for this lightpath
-                if snr_db is not None:
-                    request_snr_values.append(snr_db)
+                # Collect SNR for this lightpath (use snr_for_tracking for Legacy compatibility)
+                if snr_for_tracking is not None:
+                    request_snr_values.append(snr_for_tracking)
 
             # Append mean of all lightpaths' SNR for this request (legacy behavior)
             if request_snr_values:
@@ -2036,7 +2070,16 @@ class SimStats:
                         hop_dict["overall"].append(num_hops)
 
             # Track SNR or XT cost
+            # DEBUG: Track when SNR is None for 16-QAM
+            if snr_value is None and modulation == "16-QAM":
+                print(f"[V5_SNR_NONE] mod={modulation} snr_value=None band={band} bw={bandwidth_gbps}")
             if snr_value is not None:
+                # DEBUG: Track ALL 16-QAM SNR values to compare with Legacy
+                if modulation == "16-QAM":
+                    print(f"[V5_16QAM_SNR] mod={modulation} snr={snr_value:.2f} band={band} bw={bandwidth_gbps}")
+                # DEBUG: Track high SNR values
+                if snr_value > 17.0:
+                    print(f"[V5_SNR_TRACK] mod={modulation} snr={snr_value:.2f} band={band} bw={bandwidth_gbps}")
                 snr_type = self.engine_props.get("snr_type")
                 if snr_type == "xt_calculation":
                     xt_dict = data_mod_dict.get("xt_cost")

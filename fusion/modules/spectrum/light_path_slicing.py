@@ -304,6 +304,22 @@ class LightPathSlicingManager:
         sdn_controller: Any,
     ) -> bool:
         """Handle fixed-grid dynamic slicing."""
+        # DEBUG: Dump spectrum state for request 5 before slicing
+        if self.sdn_props.request_id == 5:
+            path = self.spectrum_obj.spectrum_props.path_list
+            print(f"\n[LEGACY_SPECTRUM_STATE] req=5 BEFORE SLICING - path={path[:3] if path else 'None'}...")
+            if path and len(path) >= 2 and self.sdn_props.network_spectrum_dict:
+                link = (path[0], path[1])
+                if link in self.sdn_props.network_spectrum_dict:
+                    cores_matrix = self.sdn_props.network_spectrum_dict[link]["cores_matrix"]
+                    for band, band_cores in cores_matrix.items():
+                        for core_num, core_arr in enumerate(band_cores):
+                            # Show first 10 slots
+                            slots_preview = list(core_arr[:10])
+                            occupied = [i for i, v in enumerate(slots_preview) if v != 0]
+                            if occupied:
+                                print(f"[LEGACY_SPECTRUM_STATE] link={link} band={band} core={core_num} slots[0:10]={slots_preview} occupied_indices={occupied}")
+
         initial_remaining = remaining_bw
         iteration = 0
         while remaining_bw > 0:
@@ -312,6 +328,10 @@ class LightPathSlicingManager:
             _, bandwidth = self.spectrum_obj.get_spectrum_dynamic_slicing(
                 _mod_format_list=[], path_index=path_index
             )
+
+            # DEBUG: Show bandwidth values for req 40
+            if self.sdn_props.request_id == 40:
+                print(f"[LEGACY_DYN_SLICE] req=40 iter={iteration} remaining_bw={remaining_bw} bandwidth={bandwidth} is_free={self.spectrum_obj.spectrum_props.is_free}")
 
             if self.spectrum_obj.spectrum_props.is_free:
                 lp_id = self.sdn_props.get_lightpath_id()

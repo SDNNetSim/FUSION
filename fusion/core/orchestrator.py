@@ -58,7 +58,7 @@ class SDNOrchestrator:
         Does NOT store network_state - receives per call only.
     """
 
-    __slots__ = ("config", "routing", "spectrum", "grooming", "snr", "slicing")
+    __slots__ = ("config", "routing", "spectrum", "grooming", "snr", "slicing", "_failed_attempt_snr_list")
 
     def __init__(
         self,
@@ -120,6 +120,10 @@ class SDNOrchestrator:
         groomed_lightpaths: list[int] = []
         remaining_bw = request.bandwidth_gbps
         was_partially_groomed = False
+
+        # Track SNR values from failed allocation attempts (for Legacy compatibility)
+        # Legacy adds SNR to snr_list before SNR recheck; if recheck fails, value stays
+        self._failed_attempt_snr_list = []  # type: list[float]
 
         # Stage 1: Grooming (if enabled)
         if self.grooming and self.config.grooming_enabled:
@@ -623,6 +627,10 @@ class SDNOrchestrator:
         # which matches legacy behavior
         if spectrum_result.snr_db is not None:
             lightpath.snr_db = spectrum_result.snr_db
+        else:
+            # DEBUG: Track when SNR is None for 16-QAM
+            if spectrum_result.modulation == "16-QAM":
+                print(f"[V5_ORCH_SNR_NONE] req={request.request_id} mod={spectrum_result.modulation} spec_snr_db=None lp={lightpath.lightpath_id}")
 
         # SNR recheck: check if existing lightpaths would be degraded by new allocation
         # NOTE: We do NOT re-validate the new lightpath's SNR here because:
@@ -641,6 +649,10 @@ class SDNOrchestrator:
                     f"SNR recheck failed for request {request.request_id}: "
                     f"affected LPs {recheck_result.degraded_lightpath_ids}"
                 )
+                # Track the failed attempt's SNR for Legacy compatibility
+                # Legacy adds to snr_list before SNR recheck; value stays even on failure
+                if spectrum_result.snr_db is not None and hasattr(self, '_failed_attempt_snr_list'):
+                    self._failed_attempt_snr_list.append(spectrum_result.snr_db)
                 network_state.release_lightpath(lightpath.lightpath_id)
                 return None
 
@@ -729,6 +741,10 @@ class SDNOrchestrator:
             # This is the SNR calculated during spectrum assignment (before lightpath creation)
             if spectrum_result.snr_db is not None:
                 lightpath.snr_db = spectrum_result.snr_db
+            else:
+                # DEBUG: Track when SNR is None for 16-QAM
+                if spectrum_result.modulation == "16-QAM":
+                    print(f"[V5_ORCH_DYN_SNR_NONE] req={request.request_id} mod={spectrum_result.modulation} spec_snr_db=None lp={lightpath.lightpath_id}")
 
             # SNR recheck for affected existing lightpaths (legacy behavior)
             # NOTE: Legacy does NOT re-validate the new LP's SNR here - only checks existing LPs
@@ -891,6 +907,9 @@ class SDNOrchestrator:
 
         print(f"[V5] req={request.request_id} | {outcome} | path_idx={path_index} | lps_created={list(alloc_result.lightpaths_created)} | lps_groomed={groomed_lightpaths} | spec={spec_info}")
 
+        # Include failed attempt SNR values for Legacy compatibility
+        failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
+
         return AllocationResult(
             success=True,
             lightpaths_created=alloc_result.lightpaths_created,
@@ -905,6 +924,7 @@ class SDNOrchestrator:
             path_index=path_index,
             route_result=route_result,
             spectrum_result=alloc_result.spectrum_result,
+            failed_attempt_snr_values=failed_snr,
         )
 
     def handle_release(

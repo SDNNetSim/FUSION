@@ -345,6 +345,10 @@ class SpectrumAssignment:
             self._setup_first_last_allocation()
         )
 
+        # DEBUG: Show available slots during slicing search
+        is_slicing = getattr(self.spectrum_props, 'slicing_flag', False)
+        req_id = getattr(self.sdn_props, 'request_id', 'unknown')
+
         for core_spectrum_array, core_number in zip(
             cores_spectrum_matrix, core_numbers_list, strict=False
         ):
@@ -352,6 +356,14 @@ class SpectrumAssignment:
                 available_slots_array = np.where(core_spectrum_array[band_index] == 0)[
                     0
                 ]
+
+                # DEBUG: Show what's available during slicing for first core/band
+                if is_slicing and core_number == 0 and band_index == 0:
+                    # Show what slots spectrum_assignment sees as available
+                    print(f"[SPECTRUM_SEARCH] req={req_id} slicing core={core_number} band={band} available_slots[:10]={list(available_slots_array[:10])}")
+                    # Also show the raw spectrum array
+                    print(f"[SPECTRUM_SEARCH] req={req_id} slicing core={core_number} band={band} raw_spectrum[:10]={list(core_spectrum_array[band_index][:10])}")
+
                 available_slots_matrix = self._get_available_slots_matrix(
                     available_slots_array, allocation_flag
                 )
@@ -770,6 +782,9 @@ class SpectrumAssignment:
 #            print(f"[LP97-CREATE] Modulation: {self.spectrum_props.modulation}")
 #            print(f"[LP97-CREATE] =====================================\n")
 
+        # DEBUG: Track SNR when creating LP 126
+        if lp_id == 126:
+            print(f"[CREATE_LP126_DEBUG] lp={lp_id} mod={self.spectrum_props.modulation} snr_cost={self.spectrum_props.crosstalk_cost} slot={self.spectrum_props.start_slot} req={self.sdn_props.request_id}")
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
             "path": self.sdn_props.path_list,
             "path_weight": self.sdn_props.path_weight,
@@ -898,6 +913,11 @@ class SpectrumAssignment:
                         self.snr_measurements.handle_snr(self.sdn_props.path_index)
                     )
                     self.spectrum_props.crosstalk_cost = crosstalk_cost
+                    # DEBUG: Track SNR calculation for specific requests
+                    if self.sdn_props.request_id == 100 and self.sdn_props.path_index == 2:
+                        mod = self.spectrum_props.modulation
+                        slot = self.spectrum_props.start_slot
+                        print(f"[SNR_CALC_DEBUG] req=100 path_idx=2 mod={mod} slot={slot} crosstalk_cost={crosstalk_cost:.4f} acceptable={snr_is_acceptable}")
                     # Don't set lightpath_bandwidth here - LEGACY calculates LP capacity
                     # from modulation_formats_dict in _create_lightpath_info, not from SNR lp_bw
 

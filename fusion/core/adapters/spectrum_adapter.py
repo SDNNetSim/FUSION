@@ -224,6 +224,20 @@ class SpectrumAdapter(SpectrumPipeline):
             # NOTE: Don't pre-set lightpath_bandwidth here - get_spectrum may clear it.
             # We set it AFTER get_spectrum as a fallback (matching legacy sdn_controller behavior).
 
+            # DEBUG: Show spectrum state when find_spectrum is called during slicing
+            # Check if this might be request 5 (we don't have request_id here, but can check network state)
+            if use_dynamic_slicing and len(path) >= 2:
+                link = (path[0], path[1])
+                if link in network_state.network_spectrum_dict:
+                    cores_matrix = network_state.network_spectrum_dict[link]["cores_matrix"]
+                    for bnd, bnd_cores in cores_matrix.items():
+                        if len(bnd_cores) > 0:
+                            slots_preview = list(bnd_cores[0][:10])
+                            occupied = [i for i, v in enumerate(slots_preview) if v != 0]
+                            if occupied:
+                                print(f"[V5_ADAPTER_SPECTRUM] dynamic_slice link={link} band={bnd} core=0 slots[0:10]={slots_preview} occupied={occupied}")
+                            break  # Just show first band
+
             # Choose method based on whether we're in slicing mode
             # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
             if use_dynamic_slicing and self._config.dynamic_lps:

@@ -459,6 +459,9 @@ class SDNProps:
                 spectrum_value = getattr(spectrum_obj, spectrum_key)
                 current_value = getattr(self, key)
                 if isinstance(current_value, list):
+                    # DEBUG: Track snr_list updates for LP 126
+                    if key == "snr_list" and hasattr(self, 'request_id') and self.request_id == 100:
+                        print(f"[UPDATE_PARAMS_DEBUG] req={self.request_id} key={key} spectrum_key={spectrum_key} value={spectrum_value}")
                     current_value.append(spectrum_value)
                 else:
                     setattr(self, key, spectrum_value)

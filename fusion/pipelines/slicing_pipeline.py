@@ -230,12 +230,30 @@ class StandardSlicingPipeline:
 
         allocated_lightpaths: list[int] = []
 
+        # DEBUG: Dump spectrum state for request 5 before slicing
+        if request.request_id == 5:
+            print(f"\n[V5_SPECTRUM_STATE] req=5 BEFORE SLICING - path={path[:3]}...")
+            # Get first link's spectrum state
+            if len(path) >= 2:
+                link = (path[0], path[1])
+                if link in network_state.network_spectrum_dict:
+                    cores_matrix = network_state.network_spectrum_dict[link]["cores_matrix"]
+                    for band, band_cores in cores_matrix.items():
+                        for core_num, core_arr in enumerate(band_cores):
+                            # Show first 10 slots
+                            slots_preview = list(core_arr[:10])
+                            occupied = [i for i, v in enumerate(slots_preview) if v != 0]
+                            if occupied:
+                                print(f"[V5_SPECTRUM_STATE] link={link} band={band} core={core_num} slots[0:10]={slots_preview} occupied_indices={occupied}")
+
         # ALWAYS determine modulation based on SLICE bandwidth (matches legacy behavior)
         # Legacy slicing uses mod_per_bw[slice_bandwidth] to find modulation,
         # NOT the routing modulation for the full request bandwidth.
         # This is critical for spectral efficiency - a 50 Gbps slice may use
         # a higher-order modulation (16-QAM) than a 100 Gbps request (QPSK).
         slice_modulation = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
+        if request.request_id == 5:
+            print(f"[V5_SLICE_ALLOC_DBG] req=5 num_slices={num_slices} slice_bw={slice_bandwidth} slice_mod={slice_modulation}")
         if not slice_modulation:
             logger.debug(f"No valid modulation for slice bandwidth {slice_bandwidth}")
             return None
@@ -251,6 +269,8 @@ class StandardSlicingPipeline:
                     connection_index=connection_index,
                     path_index=path_index,
                 )
+                if request.request_id == 5:
+                    print(f"[V5_SLICE_ALLOC_DBG] req=5 slice={i+1}/{num_slices} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot}")
 
                 if not spectrum_result.is_free:
                     logger.debug(f"Slice {i + 1}/{num_slices} failed: no spectrum")

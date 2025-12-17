@@ -173,6 +173,17 @@ class GroomingAdapter(GroomingPipeline):
                 arrive_time=request.arrive_time,
             )
 
+            # Debug: show ALL lightpaths in network state
+            if request.request_id == 45:
+                src, dst = str(request.source), str(request.destination)
+                lp_status = network_state.lightpath_status_dict
+                print(f"[V5_GROOM_DBG] req=45 src={src} dst={dst} total_lp_groups={len(lp_status)}")
+                for sd_key, lps in lp_status.items():
+                    for lp_id, lp_info in lps.items():
+                        remaining = lp_info.get('remaining_bandwidth', 'N/A')
+                        path = lp_info.get('path', 'N/A')
+                        print(f"[V5_GROOM_DBG] req=45 LP {lp_id}: key={sd_key} path={path} remaining={remaining}")
+
             # Make engine_props copy
             engine_props = dict(self._engine_props)
             engine_props["topology"] = network_state.topology
@@ -187,6 +198,7 @@ class GroomingAdapter(GroomingPipeline):
 
             # Call legacy handle_grooming for arrival
             was_fully_groomed = legacy_grooming.handle_grooming("arrival")
+
 
             # CRITICAL: Sync grooming changes back to actual Lightpath objects
             # The legacy grooming code modifies lightpath_status_dict in place,
@@ -264,6 +276,11 @@ class GroomingAdapter(GroomingPipeline):
         """Convert SDN props state to GroomingResult."""
         from fusion.domain.results import GroomingResult
 
+        # Extract SNR and modulation lists for Legacy compatibility
+        # These include values from grooming attempts (even if grooming fails)
+        snr_list = [v for v in sdn_props.snr_list if v is not None]
+        modulation_list = list(sdn_props.modulation_list)
+
         # Determine grooming outcome
         if was_fully_groomed:
             # Fully groomed - no new lightpath needed
@@ -274,6 +291,8 @@ class GroomingAdapter(GroomingPipeline):
             return GroomingResult.full(
                 bandwidth_gbps=bandwidth_groomed,
                 lightpath_ids=list(sdn_props.lightpath_id_list),
+                snr_list=snr_list,
+                modulation_list=modulation_list,
             )
 
         elif sdn_props.was_partially_groomed:
@@ -286,6 +305,10 @@ class GroomingAdapter(GroomingPipeline):
 
             bandwidth_groomed = original_bandwidth - remaining
 
+            # DEBUG: Show partial groom calculation for req 40
+            if sdn_props.request_id == 40:
+                print(f"[V5_GROOM_RESULT] req=40 original_bw={original_bandwidth} sdn_props.remaining_bw={sdn_props.remaining_bw} remaining={remaining} bandwidth_groomed={bandwidth_groomed}")
+
             forced_path = None
             if sdn_props.path_list:
                 forced_path = [str(n) for n in sdn_props.path_list]
@@ -295,6 +318,8 @@ class GroomingAdapter(GroomingPipeline):
                 remaining=remaining,
                 lightpath_ids=list(sdn_props.lightpath_id_list),
                 forced_path=forced_path,
+                snr_list=snr_list,
+                modulation_list=modulation_list,
             )
 
         else:
