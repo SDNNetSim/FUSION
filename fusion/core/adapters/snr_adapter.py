@@ -246,6 +246,7 @@ class SNRAdapter(SNRPipeline):
         network_state: NetworkState,
         *,
         affected_range_slots: int = 5,
+        slicing_flag: bool = False,
     ) -> SNRRecheckResult:
         """
         Recheck SNR of existing lightpaths after new allocation.
@@ -257,6 +258,7 @@ class SNRAdapter(SNRPipeline):
             new_lightpath_id: ID of newly created lightpath
             network_state: Current network state
             affected_range_slots: Consider lightpaths within this many slots (unused, legacy uses overlap)
+            slicing_flag: Whether the allocation was a slicing allocation (affects SNR check behavior)
 
         Returns:
             SNRRecheckResult with list of degraded lightpaths
@@ -328,10 +330,11 @@ class SNRAdapter(SNRPipeline):
                 modulation=new_lp.modulation,
                 slots_needed=new_lp.num_slots,
                 is_free=True,
-                # Match legacy: spectrum_props is deepcopied from spectrum_obj which has
-                # slicing_flag=True when dynamic slicing mode is used. This ensures check_gsnr
-                # takes the dynamic branch which returns modulation string instead of bool.
-                slicing_flag=True,
+                # Match legacy: spectrum_props.slicing_flag should match the allocation type.
+                # For standard allocations, slicing_flag=False causes check_gsnr to do
+                # bandwidth validation that can return resp=False.
+                # For slicing allocations, slicing_flag=True returns modulation string.
+                slicing_flag=slicing_flag,
             )
 
             # Make engine_props copy with topology
