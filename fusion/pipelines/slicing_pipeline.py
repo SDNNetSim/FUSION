@@ -247,6 +247,7 @@ class StandardSlicingPipeline:
                     path_weight_km=path_weight_km,
                     guard_slots=getattr(self._config, "guard_slots", 0),
                     connection_index=connection_index,
+                    snr_db=spectrum_result.snr_db,  # Pass SNR for metrics tracking
                 )
                 lightpath_id = lightpath.lightpath_id
 
@@ -286,10 +287,14 @@ class StandardSlicingPipeline:
         if remaining_bw <= 0:
             total_bw = sum(slice_bandwidths)
             print(f"[V5] req={request.request_id} TIER_SLICING_SUCCESS slices={len(allocated_lightpaths)} total_bw={total_bw} lps={allocated_lightpaths}")
-            return SlicingResult.sliced(
+            # Create SlicingResult directly to handle mixed tier sizes correctly
+            # The factory method SlicingResult.sliced() assumes equal slice sizes
+            return SlicingResult(
+                success=True,
                 num_slices=len(allocated_lightpaths),
-                slice_bandwidth=slice_bandwidths[0] if slice_bandwidths else 0,  # First slice bw for compatibility
-                lightpath_ids=allocated_lightpaths,
+                slice_bandwidth_gbps=slice_bandwidths[0] if slice_bandwidths else 0,
+                lightpaths_created=tuple(allocated_lightpaths),
+                total_bandwidth_gbps=total_bw,  # Actual sum, not num_slices * slice_bw
             )
 
         # Partial allocation - check if we can accept partial service
@@ -300,10 +305,13 @@ class StandardSlicingPipeline:
         if can_partial and on_last_path:
             allocated_bw = sum(slice_bandwidths)
             print(f"[V5] req={request.request_id} TIER_PARTIAL_SERVE slices={len(allocated_lightpaths)} bw={allocated_bw} remaining={remaining_bw}")
-            return SlicingResult.sliced(
+            # Create SlicingResult directly for mixed tier sizes
+            return SlicingResult(
+                success=True,
                 num_slices=len(allocated_lightpaths),
-                slice_bandwidth=slice_bandwidths[0] if slice_bandwidths else 0,
-                lightpath_ids=allocated_lightpaths,
+                slice_bandwidth_gbps=slice_bandwidths[0] if slice_bandwidths else 0,
+                lightpaths_created=tuple(allocated_lightpaths),
+                total_bandwidth_gbps=allocated_bw,  # Actual sum
             )
 
         # Cannot accept partial - rollback all
@@ -460,6 +468,7 @@ class StandardSlicingPipeline:
                     path_weight_km=path_weight_km,
                     guard_slots=getattr(self._config, "guard_slots", 0),
                     connection_index=connection_index,
+                    snr_db=spectrum_result.snr_db,  # Pass SNR for metrics tracking
                 )
                 lightpath_id = lightpath.lightpath_id
 

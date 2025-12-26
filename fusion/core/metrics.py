@@ -526,13 +526,11 @@ class SimStats:
                                 else:
                                     # Track snr
                                     snr_val = sdn_data.snr_list[i]
-                                    # DEBUG: Track ALL 16-QAM SNR values
+                                    # DEBUG: Track 16-QAM and 32-QAM SNR values for comparison with V5
                                     lp_bw = sdn_data.lightpath_bandwidth_list[i] if i < len(sdn_data.lightpath_bandwidth_list) else None
-                                    if data == "16-QAM":
-                                        print(f"[LEGACY_16QAM_SNR] mod={data} snr={snr_val:.2f} band={band} bw={lp_bw} req={sdn_data.request_id}")
-                                    # DEBUG: Track high SNR values
-                                    if snr_val > 17.0:
-                                        print(f"[LEGACY_SNR_TRACK] mod={data} snr={snr_val:.2f} band={band} bw={lp_bw} req={sdn_data.request_id}")
+                                    lp_id = sdn_data.lightpath_id_list[i] if i < len(sdn_data.lightpath_id_list) else None
+                                    if data in ("16-QAM", "32-QAM"):
+                                        print(f"[LEGACY_SNR] req={sdn_data.request_id} lp={lp_id} mod={data} snr={snr_val:.4f} band={band} bw={lp_bw}")
                                     snr_dict = data_mod_dict.get("snr")
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
@@ -2070,16 +2068,10 @@ class SimStats:
                         hop_dict["overall"].append(num_hops)
 
             # Track SNR or XT cost
-            # DEBUG: Track when SNR is None for 16-QAM
-            if snr_value is None and modulation == "16-QAM":
-                print(f"[V5_SNR_NONE] mod={modulation} snr_value=None band={band} bw={bandwidth_gbps}")
             if snr_value is not None:
-                # DEBUG: Track ALL 16-QAM SNR values to compare with Legacy
-                if modulation == "16-QAM":
-                    print(f"[V5_16QAM_SNR] mod={modulation} snr={snr_value:.2f} band={band} bw={bandwidth_gbps}")
-                # DEBUG: Track high SNR values
-                if snr_value > 17.0:
-                    print(f"[V5_SNR_TRACK] mod={modulation} snr={snr_value:.2f} band={band} bw={bandwidth_gbps}")
+                # DEBUG: Track 16-QAM and 32-QAM SNR values for comparison with Legacy
+                if modulation in ("16-QAM", "32-QAM"):
+                    print(f"[V5_SNR] mod={modulation} snr={snr_value:.4f} band={band} bw={bandwidth_gbps}")
                 snr_type = self.engine_props.get("snr_type")
                 if snr_type == "xt_calculation":
                     xt_dict = data_mod_dict.get("xt_cost")
