@@ -81,8 +81,10 @@ class StandardSlicingPipeline:
         """
         Attempt to slice request into multiple smaller allocations.
 
-        Tries progressively more slices until all can be allocated
-        or max_slices is reached.
+        Uses tier-based slicing (matching Legacy behavior):
+        - Iterates through bandwidth tiers from largest to smallest
+        - Allocates as many slices of each tier as possible
+        - Allows mixing different tier sizes (e.g., 500 + 100 = 600 Gbps)
 
         Args:
             request: The request being processed
@@ -102,7 +104,7 @@ class StandardSlicingPipeline:
         Notes:
             - When spectrum_pipeline is None, only checks feasibility
             - When spectrum_pipeline is provided, attempts actual allocation
-            - Each slice gets equal bandwidth (bandwidth_gbps // num_slices)
+            - Uses tier-based slicing with mixed sizes (matches Legacy)
         """
         from fusion.domain.results import SlicingResult
 
@@ -112,53 +114,215 @@ class StandardSlicingPipeline:
             logger.debug("Slicing disabled (max_slices < 2)")
             return SlicingResult.failed()
 
-        # Try progressively more slices
-        for num_slices in range(2, limit + 1):
-            slice_bandwidth = bandwidth_gbps // num_slices
+        if spectrum_pipeline is not None:
+            # Attempt actual tier-based allocation (matches Legacy behavior)
+            result = self._try_allocate_tier_based(
+                request=request,
+                path=path,
+                bandwidth_gbps=bandwidth_gbps,
+                network_state=network_state,
+                spectrum_pipeline=spectrum_pipeline,
+                snr_pipeline=snr_pipeline,
+                connection_index=connection_index,
+                path_index=path_index,
+                max_slices=limit,
+            )
+            if result is not None:
+                return result
+        else:
+            # Feasibility check only - use simple tier check
+            if self._check_tier_feasibility(
+                path=path,
+                bandwidth_gbps=bandwidth_gbps,
+                network_state=network_state,
+            ):
+                logger.debug(f"Tier-based slicing appears feasible for {bandwidth_gbps} Gbps")
+                return SlicingResult(
+                    success=True,
+                    num_slices=2,  # Estimate
+                    slice_bandwidth_gbps=bandwidth_gbps // 2,
+                    lightpaths_created=(),
+                    total_bandwidth_gbps=bandwidth_gbps,
+                )
 
-            if slice_bandwidth <= 0:
-                logger.debug(f"Slice bandwidth too small at {num_slices} slices")
+        logger.debug(f"Slicing failed: could not allocate {bandwidth_gbps} Gbps with tier-based slicing")
+        return SlicingResult.failed()
+
+    def _try_allocate_tier_based(
+        self,
+        request: Request,
+        path: list[str],
+        bandwidth_gbps: int,
+        network_state: NetworkState,
+        spectrum_pipeline: SpectrumPipeline,
+        snr_pipeline: SNRPipeline | None,
+        connection_index: int | None,
+        path_index: int,
+        max_slices: int,
+    ) -> SlicingResult | None:
+        """
+        Tier-based slicing allocation (matches Legacy behavior).
+
+        Iterates through bandwidth tiers from largest to smallest,
+        allocating as many slices of each tier as possible before
+        moving to smaller tiers. Allows mixing different tier sizes.
+
+        Args:
+            request: The request being processed
+            path: Route to use
+            bandwidth_gbps: Total bandwidth to allocate
+            network_state: Current network state
+            spectrum_pipeline: Pipeline for spectrum assignment
+            snr_pipeline: Pipeline for SNR validation (optional)
+            connection_index: External routing index
+            path_index: Index of which k-path is being tried
+            max_slices: Maximum number of slices allowed
+
+        Returns:
+            SlicingResult if successful, None if slicing fails
+        """
+        from fusion.domain.results import SlicingResult
+
+        # Get sorted bandwidth tiers from config (descending order)
+        mod_per_bw = getattr(self._config, "mod_per_bw", {})
+        sorted_tiers = sorted([int(k) for k in mod_per_bw.keys()], reverse=True)
+
+        remaining_bw = bandwidth_gbps
+        allocated_lightpaths: list[int] = []
+        slice_bandwidths: list[int] = []  # Track bandwidth of each slice
+
+        print(f"[V5] req={request.request_id} TIER_SLICING_START bw={bandwidth_gbps} tiers={sorted_tiers}")
+
+        for tier_bw in sorted_tiers:
+            # Skip tiers >= original request bandwidth (matches Legacy)
+            if tier_bw >= bandwidth_gbps:
                 continue
 
-            # Check if all slices can be allocated
-            if spectrum_pipeline is not None:
-                # Attempt actual allocation
-                result = self._try_allocate_slices(
-                    request=request,
+            # Skip if remaining bandwidth is less than this tier
+            if remaining_bw < tier_bw:
+                continue
+
+            # Get modulations valid for this tier on this path
+            tier_modulations = self._get_modulation_for_slice(tier_bw, path, network_state)
+            if not tier_modulations:
+                continue
+
+            print(f"[V5] req={request.request_id} TRYING_TIER bw={tier_bw} remaining={remaining_bw} mods={tier_modulations}")
+
+            # Try to allocate as many slices of this tier as possible
+            while remaining_bw >= tier_bw:
+                # Check max slices limit
+                if len(allocated_lightpaths) >= max_slices:
+                    print(f"[V5] req={request.request_id} MAX_SLICES_REACHED count={len(allocated_lightpaths)}")
+                    break
+
+                # Find spectrum for this slice
+                spectrum_result = spectrum_pipeline.find_spectrum(
                     path=path,
-                    modulation=modulation,
-                    slice_bandwidth=slice_bandwidth,
-                    num_slices=num_slices,
+                    modulation=tier_modulations,
+                    bandwidth_gbps=tier_bw,
                     network_state=network_state,
-                    spectrum_pipeline=spectrum_pipeline,
-                    snr_pipeline=snr_pipeline,
                     connection_index=connection_index,
                     path_index=path_index,
                 )
-                if result is not None:
-                    return result
-            else:
-                # Feasibility check only
-                if self._check_slice_feasibility(
-                    path=path,
-                    modulation=modulation,
-                    slice_bandwidth=slice_bandwidth,
-                    num_slices=num_slices,
-                    network_state=network_state,
-                ):
-                    logger.debug(
-                        f"Slicing feasible: {num_slices} slices of {slice_bandwidth} Gbps"
-                    )
-                    return SlicingResult(
-                        success=True,
-                        num_slices=num_slices,
-                        slice_bandwidth_gbps=slice_bandwidth,
-                        lightpaths_created=(),  # Not allocated, just feasibility
-                        total_bandwidth_gbps=num_slices * slice_bandwidth,
-                    )
 
-        logger.debug(f"Slicing failed: could not allocate up to {limit} slices")
-        return SlicingResult.failed()
+                print(f"[V5] req={request.request_id} TIER_ATTEMPT tier_bw={tier_bw} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={spectrum_result.modulation}")
+
+                if not spectrum_result.is_free:
+                    print(f"[V5] req={request.request_id} TIER_NO_SPECTRUM tier_bw={tier_bw} moving_to_smaller")
+                    break  # Move to smaller tier
+
+                # Create lightpath for this slice
+                path_weight_km = self._calculate_path_weight(path, network_state)
+                actual_modulation = spectrum_result.modulation
+
+                lightpath = network_state.create_lightpath(
+                    path=path,
+                    start_slot=spectrum_result.start_slot,
+                    end_slot=spectrum_result.end_slot,
+                    core=spectrum_result.core,
+                    band=spectrum_result.band,
+                    modulation=actual_modulation,
+                    bandwidth_gbps=tier_bw,
+                    path_weight_km=path_weight_km,
+                    guard_slots=getattr(self._config, "guard_slots", 0),
+                    connection_index=connection_index,
+                )
+                lightpath_id = lightpath.lightpath_id
+
+                # Link request to lightpath
+                lightpath.request_allocations[request.request_id] = tier_bw
+                lightpath.remaining_bandwidth_gbps -= tier_bw
+                request.lightpath_ids.append(lightpath_id)
+
+                # Validate SNR if pipeline provided AND snr_recheck is enabled
+                # Legacy only does SNR recheck if snr_recheck config is True
+                snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
+                if snr_pipeline is not None and snr_recheck_enabled:
+                    lightpath = network_state.get_lightpath(lightpath_id)
+                    if lightpath is not None:
+                        snr_result = snr_pipeline.validate(lightpath, network_state)
+                        if not snr_result.passed:
+                            logger.debug(f"Tier slice failed SNR validation (tier_bw={tier_bw})")
+                            network_state.release_lightpath(lightpath_id)
+                            print(f"[V5] req={request.request_id} TIER_SNR_FAIL tier_bw={tier_bw} moving_to_smaller")
+                            break  # Move to smaller tier
+
+                allocated_lightpaths.append(lightpath_id)
+                slice_bandwidths.append(tier_bw)
+                remaining_bw -= tier_bw
+                print(f"[V5] req={request.request_id} TIER_SLICE_CREATED lp_id={lightpath_id} tier_bw={tier_bw} remaining={remaining_bw}")
+
+            # Stop if fully allocated
+            if remaining_bw <= 0:
+                break
+
+        # Check if we allocated anything
+        if not allocated_lightpaths:
+            print(f"[V5] req={request.request_id} TIER_SLICING_FAIL no_slices_allocated")
+            return None
+
+        # Check if fully allocated
+        if remaining_bw <= 0:
+            total_bw = sum(slice_bandwidths)
+            print(f"[V5] req={request.request_id} TIER_SLICING_SUCCESS slices={len(allocated_lightpaths)} total_bw={total_bw} lps={allocated_lightpaths}")
+            return SlicingResult.sliced(
+                num_slices=len(allocated_lightpaths),
+                slice_bandwidth=slice_bandwidths[0] if slice_bandwidths else 0,  # First slice bw for compatibility
+                lightpath_ids=allocated_lightpaths,
+            )
+
+        # Partial allocation - check if we can accept partial service
+        can_partial = getattr(self._config, "can_partially_serve", False)
+        k_paths = getattr(self._config, "k_paths", 3)
+        on_last_path = path_index >= k_paths - 1
+
+        if can_partial and on_last_path:
+            allocated_bw = sum(slice_bandwidths)
+            print(f"[V5] req={request.request_id} TIER_PARTIAL_SERVE slices={len(allocated_lightpaths)} bw={allocated_bw} remaining={remaining_bw}")
+            return SlicingResult.sliced(
+                num_slices=len(allocated_lightpaths),
+                slice_bandwidth=slice_bandwidths[0] if slice_bandwidths else 0,
+                lightpath_ids=allocated_lightpaths,
+            )
+
+        # Cannot accept partial - rollback all
+        print(f"[V5] req={request.request_id} TIER_SLICING_ROLLBACK slices={len(allocated_lightpaths)} remaining={remaining_bw}")
+        self.rollback_slices(allocated_lightpaths, network_state)
+        return None
+
+    def _check_tier_feasibility(
+        self,
+        path: list[str],
+        bandwidth_gbps: int,
+        network_state: NetworkState,
+    ) -> bool:
+        """Check if tier-based slicing is feasible (simplified check)."""
+        # Get available slots on path
+        available_slots = self._get_available_slots_on_path(path, network_state)
+
+        # Rough estimate: need at least some slots
+        return available_slots >= 4  # Minimum for any slicing
 
     def _check_slice_feasibility(
         self,
@@ -230,50 +394,50 @@ class StandardSlicingPipeline:
 
         allocated_lightpaths: list[int] = []
 
-        # DEBUG: Dump spectrum state for request 5 before slicing
-        if request.request_id == 5:
-            print(f"\n[V5_SPECTRUM_STATE] req=5 BEFORE SLICING - path={path[:3]}...")
-            # Get first link's spectrum state
-            if len(path) >= 2:
-                link = (path[0], path[1])
-                if link in network_state.network_spectrum_dict:
-                    cores_matrix = network_state.network_spectrum_dict[link]["cores_matrix"]
-                    for band, band_cores in cores_matrix.items():
-                        for core_num, core_arr in enumerate(band_cores):
-                            # Show first 10 slots
-                            slots_preview = list(core_arr[:10])
-                            occupied = [i for i, v in enumerate(slots_preview) if v != 0]
-                            if occupied:
-                                print(f"[V5_SPECTRUM_STATE] link={link} band={band} core={core_num} slots[0:10]={slots_preview} occupied_indices={occupied}")
-
         # ALWAYS determine modulation based on SLICE bandwidth (matches legacy behavior)
         # Legacy slicing uses mod_per_bw[slice_bandwidth] to find modulation,
         # NOT the routing modulation for the full request bandwidth.
         # This is critical for spectral efficiency - a 50 Gbps slice may use
         # a higher-order modulation (16-QAM) than a 100 Gbps request (QPSK).
-        slice_modulation = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
-        if request.request_id == 5:
-            print(f"[V5_SLICE_ALLOC_DBG] req=5 num_slices={num_slices} slice_bw={slice_bandwidth} slice_mod={slice_modulation}")
-        if not slice_modulation:
+        # Return ALL valid modulations so find_spectrum can try each one.
+        slice_modulations = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
+        print(f"[V5] req={request.request_id} SLICING_START num_slices={num_slices} slice_bw={slice_bandwidth} slice_mods={slice_modulations or 'NONE'}")
+        if not slice_modulations:
             logger.debug(f"No valid modulation for slice bandwidth {slice_bandwidth}")
             return None
 
         try:
             for i in range(num_slices):
-                # Find spectrum for this slice
+                # Find spectrum for this slice - pass ALL valid modulations
                 spectrum_result = spectrum_pipeline.find_spectrum(
                     path=path,
-                    modulation=slice_modulation,
+                    modulation=slice_modulations,  # Pass list of modulations
                     bandwidth_gbps=slice_bandwidth,
                     network_state=network_state,
                     connection_index=connection_index,
                     path_index=path_index,
                 )
-                if request.request_id == 5:
-                    print(f"[V5_SLICE_ALLOC_DBG] req=5 slice={i+1}/{num_slices} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot}")
+                print(f"[V5] req={request.request_id} SLICE_ATTEMPT slice={i+1}/{num_slices} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={spectrum_result.modulation}")
 
                 if not spectrum_result.is_free:
-                    logger.debug(f"Slice {i + 1}/{num_slices} failed: no spectrum")
+                    print(f"[V5] req={request.request_id} SLICE_FAIL slice={i+1}/{num_slices} no_spectrum slice_bw={slice_bandwidth}")
+
+                    # Check for partial serving (Legacy behavior)
+                    # If can_partially_serve is enabled, some slices allocated, and on last path, accept partial
+                    can_partial = getattr(self._config, "can_partially_serve", False)
+                    k_paths = getattr(self._config, "k_paths", 3)
+                    on_last_path = path_index >= k_paths - 1
+
+                    if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
+                        # Accept partial service - don't rollback, return what we allocated
+                        allocated_bw = len(allocated_lightpaths) * slice_bandwidth
+                        print(f"[V5] req={request.request_id} PARTIAL_SERVE accepted allocated_slices={len(allocated_lightpaths)} bw={allocated_bw}")
+                        return SlicingResult.sliced(
+                            num_slices=len(allocated_lightpaths),
+                            slice_bandwidth=slice_bandwidth,
+                            lightpath_ids=allocated_lightpaths,
+                        )
+
                     # Rollback already allocated slices
                     self.rollback_slices(allocated_lightpaths, network_state)
                     return None
@@ -282,13 +446,16 @@ class StandardSlicingPipeline:
                 # Calculate path weight for lightpath
                 path_weight_km = self._calculate_path_weight(path, network_state)
 
+                # Use the modulation that was actually selected by spectrum assignment
+                actual_modulation = spectrum_result.modulation
+
                 lightpath = network_state.create_lightpath(
                     path=path,
                     start_slot=spectrum_result.start_slot,
                     end_slot=spectrum_result.end_slot,
                     core=spectrum_result.core,
                     band=spectrum_result.band,
-                    modulation=slice_modulation,
+                    modulation=actual_modulation,  # Use selected modulation
                     bandwidth_gbps=slice_bandwidth,
                     path_weight_km=path_weight_km,
                     guard_slots=getattr(self._config, "guard_slots", 0),
@@ -310,14 +477,33 @@ class StandardSlicingPipeline:
                             logger.debug(
                                 f"Slice {i + 1}/{num_slices} failed SNR validation"
                             )
-                            # Rollback this and all previous slices
-                            allocated_lightpaths.append(lightpath_id)
+                            # Check for partial serving before rollback
+                            can_partial = getattr(self._config, "can_partially_serve", False)
+                            k_paths = getattr(self._config, "k_paths", 3)
+                            on_last_path = path_index >= k_paths - 1
+
+                            # Release the failed lightpath first
+                            network_state.release_lightpath(lightpath_id)
+
+                            if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
+                                # Accept partial service with what we have
+                                allocated_bw = len(allocated_lightpaths) * slice_bandwidth
+                                print(f"[V5] req={request.request_id} PARTIAL_SERVE (SNR) accepted allocated_slices={len(allocated_lightpaths)} bw={allocated_bw}")
+                                return SlicingResult.sliced(
+                                    num_slices=len(allocated_lightpaths),
+                                    slice_bandwidth=slice_bandwidth,
+                                    lightpath_ids=allocated_lightpaths,
+                                )
+
+                            # Rollback all previous slices
                             self.rollback_slices(allocated_lightpaths, network_state)
                             return None
 
                 allocated_lightpaths.append(lightpath_id)
+                print(f"[V5] req={request.request_id} SLICE_CREATED slice={i+1}/{num_slices} lp_id={lightpath_id} bw={slice_bandwidth}")
 
             # All slices allocated successfully
+            print(f"[V5] req={request.request_id} SLICING_SUCCESS num_slices={num_slices} slice_bw={slice_bandwidth} lps={allocated_lightpaths}")
             return SlicingResult.sliced(
                 num_slices=num_slices,
                 slice_bandwidth=slice_bandwidth,
@@ -423,12 +609,12 @@ class StandardSlicingPipeline:
         slice_bandwidth: int,
         path: list[str],
         network_state: NetworkState,
-    ) -> str:
+    ) -> list[str]:
         """
-        Determine valid modulation for slice bandwidth and path.
+        Determine ALL valid modulations for slice bandwidth and path.
 
-        Looks up mod_per_bw for the slice bandwidth and finds a modulation
-        that can reach the path length.
+        Looks up mod_per_bw for the slice bandwidth and finds ALL modulations
+        that can reach the path length, sorted by spectral efficiency.
 
         Args:
             slice_bandwidth: Bandwidth of the slice in Gbps
@@ -436,7 +622,7 @@ class StandardSlicingPipeline:
             network_state: Network state for path length calculation
 
         Returns:
-            Valid modulation format name, or empty string if none found
+            List of valid modulation format names, empty list if none found
         """
         # Calculate path length
         path_length = 0.0
@@ -453,13 +639,14 @@ class StandardSlicingPipeline:
 
         if bw_key not in mod_per_bw:
             logger.debug(f"No mod_per_bw entry for bandwidth {slice_bandwidth}")
-            return ""
+            return []
 
         bw_mods = mod_per_bw[bw_key]
 
-        # Find first modulation that can reach the path
+        # Find ALL modulations that can reach the path
         # Sort by efficiency (highest order first for spectral efficiency)
         mod_order = ["64-QAM", "32-QAM", "16-QAM", "8-QAM", "QPSK", "BPSK"]
+        valid_mods = []
 
         for mod_name in mod_order:
             if mod_name in bw_mods:
@@ -467,13 +654,16 @@ class StandardSlicingPipeline:
                 if isinstance(mod_info, dict):
                     max_length = mod_info.get("max_length", 0)
                     if max_length >= path_length:
-                        logger.debug(
-                            f"Slice modulation for {slice_bandwidth} Gbps: {mod_name} "
-                            f"(max_length={max_length}, path_length={path_length:.1f})"
-                        )
-                        return mod_name
+                        valid_mods.append(mod_name)
 
-        logger.debug(
-            f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}"
-        )
-        return ""
+        if valid_mods:
+            logger.debug(
+                f"Slice modulations for {slice_bandwidth} Gbps: {valid_mods} "
+                f"(path_length={path_length:.1f})"
+            )
+        else:
+            logger.debug(
+                f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}"
+            )
+
+        return valid_mods

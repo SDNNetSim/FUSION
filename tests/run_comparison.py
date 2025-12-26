@@ -525,7 +525,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'spain_C_fixed_grooming':
+        if case.name == 'spain_C_flexi':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:

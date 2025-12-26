@@ -396,16 +396,20 @@ class LightPathSlicingManager:
     ) -> bool:
         """Handle flex-grid dynamic slicing."""
         initial_bw = int(self.sdn_props.bandwidth)
+        print(f"[LEGACY] req={self.sdn_props.request_id} FLEX_GRID_SLICING initial_bw={initial_bw} remaining_bw={remaining_bw}")
 
         for bandwidth_str, mods_dict in bw_mod_dict.items():
             # Skip bandwidth tiers >= request bandwidth
             if int(bandwidth_str) >= initial_bw:
                 continue
 
+            print(f"[LEGACY] req={self.sdn_props.request_id} TRYING_BW_TIER bw={bandwidth_str} remaining={remaining_bw}")
+            iteration = 0
             while remaining_bw > 0:
                 if remaining_bw < int(bandwidth_str):
                     break
 
+                iteration += 1
                 self.sdn_props.was_routed = True
                 mod_format, _ = self.spectrum_obj.get_spectrum_dynamic_slicing(
                     _mod_format_list=[],
@@ -414,6 +418,9 @@ class LightPathSlicingManager:
                 )
                 # In flex-grid slicing, bandwidth is pre-calculated from the tier
                 bw = int(bandwidth_str)
+
+                sp = self.spectrum_obj.spectrum_props
+                print(f"[LEGACY] req={self.sdn_props.request_id} SLICE_ATTEMPT iter={iteration} bw_tier={bandwidth_str} is_free={sp.is_free} start={sp.start_slot} end={sp.end_slot} mod={sp.modulation}")
 
                 if self.spectrum_obj.spectrum_props.is_free:
                     lp_id = self.sdn_props.get_lightpath_id()
@@ -433,6 +440,8 @@ class LightPathSlicingManager:
                     self.sdn_props.was_partially_routed = False
                     self.sdn_props.remaining_bw = max(0, remaining_bw)
 
+                    print(f"[LEGACY] req={self.sdn_props.request_id} SLICE_CREATED lp_id={lp_id} bw={dedicated_bw} remaining={remaining_bw}")
+
                     # SNR recheck after allocation (v5 behavior)
                     # This ensures lightpaths are validated immediately and rolled back
                     # if SNR requirements are not met, preventing orphaned allocations
@@ -441,9 +450,11 @@ class LightPathSlicingManager:
                         self.sdn_props.was_routed = False
                         self.sdn_props.block_reason = "snr_recheck_failed"
                         remaining_bw += bw
+                        print(f"[LEGACY] req={self.sdn_props.request_id} SLICE_SNR_FAIL lp_id={lp_id} rollback")
                         sdn_controller._handle_congestion(remaining_bw)
                         break
                 else:
+                    print(f"[LEGACY] req={self.sdn_props.request_id} SLICE_FAIL no_spectrum remaining={remaining_bw}")
                     break
 
             if remaining_bw <= 0:
