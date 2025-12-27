@@ -512,6 +512,7 @@ class SlicingResult:
     slice_bandwidth_gbps: int = 0
     lightpaths_created: tuple[int, ...] = ()
     total_bandwidth_gbps: int = 0
+    failed_attempt_snr_values: tuple[float, ...] = ()  # SNR values from failed attempts (for Legacy compatibility)
 
     def __post_init__(self) -> None:
         """Validate slicing result after creation."""

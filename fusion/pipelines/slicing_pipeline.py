@@ -115,18 +115,36 @@ class StandardSlicingPipeline:
             return SlicingResult.failed()
 
         if spectrum_pipeline is not None:
-            # Attempt actual tier-based allocation (matches Legacy behavior)
-            result = self._try_allocate_tier_based(
-                request=request,
-                path=path,
-                bandwidth_gbps=bandwidth_gbps,
-                network_state=network_state,
-                spectrum_pipeline=spectrum_pipeline,
-                snr_pipeline=snr_pipeline,
-                connection_index=connection_index,
-                path_index=path_index,
-                max_slices=limit,
-            )
+            # Check if we should use dynamic slicing (GSNR-based modulation selection)
+            # This matches legacy behavior when dynamic_lps=True (both fixed and flex grid)
+            dynamic_lps = getattr(self._config, "dynamic_lps", False)
+
+            if dynamic_lps:
+                # Use dynamic slicing mode (1 slot at a time with GSNR modulation selection)
+                result = self._try_allocate_dynamic(
+                    request=request,
+                    path=path,
+                    bandwidth_gbps=bandwidth_gbps,
+                    network_state=network_state,
+                    spectrum_pipeline=spectrum_pipeline,
+                    snr_pipeline=snr_pipeline,
+                    connection_index=connection_index,
+                    path_index=path_index,
+                    max_slices=limit,
+                )
+            else:
+                # Attempt actual tier-based allocation (matches Legacy flex-grid behavior)
+                result = self._try_allocate_tier_based(
+                    request=request,
+                    path=path,
+                    bandwidth_gbps=bandwidth_gbps,
+                    network_state=network_state,
+                    spectrum_pipeline=spectrum_pipeline,
+                    snr_pipeline=snr_pipeline,
+                    connection_index=connection_index,
+                    path_index=path_index,
+                    max_slices=limit,
+                )
             if result is not None:
                 return result
         else:
@@ -190,6 +208,7 @@ class StandardSlicingPipeline:
         remaining_bw = bandwidth_gbps
         allocated_lightpaths: list[int] = []
         slice_bandwidths: list[int] = []  # Track bandwidth of each slice
+        failed_snr_values: list[float] = []  # Track SNR from failed attempts (Legacy compatibility)
 
         for tier_bw in sorted_tiers:
             # Skip tiers >= original request bandwidth (matches Legacy)
@@ -205,6 +224,10 @@ class StandardSlicingPipeline:
             if not tier_modulations:
                 continue
 
+            # DEBUG: Show tier being attempted for req 43
+            if request.request_id == 43:
+                print(f'[DEBUG-R43-SLICING] Trying tier_bw={tier_bw} mods={tier_modulations}')
+
             # Try to allocate as many slices of this tier as possible
             while remaining_bw >= tier_bw:
                 # Check max slices limit
@@ -212,6 +235,7 @@ class StandardSlicingPipeline:
                     break
 
                 # Find spectrum for this slice
+                # Pass slice_bandwidth to get_spectrum for proper slots calculation
                 spectrum_result = spectrum_pipeline.find_spectrum(
                     path=path,
                     modulation=tier_modulations,
@@ -219,14 +243,23 @@ class StandardSlicingPipeline:
                     network_state=network_state,
                     connection_index=connection_index,
                     path_index=path_index,
+                    request_id=request.request_id,
+                    slice_bandwidth=tier_bw,  # Key: pass tier bandwidth for slicing
                 )
 
                 if not spectrum_result.is_free:
+                    # DEBUG: Show spectrum search failure for req 43
+                    if request.request_id == 43:
+                        print(f'[DEBUG-R43-SLICING] No spectrum for tier_bw={tier_bw}, moving to next tier')
                     break  # Move to smaller tier
 
                 # Create lightpath for this slice
                 path_weight_km = self._calculate_path_weight(path, network_state)
                 actual_modulation = spectrum_result.modulation
+
+                # DEBUG: Show successful spectrum allocation for req 43
+                if request.request_id == 43:
+                    print(f'[DEBUG-R43-SLICING] Got spectrum: start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={actual_modulation} snr={spectrum_result.snr_db}')
 
                 lightpath = network_state.create_lightpath(
                     path=path,
@@ -259,6 +292,9 @@ class StandardSlicingPipeline:
                     )
                     if not recheck_result.all_pass:
                         logger.debug(f"Tier slice failed SNR recheck - existing LPs degraded (tier_bw={tier_bw})")
+                        # Track failed SNR for Legacy compatibility
+                        if spectrum_result.snr_db is not None:
+                            failed_snr_values.append(spectrum_result.snr_db)
                         network_state.release_lightpath(lightpath_id)
                         break  # Move to smaller tier
 
@@ -285,6 +321,7 @@ class StandardSlicingPipeline:
                 slice_bandwidth_gbps=slice_bandwidths[0] if slice_bandwidths else 0,
                 lightpaths_created=tuple(allocated_lightpaths),
                 total_bandwidth_gbps=total_bw,  # Actual sum, not num_slices * slice_bw
+                failed_attempt_snr_values=tuple(failed_snr_values),
             )
 
         # Partial allocation - check if we can accept partial service
@@ -301,9 +338,292 @@ class StandardSlicingPipeline:
                 slice_bandwidth_gbps=slice_bandwidths[0] if slice_bandwidths else 0,
                 lightpaths_created=tuple(allocated_lightpaths),
                 total_bandwidth_gbps=allocated_bw,  # Actual sum
+                failed_attempt_snr_values=tuple(failed_snr_values),
             )
 
         # Cannot accept partial - rollback all
+        self.rollback_slices(allocated_lightpaths, network_state)
+        return None
+
+    def _try_allocate_dynamic(
+        self,
+        request: Request,
+        path: list[str],
+        bandwidth_gbps: int,
+        network_state: NetworkState,
+        spectrum_pipeline: SpectrumPipeline,
+        snr_pipeline: SNRPipeline | None,
+        connection_index: int | None,
+        path_index: int,
+        max_slices: int,
+    ) -> SlicingResult | None:
+        """
+        Dynamic slicing allocation (matches Legacy dynamic_lps behavior).
+
+        For fixed-grid: Allocates 1 slot at a time, using GSNR to determine modulation/bandwidth.
+        For flex-grid: Iterates through bandwidth tiers, using GSNR-based modulation selection.
+
+        Args:
+            request: The request being processed
+            path: Route to use
+            bandwidth_gbps: Total bandwidth to allocate
+            network_state: Current network state
+            spectrum_pipeline: Pipeline for spectrum assignment
+            snr_pipeline: Pipeline for SNR validation (optional)
+            connection_index: External routing index
+            path_index: Index of which k-path is being tried
+            max_slices: Maximum number of slices allowed
+
+        Returns:
+            SlicingResult if successful, None if slicing fails
+        """
+        from fusion.domain.results import SlicingResult
+
+        fixed_grid = getattr(self._config, "fixed_grid", False)
+
+        if fixed_grid:
+            # Fixed-grid dynamic slicing: 1 slot at a time
+            return self._try_allocate_dynamic_fixed_grid(
+                request, path, bandwidth_gbps, network_state, spectrum_pipeline,
+                snr_pipeline, connection_index, path_index, max_slices
+            )
+        else:
+            # Flex-grid dynamic slicing: iterate through bandwidth tiers
+            return self._try_allocate_dynamic_flex_grid(
+                request, path, bandwidth_gbps, network_state, spectrum_pipeline,
+                snr_pipeline, connection_index, path_index, max_slices
+            )
+
+    def _try_allocate_dynamic_fixed_grid(
+        self,
+        request: Request,
+        path: list[str],
+        bandwidth_gbps: int,
+        network_state: NetworkState,
+        spectrum_pipeline: SpectrumPipeline,
+        snr_pipeline: SNRPipeline | None,
+        connection_index: int | None,
+        path_index: int,
+        max_slices: int,
+    ) -> SlicingResult | None:
+        """Fixed-grid dynamic slicing: 1 slot at a time."""
+        from fusion.domain.results import SlicingResult
+
+        remaining_bw = bandwidth_gbps
+        allocated_lightpaths: list[int] = []
+        slice_bandwidths: list[int] = []
+        failed_snr_values: list[float] = []
+
+        while remaining_bw > 0 and len(allocated_lightpaths) < max_slices:
+            spectrum_result = spectrum_pipeline.find_spectrum(
+                path=path,
+                modulation="",
+                bandwidth_gbps=bandwidth_gbps,
+                network_state=network_state,
+                connection_index=connection_index,
+                path_index=path_index,
+                use_dynamic_slicing=True,
+                request_id=request.request_id,
+            )
+
+            if not spectrum_result.is_free:
+                break
+
+            achieved_bw = spectrum_result.achieved_bandwidth_gbps
+            if achieved_bw is None or achieved_bw <= 0:
+                break
+
+            path_weight_km = self._calculate_path_weight(path, network_state)
+            lightpath = network_state.create_lightpath(
+                path=path,
+                start_slot=spectrum_result.start_slot,
+                end_slot=spectrum_result.end_slot,
+                core=spectrum_result.core,
+                band=spectrum_result.band,
+                modulation=spectrum_result.modulation,
+                bandwidth_gbps=achieved_bw,
+                path_weight_km=path_weight_km,
+                guard_slots=getattr(self._config, "guard_slots", 0),
+                connection_index=connection_index,
+                snr_db=spectrum_result.snr_db,
+            )
+            lightpath_id = lightpath.lightpath_id
+            lightpath.request_allocations[request.request_id] = achieved_bw
+            lightpath.remaining_bandwidth_gbps -= achieved_bw
+            request.lightpath_ids.append(lightpath_id)
+
+            snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
+            if snr_pipeline is not None and snr_recheck_enabled:
+                recheck_result = snr_pipeline.recheck_affected(
+                    lightpath_id, network_state, slicing_flag=True
+                )
+                if not recheck_result.all_pass:
+                    if spectrum_result.snr_db is not None:
+                        failed_snr_values.append(spectrum_result.snr_db)
+                    network_state.release_lightpath(lightpath_id)
+                    break
+
+            allocated_lightpaths.append(lightpath_id)
+            slice_bandwidths.append(achieved_bw)
+            remaining_bw -= achieved_bw
+
+        if not allocated_lightpaths:
+            return None
+
+        return self._finalize_dynamic_result(
+            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
+            failed_snr_values, path_index, network_state
+        )
+
+    def _try_allocate_dynamic_flex_grid(
+        self,
+        request: Request,
+        path: list[str],
+        bandwidth_gbps: int,
+        network_state: NetworkState,
+        spectrum_pipeline: SpectrumPipeline,
+        snr_pipeline: SNRPipeline | None,
+        connection_index: int | None,
+        path_index: int,
+        max_slices: int,
+    ) -> SlicingResult | None:
+        """Flex-grid dynamic slicing: iterate through bandwidth tiers."""
+        from fusion.domain.results import SlicingResult
+
+        # Get sorted bandwidth tiers (descending)
+        mod_per_bw = getattr(self._config, "mod_per_bw", {})
+        sorted_tiers = sorted([int(k) for k in mod_per_bw.keys()], reverse=True)
+
+        remaining_bw = bandwidth_gbps
+        allocated_lightpaths: list[int] = []
+        slice_bandwidths: list[int] = []
+        failed_snr_values: list[float] = []
+
+        # DEBUG: Show dynamic slicing for req 43
+        if request.request_id == 43:
+            print(f'[DEBUG-R43-DYNAMIC] Starting flex-grid dynamic slicing for {bandwidth_gbps} Gbps')
+
+        for tier_bw in sorted_tiers:
+            # Skip tiers >= original request bandwidth
+            if tier_bw >= bandwidth_gbps:
+                continue
+
+            # DEBUG: Show tier for req 43
+            if request.request_id == 43:
+                print(f'[DEBUG-R43-DYNAMIC] Trying tier_bw={tier_bw}')
+
+            while remaining_bw >= tier_bw and len(allocated_lightpaths) < max_slices:
+                # Use dynamic slicing mode with slice_bandwidth for flex-grid
+                spectrum_result = spectrum_pipeline.find_spectrum(
+                    path=path,
+                    modulation="",  # Will be determined by GSNR
+                    bandwidth_gbps=bandwidth_gbps,
+                    network_state=network_state,
+                    connection_index=connection_index,
+                    path_index=path_index,
+                    use_dynamic_slicing=True,
+                    request_id=request.request_id,
+                    slice_bandwidth=tier_bw,  # Key: pass tier bandwidth
+                )
+
+                # DEBUG: Show result for req 43
+                if request.request_id == 43:
+                    print(f'[DEBUG-R43-DYNAMIC] spectrum: is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={spectrum_result.modulation} bw={spectrum_result.achieved_bandwidth_gbps}')
+
+                if not spectrum_result.is_free:
+                    break  # Move to smaller tier
+
+                # For flex-grid, bandwidth is the tier bandwidth
+                achieved_bw = tier_bw
+
+                path_weight_km = self._calculate_path_weight(path, network_state)
+                lightpath = network_state.create_lightpath(
+                    path=path,
+                    start_slot=spectrum_result.start_slot,
+                    end_slot=spectrum_result.end_slot,
+                    core=spectrum_result.core,
+                    band=spectrum_result.band,
+                    modulation=spectrum_result.modulation,
+                    bandwidth_gbps=achieved_bw,
+                    path_weight_km=path_weight_km,
+                    guard_slots=getattr(self._config, "guard_slots", 0),
+                    connection_index=connection_index,
+                    snr_db=spectrum_result.snr_db,
+                )
+                lightpath_id = lightpath.lightpath_id
+                lightpath.request_allocations[request.request_id] = achieved_bw
+                lightpath.remaining_bandwidth_gbps -= achieved_bw
+                request.lightpath_ids.append(lightpath_id)
+
+                snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
+                if snr_pipeline is not None and snr_recheck_enabled:
+                    recheck_result = snr_pipeline.recheck_affected(
+                        lightpath_id, network_state, slicing_flag=True
+                    )
+                    if not recheck_result.all_pass:
+                        if spectrum_result.snr_db is not None:
+                            failed_snr_values.append(spectrum_result.snr_db)
+                        network_state.release_lightpath(lightpath_id)
+                        break
+
+                allocated_lightpaths.append(lightpath_id)
+                slice_bandwidths.append(achieved_bw)
+                remaining_bw -= achieved_bw
+
+                # DEBUG: Show allocation for req 43
+                if request.request_id == 43:
+                    print(f'[DEBUG-R43-DYNAMIC] Allocated slice: lp_id={lightpath_id} mod={spectrum_result.modulation} bw={achieved_bw} remaining={remaining_bw}')
+
+            if remaining_bw <= 0:
+                break
+
+        if not allocated_lightpaths:
+            return None
+
+        return self._finalize_dynamic_result(
+            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
+            failed_snr_values, path_index, network_state
+        )
+
+    def _finalize_dynamic_result(
+        self,
+        remaining_bw: int,
+        original_bw: int,
+        allocated_lightpaths: list[int],
+        slice_bandwidths: list[int],
+        failed_snr_values: list[float],
+        path_index: int,
+        network_state: NetworkState,
+    ) -> SlicingResult | None:
+        """Finalize dynamic slicing result, handling partial allocation."""
+        from fusion.domain.results import SlicingResult
+
+        if remaining_bw <= 0:
+            total_bw = sum(slice_bandwidths)
+            return SlicingResult(
+                success=True,
+                num_slices=len(allocated_lightpaths),
+                slice_bandwidth_gbps=slice_bandwidths[0] if slice_bandwidths else 0,
+                lightpaths_created=tuple(allocated_lightpaths),
+                total_bandwidth_gbps=total_bw,
+                failed_attempt_snr_values=tuple(failed_snr_values),
+            )
+
+        can_partial = getattr(self._config, "can_partially_serve", False)
+        k_paths = getattr(self._config, "k_paths", 3)
+        on_last_path = path_index >= k_paths - 1
+
+        if can_partial and on_last_path:
+            allocated_bw = sum(slice_bandwidths)
+            return SlicingResult(
+                success=True,
+                num_slices=len(allocated_lightpaths),
+                slice_bandwidth_gbps=slice_bandwidths[0] if slice_bandwidths else 0,
+                lightpaths_created=tuple(allocated_lightpaths),
+                total_bandwidth_gbps=allocated_bw,
+                failed_attempt_snr_values=tuple(failed_snr_values),
+            )
+
         self.rollback_slices(allocated_lightpaths, network_state)
         return None
 

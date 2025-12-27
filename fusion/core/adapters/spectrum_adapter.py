@@ -143,6 +143,8 @@ class SpectrumAdapter(SpectrumPipeline):
         path_index: int = 0,
         use_dynamic_slicing: bool = False,
         snr_bandwidth: int | None = None,
+        request_id: int | None = None,
+        slice_bandwidth: int | None = None,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
@@ -157,6 +159,8 @@ class SpectrumAdapter(SpectrumPipeline):
             snr_bandwidth: Bandwidth to use for SNR checks (if different from bandwidth_gbps).
                 Used for partial grooming where slots are for remaining_bw but SNR check
                 should use original request bandwidth.
+            slice_bandwidth: Bandwidth for slicing (used to look up mod_per_bw and calculate slots).
+                When provided, get_spectrum uses this to validate modulation and calculate slots.
 
         Returns:
             SpectrumResult with slot allocation or is_free=False on failure
@@ -175,11 +179,17 @@ class SpectrumAdapter(SpectrumPipeline):
 
             # Look up modulation formats from mod_per_bw for this bandwidth
             # mod_per_bw structure: {bandwidth_str: {modulation: {slots_needed: X, ...}}}
-            # IMPORTANT: Use snr_bandwidth (original request bandwidth) for lookup if provided.
-            # For partial grooming, remaining_bw is passed as bandwidth_gbps, but modulation
-            # formats should be looked up using the ORIGINAL request bandwidth (like legacy).
+            # Priority for lookup:
+            # 1. slice_bandwidth (for slicing mode - uses tier bandwidth)
+            # 2. snr_bandwidth (for partial grooming - uses original request bandwidth)
+            # 3. bandwidth_gbps (default)
             mod_per_bw = self._config.mod_per_bw
-            lookup_bw = snr_bandwidth if snr_bandwidth is not None else bandwidth_gbps
+            if slice_bandwidth is not None:
+                lookup_bw = slice_bandwidth
+            elif snr_bandwidth is not None:
+                lookup_bw = snr_bandwidth
+            else:
+                lookup_bw = bandwidth_gbps
             bw_key = str(lookup_bw)
             modulation_formats = mod_per_bw.get(bw_key, {})
 
@@ -195,6 +205,9 @@ class SpectrumAdapter(SpectrumPipeline):
                 modulation_formats=modulation_formats,
                 path_index=path_index,
             )
+            # Set request_id for debugging
+            if request_id is not None:
+                sdn_props.request_id = request_id
 
             # Handle both single modulation and list of modulations
             mod_list = [modulation] if isinstance(modulation, str) else list(modulation)
@@ -234,10 +247,24 @@ class SpectrumAdapter(SpectrumPipeline):
             # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
             if use_dynamic_slicing and self._config.dynamic_lps:
                 # Dynamic slicing mode: spectrum determines modulation/bandwidth
-                result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
-                    _mod_format_list=[modulation] if modulation else [],
-                    path_index=path_index,
-                )
+                # For flex-grid, need to pass mod_format_dict for proper slot lookup
+                if not self._config.fixed_grid and slice_bandwidth is not None:
+                    # Flex-grid dynamic slicing: pass mod_format_dict for the tier
+                    mod_format_dict = mod_per_bw.get(str(slice_bandwidth), {})
+                    result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
+                        _mod_format_list=[],
+                        path_index=path_index,
+                        mod_format_dict=mod_format_dict,
+                    )
+                    # For flex-grid, bandwidth is the tier bandwidth
+                    if result_mod and result_mod is not False:
+                        result_bw = slice_bandwidth
+                else:
+                    # Fixed-grid dynamic slicing
+                    result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
+                        _mod_format_list=[modulation] if modulation else [],
+                        path_index=path_index,
+                    )
                 # Update modulation from dynamic result
                 if result_mod and result_mod is not False:
                     modulation = str(result_mod)
@@ -248,8 +275,11 @@ class SpectrumAdapter(SpectrumPipeline):
                 # Standard mode: modulation/bandwidth specified upfront
                 # Support both single modulation and list of modulations (like legacy)
                 mod_list = [modulation] if isinstance(modulation, str) else list(modulation)
+                # Pass slice_bandwidth if provided (for slicing mode)
+                slice_bw_str = str(slice_bandwidth) if slice_bandwidth is not None else None
                 legacy_spectrum.get_spectrum(
                     mod_format_list=mod_list,
+                    slice_bandwidth=slice_bw_str,
                 )
 
             # LEGACY fallback: If lightpath_bandwidth not set by get_spectrum (e.g., fixed grid),
