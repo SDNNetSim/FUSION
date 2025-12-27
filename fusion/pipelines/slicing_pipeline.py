@@ -248,17 +248,19 @@ class StandardSlicingPipeline:
                 lightpath.remaining_bandwidth_gbps -= tier_bw
                 request.lightpath_ids.append(lightpath_id)
 
-                # Validate SNR if pipeline provided AND snr_recheck is enabled
+                # SNR RECHECK: Check if EXISTING lightpaths would be degraded by this allocation
                 # Legacy only does SNR recheck if snr_recheck config is True
+                # This is different from validating the new LP's SNR - we check EXISTING LPs
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
-                    lightpath = network_state.get_lightpath(lightpath_id)
-                    if lightpath is not None:
-                        snr_result = snr_pipeline.validate(lightpath, network_state)
-                        if not snr_result.passed:
-                            logger.debug(f"Tier slice failed SNR validation (tier_bw={tier_bw})")
-                            network_state.release_lightpath(lightpath_id)
-                            break  # Move to smaller tier
+                    # Call recheck_affected to check existing LPs (matches legacy behavior)
+                    recheck_result = snr_pipeline.recheck_affected(
+                        lightpath_id, network_state, slicing_flag=True
+                    )
+                    if not recheck_result.all_pass:
+                        logger.debug(f"Tier slice failed SNR recheck - existing LPs degraded (tier_bw={tier_bw})")
+                        network_state.release_lightpath(lightpath_id)
+                        break  # Move to smaller tier
 
                 allocated_lightpaths.append(lightpath_id)
                 slice_bandwidths.append(tier_bw)
@@ -458,35 +460,37 @@ class StandardSlicingPipeline:
                 lightpath.remaining_bandwidth_gbps -= slice_bandwidth
                 request.lightpath_ids.append(lightpath_id)
 
-                # Validate SNR if pipeline provided
-                if snr_pipeline is not None:
-                    lightpath = network_state.get_lightpath(lightpath_id)
-                    if lightpath is not None:
-                        snr_result = snr_pipeline.validate(lightpath, network_state)
-                        if not snr_result.passed:
-                            logger.debug(
-                                f"Slice {i + 1}/{num_slices} failed SNR validation"
+                # SNR RECHECK: Check if EXISTING lightpaths would be degraded by this allocation
+                # This matches legacy behavior - check existing LPs, not the new LP
+                snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
+                if snr_pipeline is not None and snr_recheck_enabled:
+                    recheck_result = snr_pipeline.recheck_affected(
+                        lightpath_id, network_state, slicing_flag=True
+                    )
+                    if not recheck_result.all_pass:
+                        logger.debug(
+                            f"Slice {i + 1}/{num_slices} failed SNR recheck - existing LPs degraded"
+                        )
+                        # Check for partial serving before rollback
+                        can_partial = getattr(self._config, "can_partially_serve", False)
+                        k_paths = getattr(self._config, "k_paths", 3)
+                        on_last_path = path_index >= k_paths - 1
+
+                        # Release the failed lightpath first
+                        network_state.release_lightpath(lightpath_id)
+
+                        if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
+                            # Accept partial service with what we have
+                            allocated_bw = len(allocated_lightpaths) * slice_bandwidth
+                            return SlicingResult.sliced(
+                                num_slices=len(allocated_lightpaths),
+                                slice_bandwidth=slice_bandwidth,
+                                lightpath_ids=allocated_lightpaths,
                             )
-                            # Check for partial serving before rollback
-                            can_partial = getattr(self._config, "can_partially_serve", False)
-                            k_paths = getattr(self._config, "k_paths", 3)
-                            on_last_path = path_index >= k_paths - 1
 
-                            # Release the failed lightpath first
-                            network_state.release_lightpath(lightpath_id)
-
-                            if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
-                                # Accept partial service with what we have
-                                allocated_bw = len(allocated_lightpaths) * slice_bandwidth
-                                return SlicingResult.sliced(
-                                    num_slices=len(allocated_lightpaths),
-                                    slice_bandwidth=slice_bandwidth,
-                                    lightpath_ids=allocated_lightpaths,
-                                )
-
-                            # Rollback all previous slices
-                            self.rollback_slices(allocated_lightpaths, network_state)
-                            return None
+                        # Rollback all previous slices
+                        self.rollback_slices(allocated_lightpaths, network_state)
+                        return None
 
                 allocated_lightpaths.append(lightpath_id)
 
