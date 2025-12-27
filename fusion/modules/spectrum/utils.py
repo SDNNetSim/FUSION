@@ -188,11 +188,6 @@ class SpectrumHelpers:
                         self.spectrum_props.is_free is not False
                         or len(self.spectrum_props.path_list) <= 2
                     ):
-                        # DEBUG: Show slot selection during slicing
-                        is_slicing = getattr(self.spectrum_props, 'slicing_flag', False)
-                        if is_slicing:
-                            req_id = getattr(self.sdn_props, 'request_id', 'unknown')
-                            print(f"[SLOT_SELECTED] req={req_id} slicing SELECTED start={self.start_index} end={self.end_index} core={self.core_number} band={self.current_band}")
                         self._update_spec_props()
                         return True
 

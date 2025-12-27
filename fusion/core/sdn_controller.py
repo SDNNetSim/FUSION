@@ -599,8 +599,6 @@ class SDNController:
         # Perform SNR recheck
         recheck_enable, violations = snr_checker.snr_recheck_after_allocation(new_lp_info)
 
-        print(f"[LEGACY] req={self.sdn_props.request_id} SNR_RECHECK lp={lightpath_id} all_pass={recheck_enable} degraded={violations}")
-
         if recheck_enable:
             return True
 
@@ -845,8 +843,6 @@ class SDNController:
         else:
             outcome_type = "ALLOCATED"
 
-        print(f"[LEGACY] req={req_id} OUTCOME={outcome_type} path_idx={path_idx} lps_created={lps_created} lps_groomed={lps_groomed} spec={spec_info}")
-
     def _handle_congestion_with_grooming(self, remaining_bw: int) -> None:
         """
         Handle allocation failure with grooming rollback.
@@ -1076,12 +1072,10 @@ class SDNController:
         # Handle slicing scenarios
         # Match v5 behavior: set force_slicing=True when segment_slicing is enabled
         if segment_slicing or force_slicing or forced_segments > 1:
-            print(f"[LEGACY] req={self.sdn_props.request_id} SLICING_PATH path_idx={path_index} segment_slicing={segment_slicing}")
             force_slicing = True
             success = self._handle_slicing_request(
                 path_list, path_index, int(forced_segments), force_slicing
             )
-            print(f"[LEGACY] req={self.sdn_props.request_id} SLICING_RESULT success={success}")
             if not success:
                 self.sdn_props.number_of_transponders = 1
                 return False
@@ -1096,10 +1090,6 @@ class SDNController:
                 mod_format_list=mod_format_list,
                 backup_mod_format_list=backup_mod_format_list,
             )
-
-            sp = self.spectrum_obj.spectrum_props
-            # Debug spectrum attempt
-            print(f"[LEGACY] req={self.sdn_props.request_id} SPECTRUM path_idx={path_index} is_free={sp.is_free} start={sp.start_slot} end={sp.end_slot} slots={sp.slots_needed} mod={sp.modulation} snr={getattr(sp, 'crosstalk_cost', None)}")
 
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
@@ -1131,11 +1121,6 @@ class SDNController:
 
             # Create lightpath entry in status dict for grooming/tracking
             self.spectrum_obj._update_lightpath_status()
-
-            # Standardized debug output
-            sp = self.spectrum_obj.spectrum_props
-            print(f"[LEGACY] req={self.sdn_props.request_id} LP_CREATED lp_id={lp_id} bw={allocate_bandwidth} lp_cap={lightpath_bandwidth}")
-            print(f"[LEGACY] req={self.sdn_props.request_id}   slots={sp.start_slot}-{sp.end_slot} mod={sp.modulation} snr={getattr(sp, 'crosstalk_cost', None)} core={sp.core_number} band={sp.current_band}")
 
         return True
 
@@ -1249,13 +1234,8 @@ class SDNController:
         self._initialize_request_statistics()
         self.sdn_props.number_of_transponders = 1
 
-        # Comprehensive debug: request arrival
-        print(f"\n[LEGACY] ========== REQUEST {self.sdn_props.request_id} ARRIVAL ==========")
-        print(f"[LEGACY] req={self.sdn_props.request_id} src={self.sdn_props.source} dst={self.sdn_props.destination} bw={self.sdn_props.bandwidth} Gbps")
-
         # Try grooming first if enabled
         if self.engine_props.get("is_grooming_enabled", False):
-            print(f"[LEGACY] req={self.sdn_props.request_id} GROOMING_CHECK enabled=True")
             # Set lightpath status dict for grooming object
             if hasattr(self.grooming_obj, "lightpath_status_dict"):
                 self.grooming_obj.lightpath_status_dict = (
@@ -1263,11 +1243,9 @@ class SDNController:
                 )
 
             groom_result = self.grooming_obj.handle_grooming(request_type)
-            print(f"[LEGACY] req={self.sdn_props.request_id} GROOM_RESULT fully={groom_result} partial={getattr(self.sdn_props, 'was_partially_groomed', False)} lps={list(self.sdn_props.lightpath_id_list)} remaining_bw={getattr(self.sdn_props, 'remaining_bw', 'N/A')}")
 
             if groom_result:
                 # Fully groomed - done!
-                print(f"[LEGACY] req={self.sdn_props.request_id} OUTCOME=FULL_GROOM lps_groomed={list(self.sdn_props.lightpath_id_list)}")
                 self._update_grooming_stats()
                 return
 
@@ -1275,7 +1253,6 @@ class SDNController:
             self.sdn_props.was_new_lp_established = []
 
             if getattr(self.sdn_props, "was_partially_groomed", False):
-                print(f"[LEGACY] req={self.sdn_props.request_id} PARTIAL_GROOM original_bw={self.sdn_props.bandwidth} remaining_bw={self.sdn_props.remaining_bw} groomed_lps={list(self.sdn_props.lightpath_id_list)} forced_path={self.sdn_props.path_list}")
                 # Force route on same path as groomed portion
                 force_route_matrix = [self.sdn_props.path_list]
 
@@ -1291,16 +1268,9 @@ class SDNController:
                     force_mod_format = list(mod_formats_dict.keys())
 
         # Setup routing
-        print(f"[LEGACY] req={self.sdn_props.request_id} ROUTING forced_path={force_route_matrix}")
         route_matrix, route_time = self._setup_routing(
             force_route_matrix, force_mod_format
         )
-        print(f"[LEGACY] req={self.sdn_props.request_id} ROUTE_RESULT num_paths={len(route_matrix)}")
-        for i, path in enumerate(route_matrix):
-            if path is not False:
-                mods = self.route_obj.route_props.modulation_formats_matrix[i] if i < len(self.route_obj.route_props.modulation_formats_matrix) else []
-                weight = self.route_obj.route_props.weights_list[i] if i < len(self.route_obj.route_props.weights_list) else 0
-                print(f"[LEGACY] req={self.sdn_props.request_id}   path[{i}]={path} mods={mods} weight_km={weight:.1f}")
 
         # Get ML prediction if available
         forced_segments = self._get_ml_prediction(ml_model, request_dict)
@@ -1460,7 +1430,6 @@ class SDNController:
                     self.sdn_props.lightpath_id_list = []
                     self.sdn_props.lightpath_bandwidth_list = []
 
-            print(f"[LEGACY] req={self.sdn_props.request_id} OUTCOME=BLOCKED reason={self.sdn_props.block_reason} groomed_lps={list(self.sdn_props.lightpath_id_list or [])}")
             return
 
     # Backward compatibility methods for tests

@@ -125,21 +125,14 @@ class SDNOrchestrator:
         # Legacy adds SNR to snr_list before SNR recheck; if recheck fails, value stays
         self._failed_attempt_snr_list = []  # type: list[float]
 
-        # Comprehensive debug: request arrival
-        print(f"\n[V5] ========== REQUEST {request.request_id} ARRIVAL ==========")
-        print(f"[V5] req={request.request_id} src={request.source} dst={request.destination} bw={request.bandwidth_gbps} Gbps")
-
         # Stage 1: Grooming (if enabled)
         if self.grooming and self.config.grooming_enabled:
-            print(f"[V5] req={request.request_id} GROOMING_CHECK enabled=True")
             groom_result = self.grooming.try_groom(request, network_state)
-            print(f"[V5] req={request.request_id} GROOM_RESULT fully={groom_result.fully_groomed} partial={groom_result.partially_groomed} lps={list(groom_result.lightpaths_used)} remaining_bw={groom_result.remaining_bandwidth_gbps}")
 
             if groom_result.fully_groomed:
                 request.status = RequestStatus.GROOMED
                 # CRITICAL: Add groomed lightpath IDs to request so release can return bandwidth
                 request.lightpath_ids.extend(groom_result.lightpaths_used)
-                print(f"[V5] req={request.request_id} OUTCOME=FULL_GROOM lps_groomed={list(groom_result.lightpaths_used)}")
                 return AllocationResult(
                     success=True,
                     is_groomed=True,
@@ -154,7 +147,6 @@ class SDNOrchestrator:
                 was_partially_groomed = True
                 if groom_result.forced_path:
                     forced_path = list(groom_result.forced_path)
-                print(f"[V5] req={request.request_id} PARTIAL_GROOM original_bw={request.bandwidth_gbps} remaining_bw={remaining_bw} groomed_lps={groomed_lightpaths} forced_path={forced_path}")
 
         # LP capacity is determined by spectrum assignment (modulation-based capacity)
         # NOT by original request bandwidth. For slicing, spectrum/slicing code sets
@@ -162,7 +154,6 @@ class SDNOrchestrator:
         lp_capacity_override = None
 
         # Stage 2: Routing
-        print(f"[V5] req={request.request_id} ROUTING remaining_bw={remaining_bw} forced_path={forced_path}")
         route_result = self.routing.find_routes(
             request.source,
             request.destination,
@@ -170,12 +161,8 @@ class SDNOrchestrator:
             network_state,
             forced_path=forced_path,
         )
-        print(f"[V5] req={request.request_id} ROUTE_RESULT num_paths={len(route_result.paths)} is_empty={route_result.is_empty}")
-        for i, path in enumerate(route_result.paths):
-            print(f"[V5] req={request.request_id}   path[{i}]={list(path)} mods={route_result.modulations[i]} weight_km={route_result.weights_km[i]:.1f}")
 
         if route_result.is_empty:
-            print(f"[V5] req={request.request_id} BLOCKED reason=NO_PATH")
             return self._handle_failure(
                 request, groomed_lightpaths, BlockReason.NO_PATH, network_state
             )
@@ -183,16 +170,13 @@ class SDNOrchestrator:
         # For partial grooming, LEGACY uses original request bandwidth for spectrum allocation
         # (not remaining_bw). This affects slots_needed calculation and SNR checks.
         spectrum_bw = request.bandwidth_gbps if was_partially_groomed else remaining_bw
-        print(f"[V5] req={request.request_id} SPECTRUM_BW spectrum_bw={spectrum_bw} (partial_groom={was_partially_groomed})")
 
         # Stage 3: Try standard allocation on ALL paths first (no slicing)
         # This applies to ALL modes including dynamic_lps - legacy tries standard first
         # and only falls back to dynamic slicing if standard fails on ALL paths
-        print(f"[V5] req={request.request_id} STAGE3_STANDARD_ALLOC num_paths={len(route_result.paths)}")
         for path_idx, path in enumerate(route_result.paths):
             modulations = route_result.modulations[path_idx]
             weight_km = route_result.weights_km[path_idx]
-            print(f"[V5] req={request.request_id} STAGE3 trying path_idx={path_idx} path={list(path)[:3]}... mods={modulations}")
 
             # For partial grooming, actual_bw_to_allocate = remaining_bw (what we need to serve)
             # but spectrum_bw = original request (for spectrum calculation)
@@ -205,7 +189,6 @@ class SDNOrchestrator:
                 lp_capacity_override=lp_capacity_override,
                 actual_bw_to_allocate=actual_bw_to_allocate,
             )
-            print(f"[V5] req={request.request_id} STAGE3 path_idx={path_idx} result={'SUCCESS' if result else 'FAIL'}")
             if result is not None:
                 groomed_bw = request.bandwidth_gbps - remaining_bw
                 return self._combine_results(
@@ -216,12 +199,10 @@ class SDNOrchestrator:
         # Stage 4: Try dynamic_lps slicing on ALL paths
         # Note: This uses use_dynamic_slicing=True which behaves differently from
         # legacy's handle_dynamic_slicing_direct, but achieves similar blocking rates.
-        print(f"[V5] req={request.request_id} STAGE4_DYNAMIC_SLICING dynamic_lps={self.config.dynamic_lps} slicing_enabled={self.config.slicing_enabled} fixed_grid={self.config.fixed_grid}")
         if self.config.dynamic_lps:
             for path_idx, path in enumerate(route_result.paths):
                 modulations = route_result.modulations[path_idx]
                 weight_km = route_result.weights_km[path_idx]
-                print(f"[V5] req={request.request_id} STAGE4 trying path_idx={path_idx} path={list(path)[:3]}...")
 
                 # For dynamic slicing, use remaining_bw for the slicing loop iteration
                 # (how much bandwidth to actually serve), but spectrum_bw for spectrum
@@ -242,8 +223,6 @@ class SDNOrchestrator:
                     slicing_target_bw=slicing_target_bw,  # Actual bandwidth to serve via slicing
                     actual_bw_to_allocate=actual_bw_to_allocate,  # For stats tracking
                 )
-                lps = list(result.lightpaths_created) if result else []
-                print(f"[V5] req={request.request_id} STAGE4 path_idx={path_idx} result={'SUCCESS' if result else 'FAIL'} lps={lps}")
                 if result is not None:
                     groomed_bw = request.bandwidth_gbps - remaining_bw
                     return self._combine_results(
@@ -252,12 +231,10 @@ class SDNOrchestrator:
                     )
 
         # Stage 5: Try segment slicing pipeline on ALL paths (only if standard allocation failed)
-        print(f"[V5] req={request.request_id} STAGE5_SEGMENT_SLICING slicing_enabled={self.config.slicing_enabled}")
         if self.slicing and self.config.slicing_enabled:
             for path_idx, path in enumerate(route_result.paths):
                 modulations = route_result.modulations[path_idx]
                 weight_km = route_result.weights_km[path_idx]
-                print(f"[V5] req={request.request_id} STAGE5 trying path_idx={path_idx} path={list(path)[:3]}...")
 
                 # For partial grooming, actual_bw_to_allocate = remaining_bw
                 actual_bw_to_allocate = remaining_bw if was_partially_groomed else spectrum_bw
@@ -270,8 +247,6 @@ class SDNOrchestrator:
                     lp_capacity_override=lp_capacity_override,
                     actual_bw_to_allocate=actual_bw_to_allocate,
                 )
-                lps = list(result.lightpaths_created) if result else []
-                print(f"[V5] req={request.request_id} STAGE5 path_idx={path_idx} result={'SUCCESS' if result else 'FAIL'} lps={lps}")
                 if result is not None:
                     groomed_bw = request.bandwidth_gbps - remaining_bw
                     return self._combine_results(
@@ -280,7 +255,6 @@ class SDNOrchestrator:
                     )
 
         # Stage 6: All paths failed
-        print(f"[V5] req={request.request_id} STAGE6_ALL_PATHS_FAILED groomed_lps={groomed_lightpaths}")
         return self._handle_failure(
             request, groomed_lightpaths, BlockReason.CONGESTION, network_state
         )
@@ -496,9 +470,6 @@ class SDNOrchestrator:
                     snr_bandwidth=snr_bandwidth,
                 )
 
-                # Debug spectrum attempt
-                print(f"[V5] req={request.request_id} SPECTRUM path_idx={path_index} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} slots={spectrum_result.slots_needed} mod={spectrum_result.modulation} snr={spectrum_result.snr_db}")
-
                 if spectrum_result.is_free:
                     # Handle dynamic_lps mode: achieved_bandwidth may be < requested
                     achieved_bw = spectrum_result.achieved_bandwidth_gbps
@@ -549,7 +520,6 @@ class SDNOrchestrator:
             first_valid_mod = next((m for m in modulations if m and m is not False), "")
             # Use actual_bw_to_allocate for slicing (defaults to bandwidth_gbps)
             bw_for_slicing = actual_bw_to_allocate if actual_bw_to_allocate is not None else bandwidth_gbps
-            print(f"[V5] req={request.request_id} SLICING_ATTEMPT bw={bw_for_slicing} path_idx={path_index}")
             slicing_result = self.slicing.try_slice(
                 request,
                 list(path),
@@ -561,8 +531,6 @@ class SDNOrchestrator:
                 connection_index=connection_index,
                 path_index=path_index,
             )
-            lps = list(slicing_result.lightpaths_created) if slicing_result.success else []
-            print(f"[V5] req={request.request_id} SLICING_RESULT success={slicing_result.success} lps={lps}")
             # Convert SlicingResult to AllocationResult
             if slicing_result.success:
                 from fusion.domain.results import AllocationResult
@@ -626,10 +594,6 @@ class SDNOrchestrator:
         # which matches legacy behavior
         if spectrum_result.snr_db is not None:
             lightpath.snr_db = spectrum_result.snr_db
-        else:
-            # DEBUG: Track when SNR is None for 16-QAM
-            if spectrum_result.modulation == "16-QAM":
-                print(f"[V5_ORCH_SNR_NONE] req={request.request_id} mod={spectrum_result.modulation} spec_snr_db=None lp={lightpath.lightpath_id}")
 
         # SNR recheck: check if existing lightpaths would be degraded by new allocation
         # NOTE: We do NOT re-validate the new lightpath's SNR here because:
@@ -640,7 +604,6 @@ class SDNOrchestrator:
             recheck_result = self.snr.recheck_affected(
                 lightpath.lightpath_id, network_state, slicing_flag=slicing_flag
             )
-            print(f"[V5] req={request.request_id} SNR_RECHECK lp={lightpath.lightpath_id} all_pass={recheck_result.all_pass} degraded={recheck_result.degraded_lightpath_ids}")
             if not recheck_result.all_pass:
                 # Rollback: existing LP would fail SNR
                 logger.debug(
@@ -660,10 +623,6 @@ class SDNOrchestrator:
             request.request_id, bandwidth_gbps, timestamp=request.arrive_time
         )
         request.lightpath_ids.append(lightpath.lightpath_id)
-
-        # Standardized debug output
-        print(f"[V5] req={request.request_id} LP_CREATED lp_id={lightpath.lightpath_id} bw={bandwidth_gbps} lp_cap={lp_capacity}")
-        print(f"[V5] req={request.request_id}   slots={spectrum_result.start_slot}-{spectrum_result.end_slot} mod={spectrum_result.modulation} snr={spectrum_result.snr_db} core={spectrum_result.core} band={spectrum_result.band}")
 
         return AllocationResult(
             success=True,
@@ -719,10 +678,6 @@ class SDNOrchestrator:
             # Get actual slice bandwidth (use achieved_bw if available, else slice_bw)
             actual_slice_bw = spectrum_result.achieved_bandwidth_gbps or slice_bw
 
-            # DEBUG: Show bandwidth values for req 40
-            if request.request_id == 40:
-                print(f"[V5_DYN_SLICE] req=40 iter={iteration} remaining_bw={remaining_bw} actual_slice_bw={actual_slice_bw} achieved_bw={spectrum_result.achieved_bandwidth_gbps} slice_bw={slice_bw}")
-
             # Create lightpath for this slice
             lightpath = network_state.create_lightpath(
                 path=path,
@@ -742,10 +697,6 @@ class SDNOrchestrator:
             # This is the SNR calculated during spectrum assignment (before lightpath creation)
             if spectrum_result.snr_db is not None:
                 lightpath.snr_db = spectrum_result.snr_db
-            else:
-                # DEBUG: Track when SNR is None for 16-QAM
-                if spectrum_result.modulation == "16-QAM":
-                    print(f"[V5_ORCH_DYN_SNR_NONE] req={request.request_id} mod={spectrum_result.modulation} spec_snr_db=None lp={lightpath.lightpath_id}")
 
             # SNR recheck for affected existing lightpaths (legacy behavior)
             # NOTE: Legacy does NOT re-validate the new LP's SNR here - only checks existing LPs
@@ -844,7 +795,6 @@ class SDNOrchestrator:
         request.status = RequestStatus.BLOCKED
         request.block_reason = reason
 
-        print(f"[V5] req={request.request_id} OUTCOME=BLOCKED reason={reason} groomed_lps={groomed_lightpaths}")
         return AllocationResult(success=False, block_reason=reason)
 
     def _sum_groomed_bandwidth(
@@ -883,30 +833,6 @@ class SDNOrchestrator:
 
         # Total bandwidth = groomed + newly allocated
         total_bw = groomed_bandwidth_gbps + alloc_result.total_bandwidth_allocated_gbps
-
-        # Build LP details for debug
-        lp_details = []
-        for lp_id in alloc_result.lightpaths_created:
-            lp = network_state.get_lightpath(lp_id) if hasattr(self, '_last_network_state') else None
-            if lp:
-                lp_details.append(f"{lp_id}:{lp.start_slot}-{lp.end_slot}/{lp.modulation}")
-            else:
-                lp_details.append(str(lp_id))
-
-        # Determine outcome type
-        if len(groomed_lightpaths) > 0 and len(alloc_result.lightpaths_created) > 0:
-            outcome = "PARTIAL_GROOM+ALLOC"
-        elif len(groomed_lightpaths) > 0:
-            outcome = "GROOMED"
-        elif alloc_result.is_sliced:
-            outcome = "SLICED"
-        else:
-            outcome = "ALLOCATED"
-
-        spec = alloc_result.spectrum_result
-        spec_info = f"{spec.start_slot}-{spec.end_slot}/{spec.modulation}" if spec else "N/A"
-
-        print(f"[V5] req={request.request_id} OUTCOME={outcome} path_idx={path_index} lps_created={list(alloc_result.lightpaths_created)} lps_groomed={groomed_lightpaths} spec={spec_info}")
 
         # Include failed attempt SNR values for Legacy compatibility
         failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()

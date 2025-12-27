@@ -173,17 +173,6 @@ class GroomingAdapter(GroomingPipeline):
                 arrive_time=request.arrive_time,
             )
 
-            # Debug: show ALL lightpaths in network state
-            if request.request_id == 45:
-                src, dst = str(request.source), str(request.destination)
-                lp_status = network_state.lightpath_status_dict
-                print(f"[V5_GROOM_DBG] req=45 src={src} dst={dst} total_lp_groups={len(lp_status)}")
-                for sd_key, lps in lp_status.items():
-                    for lp_id, lp_info in lps.items():
-                        remaining = lp_info.get('remaining_bandwidth', 'N/A')
-                        path = lp_info.get('path', 'N/A')
-                        print(f"[V5_GROOM_DBG] req=45 LP {lp_id}: key={sd_key} path={path} remaining={remaining}")
-
             # Make engine_props copy
             engine_props = dict(self._engine_props)
             engine_props["topology"] = network_state.topology
@@ -215,9 +204,6 @@ class GroomingAdapter(GroomingPipeline):
             )
 
         except Exception as e:
-            import traceback
-            print(f"[GROOM-ERROR] req={request.request_id} exception: {e}")
-            traceback.print_exc()
             logger.warning("GroomingAdapter.try_groom failed: %s", e)
             return GroomingResult.no_grooming(request.bandwidth_gbps)
 
@@ -304,10 +290,6 @@ class GroomingAdapter(GroomingPipeline):
                 remaining = int(remaining) if remaining else 0
 
             bandwidth_groomed = original_bandwidth - remaining
-
-            # DEBUG: Show partial groom calculation for req 40
-            if sdn_props.request_id == 40:
-                print(f"[V5_GROOM_RESULT] req=40 original_bw={original_bandwidth} sdn_props.remaining_bw={sdn_props.remaining_bw} remaining={remaining} bandwidth_groomed={bandwidth_groomed}")
 
             forced_path = None
             if sdn_props.path_list:

@@ -388,12 +388,6 @@ class SimStats:
                 elif stat_key == "modulation_list":
                     bandwidth = sdn_data.lightpath_bandwidth_list[i]  # Use lightpath bandwidth
                     band = sdn_data.band_list[i]
-                    # DEBUG: Track specific LP for comparison with V5
-                    if i < len(sdn_data.lightpath_id_list):
-                        lp_id_debug = sdn_data.lightpath_id_list[i]
-                        snr_val_debug = sdn_data.snr_list[i] if i < len(sdn_data.snr_list) else None
-                        if lp_id_debug == 126 and data == "16-QAM":
-                            print(f"[LEGACY_LP126_DEBUG] req={sdn_data.request_id} lp={lp_id_debug} mod={data} snr={snr_val_debug} bw={bandwidth}")
                     # Ensure the nested dict structure exists - convert float to int to match dict keys
                     bandwidth_key = str(int(float(bandwidth))) if bandwidth is not None else None
                     mod_dict = self.stats_props.modulations_used_dict
@@ -526,11 +520,6 @@ class SimStats:
                                 else:
                                     # Track snr
                                     snr_val = sdn_data.snr_list[i]
-                                    # DEBUG: Track 16-QAM and 32-QAM SNR values for comparison with V5
-                                    lp_bw = sdn_data.lightpath_bandwidth_list[i] if i < len(sdn_data.lightpath_bandwidth_list) else None
-                                    lp_id = sdn_data.lightpath_id_list[i] if i < len(sdn_data.lightpath_id_list) else None
-                                    if data in ("16-QAM", "32-QAM"):
-                                        print(f"[LEGACY_SNR] req={sdn_data.request_id} lp={lp_id} mod={data} snr={snr_val:.4f} band={band} bw={lp_bw}")
                                     snr_dict = data_mod_dict.get("snr")
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
@@ -652,6 +641,7 @@ class SimStats:
                 if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(
                     self.stats_props.path_index_list
                 ):
+                    print('Path Index Update (Iter):', sdn_data.path_index)
                     self.stats_props.path_index_list[sdn_data.path_index] += 1
 
             # Track weights for NEW lightpaths only when grooming is enabled
@@ -1572,6 +1562,7 @@ class SimStats:
             else:
                 self.stats_props.block_reasons_dict[reason_key] = current + 1
 
+    # TODO: Was rollback is not used
     def _record_successful_allocation_new(
         self,
         request: Any,  # fusion.domain.request.Request
@@ -1637,6 +1628,7 @@ class SimStats:
         # Only count when NEW lightpaths are created (matches legacy behavior with modulation_list check)
         path_idx = getattr(result, 'path_index', 0)
         if result.lightpaths_created and 0 <= path_idx < len(self.stats_props.path_index_list):
+            print('Path Index Update (Successful Alloc):', path_idx)
             self.stats_props.path_index_list[path_idx] += 1
 
         # Track demand realization ratio for partial grooming (matches legacy behavior)
@@ -1691,11 +1683,6 @@ class SimStats:
                 if failed_snr and lp_idx < len(failed_snr):
                     # Use failed attempt SNR (matches Legacy's buggy index behavior)
                     snr_for_tracking = failed_snr[lp_idx]
-
-                # DEBUG: Track SNR for specific LP IDs to compare with Legacy
-                if lp_id == 126 and modulation == "16-QAM":
-                    req_id = getattr(request, 'request_id', None)
-                    print(f"[V5_LP126_DEBUG] req={req_id} lp={lp_id} mod={modulation} snr_db={snr_db} snr_for_tracking={snr_for_tracking} failed_snr={failed_snr} bw={lp_bandwidth}")
 
                 # Calculate path weight for this lightpath
                 path_weight = None
@@ -2069,9 +2056,6 @@ class SimStats:
 
             # Track SNR or XT cost
             if snr_value is not None:
-                # DEBUG: Track 16-QAM and 32-QAM SNR values for comparison with Legacy
-                if modulation in ("16-QAM", "32-QAM"):
-                    print(f"[V5_SNR] mod={modulation} snr={snr_value:.4f} band={band} bw={bandwidth_gbps}")
                 snr_type = self.engine_props.get("snr_type")
                 if snr_type == "xt_calculation":
                     xt_dict = data_mod_dict.get("xt_cost")

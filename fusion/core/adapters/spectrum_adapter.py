@@ -230,14 +230,6 @@ class SpectrumAdapter(SpectrumPipeline):
                 link = (path[0], path[1])
                 if link in network_state.network_spectrum_dict:
                     cores_matrix = network_state.network_spectrum_dict[link]["cores_matrix"]
-                    for bnd, bnd_cores in cores_matrix.items():
-                        if len(bnd_cores) > 0:
-                            slots_preview = list(bnd_cores[0][:10])
-                            occupied = [i for i, v in enumerate(slots_preview) if v != 0]
-                            if occupied:
-                                print(f"[V5_ADAPTER_SPECTRUM] dynamic_slice link={link} band={bnd} core=0 slots[0:10]={slots_preview} occupied={occupied}")
-                            break  # Just show first band
-
             # Choose method based on whether we're in slicing mode
             # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
             if use_dynamic_slicing and self._config.dynamic_lps:

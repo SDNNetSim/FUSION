@@ -191,8 +191,6 @@ class StandardSlicingPipeline:
         allocated_lightpaths: list[int] = []
         slice_bandwidths: list[int] = []  # Track bandwidth of each slice
 
-        print(f"[V5] req={request.request_id} TIER_SLICING_START bw={bandwidth_gbps} tiers={sorted_tiers}")
-
         for tier_bw in sorted_tiers:
             # Skip tiers >= original request bandwidth (matches Legacy)
             if tier_bw >= bandwidth_gbps:
@@ -207,13 +205,10 @@ class StandardSlicingPipeline:
             if not tier_modulations:
                 continue
 
-            print(f"[V5] req={request.request_id} TRYING_TIER bw={tier_bw} remaining={remaining_bw} mods={tier_modulations}")
-
             # Try to allocate as many slices of this tier as possible
             while remaining_bw >= tier_bw:
                 # Check max slices limit
                 if len(allocated_lightpaths) >= max_slices:
-                    print(f"[V5] req={request.request_id} MAX_SLICES_REACHED count={len(allocated_lightpaths)}")
                     break
 
                 # Find spectrum for this slice
@@ -226,10 +221,7 @@ class StandardSlicingPipeline:
                     path_index=path_index,
                 )
 
-                print(f"[V5] req={request.request_id} TIER_ATTEMPT tier_bw={tier_bw} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={spectrum_result.modulation}")
-
                 if not spectrum_result.is_free:
-                    print(f"[V5] req={request.request_id} TIER_NO_SPECTRUM tier_bw={tier_bw} moving_to_smaller")
                     break  # Move to smaller tier
 
                 # Create lightpath for this slice
@@ -266,13 +258,11 @@ class StandardSlicingPipeline:
                         if not snr_result.passed:
                             logger.debug(f"Tier slice failed SNR validation (tier_bw={tier_bw})")
                             network_state.release_lightpath(lightpath_id)
-                            print(f"[V5] req={request.request_id} TIER_SNR_FAIL tier_bw={tier_bw} moving_to_smaller")
                             break  # Move to smaller tier
 
                 allocated_lightpaths.append(lightpath_id)
                 slice_bandwidths.append(tier_bw)
                 remaining_bw -= tier_bw
-                print(f"[V5] req={request.request_id} TIER_SLICE_CREATED lp_id={lightpath_id} tier_bw={tier_bw} remaining={remaining_bw}")
 
             # Stop if fully allocated
             if remaining_bw <= 0:
@@ -280,13 +270,11 @@ class StandardSlicingPipeline:
 
         # Check if we allocated anything
         if not allocated_lightpaths:
-            print(f"[V5] req={request.request_id} TIER_SLICING_FAIL no_slices_allocated")
             return None
 
         # Check if fully allocated
         if remaining_bw <= 0:
             total_bw = sum(slice_bandwidths)
-            print(f"[V5] req={request.request_id} TIER_SLICING_SUCCESS slices={len(allocated_lightpaths)} total_bw={total_bw} lps={allocated_lightpaths}")
             # Create SlicingResult directly to handle mixed tier sizes correctly
             # The factory method SlicingResult.sliced() assumes equal slice sizes
             return SlicingResult(
@@ -304,7 +292,6 @@ class StandardSlicingPipeline:
 
         if can_partial and on_last_path:
             allocated_bw = sum(slice_bandwidths)
-            print(f"[V5] req={request.request_id} TIER_PARTIAL_SERVE slices={len(allocated_lightpaths)} bw={allocated_bw} remaining={remaining_bw}")
             # Create SlicingResult directly for mixed tier sizes
             return SlicingResult(
                 success=True,
@@ -315,7 +302,6 @@ class StandardSlicingPipeline:
             )
 
         # Cannot accept partial - rollback all
-        print(f"[V5] req={request.request_id} TIER_SLICING_ROLLBACK slices={len(allocated_lightpaths)} remaining={remaining_bw}")
         self.rollback_slices(allocated_lightpaths, network_state)
         return None
 
@@ -409,7 +395,6 @@ class StandardSlicingPipeline:
         # a higher-order modulation (16-QAM) than a 100 Gbps request (QPSK).
         # Return ALL valid modulations so find_spectrum can try each one.
         slice_modulations = self._get_modulation_for_slice(slice_bandwidth, path, network_state)
-        print(f"[V5] req={request.request_id} SLICING_START num_slices={num_slices} slice_bw={slice_bandwidth} slice_mods={slice_modulations or 'NONE'}")
         if not slice_modulations:
             logger.debug(f"No valid modulation for slice bandwidth {slice_bandwidth}")
             return None
@@ -425,10 +410,7 @@ class StandardSlicingPipeline:
                     connection_index=connection_index,
                     path_index=path_index,
                 )
-                print(f"[V5] req={request.request_id} SLICE_ATTEMPT slice={i+1}/{num_slices} is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={spectrum_result.modulation}")
-
                 if not spectrum_result.is_free:
-                    print(f"[V5] req={request.request_id} SLICE_FAIL slice={i+1}/{num_slices} no_spectrum slice_bw={slice_bandwidth}")
 
                     # Check for partial serving (Legacy behavior)
                     # If can_partially_serve is enabled, some slices allocated, and on last path, accept partial
@@ -439,7 +421,6 @@ class StandardSlicingPipeline:
                     if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
                         # Accept partial service - don't rollback, return what we allocated
                         allocated_bw = len(allocated_lightpaths) * slice_bandwidth
-                        print(f"[V5] req={request.request_id} PARTIAL_SERVE accepted allocated_slices={len(allocated_lightpaths)} bw={allocated_bw}")
                         return SlicingResult.sliced(
                             num_slices=len(allocated_lightpaths),
                             slice_bandwidth=slice_bandwidth,
@@ -497,7 +478,6 @@ class StandardSlicingPipeline:
                             if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
                                 # Accept partial service with what we have
                                 allocated_bw = len(allocated_lightpaths) * slice_bandwidth
-                                print(f"[V5] req={request.request_id} PARTIAL_SERVE (SNR) accepted allocated_slices={len(allocated_lightpaths)} bw={allocated_bw}")
                                 return SlicingResult.sliced(
                                     num_slices=len(allocated_lightpaths),
                                     slice_bandwidth=slice_bandwidth,
@@ -509,10 +489,8 @@ class StandardSlicingPipeline:
                             return None
 
                 allocated_lightpaths.append(lightpath_id)
-                print(f"[V5] req={request.request_id} SLICE_CREATED slice={i+1}/{num_slices} lp_id={lightpath_id} bw={slice_bandwidth}")
 
             # All slices allocated successfully
-            print(f"[V5] req={request.request_id} SLICING_SUCCESS num_slices={num_slices} slice_bw={slice_bandwidth} lps={allocated_lightpaths}")
             return SlicingResult.sliced(
                 num_slices=num_slices,
                 slice_bandwidth=slice_bandwidth,
