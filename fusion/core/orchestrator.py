@@ -199,8 +199,15 @@ class SDNOrchestrator:
         # Stage 4: Try dynamic_lps slicing on ALL paths
         # Note: This uses use_dynamic_slicing=True which behaves differently from
         # legacy's handle_dynamic_slicing_direct, but achieves similar blocking rates.
+        # Legacy behavior: when slicing fails on a path, _handle_congestion pops
+        # SNR entries for rolled-back lightpaths. We replicate this by reverting
+        # _failed_attempt_snr_list to its state before each failed path attempt.
         if self.config.dynamic_lps:
             for path_idx, path in enumerate(route_result.paths):
+                # Record SNR count BEFORE this path's slicing attempt
+                # If slicing fails, we'll revert to this count (Legacy behavior)
+                snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
+
                 modulations = route_result.modulations[path_idx]
                 weight_km = route_result.weights_km[path_idx]
 
@@ -229,10 +236,23 @@ class SDNOrchestrator:
                         request, groomed_lightpaths, result, route_result,
                         path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
+                else:
+                    # Slicing failed on this path - revert SNR entries to before this path
+                    # Legacy behavior: _handle_congestion calls snr_list.pop() for each
+                    # rolled-back lightpath, removing all entries added during this path
+                    if hasattr(self, '_failed_attempt_snr_list'):
+                        self._failed_attempt_snr_list = self._failed_attempt_snr_list[:snr_count_before_path]
 
         # Stage 5: Try segment slicing pipeline on ALL paths (only if standard allocation failed)
+        # Legacy behavior: when slicing fails on a path, _handle_congestion pops
+        # SNR entries for rolled-back lightpaths. We replicate this by reverting
+        # _failed_attempt_snr_list to its state before each failed path attempt.
         if self.slicing and self.config.slicing_enabled:
             for path_idx, path in enumerate(route_result.paths):
+                # Record SNR count BEFORE this path's slicing attempt
+                # If slicing fails, we'll revert to this count (Legacy behavior)
+                snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
+
                 modulations = route_result.modulations[path_idx]
                 weight_km = route_result.weights_km[path_idx]
 
@@ -253,6 +273,12 @@ class SDNOrchestrator:
                         request, groomed_lightpaths, result, route_result,
                         path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
+                else:
+                    # Slicing failed on this path - revert SNR entries to before this path
+                    # Legacy behavior: _handle_congestion calls snr_list.pop() for each
+                    # rolled-back lightpath, removing all entries added during this path
+                    if hasattr(self, '_failed_attempt_snr_list'):
+                        self._failed_attempt_snr_list = self._failed_attempt_snr_list[:snr_count_before_path]
 
         # Stage 6: All paths failed
         return self._handle_failure(
@@ -271,6 +297,9 @@ class SDNOrchestrator:
         """
         from fusion.domain.request import BlockReason, RequestStatus
         from fusion.domain.results import AllocationResult
+
+        # Reset SNR tracking for this request (Legacy compatibility)
+        self._failed_attempt_snr_list = []
 
         # Stage 1: Find working path
         working_routes = self.routing.find_routes(
@@ -530,16 +559,21 @@ class SDNOrchestrator:
                 snr_pipeline=self.snr,
                 connection_index=connection_index,
                 path_index=path_index,
+                snr_accumulator=self._failed_attempt_snr_list,  # Accumulate SNR across try_slice calls
             )
             # Convert SlicingResult to AllocationResult
             if slicing_result.success:
                 from fusion.domain.results import AllocationResult
+                # With accumulator, slicing appends directly to _failed_attempt_snr_list
+                # so we use the accumulator values (not slicing_result.failed_attempt_snr_values)
+                accumulated_snr = tuple(self._failed_attempt_snr_list)
 
                 return AllocationResult(
                     success=True,
                     lightpaths_created=slicing_result.lightpaths_created,
                     is_sliced=slicing_result.is_sliced,
                     total_bandwidth_allocated_gbps=slicing_result.total_bandwidth_gbps,
+                    failed_attempt_snr_values=accumulated_snr,
                 )
 
         return None
@@ -614,6 +648,7 @@ class SDNOrchestrator:
                 # Legacy adds to snr_list before SNR recheck; value stays even on failure
                 if spectrum_result.snr_db is not None and hasattr(self, '_failed_attempt_snr_list'):
                     self._failed_attempt_snr_list.append(spectrum_result.snr_db)
+                    print(f"[V5-ADD] req={request.request_id} snr={spectrum_result.snr_db:.2f} reason=recheck_fail mod={spectrum_result.modulation} total={len(self._failed_attempt_snr_list)}")
                 network_state.release_lightpath(lightpath.lightpath_id)
                 return None
 
@@ -624,11 +659,21 @@ class SDNOrchestrator:
         )
         request.lightpath_ids.append(lightpath.lightpath_id)
 
+        # Track the successful attempt's SNR for Legacy compatibility
+        # Legacy adds SNR to snr_list for ALL allocations (not just failed ones)
+        if spectrum_result.snr_db is not None and hasattr(self, '_failed_attempt_snr_list'):
+            self._failed_attempt_snr_list.append(spectrum_result.snr_db)
+            print(f"[V5-ADD] req={request.request_id} snr={spectrum_result.snr_db:.2f} reason=success mod={spectrum_result.modulation} total={len(self._failed_attempt_snr_list)}")
+
+        # Include accumulated SNR values in result for stats tracking
+        failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
+
         return AllocationResult(
             success=True,
             lightpaths_created=(lightpath.lightpath_id,),
             total_bandwidth_allocated_gbps=bandwidth_gbps,
             spectrum_result=spectrum_result,
+            failed_attempt_snr_values=failed_snr,
         )
 
     def _allocate_dynamic_slices(
@@ -697,6 +742,10 @@ class SDNOrchestrator:
             # This is the SNR calculated during spectrum assignment (before lightpath creation)
             if spectrum_result.snr_db is not None:
                 lightpath.snr_db = spectrum_result.snr_db
+                # Track SNR for Legacy compatibility (add before recheck, like legacy does)
+                if hasattr(self, '_failed_attempt_snr_list'):
+                    self._failed_attempt_snr_list.append(spectrum_result.snr_db)
+                    print(f"[V5-ADD] req={request.request_id} snr={spectrum_result.snr_db:.2f} reason=dyn_slice mod={spectrum_result.modulation} total={len(self._failed_attempt_snr_list)}")
 
             # SNR recheck for affected existing lightpaths (legacy behavior)
             # NOTE: Legacy does NOT re-validate the new LP's SNR here - only checks existing LPs
@@ -741,12 +790,15 @@ class SDNOrchestrator:
                 )
 
         if total_allocated > 0:
+            # Include accumulated SNR values for Legacy compatibility
+            failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
             return AllocationResult(
                 success=True,
                 lightpaths_created=tuple(allocated_lightpaths),
                 is_sliced=len(allocated_lightpaths) > 1,
                 total_bandwidth_allocated_gbps=total_allocated,
                 spectrum_result=first_spectrum_result,
+                failed_attempt_snr_values=failed_snr,
             )
 
         # Complete failure - rollback any allocated lightpaths
@@ -835,6 +887,8 @@ class SDNOrchestrator:
         total_bw = groomed_bandwidth_gbps + alloc_result.total_bandwidth_allocated_gbps
 
         # Include failed attempt SNR values for Legacy compatibility
+        # With snr_accumulator, slicing appends directly to _failed_attempt_snr_list
+        # so we just use the orchestrator's list (which has all values)
         failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
 
         return AllocationResult(
