@@ -237,20 +237,24 @@ class SDNOrchestrator:
                         path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
                 else:
-                    # Slicing failed on this path - revert SNR entries to before this path
-                    # Legacy behavior: _handle_congestion calls snr_list.pop() for each
-                    # rolled-back lightpath, removing all entries added during this path
-                    if hasattr(self, '_failed_attempt_snr_list'):
-                        self._failed_attempt_snr_list = self._failed_attempt_snr_list[:snr_count_before_path]
+                    # Slicing failed on this path - simulate Legacy's pop(lp_idx) behavior
+                    # Legacy's _handle_congestion pops snr_list[lp_idx] for each rolled-back LP.
+                    # Since lightpath_id_list doesn't have Stage 3 entries (they were popped on
+                    # SNR recheck fail), lp_idx=0 removes the FIRST snr_list entry, which is
+                    # Stage 3's SNR. This causes Stage 3 entries to be removed before slicing
+                    # entries. We replicate by removing N entries from the START of the list,
+                    # where N = number of entries added during this path's attempt.
+                    entries_added = len(self._failed_attempt_snr_list) - snr_count_before_path
+                    if entries_added > 0 and hasattr(self, '_failed_attempt_snr_list'):
+                        self._failed_attempt_snr_list = self._failed_attempt_snr_list[entries_added:]
 
         # Stage 5: Try segment slicing pipeline on ALL paths (only if standard allocation failed)
         # Legacy behavior: when slicing fails on a path, _handle_congestion pops
-        # SNR entries for rolled-back lightpaths. We replicate this by reverting
-        # _failed_attempt_snr_list to its state before each failed path attempt.
+        # snr_list[lp_idx] for each rolled-back LP. We replicate by removing entries
+        # from the START of the list (matching Legacy's pop(0) behavior).
         if self.slicing and self.config.slicing_enabled:
             for path_idx, path in enumerate(route_result.paths):
                 # Record SNR count BEFORE this path's slicing attempt
-                # If slicing fails, we'll revert to this count (Legacy behavior)
                 snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
 
                 modulations = route_result.modulations[path_idx]
@@ -274,11 +278,11 @@ class SDNOrchestrator:
                         path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
                 else:
-                    # Slicing failed on this path - revert SNR entries to before this path
-                    # Legacy behavior: _handle_congestion calls snr_list.pop() for each
-                    # rolled-back lightpath, removing all entries added during this path
-                    if hasattr(self, '_failed_attempt_snr_list'):
-                        self._failed_attempt_snr_list = self._failed_attempt_snr_list[:snr_count_before_path]
+                    # Slicing failed on this path - simulate Legacy's pop(lp_idx) behavior
+                    # Remove N entries from the START of the list (Stage 3 entries first)
+                    entries_added = len(self._failed_attempt_snr_list) - snr_count_before_path
+                    if entries_added > 0 and hasattr(self, '_failed_attempt_snr_list'):
+                        self._failed_attempt_snr_list = self._failed_attempt_snr_list[entries_added:]
 
         # Stage 6: All paths failed
         return self._handle_failure(
