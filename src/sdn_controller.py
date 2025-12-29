@@ -414,6 +414,7 @@ class SDNController:
                 self.sdn_props.xt_list,
                 self.sdn_props.bandwidth_list,
                 self.sdn_props.modulation_list,
+                self.sdn_props.snr_list
             ]:
                 l.pop(idx)
         if lp_id in self.sdn_props.was_new_lp_established:
