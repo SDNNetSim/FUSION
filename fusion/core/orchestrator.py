@@ -648,11 +648,8 @@ class SDNOrchestrator:
                     f"SNR recheck failed for request {request.request_id}: "
                     f"affected LPs {recheck_result.degraded_lightpath_ids}"
                 )
-                # Track the failed attempt's SNR for Legacy compatibility
-                # Legacy adds to snr_list before SNR recheck; value stays even on failure
-                if spectrum_result.snr_db is not None and hasattr(self, '_failed_attempt_snr_list'):
-                    self._failed_attempt_snr_list.append(spectrum_result.snr_db)
-                    print(f"[V5-ADD] req={request.request_id} snr={spectrum_result.snr_db:.2f} reason=recheck_fail mod={spectrum_result.modulation} total={len(self._failed_attempt_snr_list)}")
+                # Fixed legacy behavior: SNR value is removed when recheck fails
+                # (Previously we kept stale SNR values to match legacy's bug)
                 network_state.release_lightpath(lightpath.lightpath_id)
                 return None
 
@@ -663,11 +660,9 @@ class SDNOrchestrator:
         )
         request.lightpath_ids.append(lightpath.lightpath_id)
 
-        # Track the successful attempt's SNR for Legacy compatibility
-        # Legacy adds SNR to snr_list for ALL allocations (not just failed ones)
+        # Track the successful attempt's SNR for stats tracking
         if spectrum_result.snr_db is not None and hasattr(self, '_failed_attempt_snr_list'):
             self._failed_attempt_snr_list.append(spectrum_result.snr_db)
-            print(f"[V5-ADD] req={request.request_id} snr={spectrum_result.snr_db:.2f} reason=success mod={spectrum_result.modulation} total={len(self._failed_attempt_snr_list)}")
 
         # Include accumulated SNR values in result for stats tracking
         failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
@@ -744,12 +739,13 @@ class SDNOrchestrator:
 
             # Store SNR value from spectrum assignment for metrics tracking
             # This is the SNR calculated during spectrum assignment (before lightpath creation)
+            snr_was_added = False
             if spectrum_result.snr_db is not None:
                 lightpath.snr_db = spectrum_result.snr_db
-                # Track SNR for Legacy compatibility (add before recheck, like legacy does)
+                # Track SNR for metrics (add before recheck, like legacy does)
                 if hasattr(self, '_failed_attempt_snr_list'):
                     self._failed_attempt_snr_list.append(spectrum_result.snr_db)
-                    print(f"[V5-ADD] req={request.request_id} snr={spectrum_result.snr_db:.2f} reason=dyn_slice mod={spectrum_result.modulation} total={len(self._failed_attempt_snr_list)}")
+                    snr_was_added = True
 
             # SNR recheck for affected existing lightpaths (legacy behavior)
             # NOTE: Legacy does NOT re-validate the new LP's SNR here - only checks existing LPs
@@ -763,6 +759,9 @@ class SDNOrchestrator:
                         f"Dynamic slice SNR recheck failed for request {request.request_id}: "
                         f"affected LPs {recheck_result.degraded_lightpath_ids}"
                     )
+                    # Fixed legacy behavior: remove SNR value when recheck fails
+                    if snr_was_added and self._failed_attempt_snr_list:
+                        self._failed_attempt_snr_list.pop()
                     network_state.release_lightpath(lightpath.lightpath_id)
                     break
 

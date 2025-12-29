@@ -631,7 +631,9 @@ class SDNController:
                 self.sdn_props.band_list,
                 self.sdn_props.core_list,
                 self.sdn_props.end_slot_list,
+                self.sdn_props.xt_list,
                 self.sdn_props.crosstalk_list,
+                self.sdn_props.snr_list,
                 self.sdn_props.bandwidth_list,
                 self.sdn_props.modulation_list,
             ]:

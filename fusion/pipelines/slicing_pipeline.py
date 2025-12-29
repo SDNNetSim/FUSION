@@ -77,6 +77,7 @@ class StandardSlicingPipeline:
         snr_pipeline: SNRPipeline | None = None,
         connection_index: int | None = None,
         path_index: int = 0,
+        snr_accumulator: list[float] | None = None,
     ) -> SlicingResult:
         """
         Attempt to slice request into multiple smaller allocations.
@@ -131,6 +132,7 @@ class StandardSlicingPipeline:
                     connection_index=connection_index,
                     path_index=path_index,
                     max_slices=limit,
+                    snr_accumulator=snr_accumulator,
                 )
             else:
                 # Attempt actual tier-based allocation (matches Legacy flex-grid behavior)
@@ -144,6 +146,7 @@ class StandardSlicingPipeline:
                     connection_index=connection_index,
                     path_index=path_index,
                     max_slices=limit,
+                    snr_accumulator=snr_accumulator,
                 )
             if result is not None:
                 return result
@@ -177,6 +180,7 @@ class StandardSlicingPipeline:
         connection_index: int | None,
         path_index: int,
         max_slices: int,
+        snr_accumulator: list[float] | None = None,
     ) -> SlicingResult | None:
         """
         Tier-based slicing allocation (matches Legacy behavior).
@@ -292,9 +296,8 @@ class StandardSlicingPipeline:
                     )
                     if not recheck_result.all_pass:
                         logger.debug(f"Tier slice failed SNR recheck - existing LPs degraded (tier_bw={tier_bw})")
-                        # Track failed SNR for Legacy compatibility
-                        if spectrum_result.snr_db is not None:
-                            failed_snr_values.append(spectrum_result.snr_db)
+                        # Fixed legacy behavior: SNR value is removed when recheck fails
+                        # (Previously we kept stale SNR values to match legacy's bug)
                         network_state.release_lightpath(lightpath_id)
                         break  # Move to smaller tier
 
@@ -356,6 +359,7 @@ class StandardSlicingPipeline:
         connection_index: int | None,
         path_index: int,
         max_slices: int,
+        snr_accumulator: list[float] | None = None,
     ) -> SlicingResult | None:
         """
         Dynamic slicing allocation (matches Legacy dynamic_lps behavior).
@@ -385,13 +389,13 @@ class StandardSlicingPipeline:
             # Fixed-grid dynamic slicing: 1 slot at a time
             return self._try_allocate_dynamic_fixed_grid(
                 request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices
+                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator
             )
         else:
             # Flex-grid dynamic slicing: iterate through bandwidth tiers
             return self._try_allocate_dynamic_flex_grid(
                 request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices
+                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator
             )
 
     def _try_allocate_dynamic_fixed_grid(
@@ -405,6 +409,7 @@ class StandardSlicingPipeline:
         connection_index: int | None,
         path_index: int,
         max_slices: int,
+        snr_accumulator: list[float] | None = None,
     ) -> SlicingResult | None:
         """Fixed-grid dynamic slicing: 1 slot at a time."""
         from fusion.domain.results import SlicingResult
@@ -458,8 +463,7 @@ class StandardSlicingPipeline:
                     lightpath_id, network_state, slicing_flag=True
                 )
                 if not recheck_result.all_pass:
-                    if spectrum_result.snr_db is not None:
-                        failed_snr_values.append(spectrum_result.snr_db)
+                    # Fixed legacy behavior: SNR value is removed when recheck fails
                     network_state.release_lightpath(lightpath_id)
                     break
 
@@ -486,6 +490,7 @@ class StandardSlicingPipeline:
         connection_index: int | None,
         path_index: int,
         max_slices: int,
+        snr_accumulator: list[float] | None = None,
     ) -> SlicingResult | None:
         """Flex-grid dynamic slicing: iterate through bandwidth tiers."""
         from fusion.domain.results import SlicingResult
@@ -561,8 +566,7 @@ class StandardSlicingPipeline:
                         lightpath_id, network_state, slicing_flag=True
                     )
                     if not recheck_result.all_pass:
-                        if spectrum_result.snr_db is not None:
-                            failed_snr_values.append(spectrum_result.snr_db)
+                        # Fixed legacy behavior: SNR value is removed when recheck fails
                         network_state.release_lightpath(lightpath_id)
                         break
 
