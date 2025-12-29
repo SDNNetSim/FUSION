@@ -693,7 +693,8 @@ class SpectrumAssignment:
         """
         # Only skip if both grooming and dynamic_lps are disabled
         if (not self.engine_props_dict.get("is_grooming_enabled", False) and
-            not self.engine_props_dict.get("dynamic_lps", False)):
+            not self.engine_props_dict.get("dynamic_lps", False) and
+            self.engine_props_dict.get("snr_type", "gsnr") != "gsnr"):
             return
 
         if self.sdn_props.source is None or self.sdn_props.destination is None:
