@@ -349,6 +349,10 @@ class SpectrumAssignment:
         is_slicing = getattr(self.spectrum_props, 'slicing_flag', False)
         req_id = getattr(self.sdn_props, 'request_id', 'unknown')
 
+        # DEBUG: Target request 83
+        if req_id == 83 and is_slicing:
+            print(f"[REQ83] SPECTRUM SEARCH: slots_needed={self.spectrum_props.slots_needed} bands={band_list}")
+
         for core_spectrum_array, core_number in zip(
             cores_spectrum_matrix, core_numbers_list, strict=False
         ):
@@ -356,6 +360,22 @@ class SpectrumAssignment:
                 available_slots_array = np.where(core_spectrum_array[band_index] == 0)[
                     0
                 ]
+
+                # DEBUG: Target request 83
+                if req_id == 83 and is_slicing:
+                    # Show first contiguous block size to understand why allocation might fail
+                    contiguous = []
+                    current_block = 0
+                    for i, slot in enumerate(available_slots_array):
+                        if i == 0 or slot == available_slots_array[i-1] + 1:
+                            current_block += 1
+                        else:
+                            if current_block > 0:
+                                contiguous.append(current_block)
+                            current_block = 1
+                    if current_block > 0:
+                        contiguous.append(current_block)
+                    print(f"[REQ83] BAND {band}: total_free={len(available_slots_array)} first_slots={list(available_slots_array[:15])} blocks={contiguous[:5]}")
 
                 available_slots_matrix = self._get_available_slots_matrix(
                     available_slots_array, allocation_flag
@@ -367,6 +387,9 @@ class SpectrumAssignment:
                     open_slots_matrix=available_slots_matrix, flag=allocation_flag
                 )
                 if was_allocated:
+                    # DEBUG: Target request 83
+                    if req_id == 83 and is_slicing:
+                        print(f"[REQ83] ALLOCATED: band={band} slots={self.spectrum_props.start_slot}-{self.spectrum_props.end_slot}")
                     if (
                         self.engine_props_dict["cores_per_link"] in [13, 19]
                         and self.engine_props_dict["snr_type"]

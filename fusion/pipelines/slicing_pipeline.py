@@ -228,10 +228,6 @@ class StandardSlicingPipeline:
             if not tier_modulations:
                 continue
 
-            # DEBUG: Show tier being attempted for req 43
-            if request.request_id == 43:
-                print(f'[DEBUG-R43-SLICING] Trying tier_bw={tier_bw} mods={tier_modulations}')
-
             # Try to allocate as many slices of this tier as possible
             while remaining_bw >= tier_bw:
                 # Check max slices limit
@@ -252,18 +248,11 @@ class StandardSlicingPipeline:
                 )
 
                 if not spectrum_result.is_free:
-                    # DEBUG: Show spectrum search failure for req 43
-                    if request.request_id == 43:
-                        print(f'[DEBUG-R43-SLICING] No spectrum for tier_bw={tier_bw}, moving to next tier')
                     break  # Move to smaller tier
 
                 # Create lightpath for this slice
                 path_weight_km = self._calculate_path_weight(path, network_state)
                 actual_modulation = spectrum_result.modulation
-
-                # DEBUG: Show successful spectrum allocation for req 43
-                if request.request_id == 43:
-                    print(f'[DEBUG-R43-SLICING] Got spectrum: start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={actual_modulation} snr={spectrum_result.snr_db}')
 
                 lightpath = network_state.create_lightpath(
                     path=path,
@@ -296,9 +285,20 @@ class StandardSlicingPipeline:
                     )
                     if not recheck_result.all_pass:
                         logger.debug(f"Tier slice failed SNR recheck - existing LPs degraded (tier_bw={tier_bw})")
-                        # Fixed legacy behavior: SNR value is removed when recheck fails
-                        # (Previously we kept stale SNR values to match legacy's bug)
+                        # Release the failed LP first
                         network_state.release_lightpath(lightpath_id)
+                        if lightpath_id in request.lightpath_ids:
+                            request.lightpath_ids.remove(lightpath_id)
+                        # LEGACY COMPAT: Release ALL previously allocated LPs when SNR fails
+                        # This matches legacy _handle_congestion behavior
+                        # TODO: (v6) Legacy bug - releases spectrum but NOT bandwidth
+                        for prev_lp_id in allocated_lightpaths:
+                            network_state.release_lightpath(prev_lp_id)
+                            if prev_lp_id in request.lightpath_ids:
+                                request.lightpath_ids.remove(prev_lp_id)
+                        # Clear tracking lists (but don't restore bandwidth - matches legacy)
+                        allocated_lightpaths.clear()
+                        slice_bandwidths.clear()
                         break  # Move to smaller tier
 
                 allocated_lightpaths.append(lightpath_id)
@@ -463,8 +463,19 @@ class StandardSlicingPipeline:
                     lightpath_id, network_state, slicing_flag=True
                 )
                 if not recheck_result.all_pass:
-                    # Fixed legacy behavior: SNR value is removed when recheck fails
+                    # Release the failed LP first
                     network_state.release_lightpath(lightpath_id)
+                    if lightpath_id in request.lightpath_ids:
+                        request.lightpath_ids.remove(lightpath_id)
+                    # LEGACY COMPAT: Release ALL previously allocated LPs when SNR fails
+                    # TODO: (v6) Legacy bug - releases spectrum but NOT bandwidth
+                    for prev_lp_id in allocated_lightpaths:
+                        network_state.release_lightpath(prev_lp_id)
+                        if prev_lp_id in request.lightpath_ids:
+                            request.lightpath_ids.remove(prev_lp_id)
+                    # Clear tracking lists (but don't restore bandwidth - matches legacy)
+                    allocated_lightpaths.clear()
+                    slice_bandwidths.clear()
                     break
 
             allocated_lightpaths.append(lightpath_id)
@@ -495,27 +506,23 @@ class StandardSlicingPipeline:
         """Flex-grid dynamic slicing: iterate through bandwidth tiers."""
         from fusion.domain.results import SlicingResult
 
-        # Get sorted bandwidth tiers (descending)
+        # Get sorted bandwidth tiers (DESCENDING - matches Legacy's sort_dict_keys with reverse=True)
         mod_per_bw = getattr(self._config, "mod_per_bw", {})
         sorted_tiers = sorted([int(k) for k in mod_per_bw.keys()], reverse=True)
+
+        # DEBUG: Target request 83
+        if request.request_id == 83:
+            print(f"[REQ83] V5 slicing_pipeline bw={bandwidth_gbps} path_idx={path_index}")
 
         remaining_bw = bandwidth_gbps
         allocated_lightpaths: list[int] = []
         slice_bandwidths: list[int] = []
         failed_snr_values: list[float] = []
 
-        # DEBUG: Show dynamic slicing for req 43
-        if request.request_id == 43:
-            print(f'[DEBUG-R43-DYNAMIC] Starting flex-grid dynamic slicing for {bandwidth_gbps} Gbps')
-
         for tier_bw in sorted_tiers:
             # Skip tiers >= original request bandwidth
             if tier_bw >= bandwidth_gbps:
                 continue
-
-            # DEBUG: Show tier for req 43
-            if request.request_id == 43:
-                print(f'[DEBUG-R43-DYNAMIC] Trying tier_bw={tier_bw}')
 
             while remaining_bw >= tier_bw and len(allocated_lightpaths) < max_slices:
                 # Use dynamic slicing mode with slice_bandwidth for flex-grid
@@ -530,10 +537,6 @@ class StandardSlicingPipeline:
                     request_id=request.request_id,
                     slice_bandwidth=tier_bw,  # Key: pass tier bandwidth
                 )
-
-                # DEBUG: Show result for req 43
-                if request.request_id == 43:
-                    print(f'[DEBUG-R43-DYNAMIC] spectrum: is_free={spectrum_result.is_free} start={spectrum_result.start_slot} end={spectrum_result.end_slot} mod={spectrum_result.modulation} bw={spectrum_result.achieved_bandwidth_gbps}')
 
                 if not spectrum_result.is_free:
                     break  # Move to smaller tier
@@ -566,23 +569,51 @@ class StandardSlicingPipeline:
                         lightpath_id, network_state, slicing_flag=True
                     )
                     if not recheck_result.all_pass:
-                        # Fixed legacy behavior: SNR value is removed when recheck fails
+                        # DEBUG: Target request 83
+                        if request.request_id == 83:
+                            print(f"[REQ83] V5 slicing SNR FAIL lp={lightpath_id} tier={tier_bw} slots={spectrum_result.start_slot}-{spectrum_result.end_slot} band={spectrum_result.band} degraded={recheck_result.degraded_lightpath_ids}")
+                        # Release the failed LP first
                         network_state.release_lightpath(lightpath_id)
+                        # Remove from request tracking (it was added at line 542)
+                        if lightpath_id in request.lightpath_ids:
+                            request.lightpath_ids.remove(lightpath_id)
+                        # LEGACY COMPAT: Release ALL previously allocated LPs when SNR fails
+                        # This matches legacy _handle_congestion behavior which releases all
+                        # was_new_lp_established when remaining_bw != original_bw.
+                        # This allows the next tier to potentially reuse freed slots.
+                        # TODO: (v6) Legacy has a bug - it releases spectrum but does NOT restore
+                        # bandwidth for previously allocated LPs. This creates an inconsistency
+                        # between spectrum state and bandwidth accounting. We match this behavior
+                        # for compatibility, but should fix in v6.
+                        for prev_lp_id in allocated_lightpaths:
+                            network_state.release_lightpath(prev_lp_id)
+                            if prev_lp_id in request.lightpath_ids:
+                                request.lightpath_ids.remove(prev_lp_id)
+                        # Clear tracking lists (but don't restore their bandwidth - matches legacy)
+                        allocated_lightpaths.clear()
+                        slice_bandwidths.clear()
                         break
+                    elif request.request_id == 83:
+                        print(f"[REQ83] V5 slicing SNR OK lp={lightpath_id} tier={tier_bw}")
 
                 allocated_lightpaths.append(lightpath_id)
                 slice_bandwidths.append(achieved_bw)
                 remaining_bw -= achieved_bw
-
-                # DEBUG: Show allocation for req 43
-                if request.request_id == 43:
-                    print(f'[DEBUG-R43-DYNAMIC] Allocated slice: lp_id={lightpath_id} mod={spectrum_result.modulation} bw={achieved_bw} remaining={remaining_bw}')
+                # DEBUG: Target request 83
+                if request.request_id == 83:
+                    print(f"[REQ83] V5 slicing ALLOC lp={lightpath_id} tier={tier_bw} slots={spectrum_result.start_slot}-{spectrum_result.end_slot} band={spectrum_result.band} remaining={remaining_bw}")
 
             if remaining_bw <= 0:
                 break
 
         if not allocated_lightpaths:
+            # DEBUG: Target request 83
+            if request.request_id == 83:
+                print(f"[REQ83] V5 slicing FAILED - no LPs allocated")
             return None
+        # DEBUG: Target request 83
+        if request.request_id == 83:
+            print(f"[REQ83] V5 slicing SUCCESS lps={allocated_lightpaths} remaining={remaining_bw}")
 
         return self._finalize_dynamic_result(
             remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
@@ -802,6 +833,8 @@ class StandardSlicingPipeline:
 
                         # Release the failed lightpath first
                         network_state.release_lightpath(lightpath_id)
+                        if lightpath_id in request.lightpath_ids:
+                            request.lightpath_ids.remove(lightpath_id)
 
                         if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
                             # Accept partial service with what we have
@@ -814,6 +847,10 @@ class StandardSlicingPipeline:
 
                         # Rollback all previous slices
                         self.rollback_slices(allocated_lightpaths, network_state)
+                        # Clean up request.lightpath_ids for rolled back LPs
+                        for prev_lp_id in allocated_lightpaths:
+                            if prev_lp_id in request.lightpath_ids:
+                                request.lightpath_ids.remove(prev_lp_id)
                         return None
 
                 allocated_lightpaths.append(lightpath_id)
