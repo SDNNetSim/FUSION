@@ -644,6 +644,7 @@ class SDNController:
                 self.sdn_props.crosstalk_list,
                 self.sdn_props.bandwidth_list,
                 self.sdn_props.modulation_list,
+                self.sdn_props.snr_list,
             ]:
                 if idx < len(tracking_list):
                     tracking_list.pop(idx)
