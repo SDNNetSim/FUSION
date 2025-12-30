@@ -145,6 +145,7 @@ class SpectrumAdapter(SpectrumPipeline):
         snr_bandwidth: int | None = None,
         request_id: int | None = None,
         slice_bandwidth: int | None = None,
+        excluded_modulations: set[str] | None = None,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
@@ -247,10 +248,15 @@ class SpectrumAdapter(SpectrumPipeline):
             # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
             if use_dynamic_slicing and self._config.dynamic_lps:
                 # Dynamic slicing mode: spectrum determines modulation/bandwidth
-                # For flex-grid, need to pass mod_format_dict for proper slot lookup
                 if not self._config.fixed_grid and slice_bandwidth is not None:
-                    # Flex-grid dynamic slicing: pass mod_format_dict for the tier
+                    # Flex-grid dynamic slicing with explicit slice_bandwidth
                     mod_format_dict = mod_per_bw.get(str(slice_bandwidth), {})
+                    # Filter out excluded modulations (v5.5 behavior: try lower mods on SNR fail)
+                    if excluded_modulations:
+                        mod_format_dict = {
+                            k: v for k, v in mod_format_dict.items()
+                            if k not in excluded_modulations
+                        }
                     result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
                         _mod_format_list=[],
                         path_index=path_index,
@@ -259,12 +265,15 @@ class SpectrumAdapter(SpectrumPipeline):
                     # For flex-grid, bandwidth is the tier bandwidth
                     if result_mod and result_mod is not False:
                         result_bw = slice_bandwidth
-                else:
+                elif self._config.fixed_grid:
                     # Fixed-grid dynamic slicing
                     result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
                         _mod_format_list=[modulation] if modulation else [],
                         path_index=path_index,
                     )
+                else:
+                    # Flex-grid without slice_bandwidth - need orchestrator to provide tier
+                    result_mod, result_bw = False, False
                 # Update modulation from dynamic result
                 if result_mod and result_mod is not False:
                     modulation = str(result_mod)
@@ -296,9 +305,6 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
         except Exception as e:
-            import traceback
-            print(f"[SPECTRUM-ERROR] find_spectrum exception: {e}")
-            traceback.print_exc()
             logger.warning("SpectrumAdapter.find_spectrum failed: %s", e)
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)
@@ -392,9 +398,6 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
         except Exception as e:
-            import traceback
-            print(f"[SPECTRUM-ERROR] find_protected_spectrum exception: {e}")
-            traceback.print_exc()
             logger.warning("SpectrumAdapter.find_protected_spectrum failed: %s", e)
             slots_needed = self._calculate_slots_needed(modulation, bandwidth_gbps)
             return SpectrumResult.not_found(slots_needed)

@@ -382,17 +382,31 @@ class LightPathSlicingManager:
             if int(bandwidth_str) >= initial_bw:
                 continue
 
+            # Track excluded modulations for this tier (v5.5 behavior)
+            excluded_mods: set[str] = set()
+            # Make a copy of mods_dict that we can modify
+            available_mods = dict(mods_dict)
+
             iteration = 0
             while remaining_bw > 0:
                 if remaining_bw < int(bandwidth_str):
                     break
+
+                # Filter out excluded modulations
+                if excluded_mods:
+                    available_mods = {
+                        k: v for k, v in mods_dict.items()
+                        if k not in excluded_mods
+                    }
+                    if not available_mods:
+                        break  # No more modulations to try for this tier
 
                 iteration += 1
                 self.sdn_props.was_routed = True
                 mod_format, _ = self.spectrum_obj.get_spectrum_dynamic_slicing(
                     _mod_format_list=[],
                     path_index=path_index,
-                    mod_format_dict=mods_dict,
+                    mod_format_dict=available_mods,
                 )
                 # In flex-grid slicing, bandwidth is pre-calculated from the tier
                 bw = int(bandwidth_str)
@@ -419,12 +433,20 @@ class LightPathSlicingManager:
                     # This ensures lightpaths are validated immediately and rolled back
                     # if SNR requirements are not met, preventing orphaned allocations
                     if not sdn_controller._check_snr_after_allocation(lp_id):
-                        # Rollback this lightpath and stop (matches v5 behavior)
+                        # Rollback this lightpath
                         self.sdn_props.was_routed = False
                         self.sdn_props.block_reason = "snr_recheck_failed"
                         remaining_bw += bw
+                        # FIX Bug 1: Try lower modulation formats (v5.5 behavior)
+                        # Exclude failed modulation and continue instead of breaking
+                        failed_mod = self.spectrum_obj.spectrum_props.modulation
+                        if failed_mod:
+                            excluded_mods.add(failed_mod)
                         sdn_controller._handle_congestion(remaining_bw)
-                        break
+                        # FIX Bug 3: Sync local remaining_bw with sdn_props after
+                        # _handle_congestion releases ALL previously allocated LPs
+                        remaining_bw = self.sdn_props.remaining_bw
+                        continue  # Try next modulation instead of breaking
                 else:
                     break
 
@@ -439,10 +461,10 @@ class LightPathSlicingManager:
         # Handle partial serving if enabled
         if self.engine_props.get("can_partially_serve", False):
             if remaining_bw != initial_bw:
+                on_last_path = self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
                 if (
                     self.sdn_props.was_partially_groomed
-                    or self.sdn_props.path_index
-                    >= self.engine_props.get("k_paths", 1) - 1
+                    or on_last_path
                 ):
                     self.sdn_props.is_sliced = True
                     self.sdn_props.was_partially_routed = True

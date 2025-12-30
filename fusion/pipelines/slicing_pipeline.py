@@ -510,10 +510,6 @@ class StandardSlicingPipeline:
         mod_per_bw = getattr(self._config, "mod_per_bw", {})
         sorted_tiers = sorted([int(k) for k in mod_per_bw.keys()], reverse=True)
 
-        # DEBUG: Target request 83
-        if request.request_id == 83:
-            print(f"[REQ83] V5 slicing_pipeline bw={bandwidth_gbps} path_idx={path_index}")
-
         remaining_bw = bandwidth_gbps
         allocated_lightpaths: list[int] = []
         slice_bandwidths: list[int] = []
@@ -523,6 +519,9 @@ class StandardSlicingPipeline:
             # Skip tiers >= original request bandwidth
             if tier_bw >= bandwidth_gbps:
                 continue
+
+            # Track excluded modulations for this tier (v5.5 behavior: try lower mods on SNR fail)
+            excluded_mods: set[str] = set()
 
             while remaining_bw >= tier_bw and len(allocated_lightpaths) < max_slices:
                 # Use dynamic slicing mode with slice_bandwidth for flex-grid
@@ -536,6 +535,7 @@ class StandardSlicingPipeline:
                     use_dynamic_slicing=True,
                     request_id=request.request_id,
                     slice_bandwidth=tier_bw,  # Key: pass tier bandwidth
+                    excluded_modulations=excluded_mods,  # Pass excluded mods
                 )
 
                 if not spectrum_result.is_free:
@@ -569,51 +569,42 @@ class StandardSlicingPipeline:
                         lightpath_id, network_state, slicing_flag=True
                     )
                     if not recheck_result.all_pass:
-                        # DEBUG: Target request 83
-                        if request.request_id == 83:
-                            print(f"[REQ83] V5 slicing SNR FAIL lp={lightpath_id} tier={tier_bw} slots={spectrum_result.start_slot}-{spectrum_result.end_slot} band={spectrum_result.band} degraded={recheck_result.degraded_lightpath_ids}")
-                        # Release the failed LP first
+                        # Release the failed LP
+                        failed_mod = spectrum_result.modulation
                         network_state.release_lightpath(lightpath_id)
-                        # Remove from request tracking (it was added at line 542)
                         if lightpath_id in request.lightpath_ids:
                             request.lightpath_ids.remove(lightpath_id)
-                        # LEGACY COMPAT: Release ALL previously allocated LPs when SNR fails
-                        # This matches legacy _handle_congestion behavior which releases all
-                        # was_new_lp_established when remaining_bw != original_bw.
-                        # This allows the next tier to potentially reuse freed slots.
-                        # TODO: (v6) Legacy has a bug - it releases spectrum but does NOT restore
-                        # bandwidth for previously allocated LPs. This creates an inconsistency
-                        # between spectrum state and bandwidth accounting. We match this behavior
-                        # for compatibility, but should fix in v6.
+                        # Release ALL previously allocated LPs when SNR fails
                         for prev_lp_id in allocated_lightpaths:
                             network_state.release_lightpath(prev_lp_id)
                             if prev_lp_id in request.lightpath_ids:
                                 request.lightpath_ids.remove(prev_lp_id)
-                        # Clear tracking lists (but don't restore their bandwidth - matches legacy)
+                        # FIX Bug 3: Restore remaining_bw for all released LPs
+                        # This fixes the legacy bug where remaining_bw wasn't restored
+                        remaining_bw += sum(slice_bandwidths)
                         allocated_lightpaths.clear()
                         slice_bandwidths.clear()
-                        break
-                    elif request.request_id == 83:
-                        print(f"[REQ83] V5 slicing SNR OK lp={lightpath_id} tier={tier_bw}")
+                        # v5.5 BEHAVIOR: Exclude failed modulation and continue trying
+                        # with lower modulation formats for the same tier
+                        if failed_mod:
+                            excluded_mods.add(failed_mod)
+                        continue  # Try next modulation instead of breaking
 
                 allocated_lightpaths.append(lightpath_id)
                 slice_bandwidths.append(achieved_bw)
                 remaining_bw -= achieved_bw
-                # DEBUG: Target request 83
-                if request.request_id == 83:
-                    print(f"[REQ83] V5 slicing ALLOC lp={lightpath_id} tier={tier_bw} slots={spectrum_result.start_slot}-{spectrum_result.end_slot} band={spectrum_result.band} remaining={remaining_bw}")
 
             if remaining_bw <= 0:
                 break
 
+        # LEGACY COMPAT: Check remaining_bw, not allocated_lightpaths
+        # Legacy accepts partial success if remaining != original, even if LPs were released
+        can_partial = getattr(self._config, "can_partially_serve", False)
+        k_paths = getattr(self._config, "k_paths", 3)
+        on_last_path = path_index >= k_paths - 1
+
         if not allocated_lightpaths:
-            # DEBUG: Target request 83
-            if request.request_id == 83:
-                print(f"[REQ83] V5 slicing FAILED - no LPs allocated")
             return None
-        # DEBUG: Target request 83
-        if request.request_id == 83:
-            print(f"[REQ83] V5 slicing SUCCESS lps={allocated_lightpaths} remaining={remaining_bw}")
 
         return self._finalize_dynamic_result(
             remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
