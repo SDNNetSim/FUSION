@@ -154,7 +154,7 @@ class SDNController:
                                   core_num=core_num, band=band, lightpath_id=lightpath_id)
 
     # TODO: No support for multi-band
-    def _update_req_stats(self, bandwidth: str, remaining: str):
+    def _update_req_stats(self, bandwidth: str, remaining: int | str):
         self.sdn_props.bandwidth_list.append(bandwidth)
         for stat_key in self.sdn_props.stat_key_list:
             spectrum_key = stat_key.split('_')[0]  # pylint: disable=use-maxsplit-arg
@@ -192,7 +192,7 @@ class SDNController:
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
                 self.allocate()
-                self._update_req_stats(bandwidth=bandwidth, remaining = str(remaining_bw))
+                self._update_req_stats(bandwidth=bandwidth, remaining = remaining_bw)
                 # Get SNR value for comparison print
                 snr_val = self.sdn_props.snr_list[-1] if self.sdn_props.snr_list else 0
                 # print(f"[COMPARE-ALLOC] req_id={self.sdn_props.req_id}, lp_id={lp_id}, bw={bandwidth}/{bandwidth}, mod={mod_format}, snr={snr_val:.2f}, arrive={self.sdn_props.arrive:.4f}")
@@ -289,7 +289,7 @@ class SDNController:
                     # Comparison print for v5/v6 analysis
                     snr_val = self.sdn_props.snr_list[-1] if self.sdn_props.snr_list else 0
                     # print(f"[COMPARE-ALLOC] req_id={self.sdn_props.req_id}, lp_id={lp_id}, bw={dedicated_bw}/{bw}, mod={mod_format}, snr={snr_val:.2f}, arrive={self.sdn_props.arrive:.4f}")
-                    self._update_req_stats(bandwidth=str(dedicated_bw), remaining= str(remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else 0))
+                    self._update_req_stats(bandwidth=str(dedicated_bw), remaining= (remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else '0'))
                     remaining_bw -= bw
                     self.sdn_props.num_trans += 1
                     self.sdn_props.is_sliced = True
@@ -297,6 +297,7 @@ class SDNController:
                     self.sdn_props.was_partially_routed = False
                     if not self._check_snr_after_allocation(lp_id):
                         # Rollback this lightpath and stop
+                        #TODO: check dynamic slicing for fixed-grid with failed snr recheck, (like flexi-grid)
                         self.sdn_props.was_routed = False
                         self.sdn_props.block_reason = 'snr_recheck_failed'
                         remaining_bw += bw
@@ -334,7 +335,7 @@ class SDNController:
                             # Comparison print for v5/v6 analysis
                             snr_val = self.sdn_props.snr_list[-1] if self.sdn_props.snr_list else 0
                             # print(f"[COMPARE-ALLOC] req_id={self.sdn_props.req_id}, lp_id={lp_id}, bw={dedicated_bw}/{bw}, mod={mod_format}, snr={snr_val:.2f}, arrive={self.sdn_props.arrive:.4f}")
-                            self._update_req_stats(bandwidth=str(dedicated_bw), remaining= str(remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else 0))
+                            self._update_req_stats(bandwidth=str(dedicated_bw), remaining= (remaining_bw-dedicated_bw if remaining_bw > dedicated_bw else '0'))
                             remaining_bw -= bw
                             self.sdn_props.num_trans += 1
                             self.sdn_props.is_sliced = True
@@ -345,8 +346,12 @@ class SDNController:
                                 self.sdn_props.was_routed = False
                                 self.sdn_props.block_reason = 'snr_recheck_failed'
                                 remaining_bw += bw
-                                self._handle_congestion(remaining_bw)
-                                break
+                                mods_dict = mods_dict.copy()
+                                mods_dict.pop(self.spectrum_obj.spectrum_props.modulation, None)
+                                if mods_dict:
+                                    continue
+                                else:
+                                    break
                         else:
                             break
 
@@ -403,7 +408,7 @@ class SDNController:
             if self.sdn_props.remaining_bw == '0':
                 self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth_list[idx])
             else:
-                self.sdn_props.remaining_bw += self.sdn_props.bandwidth_list[idx]
+                self.sdn_props.remaining_bw += int(self.sdn_props.bandwidth_list[idx])
             for l in [
                 self.sdn_props.lightpath_id_list,
                 self.sdn_props.lightpath_bandwidth_list,

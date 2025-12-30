@@ -257,6 +257,8 @@ class SimStats:
     def _handle_iter_lists(self, sdn_data: object, new_lp_index: list):
         for stat_key in sdn_data.stat_key_list:
             curr_sdn_data = sdn_data.get_data(key=stat_key)
+            if stat_key == 'remaining_bw':
+                continue
             if stat_key in ['snr_list','xt_list']:
                 # (drl_path_agents) fixme
                 if set(curr_sdn_data) <= {None}:
