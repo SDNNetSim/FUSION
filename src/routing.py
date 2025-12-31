@@ -50,7 +50,10 @@ class Routing:
         self.route_props.paths_matrix = [sorted_paths_list[0]['path_list']]
         self.route_props.weights_list = [int(sorted_paths_list[0]['link_dict']['free_slots'])]
         # TODO: Constant QPSK format (Ask Arash)
-        self.route_props.mod_formats_matrix.append(['QPSK'])
+        mod_formats_dict = sort_nested_dict_vals(original_dict=self.sdn_props.mod_formats_dict,
+                                                         nested_key='max_length')
+        mod_formats_list = list(mod_formats_dict.keys())
+        self.route_props.mod_formats_matrix.append(mod_formats_list)
 
     def find_least_cong(self):
         """
