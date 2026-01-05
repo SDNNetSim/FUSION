@@ -453,6 +453,13 @@ class StandardSlicingPipeline:
                 snr_db=spectrum_result.snr_db,
             )
             lightpath_id = lightpath.lightpath_id
+
+            # Debug slicing pipeline allocations for first 80 requests
+            if request.request_id <= 80:
+                for i in range(len(path) - 1):
+                    link = (path[i], path[i+1])
+                    print(f"V5-PIPE-FG:r{request.request_id} link={link} slots=[{spectrum_result.start_slot}:{spectrum_result.end_slot}] lp={lightpath_id}")
+
             lightpath.request_allocations[request.request_id] = achieved_bw
             lightpath.remaining_bandwidth_gbps -= achieved_bw
             request.lightpath_ids.append(lightpath_id)

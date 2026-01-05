@@ -582,6 +582,12 @@ class SimulationEngine:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
 
+        # Path index logging for comparison
+        req_id = self.reqs_dict[current_time].get("req_id", "?")
+        path_idx = self.sdn_obj.sdn_props.path_index
+        routed = "Y" if self.sdn_obj.sdn_props.was_routed else "N"
+        print(f"L:{req_id}:p{path_idx}:{routed}")
+
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
 
@@ -623,6 +629,10 @@ class SimulationEngine:
 
         # Update stats from result
         self._update_stats_from_result(current_time, request, result)
+
+        # Path index logging for comparison
+        routed = "Y" if result.success else "N"
+        print(f"V5:{request.request_id}:p{result.path_index}:{routed}")
 
         # Sync network state back to legacy dict for compatibility
         if self._network_state is not None:
@@ -1312,6 +1322,10 @@ class SimulationEngine:
 
         # Reset state for new iteration (matches v5 pattern)
         self.reset()
+
+        # Set iteration on orchestrator for debug purposes
+        if self.use_orchestrator and self._orchestrator is not None:
+            self._orchestrator.current_iteration = iteration
 
         self.stats_obj.iteration = iteration
         self.stats_obj.init_iter_stats()

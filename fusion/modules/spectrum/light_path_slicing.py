@@ -313,6 +313,11 @@ class LightPathSlicingManager:
                 _mod_format_list=[], path_index=path_index
             )
 
+            # Debug for requests 71, 78, 118
+            if self.sdn_props.request_id in (71, 78, 118):
+                sp = self.spectrum_obj.spectrum_props
+                print(f"L:r{self.sdn_props.request_id} fixed_dyn_slice p{path_index} iter{iteration}: free={sp.is_free} mod={sp.modulation} slot={sp.start_slot}-{sp.end_slot} bw={bandwidth}")
+
             if self.spectrum_obj.spectrum_props.is_free:
                 lp_id = self.sdn_props.get_lightpath_id()
                 self.spectrum_obj.spectrum_props.lightpath_id = lp_id
@@ -340,7 +345,8 @@ class LightPathSlicingManager:
                 # SNR recheck after allocation (v5 behavior)
                 # This ensures lightpaths are validated immediately and rolled back
                 # if SNR requirements are not met, preventing orphaned allocations
-                if not sdn_controller._check_snr_after_allocation(lp_id):
+                snr_ok = sdn_controller._check_snr_after_allocation(lp_id)
+                if not snr_ok:
                     # Rollback this lightpath and stop (matches v5 behavior)
                     self.sdn_props.was_routed = False
                     self.sdn_props.block_reason = "snr_recheck_failed"

@@ -1662,9 +1662,6 @@ class SnrMeasurements:
             resp, observed_snr = self.evaluate_lp(lp)
 
             required_snr = self.snr_props.req_snr[lp["mod_format"]]
-            if new_lp_id == 57 and lp["id"] == 14:
-                print(f"[SNR_EVAL_DBG] Evaluating LP 14: resp={resp} observed_snr={observed_snr:.2f} required_snr={required_snr} mod={lp['mod_format']}")
-                print(f"[SNR_EVAL_DBG] LP 14 info: path={lp.get('path')} spectrum=({lp.get('start_slot')},{lp.get('end_slot')}) core={lp.get('core')}")
             if not resp:
                 violations.append((lp["id"], observed_snr, required_snr))
 

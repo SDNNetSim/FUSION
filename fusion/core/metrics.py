@@ -637,12 +637,13 @@ class SimStats:
                 self.total_transponders += sdn_data.number_of_transponders
 
             # Track path index from first modulation
+            path_idx_updated = False
             if sdn_data.modulation_list and len(sdn_data.modulation_list) > 0:
                 if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(
                     self.stats_props.path_index_list
                 ):
-                    print('Path Index Update (Iter):', sdn_data.path_index)
                     self.stats_props.path_index_list[sdn_data.path_index] += 1
+                    path_idx_updated = True
 
             # Track weights for NEW lightpaths only when grooming is enabled
             if (
@@ -1625,11 +1626,13 @@ class SimStats:
                 self.stats_props.lengths_list.append(round(float(path_len), 2))
 
         # Track path index from allocation result
-        # Only count when NEW lightpaths are created (matches legacy behavior with modulation_list check)
+        # Count when ANY lightpath is used (created or groomed) - matches legacy modulation_list check
         path_idx = getattr(result, 'path_index', 0)
-        if result.lightpaths_created and 0 <= path_idx < len(self.stats_props.path_index_list):
-            print('Path Index Update (Successful Alloc):', path_idx)
+        has_lightpaths = result.lightpaths_created or getattr(result, 'lightpaths_groomed', ())
+        path_idx_updated = False
+        if has_lightpaths and 0 <= path_idx < len(self.stats_props.path_index_list):
             self.stats_props.path_index_list[path_idx] += 1
+            path_idx_updated = True
 
         # Track demand realization ratio for partial grooming (matches legacy behavior)
         if self.engine_props.get("can_partially_serve"):

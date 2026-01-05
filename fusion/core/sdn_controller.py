@@ -368,6 +368,11 @@ class SDNController:
             core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
             reverse_core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
 
+            # Debug allocation - show slots for first 80 requests in iteration 1
+            iter_num = self.engine_props.get("current_iteration", 0)
+            if self.sdn_props.request_id is not None and self.sdn_props.request_id <= 80 and iter_num == 1:
+                print(f"L-ALLOC:i{iter_num}:r{self.sdn_props.request_id} link={link_tuple} slots=[{start_slot}:{end_slot}] lp={lightpath_id}")
+
             # Handle guard bands
             if self.engine_props["guard_slots"]:
                 self._allocate_guard_band(
@@ -912,7 +917,9 @@ class SDNController:
             raise ValueError("Must provide remaining_bandwidth")
         self.sdn_props.was_routed = False
         self.sdn_props.block_reason = "congestion"
-        self.sdn_props.number_of_transponders = 1
+        # Reset to 0 (not 1) - when congestion happens, no transponders are committed
+        # Previously = 1 caused over-counting when slicing recovered from SNR recheck failures
+        self.sdn_props.number_of_transponders = 0
 
         if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(
             self.sdn_props.bandwidth
@@ -1093,6 +1100,19 @@ class SDNController:
                 backup_mod_format_list=backup_mod_format_list,
             )
 
+            # Debug for requests 64 and 79
+            if self.sdn_props.request_id in (64, 79):
+                # Show first link's occupied slots
+                if len(path_list) >= 2:
+                    link = (path_list[0], path_list[1])
+                    if link in self.sdn_props.network_spectrum_dict:
+                        cores = self.sdn_props.network_spectrum_dict[link].get("cores_matrix", {})
+                        if cores and 0 in cores:
+                            occupied = [i for i, v in enumerate(cores[0]) if v != 0]
+                            print(f"L:r{self.sdn_props.request_id} p{path_index} link={link} occupied={occupied[:10]}...")
+                sp = self.spectrum_obj.spectrum_props
+                print(f"L:r{self.sdn_props.request_id} p{path_index} spec: free={sp.is_free} mod={sp.modulation} slot={sp.start_slot}-{sp.end_slot}")
+
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
                 return False
@@ -1248,6 +1268,9 @@ class SDNController:
 
             if groom_result:
                 # Fully groomed - done!
+                iter_num = self.engine_props.get("current_iteration", 0)
+                if self.sdn_props.request_id <= 20 and iter_num == 1:
+                    print(f"L-GROOM:i{iter_num}:r{self.sdn_props.request_id} FULLY_GROOMED lps={self.sdn_props.lightpath_id_list}")
                 self._update_grooming_stats()
                 return
 
@@ -1279,6 +1302,9 @@ class SDNController:
 
         # Try allocation with different strategies
         segment_slicing = False
+        _dbg = self.sdn_props.request_id in (64, 79)
+        if _dbg:
+            print(f"L:r{self.sdn_props.request_id} entered path loop, paths={len(route_matrix)}")
         while True:
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
@@ -1354,6 +1380,10 @@ class SDNController:
                     self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
 
                     # Process the path
+                    if _dbg:
+                        stage = "slicing" if segment_slicing else "standard"
+                        print(f"L:r{self.sdn_props.request_id} {stage} p{path_index} path={path_list[:2]}...{path_list[-1]}")
+
                     success = self._process_single_path(
                         path_list,
                         path_index,
@@ -1367,11 +1397,16 @@ class SDNController:
                         backup_mod_format_list,
                     )
 
+                    if _dbg:
+                        print(f"L:r{self.sdn_props.request_id} {stage} p{path_index} process={'OK' if success else 'FAIL'}")
+
                     if success:
                         # Try to finalize - includes SNR recheck
                         finalize_success = self._finalize_successful_allocation(
                             path_index, route_time, force_slicing, segment_slicing
                         )
+                        if _dbg:
+                            print(f"L:r{self.sdn_props.request_id} {stage} p{path_index} finalize={'OK' if finalize_success else 'FAIL'}")
                         if finalize_success:
                             return
                         # If finalize failed (SNR recheck), continue to next path

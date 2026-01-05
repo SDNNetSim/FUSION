@@ -233,9 +233,6 @@ class SNRAdapter(SNRPipeline):
                 )
 
         except Exception as e:
-            import traceback
-            print(f"[SNR-ERROR] validate exception: {e}")
-            traceback.print_exc()
             logger.warning("SNRAdapter.validate failed: %s", e)
             # On error, skip SNR check (fail open)
             return SNRResult.skipped()

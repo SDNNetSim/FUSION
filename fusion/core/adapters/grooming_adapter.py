@@ -248,9 +248,6 @@ class GroomingAdapter(GroomingPipeline):
             legacy_grooming.handle_grooming("release")
 
         except Exception as e:
-            import traceback
-            print(f"[GROOM-ERROR] rollback exception: {e}")
-            traceback.print_exc()
             logger.warning("GroomingAdapter.rollback_groom failed: %s", e)
 
     def _convert_grooming_result(

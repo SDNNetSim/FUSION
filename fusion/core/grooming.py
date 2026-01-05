@@ -149,9 +149,6 @@ class Grooming:
             self.sdn_props.end_slot_list.append(lp_info["end_slot"])
             self.sdn_props.modulation_list.append(lp_info["mod_format"])
             self.sdn_props.path_list = lp_info["path"]
-            # DEBUG: Track SNR when reading LP 126 for grooming
-            if lp_id == 126:
-                print(f"[GROOM_LP126_DEBUG] lp={lp_id} mod={lp_info['mod_format']} snr_cost={lp_info['snr_cost']}")
             self.sdn_props.snr_list.append(lp_info["snr_cost"])
             self.sdn_props.xt_list.append(lp_info["xt_cost"])
             self.sdn_props.lightpath_bandwidth_list.append(
@@ -180,10 +177,6 @@ class Grooming:
         self.sdn_props.was_partially_groomed = True
         self.sdn_props.was_groomed = False
         self.sdn_props.remaining_bw = remaining_bw
-
-        # DEBUG: Show partial groom result for req 40
-        if self.sdn_props.request_id == 40:
-            print(f"[GROOM_CORE] req=40 original_bw={self.sdn_props.bandwidth} remaining_bw={remaining_bw} lps_used={list(self.sdn_props.lightpath_id_list)}")
 
         logger.debug(
             "Request %s partially groomed, %d bandwidth remaining",

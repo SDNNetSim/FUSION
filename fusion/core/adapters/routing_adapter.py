@@ -174,9 +174,6 @@ class RoutingAdapter(RoutingPipeline):
             return self._convert_route_props(legacy_routing.route_props)
 
         except Exception as e:
-            import traceback
-            print(f"[ROUTING-ERROR] find_routes exception: {e}")
-            traceback.print_exc()
             logger.warning("RoutingAdapter.find_routes failed: %s", e)
             return RouteResult.empty("legacy_error")
 
