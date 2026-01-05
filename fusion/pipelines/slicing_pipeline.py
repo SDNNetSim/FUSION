@@ -78,6 +78,7 @@ class StandardSlicingPipeline:
         connection_index: int | None = None,
         path_index: int = 0,
         snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult:
         """
         Attempt to slice request into multiple smaller allocations.
@@ -133,6 +134,7 @@ class StandardSlicingPipeline:
                     path_index=path_index,
                     max_slices=limit,
                     snr_accumulator=snr_accumulator,
+                    path_weight=path_weight,
                 )
             else:
                 # Attempt actual tier-based allocation (matches Legacy flex-grid behavior)
@@ -147,6 +149,7 @@ class StandardSlicingPipeline:
                     path_index=path_index,
                     max_slices=limit,
                     snr_accumulator=snr_accumulator,
+                    path_weight=path_weight,
                 )
             if result is not None:
                 return result
@@ -181,6 +184,7 @@ class StandardSlicingPipeline:
         path_index: int,
         max_slices: int,
         snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult | None:
         """
         Tier-based slicing allocation (matches Legacy behavior).
@@ -251,7 +255,8 @@ class StandardSlicingPipeline:
                     break  # Move to smaller tier
 
                 # Create lightpath for this slice
-                path_weight_km = self._calculate_path_weight(path, network_state)
+                # Use routing weight if provided, otherwise calculate raw path length
+                path_weight_km = path_weight if path_weight is not None else self._calculate_path_weight(path, network_state)
                 actual_modulation = spectrum_result.modulation
 
                 lightpath = network_state.create_lightpath(
@@ -360,6 +365,7 @@ class StandardSlicingPipeline:
         path_index: int,
         max_slices: int,
         snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult | None:
         """
         Dynamic slicing allocation (matches Legacy dynamic_lps behavior).
@@ -389,13 +395,15 @@ class StandardSlicingPipeline:
             # Fixed-grid dynamic slicing: 1 slot at a time
             return self._try_allocate_dynamic_fixed_grid(
                 request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator
+                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator,
+                path_weight
             )
         else:
             # Flex-grid dynamic slicing: iterate through bandwidth tiers
             return self._try_allocate_dynamic_flex_grid(
                 request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator
+                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator,
+                path_weight
             )
 
     def _try_allocate_dynamic_fixed_grid(
@@ -410,6 +418,7 @@ class StandardSlicingPipeline:
         path_index: int,
         max_slices: int,
         snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult | None:
         """Fixed-grid dynamic slicing: 1 slot at a time."""
         from fusion.domain.results import SlicingResult
@@ -438,7 +447,8 @@ class StandardSlicingPipeline:
             if achieved_bw is None or achieved_bw <= 0:
                 break
 
-            path_weight_km = self._calculate_path_weight(path, network_state)
+            # Use routing weight if provided, otherwise calculate raw path length
+            path_weight_km = path_weight if path_weight is not None else self._calculate_path_weight(path, network_state)
             lightpath = network_state.create_lightpath(
                 path=path,
                 start_slot=spectrum_result.start_slot,
@@ -509,6 +519,7 @@ class StandardSlicingPipeline:
         path_index: int,
         max_slices: int,
         snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult | None:
         """Flex-grid dynamic slicing: iterate through bandwidth tiers."""
         from fusion.domain.results import SlicingResult
@@ -551,7 +562,8 @@ class StandardSlicingPipeline:
                 # For flex-grid, bandwidth is the tier bandwidth
                 achieved_bw = tier_bw
 
-                path_weight_km = self._calculate_path_weight(path, network_state)
+                # Use routing weight if provided, otherwise calculate raw path length
+                path_weight_km = path_weight if path_weight is not None else self._calculate_path_weight(path, network_state)
                 lightpath = network_state.create_lightpath(
                     path=path,
                     start_slot=spectrum_result.start_slot,

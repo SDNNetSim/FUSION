@@ -606,6 +606,7 @@ class SDNOrchestrator:
                 connection_index=connection_index,
                 path_index=path_index,
                 snr_accumulator=self._failed_attempt_snr_list,  # Accumulate SNR across try_slice calls
+                path_weight=weight_km,  # Pass routing weight for metrics tracking
             )
             # Convert SlicingResult to AllocationResult
             if slicing_result.success:

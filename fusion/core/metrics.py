@@ -1687,12 +1687,10 @@ class SimStats:
                     # Use failed attempt SNR (matches Legacy's buggy index behavior)
                     snr_for_tracking = failed_snr[lp_idx]
 
-                # Calculate path weight for this lightpath
-                path_weight = None
-                num_hops = None
-                if lp_path:
-                    path_weight = self._calculate_path_length_new(lp_path, network_state)
-                    num_hops = len(lp_path) - 1
+                # Get path weight from lightpath (routing weight, not raw length)
+                # This preserves the routing algorithm's weight (e.g., XT-aware normalized cost)
+                path_weight = getattr(lp, 'path_weight_km', None)
+                num_hops = len(lp_path) - 1 if lp_path else None
 
                 # Track modulation with correct lightpath bandwidth
                 if modulation:
@@ -1716,11 +1714,9 @@ class SimStats:
             # Fallback for non-lightpath allocations (shouldn't happen often)
             if first_lp_details.get('modulation'):
                 bandwidth = request.bandwidth_gbps if hasattr(request, 'bandwidth_gbps') else None
-                path_weight = None
-                num_hops = None
-                if first_lp_details.get('path'):
-                    path_weight = self._calculate_path_length_new(first_lp_details['path'], network_state)
-                    num_hops = len(first_lp_details['path']) - 1
+                # Use stored routing weight, not recalculated path length
+                path_weight = first_lp_details.get('path_weight_km')
+                num_hops = len(first_lp_details['path']) - 1 if first_lp_details.get('path') else None
                 self._increment_modulation_count(
                     first_lp_details['modulation'],
                     bandwidth_gbps=bandwidth,
@@ -1757,6 +1753,7 @@ class SimStats:
             'band': None,
             'start_slot': None,
             'end_slot': None,
+            'path_weight_km': None,
         }
 
         # Try to get from lightpaths_created
@@ -1773,6 +1770,7 @@ class SimStats:
                 details['band'] = getattr(lp, 'band', None)
                 details['start_slot'] = getattr(lp, 'start_slot', None)
                 details['end_slot'] = getattr(lp, 'end_slot', None)
+                details['path_weight_km'] = getattr(lp, 'path_weight_km', None)
 
         # Fall back to result fields if lightpath lookup failed
         if details['modulation'] is None and result.modulations:
