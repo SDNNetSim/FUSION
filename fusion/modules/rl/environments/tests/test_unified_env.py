@@ -937,3 +937,108 @@ class TestActionMaskWrapper:
 
         assert steps == 5
         assert terminated
+
+
+# Check if sb3-contrib is available for integration tests
+try:
+    from sb3_contrib import MaskablePPO
+
+    HAS_SB3_CONTRIB = True
+except ImportError:
+    HAS_SB3_CONTRIB = False
+
+
+@pytest.mark.skipif(not HAS_SB3_CONTRIB, reason="sb3-contrib not installed")
+class TestSB3Integration:
+    """Integration tests with Stable-Baselines3 MaskablePPO (Chunk 11).
+
+    This is Integration Checkpoint 3 - verifies RL training runs.
+    These tests require sb3-contrib to be installed.
+
+    Note: We use "MultiInputPolicy" for Dict observation spaces.
+    """
+
+    def test_can_create_maskable_ppo(self) -> None:
+        """Can create MaskablePPO with wrapped environment."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        # Use MultiInputPolicy for Dict observation spaces
+        model = MaskablePPO(
+            "MultiInputPolicy",
+            wrapped,
+            verbose=0,
+        )
+
+        assert model is not None
+
+    def test_can_call_predict(self) -> None:
+        """Can call predict() on MaskablePPO model."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        model = MaskablePPO(
+            "MultiInputPolicy",
+            wrapped,
+            verbose=0,
+        )
+
+        obs, _ = wrapped.reset(seed=42)
+        action, _ = model.predict(obs, action_masks=wrapped.action_masks())
+
+        # Action can be int, np.integer, or np.ndarray with single element
+        if isinstance(action, np.ndarray):
+            action_val = int(action.item())
+        else:
+            action_val = int(action)
+
+        assert 0 <= action_val < env.action_space.n
+
+    def test_can_train_1000_steps(self) -> None:
+        """Can train MaskablePPO for 1000 timesteps without crashing."""
+        env = UnifiedSimEnv(num_requests=50)
+        wrapped = ActionMaskWrapper(env)
+
+        model = MaskablePPO(
+            "MultiInputPolicy",
+            wrapped,
+            verbose=0,
+            n_steps=64,  # Smaller batch for faster test
+            batch_size=32,
+        )
+
+        # This should not raise any exceptions
+        model.learn(total_timesteps=1000)
+
+    def test_can_train_and_evaluate(self) -> None:
+        """Can train and then evaluate the model."""
+        env = UnifiedSimEnv(num_requests=20)
+        wrapped = ActionMaskWrapper(env)
+
+        model = MaskablePPO(
+            "MultiInputPolicy",
+            wrapped,
+            verbose=0,
+            n_steps=64,
+            batch_size=32,
+        )
+
+        # Train briefly
+        model.learn(total_timesteps=500)
+
+        # Evaluate for one episode
+        obs, info = wrapped.reset(seed=99)
+        total_reward = 0.0
+        steps = 0
+
+        while True:
+            action, _ = model.predict(obs, action_masks=wrapped.action_masks())
+            obs, reward, terminated, truncated, info = wrapped.step(int(action))
+            total_reward += float(reward)
+            steps += 1
+
+            if terminated or truncated:
+                break
+
+        assert steps == 20  # Should complete all requests
+        # Reward can be positive or negative depending on learning
