@@ -50,6 +50,8 @@ class RLConfig:
         max_holding_time: Maximum holding time for normalization
         num_nodes: Number of nodes in network (for observation space)
         total_slots: Total spectrum slots per link
+        use_gnn_obs: Whether to include GNN features (adjacency, node features)
+        num_node_features: Number of features per node for GNN mode
     """
 
     k_paths: int = 3
@@ -61,6 +63,8 @@ class RLConfig:
     max_holding_time: float = 100.0
     num_nodes: int = 14
     total_slots: int = 320
+    use_gnn_obs: bool = False
+    num_node_features: int = 4  # utilization, degree, centrality, is_src_dst
 
 
 @dataclass(frozen=True)

@@ -132,59 +132,75 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         k_paths = self._config.k_paths
         max_slots = self._config.total_slots
 
-        # Observation space: Dict of Box spaces
-        self.observation_space: spaces.Dict = spaces.Dict(
-            {
-                "source": spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(num_nodes,),
-                    dtype=np.float32,
-                ),
-                "destination": spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(num_nodes,),
-                    dtype=np.float32,
-                ),
-                "holding_time": spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(1,),
-                    dtype=np.float32,
-                ),
-                "slots_needed": spaces.Box(
-                    low=-1.0,
-                    high=float(max_slots),
-                    shape=(k_paths,),
-                    dtype=np.float32,
-                ),
-                "path_lengths": spaces.Box(
-                    low=0.0,
-                    high=float(num_nodes),
-                    shape=(k_paths,),
-                    dtype=np.float32,
-                ),
-                "congestion": spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(k_paths,),
-                    dtype=np.float32,
-                ),
-                "available_slots": spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(k_paths,),
-                    dtype=np.float32,
-                ),
-                "is_feasible": spaces.Box(
-                    low=0.0,
-                    high=1.0,
-                    shape=(k_paths,),
-                    dtype=np.float32,
-                ),
-            }
-        )
+        # Base observation space: Dict of Box spaces
+        obs_spaces: dict[str, spaces.Box] = {
+            "source": spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(num_nodes,),
+                dtype=np.float32,
+            ),
+            "destination": spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(num_nodes,),
+                dtype=np.float32,
+            ),
+            "holding_time": spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(1,),
+                dtype=np.float32,
+            ),
+            "slots_needed": spaces.Box(
+                low=-1.0,
+                high=float(max_slots),
+                shape=(k_paths,),
+                dtype=np.float32,
+            ),
+            "path_lengths": spaces.Box(
+                low=0.0,
+                high=float(num_nodes),
+                shape=(k_paths,),
+                dtype=np.float32,
+            ),
+            "congestion": spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(k_paths,),
+                dtype=np.float32,
+            ),
+            "available_slots": spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(k_paths,),
+                dtype=np.float32,
+            ),
+            "is_feasible": spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(k_paths,),
+                dtype=np.float32,
+            ),
+        }
+
+        # Add GNN features if enabled
+        if self._config.use_gnn_obs:
+            num_node_features = self._config.num_node_features
+            obs_spaces["adjacency"] = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(num_nodes, num_nodes),
+                dtype=np.float32,
+            )
+            obs_spaces["node_features"] = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(num_nodes, num_node_features),
+                dtype=np.float32,
+            )
+
+        self.observation_space: spaces.Dict = spaces.Dict(obs_spaces)
 
         # Action space: Discrete - select one of k paths
         self.action_space: spaces.Discrete = spaces.Discrete(k_paths)
@@ -450,7 +466,7 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         else:
             is_feasible = np.zeros(k, dtype=np.float32)
 
-        return {
+        obs: dict[str, np.ndarray] = {
             "source": source_onehot,
             "destination": dest_onehot,
             "holding_time": np.array([holding_time_norm], dtype=np.float32),
@@ -460,6 +476,13 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
             "available_slots": available_slots,
             "is_feasible": is_feasible,
         }
+
+        # Add GNN features if enabled
+        if self._config.use_gnn_obs:
+            obs["adjacency"] = self._generate_adjacency()
+            obs["node_features"] = self._generate_node_features(req.source, req.destination)
+
+        return obs
 
     def _build_info(self) -> dict[str, Any]:
         """Build info dict with action mask and metadata.
@@ -487,7 +510,7 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         k = self._config.k_paths
         n = self._config.num_nodes
 
-        return {
+        obs: dict[str, np.ndarray] = {
             "source": np.zeros(n, dtype=np.float32),
             "destination": np.zeros(n, dtype=np.float32),
             "holding_time": np.zeros(1, dtype=np.float32),
@@ -497,6 +520,14 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
             "available_slots": np.zeros(k, dtype=np.float32),
             "is_feasible": np.zeros(k, dtype=np.float32),
         }
+
+        # Add zero GNN features if enabled
+        if self._config.use_gnn_obs:
+            num_node_features = self._config.num_node_features
+            obs["adjacency"] = np.zeros((n, n), dtype=np.float32)
+            obs["node_features"] = np.zeros((n, num_node_features), dtype=np.float32)
+
+        return obs
 
     def _generate_slots_needed(self, bandwidth_gbps: float) -> np.ndarray:
         """Generate slots needed per path (standalone mode simulation).
@@ -550,6 +581,78 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         # Generate random availability (typically 30-100%)
         available = 0.3 + 0.7 * self.np_random.random(k)
         return available.astype(np.float32)
+
+    def _generate_adjacency(self) -> np.ndarray:
+        """Generate adjacency matrix for GNN observations (standalone mode).
+
+        In standalone mode, generates a random connected graph structure.
+        When wired to real simulation, this will use the actual topology.
+
+        Returns:
+            Adjacency matrix of shape (num_nodes, num_nodes) with values in [0, 1]
+        """
+        n = self._config.num_nodes
+
+        # Generate a random symmetric adjacency matrix
+        # Use a sparse connectivity pattern typical of optical networks
+        adj = np.zeros((n, n), dtype=np.float32)
+
+        # Create a ring topology as base (ensures connectivity)
+        for i in range(n):
+            adj[i, (i + 1) % n] = 1.0
+            adj[(i + 1) % n, i] = 1.0
+
+        # Add some random additional links (mesh-like structure)
+        num_extra_links = n // 2
+        for _ in range(num_extra_links):
+            i = self.np_random.integers(0, n)
+            j = self.np_random.integers(0, n)
+            if i != j:
+                adj[i, j] = 1.0
+                adj[j, i] = 1.0
+
+        return adj
+
+    def _generate_node_features(self, source: int, destination: int) -> np.ndarray:
+        """Generate node features for GNN observations (standalone mode).
+
+        Features per node:
+        - utilization: Link utilization around the node [0, 1]
+        - degree: Normalized node degree [0, 1]
+        - centrality: Betweenness centrality approximation [0, 1]
+        - is_src_dst: 1.0 if source, 0.5 if destination, 0.0 otherwise
+
+        Args:
+            source: Source node index
+            destination: Destination node index
+
+        Returns:
+            Node features of shape (num_nodes, num_node_features)
+        """
+        n = self._config.num_nodes
+        num_features = self._config.num_node_features
+
+        features = np.zeros((n, num_features), dtype=np.float32)
+
+        for i in range(n):
+            # Feature 0: utilization (random in standalone mode)
+            features[i, 0] = float(self.np_random.random())
+
+            # Feature 1: normalized degree (random, typical range 2-6 for optical)
+            features[i, 1] = float(self.np_random.integers(2, 7)) / 6.0
+
+            # Feature 2: centrality approximation (random)
+            features[i, 2] = float(self.np_random.random())
+
+            # Feature 3: source/destination indicator
+            if i == source:
+                features[i, 3] = 1.0
+            elif i == destination:
+                features[i, 3] = 0.5
+            else:
+                features[i, 3] = 0.0
+
+        return features
 
     def render(self) -> None:
         """Render the environment (not implemented)."""

@@ -1042,3 +1042,171 @@ class TestSB3Integration:
 
         assert steps == 20  # Should complete all requests
         # Reward can be positive or negative depending on learning
+
+
+class TestUnifiedSimEnvGNNObservations:
+    """Tests for GNN observation mode (Chunk 12)."""
+
+    def test_gnn_mode_disabled_by_default(self) -> None:
+        """GNN mode is disabled by default."""
+        config = RLConfig()
+        assert not config.use_gnn_obs
+
+    def test_gnn_mode_adds_adjacency_to_obs_space(self) -> None:
+        """GNN mode adds adjacency matrix to observation space."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        assert "adjacency" in env.observation_space.spaces
+        assert env.observation_space["adjacency"].shape == (10, 10)
+
+    def test_gnn_mode_adds_node_features_to_obs_space(self) -> None:
+        """GNN mode adds node features to observation space."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10, num_node_features=4)
+        env = UnifiedSimEnv(config=config)
+
+        assert "node_features" in env.observation_space.spaces
+        assert env.observation_space["node_features"].shape == (10, 4)
+
+    def test_gnn_mode_custom_num_node_features(self) -> None:
+        """GNN mode respects custom num_node_features."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=8, num_node_features=6)
+        env = UnifiedSimEnv(config=config)
+
+        assert env.observation_space["node_features"].shape == (8, 6)
+
+    def test_non_gnn_mode_no_adjacency(self) -> None:
+        """Non-GNN mode does not include adjacency."""
+        config = RLConfig(use_gnn_obs=False)
+        env = UnifiedSimEnv(config=config)
+
+        assert "adjacency" not in env.observation_space.spaces
+        assert "node_features" not in env.observation_space.spaces
+
+    def test_gnn_reset_returns_adjacency(self) -> None:
+        """reset() returns adjacency matrix in GNN mode."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        obs, _ = env.reset(seed=42)
+
+        assert "adjacency" in obs
+        assert obs["adjacency"].shape == (10, 10)
+        assert obs["adjacency"].dtype == np.float32
+
+    def test_gnn_reset_returns_node_features(self) -> None:
+        """reset() returns node features in GNN mode."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10, num_node_features=4)
+        env = UnifiedSimEnv(config=config)
+
+        obs, _ = env.reset(seed=42)
+
+        assert "node_features" in obs
+        assert obs["node_features"].shape == (10, 4)
+        assert obs["node_features"].dtype == np.float32
+
+    def test_gnn_step_returns_adjacency(self) -> None:
+        """step() returns adjacency matrix in GNN mode."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config, num_requests=5)
+
+        env.reset(seed=42)
+        obs, _, _, _, _ = env.step(0)
+
+        assert "adjacency" in obs
+        assert obs["adjacency"].shape == (10, 10)
+
+    def test_gnn_adjacency_is_symmetric(self) -> None:
+        """Adjacency matrix is symmetric."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        obs, _ = env.reset(seed=42)
+        adj = obs["adjacency"]
+
+        assert np.allclose(adj, adj.T), "Adjacency matrix should be symmetric"
+
+    def test_gnn_adjacency_values_in_range(self) -> None:
+        """Adjacency matrix values are in [0, 1]."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        obs, _ = env.reset(seed=42)
+        adj = obs["adjacency"]
+
+        assert np.all(adj >= 0.0)
+        assert np.all(adj <= 1.0)
+
+    def test_gnn_node_features_in_range(self) -> None:
+        """Node features are in [0, 1]."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        obs, _ = env.reset(seed=42)
+        features = obs["node_features"]
+
+        assert np.all(features >= 0.0)
+        assert np.all(features <= 1.0)
+
+    def test_gnn_node_features_source_marked(self) -> None:
+        """Source node is marked in node features."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=14, num_node_features=4)
+        env = UnifiedSimEnv(config=config)
+
+        env.reset(seed=42)
+        req = env.current_request
+        assert req is not None
+
+        obs, _ = env.reset(seed=42)  # Reset again to get same request
+        features = obs["node_features"]
+
+        # Feature 3 (index 3) is the source/destination indicator
+        # Source should be 1.0
+        assert features[req.source, 3] == 1.0
+
+    def test_gnn_node_features_destination_marked(self) -> None:
+        """Destination node is marked in node features."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=14, num_node_features=4)
+        env = UnifiedSimEnv(config=config)
+
+        env.reset(seed=42)
+        req = env.current_request
+        assert req is not None
+
+        obs, _ = env.reset(seed=42)  # Reset again to get same request
+        features = obs["node_features"]
+
+        # Feature 3 (index 3) is the source/destination indicator
+        # Destination should be 0.5
+        assert features[req.destination, 3] == 0.5
+
+    def test_gnn_observation_in_space(self) -> None:
+        """GNN observation is contained in observation space."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        obs, _ = env.reset(seed=42)
+
+        assert env.observation_space.contains(obs)
+
+    def test_gnn_zero_observation_has_correct_shape(self) -> None:
+        """Zero observation includes GNN features with correct shapes."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10, num_node_features=4)
+        env = UnifiedSimEnv(config=config)
+
+        obs = env._zero_observation()
+
+        assert "adjacency" in obs
+        assert "node_features" in obs
+        assert obs["adjacency"].shape == (10, 10)
+        assert obs["node_features"].shape == (10, 4)
+        assert np.all(obs["adjacency"] == 0)
+        assert np.all(obs["node_features"] == 0)
+
+    def test_gnn_passes_env_checker(self) -> None:
+        """GNN mode environment passes gymnasium env_checker."""
+        from gymnasium.utils.env_checker import check_env
+
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config, num_requests=10)
+        check_env(env, skip_render_check=True)
