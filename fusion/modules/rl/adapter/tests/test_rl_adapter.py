@@ -3,6 +3,7 @@
 Phase: P4.1 - RLSimulationAdapter Scaffolding
 Chunk: 2 - Adapter skeleton
 Chunk: 3 - get_path_options method
+Chunk: 4 - apply_action method
 """
 
 from unittest.mock import MagicMock
@@ -403,3 +404,168 @@ class TestGetPathOptions:
 
         assert options[0].congestion == 0.0
         assert options[0].available_slots == 1.0
+
+
+class TestApplyAction:
+    """Tests for apply_action method.
+
+    Verifies that apply_action:
+    - Routes through orchestrator with forced_path
+    - Finds correct PathOption by action index
+    - Returns failed result for invalid action
+    - Raises ValueError for negative action
+    """
+
+    def _create_path_option(
+        self,
+        path_index: int = 0,
+        path: tuple[str, ...] = ("A", "B"),
+        is_feasible: bool = True,
+    ) -> PathOption:
+        """Create a PathOption for testing."""
+        return PathOption(
+            path_index=path_index,
+            path=path,
+            weight_km=100.0,
+            num_hops=len(path) - 1,
+            modulation="QPSK",
+            slots_needed=4,
+            is_feasible=is_feasible,
+            congestion=0.0,
+            available_slots=1.0,
+        )
+
+    def _create_adapter_with_mocks(self) -> tuple[RLSimulationAdapter, MagicMock]:
+        """Create an adapter with mock orchestrator."""
+        mock_routing = MagicMock()
+        mock_spectrum = MagicMock()
+        mock_orchestrator = MagicMock()
+        mock_orchestrator.routing = mock_routing
+        mock_orchestrator.spectrum = mock_spectrum
+
+        adapter = RLSimulationAdapter(mock_orchestrator)
+        return adapter, mock_orchestrator
+
+    def test_calls_orchestrator_handle_arrival(self) -> None:
+        """apply_action should call orchestrator.handle_arrival."""
+        adapter, mock_orchestrator = self._create_adapter_with_mocks()
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_orchestrator.handle_arrival.return_value = mock_result
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+
+        options = [
+            self._create_path_option(path_index=0, path=("A", "C", "B")),
+            self._create_path_option(path_index=1, path=("A", "D", "B")),
+        ]
+
+        result = adapter.apply_action(0, mock_request, mock_network_state, options)
+
+        mock_orchestrator.handle_arrival.assert_called_once()
+        assert result is mock_result
+
+    def test_passes_forced_path_to_orchestrator(self) -> None:
+        """apply_action should pass selected path as forced_path."""
+        adapter, mock_orchestrator = self._create_adapter_with_mocks()
+
+        mock_result = MagicMock()
+        mock_orchestrator.handle_arrival.return_value = mock_result
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+
+        options = [
+            self._create_path_option(path_index=0, path=("A", "X", "B")),
+            self._create_path_option(path_index=1, path=("A", "Y", "Z", "B")),
+        ]
+
+        # Select action 1 (second path)
+        adapter.apply_action(1, mock_request, mock_network_state, options)
+
+        call_args = mock_orchestrator.handle_arrival.call_args
+        assert call_args.kwargs["forced_path"] == ["A", "Y", "Z", "B"]
+
+    def test_returns_failed_result_for_missing_path_index(self) -> None:
+        """apply_action should return failed result if action not in options."""
+        adapter, mock_orchestrator = self._create_adapter_with_mocks()
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+
+        # Options only have path_index 0 and 1
+        options = [
+            self._create_path_option(path_index=0),
+            self._create_path_option(path_index=1),
+        ]
+
+        # Select action 2 (not in options)
+        result = adapter.apply_action(2, mock_request, mock_network_state, options)
+
+        assert result.success is False
+        mock_orchestrator.handle_arrival.assert_not_called()
+
+    def test_returns_failed_result_for_empty_options(self) -> None:
+        """apply_action should return failed result if options is empty."""
+        adapter, mock_orchestrator = self._create_adapter_with_mocks()
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+
+        result = adapter.apply_action(0, mock_request, mock_network_state, [])
+
+        assert result.success is False
+        mock_orchestrator.handle_arrival.assert_not_called()
+
+    def test_raises_value_error_for_negative_action(self) -> None:
+        """apply_action should raise ValueError for negative action."""
+        adapter, _ = self._create_adapter_with_mocks()
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+        options = [self._create_path_option()]
+
+        with pytest.raises(ValueError, match="non-negative"):
+            adapter.apply_action(-1, mock_request, mock_network_state, options)
+
+    def test_selects_correct_option_by_path_index(self) -> None:
+        """apply_action should find option with matching path_index."""
+        adapter, mock_orchestrator = self._create_adapter_with_mocks()
+
+        mock_result = MagicMock()
+        mock_orchestrator.handle_arrival.return_value = mock_result
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+
+        # Options with non-sequential path_indices (simulating some paths not found)
+        options = [
+            self._create_path_option(path_index=0, path=("A", "B")),
+            self._create_path_option(path_index=2, path=("A", "C", "D", "B")),  # Index 1 missing
+        ]
+
+        # Select action 2
+        adapter.apply_action(2, mock_request, mock_network_state, options)
+
+        call_args = mock_orchestrator.handle_arrival.call_args
+        assert call_args.kwargs["forced_path"] == ["A", "C", "D", "B"]
+
+    def test_passes_request_and_network_state_to_orchestrator(self) -> None:
+        """apply_action should pass request and network_state to orchestrator."""
+        adapter, mock_orchestrator = self._create_adapter_with_mocks()
+
+        mock_result = MagicMock()
+        mock_orchestrator.handle_arrival.return_value = mock_result
+
+        mock_request = MagicMock()
+        mock_network_state = MagicMock()
+
+        options = [self._create_path_option()]
+
+        adapter.apply_action(0, mock_request, mock_network_state, options)
+
+        call_args = mock_orchestrator.handle_arrival.call_args
+        assert call_args.kwargs["request"] is mock_request
+        assert call_args.kwargs["network_state"] is mock_network_state

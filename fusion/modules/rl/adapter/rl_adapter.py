@@ -14,6 +14,7 @@ Key Invariants:
 Phase: P4.1 - RLSimulationAdapter Scaffolding
 Chunk: 2 - Adapter skeleton
 Chunk: 3 - get_path_options method
+Chunk: 4 - apply_action method
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from fusion.core.orchestrator import SDNOrchestrator
     from fusion.domain.network_state import NetworkState
     from fusion.domain.request import Request
+    from fusion.domain.results import AllocationResult
     from fusion.interfaces.pipelines import RoutingPipeline, SpectrumPipeline
 
 
@@ -227,3 +229,64 @@ class RLSimulationAdapter:
         # TODO: Implement when NetworkState has get_available_slots()
         # For now, return 1.0 (fully available)
         return 1.0
+
+    def apply_action(
+        self,
+        action: int,
+        request: Request,
+        network_state: NetworkState,
+        options: PathOptionList,
+    ) -> AllocationResult:
+        """Apply the selected action via orchestrator.
+
+        This method routes through the SDNOrchestrator with a forced path,
+        ensuring all allocation logic (spectrum assignment, SNR validation,
+        grooming, slicing) uses the same code paths as non-RL simulation.
+
+        Args:
+            action: Index of selected path (corresponds to PathOption.path_index)
+            request: Current request to allocate
+            network_state: Current network state
+            options: PathOption list from get_path_options()
+
+        Returns:
+            AllocationResult from orchestrator indicating success/failure
+
+        Raises:
+            ValueError: If action is negative
+
+        Note:
+            If action doesn't match any PathOption.path_index, returns
+            a failed AllocationResult (no paths available for that action).
+        """
+        from fusion.domain.request import BlockReason
+        from fusion.domain.results import AllocationResult
+
+        if action < 0:
+            raise ValueError(f"Action must be non-negative, got {action}")
+
+        # Find the corresponding PathOption
+        selected_option: PathOption | None = None
+        for opt in options:
+            if opt.path_index == action:
+                selected_option = opt
+                break
+
+        if selected_option is None:
+            # Action refers to a path that wasn't returned
+            # (e.g., fewer paths found than k_paths, or invalid action)
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.NO_PATH,
+            )
+
+        # Apply via orchestrator with forced path
+        # This ensures all allocation logic goes through the same code path
+        # as non-RL simulation (SNR checks, grooming, slicing, etc.)
+        result = self._orchestrator.handle_arrival(
+            request=request,
+            network_state=network_state,
+            forced_path=list(selected_option.path),
+        )
+
+        return result
