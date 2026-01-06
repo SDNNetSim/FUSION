@@ -1,12 +1,14 @@
 """Tests for UnifiedSimEnv.
 
 Phase: P4.2 - UnifiedSimEnv Wiring
-Chunk 6: Environment skeleton tests
+Chunk 6-7: Environment skeleton and reset() tests
 
 These tests verify that:
 1. Environment can be instantiated
 2. Observation and action spaces are valid Gymnasium spaces
 3. Spaces have correct shapes based on configuration
+4. reset() generates requests and returns valid observations
+5. Seeding produces deterministic episodes
 """
 
 from __future__ import annotations
@@ -256,3 +258,245 @@ class TestUnifiedSimEnvZeroObservation:
 
         # slots_needed should be -1 (indicates no path)
         assert np.all(obs["slots_needed"] == -1.0)
+
+
+class TestUnifiedSimEnvReset:
+    """Tests for reset() method (Chunk 7)."""
+
+    def test_reset_generates_requests(self) -> None:
+        """reset() generates requests for the episode."""
+        env = UnifiedSimEnv(num_requests=50)
+        env.reset(seed=42)
+
+        assert env.num_requests == 50
+        assert env.current_request is not None
+
+    def test_reset_initializes_request_index(self) -> None:
+        """reset() initializes request index to 0."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+
+        assert env.request_index == 0
+
+    def test_reset_with_options_num_requests(self) -> None:
+        """reset() accepts num_requests in options."""
+        env = UnifiedSimEnv(num_requests=100)
+        env.reset(seed=42, options={"num_requests": 25})
+
+        assert env.num_requests == 25
+
+    def test_reset_returns_observation_with_request_data(self) -> None:
+        """reset() returns observation based on first request."""
+        env = UnifiedSimEnv()
+        obs, _ = env.reset(seed=42)
+
+        # Source and destination should have exactly one 1.0 value (one-hot)
+        assert np.sum(obs["source"]) == 1.0
+        assert np.sum(obs["destination"]) == 1.0
+
+        # Holding time should be in [0, 1]
+        assert 0.0 <= obs["holding_time"][0] <= 1.0
+
+    def test_reset_info_contains_metadata(self) -> None:
+        """reset() info contains episode metadata."""
+        env = UnifiedSimEnv(num_requests=50)
+        _, info = env.reset(seed=42)
+
+        assert "action_mask" in info
+        assert "request_index" in info
+        assert "total_requests" in info
+        assert info["request_index"] == 0
+        assert info["total_requests"] == 50
+
+    def test_reset_action_mask_has_feasible_paths(self) -> None:
+        """reset() action mask indicates some feasible paths."""
+        env = UnifiedSimEnv()
+        # Run multiple times to ensure at least one has feasible paths
+        has_feasible = False
+        for seed in range(10):
+            _, info = env.reset(seed=seed)
+            if np.any(info["action_mask"]):
+                has_feasible = True
+                break
+
+        assert has_feasible, "No feasible paths found in 10 resets"
+
+
+class TestUnifiedSimEnvSeeding:
+    """Tests for deterministic seeding."""
+
+    def test_same_seed_same_requests(self) -> None:
+        """Same seed produces identical request sequences."""
+        env1 = UnifiedSimEnv(num_requests=20)
+        env2 = UnifiedSimEnv(num_requests=20)
+
+        env1.reset(seed=123)
+        env2.reset(seed=123)
+
+        # Compare first request
+        req1 = env1.current_request
+        req2 = env2.current_request
+
+        assert req1 is not None
+        assert req2 is not None
+        assert req1.source == req2.source
+        assert req1.destination == req2.destination
+        assert req1.bandwidth_gbps == req2.bandwidth_gbps
+
+    def test_same_seed_same_observations(self) -> None:
+        """Same seed produces identical observations."""
+        env1 = UnifiedSimEnv()
+        env2 = UnifiedSimEnv()
+
+        obs1, _ = env1.reset(seed=456)
+        obs2, _ = env2.reset(seed=456)
+
+        for key in obs1:
+            assert np.allclose(obs1[key], obs2[key]), f"Mismatch in {key}"
+
+    def test_different_seeds_different_requests(self) -> None:
+        """Different seeds produce different request sequences."""
+        env = UnifiedSimEnv(num_requests=20)
+
+        env.reset(seed=100)
+        req1 = env.current_request
+
+        env.reset(seed=200)
+        req2 = env.current_request
+
+        assert req1 is not None
+        assert req2 is not None
+        # Very unlikely to have same src, dst, and bandwidth with different seeds
+        different = (
+            req1.source != req2.source
+            or req1.destination != req2.destination
+            or req1.bandwidth_gbps != req2.bandwidth_gbps
+        )
+        assert different, "Different seeds should produce different requests"
+
+    def test_reset_without_seed_uses_random(self) -> None:
+        """reset() without seed still works (uses random)."""
+        env = UnifiedSimEnv()
+        obs, info = env.reset()
+
+        assert env.observation_space.contains(obs)
+        assert "action_mask" in info
+
+
+class TestUnifiedSimEnvRequestGeneration:
+    """Tests for internal request generation."""
+
+    def test_requests_have_valid_source_destination(self) -> None:
+        """Generated requests have valid source/destination nodes."""
+        config = RLConfig(num_nodes=14)
+        env = UnifiedSimEnv(config=config, num_requests=50)
+        env.reset(seed=42)
+
+        req = env.current_request
+        assert req is not None
+        assert 0 <= req.source < 14
+        assert 0 <= req.destination < 14
+        assert req.source != req.destination
+
+    def test_requests_have_valid_bandwidth(self) -> None:
+        """Generated requests have valid bandwidth values."""
+        env = UnifiedSimEnv(num_requests=100)
+        env.reset(seed=42)
+
+        req = env.current_request
+        assert req is not None
+        assert req.bandwidth_gbps in [10.0, 40.0, 100.0, 400.0]
+
+    def test_requests_have_positive_holding_time(self) -> None:
+        """Generated requests have positive holding time."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+
+        req = env.current_request
+        assert req is not None
+        assert req.holding_time > 0
+
+    def test_requests_have_increasing_arrival_times(self) -> None:
+        """Generated requests have non-decreasing arrival times."""
+        env = UnifiedSimEnv(num_requests=50)
+        env.reset(seed=42)
+
+        # Access internal request list
+        prev_time = 0.0
+        for req in env._requests:
+            assert req.arrive_time >= prev_time
+            prev_time = req.arrive_time
+
+
+class TestUnifiedSimEnvObservationBuilding:
+    """Tests for observation building from requests."""
+
+    def test_source_one_hot_matches_request(self) -> None:
+        """Source one-hot encoding matches request source."""
+        config = RLConfig(num_nodes=14)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        req = env.current_request
+        assert req is not None
+
+        # Find the 1.0 in source array
+        source_idx = np.argmax(obs["source"])
+        assert source_idx == req.source
+
+    def test_destination_one_hot_matches_request(self) -> None:
+        """Destination one-hot encoding matches request destination."""
+        config = RLConfig(num_nodes=14)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        req = env.current_request
+        assert req is not None
+
+        # Find the 1.0 in destination array
+        dest_idx = np.argmax(obs["destination"])
+        assert dest_idx == req.destination
+
+    def test_holding_time_is_normalized(self) -> None:
+        """Holding time is normalized to [0, 1]."""
+        config = RLConfig(max_holding_time=100.0)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert 0.0 <= obs["holding_time"][0] <= 1.0
+
+    def test_path_features_have_correct_shape(self) -> None:
+        """Path features have shape (k_paths,)."""
+        config = RLConfig(k_paths=5)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert obs["slots_needed"].shape == (5,)
+        assert obs["path_lengths"].shape == (5,)
+        assert obs["congestion"].shape == (5,)
+        assert obs["available_slots"].shape == (5,)
+        assert obs["is_feasible"].shape == (5,)
+
+    def test_slots_needed_are_positive(self) -> None:
+        """Slots needed are positive values."""
+        env = UnifiedSimEnv()
+        obs, _ = env.reset(seed=42)
+
+        # All slots_needed should be >= 1 (at least 1 slot needed)
+        assert np.all(obs["slots_needed"] >= 1.0)
+
+    def test_congestion_in_valid_range(self) -> None:
+        """Congestion values are in [0, 1]."""
+        env = UnifiedSimEnv()
+        obs, _ = env.reset(seed=42)
+
+        assert np.all(obs["congestion"] >= 0.0)
+        assert np.all(obs["congestion"] <= 1.0)
+
+    def test_available_slots_in_valid_range(self) -> None:
+        """Available slots ratios are in [0, 1]."""
+        env = UnifiedSimEnv()
+        obs, _ = env.reset(seed=42)
+
+        assert np.all(obs["available_slots"] >= 0.0)
+        assert np.all(obs["available_slots"] <= 1.0)
