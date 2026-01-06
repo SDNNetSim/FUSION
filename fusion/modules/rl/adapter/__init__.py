@@ -12,10 +12,14 @@ from fusion.modules.rl.adapter.path_option import (
     PathOptionList,
     compute_action_mask,
 )
+from fusion.modules.rl.adapter.rl_adapter import RLSimulationAdapter
 
 __all__ = [
+    # PathOption and helpers
     "PathOption",
     "PathOptionList",
     "ActionMask",
     "compute_action_mask",
+    # Adapter
+    "RLSimulationAdapter",
 ]
