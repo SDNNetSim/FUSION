@@ -313,26 +313,102 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
     ) -> tuple[dict[str, np.ndarray], float, bool, bool, dict[str, Any]]:
         """Execute action and advance simulation.
 
+        Applies the selected action (path choice), computes reward based on
+        feasibility, and advances to the next request in the episode.
+
         Args:
             action: Selected path index (0 to k_paths-1)
 
         Returns:
-            observation: New observation dict
-            reward: Scalar reward
-            terminated: True if episode ended normally
-            truncated: True if episode ended abnormally
-            info: Info dict with action_mask
-        """
-        # TODO: Chunk 8 - Full step implementation with simulation wiring
-        # For now, return dummy values
+            observation: New observation dict for next request
+            reward: Scalar reward (positive if feasible, negative if blocked)
+            terminated: True if all requests processed
+            truncated: Always False (no truncation in optical network episodes)
+            info: Info dict with action_mask and metadata
 
-        obs = self._zero_observation()
-        reward = 0.0
-        terminated = True
+        Raises:
+            RuntimeError: If step() called before reset() or after episode end
+        """
+        # Validate state
+        if len(self._requests) == 0:
+            raise RuntimeError("Must call reset() before step()")
+
+        if self._request_index >= len(self._requests):
+            raise RuntimeError("Episode has ended. Call reset() to start new episode.")
+
+        if self._current_request is None:
+            raise RuntimeError("No current request. Call reset() to start new episode.")
+
+        # Compute reward based on action feasibility
+        reward = self._compute_reward(action)
+
+        # Record result for statistics (in standalone mode, just track counts)
+        self._record_step_result(action)
+
+        # Advance to next request
+        self._request_index += 1
+
+        # Check termination
+        terminated = self._request_index >= len(self._requests)
         truncated = False
+
+        # Update current request and feasibility for next step
+        if not terminated:
+            self._current_request = self._requests[self._request_index]
+            self._current_feasibility = self._generate_path_feasibility()
+        else:
+            self._current_request = None
+            self._current_feasibility = None
+
+        # Build observation and info
+        obs = self._build_observation()
         info = self._build_info()
 
         return obs, reward, terminated, truncated, info
+
+    def _compute_reward(self, action: int) -> float:
+        """Compute reward for the selected action.
+
+        In standalone mode, reward is based on whether the selected path
+        was feasible. When wired to real simulation, this will use
+        adapter.compute_reward() with actual allocation results.
+
+        Args:
+            action: Selected path index
+
+        Returns:
+            Reward value (positive for success, negative for block)
+        """
+        k = self._config.k_paths
+
+        # Check if action is valid
+        if action < 0 or action >= k:
+            # Invalid action - penalize
+            return self._config.rl_block_penalty
+
+        # Check feasibility of selected path
+        if self._current_feasibility is not None and action < len(self._current_feasibility):
+            is_feasible = self._current_feasibility[action]
+        else:
+            is_feasible = False
+
+        if is_feasible:
+            return self._config.rl_success_reward
+        else:
+            return self._config.rl_block_penalty
+
+    def _record_step_result(self, action: int) -> None:
+        """Record step result for statistics tracking.
+
+        In standalone mode, this is a no-op placeholder. When wired to
+        real simulation, this will call engine.record_allocation_result().
+
+        Args:
+            action: Selected path index
+        """
+        # Placeholder for statistics tracking
+        # In real mode: self._engine.record_allocation_result(request, result)
+        pass
 
     def _build_observation(self) -> dict[str, np.ndarray]:
         """Build observation dict from current request state.

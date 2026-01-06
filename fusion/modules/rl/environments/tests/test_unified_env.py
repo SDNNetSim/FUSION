@@ -1,7 +1,7 @@
 """Tests for UnifiedSimEnv.
 
 Phase: P4.2 - UnifiedSimEnv Wiring
-Chunk 6-7: Environment skeleton and reset() tests
+Chunks 6-8: Environment skeleton, reset(), and step() tests
 
 These tests verify that:
 1. Environment can be instantiated
@@ -9,6 +9,8 @@ These tests verify that:
 3. Spaces have correct shapes based on configuration
 4. reset() generates requests and returns valid observations
 5. Seeding produces deterministic episodes
+6. step() advances episode and returns correct rewards
+7. Episode terminates after all requests processed
 """
 
 from __future__ import annotations
@@ -500,3 +502,287 @@ class TestUnifiedSimEnvObservationBuilding:
 
         assert np.all(obs["available_slots"] >= 0.0)
         assert np.all(obs["available_slots"] <= 1.0)
+
+
+class TestUnifiedSimEnvStep:
+    """Tests for step() method (Chunk 8)."""
+
+    def test_step_returns_five_tuple(self) -> None:
+        """step() returns (obs, reward, terminated, truncated, info)."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+        result = env.step(0)
+
+        assert isinstance(result, tuple)
+        assert len(result) == 5
+
+    def test_step_returns_valid_observation(self) -> None:
+        """step() returns observation in observation_space."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+        obs, _, _, _, _ = env.step(0)
+
+        assert env.observation_space.contains(obs)
+
+    def test_step_returns_float_reward(self) -> None:
+        """step() returns numeric reward."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+        _, reward, _, _, _ = env.step(0)
+
+        assert isinstance(reward, (int, float))
+
+    def test_step_returns_bool_terminated(self) -> None:
+        """step() returns boolean terminated flag."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+        _, _, terminated, _, _ = env.step(0)
+
+        assert isinstance(terminated, bool)
+
+    def test_step_returns_bool_truncated(self) -> None:
+        """step() returns boolean truncated flag (always False)."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+        _, _, _, truncated, _ = env.step(0)
+
+        assert isinstance(truncated, bool)
+        assert truncated is False
+
+    def test_step_returns_info_with_action_mask(self) -> None:
+        """step() returns info dict with action_mask."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+        _, _, _, _, info = env.step(0)
+
+        assert "action_mask" in info
+        assert isinstance(info["action_mask"], np.ndarray)
+
+    def test_step_advances_request_index(self) -> None:
+        """step() advances request_index by 1."""
+        env = UnifiedSimEnv()
+        env.reset(seed=42)
+
+        assert env.request_index == 0
+        env.step(0)
+        assert env.request_index == 1
+        env.step(0)
+        assert env.request_index == 2
+
+    def test_step_updates_current_request(self) -> None:
+        """step() updates current_request to next request."""
+        env = UnifiedSimEnv(num_requests=10)
+        env.reset(seed=42)
+
+        first_request = env.current_request
+        env.step(0)
+        second_request = env.current_request
+
+        assert first_request is not None
+        assert second_request is not None
+        assert first_request.request_id == 0
+        assert second_request.request_id == 1
+
+    def test_step_without_reset_raises_error(self) -> None:
+        """step() before reset() raises RuntimeError."""
+        env = UnifiedSimEnv()
+
+        with pytest.raises(RuntimeError, match="Must call reset"):
+            env.step(0)
+
+
+class TestUnifiedSimEnvEpisodeTermination:
+    """Tests for episode termination logic."""
+
+    def test_terminated_after_all_requests(self) -> None:
+        """Episode terminates after processing all requests."""
+        env = UnifiedSimEnv(num_requests=5)
+        env.reset(seed=42)
+
+        for i in range(4):
+            _, _, terminated, _, _ = env.step(0)
+            assert not terminated, f"Terminated too early at step {i}"
+
+        # Last step should terminate
+        _, _, terminated, _, _ = env.step(0)
+        assert terminated
+
+    def test_is_episode_done_property(self) -> None:
+        """is_episode_done property reflects episode state."""
+        env = UnifiedSimEnv(num_requests=3)
+        env.reset(seed=42)
+
+        assert not env.is_episode_done
+        env.step(0)
+        assert not env.is_episode_done
+        env.step(0)
+        assert not env.is_episode_done
+        env.step(0)
+        assert env.is_episode_done
+
+    def test_current_request_none_after_termination(self) -> None:
+        """current_request is None after episode terminates."""
+        env = UnifiedSimEnv(num_requests=2)
+        env.reset(seed=42)
+
+        env.step(0)
+        assert env.current_request is not None
+
+        env.step(0)  # This terminates the episode
+        assert env.current_request is None
+
+    def test_step_after_termination_raises_error(self) -> None:
+        """step() after episode termination raises RuntimeError."""
+        env = UnifiedSimEnv(num_requests=2)
+        env.reset(seed=42)
+
+        env.step(0)
+        env.step(0)  # Episode terminates
+
+        with pytest.raises(RuntimeError, match="Episode has ended"):
+            env.step(0)
+
+    def test_reset_after_termination_starts_new_episode(self) -> None:
+        """reset() after termination starts a fresh episode."""
+        env = UnifiedSimEnv(num_requests=2)
+        env.reset(seed=42)
+
+        env.step(0)
+        env.step(0)  # Episode terminates
+        assert env.is_episode_done
+
+        env.reset(seed=42)
+        assert not env.is_episode_done
+        assert env.request_index == 0
+        assert env.current_request is not None
+
+
+class TestUnifiedSimEnvReward:
+    """Tests for reward computation."""
+
+    def test_feasible_action_gives_positive_reward(self) -> None:
+        """Selecting a feasible path gives positive reward."""
+        config = RLConfig(rl_success_reward=1.0, rl_block_penalty=-1.0)
+        env = UnifiedSimEnv(config=config)
+
+        # Try multiple seeds to find one with a feasible action
+        for seed in range(20):
+            env.reset(seed=seed)
+            mask = env._current_feasibility
+            if mask is not None and np.any(mask):
+                feasible_action = int(np.argmax(mask))
+                _, reward, _, _, _ = env.step(feasible_action)
+                assert reward == 1.0
+                return
+
+        pytest.skip("Could not find seed with feasible action")
+
+    def test_infeasible_action_gives_negative_reward(self) -> None:
+        """Selecting an infeasible path gives negative reward."""
+        config = RLConfig(rl_success_reward=1.0, rl_block_penalty=-1.0)
+        env = UnifiedSimEnv(config=config)
+
+        # Try multiple seeds to find one with an infeasible action
+        for seed in range(20):
+            env.reset(seed=seed)
+            mask = env._current_feasibility
+            if mask is not None and not np.all(mask):
+                infeasible_action = int(np.argmin(mask))
+                if not mask[infeasible_action]:
+                    _, reward, _, _, _ = env.step(infeasible_action)
+                    assert reward == -1.0
+                    return
+
+        pytest.skip("Could not find seed with infeasible action")
+
+    def test_reward_uses_config_values(self) -> None:
+        """Reward uses configured success/penalty values."""
+        config = RLConfig(rl_success_reward=5.0, rl_block_penalty=-2.5)
+        env = UnifiedSimEnv(config=config)
+        env.reset(seed=42)
+
+        # Get the computed reward (either success or penalty)
+        _, reward, _, _, _ = env.step(0)
+        assert reward in [5.0, -2.5]
+
+    def test_invalid_action_gives_penalty(self) -> None:
+        """Invalid action index gives penalty reward."""
+        config = RLConfig(k_paths=3, rl_block_penalty=-1.0)
+        env = UnifiedSimEnv(config=config)
+        env.reset(seed=42)
+
+        # Action outside valid range
+        _, reward, _, _, _ = env.step(10)
+        assert reward == -1.0
+
+
+class TestUnifiedSimEnvFullEpisode:
+    """Tests for running complete episodes."""
+
+    def test_can_run_full_episode(self) -> None:
+        """Can run a complete episode from reset to termination."""
+        env = UnifiedSimEnv(num_requests=20)
+        obs, info = env.reset(seed=42)
+
+        total_reward = 0.0
+        steps = 0
+
+        while True:
+            # Select first feasible action, or action 0 if none
+            mask = info["action_mask"]
+            if np.any(mask):
+                action = int(np.argmax(mask))
+            else:
+                action = 0
+
+            obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += reward
+            steps += 1
+
+            if terminated or truncated:
+                break
+
+        assert steps == 20
+        assert terminated
+        assert not truncated
+
+    def test_multiple_episodes_independent(self) -> None:
+        """Multiple episodes are independent with different seeds."""
+        env = UnifiedSimEnv(num_requests=10)
+
+        # Run episode 1
+        env.reset(seed=100)
+        rewards_1 = []
+        for _ in range(10):
+            _, reward, _, _, _ = env.step(0)
+            rewards_1.append(reward)
+
+        # Run episode 2 with different seed
+        env.reset(seed=200)
+        rewards_2 = []
+        for _ in range(10):
+            _, reward, _, _, _ = env.step(0)
+            rewards_2.append(reward)
+
+        # Rewards should differ (different random feasibility)
+        assert rewards_1 != rewards_2
+
+    def test_same_seed_same_episode(self) -> None:
+        """Same seed produces identical episode trajectories."""
+        env = UnifiedSimEnv(num_requests=10)
+
+        # Run episode 1
+        env.reset(seed=42)
+        rewards_1 = []
+        for _ in range(10):
+            _, reward, _, _, _ = env.step(0)
+            rewards_1.append(reward)
+
+        # Run episode 2 with same seed
+        env.reset(seed=42)
+        rewards_2 = []
+        for _ in range(10):
+            _, reward, _, _, _ = env.step(0)
+            rewards_2.append(reward)
+
+        assert rewards_1 == rewards_2
