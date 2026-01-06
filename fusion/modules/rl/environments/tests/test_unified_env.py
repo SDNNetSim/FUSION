@@ -21,7 +21,7 @@ import pytest
 from gymnasium import spaces
 
 from fusion.modules.rl.adapter import RLConfig
-from fusion.modules.rl.environments import UnifiedSimEnv
+from fusion.modules.rl.environments import ActionMaskWrapper, UnifiedSimEnv
 
 
 class TestUnifiedSimEnvInit:
@@ -810,3 +810,130 @@ class TestUnifiedSimEnvGymnasiumChecker:
         config = RLConfig(k_paths=5, num_nodes=20, total_slots=400)
         env = UnifiedSimEnv(config=config, num_requests=10)
         check_env(env, skip_render_check=True)
+
+
+class TestActionMaskWrapper:
+    """Tests for ActionMaskWrapper (Chunk 10)."""
+
+    def test_wrapper_wraps_environment(self) -> None:
+        """ActionMaskWrapper wraps UnifiedSimEnv."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        assert wrapped.env is env
+
+    def test_wrapper_has_action_masks_method(self) -> None:
+        """Wrapped environment has action_masks() method."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        assert hasattr(wrapped, "action_masks")
+        assert callable(wrapped.action_masks)
+
+    def test_action_masks_after_reset(self) -> None:
+        """action_masks() returns valid mask after reset()."""
+        config = RLConfig(k_paths=3)
+        env = UnifiedSimEnv(config=config, num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        wrapped.reset(seed=42)
+        mask = wrapped.action_masks()
+
+        assert isinstance(mask, np.ndarray)
+        assert mask.shape == (3,)
+        assert mask.dtype == np.bool_
+
+    def test_action_masks_after_step(self) -> None:
+        """action_masks() returns updated mask after step()."""
+        config = RLConfig(k_paths=3)
+        env = UnifiedSimEnv(config=config, num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        wrapped.reset(seed=42)
+        wrapped.step(0)
+        mask = wrapped.action_masks()
+
+        assert isinstance(mask, np.ndarray)
+        assert mask.shape == (3,)
+
+    def test_action_masks_before_reset_raises(self) -> None:
+        """action_masks() before reset() raises RuntimeError."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        with pytest.raises(RuntimeError, match="No action mask available"):
+            wrapped.action_masks()
+
+    def test_wrapper_preserves_observation_space(self) -> None:
+        """Wrapper preserves observation_space from wrapped env."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        assert wrapped.observation_space == env.observation_space
+
+    def test_wrapper_preserves_action_space(self) -> None:
+        """Wrapper preserves action_space from wrapped env."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        assert wrapped.action_space == env.action_space
+
+    def test_wrapper_reset_returns_same_as_env(self) -> None:
+        """Wrapper reset() returns same observation as wrapped env."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        obs, info = wrapped.reset(seed=42)
+
+        assert env.observation_space.contains(obs)
+        assert "action_mask" in info
+
+    def test_wrapper_step_returns_same_as_env(self) -> None:
+        """Wrapper step() returns same tuple structure as wrapped env."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        wrapped.reset(seed=42)
+        obs, reward, terminated, truncated, info = wrapped.step(0)
+
+        assert env.observation_space.contains(obs)
+        assert isinstance(reward, (int, float))
+        assert isinstance(terminated, bool)
+        assert isinstance(truncated, bool)
+        assert "action_mask" in info
+
+    def test_wrapper_mask_matches_info_mask(self) -> None:
+        """action_masks() returns same mask as info['action_mask']."""
+        env = UnifiedSimEnv(num_requests=10)
+        wrapped = ActionMaskWrapper(env)
+
+        _, info = wrapped.reset(seed=42)
+        mask_from_method = wrapped.action_masks()
+        mask_from_info = info["action_mask"]
+
+        assert np.array_equal(mask_from_method, mask_from_info)
+
+    def test_wrapper_can_run_full_episode(self) -> None:
+        """Wrapped environment can run a full episode."""
+        env = UnifiedSimEnv(num_requests=5)
+        wrapped = ActionMaskWrapper(env)
+
+        obs, info = wrapped.reset(seed=42)
+        steps = 0
+
+        while True:
+            mask = wrapped.action_masks()
+            # Select first valid action or 0
+            if np.any(mask):
+                action = int(np.argmax(mask))
+            else:
+                action = 0
+
+            obs, reward, terminated, truncated, info = wrapped.step(action)
+            steps += 1
+
+            if terminated or truncated:
+                break
+
+        assert steps == 5
+        assert terminated
