@@ -786,3 +786,27 @@ class TestUnifiedSimEnvFullEpisode:
             rewards_2.append(reward)
 
         assert rewards_1 == rewards_2
+
+
+class TestUnifiedSimEnvGymnasiumChecker:
+    """Tests using gymnasium.utils.env_checker (Chunk 9).
+
+    This is Integration Checkpoint 2 - verifies full Gymnasium compliance.
+    """
+
+    def test_passes_env_checker(self) -> None:
+        """Environment passes gymnasium.utils.env_checker."""
+        from gymnasium.utils.env_checker import check_env
+
+        env = UnifiedSimEnv(num_requests=10)
+        # check_env raises an exception if there are issues
+        # It also prints warnings for non-critical issues
+        check_env(env, skip_render_check=True)
+
+    def test_passes_env_checker_with_custom_config(self) -> None:
+        """Environment with custom config passes env_checker."""
+        from gymnasium.utils.env_checker import check_env
+
+        config = RLConfig(k_paths=5, num_nodes=20, total_slots=400)
+        env = UnifiedSimEnv(config=config, num_requests=10)
+        check_env(env, skip_render_check=True)
