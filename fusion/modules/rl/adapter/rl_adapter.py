@@ -15,6 +15,7 @@ Phase: P4.1 - RLSimulationAdapter Scaffolding
 Chunk: 2 - Adapter skeleton
 Chunk: 3 - get_path_options method
 Chunk: 4 - apply_action method
+Chunk: 5 - compute_reward method
 """
 
 from __future__ import annotations
@@ -290,3 +291,47 @@ class RLSimulationAdapter:
         )
 
         return result
+
+    def compute_reward(
+        self,
+        result: AllocationResult,
+        request: Request | None = None,
+    ) -> float:
+        """Compute reward signal from allocation result.
+
+        Reward structure (using default values):
+        - Success: +1.0
+        - Failure: -1.0
+        - Grooming bonus: +0.1 (if request used existing lightpath)
+        - Slicing penalty: -0.05 (if request was split)
+
+        Args:
+            result: AllocationResult from apply_action()
+            request: Original request (optional, for future bandwidth weighting)
+
+        Returns:
+            Scalar reward value
+
+        Note:
+            Future versions may add configurable reward values and
+            bandwidth weighting. Currently uses sensible defaults.
+        """
+        # Default reward values
+        success_reward = 1.0
+        block_penalty = -1.0
+        grooming_bonus = 0.1
+        slicing_penalty = -0.05
+
+        if not result.success:
+            return block_penalty
+
+        reward = success_reward
+
+        # Apply bonuses/penalties based on allocation type
+        if getattr(result, "is_groomed", False):
+            reward += grooming_bonus
+
+        if getattr(result, "is_sliced", False):
+            reward += slicing_penalty
+
+        return reward

@@ -4,6 +4,7 @@ Phase: P4.1 - RLSimulationAdapter Scaffolding
 Chunk: 2 - Adapter skeleton
 Chunk: 3 - get_path_options method
 Chunk: 4 - apply_action method
+Chunk: 5 - compute_reward method
 """
 
 from unittest.mock import MagicMock
@@ -569,3 +570,100 @@ class TestApplyAction:
         call_args = mock_orchestrator.handle_arrival.call_args
         assert call_args.kwargs["request"] is mock_request
         assert call_args.kwargs["network_state"] is mock_network_state
+
+
+class TestComputeReward:
+    """Tests for compute_reward method.
+
+    Verifies reward computation:
+    - Success returns positive reward
+    - Failure returns negative reward
+    - Grooming adds bonus
+    - Slicing adds penalty
+    """
+
+    def _create_adapter(self) -> RLSimulationAdapter:
+        """Create an adapter with mock orchestrator."""
+        mock_orchestrator = MagicMock()
+        mock_orchestrator.routing = MagicMock()
+        mock_orchestrator.spectrum = MagicMock()
+        return RLSimulationAdapter(mock_orchestrator)
+
+    def _create_mock_result(
+        self,
+        success: bool = True,
+        is_groomed: bool = False,
+        is_sliced: bool = False,
+    ) -> MagicMock:
+        """Create a mock AllocationResult."""
+        mock = MagicMock()
+        mock.success = success
+        mock.is_groomed = is_groomed
+        mock.is_sliced = is_sliced
+        return mock
+
+    def test_success_returns_positive_reward(self) -> None:
+        """Successful allocation should return positive reward."""
+        adapter = self._create_adapter()
+        result = self._create_mock_result(success=True)
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == 1.0
+
+    def test_failure_returns_negative_reward(self) -> None:
+        """Failed allocation should return negative reward."""
+        adapter = self._create_adapter()
+        result = self._create_mock_result(success=False)
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == -1.0
+
+    def test_groomed_allocation_gets_bonus(self) -> None:
+        """Groomed allocation should get +0.1 bonus."""
+        adapter = self._create_adapter()
+        result = self._create_mock_result(success=True, is_groomed=True)
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == 1.1  # 1.0 + 0.1
+
+    def test_sliced_allocation_gets_penalty(self) -> None:
+        """Sliced allocation should get -0.05 penalty."""
+        adapter = self._create_adapter()
+        result = self._create_mock_result(success=True, is_sliced=True)
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == 0.95  # 1.0 - 0.05
+
+    def test_groomed_and_sliced_combined(self) -> None:
+        """Groomed + sliced should combine bonuses/penalties."""
+        adapter = self._create_adapter()
+        result = self._create_mock_result(success=True, is_groomed=True, is_sliced=True)
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == 1.05  # 1.0 + 0.1 - 0.05
+
+    def test_failure_ignores_grooming_slicing(self) -> None:
+        """Failed allocation should return block penalty regardless of flags."""
+        adapter = self._create_adapter()
+        result = self._create_mock_result(success=False, is_groomed=True, is_sliced=True)
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == -1.0
+
+    def test_handles_missing_flags(self) -> None:
+        """Should handle result without is_groomed/is_sliced attributes."""
+        adapter = self._create_adapter()
+
+        # Create mock without is_groomed/is_sliced attributes
+        result = MagicMock(spec=["success"])
+        result.success = True
+
+        reward = adapter.compute_reward(result)
+
+        assert reward == 1.0  # Base success reward only
