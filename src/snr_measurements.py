@@ -534,7 +534,7 @@ class SnrMeasurements:
             gsnr_link_ase_nli_db.append(10 * np.log10(gsnr_link_ase_nli**-1))
             gsnr_path_ase_nli += gsnr_link_ase_nli
         gsnr_db = 10 * np.log10(1 / gsnr_path_ase_nli)
-        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.snr_props.snr_margin
+        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.engine_props['snr_margin'] 
         bw_resp = 0
         if resp:
             if self.engine_props['fixed_grid']:
@@ -750,7 +750,7 @@ class SnrMeasurements:
 
         gsnr = self._gsnr_calc_mb()
         gsnr_db = 10 * np.log10(gsnr)
-        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.snr_props.snr_margin
+        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.engine_props['snr_margin'] 
         bw_resp = 0
         if resp:
             if self.engine_props['fixed_grid']:

@@ -71,6 +71,7 @@ SIM_REQUIRED_OPTIONS = {
         'snr_recheck': str_to_bool,
         'recheck_adjacent_cores': str_to_bool,
         'recheck_crossband': str_to_bool,
+        'snr_margin': float,
     },
     'file_settings': {
         'file_type': str,
@@ -257,6 +258,7 @@ COMMAND_LINE_PARAMS = [
     ['snr_recheck', bool, ''],
     ['recheck_adjacent_cores', bool, ''],
     ['recheck_crossband', bool, ''],
+    ['snr_margin', float, ''],
 
 
     # TODO: (version 5.5-6) RLZoo3 will be removed
