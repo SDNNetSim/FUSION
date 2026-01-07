@@ -52,6 +52,8 @@ class RLConfig:
         total_slots: Total spectrum slots per link
         use_gnn_obs: Whether to include GNN features (adjacency, node features)
         num_node_features: Number of features per node for GNN mode
+        obs_space: Observation space configuration (obs_1 through obs_8)
+        num_bandwidth_classes: Number of bandwidth classes for one-hot encoding
     """
 
     k_paths: int = 3
@@ -65,6 +67,8 @@ class RLConfig:
     total_slots: int = 320
     use_gnn_obs: bool = False
     num_node_features: int = 4  # utilization, degree, centrality, is_src_dst
+    obs_space: str = "obs_8"  # obs_1 through obs_8, configurable observation space
+    num_bandwidth_classes: int = 4  # Number of bandwidth classes (e.g., 10, 40, 100, 400 Gbps)
 
 
 @dataclass(frozen=True)

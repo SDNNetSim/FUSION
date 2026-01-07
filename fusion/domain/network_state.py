@@ -883,6 +883,40 @@ class NetworkState:
             f"lightpaths={self.lightpath_count}, next_id={self._next_lightpath_id})"
         )
 
+    def reset(self) -> None:
+        """Reset network state for new RL episode.
+
+        Clears:
+        - All spectrum allocations (sets arrays to zero)
+        - Active lightpaths (clears registry)
+        - Resets lightpath ID counter
+
+        Preserves:
+        - Topology structure
+        - Configuration
+        - Link spectrum objects (just cleared, not recreated)
+
+        This method is used by UnifiedSimEnv.reset() to prepare for a new
+        episode without needing to recreate the entire NetworkState object.
+
+        Example:
+            >>> state = NetworkState(topology, config)
+            >>> # ... run episode ...
+            >>> state.reset()  # Clear for new episode
+        """
+        # Clear all spectrum allocations
+        for link_spectrum in self._spectrum.values():
+            for band, arr in link_spectrum.cores_matrix.items():
+                arr.fill(0)
+            link_spectrum.usage_count = 0
+            link_spectrum.throughput = 0.0
+
+        # Clear active lightpaths
+        self._lightpaths.clear()
+
+        # Reset lightpath ID counter
+        self._next_lightpath_id = 1
+
     # =========================================================================
     # Write Methods (P2.2)
     # =========================================================================

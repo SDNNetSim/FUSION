@@ -2124,3 +2124,193 @@ class SimulationEngine:
         logger.warning("Received signal %d, saving statistics...", signum)
         self._save_all_stats()
         logger.info("Statistics saved due to signal")
+
+    # =========================================================================
+    # RL Integration Methods (P4.2)
+    # These methods support UnifiedSimEnv for RL training
+    # =========================================================================
+
+    @property
+    def num_requests(self) -> int:
+        """Total number of arrival requests in current episode.
+
+        Returns:
+            Number of arrival requests (excludes release events)
+        """
+        if self.reqs_dict is None:
+            return 0
+        return sum(
+            1 for req in self.reqs_dict.values()
+            if req.get("request_type") == "arrival"
+        )
+
+    @property
+    def network_state(self) -> NetworkState | None:
+        """Access to the v5 NetworkState object.
+
+        Returns:
+            NetworkState if orchestrator mode enabled, None otherwise.
+        """
+        return self._network_state
+
+    def get_next_request(self) -> Request | None:
+        """Get the next unprocessed arrival request for RL.
+
+        This method is used by UnifiedSimEnv to get requests one at a time
+        for step-by-step RL decision making.
+
+        Returns:
+            Next Request object, or None if all arrivals processed.
+
+        Note:
+            This method requires orchestrator mode (use_orchestrator=True).
+            The returned Request is the v5 domain object, not the legacy dict.
+        """
+        if not self.use_orchestrator or self.reqs_dict is None:
+            return None
+
+        # Get sorted arrival times
+        arrival_times = sorted(
+            [
+                t
+                for t, req in self.reqs_dict.items()
+                if req.get("request_type") == "arrival"
+            ]
+        )
+
+        # Find next unprocessed request using _rl_request_index
+        if not hasattr(self, "_rl_request_index"):
+            self._rl_request_index = 0
+
+        if self._rl_request_index >= len(arrival_times):
+            return None
+
+        current_time = arrival_times[self._rl_request_index]
+        return self._get_or_create_v5_request(current_time)
+
+    def process_releases_until(self, time: float) -> None:
+        """Process all release events due before given time.
+
+        This method is used by UnifiedSimEnv to process lightpath releases
+        between RL decision points.
+
+        Args:
+            time: Process all releases with depart_time < time
+
+        Note:
+            This method requires orchestrator mode (use_orchestrator=True).
+        """
+        if not self.use_orchestrator or self.reqs_dict is None:
+            return
+
+        if self._network_state is None or self._orchestrator is None:
+            return
+
+        # Find and process all release events before given time
+        release_times = sorted(
+            [
+                t
+                for t, req in self.reqs_dict.items()
+                if req.get("request_type") == "release" and t[1] < time
+            ]
+        )
+
+        for release_time in release_times:
+            # Check if we've already processed this release
+            if not hasattr(self, "_processed_releases"):
+                self._processed_releases: set[tuple[int, float]] = set()
+
+            if release_time in self._processed_releases:
+                continue
+
+            # Process the release
+            self._handle_release_orchestrator(release_time)
+            self._processed_releases.add(release_time)
+
+    def record_allocation_result(
+        self,
+        request: Request,
+        result: AllocationResult,
+    ) -> None:
+        """Record allocation result for RL statistics.
+
+        This method is used by UnifiedSimEnv to record the result of each
+        RL decision and advance to the next request.
+
+        Args:
+            request: The Request that was processed
+            result: AllocationResult from orchestrator
+
+        Side Effects:
+            - Updates statistics counters
+            - If success, schedules release event (tracked internally)
+            - Advances _rl_request_index
+        """
+        if not self.use_orchestrator:
+            return
+
+        # Find the time key for this request
+        if self.reqs_dict is None:
+            return
+
+        time_key: tuple[int, float] | None = None
+        for t, req in self.reqs_dict.items():
+            if req.get("req_id") == request.request_id:
+                time_key = t
+                break
+
+        if time_key is None:
+            logger.warning("Could not find time key for request %d", request.request_id)
+            return
+
+        # Update stats using existing method
+        self._update_stats_from_result(time_key, request, result)
+
+        # Track the allocation for release processing
+        if result.success:
+            self.reqs_status_dict[request.request_id] = {
+                "mod_format": list(result.modulations) if result.modulations else [],
+                "path": self._get_paths_from_result(result),
+                "is_sliced": result.is_sliced,
+                "was_routed": True,
+                "core_list": list(result.cores) if result.cores else [],
+                "band": list(result.bands) if result.bands else [],
+                "start_slot_list": list(result.start_slots) if result.start_slots else [],
+                "end_slot_list": list(result.end_slots) if result.end_slots else [],
+                "bandwidth_list": (
+                    list(result.bandwidth_allocations)
+                    if result.bandwidth_allocations
+                    else [request.bandwidth_gbps]
+                ),
+                "lightpath_id_list": (
+                    list(result.all_lightpath_ids) if result.all_lightpath_ids else []
+                ),
+                "lightpath_bandwidth_list": (
+                    list(result.lightpath_bandwidths)
+                    if result.lightpath_bandwidths
+                    else []
+                ),
+                "was_new_lp_established": (
+                    list(result.lightpaths_created) if result.lightpaths_created else []
+                ),
+            }
+
+        # Advance to next request
+        if not hasattr(self, "_rl_request_index"):
+            self._rl_request_index = 0
+        self._rl_request_index += 1
+
+    def reset_rl_state(self) -> None:
+        """Reset RL-specific state for new episode.
+
+        Called by UnifiedSimEnv.reset() to prepare for a new episode.
+        """
+        self._rl_request_index = 0
+        self._processed_releases = set()
+
+        # Reset v5 request cache
+        self._v5_requests = {}
+
+        # Reset network state if in orchestrator mode
+        if self.use_orchestrator and self._network_state is not None:
+            self._network_state.reset()

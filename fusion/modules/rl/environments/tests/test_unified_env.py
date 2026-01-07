@@ -57,33 +57,52 @@ class TestUnifiedSimEnvObservationSpace:
         assert isinstance(env.observation_space, spaces.Dict)
 
     def test_observation_space_has_expected_keys(self) -> None:
-        """Observation space contains all expected keys."""
+        """Observation space contains all expected keys for obs_8 (default)."""
         env = UnifiedSimEnv()
+        # Default obs_8 includes all features
         expected_keys = {
             "source",
             "destination",
+            "request_bandwidth",
             "holding_time",
             "slots_needed",
             "path_lengths",
-            "congestion",
+            "paths_cong",
             "available_slots",
             "is_feasible",
         }
         assert set(env.observation_space.spaces.keys()) == expected_keys
 
+    def test_observation_space_obs_1(self) -> None:
+        """obs_1 only includes source and destination."""
+        config = RLConfig(obs_space="obs_1")
+        env = UnifiedSimEnv(config=config)
+        expected_keys = {"source", "destination"}
+        assert set(env.observation_space.spaces.keys()) == expected_keys
+
+    def test_observation_space_obs_4(self) -> None:
+        """obs_4 includes source, destination, request_bandwidth, holding_time."""
+        config = RLConfig(obs_space="obs_4")
+        env = UnifiedSimEnv(config=config)
+        expected_keys = {"source", "destination", "request_bandwidth", "holding_time"}
+        assert set(env.observation_space.spaces.keys()) == expected_keys
+
     def test_observation_space_shapes_match_config(self) -> None:
         """Observation space shapes match configuration."""
-        config = RLConfig(k_paths=5, num_nodes=20)
+        config = RLConfig(k_paths=5, num_nodes=20, num_bandwidth_classes=4)
         env = UnifiedSimEnv(config=config)
 
         # Node-related spaces should have shape (num_nodes,)
         assert env.observation_space["source"].shape == (20,)
         assert env.observation_space["destination"].shape == (20,)
 
+        # Bandwidth space should have shape (num_bandwidth_classes,)
+        assert env.observation_space["request_bandwidth"].shape == (4,)
+
         # Path-related spaces should have shape (k_paths,)
         assert env.observation_space["slots_needed"].shape == (5,)
         assert env.observation_space["path_lengths"].shape == (5,)
-        assert env.observation_space["congestion"].shape == (5,)
+        assert env.observation_space["paths_cong"].shape == (5,)
         assert env.observation_space["available_slots"].shape == (5,)
         assert env.observation_space["is_feasible"].shape == (5,)
 
@@ -254,7 +273,7 @@ class TestUnifiedSimEnvZeroObservation:
         assert np.all(obs["destination"] == 0)
         assert np.all(obs["holding_time"] == 0)
         assert np.all(obs["path_lengths"] == 0)
-        assert np.all(obs["congestion"] == 0)
+        assert np.all(obs["paths_cong"] == 0)
         assert np.all(obs["available_slots"] == 0)
         assert np.all(obs["is_feasible"] == 0)
 
@@ -396,9 +415,12 @@ class TestUnifiedSimEnvRequestGeneration:
 
         req = env.current_request
         assert req is not None
-        assert 0 <= req.source < 14
-        assert 0 <= req.destination < 14
-        assert req.source != req.destination
+        # Source/destination are strings in SimpleRequest
+        src = int(req.source)
+        dst = int(req.destination)
+        assert 0 <= src < 14
+        assert 0 <= dst < 14
+        assert src != dst
 
     def test_requests_have_valid_bandwidth(self) -> None:
         """Generated requests have valid bandwidth values."""
@@ -444,7 +466,8 @@ class TestUnifiedSimEnvObservationBuilding:
 
         # Find the 1.0 in source array
         source_idx = np.argmax(obs["source"])
-        assert source_idx == req.source
+        # Source is stored as string in SimpleRequest
+        assert source_idx == int(req.source)
 
     def test_destination_one_hot_matches_request(self) -> None:
         """Destination one-hot encoding matches request destination."""
@@ -457,7 +480,8 @@ class TestUnifiedSimEnvObservationBuilding:
 
         # Find the 1.0 in destination array
         dest_idx = np.argmax(obs["destination"])
-        assert dest_idx == req.destination
+        # Destination is stored as string in SimpleRequest
+        assert dest_idx == int(req.destination)
 
     def test_holding_time_is_normalized(self) -> None:
         """Holding time is normalized to [0, 1]."""
@@ -475,7 +499,7 @@ class TestUnifiedSimEnvObservationBuilding:
 
         assert obs["slots_needed"].shape == (5,)
         assert obs["path_lengths"].shape == (5,)
-        assert obs["congestion"].shape == (5,)
+        assert obs["paths_cong"].shape == (5,)
         assert obs["available_slots"].shape == (5,)
         assert obs["is_feasible"].shape == (5,)
 
@@ -488,12 +512,12 @@ class TestUnifiedSimEnvObservationBuilding:
         assert np.all(obs["slots_needed"] >= 1.0)
 
     def test_congestion_in_valid_range(self) -> None:
-        """Congestion values are in [0, 1]."""
+        """Congestion values (paths_cong) are in [0, 1]."""
         env = UnifiedSimEnv()
         obs, _ = env.reset(seed=42)
 
-        assert np.all(obs["congestion"] >= 0.0)
-        assert np.all(obs["congestion"] <= 1.0)
+        assert np.all(obs["paths_cong"] >= 0.0)
+        assert np.all(obs["paths_cong"] <= 1.0)
 
     def test_available_slots_in_valid_range(self) -> None:
         """Available slots ratios are in [0, 1]."""
@@ -1162,7 +1186,8 @@ class TestUnifiedSimEnvGNNObservations:
 
         # Feature 3 (index 3) is the source/destination indicator
         # Source should be 1.0
-        assert features[req.source, 3] == 1.0
+        src_idx = int(req.source)
+        assert features[src_idx, 3] == 1.0
 
     def test_gnn_node_features_destination_marked(self) -> None:
         """Destination node is marked in node features."""
@@ -1178,7 +1203,8 @@ class TestUnifiedSimEnvGNNObservations:
 
         # Feature 3 (index 3) is the source/destination indicator
         # Destination should be 0.5
-        assert features[req.destination, 3] == 0.5
+        dst_idx = int(req.destination)
+        assert features[dst_idx, 3] == 0.5
 
     def test_gnn_observation_in_space(self) -> None:
         """GNN observation is contained in observation space."""
@@ -1210,3 +1236,217 @@ class TestUnifiedSimEnvGNNObservations:
         config = RLConfig(use_gnn_obs=True, num_nodes=10)
         env = UnifiedSimEnv(config=config, num_requests=10)
         check_env(env, skip_render_check=True)
+
+
+class TestUnifiedSimEnvPyGGraphObservations:
+    """Tests for PyG-format graph observations (edge_index, edge_attr, path_masks)."""
+
+    def test_gnn_mode_adds_edge_index(self) -> None:
+        """GNN mode adds edge_index in PyG format [2, num_edges]."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        assert "edge_index" in env.observation_space.spaces
+        # Shape is [2, num_edges] where num_edges is estimated initially
+        assert env.observation_space["edge_index"].shape[0] == 2
+
+    def test_gnn_mode_adds_edge_attr(self) -> None:
+        """GNN mode adds edge_attr."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+
+        assert "edge_attr" in env.observation_space.spaces
+        # Shape is [num_edges, edge_dim]
+        assert env.observation_space["edge_attr"].shape[1] == 2  # [utilization, length]
+
+    def test_gnn_mode_adds_path_masks(self) -> None:
+        """GNN mode adds path_masks."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10, k_paths=5)
+        env = UnifiedSimEnv(config=config)
+
+        assert "path_masks" in env.observation_space.spaces
+        # Shape is [k_paths, num_edges]
+        assert env.observation_space["path_masks"].shape[0] == 5
+
+    def test_edge_index_contains_valid_indices(self) -> None:
+        """edge_index values are valid node indices."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        edge_index = obs["edge_index"]
+        # All values should be valid node indices [0, num_nodes-1]
+        assert np.all(edge_index >= 0)
+        assert np.all(edge_index < 10)
+
+    def test_edge_attr_is_float(self) -> None:
+        """edge_attr values are float32."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert obs["edge_attr"].dtype == np.float32
+
+    def test_path_masks_are_binary(self) -> None:
+        """path_masks values are in [0, 1]."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10, k_paths=3)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert np.all(obs["path_masks"] >= 0.0)
+        assert np.all(obs["path_masks"] <= 1.0)
+
+    def test_edge_index_dtype_is_int64(self) -> None:
+        """edge_index dtype is int64."""
+        config = RLConfig(use_gnn_obs=True, num_nodes=10)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert obs["edge_index"].dtype == np.int64
+
+
+class TestPathEncoder:
+    """Tests for PathEncoder class."""
+
+    def test_path_encoder_init(self) -> None:
+        """PathEncoder initializes correctly."""
+        from fusion.modules.rl.environments import PathEncoder
+
+        # Create simple edge_index
+        edge_index = np.array([[0, 1, 1, 2], [1, 0, 2, 1]], dtype=np.int64)
+        encoder = PathEncoder(edge_index=edge_index, num_nodes=3)
+
+        assert encoder.num_edges == 4
+
+    def test_path_encoder_encode_simple_path(self) -> None:
+        """PathEncoder encodes a simple path correctly."""
+        from fusion.modules.rl.environments import PathEncoder
+
+        # Create simple edge_index: 0<->1<->2
+        edge_index = np.array([[0, 1, 1, 2], [1, 0, 2, 1]], dtype=np.int64)
+        encoder = PathEncoder(edge_index=edge_index, num_nodes=3)
+
+        # Encode path 0->1->2
+        path = ("0", "1", "2")
+        mask = encoder.encode_path(path)
+
+        assert mask.shape == (4,)
+        # Should mark edges 0->1 and 1->2
+        assert mask.sum() == 2
+
+    def test_path_encoder_empty_path(self) -> None:
+        """PathEncoder handles single-node paths."""
+        from fusion.modules.rl.environments import PathEncoder
+
+        edge_index = np.array([[0, 1], [1, 0]], dtype=np.int64)
+        encoder = PathEncoder(edge_index=edge_index, num_nodes=2)
+
+        # Single node path (no edges)
+        path = ("0",)
+        mask = encoder.encode_path(path)
+
+        assert mask.sum() == 0
+
+    def test_path_encoder_reverse_direction(self) -> None:
+        """PathEncoder handles reverse direction edges."""
+        from fusion.modules.rl.environments import PathEncoder
+
+        # Only forward edges
+        edge_index = np.array([[0, 1], [1, 2]], dtype=np.int64)
+        encoder = PathEncoder(edge_index=edge_index, num_nodes=3)
+
+        # Path in reverse direction: 2->1->0
+        path = ("2", "1", "0")
+        mask = encoder.encode_path(path)
+
+        # Should find edges due to reverse lookup
+        assert mask.dtype == np.float32
+
+
+class TestConfigurableObsSpace:
+    """Tests for configurable observation space (obs_1 through obs_8)."""
+
+    def test_obs_space_default_is_obs_8(self) -> None:
+        """Default obs_space is obs_8."""
+        config = RLConfig()
+        assert config.obs_space == "obs_8"
+
+    def test_obs_1_minimal_features(self) -> None:
+        """obs_1 includes only source and destination."""
+        config = RLConfig(obs_space="obs_1")
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert "source" in obs
+        assert "destination" in obs
+        assert "holding_time" not in obs
+        assert "request_bandwidth" not in obs
+
+    def test_obs_2_adds_bandwidth(self) -> None:
+        """obs_2 adds request_bandwidth."""
+        config = RLConfig(obs_space="obs_2")
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert "source" in obs
+        assert "destination" in obs
+        assert "request_bandwidth" in obs
+        assert "holding_time" not in obs
+
+    def test_obs_5_adds_path_features(self) -> None:
+        """obs_5 adds slots_needed and path_lengths."""
+        config = RLConfig(obs_space="obs_5")
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert "slots_needed" in obs
+        assert "path_lengths" in obs
+        assert "paths_cong" not in obs  # Added in obs_6
+
+    def test_obs_6_adds_congestion(self) -> None:
+        """obs_6 adds paths_cong."""
+        config = RLConfig(obs_space="obs_6")
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert "paths_cong" in obs
+        assert "available_slots" not in obs  # Added in obs_7
+
+    def test_obs_7_adds_available_slots(self) -> None:
+        """obs_7 adds available_slots."""
+        config = RLConfig(obs_space="obs_7")
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert "available_slots" in obs
+        assert "is_feasible" not in obs  # Added in obs_8
+
+    def test_obs_8_complete_features(self) -> None:
+        """obs_8 includes all features including is_feasible."""
+        config = RLConfig(obs_space="obs_8")
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        assert "is_feasible" in obs
+
+    def test_request_bandwidth_one_hot(self) -> None:
+        """request_bandwidth is one-hot encoded."""
+        config = RLConfig(obs_space="obs_2", num_bandwidth_classes=4)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        # Should be one-hot (exactly one 1.0)
+        assert obs["request_bandwidth"].shape == (4,)
+        assert np.sum(obs["request_bandwidth"]) == 1.0
+
+    def test_obs_graph_suffix_stripped(self) -> None:
+        """obs_space with _graph suffix is handled correctly."""
+        config = RLConfig(obs_space="obs_7_graph", use_gnn_obs=True)
+        env = UnifiedSimEnv(config=config)
+        obs, _ = env.reset(seed=42)
+
+        # Should use obs_7 features
+        assert "available_slots" in obs
+        assert "is_feasible" not in obs
+        # Plus GNN features
+        assert "adjacency" in obs
