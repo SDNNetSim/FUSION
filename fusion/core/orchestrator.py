@@ -88,6 +88,8 @@ class SDNOrchestrator:
         request: Request,
         network_state: NetworkState,
         forced_path: list[str] | None = None,
+        forced_modulation: str | None = None,
+        forced_path_index: int | None = None,
     ) -> AllocationResult:
         """
         Handle request arrival by coordinating pipelines.
@@ -96,6 +98,8 @@ class SDNOrchestrator:
             request: The incoming request to process
             network_state: Current network state (passed per call)
             forced_path: Optional forced path from external source
+            forced_modulation: Optional forced modulation format (for RL)
+            forced_path_index: Optional path index for stats tracking (for RL)
 
         Returns:
             AllocationResult with success/failure and details
@@ -109,13 +113,15 @@ class SDNOrchestrator:
             return self._handle_protected_arrival(request, network_state)
 
         # Standard unprotected flow
-        return self._handle_unprotected_arrival(request, network_state, forced_path)
+        return self._handle_unprotected_arrival(request, network_state, forced_path, forced_modulation, forced_path_index)
 
     def _handle_unprotected_arrival(
         self,
         request: Request,
         network_state: NetworkState,
         forced_path: list[str] | None = None,
+        forced_modulation: str | None = None,
+        forced_path_index: int | None = None,
     ) -> AllocationResult:
         """Handle standard (unprotected) request arrival."""
         from fusion.domain.request import BlockReason, RequestStatus
@@ -173,6 +179,16 @@ class SDNOrchestrator:
                 request, groomed_lightpaths, BlockReason.NO_PATH, network_state
             )
 
+        # Override modulations with forced_modulation if provided (for RL)
+        # This mimics legacy RL behavior where get_path_modulation selects ONE modulation
+        if forced_modulation:
+            # Create new RouteResult with just the forced modulation for each path
+            from dataclasses import replace
+            route_result = replace(
+                route_result,
+                modulations=tuple((forced_modulation,) for _ in route_result.paths)
+            )
+
         # For partial grooming, LEGACY uses original request bandwidth for spectrum allocation
         # (not remaining_bw). This affects slots_needed calculation and SNR checks.
         spectrum_bw = request.bandwidth_gbps if was_partially_groomed else remaining_bw
@@ -183,11 +199,13 @@ class SDNOrchestrator:
         # Stage 3: Try standard allocation on ALL paths first (no slicing)
         # This applies to ALL modes including dynamic_lps - legacy tries standard first
         # and only falls back to dynamic slicing if standard fails on ALL paths
-        for path_idx, path in enumerate(route_result.paths):
+        for loop_idx, path in enumerate(route_result.paths):
+            # Use forced_path_index for stats tracking when provided (RL mode)
+            path_idx = forced_path_index if forced_path_index is not None else loop_idx
             last_path_idx = path_idx
             self._last_path_index = path_idx  # Track for groomed requests (Legacy behavior)
-            modulations = route_result.modulations[path_idx]
-            weight_km = route_result.weights_km[path_idx]
+            modulations = route_result.modulations[loop_idx]
+            weight_km = route_result.weights_km[loop_idx]
 
             # For partial grooming, actual_bw_to_allocate = remaining_bw (what we need to serve)
             # but spectrum_bw = original request (for spectrum calculation)
@@ -218,15 +236,17 @@ class SDNOrchestrator:
         # SNR entries for rolled-back lightpaths. We replicate this by reverting
         # _failed_attempt_snr_list to its state before each failed path attempt.
         if self.config.dynamic_lps and self.config.fixed_grid:
-            for path_idx, path in enumerate(route_result.paths):
+            for loop_idx, path in enumerate(route_result.paths):
+                # Use forced_path_index for stats tracking when provided (RL mode)
+                path_idx = forced_path_index if forced_path_index is not None else loop_idx
                 last_path_idx = path_idx
                 self._last_path_index = path_idx  # Track for groomed requests (Legacy behavior)
                 # Record SNR count BEFORE this path's slicing attempt
                 # If slicing fails, we'll revert to this count (Legacy behavior)
                 snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
 
-                modulations = route_result.modulations[path_idx]
-                weight_km = route_result.weights_km[path_idx]
+                modulations = route_result.modulations[loop_idx]
+                weight_km = route_result.weights_km[loop_idx]
 
                 # For dynamic slicing, use remaining_bw for the slicing loop iteration
                 # (how much bandwidth to actually serve), but spectrum_bw for spectrum
@@ -281,14 +301,16 @@ class SDNOrchestrator:
             (self.config.dynamic_lps and not self.config.fixed_grid)
         )
         if use_slicing:
-            for path_idx, path in enumerate(route_result.paths):
+            for loop_idx, path in enumerate(route_result.paths):
+                # Use forced_path_index for stats tracking when provided (RL mode)
+                path_idx = forced_path_index if forced_path_index is not None else loop_idx
                 last_path_idx = path_idx
                 self._last_path_index = path_idx  # Track for groomed requests (Legacy behavior)
                 # Record SNR count BEFORE this path's slicing attempt
                 snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
 
-                modulations = route_result.modulations[path_idx]
-                weight_km = route_result.weights_km[path_idx]
+                modulations = route_result.modulations[loop_idx]
+                weight_km = route_result.weights_km[loop_idx]
 
                 # For partial grooming, actual_bw_to_allocate = remaining_bw
                 actual_bw_to_allocate = remaining_bw if was_partially_groomed else spectrum_bw
@@ -828,10 +850,15 @@ class SDNOrchestrator:
             remaining_bw -= dedicated_bw
 
             if remaining_bw > 0:
+                # Validate modulation before next iteration
+                # Can be empty/False if previous spectrum assignment failed internally
+                mod_for_next = spectrum_result.modulation
+                if not mod_for_next or mod_for_next is False:
+                    break
                 # Find spectrum for next slice
                 spectrum_result = self.spectrum.find_spectrum(
                     list(path),
-                    spectrum_result.modulation,
+                    mod_for_next,
                     remaining_bw,
                     network_state,
                     connection_index=connection_index,

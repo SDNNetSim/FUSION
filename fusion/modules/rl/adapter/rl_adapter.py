@@ -211,8 +211,28 @@ class RLSimulationAdapter:
             weight_km = route_result.weights_km[path_idx]
             modulations = route_result.modulations[path_idx]
 
-            # Pick the first (best) modulation if available
-            modulation = modulations[0] if modulations else None
+            # Filter out False/None values (modulations that don't reach path distance)
+            valid_mods = [m for m in modulations if m and m is not False]
+
+            # Like legacy RL, use get_path_modulation to select ONE modulation
+            # based on path length. Legacy does:
+            #   modulation_format = get_path_modulation(mod_per_bw[bandwidth], path_length)
+            # This ensures we pick the appropriate modulation for the path distance.
+            if valid_mods:
+                from fusion.utils.network import get_path_modulation
+                # Get mod_per_bw from orchestrator's config
+                mod_per_bw = self._orchestrator.config.mod_per_bw
+                bw_key = str(request.bandwidth_gbps)
+                if bw_key in mod_per_bw:
+                    single_mod = get_path_modulation(
+                        modulation_formats=mod_per_bw[bw_key],
+                        path_length=weight_km,
+                    )
+                    # get_path_modulation returns False if path too long
+                    if single_mod and single_mod is not False:
+                        valid_mods = [single_mod]
+                    else:
+                        valid_mods = []  # Path too long for any modulation
 
             # Default values for spectrum-related fields
             is_feasible = False
@@ -221,15 +241,18 @@ class RLSimulationAdapter:
             spectrum_end = None
             core_index = None
             band = None
+            modulation = None  # Will be set from spectrum result
 
-            # 3. Check spectrum feasibility if we have a modulation
-            if modulation is not None:
+            # 3. Check spectrum feasibility if we have valid modulations
+            if valid_mods:
                 spectrum_result = self._spectrum.find_spectrum(
                     path=list(path),
-                    modulation=modulation,
+                    modulation=valid_mods,  # Pass all valid mods like orchestrator does
                     bandwidth_gbps=request.bandwidth_gbps,
                     network_state=network_state,
                 )
+                # Get the modulation that was actually selected
+                modulation = spectrum_result.modulation if spectrum_result.is_free else valid_mods[0]
 
                 is_feasible = spectrum_result.is_free
                 slots_needed = spectrum_result.slots_needed
@@ -373,13 +396,22 @@ class RLSimulationAdapter:
                 block_reason=BlockReason.NO_PATH,
             )
 
-        # Apply via orchestrator with forced path
-        # This ensures all allocation logic goes through the same code path
-        # as non-RL simulation (SNR checks, grooming, slicing, etc.)
+        # Apply via orchestrator with forced path AND forced modulation
+        # NOTE: When modulation is None (path too long for routing's mod selection),
+        # legacy passes [False] which causes standard allocation to FAIL, then
+        # slicing kicks in with its own modulation. We mimic this by passing
+        # "INVALID" as forced_modulation when None, which will fail standard
+        # allocation and trigger slicing fallback.
+        forced_mod = selected_option.modulation
+        if forced_mod is None:
+            # Pass an invalid modulation to fail standard allocation like legacy's [False]
+            forced_mod = "INVALID_MOD_TRIGGER_SLICING"
+
         result = self._orchestrator.handle_arrival(
             request=request,
             network_state=network_state,
             forced_path=list(selected_option.path),
+            forced_modulation=forced_mod,
         )
 
         return result
@@ -409,20 +441,9 @@ class RLSimulationAdapter:
         if not result.success:
             return self._config.rl_block_penalty
 
-        reward = self._config.rl_success_reward
-
-        # Apply bonuses/penalties based on allocation type
-        if getattr(result, "is_groomed", False):
-            reward += self._config.rl_grooming_bonus
-
-        if getattr(result, "is_sliced", False):
-            reward += self._config.rl_slicing_penalty
-
-        # Optional bandwidth weighting
-        if self._config.rl_bandwidth_weighted and request is not None:
-            reward *= request.bandwidth_gbps / 100.0
-
-        return reward
+        # Legacy bandit algorithms use raw reward/penalty without modifiers
+        # Slicing/grooming bonuses and bandwidth weighting are for DRL only
+        return self._config.rl_success_reward
 
     def get_action_mask(self, options: PathOptionList) -> ActionMask:
         """Generate action mask from path options.

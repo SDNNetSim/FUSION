@@ -582,11 +582,6 @@ class SimulationEngine:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
 
-        # Path index logging for comparison
-        req_id = self.reqs_dict[current_time].get("req_id", "?")
-        path_idx = self.sdn_obj.sdn_props.path_index
-        routed = "Y" if self.sdn_obj.sdn_props.was_routed else "N"
-        print(f"L:{req_id}:p{path_idx}:{routed}")
 
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
@@ -629,10 +624,6 @@ class SimulationEngine:
 
         # Update stats from result
         self._update_stats_from_result(current_time, request, result)
-
-        # Path index logging for comparison
-        routed = "Y" if result.success else "N"
-        print(f"V5:{request.request_id}:p{result.path_index}:{routed}")
 
         # Sync network state back to legacy dict for compatibility
         if self._network_state is not None:
@@ -1314,9 +1305,6 @@ class SimulationEngine:
         """
         if trial is not None:
             self.engine_props["thread_num"] = f"s{trial + 1}"
-        if iteration == 2:
-            pass
-#            print('debug line 709 in simulation.')
         self.iteration = iteration
         self.engine_props["current_iteration"] = iteration
 
@@ -2206,12 +2194,14 @@ class SimulationEngine:
         if self._network_state is None or self._orchestrator is None:
             return
 
-        # Find and process all release events before given time
+        # Find and process all release events at or before given time
+        # NOTE: Use <= to match legacy behavior where releases at exactly
+        # the same time as the next arrival are processed before that arrival
         release_times = sorted(
             [
                 t
                 for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "release" and t[1] < time
+                if req.get("request_type") == "release" and t[1] <= time
             ]
         )
 

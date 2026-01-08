@@ -368,11 +368,6 @@ class SDNController:
             core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
             reverse_core_matrix[band][core_num][start_slot:end_slot] = lightpath_id
 
-            # Debug allocation - show slots for first 80 requests in iteration 1
-            iter_num = self.engine_props.get("current_iteration", 0)
-            if self.sdn_props.request_id is not None and self.sdn_props.request_id <= 80 and iter_num == 1:
-                print(f"L-ALLOC:i{iter_num}:r{self.sdn_props.request_id} link={link_tuple} slots=[{start_slot}:{end_slot}] lp={lightpath_id}")
-
             # Handle guard bands
             if self.engine_props["guard_slots"]:
                 self._allocate_guard_band(
@@ -772,84 +767,6 @@ class SDNController:
 
         return False
 
-    def _print_request_summary(self, outcome: str) -> None:
-        """Print a consolidated summary of request processing."""
-        req_id = self.sdn_props.request_id
-        src = self.sdn_props.source
-        dst = self.sdn_props.destination
-        bw = self.sdn_props.bandwidth
-
-        summary = {
-            "req": req_id,
-            "src": src,
-            "dst": dst,
-            "bw": bw,
-            "outcome": outcome,
-        }
-
-        # Grooming info
-        if self.sdn_props.was_groomed:
-            summary["grooming"] = "FULL"
-        elif self.sdn_props.was_partially_groomed:
-            summary["grooming"] = "PARTIAL"
-        else:
-            summary["grooming"] = "NONE"
-
-        # Remaining bandwidth - show "None" when 0 or empty (matching V5 format)
-        remaining = self.sdn_props.remaining_bw
-        summary["remaining_bw"] = str(remaining) if remaining not in (None, '', 0, '0') else "None"
-
-        # Slicing info
-        if self.sdn_props.is_sliced:
-            summary["slicing"] = "YES"
-            # Count only NEW lightpaths created (not groomed existing ones)
-            summary["num_segments"] = len(self.sdn_props.was_new_lp_established) if self.sdn_props.was_new_lp_established else 0
-        else:
-            summary["slicing"] = "NO"
-
-        # Lightpath details
-        lightpaths = []
-        for i, lp_id in enumerate(self.sdn_props.lightpath_id_list or []):
-            lp_info = {"id": lp_id}
-            lp_info["new"] = lp_id in (self.sdn_props.was_new_lp_established or [])
-            if i < len(self.sdn_props.start_slot_list or []):
-                lp_info["slots"] = f"{self.sdn_props.start_slot_list[i]}-{self.sdn_props.end_slot_list[i]}"
-            if i < len(self.sdn_props.modulation_list or []):
-                lp_info["mod"] = self.sdn_props.modulation_list[i]
-            if i < len(self.sdn_props.lightpath_bandwidth_list or []):
-                # Convert to int to match V5 format (avoid 600.0 vs 600)
-                lp_bw = self.sdn_props.lightpath_bandwidth_list[i]
-                lp_info["lp_bw"] = int(lp_bw) if isinstance(lp_bw, (int, float)) else lp_bw
-            if i < len(self.sdn_props.band_list or []):
-                lp_info["band"] = self.sdn_props.band_list[i]
-            if i < len(self.sdn_props.core_list or []):
-                lp_info["core"] = self.sdn_props.core_list[i]
-            lightpaths.append(lp_info)
-        summary["lightpaths"] = lightpaths
-
-        # Path
-        summary["path"] = self.sdn_props.path_list
-
-        # Print comprehensive debug
-        lps_created = list(self.sdn_props.was_new_lp_established or [])
-        lps_groomed = [lp for lp in (self.sdn_props.lightpath_id_list or []) if lp not in lps_created]
-        path_idx = self.sdn_props.path_index
-
-        # Get spectrum info - use last entry for newly created LP
-        spec_info = "N/A"
-        if self.sdn_props.start_slot_list and self.sdn_props.end_slot_list and self.sdn_props.modulation_list:
-            # For partial groom, the NEW LP is the last entry
-            idx = -1 if lps_created else 0
-            spec_info = f"{self.sdn_props.start_slot_list[idx]}-{self.sdn_props.end_slot_list[idx]}/{self.sdn_props.modulation_list[idx]}"
-
-        # Determine outcome type
-        if summary.get("grooming") == "PARTIAL" and lps_created:
-            outcome_type = "PARTIAL_GROOM+ALLOC"
-        elif self.sdn_props.is_sliced:
-            outcome_type = "SLICED"
-        else:
-            outcome_type = "ALLOCATED"
-
     def _handle_congestion_with_grooming(self, remaining_bw: int) -> None:
         """
         Handle allocation failure with grooming rollback.
@@ -1100,19 +1017,6 @@ class SDNController:
                 backup_mod_format_list=backup_mod_format_list,
             )
 
-            # Debug for requests 64 and 79
-            if self.sdn_props.request_id in (64, 79):
-                # Show first link's occupied slots
-                if len(path_list) >= 2:
-                    link = (path_list[0], path_list[1])
-                    if link in self.sdn_props.network_spectrum_dict:
-                        cores = self.sdn_props.network_spectrum_dict[link].get("cores_matrix", {})
-                        if cores and 0 in cores:
-                            occupied = [i for i, v in enumerate(cores[0]) if v != 0]
-                            print(f"L:r{self.sdn_props.request_id} p{path_index} link={link} occupied={occupied[:10]}...")
-                sp = self.spectrum_obj.spectrum_props
-                print(f"L:r{self.sdn_props.request_id} p{path_index} spec: free={sp.is_free} mod={sp.modulation} slot={sp.start_slot}-{sp.end_slot}")
-
             if self.spectrum_obj.spectrum_props.is_free is not True:
                 self.sdn_props.block_reason = "congestion"
                 return False
@@ -1195,7 +1099,6 @@ class SDNController:
         if self.engine_props.get("is_grooming_enabled", False):
             self._update_grooming_stats()
 
-        self._print_request_summary("ROUTED")
         return True
 
     def handle_event(
@@ -1268,9 +1171,6 @@ class SDNController:
 
             if groom_result:
                 # Fully groomed - done!
-                iter_num = self.engine_props.get("current_iteration", 0)
-                if self.sdn_props.request_id <= 20 and iter_num == 1:
-                    print(f"L-GROOM:i{iter_num}:r{self.sdn_props.request_id} FULLY_GROOMED lps={self.sdn_props.lightpath_id_list}")
                 self._update_grooming_stats()
                 return
 
@@ -1302,9 +1202,6 @@ class SDNController:
 
         # Try allocation with different strategies
         segment_slicing = False
-        _dbg = self.sdn_props.request_id in (64, 79)
-        if _dbg:
-            print(f"L:r{self.sdn_props.request_id} entered path loop, paths={len(route_matrix)}")
         while True:
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
@@ -1380,10 +1277,6 @@ class SDNController:
                     self.sdn_props.path_weight = self.route_obj.route_props.weights_list[path_index]
 
                     # Process the path
-                    if _dbg:
-                        stage = "slicing" if segment_slicing else "standard"
-                        print(f"L:r{self.sdn_props.request_id} {stage} p{path_index} path={path_list[:2]}...{path_list[-1]}")
-
                     success = self._process_single_path(
                         path_list,
                         path_index,
@@ -1397,16 +1290,11 @@ class SDNController:
                         backup_mod_format_list,
                     )
 
-                    if _dbg:
-                        print(f"L:r{self.sdn_props.request_id} {stage} p{path_index} process={'OK' if success else 'FAIL'}")
-
                     if success:
                         # Try to finalize - includes SNR recheck
                         finalize_success = self._finalize_successful_allocation(
                             path_index, route_time, force_slicing, segment_slicing
                         )
-                        if _dbg:
-                            print(f"L:r{self.sdn_props.request_id} {stage} p{path_index} finalize={'OK' if finalize_success else 'FAIL'}")
                         if finalize_success:
                             return
                         # If finalize failed (SNR recheck), continue to next path
@@ -1445,7 +1333,6 @@ class SDNController:
                         self.sdn_props.was_partially_routed = True
                         self.sdn_props.is_sliced = True
 
-                        self._print_request_summary("PARTIAL_SERVE")
                         return  # Success!
 
             # CRITICAL FIX: Release groomed bandwidth if request was partially groomed but blocked

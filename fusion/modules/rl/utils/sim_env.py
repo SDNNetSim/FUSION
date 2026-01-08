@@ -70,7 +70,7 @@ class SimEnvUtils:
         return terminated
 
     def handle_test_train_step(
-        self, was_allocated: bool, path_length: int, trial: int
+        self, was_allocated: bool, path_length: int, trial: int, req_id: int = 0
     ) -> None:
         """
         Handles updates specific to training or testing during the current
@@ -82,7 +82,10 @@ class SimEnvUtils:
         :type path_length: int
         :param trial: The current trial number
         :type trial: int
+        :param req_id: The request ID
+        :type req_id: int
         """
+
         if self.sim_env.sim_dict["is_training"]:
             if self.sim_env.sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS:
                 self.sim_env.path_agent.update(

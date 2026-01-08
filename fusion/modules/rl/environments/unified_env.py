@@ -137,6 +137,10 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         engine: SimulationEngine | None = None,
         orchestrator: SDNOrchestrator | None = None,
         adapter: RLSimulationAdapter | None = None,
+        path_agent: Any | None = None,
+        rl_props: Any | None = None,
+        path_algorithm: str = "",
+        is_training: bool = False,
     ) -> None:
         """Initialize the environment.
 
@@ -148,6 +152,10 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
             engine: Optional SimulationEngine for wired mode
             orchestrator: Optional SDNOrchestrator for wired mode
             adapter: Optional RLSimulationAdapter for wired mode
+            path_agent: Optional PathAgent for non-DRL algorithms (bandits, Q-learning)
+            rl_props: Optional RLProps for non-DRL algorithms
+            path_algorithm: Name of the path algorithm (e.g., "epsilon_greedy_bandit")
+            is_training: Whether in training mode
 
         Note:
             If engine, orchestrator, and adapter are all provided, the
@@ -165,9 +173,20 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         self._orchestrator = orchestrator
         self._adapter = adapter
 
+        # RL agent infrastructure for non-DRL algorithms
+        self._path_agent = path_agent
+        self._rl_props = rl_props
+        self._path_algorithm = path_algorithm
+        self._is_training = is_training
+
         # Determine operating mode
         self._wired_mode = (
             engine is not None and orchestrator is not None and adapter is not None
+        )
+
+        # Determine if using non-DRL path selection (bandits, Q-learning)
+        self._use_rl_agent = path_agent is not None and (
+            "bandit" in path_algorithm or path_algorithm == "q_learning"
         )
 
         # Initialize observation and action spaces
@@ -184,10 +203,27 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         self._edge_index: np.ndarray | None = None
         self._path_encoder: PathEncoder | None = None
 
+        # Legacy compatibility attributes for workflow_runner
+        # These are expected by the existing RL training infrastructure
+        self.trial: int = 0
+        self.iteration: int = 0
+
+        # Expose path_agent for legacy compatibility
+        self.path_agent = path_agent
+
     @property
     def is_wired(self) -> bool:
         """Whether environment is wired to real simulation."""
         return self._wired_mode
+
+    @property
+    def engine_obj(self) -> SimulationEngine | None:
+        """Legacy compatibility: expose engine as engine_obj.
+
+        This property allows the existing RL infrastructure (workflow_runner,
+        run_comparison.py) to access the simulation engine for statistics.
+        """
+        return self._engine
 
     def _setup_spaces(self) -> None:
         """Initialize observation and action spaces based on config.
@@ -350,6 +386,12 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         """
         super().reset(seed=seed)
 
+        # Update legacy compatibility attributes
+        if seed is not None:
+            self.trial = seed
+        # Note: iteration is incremented at episode END (in step), not at reset
+        # This matches legacy SimEnv behavior where first episode has iteration=0
+
         # Handle options
         if options is not None:
             num_requests = options.get("num_requests", self._num_requests)
@@ -383,7 +425,16 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         self._engine.reset_rl_state()
 
         # Initialize iteration (generates requests, creates topology)
-        self._engine.init_iter(iteration=0, seed=episode_seed)
+        # Must use self.iteration (not hardcoded 0) to match legacy behavior
+        # stats_obj.iteration is set inside init_iter and used for saving iter_stats
+        self._engine.init_iter(iteration=self.iteration, seed=episode_seed)
+
+        # Sync reward/penalty with engine_props to match legacy behavior
+        engine_props = self._engine.engine_props
+        if "penalty" in engine_props:
+            self._adapter._config.rl_block_penalty = float(engine_props["penalty"])
+        if "reward" in engine_props:
+            self._adapter._config.rl_success_reward = float(engine_props["reward"])
 
         # Initialize graph structures if using GNN observations
         if self._config.use_gnn_obs and self._engine.network_state is not None:
@@ -702,7 +753,7 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         """Execute step in wired mode using real simulation.
 
         Args:
-            action: Selected path index
+            action: Selected path index (ignored for bandit/Q-learning algorithms)
 
         Returns:
             Step result tuple
@@ -711,9 +762,31 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         assert self._adapter is not None
         assert self._current_request is not None
 
+        # For non-DRL algorithms (bandits, Q-learning), use the RL agent to select path
+        # The action parameter is ignored - the algorithm decides based on Q-values
+        actual_action = action
+        if self._use_rl_agent and self._path_agent is not None:
+            algorithm_obj = getattr(self._path_agent, "algorithm_obj", None)
+            if algorithm_obj is not None and hasattr(algorithm_obj, "select_path_arm"):
+                # Get source/dest from current request
+                source = int(self._current_request.source)
+                dest = int(self._current_request.destination)
+
+                # Set epsilon for bandit (needed for exploration)
+                if hasattr(algorithm_obj, "epsilon"):
+                    engine_props = self._engine.engine_props
+                    algorithm_obj.epsilon = engine_props.get("epsilon_start", 1.0)
+
+                # Use bandit algorithm to select path based on Q-values
+                actual_action = algorithm_obj.select_path_arm(source=source, dest=dest)
+
+                # Update rl_props for tracking (if available)
+                if self._rl_props is not None:
+                    self._rl_props.chosen_path_index = actual_action
+
         # Apply action via adapter (routes through orchestrator)
         result = self._adapter.apply_action(
-            action=action,
+            action=actual_action,
             request=self._current_request,
             network_state=self._engine.network_state,
             options=self._current_options,
@@ -721,6 +794,21 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
 
         # Compute reward
         reward = self._adapter.compute_reward(result, self._current_request)
+
+        # Update bandit algorithm with reward (for non-DRL algorithms)
+        if self._use_rl_agent and self._path_agent is not None and self._is_training:
+            algorithm_obj = getattr(self._path_agent, "algorithm_obj", None)
+            if algorithm_obj is not None and hasattr(algorithm_obj, "update"):
+                # Sync bandit's iteration counter with env's iteration
+                if hasattr(algorithm_obj, "iteration"):
+                    algorithm_obj.iteration = self.iteration
+                # Update the bandit Q-values with the reward
+                algorithm_obj.update(
+                    arm=actual_action,
+                    reward=reward,
+                    iteration=self.iteration,
+                    trial=self.trial,
+                )
 
         # Record result (updates stats, schedules release if success)
         self._engine.record_allocation_result(self._current_request, result)
@@ -752,6 +840,26 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
 
         # Check termination
         terminated = self._current_request is None
+
+        # Call end_iter for path_agent at episode end (updates hyperparams like epsilon)
+        if terminated:
+            if self._use_rl_agent and self._path_agent is not None:
+                if hasattr(self._path_agent, "end_iter"):
+                    try:
+                        self._path_agent.end_iter()
+                    except (ValueError, AttributeError):
+                        # hyperparam_obj may not be initialized for some algorithms
+                        pass
+            # Call engine.end_iter() to calculate and record blocking statistics
+            # This matches what legacy SimEnv does in sim_env.py:check_terminated()
+            if self._engine is not None:
+                self._engine.end_iter(
+                    iteration=self.iteration,
+                    print_flag=False,
+                    base_file_path="data",
+                )
+            # Increment iteration counter at episode end (matches legacy behavior)
+            self.iteration += 1
 
         # Build observation and info
         obs = self._build_observation()

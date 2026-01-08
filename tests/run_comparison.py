@@ -20,7 +20,7 @@ from stable_baselines3.common.callbacks import CallbackList
 
 from fusion.cli.config_setup import load_config
 from fusion.modules.rl import workflow_runner
-from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
+from fusion.modules.rl.gymnasium_envs import create_sim_env, EnvType
 from fusion.modules.rl.utils.callbacks import (
     EpisodicRewardCallback,
     LearnRateEntCallback,
@@ -113,19 +113,51 @@ def run_rl_simulation(input_dict: dict, config_path: str) -> None:
         # Create single-thread sim_dict for RL (only s1)
         rl_sim_dict = {"s1": thread_dict}
 
-        # Create environment for s1 only
-        env = SimEnv(
-            render_mode=None, custom_callback=ep_call_obj, sim_dict=rl_sim_dict
+        # Determine environment type from env var (defaults to legacy)
+        # USE_UNIFIED_ENV=1 or RL_ENV_TYPE=unified will use UnifiedSimEnv
+        env_type = os.environ.get("RL_ENV_TYPE", "").lower()
+        if not env_type:
+            use_unified = os.environ.get("USE_UNIFIED_ENV", "").lower()
+            env_type = EnvType.UNIFIED if use_unified in ("1", "true", "yes") else EnvType.LEGACY
+
+        LOGGER.info("Creating RL environment with type: %s", env_type)
+
+        # Create environment using factory function
+        # For legacy mode, we suppress the deprecation warning since this is
+        # intentional usage during the migration period
+        if env_type == EnvType.LEGACY:
+            os.environ["SUPPRESS_SIMENV_DEPRECATION"] = "1"
+
+        env = create_sim_env(
+            config=rl_sim_dict,
+            env_type=env_type,
+            render_mode=None,
+            custom_callback=ep_call_obj,
         )
+
+        # For unified mode, ensure the output directory exists
+        # (legacy SimEnv creates this during setup, but UnifiedSimEnv doesn't)
+        if env_type == EnvType.UNIFIED:
+            # Construct the output path the same way save_arr does
+            algorithm = thread_dict.get("path_algorithm", thread_dict.get("core_algorithm", "unknown"))
+            network = thread_dict.get("network", "unknown")
+            date = thread_dict.get("date", "0000")
+            sim_start = thread_dict.get("sim_start", "000000")
+            output_dir = Path("logs") / algorithm / network / date / sim_start
+            output_dir.mkdir(parents=True, exist_ok=True)
 
         # Run the workflow for s1 only - workflow expects flat dict,
         # environment expects nested dict
         workflow_runner.run(env=env, sim_dict=thread_dict, callback_list=callback_list)
 
         # Save stats for s1
-        if hasattr(env, "engine_obj") and hasattr(env.engine_obj, "stats_obj"):
-            stats_obj = env.engine_obj.stats_obj
-            stats_obj.end_iter_update()
+        # NOTE: Do NOT call calculate_blocking_statistics() or end_iter_update() here
+        # because the workflow (via check_terminated -> engine.end_iter) already calls
+        # these at the end of each episode. Calling them again would add an extra entry.
+        # Handle both legacy SimEnv (engine_obj) and UnifiedSimEnv (_engine)
+        engine = getattr(env, "engine_obj", None) or getattr(env, "_engine", None)
+        if engine is not None and hasattr(engine, "stats_obj"):
+            stats_obj = engine.stats_obj
             stats_obj.save_stats(base_fp="data")
 
 
@@ -525,7 +557,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'xtar_slicing_pff':
+        if case.name == 'epsilon_greedy_bandit':
             all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:

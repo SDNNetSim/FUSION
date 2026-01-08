@@ -112,9 +112,8 @@ class KShortestPath(AbstractRoutingAlgorithm):
             # Get modulation formats
             modulation_formats_list: list[str]
             chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
-            if chosen_bandwidth and self.engine_props.get(
-                "pre_calc_mod_selection", False
-            ):
+            pre_calc = self.engine_props.get("pre_calc_mod_selection", False)
+            if chosen_bandwidth and pre_calc:
                 # Use mod_per_bw if available
                 if (
                     "mod_per_bw" in self.engine_props
@@ -145,7 +144,8 @@ class KShortestPath(AbstractRoutingAlgorithm):
                     modulation_formats_list = []
                     for mod_format in modulation_formats_dict.keys():
                         mod_info = self.sdn_props.modulation_formats_dict[mod_format]
-                        if mod_info.get("max_length", 0) >= path_length:
+                        max_len = mod_info.get("max_length", 0)
+                        if max_len >= path_length:
                             modulation_formats_list.append(str(mod_format))
                         else:
                             modulation_formats_list.append(False)

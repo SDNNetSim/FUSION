@@ -5,8 +5,15 @@ This module provides the main SimEnv class that wraps the FUSION simulation
 in a Gymnasium-compatible interface for reinforcement learning training and evaluation.
 The environment handles simulation setup, state management, and reward calculation
 for network resource allocation problems.
+
+.. deprecated:: 4.0
+    SimEnv (GeneralSimEnv) is deprecated and will be removed in v5.0.
+    Use UnifiedSimEnv instead for better accuracy and unified code paths.
+    See migration guide: docs/migration/rl_to_unified_env.md
 """
 
+import os
+import warnings
 from typing import Any
 
 import gymnasium as gym
@@ -60,6 +67,27 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         :type kwargs: Any
         """
         super().__init__()
+
+        # Emit deprecation warning unless suppressed
+        if not os.environ.get("SUPPRESS_SIMENV_DEPRECATION", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        ):
+            warnings.warn(
+                "SimEnv (GeneralSimEnv) is deprecated and will be removed in v5.0. "
+                "Use UnifiedSimEnv instead via:\n"
+                "  from fusion.modules.rl.environments import UnifiedSimEnv\n"
+                "  env = UnifiedSimEnv(config)\n"
+                "Or use the factory function:\n"
+                "  from fusion.modules.rl.gymnasium_envs import create_sim_env\n"
+                "  env = create_sim_env(config, env_type='unified')\n"
+                "See: docs/migration/rl_to_unified_env.md\n"
+                "To suppress this warning, set SUPPRESS_SIMENV_DEPRECATION=1",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         # Acknowledge kwargs parameter (required by Gymnasium interface)
         _ = kwargs
 
@@ -297,7 +325,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # Ensure trial is not None
         trial_value = self.trial if self.trial is not None else 0
         self.step_helper.handle_test_train_step(
-            was_allocated=was_allocated, path_length=path_length, trial=trial_value
+            was_allocated=was_allocated, path_length=path_length, trial=trial_value, req_id=req_id
         )
         self.rl_help_obj.update_snapshots()
 

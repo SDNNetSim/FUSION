@@ -229,6 +229,7 @@ class SimulationConfig:
     bandwidth_map: dict[str, int] = field(
         default_factory=lambda: dict(DEFAULT_BANDWIDTH_MAP)
     )
+    pre_calc_mod_selection: bool = False  # Use pre-calculated modulation selection
 
     # =========================================================================
     # Validation
@@ -434,6 +435,7 @@ class SimulationConfig:
             mod_per_bw=mod_per_bw,
             mod_format_map=mod_format_map,
             bandwidth_map=bandwidth_map,
+            pre_calc_mod_selection=engine_props.get("pre_calc_mod_selection", False),
         )
 
     def to_engine_props(self) -> dict[str, Any]:
@@ -507,6 +509,7 @@ class SimulationConfig:
             "mod_per_bw": self.mod_per_bw,
             "modulation_format_mapping_dict": self.mod_format_map,
             "bandwidth_mapping_dict": self.bandwidth_map,
+            "pre_calc_mod_selection": self.pre_calc_mod_selection,
         }
 
         # Add individual band slot counts

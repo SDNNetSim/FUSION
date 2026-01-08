@@ -146,6 +146,7 @@ class RoutingAdapter(RoutingPipeline):
             # Use mod_per_bw for bandwidth-specific modulations, or global modulation_formats
             mod_formats_dict = self._get_modulation_formats_for_bandwidth(bandwidth_gbps)
 
+
             # Create proxy for legacy code
             sdn_props = SDNPropsProxy.from_network_state(
                 network_state,
