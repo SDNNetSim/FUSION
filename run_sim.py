@@ -1,19 +1,17 @@
-# run_sim.py
-# TODO (version 5.5) fix multiprocessing import statement
-# fixme: (version 5.5) Multi-threaded erlangs broke, fix this
-# TODO: (immediate) Other testing configs need to be updated (erlang start, stop, step)
-# TODO: (version 5.5-6) Improve logging output, especially for print statements needed for the GUI, how should we do this?
 import multiprocessing
 import copy
-import concurrent.futures
 import time
+import os  # Added import
+import traceback  # Added import
 from datetime import datetime
-
 from multiprocessing import Manager, Process
+
+# Import helpers
 from helper_scripts.setup_helpers import create_input, save_input
 from src.engine import Engine
 from config_scripts.setup_config import read_config
 from config_scripts.parse_args import parse_args
+
 
 class NetworkSimulator:
     """
@@ -25,11 +23,8 @@ class NetworkSimulator:
     def _run_generic_sim(self, erlang: float, first_erlang: bool, erlang_index: int,
                          progress_dict, done_offset: int):
         """
-        Handles one Erlang in this single process. We set arrival_rate,
-        pass done_offset to avoid resetting progress between volumes,
-        and call Engine.run(), which returns how many iteration units are now done.
+        Handles one Erlang in this single process.
         """
-
         # Remove unpickleable keys so we can deepcopy
         unpickleable_keys = {}
         for key in ['log_queue', 'progress_queue', 'stop_flag']:
@@ -40,6 +35,8 @@ class NetworkSimulator:
 
         # Restore the queues
         self.properties.update(unpickleable_keys)
+
+        # Restore flags/queues to engine_props
         if 'log_queue' in unpickleable_keys:
             engine_props['log_queue'] = unpickleable_keys['log_queue']
         if 'progress_queue' in unpickleable_keys:
@@ -47,129 +44,130 @@ class NetworkSimulator:
         if 'stop_flag' in unpickleable_keys:
             engine_props['stop_flag'] = unpickleable_keys['stop_flag']
 
-        # Keep or remove progress_dict references as needed
+        # Setup progress tracking
         engine_props['progress_dict'] = progress_dict
         engine_props['progress_key'] = erlang_index
 
         # Set 'erlang' and 'arrival_rate'
         engine_props['erlang'] = erlang
         engine_props['arrival_rate'] = (engine_props['cores_per_link'] * erlang) / engine_props['holding_time']
-
-        # We also pass our offset so the engine knows how many iteration units we've done so far
         engine_props['done_offset'] = done_offset
-
-        # We already stored 'my_iteration_units' in run_generic_sim()
         engine_props['my_iteration_units'] = self.properties.get('my_iteration_units', engine_props['max_iters'])
 
-        # Make a sanitized copy for saving
-        clean_engine_props = engine_props.copy()
-        for badkey in ['progress_dict', 'progress_key', 'log_queue', 'progress_queue', 'done_offset', 'stop_flag']:
-            clean_engine_props.pop(badkey, None)
+        # --- PATHS ARE ALREADY SET ---
+        # The engine_props now contain the correct file paths because we updated
+        # the main config in Step A below.
+        
+        # Override thread_num to empty string to ensure flat directory output
+        # (Engine typically uses thread_num to create subfolders like s1_E50/)
+        engine_props['thread_num'] = '' 
 
-        updated_props = create_input(base_fp='data', engine_props=clean_engine_props)
-        engine_props.update(updated_props)
+        print(f"[Process {self.properties.get('sim_id', 'Unknown')}] Running Erlang: {erlang}...")
 
-        # Save input if first Erlang
-        if first_erlang:
-            save_input(
-                base_fp='data',
-                properties=clean_engine_props,
-                file_name=f"sim_input_{updated_props['thread_num']}.json",
-                data_dict=updated_props
-            )
+        # --- UPDATE START: Safe Directory Creation & Error Handling ---
+        try:
+            # 1. Force Create Output Directory
+            # Constructs path like: output/USNet/0108/00_47_52_...
+            # This ensures the folder exists BEFORE the engine tries to save into it.
+            topology = engine_props.get('topology', 'UnknownTopology')
+            date_str = engine_props.get('date', 'UnknownDate')
+            sim_start = engine_props.get('sim_start', 'UnknownTime')
+            
+            output_dir = os.path.join('output', topology, date_str, sim_start)
+            os.makedirs(output_dir, exist_ok=True)
 
-        print(f"[Simulation {erlang_index}] progress_dict id: {id(engine_props['progress_dict'])}")
+            # 2. Run Engine
+            engine = Engine(engine_props=engine_props)
+            final_done_units = engine.run()
+            
+            return final_done_units
 
-        engine = Engine(engine_props=engine_props)
-        # Let the engine run. It returns how many iteration units are done so far
-        final_done_units = engine.run()
-
-        return final_done_units
+        except Exception as e:
+            print(f"!!! CRITICAL ERROR in Process {self.properties.get('sim_id', 'Unknown')} !!!")
+            print(f"Failed while running Erlang: {erlang}")
+            traceback.print_exc()
+            return 0
+        # --- UPDATE END ---
 
     def run_generic_sim(self):
         """
-        If this single process runs multiple Erlangs sequentially, we do them all here
-        without resetting the progress. We'll unify iteration-based progress across them.
+        Runs the assigned Erlang(s). 
         """
         start, stop = self.properties['erlang_start'], self.properties['erlang_stop']
         step = self.properties['erlang_step']
-        erlang_list = [float(x) for x in range(start, stop, step)]
-        print("Launching simulations for erlangs:", erlang_list)
-
-        # Each Erlang does self.properties['max_iters'] iterations => total for this process
+        
+        erlang_list = [float(x) for x in range(int(start), int(stop), int(step))]
+        
         max_iters = self.properties['max_iters']
         my_iteration_units = len(erlang_list) * max_iters
         self.properties['my_iteration_units'] = my_iteration_units
 
-        # If you're still using a shared progress_dict, keep or remove as needed
         if 'progress_dict' not in self.properties:
             manager = Manager()
             self.properties['progress_dict'] = manager.dict()
 
         progress_dict = self.properties['progress_dict']
-        print("Initial shared progress dict:", dict(progress_dict))
-
-        # We'll track how many iteration units have been completed so far across these Erlangs
         done_units_so_far = 0
 
-        if self.properties.get('thread_erlangs', True):
-            # --- Run Erlangs in parallel threads ---
-            offsets = {i: i * max_iters for i in range(len(erlang_list))}
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                futures = {}
-                for erlang_index, erlang in enumerate(erlang_list):
-                    first_erlang = erlang_index == 0
-                    time.sleep(1.0)  # <<< added sleep before submitting each thread
-                    future = executor.submit(
-                        self._run_generic_sim,
-                        erlang=erlang,
-                        first_erlang=first_erlang,
-                        erlang_index=erlang_index,
-                        progress_dict=progress_dict,
-                        done_offset=offsets[erlang_index],
-                    )
-                    futures[future] = erlang_index
-
-                for fut in concurrent.futures.as_completed(futures):
-                    done_units_so_far += fut.result()
-
-        else:
-            for erlang_index, erlang in enumerate(erlang_list):
-                first_erlang = erlang_index == 0
-
-                # We call the helper function that sets 'arrival_rate', calls Engine, etc.
-                done_units_so_far = self._run_generic_sim(
-                    erlang=erlang,
-                    first_erlang=first_erlang,
-                    erlang_index=erlang_index,
-                    progress_dict=progress_dict,
-                    done_offset=done_units_so_far
-                )
+        for erlang_index, erlang in enumerate(erlang_list):
+            first_erlang = (erlang_index == 0)
+            
+            done_units_so_far = self._run_generic_sim(
+                erlang=erlang,
+                first_erlang=first_erlang,
+                erlang_index=erlang_index,
+                progress_dict=progress_dict,
+                done_offset=done_units_so_far
+            )
 
     def run_sim(self, **kwargs):
         """
-        Entry point for this process. We set up self.properties, then call run_generic_sim().
+        Entry point for this process.
         """
-        self.properties = kwargs['thread_params']
-        # The date and current time derived from the simulation start.
-        self.properties['date'] = kwargs['sim_start'].split('_')[0]
-        tmp_list = kwargs['sim_start'].split('_')
-        time_string = f'{tmp_list[1]}_{tmp_list[2]}_{tmp_list[3]}_{tmp_list[4]}'
-        self.properties['sim_start'] = time_string
-        self.properties['thread_num'] = kwargs['thread_num']
+        # Wrap in try/except to catch any silent crashes in the future
+        try:
+            self.properties = kwargs['thread_params']
+            
+            # --- FIX START ---
+            # Set the timestamp
+            self.properties['sim_start'] = kwargs['sim_start']
+            
+            # DELETE THIS LINE FROM YOUR OLD CODE:
+            # self.properties['date'] = kwargs['sim_start'].split('_')[0] 
+            # Reason: This was overwriting the date '0108' with the hour '00'.
+            # The correct 'date' is already in self.properties from __main__.
+            # --- FIX END ---
+            
+            self.properties['thread_num'] = kwargs['thread_num']
+            
+            # Store the original ID (e.g., 's1')
+            if '_E' in kwargs['thread_num']:
+                self.properties['sim_id'] = kwargs['thread_num'].split('_E')[0]
+            else:
+                self.properties['sim_id'] = kwargs['thread_num']
 
-        # Now we do multiple Erlangs
-        self.run_generic_sim()
+            # Print where we are saving to ensure it's correct this time
+            topo = self.properties.get('topology', 'Unknown')
+            date = self.properties.get('date', 'Unknown')
+            start = self.properties.get('sim_start', 'Unknown')
+            print(f"Process {self.properties['sim_id']} target output: output/{topo}/{date}/{start}")
+
+            self.run_generic_sim()
+
+        except Exception as e:
+            print(f"!!! CRITICAL FAILURE IN PROCESS {kwargs.get('thread_num')} !!!")
+            import traceback
+            traceback.print_exc()
 
 
-def run(sims_dict: dict, stop_flag: multiprocessing):
+def run(sims_dict: dict, stop_flag: multiprocessing.Event, sim_start_str: str):
     """
-    Spawns a separate process for each simulation config.
-    Each process might handle multiple Erlangs via run_generic_sim().
-    We'll rely on iteration-based progress in engine.py (child increments done_units each iteration).
+    Spawns processes.
     """
+    if not sims_dict:
+        print("No simulations to run.")
+        return
 
-    # If there's at least one simulation, retrieve the parent's log/progress queues
     any_conf = list(sims_dict.values())[0]
     log_queue = any_conf.get('log_queue')
     progress_queue = any_conf.get('progress_queue')
@@ -181,39 +179,91 @@ def run(sims_dict: dict, stop_flag: multiprocessing):
             print(message)
 
     processes = []
-
-    # For system testing purposes
-    if 'sim_start' not in sims_dict['s1']:
-        sim_start = datetime.now().strftime("%m%d_%H_%M_%S_%f")
-    else:
-        sim_start = f"{sims_dict['s1']['date']}_{sims_dict['s1']['sim_start']}"
+    
+    print(f"--- Launching {len(sims_dict)} Processes (Timestamp: {sim_start_str}) ---")
 
     for thread_num, thread_params in sims_dict.items():
-        # Insert the parent's queues if not already set
         thread_params['progress_queue'] = progress_queue
-        thread_params['stop_flag'] = stop_flag  # Pass the stop flag to the simulation process
-
-        log(f"Starting simulation for thread {thread_num} at {sim_start}.")
-        curr_sim = NetworkSimulator()
+        thread_params['stop_flag'] = stop_flag
 
         p = Process(
-            target=curr_sim.run_sim,
+            target=NetworkSimulator().run_sim,
             kwargs={
                 'thread_num': thread_num,
                 'thread_params': thread_params,
-                'sim_start': sim_start
+                'sim_start': sim_start_str
             }
         )
         processes.append(p)
         p.start()
 
-    # Wait for all child processes
     for p in processes:
         p.join()
+    
+    print("All simulations completed.")
 
 
 if __name__ == '__main__':
     args_dict = parse_args()
-    all_sims_dict = read_config(args_dict=args_dict, config_path=args_dict['config_path'])
+    initial_sims = read_config(args_dict=args_dict, config_path=args_dict['config_path'])
+    
+    # --- STEP 0: GENERATE TIMESTAMP ---
+    now = datetime.now()
+    sim_start_str = now.strftime("%H_%M_%S_%f") 
+    date_str = now.strftime("%m%d")
+
+    # --- STEP A: LOAD DATA & UPDATE CONFIG ---
+    print("Loading network data and generating input files...")
+    
+    # IMPORTANT: We iterate over keys to update 'initial_sims' IN PLACE
+    for key in list(initial_sims.keys()):
+        config = initial_sims[key]
+        
+        # Inject timestamp info
+        config['date'] = date_str
+        config['sim_start'] = sim_start_str
+        config['thread_num'] = key  # Use 's1' so bw_info_s1.json is created
+
+        # Run create_input. This calculates paths and loads network data.
+        updated_data = create_input(base_fp='data', engine_props=config)
+        
+        # --- FIX: MERGE UPDATED DATA BACK INTO MAIN CONFIG ---
+        # This ensures that when we copy this config for workers later,
+        # it has the file paths!
+        initial_sims[key].update(updated_data)
+        
+        # Save the single sim_input_s1.json
+        save_input(
+            base_fp='data',
+            properties=initial_sims[key],
+            file_name=f"sim_input_{key}.json",
+            data_dict=updated_data
+        )
+    print("Data load complete. Paths propagated to workers.")
+
+    # --- STEP B: EXPLODE FOR MULTIPROCESSING ---
+    final_sims = {}
+    for sim_key, config in initial_sims.items():
+        thread_erlangs = config.get('thread_erlangs', True)
+        start = int(config['erlang_start'])
+        stop = int(config['erlang_stop'])
+        step = int(config['erlang_step'])
+        
+        if thread_erlangs and (stop > start):
+            erlang_range = range(start, stop, step)
+            print(f"['{sim_key}'] Splitting into {len(erlang_range)} independent processes.")
+            
+            for i, erlang_val in enumerate(erlang_range):
+                # Deepcopy now includes the paths from Step A!
+                new_conf = copy.deepcopy(config)
+                
+                new_conf['erlang_start'] = erlang_val
+                new_conf['erlang_stop'] = erlang_val + step 
+                
+                new_key = f"{sim_key}_E{erlang_val}"
+                final_sims[new_key] = new_conf
+        else:
+            final_sims[sim_key] = config
+
     stop_flag = multiprocessing.Event()
-    run(sims_dict=all_sims_dict, stop_flag=stop_flag)
+    run(sims_dict=final_sims, stop_flag=stop_flag, sim_start_str=sim_start_str)
