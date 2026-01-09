@@ -71,6 +71,13 @@ class PathOption:
     dist_to_disaster: float = 1.0
     min_residual_slots: float = 1.0
 
+    # Protection fields (optional, for 1+1 protection)
+    backup_path: tuple[str, ...] | None = None
+    backup_feasible: bool | None = None
+    backup_weight_km: float | None = None
+    backup_modulation: str | None = None
+    is_protected: bool = False
+
     def __post_init__(self) -> None:
         """Validate invariants after initialization."""
         if self.path_index < 0:
@@ -81,6 +88,44 @@ class PathOption:
             raise ValueError("congestion must be in [0, 1]")
         if self.available_slots < 0 or self.available_slots > 1:
             raise ValueError("available_slots must be in [0, 1]")
+        # Validate protection fields consistency
+        if self.is_protected:
+            if self.backup_path is None:
+                raise ValueError("is_protected=True requires backup_path")
+            if self.backup_feasible is None:
+                raise ValueError("is_protected=True requires backup_feasible")
+
+    @property
+    def both_paths_feasible(self) -> bool:
+        """Check if both primary and backup paths are feasible.
+
+        For unprotected paths, returns the primary path's feasibility.
+        For protected paths, returns True only if both paths have spectrum.
+
+        Returns:
+            True if allocation can proceed (considering protection status)
+        """
+        if not self.is_protected:
+            return self.is_feasible
+        return self.is_feasible and (self.backup_feasible is True)
+
+    @property
+    def total_weight_km(self) -> float:
+        """Total path length (primary + backup if protected).
+
+        Returns:
+            Combined length for protected paths, primary length otherwise
+        """
+        if self.is_protected and self.backup_weight_km is not None:
+            return self.weight_km + self.backup_weight_km
+        return self.weight_km
+
+    @property
+    def backup_hop_count(self) -> int | None:
+        """Number of hops in backup path, or None if unprotected."""
+        if self.backup_path is None:
+            return None
+        return len(self.backup_path) - 1
 
     @classmethod
     def from_pipeline_results(
@@ -161,6 +206,100 @@ class PathOption:
             spectrum_end=spectrum_end,
             core_index=core_index,
             band=band,
+        )
+
+    @classmethod
+    def from_protected_route(
+        cls,
+        path_index: int,
+        primary_path: list[str],
+        backup_path: list[str],
+        primary_weight: float,
+        backup_weight: float,
+        primary_feasible: bool,
+        backup_feasible: bool,
+        primary_modulation: str | None,
+        backup_modulation: str | None,
+        slots_needed: int,
+        congestion: float,
+        available_slots: float = 1.0,
+    ) -> "PathOption":
+        """Factory method to create PathOption for 1+1 protected path pair.
+
+        This method provides a convenient way to construct a protected
+        PathOption from separate primary and backup path information.
+
+        Args:
+            path_index: Index in the options list
+            primary_path: Primary path node sequence
+            backup_path: Backup (disjoint) path node sequence
+            primary_weight: Primary path length in km
+            backup_weight: Backup path length in km
+            primary_feasible: Primary path spectrum availability
+            backup_feasible: Backup path spectrum availability
+            primary_modulation: Primary path modulation format
+            backup_modulation: Backup path modulation format
+            slots_needed: Spectrum slots required (same for both paths)
+            congestion: Combined congestion metric
+            available_slots: Available slots ratio (default 1.0)
+
+        Returns:
+            PathOption configured for 1+1 protection
+        """
+        return cls(
+            path_index=path_index,
+            path=tuple(primary_path),
+            weight_km=primary_weight,
+            num_hops=len(primary_path) - 1 if len(primary_path) > 1 else 0,
+            modulation=primary_modulation,
+            slots_needed=slots_needed,
+            is_feasible=primary_feasible,
+            congestion=congestion,
+            available_slots=available_slots,
+            backup_path=tuple(backup_path),
+            backup_feasible=backup_feasible,
+            backup_weight_km=backup_weight,
+            backup_modulation=backup_modulation,
+            is_protected=True,
+        )
+
+    @classmethod
+    def from_unprotected_route(
+        cls,
+        path_index: int,
+        path: list[str],
+        weight_km: float,
+        is_feasible: bool,
+        modulation: str | None,
+        slots_needed: int,
+        congestion: float,
+        available_slots: float = 1.0,
+    ) -> "PathOption":
+        """Factory method to create PathOption for unprotected route.
+
+        Args:
+            path_index: Index in the options list
+            path: Path node sequence
+            weight_km: Path length in km
+            is_feasible: Spectrum availability
+            modulation: Modulation format
+            slots_needed: Required spectrum slots
+            congestion: Path congestion metric
+            available_slots: Available slots ratio (default 1.0)
+
+        Returns:
+            PathOption configured for unprotected route
+        """
+        return cls(
+            path_index=path_index,
+            path=tuple(path),
+            weight_km=weight_km,
+            num_hops=len(path) - 1 if len(path) > 1 else 0,
+            modulation=modulation,
+            slots_needed=slots_needed,
+            is_feasible=is_feasible,
+            congestion=congestion,
+            available_slots=available_slots,
         )
 
 

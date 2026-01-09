@@ -237,3 +237,232 @@ class TestComputeActionMask:
         mask = compute_action_mask(options, k_paths=10)
 
         assert mask.shape == (10,)
+
+
+class TestPathOptionProtection:
+    """Tests for PathOption protection fields (P5.1)."""
+
+    def test_unprotected_default_values(self) -> None:
+        """Unprotected PathOption has None backup fields."""
+        opt = create_valid_path_option()
+
+        assert opt.backup_path is None
+        assert opt.backup_feasible is None
+        assert opt.backup_weight_km is None
+        assert opt.backup_modulation is None
+        assert opt.is_protected is False
+
+    def test_unprotected_both_paths_feasible(self) -> None:
+        """Unprotected path returns is_feasible for both_paths_feasible."""
+        opt_feasible = create_valid_path_option(is_feasible=True)
+        opt_infeasible = create_valid_path_option(is_feasible=False)
+
+        assert opt_feasible.both_paths_feasible is True
+        assert opt_infeasible.both_paths_feasible is False
+
+    def test_protected_path_creation(self) -> None:
+        """Protected PathOption can be created with backup fields."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B", "C"],
+            backup_path=["A", "D", "E", "C"],
+            primary_weight=100.0,
+            backup_weight=150.0,
+            primary_feasible=True,
+            backup_feasible=True,
+            primary_modulation="QPSK",
+            backup_modulation="8-QAM",
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        assert opt.is_protected is True
+        assert opt.path == ("A", "B", "C")
+        assert opt.backup_path == ("A", "D", "E", "C")
+        assert opt.weight_km == 100.0
+        assert opt.backup_weight_km == 150.0
+        assert opt.is_feasible is True
+        assert opt.backup_feasible is True
+        assert opt.modulation == "QPSK"
+        assert opt.backup_modulation == "8-QAM"
+
+    def test_protected_both_paths_feasible_true(self) -> None:
+        """both_paths_feasible True when both paths have spectrum."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B"],
+            backup_path=["A", "C", "B"],
+            primary_weight=50.0,
+            backup_weight=80.0,
+            primary_feasible=True,
+            backup_feasible=True,
+            primary_modulation="QPSK",
+            backup_modulation="QPSK",
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        assert opt.both_paths_feasible is True
+
+    def test_protected_both_paths_feasible_false_backup(self) -> None:
+        """both_paths_feasible False when backup infeasible."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B"],
+            backup_path=["A", "C", "B"],
+            primary_weight=50.0,
+            backup_weight=80.0,
+            primary_feasible=True,
+            backup_feasible=False,
+            primary_modulation="QPSK",
+            backup_modulation=None,
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        assert opt.both_paths_feasible is False
+
+    def test_protected_both_paths_feasible_false_primary(self) -> None:
+        """both_paths_feasible False when primary infeasible."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B"],
+            backup_path=["A", "C", "B"],
+            primary_weight=50.0,
+            backup_weight=80.0,
+            primary_feasible=False,
+            backup_feasible=True,
+            primary_modulation=None,
+            backup_modulation="QPSK",
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        assert opt.both_paths_feasible is False
+
+    def test_total_weight_unprotected(self) -> None:
+        """total_weight_km returns primary weight for unprotected."""
+        opt = create_valid_path_option(weight_km=100.0)
+
+        assert opt.total_weight_km == 100.0
+
+    def test_total_weight_protected(self) -> None:
+        """total_weight_km sums both paths for protected."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B"],
+            backup_path=["A", "C", "B"],
+            primary_weight=50.0,
+            backup_weight=80.0,
+            primary_feasible=True,
+            backup_feasible=True,
+            primary_modulation="QPSK",
+            backup_modulation="QPSK",
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        assert opt.total_weight_km == 130.0
+
+    def test_backup_hop_count_unprotected(self) -> None:
+        """backup_hop_count returns None for unprotected."""
+        opt = create_valid_path_option()
+
+        assert opt.backup_hop_count is None
+
+    def test_backup_hop_count_protected(self) -> None:
+        """backup_hop_count returns correct value for protected."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B"],
+            backup_path=["A", "C", "D", "B"],  # 3 hops
+            primary_weight=50.0,
+            backup_weight=80.0,
+            primary_feasible=True,
+            backup_feasible=True,
+            primary_modulation="QPSK",
+            backup_modulation="QPSK",
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        assert opt.backup_hop_count == 3
+
+    def test_validation_is_protected_requires_backup_path(self) -> None:
+        """is_protected=True requires backup_path."""
+        with pytest.raises(ValueError, match="is_protected=True requires backup_path"):
+            PathOption(
+                path_index=0,
+                path=("A", "B"),
+                weight_km=50.0,
+                num_hops=1,
+                modulation="QPSK",
+                slots_needed=4,
+                is_feasible=True,
+                congestion=0.5,
+                available_slots=0.5,
+                is_protected=True,
+                backup_path=None,  # Missing!
+                backup_feasible=True,
+            )
+
+    def test_validation_is_protected_requires_backup_feasible(self) -> None:
+        """is_protected=True requires backup_feasible."""
+        with pytest.raises(
+            ValueError, match="is_protected=True requires backup_feasible"
+        ):
+            PathOption(
+                path_index=0,
+                path=("A", "B"),
+                weight_km=50.0,
+                num_hops=1,
+                modulation="QPSK",
+                slots_needed=4,
+                is_feasible=True,
+                congestion=0.5,
+                available_slots=0.5,
+                is_protected=True,
+                backup_path=("A", "C", "B"),
+                backup_feasible=None,  # Missing!
+            )
+
+    def test_from_unprotected_route_factory(self) -> None:
+        """from_unprotected_route factory works correctly."""
+        opt = PathOption.from_unprotected_route(
+            path_index=1,
+            path=["A", "B", "C"],
+            weight_km=120.0,
+            is_feasible=True,
+            modulation="16-QAM",
+            slots_needed=8,
+            congestion=0.4,
+        )
+
+        assert opt.path_index == 1
+        assert opt.path == ("A", "B", "C")
+        assert opt.weight_km == 120.0
+        assert opt.is_feasible is True
+        assert opt.modulation == "16-QAM"
+        assert opt.slots_needed == 8
+        assert opt.congestion == 0.4
+        assert opt.is_protected is False
+        assert opt.backup_path is None
+
+    def test_protected_path_frozen(self) -> None:
+        """Protected PathOption should also be frozen."""
+        opt = PathOption.from_protected_route(
+            path_index=0,
+            primary_path=["A", "B"],
+            backup_path=["A", "C", "B"],
+            primary_weight=50.0,
+            backup_weight=80.0,
+            primary_feasible=True,
+            backup_feasible=True,
+            primary_modulation="QPSK",
+            backup_modulation="QPSK",
+            slots_needed=4,
+            congestion=0.3,
+        )
+
+        with pytest.raises(FrozenInstanceError):
+            opt.is_protected = False  # type: ignore[misc]
