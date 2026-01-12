@@ -13,9 +13,19 @@ Routing Strategies (P3.1.e):
 - LoadBalancedStrategy: Routing considering link utilization
 - ProtectionAwareStrategy: Routing for disjoint path pairs
 
+Protection Pipeline (P5.4):
+- DisjointPathFinder: Link-disjoint and node-disjoint path algorithms
+- ProtectionPipeline: 1+1 dedicated protection allocation
+
 Phase: P3.1 - Pipeline Factory Scaffolding
+Phase: P5.4 - Protection Pipeline
 """
 
+from fusion.pipelines.disjoint_path_finder import DisjointPathFinder, DisjointnessType
+from fusion.pipelines.protection_pipeline import (
+    ProtectedAllocationResult,
+    ProtectionPipeline,
+)
 from fusion.pipelines.routing_strategies import (
     KShortestPathStrategy,
     LoadBalancedStrategy,
@@ -31,4 +41,9 @@ __all__ = [
     "KShortestPathStrategy",
     "LoadBalancedStrategy",
     "ProtectionAwareStrategy",
+    # Protection pipeline (P5.4)
+    "DisjointnessType",
+    "DisjointPathFinder",
+    "ProtectionPipeline",
+    "ProtectedAllocationResult",
 ]
