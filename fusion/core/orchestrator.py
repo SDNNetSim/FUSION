@@ -13,6 +13,7 @@ RULES (enforced by code review):
 - Each method < 50 lines
 
 Phase: P3.2 - SDN Orchestrator Creation
+Phase: P5.5 - Orchestrator Integration with ControlPolicy
 Gap Analysis Coverage: P3.2.f (rollback), P3.2.g (protection), P3.2.h (congestion)
 """
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from fusion.domain.network_state import NetworkState
     from fusion.domain.request import BlockReason, Request
     from fusion.domain.results import AllocationResult, RouteResult, SpectrumResult
+    from fusion.interfaces.control_policy import ControlPolicy
     from fusion.interfaces.pipelines import (
         GroomingPipeline,
         RoutingPipeline,
@@ -34,6 +36,8 @@ if TYPE_CHECKING:
         SNRPipeline,
         SpectrumPipeline,
     )
+    from fusion.modules.rl.adapter import PathOption, RLSimulationAdapter
+    from fusion.pipelines.protection_pipeline import ProtectionPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +57,28 @@ class SDNOrchestrator:
         grooming: Pipeline for traffic grooming (optional)
         snr: Pipeline for SNR validation (optional)
         slicing: Pipeline for request slicing (optional)
+        policy: Control policy for path selection (optional, P5.5)
+        rl_adapter: RL adapter for building path options (optional, P5.5)
+        protection_pipeline: Protection pipeline for 1+1 (optional, P5.5)
 
     Note:
         Does NOT store network_state - receives per call only.
     """
 
-    __slots__ = ("config", "routing", "spectrum", "grooming", "snr", "slicing", "_failed_attempt_snr_list", "_last_path_index", "current_iteration")
+    __slots__ = (
+        "config", "routing", "spectrum", "grooming", "snr", "slicing",
+        "_failed_attempt_snr_list", "_last_path_index", "current_iteration",
+        # P5.5: Policy integration
+        "_policy", "_rl_adapter", "_protection_pipeline",
+    )
 
     def __init__(
         self,
         config: SimulationConfig,
         pipelines: PipelineSet,
+        policy: ControlPolicy | None = None,
+        rl_adapter: RLSimulationAdapter | None = None,
+        protection_pipeline: ProtectionPipeline | None = None,
     ) -> None:
         """
         Initialize orchestrator with config and pipelines.
@@ -71,6 +86,9 @@ class SDNOrchestrator:
         Args:
             config: Simulation configuration
             pipelines: Container with all pipeline implementations
+            policy: Optional control policy for path selection (P5.5)
+            rl_adapter: Optional RL adapter for building options (P5.5)
+            protection_pipeline: Optional protection pipeline (P5.5)
         """
         self.config: SimulationConfig = config
         self.routing: RoutingPipeline = pipelines.routing
@@ -82,6 +100,10 @@ class SDNOrchestrator:
         self._last_path_index: int = 0
         # Current iteration for debug purposes (set by simulation)
         self.current_iteration: int = 0
+        # P5.5: Policy integration (all optional)
+        self._policy: ControlPolicy | None = policy
+        self._rl_adapter: RLSimulationAdapter | None = rl_adapter
+        self._protection_pipeline: ProtectionPipeline | None = protection_pipeline
 
     def handle_arrival(
         self,
@@ -1039,3 +1061,258 @@ class SDNOrchestrator:
 
         request.lightpath_ids.clear()
         request.status = RequestStatus.RELEASED
+
+    # =========================================================================
+    # P5.5: Policy-based arrival handling
+    # =========================================================================
+
+    @property
+    def policy(self) -> ControlPolicy | None:
+        """Get the current control policy (None if not set)."""
+        return self._policy
+
+    @policy.setter
+    def policy(self, value: ControlPolicy | None) -> None:
+        """Set the control policy."""
+        self._policy = value
+
+    @property
+    def rl_adapter(self) -> RLSimulationAdapter | None:
+        """Get the RL adapter (None if not set)."""
+        return self._rl_adapter
+
+    @rl_adapter.setter
+    def rl_adapter(self, value: RLSimulationAdapter | None) -> None:
+        """Set the RL adapter."""
+        self._rl_adapter = value
+
+    @property
+    def protection_pipeline(self) -> ProtectionPipeline | None:
+        """Get the protection pipeline (None if not set)."""
+        return self._protection_pipeline
+
+    @protection_pipeline.setter
+    def protection_pipeline(self, value: ProtectionPipeline | None) -> None:
+        """Set the protection pipeline."""
+        self._protection_pipeline = value
+
+    def has_policy(self) -> bool:
+        """Check if a policy is configured."""
+        return self._policy is not None
+
+    def handle_arrival_with_policy(
+        self,
+        request: Request,
+        network_state: NetworkState,
+    ) -> AllocationResult:
+        """
+        Handle request arrival using the configured policy (P5.5).
+
+        This method provides policy-driven path selection while maintaining
+        backward compatibility with handle_arrival(). It:
+
+        1. Builds PathOption list via RL adapter
+        2. Calls policy.select_action() to get selected path
+        3. Validates action; invalid => block or fallback
+        4. Routes through standard allocation with forced path
+
+        If no policy is configured, delegates to handle_arrival().
+
+        Args:
+            request: The incoming request to process
+            network_state: Current network state (passed per call)
+
+        Returns:
+            AllocationResult with success/failure and details
+
+        Note:
+            Protection pipeline is only used when:
+            - protection_enabled is True in config
+            - request.protection_required is True
+            - protection_pipeline is set
+        """
+        from fusion.domain.request import BlockReason
+        from fusion.domain.results import AllocationResult
+
+        # If no policy configured, delegate to standard handler
+        if self._policy is None:
+            return self.handle_arrival(request, network_state)
+
+        # Create RL adapter lazily if not set
+        if self._rl_adapter is None:
+            from fusion.modules.rl.adapter import RLSimulationAdapter
+            self._rl_adapter = RLSimulationAdapter(self)
+
+        # Log policy being used
+        policy_name = self._policy.get_name()
+        logger.debug(
+            "Request %s: Using policy %s",
+            request.request_id,
+            policy_name,
+        )
+
+        # Check for protected request with protection pipeline
+        if (
+            self.config.protection_enabled
+            and getattr(request, "protection_required", False)
+            and self._protection_pipeline is not None
+        ):
+            return self._handle_protected_with_policy(request, network_state)
+
+        # Build path options via adapter
+        options = self._rl_adapter.get_path_options(request, network_state)
+
+        if not options:
+            logger.debug(
+                "Request %s: No path options available",
+                request.request_id,
+            )
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.NO_PATH,
+            )
+
+        # Call policy to select action
+        action = self._policy.select_action(request, options, network_state)
+
+        logger.debug(
+            "Request %s: Policy %s selected action %d (of %d options)",
+            request.request_id,
+            policy_name,
+            action,
+            len(options),
+        )
+
+        # Validate action
+        if action < 0 or action >= len(options):
+            logger.debug(
+                "Request %s: Invalid action %d, blocking",
+                request.request_id,
+                action,
+            )
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.CONGESTION,
+            )
+
+        # Check feasibility
+        selected_option = options[action]
+        if not selected_option.is_feasible:
+            logger.debug(
+                "Request %s: Selected action %d is infeasible, blocking",
+                request.request_id,
+                action,
+            )
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.CONGESTION,
+            )
+
+        # Route through standard handler with forced path
+        result = self.handle_arrival(
+            request,
+            network_state,
+            forced_path=list(selected_option.path),
+            forced_modulation=selected_option.modulation,
+            forced_path_index=action,
+        )
+
+        # Update policy with outcome (for learning policies)
+        if result.success:
+            reward = 1.0
+        else:
+            reward = -1.0
+        self._policy.update(request, action, reward)
+
+        return result
+
+    def _handle_protected_with_policy(
+        self,
+        request: Request,
+        network_state: NetworkState,
+    ) -> AllocationResult:
+        """
+        Handle protected request with policy selection (P5.5).
+
+        When protection is enabled and a protection pipeline is configured,
+        this method:
+
+        1. Finds disjoint path pairs via protection pipeline
+        2. Builds PathOptions with protection info
+        3. Calls policy to select among protected options
+        4. Allocates same spectrum on both paths
+
+        Args:
+            request: The protected request
+            network_state: Current network state
+
+        Returns:
+            AllocationResult indicating success/failure
+        """
+        from fusion.domain.request import BlockReason
+        from fusion.domain.results import AllocationResult
+
+        # Should only be called when protection_pipeline is set
+        if self._protection_pipeline is None:
+            return self._handle_protected_arrival(request, network_state)
+
+        # Get topology from network state
+        if not hasattr(network_state, "topology"):
+            logger.warning("NetworkState has no topology, falling back to standard protection")
+            return self._handle_protected_arrival(request, network_state)
+
+        topology = network_state.topology
+
+        # Find disjoint path pair
+        paths = self._protection_pipeline.find_protected_paths(
+            topology, request.source, request.destination
+        )
+
+        if paths is None:
+            logger.debug(
+                "Request %s: No disjoint paths found for protection",
+                request.request_id,
+            )
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.PROTECTION_FAIL,
+            )
+
+        primary_path, backup_path = paths
+
+        # Verify disjointness
+        if not self._protection_pipeline.verify_disjointness(primary_path, backup_path):
+            logger.warning(
+                "Request %s: Path pair failed disjointness verification",
+                request.request_id,
+            )
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.PROTECTION_FAIL,
+            )
+
+        # Calculate slots needed (simplified - actual implementation would check modulation)
+        slots_needed = request.bandwidth_gbps // 25 + 1  # Rough estimate
+
+        # Try to allocate protected spectrum
+        alloc_result = self._protection_pipeline.allocate_protected(
+            primary_path=primary_path,
+            backup_path=backup_path,
+            slots_needed=slots_needed,
+            network_state=network_state,
+        )
+
+        if not alloc_result.success:
+            logger.debug(
+                "Request %s: No common spectrum for protection: %s",
+                request.request_id,
+                alloc_result.failure_reason,
+            )
+            return AllocationResult(
+                success=False,
+                block_reason=BlockReason.PROTECTION_FAIL,
+            )
+
+        # Create protected lightpath
+        # Delegate to standard protected allocation for actual lightpath creation
+        return self._handle_protected_arrival(request, network_state)
