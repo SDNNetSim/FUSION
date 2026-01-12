@@ -114,6 +114,23 @@ class CLIToConfigMapper:
             "test_size": ("ml_settings", "test_size"),
             # File settings
             "file_type": ("file_settings", "file_type"),
+            # P5.6: Policy settings
+            "policy_type": ("policy_settings", "policy_type"),
+            "policy_name": ("policy_settings", "policy_name"),
+            "policy_model_path": ("policy_settings", "model_path"),
+            "policy_fallback": ("policy_settings", "fallback_policy"),
+            "policy_k_paths": ("policy_settings", "k_paths"),
+            "policy_seed": ("policy_settings", "seed"),
+            "policy_algorithm": ("policy_settings", "algorithm"),
+            "policy_device": ("policy_settings", "device"),
+            # P5.6: Heuristic settings
+            "heuristic_alpha": ("heuristic_settings", "alpha"),
+            "heuristic_seed": ("heuristic_settings", "seed"),
+            # P5.6: Protection settings
+            "protection_enabled": ("protection_settings", "protection_enabled"),
+            "disjointness_type": ("protection_settings", "disjointness_type"),
+            "protection_switchover_ms": ("protection_settings", "protection_switchover_ms"),
+            "restoration_latency_ms": ("protection_settings", "restoration_latency_ms"),
         }
 
     def map_args_to_config(self, args: dict[str, Any]) -> dict[str, dict[str, Any]]:

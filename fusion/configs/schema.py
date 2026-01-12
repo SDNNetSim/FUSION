@@ -161,6 +161,27 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     },
     "protection_settings": {
         "revert_to_primary": str_to_bool,
+        # P5.6: Extended protection settings
+        "protection_enabled": str_to_bool,
+        "disjointness_type": str,
+        "protection_switchover_ms": float,
+        "restoration_latency_ms": float,
+    },
+    # P5.6: Policy settings
+    "policy_settings": {
+        "policy_type": str,
+        "policy_name": str,
+        "model_path": str,
+        "fallback_policy": str,
+        "k_paths": int,
+        "seed": int,
+        "algorithm": str,
+        "device": str,
+    },
+    # P5.6: Heuristic settings
+    "heuristic_settings": {
+        "alpha": float,
+        "seed": int,
     },
     "routing_settings": {
         "route_method": str,
