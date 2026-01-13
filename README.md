@@ -106,27 +106,40 @@ pip install -r requirements-dev.txt
 
 After installing the dependencies, you can generate the Sphinx documentation.
 
-Navigate to the docs directory:
+### Install Documentation Dependencies
 
 ```bash
-cd docs
+pip install -r docs/requirements.txt
 ```
 
-Build the HTML documentation:
+### Build the Documentation
+
+Navigate to the docs directory and build:
 
 On macOS/Linux:
 
 ```bash
+cd docs
 make html
 ```
 
 On Windows:
 
 ```powershell
+cd docs
 .\make.bat html
 ```
 
-Finally, navigate to `_build/html/` and open `index.html` in a browser of your choice to view the documentation.
+### View the Documentation
+
+Open `docs/_build/html/index.html` in your browser, or serve locally:
+
+```bash
+cd docs
+make serve
+```
+
+Then visit http://localhost:8000 in your browser.
 
 ---
 
