@@ -1,7 +1,4 @@
-# TODO: Consider migrating unittests.yml and cross_platform.yml to use install.sh
-# for consistency and easier maintenance (single source of truth for installation)
-
-name: Comparison Tests
+name: Algorithm Results Verification
 
 on:
   pull_request:

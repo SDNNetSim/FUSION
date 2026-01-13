@@ -9,16 +9,16 @@ Overview
 
 When you push code or open a PR, several automated workflows run:
 
-==============================  =============================================
-Workflow                        Purpose
-==============================  =============================================
-**Unit Tests**                  Runs pytest on all unit tests
-**Code Quality**                Linting, formatting, type checking, security
-**Commit Message Validation**   Ensures conventional commit format
-**Cross-Platform Tests**        Tests on Windows, macOS, and Linux
-**Comparison Tests**            Runs simulation comparison tests
-**Documentation**               Builds and deploys Sphinx docs
-==============================  =============================================
+==================================  =============================================
+Workflow                            Purpose
+==================================  =============================================
+**Unit Tests**                      Runs pytest on all unit tests
+**Code Quality**                    Linting, formatting, type checking, security
+**Commit Message Validation**       Ensures conventional commit format
+**Cross-Platform Tests**            Tests on Windows, macOS, and Linux
+**Algorithm Results Verification**  Verifies algorithm consistency
+**Documentation**                   Builds and deploys Sphinx docs
+==================================  =============================================
 
 Workflow files are located in ``.github/workflows/``.
 
@@ -101,19 +101,21 @@ Ensures FUSION works on all supported operating systems.
 **If it fails:** Your changes may have platform-specific issues. Check the
 logs to see which platform failed.
 
-Comparison Tests
-----------------
+Algorithm Results Verification
+------------------------------
 
-**File:** ``comparison_tests.yml``
+**File:** ``algorithm_verification.yml``
 
-Runs simulation comparisons to detect regressions.
+Compares algorithm results before and after changes to ensure consistency
+across many algorithms.
 
 **What it checks:**
 
-- Simulation results match expected baselines
-- No unexpected changes in behavior
+- Algorithm outputs match expected baselines
+- Results remain consistent after code changes
+- No regressions in algorithm behavior
 
-**If it fails:** Your changes may have altered simulation behavior. This
+**If it fails:** Your changes may have altered algorithm behavior. This
 could be intentional (update baselines) or a bug (fix your code).
 
 Documentation
