@@ -26,6 +26,15 @@ Each module page follows a consistent structure:
 - **Development Guide** - How to modify and extend
 - **Testing** - How to verify your changes
 
+Modules
+=======
+
+.. toctree::
+   :maxdepth: 2
+   :caption: fusion/
+
+   fusion/analysis/index
+
 Data Directory
 ==============
 

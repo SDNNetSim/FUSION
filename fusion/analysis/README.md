@@ -78,5 +78,5 @@ pytest --cov=fusion.analysis fusion/analysis/tests/
 
 ### Known Limitations
 - Methods currently require the legacy `network_spectrum` dict format (use `NetworkState.network_spectrum_dict` for compatibility with v5.5.0)
-- Will be migrated to use `NetworkState` and `LinkSpectrum` directly (v6.0.0)
+- Will be migrated to use `NetworkState` and `LinkSpectrum` directly (v6.1.0)
 - No caching of analysis results between calls

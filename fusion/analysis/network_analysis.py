@@ -10,7 +10,7 @@ for network_spectrum (dict mapping (src, dst) tuples to dicts with 'cores_matrix
 NetworkState.network_spectrum_dict for backwards compatibility with v5.5.0.
 
 This module should be updated to work directly with NetworkState and LinkSpectrum
-objects (v6.0.0) instead of raw dicts. See fusion/domain/network_state.py for
+objects (v6.1.0) instead of raw dicts. See fusion/domain/network_state.py for
 the new data structures.
 """
 
