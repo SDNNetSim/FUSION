@@ -1,0 +1,54 @@
+# Example of NEW configuration format (v6.0+)
+# Migrated from old format using: fusion viz migrate
+
+network: NSFNet
+dates:
+  - "0606"
+  - "0611"
+
+# New format: detailed plot specifications
+plots:
+  # Blocking probability plot
+  - type: blocking
+    algorithms:
+      - ppo_obs_7
+      - ppo_obs_10
+      - dqn_obs_7
+      - dqn_obs_10
+    traffic_volumes: [600, 700, 800, 900, 1000]
+    title: "Blocking Probability vs Traffic Volume"
+    x_label: "Traffic Volume (Erlang)"
+    y_label: "Blocking Probability"
+    include_ci: true
+    include_baselines: true
+    save_path: ./figures/blocking.png
+
+  # RL rewards plot
+  - type: rewards
+    algorithms:
+      - ppo_obs_7
+      - ppo_obs_10
+      - dqn_obs_7
+      - dqn_obs_10
+    title: "Training Rewards Over Time"
+    x_label: "Episode"
+    y_label: "Cumulative Reward"
+    save_path: ./figures/rewards.png
+
+# Settings moved to defaults section
+defaults:
+  format: png
+  dpi: 300
+  style: seaborn
+  cache_enabled: true
+
+# Run filters (optional)
+run_filters:
+  drl: true
+  non_drl: true
+
+# Migration metadata (auto-generated)
+_migration:
+  migrated_at: "2025-10-02T10:30:00"
+  original_format: legacy
+  migrator_version: "1.0"

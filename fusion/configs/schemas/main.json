@@ -1,0 +1,127 @@
+{
+  "type": "object",
+  "properties": {
+    "general_settings": {
+      "type": "object",
+      "properties": {
+        "holding_time": {"type": "number", "minimum": 0},
+        "mod_assumption": {"type": "string", "enum": ["DEFAULT", "CUSTOM"]},
+        "mod_assumption_path": {"type": "string"},
+        "erlang_start": {"type": "number", "minimum": 0},
+        "erlang_stop": {"type": "number", "minimum": 0},
+        "erlang_step": {"type": "number", "minimum": 0},
+        "max_iters": {"type": "integer", "minimum": 1},
+        "guard_slots": {"type": "integer", "minimum": 0},
+        "max_segments": {"type": "integer", "minimum": 1},
+        "thread_erlangs": {"type": "boolean"},
+        "dynamic_lps": {"type": "boolean"},
+        "fixed_grid": {"type": "boolean"},
+        "pre_calc_mod_selection": {"type": "boolean"},
+        "spectrum_priority": {"type": ["string", "null"]},
+        "num_requests": {"type": "integer", "minimum": 1},
+        "request_distribution": {"type": "object"},
+        "allocation_method": {"type": "string", "enum": ["first_fit", "best_fit", "last_fit"]},
+        "k_paths": {"type": "integer", "minimum": 1},
+        "route_method": {"type": "string", "enum": ["k_shortest_path", "shortest_path"]},
+        "save_snapshots": {"type": "boolean"},
+        "snapshot_step": {"type": "integer", "minimum": 1},
+        "print_step": {"type": "integer", "minimum": 1},
+        "save_step": {"type": "integer", "minimum": 1},
+        "save_start_end_slots": {"type": "boolean"}
+      },
+      "required": ["erlang_start", "erlang_stop", "num_requests"]
+    },
+    "topology_settings": {
+      "type": "object",
+      "properties": {
+        "network": {"type": "string", "enum": ["NSFNet", "Pan-European", "USbackbone60"]},
+        "bw_per_slot": {"type": "number", "minimum": 0},
+        "cores_per_link": {"type": "integer", "minimum": 1},
+        "const_link_weight": {"type": "boolean"},
+        "is_only_core_node": {"type": "boolean"},
+        "multi_fiber": {"type": "boolean"}
+      },
+      "required": ["network"]
+    },
+    "spectrum_settings": {
+      "type": "object",
+      "properties": {
+        "c_band": {"type": "integer", "minimum": 1}
+      },
+      "required": ["c_band"]
+    },
+    "snr_settings": {
+      "type": "object",
+      "properties": {
+        "snr_type": {"type": ["string", "null"]},
+        "xt_type": {"type": "string", "enum": ["with_length", "without_length"]},
+        "beta": {"type": "number", "minimum": 0, "maximum": 1},
+        "theta": {"type": "number"},
+        "input_power": {"type": "number", "minimum": 0},
+        "egn_model": {"type": "boolean"},
+        "phi": {"type": "object"},
+        "bi_directional": {"type": "boolean"},
+        "xt_noise": {"type": "boolean"},
+        "requested_xt": {"type": "object"}
+      }
+    },
+    "rl_settings": {
+      "type": "object",
+      "properties": {
+        "obs_space": {"type": "string"},
+        "n_trials": {"type": "integer", "minimum": 1},
+        "device": {"type": "string", "enum": ["cpu", "cuda", "auto"]},
+        "optimize_hyperparameters": {"type": "boolean"},
+        "optuna_trials": {"type": "integer", "minimum": 1},
+        "is_training": {"type": "boolean"},
+        "path_algorithm": {"type": "string"},
+        "path_model": {"type": ["string", "null"]},
+        "core_algorithm": {"type": "string"},
+        "core_model": {"type": ["string", "null"]},
+        "spectrum_algorithm": {"type": "string"},
+        "spectrum_model": {"type": ["string", "null"]},
+        "render_mode": {"type": ["string", "null"]},
+        "super_channel_space": {"type": "integer", "minimum": 1},
+        "alpha_start": {"type": "number", "minimum": 0},
+        "alpha_end": {"type": "number", "minimum": 0},
+        "alpha_update": {"type": "string", "enum": ["linear_decay", "exp_decay", "constant"]},
+        "gamma": {"type": "number", "minimum": 0, "maximum": 1},
+        "epsilon_start": {"type": "number", "minimum": 0, "maximum": 1},
+        "epsilon_end": {"type": "number", "minimum": 0, "maximum": 1},
+        "epsilon_update": {"type": "string", "enum": ["linear_decay", "exp_decay", "constant"]},
+        "path_levels": {"type": "integer", "minimum": 1},
+        "decay_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "feature_extractor": {"type": "string"},
+        "gnn_type": {"type": "string"},
+        "layers": {"type": "integer", "minimum": 1},
+        "emb_dim": {"type": "integer", "minimum": 1},
+        "heads": {"type": "integer", "minimum": 1},
+        "conf_param": {"type": "number"},
+        "cong_cutoff": {"type": "number", "minimum": 0, "maximum": 1},
+        "reward": {"type": "number"},
+        "penalty": {"type": "number"},
+        "dynamic_reward": {"type": "boolean"},
+        "core_beta": {"type": "number", "minimum": 0}
+      }
+    },
+    "ml_settings": {
+      "type": "object",
+      "properties": {
+        "deploy_model": {"type": "boolean"},
+        "output_train_data": {"type": "boolean"},
+        "ml_training": {"type": "boolean"},
+        "ml_model": {"type": ["string", "null"]},
+        "train_file_path": {"type": ["string", "null"]},
+        "test_size": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "file_settings": {
+      "type": "object",
+      "properties": {
+        "file_type": {"type": "string", "enum": ["json", "csv", "xlsx"]}
+      },
+      "required": ["file_type"]
+    }
+  },
+  "required": ["general_settings", "topology_settings", "spectrum_settings", "file_settings"]
+}

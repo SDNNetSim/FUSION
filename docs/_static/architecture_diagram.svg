@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- FUSION System Architecture Diagram -->
+  <defs>
+    <style>
+      .box { fill: #ECF0F1; stroke: #2C3E50; stroke-width: 2; }
+      .core { fill: #3498DB; }
+      .module { fill: #1ABC9C; }
+      .interface { fill: #E74C3C; }
+      .config { fill: #F39C12; }
+      .io { fill: #9B59B6; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #2C3E50; }
+      .title { font-size: 18px; font-weight: bold; }
+      .arrow { stroke: #34495E; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34495E" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="30" class="text title" text-anchor="middle">FUSION System Architecture</text>
+
+  <!-- Top Layer: CLI & Configs -->
+  <rect x="50" y="60" width="150" height="60" class="box config"/>
+  <text x="125" y="85" class="text title" text-anchor="middle">CLI</text>
+  <text x="125" y="105" class="text" text-anchor="middle">Command-line</text>
+
+  <rect x="250" y="60" width="150" height="60" class="box config"/>
+  <text x="325" y="85" class="text title" text-anchor="middle">Configs</text>
+  <text x="325" y="105" class="text" text-anchor="middle">Configuration</text>
+
+  <rect x="450" y="60" width="150" height="60" class="box io"/>
+  <text x="525" y="85" class="text title" text-anchor="middle">I/O</text>
+  <text x="525" y="105" class="text" text-anchor="middle">Data Management</text>
+
+  <rect x="650" y="60" width="100" height="60" class="box io"/>
+  <text x="700" y="85" class="text title" text-anchor="middle">Utils</text>
+  <text x="700" y="105" class="text" text-anchor="middle">Utilities</text>
+
+  <!-- Middle Layer: Sim Orchestration -->
+  <rect x="200" y="170" width="400" height="60" class="box core"/>
+  <text x="400" y="195" class="text title" text-anchor="middle">Simulation Orchestration (fusion.sim)</text>
+  <text x="400" y="215" class="text" text-anchor="middle">Workflow Runner • Pipeline Manager</text>
+
+  <!-- Core Layer -->
+  <rect x="50" y="280" width="700" height="100" class="box core"/>
+  <text x="400" y="305" class="text title" text-anchor="middle">Core Simulation Engine (fusion.core)</text>
+
+  <rect x="70" y="320" width="130" height="50" class="box" style="fill: #5DADE2;"/>
+  <text x="135" y="340" class="text" text-anchor="middle">SDN</text>
+  <text x="135" y="355" class="text" text-anchor="middle">Controller</text>
+
+  <rect x="220" y="320" width="130" height="50" class="box" style="fill: #5DADE2;"/>
+  <text x="285" y="340" class="text" text-anchor="middle">Request</text>
+  <text x="285" y="355" class="text" text-anchor="middle">Generator</text>
+
+  <rect x="370" y="320" width="130" height="50" class="box" style="fill: #5DADE2;"/>
+  <text x="435" y="340" class="text" text-anchor="middle">Network</text>
+  <text x="435" y="355" class="text" text-anchor="middle">Graph</text>
+
+  <rect x="520" y="320" width="110" height="50" class="box" style="fill: #5DADE2;"/>
+  <text x="575" y="345" class="text" text-anchor="middle">Engine</text>
+
+  <!-- Interfaces Layer -->
+  <rect x="50" y="430" width="700" height="60" class="box interface"/>
+  <text x="400" y="455" class="text title" text-anchor="middle" style="fill: white;">Abstract Interfaces (fusion.interfaces)</text>
+  <text x="400" y="475" class="text" text-anchor="middle" style="fill: white;">Router • Spectrum • SNR • ML • RL</text>
+
+  <!-- Modules Layer -->
+  <rect x="50" y="540" width="130" height="50" class="box module"/>
+  <text x="115" y="560" class="text" text-anchor="middle">Routing</text>
+  <text x="115" y="575" class="text" text-anchor="middle">Algorithms</text>
+
+  <rect x="200" y="540" width="130" height="50" class="box module"/>
+  <text x="265" y="560" class="text" text-anchor="middle">Spectrum</text>
+  <text x="265" y="575" class="text" text-anchor="middle">Assignment</text>
+
+  <rect x="350" y="540" width="100" height="50" class="box module"/>
+  <text x="400" y="560" class="text" text-anchor="middle">SNR</text>
+  <text x="400" y="575" class="text" text-anchor="middle">Models</text>
+
+  <rect x="470" y="540" width="130" height="50" class="box module"/>
+  <text x="535" y="560" class="text" text-anchor="middle">Machine</text>
+  <text x="535" y="575" class="text" text-anchor="middle">Learning</text>
+
+  <rect x="620" y="540" width="130" height="50" class="box module"/>
+  <text x="685" y="560" class="text" text-anchor="middle">Reinforcement</text>
+  <text x="685" y="575" class="text" text-anchor="middle">Learning</text>
+
+  <!-- Arrows showing data flow -->
+  <path d="M 125,120 L 125,170" class="arrow"/>
+  <path d="M 325,120 L 325,170" class="arrow"/>
+  <path d="M 525,120 L 525,170" class="arrow"/>
+  <path d="M 400,230 L 400,280" class="arrow"/>
+  <path d="M 400,380 L 400,430" class="arrow"/>
+  <path d="M 115,490 L 115,540" class="arrow"/>
+  <path d="M 265,490 L 265,540" class="arrow"/>
+  <path d="M 400,490 L 400,540" class="arrow"/>
+  <path d="M 535,490 L 535,540" class="arrow"/>
+  <path d="M 685,490 L 685,540" class="arrow"/>
+
+  <!-- Legend -->
+  <text x="50" y="25" class="text" style="font-size: 12px; font-style: italic;">Modular plugin-based architecture with clean separation of concerns</text>
+</svg>

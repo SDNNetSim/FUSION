@@ -23,12 +23,13 @@ We need your insight and creativity! The true strength of open-source lies in co
 
 ## Installation Instructions
 
-To get started with FUSION, first clone the repository and create a Python 3.11 virtual environment:
+FUSION offers multiple installation methods. Choose the one that best fits your needs:
+
+### Automatic Installation (Recommended)
+
+For the easiest setup experience, use our automated installation script:
 
 ```bash
-# Navigate to your desired directory
-cd /your/desired/path
-
 # Clone the repository
 git clone git@github.com:SDNNetSim/FUSION.git
 cd FUSION
@@ -36,61 +37,68 @@ cd FUSION
 # Create and activate a Python 3.11 virtual environment
 python3.11 -m venv venv
 source venv/bin/activate
+
+# Run automated installation
+./install.sh
 ```
 
-Next, follow the specific instructions for your operating system.
+The script automatically:
+- Detects your platform (macOS, Linux, Windows)
+- Handles PyTorch Geometric compilation issues
+- Installs all dependencies in the correct order
+- Sets up development tools
+- Installs and configures pre-commit hooks
+- Verifies the installation
 
----
+### Package Installation
 
-### macOS Installation
-
-Installation on macOS is a multi-step process that requires compiling packages from source. Please follow these steps carefully.
-
-**Step 1: Install Prerequisites**
-
-Ensure you have Apple’s Command Line Tools installed:
-
-```bash
-xcode-select --install
-```
-
-**Step 2: Install PyTorch**
+For a more controlled installation using Python packaging:
 
 ```bash
-pip install torch==2.2.2
-```
+# Clone and create venv (same as above)
+git clone git@github.com:SDNNetSim/FUSION.git
+cd FUSION
+python3.11 -m venv venv
+source venv/bin/activate
 
-**Step 3: Install PyTorch Geometric (PyG) Packages**
+# Install core package
+pip install -e .
 
-These packages require special flags to compile correctly on macOS:
+# Install optional components as needed:
+pip install -e .[dev]        # Development tools (ruff, mypy, pytest, pre-commit)
+pip install -e .[rl]         # Reinforcement learning (stable-baselines3)
+pip install -e .[all]        # Everything except PyTorch Geometric
 
-```bash
+# Install pre-commit hooks (for development)
+pre-commit install
+pre-commit install --hook-type commit-msg
+
+# PyTorch Geometric requires manual installation:
+# macOS (Apple Silicon):
+MACOSX_DEPLOYMENT_TARGET=11.0 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# macOS (Intel):
 MACOSX_DEPLOYMENT_TARGET=10.15 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# Linux/Windows:
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# Finally install PyTorch Geometric:
+pip install torch-geometric==2.6.1
 ```
 
-**Step 4: Install Remaining Dependencies**
+### Legacy Requirements Installation
+
+If you prefer using requirements files:
 
 ```bash
-pip install -r requirements.txt
-```
-
----
-
-### Linux & Windows Installation
-
-Installation on Linux and Windows is more straightforward.
-
-**Step 1: Install PyTorch**
-
-```bash
+# Core dependencies
 pip install torch==2.2.2
-```
-
-**Step 2: Install All Other Dependencies**
-
-```bash
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
+
+**Note**: This method may fail on PyTorch Geometric packages. Use the automatic installer instead.
 
 ---
 
@@ -122,6 +130,91 @@ Finally, navigate to `_build/html/` and open `index.html` in a browser of your c
 
 ---
 
+## Survivability Experiments
+
+FUSION now supports comprehensive survivability testing with failure injection, protection mechanisms, and offline RL policy evaluation.
+
+### Key Features
+
+- **Failure Types**: Link (F1), Node (F2), SRLG (F3), and Geographic (F4) failures
+- **Protection Mechanisms**: 1+1 disjoint path protection with configurable recovery times
+- **RL Policies**: Baseline (KSP-FF, 1+1) and offline RL policies (BC, IQL) with action masking
+- **Metrics**: Blocking probability, recovery time (mean, P95), fragmentation, decision time
+- **Dataset Generation**: Log offline RL training data in JSONL format
+
+### Quick Start
+
+```bash
+# Run survivability experiment with geographic failure and 1+1 protection
+python -m fusion.cli.run_sim \
+  --config_path fusion/configs/templates/survivability_experiment.ini \
+  --failure_type geo \
+  --geo_center_node 5 \
+  --geo_hop_radius 2 \
+  --route_method 1plus1_protection
+```
+
+### Example Configurations
+
+**Link Failure with KSP-FF (Baseline):**
+```ini
+[failure_settings]
+failure_type = link
+failed_link_src = 3
+failed_link_dst = 9
+
+[offline_rl_settings]
+policy_type = ksp_ff
+```
+
+**Geographic Failure with 1+1 Protection:**
+```ini
+[failure_settings]
+failure_type = geo
+geo_center_node = 5
+geo_hop_radius = 2
+
+[routing_settings]
+route_method = 1plus1_protection
+
+[protection_settings]
+protection_switchover_ms = 50.0
+```
+
+**RL Policy Evaluation:**
+```ini
+[offline_rl_settings]
+policy_type = bc
+bc_model_path = models/bc_model.pt
+fallback_policy = ksp_ff
+```
+
+### Supported Failure Types
+
+| Type | Description | Parameters |
+|------|-------------|------------|
+| **F1 (Link)** | Single link failure | `failed_link_src`, `failed_link_dst` |
+| **F2 (Node)** | Node and adjacent links | `failed_node_id` |
+| **F3 (SRLG)** | Shared Risk Link Group | `srlg_links` |
+| **F4 (Geographic)** | Hop-radius disaster | `geo_center_node`, `geo_hop_radius` |
+
+### Metrics Collected
+
+- **Blocking Probability**: Overall and within failure window
+- **Recovery Time**: Mean, P95, max recovery times
+- **Fragmentation**: Spectrum efficiency proxy
+- **Decision Time**: Policy inference latency
+
+### Documentation
+
+For detailed documentation on survivability features, see:
+- [Survivability v1 Documentation](docs/survivability-v1/README.md)
+- [Failures Module](fusion/modules/failures/README.md)
+- [RL Policies Module](fusion/modules/rl/policies/README.md)
+- [Configuration Guide](fusion/configs/templates/survivability_experiment.ini)
+
+---
+
 ## Standards and Guidelines
 
 To maintain the quality and consistency of the codebase, we adhere to the following standards and guidelines:
@@ -129,8 +222,8 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 1. **Commit Formatting**: Follow the commit format specified [here](https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53).
 2. **Code Style**: All code should follow the [PEP 8](https://peps.python.org/pep-0008/) coding style guidelines.
 3. **Versioning**: Use the [semantic versioning system](https://semver.org/) for all git tags.
-4. **Coding Guidelines**: Adhere to the team's [coding guidelines document](https://github.com/SDNNetSim/sdn_simulator/blob/main/CONTRIBUTING.md).
-5. **Unit Testing**: Each unit test should follow the [community unit testing guidelines](https://pylonsproject.org/community-unit-testing-guidelines.html).
+4. **Coding Guidelines**: Adhere to the team's [coding guidelines document](CODING_STANDARDS.md).
+5. **Unit Testing**: Each unit test should follow the [FUSION testing standards](TESTING_STANDARDS.md).
 
 ---
 
@@ -140,24 +233,97 @@ This project is brought to you by the efforts of **Arash Rezaee**, **Ryan McCann
 
 ---
 
-## 📖 How to Cite This Work
+## Publications
+
+### Primary Citation
 
 If you use FUSION in your research, please cite the following paper:
 
-R. McCann, A. Rezaee, and V. M. Vokkarane,  
-"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"  
-*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.  
+R. McCann, A. Rezaee, and V. M. Vokkarane,
+"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"
+*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.
 DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
-### 📄 BibTeX
+### BibTeX
 
 ```bibtex
 @INPROCEEDINGS{10898199,
   author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
-  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
-  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)},
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking},
   year={2024},
   pages={1-6},
   doi={10.1109/ANTS63515.2024.10898199}
 }
 ```
+
+### Related Publications
+
+*This section will be updated as research using FUSION is published. If you have published work using FUSION, please open an issue or pull request to add it here.*
+
+---
+
+## Development & Contributing
+
+### Setting Up Pre-commit Hooks
+
+The project uses pre-commit hooks for code quality checks. Set them up once:
+
+```bash
+# Install pre-commit (if not already installed)
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+
+# Install commit message hook
+pre-commit install --hook-type commit-msg
+```
+
+### Running Code Quality Checks
+
+**Pre-commit hooks (recommended):**
+```bash
+# Run all checks on staged files
+pre-commit run
+
+# Run all checks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run ruff --all-files
+pre-commit run mypy --all-files
+```
+
+**Using Makefile:**
+```bash
+# Run tests
+make test
+
+# Run linting (using pre-commit)
+make lint
+
+# Clean up generated files
+make clean
+```
+
+### What Gets Validated
+
+Pre-commit hooks check:
+- **Ruff** - Code linting and formatting (replaces pylint)
+- **Mypy** - Type checking
+- **Vulture** - Dead code detection
+- **Bandit** - Security vulnerability scanning
+- **Pre-commit hooks** - Trailing whitespace, file endings, YAML validation
+- **Conventional commits** - Commit message format
+
+### Development Workflow
+
+1. Install pre-commit hooks (one time): `pre-commit install`
+2. Make your changes
+3. Stage files: `git add .`
+4. Hooks run automatically on commit, or run manually: `pre-commit run`
+5. Run tests: `make test` or `pytest`
+6. Submit your PR - all checks should pass
+
+**Note:** The `fusion/gui` module is excluded from all checks as it's deprecated and requires a revamp.
