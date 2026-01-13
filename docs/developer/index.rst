@@ -34,6 +34,7 @@ Modules
    :caption: fusion/
 
    fusion/analysis/index
+   fusion/cli/index
 
 Data Directory
 ==============
