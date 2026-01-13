@@ -146,4 +146,6 @@ Navigation
    :maxdepth: 1
    :caption: Getting Started
 
+   getting-started/installation
+   getting-started/git-github/index
    getting-started/claude-code/index

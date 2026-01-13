@@ -68,6 +68,8 @@ myst_enable_extensions = [
     "deflist",
     "tasklist",
 ]
+myst_heading_anchors = 3
+suppress_warnings = ["myst.header"]
 
 # Todo
 todo_include_todos = True
