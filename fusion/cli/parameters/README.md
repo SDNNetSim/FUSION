@@ -21,7 +21,6 @@ The CLI Parameters module provides a centralized, modular system for managing co
 
 ### Legacy Compatibility
 - `simulation.py`: Compatibility module that imports and combines arguments from other modules
-- `gui.py`: GUI launcher arguments (imports shared configuration)
 
 ## Architecture
 
@@ -45,8 +44,7 @@ CLI Parameters Module Architecture
 │   ├── Traffic (traffic.py) - 7 arguments
 │   └── Training (training.py) - 34 arguments
 └── Legacy Compatibility
-    ├── Simulation (simulation.py) - imports others
-    └── GUI (gui.py) - imports shared
+    └── Simulation (simulation.py) - imports others
 ```
 
 ## Usage
@@ -321,7 +319,6 @@ args = parser.parse_args()
 - `add_snr_args(parser)`: Add SNR calculation and modulation arguments
 - `add_all_training_args(parser)`: Add all training-related argument groups
 - `add_all_analysis_args(parser)`: Add all analysis-related argument groups
-- `add_gui_args(parser)`: Add GUI launcher arguments
 
 #### Registry System
 - `ArgumentRegistry`: Central coordinator class for argument management
@@ -404,7 +401,7 @@ args = parser.parse_args()
 ### Design Decisions
 - **Registry Pattern**: Enables modular argument organization and reduces code duplication
 - **Argument Groups**: Logical separation improves CLI usability and code maintainability
-- **Backward Compatibility**: Legacy modules (simulation.py, gui.py) maintained for existing code
+- **Backward Compatibility**: Legacy modules (simulation.py) maintained for existing code
 - **Type Annotations**: Full type hints throughout for better IDE support and code clarity
 - **Comprehensive Documentation**: Every parameter documented with type, default, and description
 
@@ -420,7 +417,7 @@ args = parser.parse_args()
 - **Fast Imports**: No heavy dependencies or complex initialization
 
 ### Integration Notes
-- **CLI Commands**: Used by all FUSION CLI commands (run_sim, run_train, run_gui, etc.)
+- **CLI Commands**: Used by all FUSION CLI commands (run_sim, run_train, etc.)
 - **Configuration System**: Integrates with INI-based configuration management
 - **Logging System**: Debug arguments integrate with FUSION logging infrastructure
 - **Output Management**: File and directory arguments coordinate with result saving systems

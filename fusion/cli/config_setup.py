@@ -1,4 +1,26 @@
-"""Configuration setup module for the FUSION simulator CLI."""
+"""
+Configuration setup module for the FUSION simulator CLI.
+
+This module handles loading, parsing, and validating INI configuration files
+for the FUSION optical network simulator. It provides:
+
+- Configuration file path resolution and validation
+- INI file parsing with type conversion
+- CLI argument overrides for config values
+- Multi-process configuration section support (s1, s2, etc.)
+- Backward compatibility with legacy flat config structure
+
+Key Functions:
+- load_config(): Main entry point for loading configuration files
+- setup_config_from_cli(): Wrapper for CLI-based config loading
+- normalize_config_path(): Resolves relative/absolute config paths
+
+Key Classes:
+- ConfigManager: High-level interface for configuration access
+
+WARNING: If is_training is set to True, the confidence interval (CI) for
+blocking probability will be ignored during simulation.
+"""
 
 import os
 import re
@@ -55,7 +77,6 @@ def normalize_config_path(config_path: str) -> str:
     return config_path
 
 
-# TODO: Type is any
 def setup_config_from_cli(args: Any) -> dict[str, Any]:
     """
     Set up configuration from command line input.
@@ -69,8 +90,6 @@ def setup_config_from_cli(args: Any) -> dict[str, Any]:
     config_path = args_dict.get("config_path")
 
     try:
-        # TODO (variable naming registry)
-        # TODO (document data structs)
         config_data = load_config(config_path, args_dict)
         return config_data
     except (
@@ -86,10 +105,6 @@ def setup_config_from_cli(args: Any) -> dict[str, Any]:
         return {}
 
 
-# TODO (variable naming registry)
-# TODO (document data structs)
-# TODO: Type is any
-# TODO: It is not clear why this does what it does and how to new users
 def _process_required_options(
     config: ConfigParser,
     config_dict: dict[str, Any],
@@ -134,9 +149,6 @@ def _process_required_options(
             config_dict[DEFAULT_THREAD_NAME][option] = final_value
 
 
-# TODO (variable naming registry)
-# TODO (document data structs)
-# TODO: Type is any
 def _process_optional_options(
     config: ConfigParser,
     config_dict: dict[str, Any],
@@ -151,8 +163,7 @@ def _process_optional_options(
             continue
 
         # Determine if this section should be nested or flattened
-        # general_settings gets flattened (backward compatibility)
-        # Other sections get nested (new architecture)
+        # TODO (v6.1.0): Remove flattening of general_settings - migrate to nested structure only
         flatten_section = category == "general_settings"
 
         if not flatten_section:
@@ -230,16 +241,16 @@ def load_config(
     3. Validates the configuration structure and required sections
     4. Processes both required and optional configuration options
     5. Applies type conversions and CLI argument overrides
-    6. Handles multi-threaded configuration sections
+    6. Handles multi-process configuration sections (s1, s2, etc.)
 
-    Returns empty dict on error for backward compatibility.
+    TODO (v6.1.0): Remove returning empty dict on error - raise exceptions instead.
     Use setup_config_from_cli for better error handling.
 
     :param config_path: Path to configuration file
     :type config_path: Optional[str]
     :param args_dict: Optional CLI arguments dictionary for overrides
     :type args_dict: Optional[Dict[str, Any]]
-    :return: Configuration dictionary with thread-based structure
+    :return: Configuration dictionary with process-based structure (s1, s2, etc.)
     :rtype: Dict[str, Any]
     """
     if args_dict is None:
@@ -260,8 +271,7 @@ def load_config(
         )
         _process_optional_options(config, config_dict, OPTIONAL_OPTIONS_DICT, args_dict)
 
-        # Mirror routing_settings and spectrum_settings to root for backward
-        # compatibility
+        # TODO (v6.1.0): Remove _mirror_nested_to_flat - migrate consumers to nested structure
         _mirror_nested_to_flat(config_dict[DEFAULT_THREAD_NAME])
 
         thread_sections = [s for s in config.sections() if s != REQUIRED_SECTION]
@@ -290,9 +300,7 @@ def load_config(
         return {}
 
 
-# TODO (variable naming registry)
-# TODO (document data structs)
-# TODO: Type is any
+# TODO (v6.1.0): Rename to _setup_processes - this handles multi-process config sections, not threads
 def _setup_threads(
     config: ConfigParser,
     config_dict: dict[str, Any],
@@ -335,32 +343,33 @@ def _setup_threads(
     return config_dict
 
 
-# TODO: Can be moved to a helper function or util most likely
+# NOTE: Keeping in config_setup.py as it's config-specific logic
 def _copy_dict_vals(dest_key: str, dictionary: dict[str, Any]) -> dict[str, Any]:
+    """Copy default thread config values to a new thread section."""
     dictionary[dest_key] = dict(dictionary[DEFAULT_THREAD_NAME].items())
     return dictionary
 
-# TODO: Can be moved to a helper function or util most likely
+
+# NOTE: Keeping in config_setup.py as it's config-specific logic
 def _find_category(
     category_dict: dict[str, dict[str, Any]], target_key: str
 ) -> str | None:
+    """Find which category contains a given config key."""
     for category, subdict in category_dict.items():
         if target_key in subdict:
             return category
     return None
 
 
-# TODO: Can be moved to a helper or util most likely
-# TODO (variable naming registry)
-# TODO (document data structs)
-# TODO: Type is any
+# TODO (v6.1.0): Remove this function - migrate all consumers to nested config structure
 def _mirror_nested_to_flat(config: dict[str, Any]) -> None:
     """
-    Mirror values from nested sections to root level for backward compatibility.
+    Mirror values from nested sections to root level.
 
-    This allows newer code to use nested structure like
-    engine_props["routing_settings"]["k_paths"] while older code can still
-    use flat structure (engine_props["k_paths"]).
+    TODO (v6.1.0): This function exists for backward compatibility with legacy code
+    that expects flat config structure (engine_props["k_paths"]) instead of nested
+    structure (engine_props["routing_settings"]["k_paths"]). Remove once all
+    consumers are migrated.
 
     :param config: Configuration dictionary to update in-place
     :type config: dict[str, Any]
@@ -403,13 +412,15 @@ def load_and_validate_config(args: Any) -> dict[str, Any]:
     return config_dict
 
 
+# TODO (v6.1.0): Rename thread methods to process (get_threads -> get_processes, has_thread -> has_process)
+# The "thread" terminology is misleading - these are multi-process config sections, not threads
 class ConfigManager:
     """
     Centralized configuration management for FUSION simulator.
 
     Provides a unified interface for accessing configuration from both
     INI files and command-line arguments, with proper validation and
-    error handling. Supports multi-threaded configuration sections.
+    error handling. Supports multi-process configuration sections (s1, s2, etc.).
     """
 
     def __init__(self, config_dict: dict[str, Any], args: Any) -> None:
@@ -426,10 +437,10 @@ class ConfigManager:
         self._validate_config()
 
     def _validate_config(self) -> None:
-        # Allow empty config for backward compatibility
+        # TODO (v6.1.0): Remove empty config allowance - require valid config or raise
         if self._config and DEFAULT_THREAD_NAME not in self._config:
             # Only validate if config is non-empty
-            pass  # Config might have other threads, which is valid
+            pass  # Config might have other processes, which is valid
 
     @classmethod
     def from_args(cls, args: Any) -> "ConfigManager":
