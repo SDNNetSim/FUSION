@@ -1,12 +1,24 @@
 """
-CLI arguments for policy, protection, and heuristic configuration (P5.6).
+CLI arguments for policy, protection, and heuristic configuration.
 
-This module provides command-line argument definitions for:
-- Policy selection and configuration
-- Protection pipeline settings
-- Heuristic policy parameters
+This module provides command-line argument definitions for the SDN Orchestrator's
+path selection system (v6.0.0):
 
-Phase: P5.6 - Configuration + CLI Integration
+- Policy selection (heuristic, SL, or RL)
+- Protection pipeline settings (1+1 protection, disjointness)
+- Heuristic policy parameters (alpha, seed)
+
+These arguments configure the ControlPolicy interface used by the SDN Orchestrator
+to select from pre-computed candidate paths. This is separate from the legacy
+routing algorithms - it operates at a higher abstraction level.
+
+TODO (v6.1.0): This module uses dash-style argument names (e.g., --policy-type)
+while other CLI modules use underscore-style (e.g., --route_method). Consider
+standardizing to underscore-style for consistency across the codebase:
+  --policy-type -> --policy_type
+  --policy-name -> --policy_name
+  --protection-enabled -> --protection_enabled
+  etc.
 """
 
 import argparse
@@ -14,19 +26,26 @@ import argparse
 
 def add_policy_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add policy configuration arguments.
+    Add policy configuration arguments to the parser.
 
-    Args:
-        parser: ArgumentParser to add arguments to
+    Configures the SDN Orchestrator's path selection policy, including
+    policy type (heuristic/SL/RL), policy name, model paths, and fallback
+    behavior.
+
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
-    group = parser.add_argument_group("Policy Configuration (P5.6)")
+    group = parser.add_argument_group("Policy Configuration")
 
+    # TODO (v6.1.0): Rename "ml" choice to "sl" for supervised learning consistency
     group.add_argument(
         "--policy-type",
         type=str,
         choices=["heuristic", "ml", "rl"],
         default=None,
-        help="Type of policy: heuristic, ml, or rl (default: heuristic)",
+        help="Type of policy: heuristic, sl (supervised learning), or rl (default: heuristic)",
     )
 
     group.add_argument(
@@ -49,14 +68,14 @@ def add_policy_args(parser: argparse.ArgumentParser) -> None:
         "--policy-model-path",
         type=str,
         default=None,
-        help="Path to ML/RL model file for ml/rl policy types",
+        help="Path to SL/RL model file for sl/rl policy types",
     )
 
     group.add_argument(
         "--policy-fallback",
         type=str,
         default=None,
-        help="Fallback policy name when ML/RL fails (default: first_feasible)",
+        help="Fallback policy name when SL/RL fails (default: first_feasible)",
     )
 
     group.add_argument(
@@ -85,18 +104,23 @@ def add_policy_args(parser: argparse.ArgumentParser) -> None:
         type=str,
         choices=["cpu", "cuda", "auto"],
         default=None,
-        help="Device for ML/RL inference (default: cpu)",
+        help="Device for SL/RL inference (default: cpu)",
     )
 
 
 def add_heuristic_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add heuristic policy configuration arguments.
+    Add heuristic policy configuration arguments to the parser.
 
-    Args:
-        parser: ArgumentParser to add arguments to
+    Configures parameters for heuristic policies such as LoadBalancedPolicy
+    (alpha weighting) and RandomFeasiblePolicy (seed).
+
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
-    group = parser.add_argument_group("Heuristic Policy Configuration (P5.6)")
+    group = parser.add_argument_group("Heuristic Policy Configuration")
 
     group.add_argument(
         "--heuristic-alpha",
@@ -115,12 +139,17 @@ def add_heuristic_args(parser: argparse.ArgumentParser) -> None:
 
 def add_protection_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add protection pipeline configuration arguments.
+    Add protection pipeline configuration arguments to the parser.
 
-    Args:
-        parser: ArgumentParser to add arguments to
+    Configures 1+1 protection settings including disjointness type
+    (link or node), switchover latency, and restoration latency.
+
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
-    group = parser.add_argument_group("Protection Configuration (P5.6)")
+    group = parser.add_argument_group("Protection Configuration")
 
     group.add_argument(
         "--protection-enabled",
@@ -152,15 +181,17 @@ def add_protection_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_all_phase5_args(parser: argparse.ArgumentParser) -> None:
+def add_all_policy_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add all Phase 5 configuration arguments.
+    Add all policy-related argument groups to the parser.
 
-    Convenience function to add all policy, heuristic, and protection
-    arguments to a parser.
+    Convenience function that adds policy, heuristic, and protection
+    arguments in a single call.
 
-    Args:
-        parser: ArgumentParser to add arguments to
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     add_policy_args(parser)
     add_heuristic_args(parser)

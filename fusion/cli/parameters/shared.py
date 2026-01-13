@@ -86,6 +86,8 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.1.0): Plotting functionality is not currently supported. These arguments
+# are defined for future use when plotting is implemented.
 def add_plot_format_args(
     parser: argparse.ArgumentParser | argparse._ArgumentGroup,
 ) -> None:
@@ -94,6 +96,9 @@ def add_plot_format_args(
 
     Provides standardized plot format options used by both analysis
     and plotting commands for consistent output formatting.
+
+    NOTE: Plotting is not currently supported. These arguments are defined
+    for future use and will be functional in v6.1.0.
 
     :param parser: ArgumentParser or ArgumentGroup instance to add arguments to
     :type parser: argparse.ArgumentParser | argparse._ArgumentGroup
@@ -104,5 +109,5 @@ def add_plot_format_args(
         "--plot_format",
         type=str,
         default=None,
-        help="Output format for generated plots",
+        help="Output format for generated plots (not currently supported)",
     )

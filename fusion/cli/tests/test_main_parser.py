@@ -7,8 +7,8 @@ import pytest
 
 from fusion.cli.main_parser import (
     AGENT_TYPE_CHOICES,
-    GUI_GROUP_NAMES,
     TRAINING_GROUP_NAMES,
+    GUINotSupportedError,
     build_main_argument_parser,
     build_parser,
     create_gui_argument_parser,
@@ -38,19 +38,10 @@ class TestGroupConstants:
         """Test that TRAINING_GROUP_NAMES is a list."""
         assert isinstance(TRAINING_GROUP_NAMES, list)
 
-    def test_gui_group_names_contains_expected_groups(self) -> None:
-        """Test that GUI_GROUP_NAMES contains expected groups."""
-        expected_groups = ["gui", "debug", "output"]
-        assert all(group in GUI_GROUP_NAMES for group in expected_groups)
-
-    def test_gui_group_names_is_list(self) -> None:
-        """Test that GUI_GROUP_NAMES is a list."""
-        assert isinstance(GUI_GROUP_NAMES, list)
-
     def test_agent_type_choices_contains_valid_options(self) -> None:
         """Test that AGENT_TYPE_CHOICES contains valid agent types."""
         assert "rl" in AGENT_TYPE_CHOICES
-        assert "ml" in AGENT_TYPE_CHOICES
+        assert "sl" in AGENT_TYPE_CHOICES
 
     def test_agent_type_choices_is_list(self) -> None:
         """Test that AGENT_TYPE_CHOICES is a list."""
@@ -98,24 +89,25 @@ class TestCreateTrainingArgumentParser:
 
         assert result == mock_namespace
         mock_create_parser.assert_called_once_with(
-            "Train an agent (RL or ML)", TRAINING_GROUP_NAMES
+            "Train an agent using reinforcement learning (RL) or supervised learning (SL)",
+            TRAINING_GROUP_NAMES,
         )
         mock_parser.add_argument.assert_called_once()
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
-    @patch("sys.argv", ["prog", "--agent_type", "ml"])
-    def test_create_training_argument_parser_with_ml_agent(
+    @patch("sys.argv", ["prog", "--agent_type", "sl"])
+    def test_create_training_argument_parser_with_sl_agent(
         self, mock_create_parser: Mock
     ) -> None:
-        """Test create_training_argument_parser with ML agent type."""
+        """Test create_training_argument_parser with SL agent type."""
         mock_parser = Mock()
-        mock_namespace = Namespace(agent_type="ml")
+        mock_namespace = Namespace(agent_type="sl")
         mock_parser.parse_args.return_value = mock_namespace
         mock_create_parser.return_value = mock_parser
 
         result = create_training_argument_parser()
 
-        assert result.agent_type == "ml"
+        assert result.agent_type == "sl"
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
     def test_create_training_argument_parser_adds_agent_type_argument(
@@ -134,10 +126,7 @@ class TestCreateTrainingArgumentParser:
             "--agent_type",
             choices=AGENT_TYPE_CHOICES,
             required=True,
-            help=(
-                "Type of agent to train "
-                "(rl=reinforcement learning, ml=machine learning)"
-            ),
+            help="Type of agent to train (rl=reinforcement learning, sl=supervised learning)",
         )
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
@@ -155,56 +144,23 @@ class TestCreateTrainingArgumentParser:
 
 
 class TestCreateGuiArgumentParser:
-    """Tests for create_gui_argument_parser function."""
+    """Tests for create_gui_argument_parser function - GUI not supported."""
 
-    @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
-    @patch("sys.argv", ["prog"])
-    def test_create_gui_argument_parser_returns_namespace(
-        self, mock_create_parser: Mock
-    ) -> None:
-        """Test create_gui_argument_parser returns parsed namespace."""
-        mock_parser = Mock()
-        mock_namespace = Namespace()
-        mock_parser.parse_args.return_value = mock_namespace
-        mock_create_parser.return_value = mock_parser
-
-        result = create_gui_argument_parser()
-
-        assert result == mock_namespace
-        mock_create_parser.assert_called_once_with(
-            "Launch GUI for FUSION", GUI_GROUP_NAMES
-        )
-
-    @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
-    def test_create_gui_argument_parser_uses_correct_description(
-        self, mock_create_parser: Mock
-    ) -> None:
-        """Test that GUI parser uses correct description."""
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = Namespace()
-        mock_create_parser.return_value = mock_parser
-
-        with patch("sys.argv", ["prog"]):
+    def test_create_gui_argument_parser_raises_gui_not_supported_error(self) -> None:
+        """Test create_gui_argument_parser raises GUINotSupportedError."""
+        with pytest.raises(GUINotSupportedError) as exc_info:
             create_gui_argument_parser()
 
-        mock_create_parser.assert_called_once_with(
-            "Launch GUI for FUSION", GUI_GROUP_NAMES
-        )
+        assert "not supported" in str(exc_info.value).lower()
+        assert "6.1.0" in str(exc_info.value)
 
-    @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
-    def test_create_gui_argument_parser_uses_gui_groups(
-        self, mock_create_parser: Mock
-    ) -> None:
-        """Test that GUI parser uses GUI_GROUP_NAMES."""
-        mock_parser = Mock()
-        mock_parser.parse_args.return_value = Namespace()
-        mock_create_parser.return_value = mock_parser
-
-        with patch("sys.argv", ["prog"]):
+    def test_gui_not_supported_error_provides_helpful_message(self) -> None:
+        """Test that GUINotSupportedError provides helpful guidance."""
+        with pytest.raises(GUINotSupportedError) as exc_info:
             create_gui_argument_parser()
 
-        args, kwargs = mock_create_parser.call_args
-        assert args[1] == GUI_GROUP_NAMES
+        error_message = str(exc_info.value)
+        assert "CLI" in error_message or "cli" in error_message
 
 
 class TestLegacyFunctions:
@@ -234,46 +190,9 @@ class TestLegacyFunctions:
             assert result == mock_namespace
             mock_create.assert_called_once()
 
-    def test_get_gui_args_delegates_to_create_gui_argument_parser(self) -> None:
-        """Test that get_gui_args is legacy wrapper."""
-        with patch("fusion.cli.main_parser.create_gui_argument_parser") as mock_create:
-            mock_namespace = Mock()
-            mock_create.return_value = mock_namespace
+    def test_get_gui_args_raises_gui_not_supported_error(self) -> None:
+        """Test that get_gui_args raises GUINotSupportedError."""
+        with pytest.raises(GUINotSupportedError) as exc_info:
+            get_gui_args()
 
-            result = get_gui_args()
-
-            assert result == mock_namespace
-            mock_create.assert_called_once()
-
-    def test_legacy_functions_return_same_types_as_new_functions(self) -> None:
-        """Test that legacy functions return same types as new functions."""
-        # Mock all the internal functions to prevent actual argument parsing
-        with patch("fusion.cli.main_parser.build_main_argument_parser") as mock_build:
-            with patch(
-                "fusion.cli.main_parser.create_training_argument_parser"
-            ) as mock_train:
-                with patch(
-                    "fusion.cli.main_parser.create_gui_argument_parser"
-                ) as mock_gui:
-                    # Set up return values
-                    mock_parser = Mock(spec=ArgumentParser)
-                    mock_namespace = Mock(spec=Namespace)
-
-                    mock_build.return_value = mock_parser
-                    mock_train.return_value = mock_namespace
-                    mock_gui.return_value = mock_namespace
-
-                    # Test that legacy functions delegate to new functions
-                    result1 = build_parser()
-                    result2 = get_train_args()
-                    result3 = get_gui_args()
-
-                    # Verify the calls were made
-                    mock_build.assert_called()
-                    mock_train.assert_called()
-                    mock_gui.assert_called()
-
-                    # Verify return types match
-                    assert type(result1) is type(mock_parser)
-                    assert type(result2) is type(mock_namespace)
-                    assert type(result3) is type(mock_namespace)
+        assert "not supported" in str(exc_info.value).lower()

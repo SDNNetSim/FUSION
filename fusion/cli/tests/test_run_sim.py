@@ -95,11 +95,11 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    @patch("builtins.print")
-    def test_sim_main_prints_interrupt_message(
-        self, mock_print: Any, mock_build_parser: Any, mock_run_pipeline: Any
+    @patch("fusion.cli.run_sim.logger")
+    def test_sim_main_logs_interrupt_message(
+        self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any
     ) -> None:
-        """Test sim main prints appropriate message on KeyboardInterrupt."""
+        """Test sim main logs appropriate message on KeyboardInterrupt."""
         mock_parser = Mock()
         mock_args = Mock()
         mock_parser.parse_args.return_value = mock_args
@@ -108,16 +108,17 @@ class TestSimMain:
 
         sim_main()
 
-        print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("interrupted" in call.lower() for call in print_calls)
+        mock_logger.info.assert_called()
+        log_message = mock_logger.info.call_args[0][0].lower()
+        assert "interrupted" in log_message
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    @patch("builtins.print")
-    def test_sim_main_prints_error_message_on_exception(
-        self, mock_print: Any, mock_build_parser: Any, mock_run_pipeline: Any
+    @patch("fusion.cli.run_sim.logger")
+    def test_sim_main_logs_error_message_on_exception(
+        self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any
     ) -> None:
-        """Test sim main prints error message on general exception."""
+        """Test sim main logs error message on general exception."""
         mock_parser = Mock()
         mock_args = Mock()
         mock_parser.parse_args.return_value = mock_args
@@ -126,8 +127,7 @@ class TestSimMain:
 
         sim_main()
 
-        print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("error" in call.lower() for call in print_calls)
+        mock_logger.error.assert_called()
 
     @patch("fusion.cli.run_sim.multiprocessing.Event")
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
@@ -166,11 +166,11 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    @patch("builtins.print")
-    def test_sim_main_shows_exception_traceback_info(
-        self, mock_print: Any, mock_build_parser: Any, mock_run_pipeline: Any
+    @patch("fusion.cli.run_sim.logger")
+    def test_sim_main_logs_exception_with_traceback(
+        self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any
     ) -> None:
-        """Test sim main shows exception type and traceback info."""
+        """Test sim main logs exception with traceback info."""
         mock_parser = Mock()
         mock_args = Mock()
         mock_parser.parse_args.return_value = mock_args
@@ -179,8 +179,8 @@ class TestSimMain:
 
         sim_main()
 
-        print_calls = [call[0][0] for call in mock_print.call_args_list]
-        # Should show exception type
-        assert any("Exception type:" in call for call in print_calls)
-        # Should show traceback info
-        assert any("Last few calls:" in call for call in print_calls)
+        # Should log error with exc_info=True for traceback
+        mock_logger.error.assert_called()
+        # Check that exc_info was passed for traceback
+        call_kwargs = mock_logger.error.call_args[1]
+        assert call_kwargs.get("exc_info") is True

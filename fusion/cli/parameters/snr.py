@@ -1,5 +1,5 @@
 """
-SNR and modulation CLI arguments.
+CLI arguments for SNR and modulation configuration.
 Handles signal-to-noise ratio calculations and modulation format selection.
 """
 
@@ -8,10 +8,15 @@ import argparse
 
 def add_snr_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add SNR measurement arguments to the parser.
+    Add SNR measurement and modulation arguments to the parser.
 
-    Args:
-        parser: ArgumentParser instance to add arguments to
+    Configures signal-to-noise ratio calculation methods, modulation format
+    selection strategies, and physical layer parameters.
+
+    :param parser: ArgumentParser instance to add arguments to
+    :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     parser.add_argument(
         "--mod_assumption", type=str, help="Modulation format selection strategy"

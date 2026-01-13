@@ -1,6 +1,17 @@
 """
-CLI arguments for training configuration (RL and ML).
-Consolidates machine learning and reinforcement learning arguments.
+CLI arguments for training configuration (RL and SL).
+
+This module provides arguments for reinforcement learning (RL) and supervised
+learning (SL) training pipelines. It consolidates algorithm selection, model
+configuration, training parameters, and optimization settings.
+
+TODO (v6.1.0): Rename ml_* arguments to sl_* for consistency:
+  --ml_training -> --sl_training
+  --ml_model -> --sl_model
+  Also rename add_machine_learning_args to add_supervised_learning_args.
+
+TODO (v6.1.0): Add support for unsupervised learning (UL) methods such as
+clustering and dimensionality reduction for network state analysis.
 """
 
 import argparse
@@ -123,10 +134,10 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
 
 def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add feature extraction and neural network arguments.
+    Add feature extraction and neural network arguments to the parser.
 
     Configures feature extraction methods, neural network architectures,
-    and observation space representations for ML model training.
+    and observation space representations for RL and SL model training.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
@@ -169,21 +180,25 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.1.0): Rename to add_supervised_learning_args
 def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add traditional machine learning arguments.
+    Add supervised learning (SL) arguments to the parser.
 
-    Configures classical ML algorithms, training data paths,
+    Configures classical supervised learning algorithms, training data paths,
     test/train splits, and model deployment options.
+
+    NOTE: This function and its arguments use "ml" naming for backward
+    compatibility. Will be renamed to sl_* in v6.1.0.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
     :rtype: None
     """
-    ml_group = parser.add_argument_group("Machine Learning Configuration")
+    ml_group = parser.add_argument_group("Supervised Learning Configuration")
     ml_group.add_argument(
-        "--ml_training", action="store_true", help="Enable ML training mode"
+        "--ml_training", action="store_true", help="Enable SL training mode"
     )
     ml_group.add_argument(
         "--ml_model",
@@ -195,7 +210,7 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
             "neural_network",
             "decision_tree",
         ],
-        help="Machine learning model type",
+        help="Supervised learning model type",
     )
     ml_group.add_argument(
         "--train_file_path", type=str, help="Path to training data file"
@@ -258,10 +273,11 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
 
 def add_all_training_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add all training-related argument groups.
+    Add all training-related argument groups to the parser.
 
-    Convenience function that combines reinforcement learning,
-    feature extraction, machine learning, and optimization arguments.
+    Convenience function that combines reinforcement learning (RL),
+    feature extraction, supervised learning (SL), and optimization
+    arguments in a single call.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser

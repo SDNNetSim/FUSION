@@ -48,10 +48,10 @@ from .shared import (
 from .simulation import add_run_sim_args, add_simulation_args, register_run_sim_args
 from .snr import add_snr_args
 from .policy import (
-    add_all_phase5_args,
+    add_all_policy_args,
     add_heuristic_args,
     add_policy_args,
-    add_protection_args as add_phase5_protection_args,
+    add_protection_args as add_orchestrator_protection_args,
 )
 from .survivability import (
     add_dataset_logging_args,
@@ -135,9 +135,9 @@ __all__ = [
     "add_dataset_logging_args",
     "add_recovery_timing_args",
     "add_reporting_args",
-    # P5.6: Policy/protection arguments
-    "add_all_phase5_args",
+    # Orchestrator policy arguments (v6.0.0)
+    "add_all_policy_args",
     "add_policy_args",
     "add_heuristic_args",
-    "add_phase5_protection_args",
+    "add_orchestrator_protection_args",
 ]

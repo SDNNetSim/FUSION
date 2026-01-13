@@ -51,12 +51,17 @@ def add_statistics_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.0.0): Plotting functionality is being revamped - these arguments are not
+# currently functional. Full plotting support will be available in v6.0.0.
 def add_plotting_args(parser: argparse.ArgumentParser) -> None:
     """
     Add plotting and visualization arguments to the parser.
 
     Configures arguments for plot generation, display options, and
     visualization formatting parameters.
+
+    NOTE: Plotting is currently being revamped and these arguments are not
+    functional. Full support coming in v6.0.0.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
@@ -83,12 +88,14 @@ def add_plotting_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.1.0): Currently only JSON export is supported. Add support for csv, excel,
+# and tsv formats in v6.1.0.
 def add_export_args(parser: argparse.ArgumentParser) -> None:
     """
     Add data export and file handling arguments to the parser.
 
-    Configures arguments for exporting simulation results to various
-    formats including Excel, CSV, JSON, and TSV.
+    NOTE: Currently only JSON export is officially supported. Additional formats
+    (csv, excel, tsv) will be available in v6.1.0.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
@@ -101,7 +108,7 @@ def add_export_args(parser: argparse.ArgumentParser) -> None:
         type=str,
         choices=["json", "csv", "excel", "tsv"],
         default=None,
-        help="Default file format for data export",
+        help="Default file format for data export (only json currently supported)",
     )
 
 
@@ -168,7 +175,6 @@ def add_comparison_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-# TODO: Function name should be standardized across all parameters (I believe it is)
 def add_all_analysis_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all analysis-related argument groups to the parser.

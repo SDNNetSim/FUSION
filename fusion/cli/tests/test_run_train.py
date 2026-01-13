@@ -164,35 +164,33 @@ class TestTrainMain:
 
     @patch("fusion.cli.run_train.run_training_pipeline")
     @patch("fusion.cli.run_train.create_training_argument_parser")
-    @patch("builtins.print")
-    def test_train_main_prints_user_friendly_messages_on_error(
-        self, mock_print: Mock, mock_create_parser: Mock, mock_run_pipeline: Mock
+    @patch("fusion.cli.run_train.logger")
+    def test_train_main_logs_user_friendly_messages_on_error(
+        self, mock_logger: Mock, mock_create_parser: Mock, mock_run_pipeline: Mock
     ) -> None:
-        """Test that train main prints user-friendly error messages."""
+        """Test that train main logs user-friendly error messages."""
         mock_create_parser.return_value = Mock()
         mock_run_pipeline.side_effect = ImportError("Missing torch")
 
         train_main()
 
-        # Verify print was called with user-friendly messages
-        assert mock_print.called
-        print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any(
-            "dependencies" in call.lower() or "module" in call.lower()
-            for call in print_calls
-        )
+        # Verify logger.error was called with user-friendly messages
+        mock_logger.error.assert_called()
+        log_message = mock_logger.error.call_args[0][0].lower()
+        assert "dependencies" in log_message or "missing" in log_message
 
     @patch("fusion.cli.run_train.run_training_pipeline")
     @patch("fusion.cli.run_train.create_training_argument_parser")
-    @patch("builtins.print")
-    def test_train_main_prints_interrupt_message(
-        self, mock_print: Mock, mock_create_parser: Mock, mock_run_pipeline: Mock
+    @patch("fusion.cli.run_train.logger")
+    def test_train_main_logs_interrupt_message(
+        self, mock_logger: Mock, mock_create_parser: Mock, mock_run_pipeline: Mock
     ) -> None:
-        """Test that train main prints appropriate message on KeyboardInterrupt."""
+        """Test that train main logs appropriate message on KeyboardInterrupt."""
         mock_create_parser.return_value = Mock()
         mock_run_pipeline.side_effect = KeyboardInterrupt()
 
         train_main()
 
-        print_calls = [call[0][0] for call in mock_print.call_args_list]
-        assert any("interrupted" in call.lower() for call in print_calls)
+        mock_logger.info.assert_called()
+        log_message = mock_logger.info.call_args[0][0].lower()
+        assert "interrupted" in log_message
