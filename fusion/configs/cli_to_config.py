@@ -1,4 +1,24 @@
-"""CLI argument to configuration mapping for FUSION simulator."""
+"""
+CLI argument to configuration mapping for FUSION simulator.
+
+This module handles mapping between CLI arguments and configuration structure.
+
+CORE PARAMETERS (used by both engines):
+    general_settings, topology_settings, spectrum_settings, snr_settings,
+    file_settings - These are fundamental simulation parameters used by
+    both the legacy engine and the new orchestrator.
+
+LEGACY PARAMETERS (to be phased out):
+    rl_settings, ml_settings - These use the old RL/ML integration approach.
+    Will be replaced by policy_settings in the orchestrator.
+
+ORCHESTRATOR PARAMETERS (v6.0+):
+    policy_settings, heuristic_settings, protection_settings, failure_settings,
+    routing_settings, reporting_settings - New parameters for the orchestrator-based
+    simulation engine supporting survivability experiments and policy-based routing.
+
+See schema.py for the corresponding type definitions.
+"""
 
 import argparse
 from typing import Any
@@ -25,6 +45,9 @@ class CLIToConfigMapper:
         """
         # Define mapping from CLI argument names to config sections and keys
         self.arg_mapping: dict[str, tuple[str, str]] = {
+            # =================================================================
+            # CORE PARAMETERS (used by both legacy engine and orchestrator)
+            # =================================================================
             # General settings
             "holding_time": ("general_settings", "holding_time"),
             "mod_assumption": ("general_settings", "mod_assumption"),
@@ -70,7 +93,10 @@ class CLIToConfigMapper:
             "bi_directional": ("snr_settings", "bi_directional"),
             "xt_noise": ("snr_settings", "xt_noise"),
             "requested_xt": ("snr_settings", "requested_xt"),
-            # RL settings
+            # =================================================================
+            # LEGACY PARAMETERS (to be phased out, replaced by policy_settings)
+            # =================================================================
+            # RL settings (LEGACY - replaced by policy_settings in orchestrator)
             "obs_space": ("rl_settings", "obs_space"),
             "n_trials": ("rl_settings", "n_trials"),
             "device": ("rl_settings", "device"),
@@ -105,7 +131,7 @@ class CLIToConfigMapper:
             "penalty": ("rl_settings", "penalty"),
             "dynamic_reward": ("rl_settings", "dynamic_reward"),
             "core_beta": ("rl_settings", "core_beta"),
-            # ML settings
+            # ML settings (LEGACY - replaced by policy_settings in orchestrator)
             "deploy_model": ("ml_settings", "deploy_model"),
             "output_train_data": ("ml_settings", "output_train_data"),
             "ml_training": ("ml_settings", "ml_training"),
@@ -114,7 +140,11 @@ class CLIToConfigMapper:
             "test_size": ("ml_settings", "test_size"),
             # File settings
             "file_type": ("file_settings", "file_type"),
-            # P5.6: Policy settings
+            # =================================================================
+            # ORCHESTRATOR PARAMETERS (v6.0+)
+            # Used with new orchestrator-based simulation engine
+            # =================================================================
+            # Policy settings (v6.0+ orchestrator)
             "policy_type": ("policy_settings", "policy_type"),
             "policy_name": ("policy_settings", "policy_name"),
             "policy_model_path": ("policy_settings", "model_path"),
@@ -123,10 +153,10 @@ class CLIToConfigMapper:
             "policy_seed": ("policy_settings", "seed"),
             "policy_algorithm": ("policy_settings", "algorithm"),
             "policy_device": ("policy_settings", "device"),
-            # P5.6: Heuristic settings
+            # Heuristic settings (v6.0+ orchestrator)
             "heuristic_alpha": ("heuristic_settings", "alpha"),
             "heuristic_seed": ("heuristic_settings", "seed"),
-            # P5.6: Protection settings
+            # Protection settings (v6.0+ orchestrator)
             "protection_enabled": ("protection_settings", "protection_enabled"),
             "disjointness_type": ("protection_settings", "disjointness_type"),
             "protection_switchover_ms": ("protection_settings", "protection_switchover_ms"),

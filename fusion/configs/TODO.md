@@ -24,19 +24,30 @@ This file tracks known issues and future improvements for the FUSION configurati
   2. Ensure save_step aligns with Unity's requirements
   3. Add validation for compatible save_step values
 
-### YAML and JSON Configuration File Input
-- **Issue**: YAML and JSON configuration file input needs implementation and validation
-- **Files**: `cli_to_config.py`
-- **Description**: While the system supports INI files, YAML and JSON configuration file formats have not been fully implemented or validated
-- **Impact**: Limits configuration flexibility and integration with modern tooling that expects YAML/JSON formats
+### JSON Configuration File Input Validation
+- **Issue**: JSON configuration file input exists but needs comprehensive validation
+- **Files**: `config.py`
+- **Description**: JSON configuration loading is implemented but not fully tested against all configuration scenarios. INI remains the primary supported format.
+- **Impact**: Users may encounter edge cases when using JSON configurations
 - **Next Steps**:
-  1. Implement YAML configuration file parser
-  2. Implement JSON configuration file parser
-  3. Validate parsing against existing INI-based configurations
-  4. Add comprehensive tests for both formats
-  5. Update documentation with examples for each format
+  1. Add comprehensive tests for JSON configuration loading
+  2. Validate JSON parsing against existing INI-based configurations
+  3. Update documentation with JSON examples if validated
+
+**Note**: YAML support has been removed. Only INI and JSON formats are supported.
 
 ## Medium Priority
+
+### Variable Naming: Thread to Process
+- **Issue**: Variable names use "thread" terminology but FUSION uses multiprocessing
+- **Files**: `constants.py` and usages across codebase
+- **Description**: Variables like `DEFAULT_THREAD_NAME` and `THREAD_SECTION_PATTERN` should use "process" terminology to accurately reflect that FUSION uses multiprocessing, not threading
+- **Impact**: Misleading naming can cause confusion for developers
+- **Next Steps**:
+  1. Rename `DEFAULT_THREAD_NAME` to `DEFAULT_PROCESS_NAME`
+  2. Rename `THREAD_SECTION_PATTERN` to `PROCESS_SECTION_PATTERN`
+  3. Search and update all usages across the codebase
+  4. Update any related documentation
 
 ### Template System Enhancements
 - **Issue**: Add more specialized templates for specific research areas

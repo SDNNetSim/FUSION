@@ -5,6 +5,22 @@ This module defines the required and optional configuration options
 for the FUSION simulator, including their expected types and conversion
 functions. These schemas are used for validation and type conversion
 during configuration loading.
+
+Schema Organization:
+    CORE PARAMETERS (SIM_REQUIRED_OPTIONS_DICT):
+        Required parameters used by both legacy engine and orchestrator.
+        Includes: general_settings, topology_settings, spectrum_settings,
+        snr_settings, file_settings, ml_settings
+
+    OPTIONAL PARAMETERS (OPTIONAL_OPTIONS_DICT):
+        Optional parameters organized by usage:
+        - Core optional: general_settings, topology_settings, spectrum_settings, file_settings
+        - LEGACY (to be phased out): rl_settings, ml_settings
+        - ORCHESTRATOR (v6.0+): policy_settings, heuristic_settings, protection_settings,
+          failure_settings, routing_settings, reporting_settings, dataset_logging_settings,
+          offline_rl_settings, recovery_timing_settings
+
+See cli_to_config.py for the corresponding CLI argument mappings.
 """
 
 # Standard library imports
@@ -43,6 +59,8 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "can_partially_serve": str_to_bool,
         "transponder_usage_per_node": str_to_bool,
         "blocking_type_ci": str_to_bool,
+        "route_method": str,
+        "allocation_method": str,
     },
     "topology_settings": {
         "network": str,
@@ -79,6 +97,9 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
 
 # Optional configuration options with their type converters
 OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
+    # =========================================================================
+    # CORE OPTIONAL PARAMETERS (used by both legacy engine and orchestrator)
+    # =========================================================================
     "general_settings": {
         "filter_mods": bool,
         "request_distribution": str,
@@ -100,6 +121,9 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     "file_settings": {
         "run_id": str,
     },
+    # =========================================================================
+    # LEGACY PARAMETERS (to be phased out, replaced by policy_settings)
+    # =========================================================================
     "rl_settings": {
         "obs_space": str,
         "n_trials": int,
@@ -144,6 +168,10 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "train_file_path": str,
         "test_size": float,
     },
+    # =========================================================================
+    # ORCHESTRATOR PARAMETERS (v6.0+)
+    # Used with new orchestrator-based simulation engine
+    # =========================================================================
     "dataset_logging_settings": {
         "log_offline_dataset": str_to_bool,
         "dataset_output_path": str,
@@ -161,13 +189,11 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     },
     "protection_settings": {
         "revert_to_primary": str_to_bool,
-        # P5.6: Extended protection settings
         "protection_enabled": str_to_bool,
         "disjointness_type": str,
         "protection_switchover_ms": float,
         "restoration_latency_ms": float,
     },
-    # P5.6: Policy settings
     "policy_settings": {
         "policy_type": str,
         "policy_name": str,
@@ -178,7 +204,6 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "algorithm": str,
         "device": str,
     },
-    # P5.6: Heuristic settings
     "heuristic_settings": {
         "alpha": float,
         "seed": int,

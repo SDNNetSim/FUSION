@@ -254,10 +254,15 @@ class ConfigRegistry:
         """
         template_path = os.path.join(self.templates_dir, f"{template_name}.ini")
 
-        # Description injection pending - see TODO.md for implementation details
+        # TODO (v6.1): Implement description injection into exported INI templates.
+        # Currently, the save_config method doesn't support adding comments/headers
+        # to INI files. To implement this feature:
+        #   1. Enhance ConfigManager.save_config() to accept optional header comments
+        #   2. Format the description as INI-style comments (# prefix)
+        #   3. Insert at the top of the exported template file
+        # See TODO.md "Template Description Injection" for full details.
         if description:
-            # Description will be added when comment support is implemented
-            _ = description  # Suppress unused variable warning
+            _ = description  # Suppress unused variable warning until implemented
 
         config_manager.save_config(template_path, "ini")
 
