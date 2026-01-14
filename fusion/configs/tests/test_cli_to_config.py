@@ -212,13 +212,20 @@ class TestCLIToConfigMapper:
         """Test consistency of argument mappings."""
         # Verify that all mapped arguments point to valid sections
         valid_sections = {
+            # Core settings (used by both legacy engine and orchestrator)
             "general_settings",
             "topology_settings",
             "spectrum_settings",
             "snr_settings",
+            "file_settings",
+            # Legacy settings (to be phased out)
             "rl_settings",
             "ml_settings",
-            "file_settings",
+            # Orchestrator settings (v6.0+)
+            "policy_settings",
+            "heuristic_settings",
+            "protection_settings",
+            "routing_settings",
         }
 
         for cli_arg, (section, key) in self.mapper.arg_mapping.items():
