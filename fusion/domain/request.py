@@ -70,7 +70,8 @@ class RequestStatus(Enum):
     """
     Request lifecycle status.
 
-    State Machine:
+    State Machine::
+
         PENDING --> ROUTING --> SPECTRUM_SEARCH --> SNR_CHECK
                         |              |               |
                         v              v               v
@@ -93,11 +94,11 @@ class RequestStatus(Enum):
                                    RELEASED
 
     State Categories:
-        Initial: PENDING
-        Processing: ROUTING, SPECTRUM_SEARCH, SNR_CHECK
-        Success (terminal): ALLOCATED, GROOMED, PARTIALLY_GROOMED
-        Failure (terminal): BLOCKED
-        Release: RELEASING, RELEASED (terminal)
+        - Initial: PENDING
+        - Processing: ROUTING, SPECTRUM_SEARCH, SNR_CHECK
+        - Success (terminal): ALLOCATED, GROOMED, PARTIALLY_GROOMED
+        - Failure (terminal): BLOCKED
+        - Release: RELEASING, RELEASED (terminal)
     """
 
     # Initial state

@@ -60,15 +60,11 @@ class AbstractSpectrumAssigner(ABC):
         :param path: List of nodes representing the path
         :type path: List[Any]
         :param request: Request object containing traffic demand and spectrum
-                requirements
+            requirements
         :type request: Any
-        :return: Dictionary containing spectrum assignment details:
-                - 'start_slot': Starting slot index
-                - 'end_slot': Ending slot index
-                - 'core_num': Core number (for multi-core fibers)
-                - 'band': Band identifier
-                - 'is_free': Whether assignment was successful
-            Returns None if assignment fails
+        :return: Dictionary containing spectrum assignment details
+            (start_slot, end_slot, core_num, band, is_free),
+            or None if assignment fails.
         :rtype: Optional[Dict[str, Any]]
         """
 

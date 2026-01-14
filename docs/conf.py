@@ -50,6 +50,7 @@ autodoc_default_options = {
     "show-inheritance": True,
 }
 autodoc_typehints = "description"
+autodoc_class_signature = "separated"  # Cleaner class signatures
 
 # Autosummary
 autosummary_generate = True
@@ -69,7 +70,21 @@ myst_enable_extensions = [
     "tasklist",
 ]
 myst_heading_anchors = 3
-suppress_warnings = ["myst.header"]
+# Suppress warnings for:
+# - myst.header: MyST heading anchor warnings
+# - autodoc.duplicate_object: Dataclass fields documented multiple times
+# - ref.python: Ambiguous cross-references (multiple classes with same name)
+# - app.add_object: Duplicate object descriptions (same module documented twice)
+suppress_warnings = [
+    "myst.header",
+    "autodoc.duplicate_object",
+    "ref.python",
+    "app.add_object",
+]
+
+# Avoid duplicate object warnings from dataclass fields
+# by not re-documenting inherited members
+autodoc_inherit_docstrings = False
 
 # Todo
 todo_include_todos = True

@@ -72,7 +72,8 @@ class RoutingPipeline(Protocol):
         - Fragmentation-aware routing
         - NLI-aware routing (non-linear interference)
 
-    Example:
+    Example::
+
         class KShortestPathRouter:
             def find_routes(
                 self,
@@ -112,10 +113,12 @@ class RoutingPipeline(Protocol):
 
         Returns:
             RouteResult containing:
+
             - paths: Candidate paths as tuples of node IDs
             - weights_km: Path distances/weights in kilometers
             - modulations: Valid modulation formats per path
             - strategy_name: Name of routing algorithm used
+
             Returns empty RouteResult if no routes found.
 
         Side Effects:
@@ -152,7 +155,8 @@ class SpectrumPipeline(Protocol):
         - Best-fit: Allocate smallest sufficient gap
         - Last-fit: Allocate highest available slot range
 
-    Example:
+    Example::
+
         class FirstFitSpectrum:
             def find_spectrum(
                 self,
@@ -231,8 +235,10 @@ class SpectrumPipeline(Protocol):
 
         Returns:
             SpectrumResult containing:
+
             - Primary allocation in main fields (is_free, start_slot, etc.)
             - Backup allocation in backup_* fields
+
             Returns is_free=False if either path lacks spectrum.
 
         Side Effects:
@@ -268,7 +274,8 @@ class GroomingPipeline(Protocol):
         - Partial grooming: Some bandwidth groomed, rest needs new lightpath
         - No grooming: No suitable lightpaths found
 
-    Example:
+    Example::
+
         class SimpleGrooming:
             def try_groom(
                 self,
@@ -367,7 +374,8 @@ class SNRPipeline(Protocol):
         - Crosstalk in multi-core fibers (MCF)
         - Modulation-dependent thresholds
 
-    Example:
+    Example::
+
         class GNModelSNR:
             def validate(
                 self,
@@ -473,7 +481,8 @@ class SlicingPipeline(Protocol):
         - Static slicing: Fixed slice size (e.g., 50 Gbps per slice)
         - Dynamic slicing: Adaptive based on availability
 
-    Example:
+    Example::
+
         class DynamicSlicing:
             def try_slice(
                 self,

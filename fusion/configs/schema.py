@@ -6,21 +6,25 @@ for the FUSION simulator, including their expected types and conversion
 functions. These schemas are used for validation and type conversion
 during configuration loading.
 
-Schema Organization:
-    CORE PARAMETERS (SIM_REQUIRED_OPTIONS_DICT):
-        Required parameters used by both legacy engine and orchestrator.
-        Includes: general_settings, topology_settings, spectrum_settings,
-        snr_settings, file_settings, ml_settings
+Schema Organization
+-------------------
 
-    OPTIONAL PARAMETERS (OPTIONAL_OPTIONS_DICT):
-        Optional parameters organized by usage:
-        - Core optional: general_settings, topology_settings, spectrum_settings, file_settings
-        - LEGACY (to be phased out): rl_settings, ml_settings
-        - ORCHESTRATOR (v6.0+): policy_settings, heuristic_settings, protection_settings,
-          failure_settings, routing_settings, reporting_settings, dataset_logging_settings,
-          offline_rl_settings, recovery_timing_settings
+**CORE PARAMETERS** (``SIM_REQUIRED_OPTIONS_DICT``):
+    Required parameters used by both legacy engine and orchestrator.
+    Includes: general_settings, topology_settings, spectrum_settings,
+    snr_settings, file_settings, ml_settings
 
-See cli_to_config.py for the corresponding CLI argument mappings.
+**OPTIONAL PARAMETERS** (``OPTIONAL_OPTIONS_DICT``):
+    Optional parameters organized by usage:
+
+    - Core optional: general_settings, topology_settings, spectrum_settings, file_settings
+    - LEGACY (to be phased out): rl_settings, ml_settings
+    - ORCHESTRATOR (v6.0+): policy_settings, heuristic_settings,
+      protection_settings, failure_settings, routing_settings,
+      reporting_settings, dataset_logging_settings, offline_rl_settings,
+      recovery_timing_settings
+
+See ``cli_to_config.py`` for the corresponding CLI argument mappings.
 """
 
 # Standard library imports

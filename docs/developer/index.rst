@@ -35,6 +35,7 @@ Modules
 
    fusion/analysis/index
    fusion/cli/index
+   fusion/configs/index
 
 Data Directory
 ==============
