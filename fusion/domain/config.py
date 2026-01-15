@@ -51,72 +51,69 @@ DEFAULT_BANDWIDTH_MAP: dict[str, int] = {
 
 @dataclass(frozen=True)
 class SimulationConfig:
-    """
-    Immutable simulation configuration.
+    """Immutable simulation configuration.
 
     This dataclass captures all simulation parameters in a typed,
     frozen structure. Once created, the configuration cannot be modified.
 
     Attributes:
-        Network Configuration:
-            network_name: Network topology identifier (e.g., "USbackbone60")
-            cores_per_link: Number of cores per fiber link (MCF support)
-            band_list: Available frequency bands as immutable tuple
-            band_slots: Slot count per band (e.g., {"c": 320, "l": 320})
-            guard_slots: Guard band slots between allocations
-
-        Topology Constraints:
-            span_length: Default span length in km
-            max_link_length: Maximum link length constraint (None = no limit)
-            max_span: Maximum spans per link (None = no limit)
-            max_transponders: Maximum transponders per node (None = no limit)
-            single_core: Force single core allocation
-
-        Traffic Configuration:
-            num_requests: Total requests to simulate
-            erlang: Traffic intensity (arrival_rate * holding_time)
-            holding_time: Mean request duration
-
-        Routing Configuration:
-            route_method: Routing algorithm name
-            k_paths: Number of candidate paths to compute
-            allocation_method: Spectrum allocation strategy
-
-        Feature Flags:
-            grooming_enabled: Enable traffic grooming
-            grooming_type: Grooming algorithm type (None if disabled)
-            slicing_enabled: Enable lightpath slicing
-            max_slices: Maximum slices per request
-            snr_enabled: Enable SNR validation
-            snr_type: SNR calculation method or None
-            snr_recheck: Re-validate SNR after allocation
-            recheck_adjacent_cores: Include adjacent cores in SNR recheck
-            recheck_crossband: Include crossband in SNR recheck
-            can_partially_serve: Allow partial bandwidth fulfillment
-
-        Protection Configuration:
-            protection_switchover_ms: Time to switch to backup path (ms)
-            restoration_latency_ms: Time to restore after failure (ms)
-
-        Physical Layer Parameters:
-            input_power: Optical input power in Watts
-            frequency_spacing: Channel spacing in Hz
-            light_frequency: Center light frequency in Hz
-            planck_constant: Planck's constant in J*s
-            noise_spectral_density: Noise spectral density
-            mci_worst: Worst-case mutual coupling interference
-            nsp_per_band: Noise spontaneous parameter per band
-
-        SNR Configuration:
-            request_bit_rate: Default request bit rate in Gb/s
-            request_snr: Default requested SNR in dB
-            snr_thresholds: SNR thresholds per modulation format
-
-        Modulation Configuration:
-            modulation_formats: Available modulation format definitions
-            mod_per_bw: Modulation formats available per bandwidth
-            mod_format_map: Mapping of format ID to format name
-            bandwidth_map: Mapping of format name to bandwidth capacity
+        network_name: Network topology identifier (e.g., "USbackbone60").
+        cores_per_link: Number of cores per fiber link (MCF support).
+        band_list: Available frequency bands as immutable tuple.
+        band_slots: Slot count per band (e.g., {"c": 320, "l": 320}).
+        guard_slots: Guard band slots between allocations.
+        span_length: Default span length in km.
+        max_link_length: Maximum link length constraint (None = no limit).
+        max_span: Maximum spans per link (None = no limit).
+        max_transponders: Maximum transponders per node (None = no limit).
+        single_core: Force single core allocation.
+        topology_info: Physical topology info for SNR calculations.
+        num_requests: Total requests to simulate.
+        erlang: Traffic intensity (arrival_rate * holding_time).
+        holding_time: Mean request duration.
+        route_method: Routing algorithm name.
+        k_paths: Number of candidate paths to compute.
+        allocation_method: Spectrum allocation strategy.
+        grooming_enabled: Enable traffic grooming.
+        grooming_type: Grooming algorithm type (None if disabled).
+        slicing_enabled: Enable lightpath slicing.
+        max_slices: Maximum slices per request.
+        snr_enabled: Enable SNR validation.
+        snr_type: SNR calculation method or None.
+        snr_recheck: Re-validate SNR after allocation.
+        recheck_adjacent_cores: Include adjacent cores in SNR recheck.
+        recheck_crossband: Include crossband in SNR recheck.
+        can_partially_serve: Allow partial bandwidth fulfillment.
+        fixed_grid: True for fixed grid, False for flexi-grid.
+        spectrum_priority: Band selection priority ("BSC", "CSB", or None).
+        multi_fiber: True for multi-fiber, False for multi-core fiber.
+        dynamic_lps: True for dynamic lightpath slicing mode.
+        protection_switchover_ms: Time to switch to backup path (ms).
+        restoration_latency_ms: Time to restore after failure (ms).
+        bw_per_slot: Bandwidth per slot in GHz.
+        input_power: Optical input power in Watts.
+        frequency_spacing: Channel spacing in Hz.
+        light_frequency: Center light frequency in Hz.
+        planck_constant: Planck's constant in J*s.
+        noise_spectral_density: Noise spectral density.
+        mci_worst: Worst-case mutual coupling interference.
+        nsp_per_band: Noise spontaneous parameter per band.
+        request_bit_rate: Default request bit rate in Gb/s.
+        request_snr: Default requested SNR in dB.
+        snr_thresholds: SNR thresholds per modulation format.
+        phi: SNR phi parameter per modulation format.
+        egn_model: Use EGN model for SNR calculation.
+        xt_type: Crosstalk type.
+        beta: SNR beta parameter.
+        theta: SNR theta parameter.
+        bi_directional: Bi-directional SNR calculation.
+        xt_noise: Include crosstalk noise.
+        requested_xt: Requested crosstalk per format.
+        modulation_formats: Available modulation format definitions.
+        mod_per_bw: Modulation formats available per bandwidth.
+        mod_format_map: Mapping of format ID to format name.
+        bandwidth_map: Mapping of format name to bandwidth capacity.
+        pre_calc_mod_selection: Use pre-calculated modulation selection.
 
     Example:
         >>> config = SimulationConfig.from_engine_props(engine_props)
@@ -301,21 +298,19 @@ class SimulationConfig:
 
     # =========================================================================
     # Legacy Adapters
+    # TODO(v6.1): Remove legacy adapter methods once migration is complete.
     # =========================================================================
     @classmethod
     def from_engine_props(cls, engine_props: dict[str, Any]) -> SimulationConfig:
         """
         Create SimulationConfig from legacy engine_props dictionary.
 
-        Args:
-            engine_props: Legacy configuration dictionary
-
-        Returns:
-            New SimulationConfig instance
-
-        Raises:
-            KeyError: If required fields are missing
-            ValueError: If field values are invalid
+        :param engine_props: Legacy configuration dictionary.
+        :type engine_props: dict[str, Any]
+        :return: New SimulationConfig instance.
+        :rtype: SimulationConfig
+        :raises KeyError: If required fields are missing.
+        :raises ValueError: If field values are invalid.
         """
         # Extract band list (convert list to tuple for immutability)
         band_list_raw = engine_props.get("band_list", ["c"])
@@ -442,8 +437,8 @@ class SimulationConfig:
         """
         Convert to legacy engine_props dictionary format.
 
-        Returns:
-            Dictionary compatible with legacy engine_props consumers
+        :return: Dictionary compatible with legacy engine_props consumers.
+        :rtype: dict[str, Any]
         """
         props: dict[str, Any] = {
             # Network

@@ -1,7 +1,7 @@
 """
 FUSION Domain Model Package.
 
-This package contains the typed domain objects for FUSION v5:
+This package contains the typed domain objects for FUSION:
 - SimulationConfig: Immutable simulation configuration
 - Request: Network service request with lifecycle tracking
 - Lightpath: Allocated optical path with capacity management
@@ -42,7 +42,7 @@ __all__ = [
     "ProtectionStatus",
     # Lightpath
     "Lightpath",
-    # Network State (Phase 2)
+    # Network State
     "LinkSpectrum",
     "NetworkState",
     # Results
