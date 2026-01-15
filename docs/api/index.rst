@@ -149,16 +149,19 @@ Domain objects and data structures.
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 .. automodule:: fusion.domain.request
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 .. automodule:: fusion.domain.lightpath
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 .. automodule:: fusion.domain.network_state
    :members:

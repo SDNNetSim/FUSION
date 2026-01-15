@@ -41,7 +41,6 @@ Orchestrator (v6.0+)
 * :doc:`metrics` - Statistics collection, persistence, and ML training data
 * :doc:`data_structures` - Result objects, properties classes, multi-fiber mappings
 * :doc:`tutorial` - Step-by-step guide for new contributors
-* :doc:`contributing` - How to contribute to the core module
 
 **When you work here:**
 
