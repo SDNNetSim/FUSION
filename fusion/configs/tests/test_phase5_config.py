@@ -15,13 +15,11 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
 from fusion.configs.cli_to_config import CLIToConfigMapper
 from fusion.configs.config import ConfigManager
-
 
 # =============================================================================
 # Fixtures

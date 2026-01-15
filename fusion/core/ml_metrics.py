@@ -2,6 +2,11 @@
 Machine learning metrics collection for FUSION.
 
 Handles collection and management of training data for ML models.
+
+# TODO: Rename or clarify scope - this module is for supervised learning (SL) and
+# unsupervised learning (USL) data collection. Reinforcement learning (RL) metrics
+# are handled separately in fusion.rl, despite RL also being a form of ML. The "ML"
+# naming here specifically refers to SL/USL approaches.
 """
 
 import os

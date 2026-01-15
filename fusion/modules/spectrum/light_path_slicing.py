@@ -503,14 +503,14 @@ class LightPathSlicingManager:
         """
         self.sdn_props.number_of_transponders = num_segments
         self.spectrum_obj.spectrum_props.path_list = path_list
-        remaining_bw = int(self.sdn_props.bandwidth)
+        remaining_bw = int(float(self.sdn_props.bandwidth))
         mod_format_list = [mod_format]
         for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(
                 mod_format_list=mod_format_list, slice_bandwidth=bandwidth
             )
             if self.spectrum_obj.spectrum_props.is_free:
-                remaining_bw -= int(bandwidth)
+                remaining_bw -= int(float(bandwidth))
 
                 # Generate unique lightpath ID for this segment
                 lp_id = self.sdn_props.get_lightpath_id()
@@ -522,7 +522,7 @@ class LightPathSlicingManager:
                 sdn_controller._update_req_stats(bandwidth=bandwidth, remaining=str(remaining_bw))
             else:
                 # Rollback previously allocated segments
-                remaining_bw_calc = int(self.sdn_props.bandwidth) - (int(self.sdn_props.bandwidth) - remaining_bw)
+                remaining_bw_calc = int(float(self.sdn_props.bandwidth)) - (int(float(self.sdn_props.bandwidth)) - remaining_bw)
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw_calc)
                 break
 

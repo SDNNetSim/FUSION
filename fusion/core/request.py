@@ -176,8 +176,8 @@ def generate_simulation_requests(
         - request_distribution: Bandwidth distribution percentages
         - mod_per_bw: Modulation formats per bandwidth
     :type engine_properties: Dict[str, Any]
-    :return: Dictionary mapping simulation times to request events
-    :rtype: Dict[float, Dict[str, Any]]
+    :return: Dictionary mapping (request_id, time) tuples to request events
+    :rtype: Dict[tuple[int, float], Dict[str, Any]]
     :raises ValueError: If no nodes available or distribution invalid
 
     Example:
@@ -195,7 +195,7 @@ def generate_simulation_requests(
     logger.debug("Generating requests with seed %s", seed)
 
     # Initialize variables
-    requests_dict: dict[float, dict[str, Any]] = {}
+    requests_dict: dict[tuple[int, float], dict[str, Any]] = {}
     current_time = 0.0
     request_id = 1
 
@@ -320,7 +320,7 @@ def generate_simulation_requests(
 
 
 # Maintain backward compatibility with old function name
-def get_requests(seed: int, engine_props: dict) -> dict[float, dict[str, Any]]:
+def get_requests(seed: int, engine_props: dict) -> dict[tuple[int, float], dict[str, Any]]:
     """
     Legacy function name for backward compatibility.
 
@@ -332,7 +332,7 @@ def get_requests(seed: int, engine_props: dict) -> dict[float, dict[str, Any]]:
     :param engine_props: Engine properties dictionary
     :type engine_props: dict
     :return: Generated requests dictionary
-    :rtype: Dict[float, Dict[str, Any]]
+    :rtype: Dict[tuple[int, float], Dict[str, Any]]
     """
     logger.warning(
         "get_requests is deprecated. Use generate_simulation_requests instead."

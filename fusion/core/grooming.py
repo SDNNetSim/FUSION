@@ -53,8 +53,6 @@ class Grooming:
         :return: Dictionary of the path group with maximum remaining bandwidth or None
         :rtype: dict[str, Any] | None
         """
-        # TODO: Any type
-        # TODO: GLOBAL DECLARATION TO LOOK FOR ANY TYPES IN A SEPARATE SIMULATOR SWEEP
         path_groups: dict[tuple, dict[str, Any]] = {}
 
         for lp_id, lp_info in self.sdn_props.lightpath_status_dict[light_id].items():

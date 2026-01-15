@@ -6,7 +6,6 @@ allocation in software-defined optical networks.
 """
 
 import copy
-import json
 import time
 from typing import Any
 
@@ -112,6 +111,8 @@ class SDNController:
         """
         if lightpath_id is None:
             raise ValueError('Lightpath ID is none')
+        if self.sdn_props.path_list is None:
+            raise ValueError('Path list is not initialized')
 
         for source, dest in zip(
             self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
@@ -195,10 +196,6 @@ class SDNController:
                     return
 
                 lp_status = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]
-
-                lp_bw = lp_status.get("lightpath_bandwidth", "N/A")
-                remaining_bw = lp_status.get("remaining_bandwidth", "N/A")
-                time_bw_usage = lp_status.get("time_bw_usage", {})
 
                 average_bw_usage = 0.0
                 # Note: average_bandwidth_usage may not exist yet
@@ -618,13 +615,16 @@ class SDNController:
             # Only restore remaining bandwidth for sliced/partial requests (v5 behavior)
             # For non-sliced requests, remaining_bw should stay None/0 since no bandwidth was served
             if self.sdn_props.is_sliced or self.sdn_props.was_partially_groomed:
+                bw_to_restore = int(float(self.sdn_props.bandwidth_list[idx]))
                 if self.sdn_props.remaining_bw is None or self.sdn_props.remaining_bw == 0:
-                    self.sdn_props.remaining_bw = int(float(self.sdn_props.bandwidth_list[idx]))
+                    self.sdn_props.remaining_bw = bw_to_restore
                 else:
-                    self.sdn_props.remaining_bw += int(float(self.sdn_props.bandwidth_list[idx]))
+                    # Handle remaining_bw being str/float type
+                    current_remaining = int(float(self.sdn_props.remaining_bw))
+                    self.sdn_props.remaining_bw = current_remaining + bw_to_restore
 
             # Remove from all tracking lists (with safety check for list length)
-            for tracking_list in [
+            tracking_lists: list[list] = [
                 self.sdn_props.lightpath_id_list,
                 self.sdn_props.lightpath_bandwidth_list,
                 self.sdn_props.start_slot_list,
@@ -636,130 +636,14 @@ class SDNController:
                 self.sdn_props.snr_list,
                 self.sdn_props.bandwidth_list,
                 self.sdn_props.modulation_list,
-            ]:
+            ]
+            for tracking_list in tracking_lists:
                 if idx < len(tracking_list):
                     tracking_list.pop(idx)
 
         # Remove from new lightpath list
         if lightpath_id in self.sdn_props.was_new_lp_established:
             self.sdn_props.was_new_lp_established.remove(lightpath_id)
-
-
-        """
-        Grooming
-        
-        (Before)
-        --> Request ID comes in to SDN controller
-        --> Multiple Lightpath ID is mapped to a request ID
-            --> When we slice multiple lightpath IDs
-            --> When we groom/partially groom in each lighpath, more than one request ID
-        --> SDN controller calling on grooming/slicing which interacts with routing and spectrum assignment
-            --> Much of the logic is in SDN controller or needs to change SDN controller
-            
-        (After)
-        --> Request Object
-            --> Information, could be slicing, nothing, grooming, etc. it could have a lightpath objects tied to it
-        --> SDN controller (wrapper/helper function)
-            --> Send to grooming?
-                --> Routing and Spectrum Assignment
-                    --> Grooming interacts with routing and spectrum assignment uniquely
-                    --> Grooming module that correctly interacts with the base Routing and Spectrum Assignment
-                        --> Finds a path, finds a spectrum (Network Spectrum Dict/Database)
-                        --> Conclusion: SDN, Routing, Spectrum Assignment, literally do not know what happened detail by detail for grooming
-                            --> What does each section know happened?
-                                --> SDN section says, go to grooming logic
-                                --> Grooming called on routes from Routing when it needed it, handled updating request ID and lighpath objects
-                                --> Grooming called on spectrum from Spectrum when it needed it
-                                --> Grooming updated the Request Object and returned to SDN
-                                --> SDN understood that grooming is done, pass to statistics logic, then call on next request
-                                    --> Stats does the SAME!
-                            --> We wouldn't have to change every centralized core script, rather, create a new module with standardized input and output
-                            
-        A PROBLEM: If the modules need to interact?
-        --> Grooming + Slicing + SNR interacting with routing? (Question for GPT/ChatGPT)
-            --> Existing problem: Change whole simulator so they can interact (impossible)
-            --> Potential solution with an example of grooming
-                1.) Request shows up
-                2.) Request is groomed (k = 1 (forced path), 50% of req is groomed (200 Gbps) of 400 Gbps)
-                    --> Why? A lightpath exists with 400 Gbps and 200 Gbps is free (previous request)
-                3.) Allocate 200 Gbps with RSA on that previous lightpath
-                
-                1.) Second option for a request (k = 2 (option of paths), 400 Gbps) - Another possible algorithm for example
-                2.) Decide on which one is better to select, should I partially groom or should I fully allocate? k = 1, partially groom, k = 2 fully allocate
-                3.) In this algorithm, we want to know which is better
-                
-                What I (Ryan) would like to do based on the above example, know that interacting between modules can be tough
-                --> Grooming Algorithm 1 & Grooming Algorithm 2
-                --> Pass Current Request Object, Class of Request Objects (Central Request Class) to SDN
-                    --> SDN Wrapper passes to where? Grooming Module
-                        --> Within grooming module (SDN doesn't know this) we call on Algorithm 1 or 2
-                        --> Grooming (A new SDN module but this is a different script) Handles
-                            --> Algorithm 1 & 2
-                            
-                            
-                        --> Engine --> SDN (grooming) --> Route --> Spectrum
-                        --> Engine --> SDN Wrapper
-                                                    --> Grooming SDN logic
-                                                    --> Slicing SDN logic
-                                                    --> ...
-                                                    --> Slicing + Grooming SDN logic
-                                                        --> Slicing + Grooming Wrapper
-                                                    
-                                                    
-                                                    
-                                                    Dynamic Slicing + Grooming
-                                                    1.) Check grooming
-                                                    2.) Then RSA
-                                                    3.) Then if need slicing
-                                                    
-                                                    
-                                                    Hierarchy (Combination)
-                                                    --> Connection between slicing and grooming
-                                                    --> Slicing logic is the same
-                                                    --> Slicing called alone (slicing logic)
-                                                    --> Grooming called...Tells slicing to behave a certain way
-                                                        --> PROBLEM ? Will we duplicate logic interlinking these?
-                                                        
-                                                    E.g., Solution
-                                                    --> Routing, Spectrum Allocation (RSA) - single function
-                                                    --> 
-                                                    
-                                                    
-                
-            --> Request object comes back
-                --> SDN sends to stats logic
-                --> SDN triggers it's ready for next request object
-        
-        RL Integration?
-        --> Specifically developed to interact with Engine to pick paths with essentially static actions, rewards, etc.
-            --> RL knows everything, too separate
-        --> RL doesn't have general connections (wrapper) to SDN
-            --> In the future, ideally RL core logic doesn't know what's happening
-            --> There's some RL wrapper (similar to that SDN wrapper):
-                --> Information comes in
-                --> Standardized/Normalized/Etc. (Similar Object to Request Object Maybe?)
-                --> Passed to RL
-                --> What does RL know?
-                    --> I need to create a state action space mxnxp
-                    --> I need to try and select the best action, I don't care what it is
-                    --> If I do well, reward myself, if not, penalize myself
-                    --> Next
-                    
-                    
-        WHAT DOES RL DO NOW??
-        --> Literally clones a simulation
-        --> Acts entirely independently
-        --> Therefor, all the state issues, etc. happen in RL
-        
-        --> SB3 calls X, Y, and Z...I need to run via command line, no control over what SB3 calls
-            ---> Wrote the functions as I saw them in the tutorial
-            --> Call on SB3 and it calls specific functions based on ONE SCRIPT
-        
-        --> What will have to happen now?
-            --> run via command line normally
-                --> Call SB3 as like an OS command in some script and interlink them
-                    
-        """
 
         # Mark request as blocked
         self.sdn_props.was_routed = False
@@ -806,9 +690,10 @@ class SDNController:
         self.sdn_props.was_partially_routed = False
 
         if getattr(self.sdn_props, "was_partially_groomed", False):
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
-                map(int, self.sdn_props.bandwidth_list)
-            )
+            if self.sdn_props.bandwidth is not None:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
+                    map(int, self.sdn_props.bandwidth_list)
+                )
         else:
             if self.sdn_props.bandwidth is not None:
                 self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
@@ -843,11 +728,12 @@ class SDNController:
         ):
             # Release all newly established lightpaths for this request (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
-            if isinstance(was_new_lps, list):
+            if isinstance(was_new_lps, list) and self.sdn_props.path_list:
                 for lpid in list(was_new_lps):
                     # Remove current request from lightpath's requests_dict before releasing
                     light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
-                    if (light_id in self.sdn_props.lightpath_status_dict and
+                    if (self.sdn_props.lightpath_status_dict is not None and
+                            light_id in self.sdn_props.lightpath_status_dict and
                             lpid in self.sdn_props.lightpath_status_dict[light_id]):
                         lp_info = self.sdn_props.lightpath_status_dict[light_id][lpid]
                         if self.sdn_props.request_id in lp_info["requests_dict"]:
@@ -878,12 +764,13 @@ class SDNController:
         self.sdn_props.was_partially_routed = False
 
         # Reset remaining_bw to match v5 behavior
-        if self.sdn_props.was_partially_groomed:
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
-                map(int, self.sdn_props.bandwidth_list)
-            )
-        else:
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+        if self.sdn_props.bandwidth is not None:
+            if self.sdn_props.was_partially_groomed:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
+                    map(int, self.sdn_props.bandwidth_list)
+                )
+            else:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
 
         self.sdn_props.was_new_lp_established = []
 
@@ -893,15 +780,15 @@ class SDNController:
         self.sdn_props.reset_params()
 
     def _setup_routing(
-        self, force_route_matrix: list[Any] | None, force_mod_format: str | None
+        self, force_route_matrix: list[Any] | None, force_mod_format: str | list[str] | None
     ) -> tuple[list[Any], float]:
         """
         Setup routing for the request.
 
         :param force_route_matrix: Optional forced routing matrix
         :type force_route_matrix: list[Any] | None
-        :param force_mod_format: Optional forced modulation format
-        :type force_mod_format: str | None
+        :param force_mod_format: Optional forced modulation format (single or list)
+        :type force_mod_format: str | list[str] | None
         :return: Tuple of (route_matrix, route_time)
         :rtype: tuple[list[Any], float]
         """
@@ -923,10 +810,10 @@ class SDNController:
 
             # For partially groomed requests, use path_weight from groomed lightpath
             # This ensures new lightpaths on the same path get the correct weight
-            if getattr(self.sdn_props, "was_partially_groomed", False):
+            if getattr(self.sdn_props, "was_partially_groomed", False) and self.sdn_props.path_weight is not None:
                 self.route_obj.route_props.weights_list = [self.sdn_props.path_weight]
             else:
-                self.route_obj.route_props.weights_list = [0]
+                self.route_obj.route_props.weights_list = [0.0]
         route_time = time.time() - start_time
         return route_matrix, route_time
 
@@ -1028,9 +915,10 @@ class SDNController:
 
 
             # Determine bandwidth for statistics and lightpath (handle partial grooming)
+            allocate_bandwidth: float | None
             if self.sdn_props.was_partially_groomed:
                 # For partial grooming, allocate_bandwidth is the actual bandwidth used for statistics
-                allocate_bandwidth = str(self.sdn_props.remaining_bw)
+                allocate_bandwidth = float(self.sdn_props.remaining_bw) if self.sdn_props.remaining_bw else None
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
 
@@ -1110,7 +998,7 @@ class SDNController:
         forced_index: int | None = None,
         force_core: int | None = None,
         ml_model: Any | None = None,
-        force_mod_format: str | None = None,
+        force_mod_format: str | list[str] | None = None,
         forced_band: str | None = None,
     ) -> None:
         """
@@ -1337,13 +1225,14 @@ class SDNController:
 
             # CRITICAL FIX: Release groomed bandwidth if request was partially groomed but blocked
             if getattr(self.sdn_props, "was_partially_groomed", False):
-                if self.sdn_props.lightpath_id_list:
+                if self.sdn_props.lightpath_id_list and self.sdn_props.source is not None and self.sdn_props.destination is not None:
                     # Release groomed bandwidth from all lightpaths
                     light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
+                    lp_status = self.sdn_props.lightpath_status_dict
                     for lp_id in self.sdn_props.lightpath_id_list[:]:
-                        if light_id in self.sdn_props.lightpath_status_dict:
-                            if lp_id in self.sdn_props.lightpath_status_dict[light_id]:
-                                lp_info = self.sdn_props.lightpath_status_dict[light_id][lp_id]
+                        if lp_status is not None and light_id in lp_status:
+                            if lp_id in lp_status[light_id]:
+                                lp_info = lp_status[light_id][lp_id]
                                 if self.sdn_props.request_id in lp_info["requests_dict"]:
                                     # Get allocated bandwidth and release it
                                     req_bw = lp_info["requests_dict"][self.sdn_props.request_id]

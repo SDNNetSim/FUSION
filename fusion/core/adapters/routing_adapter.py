@@ -2,9 +2,7 @@
 RoutingAdapter - Adapts legacy Routing class to RoutingPipeline protocol.
 
 ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-It will be replaced with a clean implementation in Phase 4.
-
-Phase: P2.4 - Legacy Adapters
+It will be replaced with a clean implementation in v6.1.0.
 """
 
 from __future__ import annotations
@@ -60,7 +58,22 @@ class SDNPropsProxy:
         bandwidth: float,
         modulation_formats_dict: dict[str, dict[str, Any]] | None = None,
     ) -> SDNPropsProxy:
-        """Create proxy from NetworkState with request context."""
+        """
+        Create proxy from NetworkState with request context.
+
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param source: Source node identifier
+        :type source: str
+        :param destination: Destination node identifier
+        :type destination: str
+        :param bandwidth: Requested bandwidth in Gbps
+        :type bandwidth: float
+        :param modulation_formats_dict: Modulation format configurations
+        :type modulation_formats_dict: dict[str, dict[str, Any]] | None
+        :return: Proxy instance populated from network state
+        :rtype: SDNPropsProxy
+        """
         mod_dict = modulation_formats_dict or {}
         return cls(
             topology=network_state.topology,
@@ -79,19 +92,13 @@ class RoutingAdapter(RoutingPipeline):
     Adapts legacy Routing class to RoutingPipeline protocol.
 
     ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-    It will be replaced with a clean implementation in Phase 4.
+    It will be replaced with a clean implementation in v6.1.0.
 
     The adapter:
     1. Receives Phase 1 objects (NetworkState, config)
     2. Creates proxy objects for legacy code
     3. Calls legacy Routing.get_route()
     4. Converts route_props to RouteResult
-
-    Removal Checklist:
-    [ ] Clean RoutingPipeline implementation exists
-    [ ] All callers migrated to clean implementation
-    [ ] run_comparison.py passes without this adapter
-    [ ] grep 'RoutingAdapter' returns only this definition
 
     Example:
         >>> config = SimulationConfig.from_engine_props(engine_props)
@@ -104,11 +111,10 @@ class RoutingAdapter(RoutingPipeline):
         """
         Initialize adapter with configuration.
 
-        Args:
-            config: SimulationConfig for creating legacy engine_props
+        Does NOT store NetworkState - receives per-call.
 
-        Note:
-            Does NOT store NetworkState - receives per-call
+        :param config: SimulationConfig for creating legacy engine_props
+        :type config: SimulationConfig
         """
         self._config = config
         self._engine_props = config.to_engine_props()
@@ -125,15 +131,18 @@ class RoutingAdapter(RoutingPipeline):
         """
         Find candidate routes between source and destination.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-            forced_path: Optional forced path (from grooming)
-
-        Returns:
-            RouteResult containing paths, weights, and modulations
+        :param source: Source node identifier
+        :type source: str
+        :param destination: Destination node identifier
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth in Gbps
+        :type bandwidth_gbps: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param forced_path: Optional forced path (from grooming)
+        :type forced_path: list[str] | None
+        :return: RouteResult containing paths, weights, and modulations
+        :rtype: RouteResult
         """
         from fusion.domain.results import RouteResult
 
@@ -187,11 +196,10 @@ class RoutingAdapter(RoutingPipeline):
         Checks mod_per_bw first for bandwidth-specific modulations,
         then falls back to global modulation_formats.
 
-        Args:
-            bandwidth_gbps: Requested bandwidth in Gbps
-
-        Returns:
-            Dict of modulation format name to format info (with max_length key)
+        :param bandwidth_gbps: Requested bandwidth in Gbps
+        :type bandwidth_gbps: int
+        :return: Dict of modulation format name to format info (with max_length key)
+        :rtype: dict[str, dict[str, Any]]
         """
         # Try bandwidth-specific modulation formats first
         mod_per_bw = self._config.mod_per_bw
@@ -224,6 +232,13 @@ class RoutingAdapter(RoutingPipeline):
         Legacy behavior: return ALL modulation formats and let spectrum
         assignment determine which one works. This is important because
         the existing lightpath already has a valid modulation.
+
+        :param forced_path: Path forced by partial grooming
+        :type forced_path: list[str]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: RouteResult with the forced path and all modulation formats
+        :rtype: RouteResult
         """
         from fusion.domain.results import RouteResult
 
@@ -232,7 +247,6 @@ class RoutingAdapter(RoutingPipeline):
 
         # For forced paths (partial grooming), return ALL modulation formats
         # Legacy behavior: spectrum assignment determines the valid modulation
-        # This matches v5 behavior where force_mod_format = list(mod_formats_dict.keys())
         modulations = self._get_all_modulation_names()
 
         return RouteResult(
@@ -247,7 +261,16 @@ class RoutingAdapter(RoutingPipeline):
         path: list[str],
         network_state: NetworkState,
     ) -> float:
-        """Calculate total path weight (distance) in km."""
+        """
+        Calculate total path weight (distance) in km.
+
+        :param path: List of node identifiers forming the path
+        :type path: list[str]
+        :param network_state: Current network state with topology
+        :type network_state: NetworkState
+        :return: Total path distance in kilometers
+        :rtype: float
+        """
         total = 0.0
         topology = network_state.topology
 
@@ -262,7 +285,14 @@ class RoutingAdapter(RoutingPipeline):
         return total
 
     def _get_modulations_for_weight(self, weight_km: float) -> tuple[str, ...]:
-        """Get valid modulation formats for given path weight."""
+        """
+        Get valid modulation formats for given path weight.
+
+        :param weight_km: Path weight (distance) in kilometers
+        :type weight_km: float
+        :return: Tuple of valid modulation format names
+        :rtype: tuple[str, ...]
+        """
         modulations = []
         mod_formats = self._config.modulation_formats
 
@@ -282,6 +312,9 @@ class RoutingAdapter(RoutingPipeline):
 
         Used for forced paths (partial grooming) where spectrum assignment
         determines which modulation works based on the existing lightpath.
+
+        :return: Tuple of all modulation format names sorted by efficiency
+        :rtype: tuple[str, ...]
         """
         # First try global modulation_formats
         mod_formats = self._config.modulation_formats
@@ -315,11 +348,10 @@ class RoutingAdapter(RoutingPipeline):
         Higher-order modulations (e.g., 64-QAM) should be tried first as they
         use fewer spectrum slots for the same bandwidth.
 
-        Args:
-            modulations: List of modulation format names
-
-        Returns:
-            Tuple of modulation names sorted by efficiency (descending)
+        :param modulations: List of modulation format names
+        :type modulations: list[str]
+        :return: Tuple of modulation names sorted by efficiency (descending)
+        :rtype: tuple[str, ...]
         """
         if not modulations:
             return ()
@@ -363,7 +395,11 @@ class RoutingAdapter(RoutingPipeline):
             if bits_per_symbol is not None:
                 return (0, -bits_per_symbol)
 
-            # Final fallback: infer from name (common patterns)
+            # TODO: Remove this hardcoded name-based inference. Modulation format sorting
+            # should be driven entirely by configuration (max_length or bits_per_symbol).
+            # If config is missing this data, it should be fixed at the config level,
+            # not guessed from string patterns. This is brittle and will break for
+            # non-standard naming conventions.
             name_upper = mod_name.upper()
             if "64-QAM" in name_upper or "64QAM" in name_upper:
                 return (0, -6)
@@ -383,7 +419,15 @@ class RoutingAdapter(RoutingPipeline):
         return tuple(sorted(modulations, key=get_sort_key))
 
     def _convert_route_props(self, route_props: Any) -> RouteResult:
-        """Convert legacy RoutingProps to RouteResult."""
+        """
+        Convert legacy RoutingProps to RouteResult.
+
+        :param route_props: Legacy RoutingProps object with paths_matrix,
+            weights_list, and modulation_formats_matrix
+        :type route_props: Any
+        :return: Converted RouteResult
+        :rtype: RouteResult
+        """
         from fusion.domain.results import RouteResult
 
         # Check for empty results

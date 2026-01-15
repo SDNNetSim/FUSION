@@ -31,6 +31,14 @@ from .network import (
     add_spectrum_bands_args,
     add_topology_args,
 )
+from .policy import (
+    add_all_policy_args,
+    add_heuristic_args,
+    add_policy_args,
+)
+from .policy import (
+    add_protection_args as add_orchestrator_protection_args,
+)
 from .registry import ArgumentRegistry, args_registry
 from .routing import (
     add_all_routing_args,
@@ -47,12 +55,6 @@ from .shared import (
 )
 from .simulation import add_run_sim_args, add_simulation_args, register_run_sim_args
 from .snr import add_snr_args
-from .policy import (
-    add_all_policy_args,
-    add_heuristic_args,
-    add_policy_args,
-    add_protection_args as add_orchestrator_protection_args,
-)
 from .survivability import (
     add_dataset_logging_args,
     add_failure_args,

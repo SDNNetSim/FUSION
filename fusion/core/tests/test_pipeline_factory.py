@@ -19,7 +19,7 @@ import pytest
 from fusion.core.pipeline_factory import PipelineFactory, PipelineSet
 
 if TYPE_CHECKING:
-    from fusion.domain.config import SimulationConfig
+    pass
 
 
 # =============================================================================

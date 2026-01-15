@@ -243,6 +243,8 @@ class TestEndToEndGrooming:
         sdn_props.end_slot_list = []
         sdn_props.modulation_list = []
         sdn_props.crosstalk_list = []
+        sdn_props.snr_list = []
+        sdn_props.xt_list = []
         sdn_props.lightpath_bandwidth_list = []
         sdn_props.lightpath_id_list = []
         sdn_props.lightpath_status_dict = {
@@ -259,6 +261,7 @@ class TestEndToEndGrooming:
                     "end_slot": 20,
                     "mod_format": "QPSK",
                     "snr_cost": 0.5,
+                    "xt_cost": 0.0,
                     "requests_dict": {},
                     "time_bw_usage": {},
                 }
@@ -296,6 +299,8 @@ class TestEndToEndGrooming:
         sdn_props.end_slot_list = []
         sdn_props.modulation_list = []
         sdn_props.crosstalk_list = []
+        sdn_props.snr_list = []
+        sdn_props.xt_list = []
         sdn_props.lightpath_bandwidth_list = []
         sdn_props.lightpath_id_list = []
         sdn_props.lightpath_status_dict = {
@@ -312,6 +317,7 @@ class TestEndToEndGrooming:
                     "end_slot": 20,
                     "mod_format": "QPSK",
                     "snr_cost": 0.5,
+                    "xt_cost": 0.0,
                     "requests_dict": {},
                     "time_bw_usage": {},
                 }
@@ -345,6 +351,8 @@ class TestEndToEndGrooming:
         sdn_props.end_slot_list = []
         sdn_props.modulation_list = []
         sdn_props.crosstalk_list = []
+        sdn_props.snr_list = []
+        sdn_props.xt_list = []
         sdn_props.lightpath_bandwidth_list = []
         sdn_props.lightpath_id_list = []
         sdn_props.lightpath_status_dict = {
@@ -361,6 +369,7 @@ class TestEndToEndGrooming:
                     "end_slot": 20,
                     "mod_format": "QPSK",
                     "snr_cost": 0.5,
+                    "xt_cost": 0.0,
                     "requests_dict": {},
                     "time_bw_usage": {},
                 },
@@ -376,6 +385,7 @@ class TestEndToEndGrooming:
                     "end_slot": 40,
                     "mod_format": "16QAM",
                     "snr_cost": 0.3,
+                    "xt_cost": 0.0,
                     "requests_dict": {},
                     "time_bw_usage": {},
                 },
@@ -541,6 +551,7 @@ class TestHandleGrooming:
         sdn_props.source = "A"
         sdn_props.destination = "B"
         sdn_props.request_id = 100
+        sdn_props.bandwidth = 100  # Required for remaining_bw calculation
         sdn_props.lightpath_id_list = []
         sdn_props.lightpath_bandwidth_list = []
         sdn_props.lightpath_status_dict = {("A", "B"): {}}

@@ -139,6 +139,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.spectrum_obj.spectrum_props.end_slot = 3
         self.controller.spectrum_obj.spectrum_props.core_number = 0
         self.controller.spectrum_obj.spectrum_props.current_band = "c"
+        self.controller.spectrum_obj.spectrum_props.lightpath_id = 1
 
         self.controller.allocate()
 
@@ -162,6 +163,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.spectrum_obj.spectrum_props.end_slot = 2
         self.controller.spectrum_obj.spectrum_props.core_number = 0
         self.controller.spectrum_obj.spectrum_props.current_band = "c"
+        self.controller.spectrum_obj.spectrum_props.lightpath_id = 1
         self.controller.engine_props["guard_slots"] = 0
 
         self.controller.allocate()
@@ -188,6 +190,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.spectrum_obj.spectrum_props.end_slot = 3
         self.controller.spectrum_obj.spectrum_props.core_number = 0
         self.controller.spectrum_obj.spectrum_props.current_band = "c"
+        self.controller.spectrum_obj.spectrum_props.lightpath_id = 1
 
         # Initialize usage counts
         assert self.controller.sdn_props.network_spectrum_dict is not None
@@ -214,7 +217,7 @@ class TestSDNController(unittest.TestCase):
         spectrum_dict[(0, 1)]["cores_matrix"]["c"][0][:3] = 1
         spectrum_dict[(0, 1)]["cores_matrix"]["c"][0][3] = -1
 
-        self.controller.release()
+        self.controller.release(lightpath_id=1)
 
         assert self.controller.sdn_props.path_list is not None
         path_list = self.controller.sdn_props.path_list
@@ -227,13 +230,13 @@ class TestSDNController(unittest.TestCase):
 
     def test_release_with_empty_path_list_handles_gracefully(self) -> None:
         """Test release handles empty path list gracefully."""
-        self.controller.sdn_props.path_list = None
+        self.controller.sdn_props.path_list = []  # Empty list, not None
 
         # Should not raise exception
-        self.controller.release()
+        self.controller.release(lightpath_id=1)
 
     def test_release_updates_throughput_tracking(self) -> None:
-        """Test that release correctly tracks throughput."""
+        """Test that _update_throughput correctly tracks throughput."""
         assert self.controller.sdn_props.network_spectrum_dict is not None
         network_dict = self.controller.sdn_props.network_spectrum_dict
         for key in network_dict:
@@ -243,7 +246,9 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.depart = 5  # 5 seconds duration
         self.controller.sdn_props.bandwidth = 100.0  # Gbps
 
-        self.controller.release()
+        # _update_throughput is called by _handle_release, not release()
+        self.controller._update_throughput()
+        self.controller.release(lightpath_id=1)
 
         assert self.controller.sdn_props.path_list is not None
         path_list = self.controller.sdn_props.path_list
@@ -270,7 +275,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.bandwidth = None
 
         # Should not raise exception
-        self.controller.release()
+        self.controller.release(lightpath_id=1)
 
         for key in network_dict:
             self.assertEqual(network_dict[key]["throughput"], 0)
@@ -306,6 +311,7 @@ class TestSDNController(unittest.TestCase):
     ) -> None:
         """Test slicing allocation with available spectrum."""
         self.controller.spectrum_obj.spectrum_props.is_free = True
+        self.controller.sdn_props.bandwidth = 100  # Required for remaining_bw calculation
         mock_get_spectrum.return_value = None
 
         self.controller._allocate_slicing(
@@ -314,7 +320,8 @@ class TestSDNController(unittest.TestCase):
 
         mock_get_spectrum.assert_called()
         mock_allocate.assert_called()
-        mock_update_req_stats.assert_called_with(bandwidth="50.0")
+        # Slicing calls _update_req_stats with both bandwidth and remaining params
+        mock_update_req_stats.assert_called_with(bandwidth="50.0", remaining="0")
 
     @patch("fusion.core.sdn_controller.SDNController.allocate")
     @patch("fusion.core.sdn_controller.SDNController._update_req_stats")
@@ -566,7 +573,9 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.band_list = ["c", "c"]
         self.controller.sdn_props.core_list = [0, 0]
         self.controller.sdn_props.end_slot_list = [5, 10]
-        self.controller.sdn_props.crosstalk_list = [0, 0]
+        self.controller.sdn_props.crosstalk_list = [0.0, 0.0]
+        self.controller.sdn_props.snr_list = [10.0, 10.0]
+        self.controller.sdn_props.xt_list = [0.0, 0.0]
         self.controller.sdn_props.bandwidth_list = [50, 50]
         self.controller.sdn_props.modulation_list = ["QPSK", "QPSK"]
         self.controller.sdn_props.was_partially_groomed = False
@@ -576,8 +585,8 @@ class TestSDNController(unittest.TestCase):
 
             # Verify release was called for each new lightpath
             self.assertEqual(mock_release.call_count, 2)
-            mock_release.assert_any_call(lightpath_id=1000, slicing_flag=True)
-            mock_release.assert_any_call(lightpath_id=1001, slicing_flag=True)
+            mock_release.assert_any_call(lightpath_id=1000, slicing_flag=True, skip_validation=True)
+            mock_release.assert_any_call(lightpath_id=1001, slicing_flag=True, skip_validation=True)
 
             # Verify lists were cleared
             self.assertEqual(len(self.controller.sdn_props.was_new_lp_established), 0)

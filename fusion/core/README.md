@@ -3,11 +3,15 @@
 ## Purpose
 Core simulation engine and fundamental components for optical network simulations. Provides type-safe, production-ready simulation infrastructure with comprehensive error handling and modern Python practices.
 
+This module supports two simulation architectures:
+- **Legacy Engine**: The original `SimulationEngine` and `SDNController` for backward compatibility
+- **Orchestrator (v6.0+)**: The new `SDNOrchestrator` with pipeline-based architecture for survivability experiments and policy-based routing
+
 **Example**: *This module handles all core simulation logic including request processing, routing, spectrum assignment, SNR calculations, and metrics collection with full type safety and defensive programming.*
 
 ## Quick Start
 
-### Basic Simulation
+### Legacy Simulation
 ```python
 from fusion.core import SimulationEngine, SDNController
 from fusion.core.properties import RoutingProps, SpectrumProps
@@ -19,6 +23,19 @@ sim_engine = SimulationEngine(engine_props)
 # Run simulation
 sim_engine.create_topology()
 completed_iterations = sim_engine.run()
+```
+
+### Orchestrator-Based Simulation (v6.0+)
+```python
+from fusion.core import SDNOrchestrator, PipelineFactory
+from fusion.domain.config import SimulationConfig
+
+# Create configuration and orchestrator
+config = SimulationConfig.from_engine_props(engine_props)
+orchestrator = PipelineFactory.create_orchestrator(config)
+
+# Handle requests through pipelines
+result = orchestrator.handle_arrival(request, network_state)
 ```
 
 ### Metrics Collection
@@ -38,22 +55,31 @@ if engine_props.get('output_train_data'):
 
 ```
 core/
-├── Simulation Engine
-│   ├── simulation.py        # Main simulation orchestrator
-│   ├── sdn_controller.py    # SDN network controller
+├── Legacy Engine
+│   ├── simulation.py        # Main simulation orchestrator (legacy)
+│   ├── sdn_controller.py    # SDN network controller (legacy)
 │   └── request.py           # Request generation and management
+├── Orchestrator (v6.0+)
+│   ├── orchestrator.py      # SDNOrchestrator - thin coordination layer
+│   ├── pipeline_factory.py  # PipelineFactory and PipelineSet
+│   └── adapters/            # Legacy adapters for pipeline protocols
+│       ├── routing_adapter.py
+│       ├── spectrum_adapter.py
+│       ├── snr_adapter.py
+│       └── grooming_adapter.py
 ├── Network Components
 │   ├── routing.py           # Path computation and routing
 │   ├── spectrum_assignment.py # Spectrum allocation algorithms
-│   └── snr_measurements.py  # Signal quality calculations
+│   ├── snr_measurements.py  # Signal quality calculations
+│   └── grooming.py          # Traffic grooming for bandwidth packing
 ├── Data & Metrics
 │   ├── properties.py        # Core data structures and properties
-│   ├── metrics.py          # Statistics collection and analysis
-│   ├── ml_metrics.py       # ML training data collection
-│   └── persistence.py      # Data persistence and storage
+│   ├── metrics.py           # Statistics collection and analysis
+│   ├── ml_metrics.py        # ML training data collection
+│   └── persistence.py       # Data persistence and storage
 └── Support
-    ├── __init__.py         # Public API exports
-    └── TODO.md            # Development roadmap
+    ├── __init__.py          # Public API exports
+    └── TODO.md              # Development roadmap
 ```
 
 ## Key Components
@@ -73,6 +99,29 @@ Software-defined network controller that:
 - Coordinates with routing and spectrum assignment modules
 - Handles request lifecycle management
 - Maintains network state consistency
+
+### SDNOrchestrator (v6.0+)
+Thin coordination layer for the new pipeline-based architecture:
+- Routes requests through configurable pipelines without implementing algorithm logic
+- Supports grooming, routing, spectrum assignment, SNR validation, and slicing stages
+- Integrates with ControlPolicy for policy-driven path selection
+- Handles protected (1+1) request allocation with disjoint paths
+- Receives NetworkState per call (stateless design)
+- Supports rollback on allocation failures
+
+### PipelineFactory (v6.0+)
+Factory for creating pipelines based on configuration:
+- Stateless factory with static/class methods
+- Config-driven pipeline selection
+- Lazy imports to avoid circular dependencies
+- Creates complete PipelineSet with routing, spectrum, grooming, SNR, and slicing pipelines
+
+### Grooming
+Traffic grooming handler for bandwidth packing:
+- Grooms requests onto existing lightpaths
+- Supports partial grooming with remaining bandwidth tracking
+- Handles service release and bandwidth reclamation
+- Groups lightpaths by physical path for optimal allocation
 
 ### Routing
 Path computation module that:
@@ -263,63 +312,26 @@ advanced_props = {
 }
 ```
 
-## API Reference
-
-### Core Classes
-
-#### SimulationEngine
-- `__init__(engine_props: dict[str, Any]) -> None`
-- `create_topology() -> None`: Initialize network topology
-- `run(seed: int | None = None) -> int`: Execute complete simulation
-- `init_iter(iteration: int, seed: int | None = None) -> None`: Initialize iteration
-- `end_iter(iteration: int, print_flag: bool = True) -> bool`: Finalize iteration
-
-#### SDNController
-- `__init__(engine_props: dict[str, Any]) -> None`
-- `handle_event(request_data: dict, request_type: str, **kwargs) -> None`: Process requests
-- `allocate_spectrum(spectrum_obj: Any, path_list: list[int]) -> None`: Allocate spectrum
-- `deallocate_spectrum(spectrum_obj: Any, path_list: list[int]) -> None`: Release spectrum
-
-#### Routing
-- `__init__(engine_props: dict[str, Any], sdn_props: Any) -> None`
-- `get_route() -> None`: Execute routing algorithm
-- `find_least_weight(weight: str) -> None`: Find minimum weight path (deprecated)
-- `find_k_shortest() -> None`: K-shortest path routing (deprecated)
-
-#### SpectrumAssignment
-- `__init__(engine_props: dict, sdn_props: Any, route_props: Any) -> None`
-- `get_spectrum(mod_format_list: list[str], slice_bandwidth: str | None = None) -> None`
-- `find_best_fit() -> None`: Best-fit spectrum allocation
-- `handle_first_last_allocation(allocation_flag: str) -> None`: First/last-fit allocation
-
-#### SnrMeasurements
-- `__init__(engine_props: dict, sdn_props: Any, spectrum_props: Any, route_props: Any) -> None`
-- `check_snr() -> tuple[bool, float]`: Validate SNR requirements
-- `check_xt() -> tuple[bool, float]`: Validate crosstalk requirements
-- `handle_snr(path_index: int) -> tuple[bool, float]`: Main SNR validation entry point
-
-#### SimStats
-- `__init__(engine_props: dict[str, Any], sim_info: str) -> None`
-- `init_iter_stats() -> None`: Initialize iteration statistics
-- `iter_update(req_data: dict, sdn_data: Any, network_spectrum_dict: dict) -> None`: Update metrics
-- `calculate_blocking_statistics() -> None`: Calculate blocking probabilities
-- `calculate_confidence_interval() -> bool`: Check statistical significance
-
 ## Testing
 
 Unit tests are comprehensive and focus on type safety:
 
 ```bash
 # Run core module tests
-pytest tests/core/
+pytest fusion/core/tests/
 
 # Run with coverage reporting
-pytest --cov=fusion.core tests/core/
+pytest --cov=fusion.core fusion/core/tests/
 
 # Run specific component tests
-pytest tests/core/test_simulation.py
-pytest tests/core/test_routing.py
-pytest tests/core/test_spectrum_assignment.py
+pytest fusion/core/tests/test_simulation.py
+pytest fusion/core/tests/test_routing.py
+pytest fusion/core/tests/test_spectrum_assignment.py
+
+# Run orchestrator tests (v6.0+)
+pytest fusion/core/tests/test_orchestrator.py
+pytest fusion/core/tests/test_orchestrator_policy.py
+pytest fusion/core/tests/test_pipeline_factory.py
 ```
 
 ## Error Handling
@@ -383,73 +395,13 @@ finally:
 - `fusion.modules.snr`: SNR calculation utilities and external data integration
 - `fusion.utils.logging_config`: Standardized logging configuration
 - `fusion.configs`: Configuration management and validation
+- `fusion.domain`: Domain objects (Request, NetworkState, SimulationConfig) - v6.0+
+- `fusion.interfaces`: Pipeline protocols and control policy interfaces - v6.0+
+- `fusion.pipelines`: Pipeline implementations (slicing, protection, routing) - v6.0+
+- `fusion.policies`: Policy implementations for path selection - v6.0+
 
 ### External Dependencies
 - `numpy`: Numerical computations and spectrum matrices
 - `networkx`: Network topology and graph operations
 - `pandas`: Data analysis and ML metrics collection (optional)
 - **Standard Library**: `json`, `pickle`, `copy`, `time`, `signal`, `itertools`
-
-## Migration Notes
-
-### From Legacy Core Module
-The core module has been significantly enhanced for production use:
-
-- **✅ Type Safety**: Complete mypy compliance with comprehensive null checking
-- **✅ Error Handling**: Robust validation with clear error messages
-- **✅ Code Quality**: 100% ruff compliance with modern Python practices
-- **✅ Documentation**: Comprehensive docstrings and usage examples
-- **✅ API Consistency**: Standardized interfaces across all components
-- **✅ Performance**: Optimized data structures and algorithms
-
-### Backward Compatibility
-- All existing APIs maintained for seamless migration
-- Legacy method names available with deprecation warnings
-- Configuration format unchanged
-- Existing scripts continue to work without modification
-
-## Known Limitations
-
-### Current Constraints
-- **Multi-core configurations**: Some algorithms optimized for 7-core fibers
-- **Spectrum bands**: Primary focus on C-band with growing multi-band support
-- **External data**: SNR calculations depend on external data files for some methods
-- **Memory usage**: Large topologies may require significant memory for spectrum matrices
-
-### Planned Improvements
-- Enhanced multi-core algorithm support (4, 13, 19 core configurations)
-- Advanced multi-band spectrum management
-- Improved memory efficiency for large-scale simulations
-- Enhanced ML/RL integration capabilities
-
----
-
-## Development
-
-### Code Quality Standards
-This module maintains the highest code quality standards:
-
-- **Type Safety**: 100% mypy compliance with strict null checking
-- **Linting**: 100% ruff compliance with comprehensive formatting
-- **Testing**: Extensive unit test coverage with type-safe testing patterns
-- **Documentation**: Complete API documentation with usage examples
-- **Error Handling**: Defensive programming with comprehensive validation
-
-### Contributing
-When contributing to the core module:
-
-1. **Maintain type safety**: Add type hints and null checks for all new code
-2. **Follow patterns**: Use established error handling and validation patterns
-3. **Test thoroughly**: Add comprehensive tests for all new functionality
-4. **Document clearly**: Provide clear docstrings and usage examples
-5. **Performance focus**: Consider memory and computational efficiency
-
-### Architecture Philosophy
-The core module follows these design principles:
-
-- **Type Safety First**: Prevent runtime errors through comprehensive type checking
-- **Fail Fast**: Validate inputs early with clear error messages
-- **Single Responsibility**: Each class has a focused, well-defined purpose
-- **Loose Coupling**: Minimal dependencies between components
-- **Extensibility**: Design for easy extension and algorithm swapping
-- **Production Ready**: Robust error handling suitable for production deployment

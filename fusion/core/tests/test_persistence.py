@@ -6,8 +6,9 @@ saving, loading, and file format handling.
 """
 
 import json
+from types import SimpleNamespace
 from typing import Any
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -63,21 +64,24 @@ class TestStatsPersistenceSaveStats:
         """Provide sample statistics data for tests."""
         stats_dict = {"simulation_time": 1000.0, "total_requests": 500}
 
-        stats_props = Mock()
-        stats_props.link_usage_dict = {"link_1": 0.5, "link_2": 0.8}
-        stats_props.simulation_blocking_list = [0.1, 0.15, 0.12]
-        stats_props.simulation_bitrate_blocking_list = [0.05, 0.08, 0.06]
-        stats_props.modulations_used_dict = {"QPSK": 100, "16QAM": 50}
-        stats_props.bandwidth_blocking_dict = {"50GHz": 0.1, "100GHz": 0.2}
-        stats_props.number_of_transponders = 10
-        stats_props.request_id = 500
-        stats_props.start_slot_list = [1, 5, 10]
-        stats_props.end_slot_list = [4, 9, 14]
-        stats_props.transponders_list = [2, 3, 1]
-        stats_props.hops_list = [3, 4, 2]
-        stats_props.lengths_list = [100.5, 200.8, 150.2]
-        stats_props.route_times_list = [0.1, 0.15, 0.12]
-        stats_props.crosstalk_list = [0.5, None, 0.8]
+        # Use SimpleNamespace so vars() works properly for _prepare_iteration_stats
+        stats_props = SimpleNamespace(
+            link_usage_dict={"link_1": 0.5, "link_2": 0.8},
+            simulation_blocking_list=[0.1, 0.15, 0.12],
+            simulation_bitrate_blocking_list=[0.05, 0.08, 0.06],
+            modulations_used_dict={"QPSK": 100, "16QAM": 50},
+            bandwidth_blocking_dict={"50GHz": 0.1, "100GHz": 0.2},
+            number_of_transponders=10,
+            request_id=500,
+            start_slot_list=[1, 5, 10],
+            end_slot_list=[4, 9, 14],
+            transponders_list=[2, 3, 1],
+            hops_list=[3, 4, 2],
+            lengths_list=[100.5, 200.8, 150.2],
+            route_times_list=[0.1, 0.15, 0.12],
+            crosstalk_list=[0.5, None, 0.8],
+            snr_list=[],
+        )
 
         blocking_stats = {
             "block_mean": 0.12,
@@ -228,26 +232,23 @@ class TestStatsPersistenceIterationStats:
         self, persistence_for_iter_stats: Any
     ) -> None:
         """Test calculation of mean, min, max for list statistics."""
-        # Arrange
-        stats_props = Mock()
-        stats_props.transponders_list = [2, 4, 6]
-        stats_props.hops_list = [1, 3, 5]
-        stats_props.lengths_list = [100.0, 200.0, 300.0]
-        stats_props.route_times_list = [0.1, 0.2, 0.3]
-        stats_props.crosstalk_list = [0.5, 0.8, 1.0]
-
-        # Mock other required attributes
-        for attr in [
-            "simulation_blocking_list",
-            "simulation_bitrate_blocking_list",
-            "modulations_used_dict",
-            "bandwidth_blocking_dict",
-            "number_of_transponders",
-            "request_id",
-            "start_slot_list",
-            "end_slot_list",
-        ]:
-            setattr(stats_props, attr, [])
+        # Arrange - use SimpleNamespace so vars() works properly
+        stats_props = SimpleNamespace(
+            transponders_list=[2, 4, 6],
+            hops_list=[1, 3, 5],
+            lengths_list=[100.0, 200.0, 300.0],
+            route_times_list=[0.1, 0.2, 0.3],
+            crosstalk_list=[0.5, 0.8, 1.0],
+            snr_list=[],
+            simulation_blocking_list=[],
+            simulation_bitrate_blocking_list=[],
+            modulations_used_dict={},
+            bandwidth_blocking_dict={},
+            number_of_transponders=0,
+            request_id=0,
+            start_slot_list=[],
+            end_slot_list=[],
+        )
 
         # Act
         result = persistence_for_iter_stats._prepare_iteration_stats(stats_props, 1)
@@ -265,26 +266,23 @@ class TestStatsPersistenceIterationStats:
         self, persistence_for_iter_stats: Any
     ) -> None:
         """Test handling of empty statistical lists."""
-        # Arrange
-        stats_props = Mock()
-        stats_props.transponders_list = []
-        stats_props.hops_list = []
-        stats_props.lengths_list = []
-        stats_props.route_times_list = []
-        stats_props.crosstalk_list = []
-
-        # Mock other required attributes
-        for attr in [
-            "simulation_blocking_list",
-            "simulation_bitrate_blocking_list",
-            "modulations_used_dict",
-            "bandwidth_blocking_dict",
-            "number_of_transponders",
-            "request_id",
-            "start_slot_list",
-            "end_slot_list",
-        ]:
-            setattr(stats_props, attr, [])
+        # Arrange - use SimpleNamespace so vars() works properly
+        stats_props = SimpleNamespace(
+            transponders_list=[],
+            hops_list=[],
+            lengths_list=[],
+            route_times_list=[],
+            crosstalk_list=[],
+            snr_list=[],
+            simulation_blocking_list=[],
+            simulation_bitrate_blocking_list=[],
+            modulations_used_dict={},
+            bandwidth_blocking_dict={},
+            number_of_transponders=0,
+            request_id=0,
+            start_slot_list=[],
+            end_slot_list=[],
+        )
 
         # Act
         result = persistence_for_iter_stats._prepare_iteration_stats(stats_props, 1)
@@ -299,29 +297,23 @@ class TestStatsPersistenceIterationStats:
         self, persistence_for_iter_stats: Any
     ) -> None:
         """Test crosstalk handling with None values converted to 0."""
-        # Arrange
-        stats_props = Mock()
-        stats_props.crosstalk_list = [0.5, None, 0.8, None]
-
-        # Mock empty lists for other stats
-        for attr in [
-            "transponders_list",
-            "hops_list",
-            "lengths_list",
-            "route_times_list",
-        ]:
-            setattr(stats_props, attr, [])
-        for attr in [
-            "simulation_blocking_list",
-            "simulation_bitrate_blocking_list",
-            "modulations_used_dict",
-            "bandwidth_blocking_dict",
-            "number_of_transponders",
-            "request_id",
-            "start_slot_list",
-            "end_slot_list",
-        ]:
-            setattr(stats_props, attr, [])
+        # Arrange - use SimpleNamespace so vars() works properly
+        stats_props = SimpleNamespace(
+            transponders_list=[],
+            hops_list=[],
+            lengths_list=[],
+            route_times_list=[],
+            crosstalk_list=[0.5, None, 0.8, None],
+            snr_list=[],
+            simulation_blocking_list=[],
+            simulation_bitrate_blocking_list=[],
+            modulations_used_dict={},
+            bandwidth_blocking_dict={},
+            number_of_transponders=0,
+            request_id=0,
+            start_slot_list=[],
+            end_slot_list=[],
+        )
 
         # Act
         result = persistence_for_iter_stats._prepare_iteration_stats(stats_props, 1)
@@ -334,26 +326,23 @@ class TestStatsPersistenceIterationStats:
         self, persistence_for_iter_stats: Any
     ) -> None:
         """Test correct mapping of property names to output keys."""
-        # Arrange
-        stats_props = Mock()
-        stats_props.simulation_blocking_list = [0.1, 0.2]
-        stats_props.simulation_bitrate_blocking_list = [0.05, 0.1]
-        stats_props.modulations_used_dict = {"QPSK": 10}
-        stats_props.bandwidth_blocking_dict = {"50GHz": 0.1}
-        stats_props.number_of_transponders = 5
-        stats_props.request_id = 100
-        stats_props.start_slot_list = [1, 5]
-        stats_props.end_slot_list = [4, 9]
-
-        # Mock empty lists for stats that calculate mean/min/max
-        for attr in [
-            "transponders_list",
-            "hops_list",
-            "lengths_list",
-            "route_times_list",
-            "crosstalk_list",
-        ]:
-            setattr(stats_props, attr, [])
+        # Arrange - use SimpleNamespace so vars() works properly
+        stats_props = SimpleNamespace(
+            simulation_blocking_list=[0.1, 0.2],
+            simulation_bitrate_blocking_list=[0.05, 0.1],
+            modulations_used_dict={"QPSK": 10},
+            bandwidth_blocking_dict={"50GHz": 0.1},
+            number_of_transponders=5,
+            request_id=100,
+            start_slot_list=[1, 5],
+            end_slot_list=[4, 9],
+            transponders_list=[],
+            hops_list=[],
+            lengths_list=[],
+            route_times_list=[],
+            crosstalk_list=[],
+            snr_list=[],
+        )
 
         # Act
         result = persistence_for_iter_stats._prepare_iteration_stats(stats_props, 1)
@@ -464,27 +453,25 @@ class TestStatsPersistenceEdgeCases:
             {"file_type": "json", "erlang": 100.0, "thread_num": "s1"}, "corrupt_test"
         )
         stats_dict: dict[str, float | None] = {}
-        stats_props = Mock()
-        stats_props.link_usage_dict = {}
+        # Use SimpleNamespace so vars() works properly
+        stats_props = SimpleNamespace(
+            link_usage_dict={},
+            simulation_blocking_list=[],
+            simulation_bitrate_blocking_list=[],
+            modulations_used_dict={},
+            bandwidth_blocking_dict={},
+            number_of_transponders=0,
+            request_id=0,
+            start_slot_list=[],
+            end_slot_list=[],
+            transponders_list=[],
+            hops_list=[],
+            lengths_list=[],
+            route_times_list=[],
+            crosstalk_list=[],
+            snr_list=[],
+        )
         blocking_stats: dict[str, float | None] = {"iteration": 0.0}
-
-        # Mock all required attributes for stats_props
-        for attr in [
-            "simulation_blocking_list",
-            "simulation_bitrate_blocking_list",
-            "modulations_used_dict",
-            "bandwidth_blocking_dict",
-            "number_of_transponders",
-            "request_id",
-            "start_slot_list",
-            "end_slot_list",
-            "transponders_list",
-            "hops_list",
-            "lengths_list",
-            "route_times_list",
-            "crosstalk_list",
-        ]:
-            setattr(stats_props, attr, [])
 
         # Act & Assert - should not raise exception
         with (
@@ -505,27 +492,25 @@ class TestStatsPersistenceEdgeCases:
             "access_error_test",
         )
         stats_dict: dict[str, float | None] = {}
-        stats_props = Mock()
-        stats_props.link_usage_dict = {}
+        # Use SimpleNamespace so vars() works properly
+        stats_props = SimpleNamespace(
+            link_usage_dict={},
+            simulation_blocking_list=[],
+            simulation_bitrate_blocking_list=[],
+            modulations_used_dict={},
+            bandwidth_blocking_dict={},
+            number_of_transponders=0,
+            request_id=0,
+            start_slot_list=[],
+            end_slot_list=[],
+            transponders_list=[],
+            hops_list=[],
+            lengths_list=[],
+            route_times_list=[],
+            crosstalk_list=[],
+            snr_list=[],
+        )
         blocking_stats: dict[str, float | None] = {"iteration": 0.0}
-
-        # Mock all required attributes
-        for attr in [
-            "simulation_blocking_list",
-            "simulation_bitrate_blocking_list",
-            "modulations_used_dict",
-            "bandwidth_blocking_dict",
-            "number_of_transponders",
-            "request_id",
-            "start_slot_list",
-            "end_slot_list",
-            "transponders_list",
-            "hops_list",
-            "lengths_list",
-            "route_times_list",
-            "crosstalk_list",
-        ]:
-            setattr(stats_props, attr, [])
 
         mock_exists.return_value = True
 

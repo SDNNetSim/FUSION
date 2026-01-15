@@ -125,8 +125,8 @@ class TestSimStats(unittest.TestCase):
         self.assertEqual(guard_slots, 0)
         self.assertEqual(active_reqs, 0)
 
-    def test_update_snapshot_with_valid_request_updates_correctly(self) -> None:
-        """Test snapshot update with valid request data."""
+    def test_update_snapshot_is_stub_and_does_not_modify_data(self) -> None:
+        """Test update_snapshot is a stub (v6.1 feature) and doesn't modify data."""
         self.sim_stats.stats_props.snapshots_dict = {
             2: {
                 "occupied_slots": [],
@@ -138,28 +138,17 @@ class TestSimStats(unittest.TestCase):
             }
         }
 
-        with (
-            patch.object(self.sim_stats, "_get_snapshot_info", return_value=(3, 3, 1)),
-            patch(
-                "fusion.analysis.network_analysis.NetworkAnalyzer.get_link_usage_summary",
-                return_value={},
-            ),
-        ):
-            self.sim_stats.blocked_requests = 1
-            self.sim_stats.bit_rate_request = 100
-            self.sim_stats.bit_rate_blocked = 50
-            req_num = 2
-            path_list = [(0, 1)]
+        # update_snapshot is documented as "not currently functional"
+        # and will be implemented in v6.1
+        self.sim_stats.update_snapshot(
+            network_spectrum_dict={}, request_number=2, path_list=[(0, 1)]
+        )
 
-            self.sim_stats.update_snapshot(
-                network_spectrum_dict={}, request_number=req_num, path_list=path_list
-            )
-
-            snapshot = self.sim_stats.stats_props.snapshots_dict[req_num]
-            self.assertEqual(snapshot["occupied_slots"][0], 3)
-            self.assertEqual(snapshot["guard_slots"][0], 3)
-            self.assertEqual(snapshot["active_requests"][0], 1)
-            self.assertAlmostEqual(snapshot["blocking_prob"][0], 0.5)
+        # Verify lists remain empty (stub behavior)
+        snapshot = self.sim_stats.stats_props.snapshots_dict[2]
+        self.assertEqual(snapshot["occupied_slots"], [])
+        self.assertEqual(snapshot["guard_slots"], [])
+        self.assertEqual(snapshot["active_requests"], [])
 
     def test_init_snapshots_creates_correct_structure(self) -> None:
         """Test snapshot initialization creates correct data structure."""

@@ -150,6 +150,8 @@ class TestSDNProps(unittest.TestCase):
             [
                 "modulation_list",
                 "crosstalk_list",
+                "snr_list",
+                "xt_list",
                 "core_list",
                 "band_list",
                 "start_slot_list",
@@ -213,7 +215,7 @@ class TestStatsProps(unittest.TestCase):
         # block_reasons_dict has default None values in actual implementation
         self.assertEqual(
             props.block_reasons_dict,
-            {"distance": None, "congestion": None, "xt_threshold": None},
+            {"distance": None, "congestion": None, "xt_threshold": None, "failure": None},
         )
         self.assertEqual(props.snapshots_dict, {})
         self.assertEqual(props.weights_dict, {})

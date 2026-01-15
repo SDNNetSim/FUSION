@@ -7,7 +7,7 @@ and dual-path operation in SimulationEngine.
 
 import os
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -393,7 +393,11 @@ class TestSimulationEngineDualPath:
         mock_result.end_slots = (10,)
         mock_result.bandwidth_allocations = (100,)
         mock_result.lightpath_bandwidths = (100,)
+        mock_result.total_bandwidth_allocated_gbps = 100  # Required for stats calc
         mock_result.block_reason = None
+        mock_result.failed_attempt_snr_values = ()  # Prevent Mock auto-creation
+        mock_result.path_index = 0  # Prevent Mock comparison error
+        mock_result.snr_values = None  # Prevent Mock subscript error
 
         engine._orchestrator = Mock()
         engine._orchestrator.handle_arrival.return_value = mock_result
@@ -401,9 +405,16 @@ class TestSimulationEngineDualPath:
         # Mock network_state entirely (get_lightpath is read-only on real NetworkState)
         mock_lightpath = Mock()
         mock_lightpath.path = ["A", "B", "C"]
+        mock_lightpath.total_bandwidth_gbps = 100  # Prevent Mock being passed to int()
+        mock_lightpath.modulation = "QPSK"
+        mock_lightpath.core = 0
+        mock_lightpath.band = "c"
+        mock_lightpath.snr_db = None
+        mock_lightpath.path_weight_km = None
         mock_network_state = Mock()
         mock_network_state.get_lightpath.return_value = mock_lightpath
         mock_network_state.network_spectrum_dict = engine.network_spectrum_dict
+        mock_network_state.topology = None  # Avoid subscript error in path length calc
         engine._network_state = mock_network_state
 
         # Act
@@ -421,7 +432,7 @@ class TestSimulationEngineDualPath:
         engine = SimulationEngine(topology_engine_props)
         engine.create_topology()
         engine.reqs_dict = {
-            1.0: {
+            (0, 1.0): {
                 "req_id": 1,
                 "source": "A",
                 "destination": "C",
@@ -442,7 +453,7 @@ class TestSimulationEngineDualPath:
         engine.stats_obj = Mock()
 
         # Act
-        engine.handle_arrival(current_time=1.0)
+        engine.handle_arrival(current_time=(0, 1.0))
 
         # Assert
         engine.sdn_obj.handle_event.assert_called_once()
@@ -538,7 +549,11 @@ class TestDualPathStatsUpdate:
         mock_result.end_slots = (10,)
         mock_result.bandwidth_allocations = (100,)
         mock_result.lightpath_bandwidths = (100,)
+        mock_result.total_bandwidth_allocated_gbps = 100  # Required for stats calc
         mock_result.block_reason = None
+        mock_result.failed_attempt_snr_values = ()  # Prevent Mock auto-creation
+        mock_result.path_index = 0  # Prevent Mock comparison error
+        mock_result.snr_values = None  # Prevent Mock subscript error
 
         initial_bit_rate = engine_with_topology.stats_obj.bit_rate_request
         initial_blocked = engine_with_topology.stats_obj.blocked_requests

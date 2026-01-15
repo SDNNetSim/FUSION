@@ -114,6 +114,9 @@ class Lightpath:
     backup_band: str | None = None
     is_protected: bool = False
     active_path: str = "primary"
+    # Link working/protection LP pairs
+    protection_lp_id: int | None = None  # For working LPs: ID of backup LP
+    working_lp_id: int | None = None  # For backup LPs: ID of working LP
 
     # =========================================================================
     # Validation

@@ -512,8 +512,12 @@ class TestSpectrumAssignment(unittest.TestCase):
 
         self.assertEqual(slots, 3)
 
-    def test_lightpath_id_generation_when_spectrum_found(self) -> None:
-        """Test lightpath ID is generated when spectrum is allocated."""
+    def test_spectrum_allocation_sets_free_when_spectrum_available(self) -> None:
+        """Test spectrum allocation sets is_free=True when spectrum is found.
+
+        Note: Lightpath ID generation happens in SDNController._handle_arrival,
+        not in SpectrumAssignment.get_spectrum.
+        """
 
         def mock_get_spectrum_side_effect() -> None:
             self.spec_assign.spectrum_props.is_free = True
@@ -521,8 +525,6 @@ class TestSpectrumAssignment(unittest.TestCase):
             self.spec_assign.spectrum_props.end_slot = 3
             self.spec_assign.spectrum_props.core_number = 0
             self.spec_assign.spectrum_props.current_band = "c"
-
-        self.spec_assign.engine_props_dict["is_grooming_enabled"] = True
 
         with (
             patch.object(
@@ -535,29 +537,29 @@ class TestSpectrumAssignment(unittest.TestCase):
                 "handle_snr",
                 return_value=(True, 0.5, 200.0),
             ),
-            patch.object(self.spec_assign, "_update_lightpath_status") as mock_update,
-            patch.object(
-                self.spec_assign.sdn_props, "get_lightpath_id", return_value=42
-            ),
         ):
             self.spec_assign.get_spectrum(["QPSK"])
 
-            self.assertEqual(self.spec_assign.spectrum_props.lightpath_id, 42)
-            self.assertEqual(self.spec_assign.sdn_props.was_new_lp_established, [42])
-            mock_update.assert_called_once()
+            self.assertTrue(self.spec_assign.spectrum_props.is_free)
+            self.assertEqual(self.spec_assign.spectrum_props.start_slot, 0)
+            self.assertEqual(self.spec_assign.spectrum_props.end_slot, 3)
 
     def test_update_lightpath_status_populates_dict(self) -> None:
         """Test _update_lightpath_status populates lightpath status dict."""
         self.spec_assign.engine_props_dict["is_grooming_enabled"] = True
-        self.spec_assign.sdn_props.lightpath_status_dict = {}
-        self.spec_assign.sdn_props.source = "A"
-        self.spec_assign.sdn_props.destination = "B"
-        self.spec_assign.sdn_props.path_list = [0, 1, 2]  # Use integers
-        self.spec_assign.sdn_props.path_weight = 100.0
-        self.spec_assign.sdn_props.arrive = 1000.0
-        self.spec_assign.sdn_props.modulation_formats_dict = {
+        self.sdn_props.lightpath_status_dict = {}
+        self.sdn_props.source = "A"
+        self.sdn_props.destination = "B"
+        self.sdn_props.path_list = [0, 1, 2]  # Use integers
+        self.sdn_props.path_weight = 100.0
+        self.sdn_props.arrive = 1000.0
+        self.sdn_props.was_new_lp_established = [1]  # LP must be in this list
+        # Reset modulation_formats_dict with bandwidth key (overwrite setUp's version)
+        self.sdn_props.modulation_formats_dict = {
             "QPSK": {"bandwidth": 200, "slots_needed": 3}
         }
+        self.sdn_props.request_id = 1  # Required for requests_dict population
+        self.sdn_props.bandwidth_list = [200]  # For dedicated_bw calculation
         self.spec_assign.spectrum_props.lightpath_id = 1
         self.spec_assign.spectrum_props.lightpath_bandwidth = None
         self.spec_assign.spectrum_props.modulation = "QPSK"
@@ -570,10 +572,13 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_assign._update_lightpath_status()
 
         light_id = ("A", "B")
-        self.assertIn(light_id, self.spec_assign.sdn_props.lightpath_status_dict)
-        self.assertIn(1, self.spec_assign.sdn_props.lightpath_status_dict[light_id])
+        lp_status_dict = self.spec_assign.sdn_props.lightpath_status_dict
+        self.assertIsNotNone(lp_status_dict)
+        assert lp_status_dict is not None  # Type narrowing for mypy
+        self.assertIn(light_id, lp_status_dict)
+        self.assertIn(1, lp_status_dict[light_id])
 
-        lp_entry = self.spec_assign.sdn_props.lightpath_status_dict[light_id][1]
+        lp_entry = lp_status_dict[light_id][1]
         self.assertEqual(lp_entry["path"], [0, 1, 2])
         self.assertEqual(lp_entry["path_weight"], 100.0)
         self.assertEqual(lp_entry["core"], 0)
@@ -581,11 +586,13 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.assertEqual(lp_entry["start_slot"], 5)
         self.assertEqual(lp_entry["end_slot"], 8)
         self.assertEqual(lp_entry["mod_format"], "QPSK")
-        self.assertEqual(lp_entry["lightpath_bandwidth"], 200)
-        self.assertEqual(lp_entry["remaining_bandwidth"], 200)
+        self.assertEqual(lp_entry["lightpath_bandwidth"], 200.0)
+        # remaining = lp_bandwidth - dedicated_bw = 200 - 200 = 0
+        self.assertEqual(lp_entry["remaining_bandwidth"], 0.0)
         self.assertEqual(lp_entry["snr_cost"], 0.5)
         self.assertFalse(lp_entry["is_degraded"])
-        self.assertEqual(lp_entry["requests_dict"], {})
+        # requests_dict is populated with {request_id: dedicated_bw}
+        self.assertEqual(lp_entry["requests_dict"], {1: 200})
         self.assertIn(1000.0, lp_entry["time_bw_usage"])
 
     def test_update_lightpath_status_skipped_when_grooming_disabled(self) -> None:

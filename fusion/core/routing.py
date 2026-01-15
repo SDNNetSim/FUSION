@@ -25,7 +25,9 @@ get_path_mod = get_path_modulation
 sort_nested_dict_vals = sort_nested_dict_values
 
 # Legacy method mappings to new algorithm names
-# TODO: Legacy mapping to be removed
+# TODO: Remove LEGACY_METHOD_MAPPING once all config files and CLI arguments have been
+# migrated to use the new standardized algorithm names. This mapping exists for backwards
+# compatibility with older configurations. Deprecation warning should be added first.
 LEGACY_METHOD_MAPPING = {
     "shortest_path": "k_shortest_path",  # k=1 shortest path
     "k_shortest_path": "k_shortest_path",
@@ -154,7 +156,9 @@ class Routing:
         :param algorithm: Algorithm instance with results
         :type algorithm: Any
         """
-        # TODO: We shouldn't have to copy like this, bad design identified by actions
+        # TODO: Refactor to eliminate this copy pattern. Algorithms should return results
+        # directly rather than storing in route_props. The Routing class should not need
+        # to know about algorithm internals. Consider returning a RouteResult dataclass.
         if hasattr(algorithm, "route_props"):
             self.route_props.paths_matrix = algorithm.route_props.paths_matrix
             self.route_props.modulation_formats_matrix = (
@@ -185,21 +189,6 @@ class Routing:
 
         :raises NotImplementedError: If routing method is not recognized
         """
-        # TODO(survivability-v1): Optimize routing under failures by removing failed
-        # links from topology BEFORE path computation. Current implementation computes
-        # paths on full topology and validates afterward via is_path_feasible(), which
-        # is correct but may waste computation on infeasible paths.
-        # Example optimization:
-        #     if hasattr(self.sdn_props, 'failure_manager') and
-        #        self.sdn_props.failure_manager:
-        #         topology_view = self.engine_props['topology'].copy()
-        #         for failed_link in self.sdn_props.failure_manager.active_failures:
-        #             u, v = failed_link
-        #             if topology_view.has_edge(u, v):
-        #                 topology_view.remove_edge(u, v)
-        #         self.engine_props['topology'] = topology_view
-        #
-        # Initialize route properties
         self._init_route_info()
 
         route_method = self.engine_props.get("route_method", None)
@@ -217,8 +206,10 @@ class Routing:
             self._handle_external_ksp()
         else:
             # Use modular algorithms for all other routing methods
+            if route_method is None:
+                raise NotImplementedError("Routing method not specified.")
             try:
-                algorithm = self._get_algorithm_for_method(route_method)
+                algorithm = self._get_algorithm_for_method(str(route_method))
                 algorithm.route(self.sdn_props.source, self.sdn_props.destination, None)
                 self._copy_results_from_algorithm(algorithm)
             except (KeyError, NotImplementedError) as exc:
@@ -241,7 +232,9 @@ class Routing:
             logger.warning("No paths found by routing algorithm")
 
     # Legacy methods for backward compatibility
-    # TODO: Legacy method
+    # TODO: Remove find_least_weight and find_k_shortest once all callers have been
+    # migrated to use get_route() with the appropriate route_method configuration.
+    # These methods exist only for backwards compatibility with older code paths.
     def find_least_weight(self, weight: str) -> None:
         """
         Legacy method: Find path with minimum weight.
@@ -366,7 +359,6 @@ class Routing:
         self.engine_props["route_method"] = "frag_aware"
         self.get_route()
 
-    # Util function or no?
     def _find_most_cong_link(self, path_list: list) -> None:
         """Find the most congested link along a path (backward compatibility)."""
 

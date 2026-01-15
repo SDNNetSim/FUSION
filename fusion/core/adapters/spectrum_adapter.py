@@ -2,16 +2,14 @@
 SpectrumAdapter - Adapts legacy SpectrumAssignment to SpectrumPipeline protocol.
 
 ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-It will be replaced with a clean implementation in Phase 4.
-
-Phase: P2.4 - Legacy Adapters
+It will be replaced with a clean implementation in Phase v6.1.0.
 """
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from fusion.interfaces.pipelines import SpectrumPipeline
 
@@ -70,7 +68,26 @@ class SDNPropsProxyForSpectrum:
         backup_path: list[str] | None = None,
         path_index: int = 0,
     ) -> SDNPropsProxyForSpectrum:
-        """Create proxy from NetworkState with request context."""
+        """
+        Create proxy from NetworkState with request context.
+
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param source: Source node identifier
+        :type source: str
+        :param destination: Destination node identifier
+        :type destination: str
+        :param bandwidth: Requested bandwidth in Gbps
+        :type bandwidth: float
+        :param modulation_formats: Modulation format configurations
+        :type modulation_formats: dict[str, Any] | None
+        :param backup_path: Optional backup path for 1+1 protection
+        :type backup_path: list[str] | None
+        :param path_index: Index of which k-path is being tried
+        :type path_index: int
+        :return: Proxy instance populated from network state
+        :rtype: SDNPropsProxyForSpectrum
+        """
         return cls(
             topology=network_state.topology,
             source=source,
@@ -104,18 +121,12 @@ class SpectrumAdapter(SpectrumPipeline):
     Adapts legacy SpectrumAssignment to SpectrumPipeline protocol.
 
     ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-    It will be replaced with a clean implementation in Phase 4.
+    It will be replaced with a clean implementation in v6.1.0.
 
     The adapter:
     1. Creates proxy objects from NetworkState
     2. Calls legacy SpectrumAssignment.get_spectrum()
     3. Converts spectrum_props to SpectrumResult
-
-    Removal Checklist:
-    [ ] Clean SpectrumPipeline implementation exists
-    [ ] All callers migrated to clean implementation
-    [ ] run_comparison.py passes without this adapter
-    [ ] grep 'SpectrumAdapter' returns only this definition
 
     Example:
         >>> adapter = SpectrumAdapter(config)
@@ -126,8 +137,8 @@ class SpectrumAdapter(SpectrumPipeline):
         """
         Initialize adapter with configuration.
 
-        Args:
-            config: SimulationConfig for creating legacy engine_props
+        :param config: SimulationConfig for creating legacy engine_props
+        :type config: SimulationConfig
         """
         self._config = config
         self._engine_props = config.to_engine_props()
@@ -150,21 +161,34 @@ class SpectrumAdapter(SpectrumPipeline):
         """
         Find available spectrum along a path.
 
-        Args:
-            path: Ordered list of node IDs forming the route
-            modulation: Modulation format name (e.g., "QPSK", "16-QAM")
-            bandwidth_gbps: Required bandwidth in Gbps
-            network_state: Current network state
-            connection_index: External routing index for pre-calculated SNR lookup
-            path_index: Index of which k-path is being tried (0, 1, 2...)
-            snr_bandwidth: Bandwidth to use for SNR checks (if different from bandwidth_gbps).
-                Used for partial grooming where slots are for remaining_bw but SNR check
-                should use original request bandwidth.
-            slice_bandwidth: Bandwidth for slicing (used to look up mod_per_bw and calculate slots).
-                When provided, get_spectrum uses this to validate modulation and calculate slots.
-
-        Returns:
-            SpectrumResult with slot allocation or is_free=False on failure
+        :param path: Ordered list of node IDs forming the route
+        :type path: list[str]
+        :param modulation: Modulation format name (e.g., "QPSK", "16-QAM")
+        :type modulation: str | list[str]
+        :param bandwidth_gbps: Required bandwidth in Gbps
+        :type bandwidth_gbps: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param connection_index: External routing index for pre-calculated SNR lookup
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried (0, 1, 2...)
+        :type path_index: int
+        :param use_dynamic_slicing: Whether to use dynamic slicing mode
+        :type use_dynamic_slicing: bool
+        :param snr_bandwidth: Bandwidth to use for SNR checks (if different from
+            bandwidth_gbps). Used for partial grooming where slots are for
+            remaining_bw but SNR check should use original request bandwidth.
+        :type snr_bandwidth: int | None
+        :param request_id: Optional request ID for debugging
+        :type request_id: int | None
+        :param slice_bandwidth: Bandwidth for slicing (used to look up mod_per_bw
+            and calculate slots). When provided, get_spectrum uses this to
+            validate modulation and calculate slots.
+        :type slice_bandwidth: int | None
+        :param excluded_modulations: Modulations to exclude from dynamic slicing
+        :type excluded_modulations: set[str] | None
+        :return: SpectrumResult with slot allocation or is_free=False on failure
+        :rtype: SpectrumResult
         """
         from fusion.domain.results import SpectrumResult
 
@@ -224,26 +248,22 @@ class SpectrumAdapter(SpectrumPipeline):
             engine_props["topology"] = network_state.topology
 
             # Instantiate legacy SpectrumAssignment
+            from fusion.core.properties import RoutingProps, SDNProps
             from fusion.core.spectrum_assignment import SpectrumAssignment
 
+            # Cast proxy objects to satisfy mypy - proxies implement same interface
             legacy_spectrum = SpectrumAssignment(
                 engine_props=engine_props,
-                sdn_props=sdn_props,
-                route_props=route_props,
+                sdn_props=cast(SDNProps, sdn_props),
+                route_props=cast(RoutingProps, route_props),
             )
 
-            # Set path in spectrum_props
-            legacy_spectrum.spectrum_props.path_list = list(path)
+            # Set path in spectrum_props (path is list of node IDs as strings)
+            legacy_spectrum.spectrum_props.path_list = [int(node) if node.isdigit() else hash(node) % 10000 for node in path]
 
             # NOTE: Don't pre-set lightpath_bandwidth here - get_spectrum may clear it.
             # We set it AFTER get_spectrum as a fallback (matching legacy sdn_controller behavior).
 
-            # DEBUG: Show spectrum state when find_spectrum is called during slicing
-            # Check if this might be request 5 (we don't have request_id here, but can check network state)
-            if use_dynamic_slicing and len(path) >= 2:
-                link = (path[0], path[1])
-                if link in network_state.network_spectrum_dict:
-                    cores_matrix = network_state.network_spectrum_dict[link]["cores_matrix"]
             # Choose method based on whether we're in slicing mode
             # Only use get_spectrum_dynamic_slicing when explicitly in slicing stage
             if use_dynamic_slicing and self._config.dynamic_lps:
@@ -267,8 +287,9 @@ class SpectrumAdapter(SpectrumPipeline):
                         result_bw = slice_bandwidth
                 elif self._config.fixed_grid:
                     # Fixed-grid dynamic slicing
+                    mod_list_for_slicing = [modulation] if isinstance(modulation, str) else (list(modulation) if modulation else [])
                     result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
-                        _mod_format_list=[modulation] if modulation else [],
+                        _mod_format_list=mod_list_for_slicing,
                         path_index=path_index,
                     )
                 else:
@@ -297,11 +318,12 @@ class SpectrumAdapter(SpectrumPipeline):
             if legacy_spectrum.spectrum_props.lightpath_bandwidth is None:
                 legacy_spectrum.spectrum_props.lightpath_bandwidth = proxy_bandwidth
 
-            # Convert results
+            # Convert results (use first modulation if list provided)
+            mod_for_result = modulation[0] if isinstance(modulation, list) else modulation
             return self._convert_spectrum_props(
                 legacy_spectrum.spectrum_props,
                 sdn_props,
-                modulation,
+                mod_for_result,
             )
 
         except Exception as e:
@@ -320,15 +342,18 @@ class SpectrumAdapter(SpectrumPipeline):
         """
         Find spectrum for both primary and backup paths (1+1 protection).
 
-        Args:
-            primary_path: Primary route node sequence
-            backup_path: Backup route node sequence (should be disjoint)
-            modulation: Modulation format name
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-
-        Returns:
-            SpectrumResult with both primary and backup allocations
+        :param primary_path: Primary route node sequence
+        :type primary_path: list[str]
+        :param backup_path: Backup route node sequence (should be disjoint)
+        :type backup_path: list[str]
+        :param modulation: Modulation format name
+        :type modulation: str
+        :param bandwidth_gbps: Required bandwidth in Gbps
+        :type bandwidth_gbps: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: SpectrumResult with both primary and backup allocations
+        :rtype: SpectrumResult
         """
         from fusion.domain.results import SpectrumResult
 
@@ -372,17 +397,19 @@ class SpectrumAdapter(SpectrumPipeline):
             engine_props["topology"] = network_state.topology
 
             # Instantiate legacy SpectrumAssignment
+            from fusion.core.properties import RoutingProps, SDNProps
             from fusion.core.spectrum_assignment import SpectrumAssignment
 
+            # Cast proxy objects to satisfy mypy - proxies implement same interface
             legacy_spectrum = SpectrumAssignment(
                 engine_props=engine_props,
-                sdn_props=sdn_props,
-                route_props=route_props,
+                sdn_props=cast(SDNProps, sdn_props),
+                route_props=cast(RoutingProps, route_props),
             )
 
-            # Set paths in spectrum_props
-            legacy_spectrum.spectrum_props.path_list = list(primary_path)
-            legacy_spectrum.spectrum_props.backup_path = list(backup_path)
+            # Set paths in spectrum_props (convert string node IDs to ints)
+            legacy_spectrum.spectrum_props.path_list = [int(node) if node.isdigit() else hash(node) % 10000 for node in primary_path]
+            legacy_spectrum.spectrum_props.backup_path = [int(node) if node.isdigit() else hash(node) % 10000 for node in backup_path]
 
             # Call legacy get_spectrum with backup modulation
             legacy_spectrum.get_spectrum(
@@ -407,7 +434,16 @@ class SpectrumAdapter(SpectrumPipeline):
         modulation: str | list[str],
         bandwidth_gbps: float,
     ) -> int:
-        """Calculate number of spectrum slots needed."""
+        """
+        Calculate number of spectrum slots needed.
+
+        :param modulation: Modulation format name or list of names
+        :type modulation: str | list[str]
+        :param bandwidth_gbps: Required bandwidth in Gbps
+        :type bandwidth_gbps: float
+        :return: Number of spectrum slots needed including guard slots
+        :rtype: int
+        """
         # Handle list of modulations - use first one
         mod_str = modulation[0] if isinstance(modulation, list) else modulation
         # Get modulation info from config
@@ -434,9 +470,11 @@ class SpectrumAdapter(SpectrumPipeline):
         sdn_props: SDNPropsProxyForSpectrum,
         modulation: str,
     ) -> SpectrumResult:
-        """Convert legacy spectrum_props to SpectrumResult.
+        """
+        Convert legacy spectrum_props to SpectrumResult.
 
         Important: Legacy end_slot semantics depend on guard_slots:
+
         - end_index = start + slots_needed + guard_slots - 1 (last slot, inclusive)
         - end_slot = end_index + guard_slots
 
@@ -444,6 +482,15 @@ class SpectrumAdapter(SpectrumPipeline):
         When guard_slots == 0: end_slot is inclusive (end_index + 0 = end_index)
 
         New domain objects use EXCLUSIVE end_slot (Python slice notation).
+
+        :param spectrum_props: Legacy SpectrumProps object with allocation results
+        :type spectrum_props: Any
+        :param sdn_props: SDN properties proxy with request context
+        :type sdn_props: SDNPropsProxyForSpectrum
+        :param modulation: Requested modulation format
+        :type modulation: str
+        :return: Converted SpectrumResult
+        :rtype: SpectrumResult
         """
         from fusion.domain.results import SpectrumResult
 

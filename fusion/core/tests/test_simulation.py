@@ -240,7 +240,7 @@ class TestSimulationEngineRequestHandling:
         }
         engine = SimulationEngine(engine_props)
         engine.reqs_dict = {
-            1.0: {
+            (0, 1.0): {
                 "req_id": 1,
                 "source": "A",
                 "destination": "B",
@@ -250,7 +250,7 @@ class TestSimulationEngineRequestHandling:
                 "bandwidth": "100GHz",
                 "mod_formats": {"QPSK": {"max_length": [200]}},
             },
-            5.0: {
+            (0, 5.0): {
                 "req_id": 1,
                 "source": "A",
                 "destination": "B",
@@ -282,7 +282,7 @@ class TestSimulationEngineRequestHandling:
     ) -> None:
         """Test that handle_arrival updates SDN controller with request parameters."""
         # Arrange
-        current_time = 1.0
+        current_time = (0, 1.0)
         engine_with_requests.sdn_obj = Mock()
         engine_with_requests.sdn_obj.sdn_props = Mock()
         engine_with_requests.sdn_obj.sdn_props.network_spectrum_dict = {}
@@ -303,7 +303,7 @@ class TestSimulationEngineRequestHandling:
     ) -> None:
         """Test handle_arrival with forced routing parameters."""
         # Arrange
-        current_time = 1.0
+        current_time = (0, 1.0)
         force_route_matrix = [["A", "B"]]
         force_core = 1
         force_slicing = True
@@ -340,10 +340,11 @@ class TestSimulationEngineRequestHandling:
     ) -> None:
         """Test that handle_release calls SDN controller for resource teardown."""
         # Arrange
-        current_time = 5.0
+        current_time = (0, 5.0)
         engine_with_requests.sdn_obj = Mock()
         engine_with_requests.sdn_obj.sdn_props = Mock()
         engine_with_requests.sdn_obj.sdn_props.network_spectrum_dict = {}
+        engine_with_requests.sdn_obj.sdn_props.lp_bw_utilization_dict = None
 
         # Act
         engine_with_requests.handle_release(current_time)
@@ -358,9 +359,9 @@ class TestSimulationEngineRequestHandling:
     ) -> None:
         """Test handle_release when request ID not in status dict."""
         # Arrange
-        current_time = 5.0
+        current_time = (0, 5.0)
         assert engine_with_requests.reqs_dict is not None
-        engine_with_requests.reqs_dict[5.0]["req_id"] = 999  # Non-existent ID
+        engine_with_requests.reqs_dict[(0, 5.0)]["req_id"] = 999  # Non-existent ID
         engine_with_requests.sdn_obj.sdn_props = Mock()
 
         # Act & Assert - should not raise exception
@@ -371,7 +372,7 @@ class TestSimulationEngineRequestHandling:
     ) -> None:
         """Test handle_request processes arrival request type."""
         # Arrange
-        current_time = 1.0
+        current_time = (0, 1.0)
         request_number = 1
         engine_with_requests.engine_props["save_snapshots"] = False
         engine_with_requests.engine_props["output_train_data"] = False
@@ -388,7 +389,7 @@ class TestSimulationEngineRequestHandling:
     ) -> None:
         """Test handle_request processes release request type."""
         # Arrange
-        current_time = 5.0
+        current_time = (0, 5.0)
         request_number = 1
 
         # Act & Assert
@@ -402,8 +403,8 @@ class TestSimulationEngineRequestHandling:
         """Test handle_request raises error for invalid request type."""
         # Arrange
         assert engine_with_requests.reqs_dict is not None
-        engine_with_requests.reqs_dict[1.0]["request_type"] = "invalid"
-        current_time = 1.0
+        engine_with_requests.reqs_dict[(0, 1.0)]["request_type"] = "invalid"
+        current_time = (0, 1.0)
         request_number = 1
 
         # Act & Assert
@@ -691,7 +692,7 @@ class TestSimulationEngineFullExecution:
     ) -> None:
         """Test run method executes complete simulation workflow."""
         # Arrange
-        execution_engine.reqs_dict = {1.0: {"request_type": "arrival"}}
+        execution_engine.reqs_dict = {(0, 1.0): {"request_type": "arrival"}}
 
         with (
             patch.object(execution_engine, "init_iter") as mock_init,
@@ -711,7 +712,7 @@ class TestSimulationEngineFullExecution:
     ) -> None:
         """Test run stops early when confidence interval is reached."""
         # Arrange
-        execution_engine.reqs_dict = {1.0: {"request_type": "arrival"}}
+        execution_engine.reqs_dict = {(0, 1.0): {"request_type": "arrival"}}
 
         with (
             patch.object(execution_engine, "init_iter"),
@@ -735,7 +736,7 @@ class TestSimulationEngineFullExecution:
         stop_flag.is_set.side_effect = [False, True]  # Stop after first iteration
         execution_engine.engine_props["stop_flag"] = stop_flag
         execution_engine.stop_flag = stop_flag
-        execution_engine.reqs_dict = {1.0: {"request_type": "arrival"}}
+        execution_engine.reqs_dict = {(0, 1.0): {"request_type": "arrival"}}
 
         with (
             patch.object(execution_engine, "init_iter"),
@@ -795,7 +796,7 @@ class TestSimulationEngineEdgeCases:
                 "output_train_data": False,
             }
         )
-        current_time = 1.0
+        current_time = (0, 1.0)
 
         # Act & Assert - should not raise exception
         engine.update_arrival_params(current_time)
@@ -811,8 +812,8 @@ class TestSimulationEngineEdgeCases:
                 "output_train_data": False,
             }
         )
-        engine.reqs_dict = {2.0: {"req_id": 1}}
-        current_time = 1.0  # Different time
+        engine.reqs_dict = {(0, 2.0): {"req_id": 1}}
+        current_time = (0, 1.0)  # Different time
 
         # Act & Assert - should not raise exception
         engine.update_arrival_params(current_time)
@@ -831,9 +832,10 @@ class TestSimulationEngineEdgeCases:
         seed = 123
 
         with patch("fusion.core.simulation.get_requests") as mock_get_requests:
+            # Use tuple keys (req_id, time) as expected by generate_requests
             mock_get_requests.return_value = {
-                1.0: {"req_id": 1},
-                2.0: {"req_id": 2},
+                (1, 1.0): {"req_id": 1},
+                (2, 2.0): {"req_id": 2},
             }
 
             # Act
@@ -844,8 +846,8 @@ class TestSimulationEngineEdgeCases:
                 seed=seed, engine_props=engine.engine_props
             )
             assert engine.reqs_dict == {
-                1.0: {"req_id": 1},
-                2.0: {"req_id": 2},
+                (1, 1.0): {"req_id": 1},
+                (2, 2.0): {"req_id": 2},
             }
 
     def test_save_all_stats_saves_ml_data_when_ml_metrics_available(self) -> None:

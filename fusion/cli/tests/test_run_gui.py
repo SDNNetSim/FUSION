@@ -2,7 +2,12 @@
 
 import pytest
 
-from fusion.cli.run_gui import GUINotSupportedError, main as gui_main
+from fusion.cli.run_gui import (
+    GUINotSupportedError,
+)
+from fusion.cli.run_gui import (
+    main as gui_main,
+)
 
 
 class TestGuiMain:

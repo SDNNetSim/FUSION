@@ -12,7 +12,7 @@ Phase: P5.5 - Orchestrator Integration
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, PropertyMock, call, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -117,6 +117,7 @@ class TestBackwardCompatibility:
     def test_handle_arrival_without_policy_delegates_correctly(
         self,
         orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -129,7 +130,7 @@ class TestBackwardCompatibility:
         route_result.weights_km = (100.0,)
         route_result.has_protection = False
         route_result.connection_index = None
-        orchestrator.routing.find_routes.return_value = route_result
+        mock_pipelines.routing.find_routes.return_value = route_result
 
         # Setup spectrum result
         spectrum_result = MagicMock()
@@ -142,7 +143,7 @@ class TestBackwardCompatibility:
         spectrum_result.slots_needed = 4
         spectrum_result.snr_db = None
         spectrum_result.achieved_bandwidth_gbps = None
-        orchestrator.spectrum.find_spectrum.return_value = spectrum_result
+        mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
         # Setup lightpath creation
         mock_lightpath = MagicMock()
@@ -158,12 +159,13 @@ class TestBackwardCompatibility:
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 
         # Verify routing was called
-        orchestrator.routing.find_routes.assert_called_once()
+        mock_pipelines.routing.find_routes.assert_called_once()
         assert result.success
 
     def test_handle_arrival_with_policy_delegates_when_no_policy(
         self,
         orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -171,14 +173,14 @@ class TestBackwardCompatibility:
         # Setup route result
         route_result = MagicMock()
         route_result.is_empty = True
-        orchestrator.routing.find_routes.return_value = route_result
+        mock_pipelines.routing.find_routes.return_value = route_result
 
         # Call with_policy when no policy set
         assert orchestrator.policy is None
-        result = orchestrator.handle_arrival_with_policy(mock_request, mock_network_state)
+        _result = orchestrator.handle_arrival_with_policy(mock_request, mock_network_state)
 
         # Should have called routing (through handle_arrival)
-        orchestrator.routing.find_routes.assert_called_once()
+        mock_pipelines.routing.find_routes.assert_called_once()
 
     def test_orchestrator_init_defaults_policy_to_none(
         self,

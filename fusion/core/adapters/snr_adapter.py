@@ -2,16 +2,14 @@
 SNRAdapter - Adapts legacy SnrMeasurements to SNRPipeline protocol.
 
 ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-It will be replaced with a clean implementation in Phase 4.
-
-Phase: P2.4 - Legacy Adapters
+It will be replaced with a clean implementation in v6.1.0.
 """
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from fusion.interfaces.pipelines import SNRPipeline
 
@@ -61,7 +59,30 @@ class SDNPropsProxyForSNR:
         request_id: int | None = None,
         modulation_formats_dict: dict[str, dict[str, Any]] | None = None,
     ) -> SDNPropsProxyForSNR:
-        """Create proxy from NetworkState."""
+        """
+        Create proxy from NetworkState.
+
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param source: Source node identifier
+        :type source: str
+        :param destination: Destination node identifier
+        :type destination: str
+        :param bandwidth: Requested bandwidth in Gbps
+        :type bandwidth: float
+        :param path_index: Index of path in paths matrix
+        :type path_index: int
+        :param lightpath_id: Optional lightpath ID for recheck operations
+        :type lightpath_id: int | None
+        :param path_list: Optional explicit path list
+        :type path_list: list[str] | None
+        :param request_id: Optional request ID
+        :type request_id: int | None
+        :param modulation_formats_dict: Modulation format configurations
+        :type modulation_formats_dict: dict[str, dict[str, Any]] | None
+        :return: Proxy instance populated from network state
+        :rtype: SDNPropsProxyForSNR
+        """
         return cls(
             topology=network_state.topology,
             source=source,
@@ -112,7 +133,7 @@ class SNRAdapter(SNRPipeline):
     Adapts legacy SnrMeasurements to SNRPipeline protocol.
 
     ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-    It will be replaced with a clean implementation in Phase 4.
+    It will be replaced with a clean implementation in v6.1.0.
 
     The adapter:
     1. Creates proxy objects from NetworkState and Lightpath
@@ -122,12 +143,6 @@ class SNRAdapter(SNRPipeline):
     Special Cases:
     - Returns SNRResult.skipped() if SNR checking is disabled
     - Returns SNRResult with passed=False if SNR fails
-
-    Removal Checklist:
-    [ ] Clean SNRPipeline implementation exists
-    [ ] All callers migrated to clean implementation
-    [ ] run_comparison.py passes without this adapter
-    [ ] grep 'SNRAdapter' returns only this definition
 
     Example:
         >>> adapter = SNRAdapter(config)
@@ -140,8 +155,8 @@ class SNRAdapter(SNRPipeline):
         """
         Initialize adapter with configuration.
 
-        Args:
-            config: SimulationConfig for creating legacy engine_props
+        :param config: SimulationConfig for creating legacy engine_props
+        :type config: SimulationConfig
         """
         self._config = config
         self._engine_props = config.to_engine_props()
@@ -154,12 +169,12 @@ class SNRAdapter(SNRPipeline):
         """
         Validate SNR for a lightpath.
 
-        Args:
-            lightpath: The lightpath to validate
-            network_state: Current network state
-
-        Returns:
-            SNRResult indicating if SNR is acceptable
+        :param lightpath: The lightpath to validate
+        :type lightpath: Lightpath
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: SNRResult indicating if SNR is acceptable
+        :rtype: SNRResult
         """
         from fusion.domain.results import SNRResult
 
@@ -200,13 +215,15 @@ class SNRAdapter(SNRPipeline):
             engine_props["topology"] = network_state.topology
 
             # Instantiate legacy SnrMeasurements
+            from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
             from fusion.core.snr_measurements import SnrMeasurements
 
+            # Cast proxy objects to satisfy mypy - proxies implement same interface
             legacy_snr = SnrMeasurements(
                 engine_props_dict=engine_props,
-                sdn_props=sdn_props,
-                spectrum_props=spectrum_props,
-                route_props=route_props,
+                sdn_props=cast(SDNProps, sdn_props),
+                spectrum_props=cast(SpectrumProps, spectrum_props),
+                route_props=cast(RoutingProps, route_props),
             )
 
             # Call legacy handle_snr
@@ -251,14 +268,18 @@ class SNRAdapter(SNRPipeline):
         Delegates to legacy SnrMeasurements.snr_recheck_after_allocation()
         to ensure identical behavior.
 
-        Args:
-            new_lightpath_id: ID of newly created lightpath
-            network_state: Current network state
-            affected_range_slots: Consider lightpaths within this many slots (unused, legacy uses overlap)
-            slicing_flag: Whether the allocation was a slicing allocation (affects SNR check behavior)
-
-        Returns:
-            SNRRecheckResult with list of degraded lightpaths
+        :param new_lightpath_id: ID of newly created lightpath
+        :type new_lightpath_id: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param affected_range_slots: Consider lightpaths within this many slots
+            (unused, legacy uses overlap)
+        :type affected_range_slots: int
+        :param slicing_flag: Whether the allocation was a slicing allocation
+            (affects SNR check behavior)
+        :type slicing_flag: bool
+        :return: SNRRecheckResult with list of degraded lightpaths
+        :rtype: SNRRecheckResult
         """
         from fusion.domain.results import SNRRecheckResult
 
@@ -339,13 +360,15 @@ class SNRAdapter(SNRPipeline):
             engine_props["topology"] = network_state.topology
 
             # Instantiate legacy SnrMeasurements
+            from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
             from fusion.core.snr_measurements import SnrMeasurements
 
+            # Cast proxy objects to satisfy mypy - proxies implement same interface
             legacy_snr = SnrMeasurements(
                 engine_props_dict=engine_props,
-                sdn_props=sdn_props,
-                spectrum_props=spectrum_props,
-                route_props=route_props,
+                sdn_props=cast(SDNProps, sdn_props),
+                spectrum_props=cast(SpectrumProps, spectrum_props),
+                route_props=cast(RoutingProps, route_props),
             )
 
             # Call legacy snr_recheck_after_allocation

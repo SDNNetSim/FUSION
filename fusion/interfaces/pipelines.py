@@ -177,23 +177,29 @@ class SpectrumPipeline(Protocol):
     def find_spectrum(
         self,
         path: list[str],
-        modulation: str,
+        modulation: str | list[str],
         bandwidth_gbps: int,
         network_state: NetworkState,
         *,
         connection_index: int | None = None,
         path_index: int = 0,
+        use_dynamic_slicing: bool = False,
+        snr_bandwidth: int | None = None,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
 
         Args:
             path: Ordered list of node IDs forming the route
-            modulation: Modulation format name (e.g., "QPSK", "16-QAM")
+            modulation: Modulation format name (e.g., "QPSK", "16-QAM") or list of
+                       valid modulations to try (pipeline selects best one)
             bandwidth_gbps: Required bandwidth in Gbps
             network_state: Current network state
             connection_index: External routing index for pre-calculated SNR lookup
             path_index: Index of which k-path is being tried (0, 1, 2...)
+            use_dynamic_slicing: If True, use dynamic slicing to find spectrum
+                                (may return achieved_bandwidth < requested)
+            snr_bandwidth: Override bandwidth for SNR calculation (optional)
 
         Returns:
             SpectrumResult containing:
@@ -427,6 +433,7 @@ class SNRPipeline(Protocol):
         network_state: NetworkState,
         *,
         affected_range_slots: int = 5,
+        slicing_flag: bool = False,
     ) -> SNRRecheckResult:
         """
         Recheck SNR of existing lightpaths after new allocation.
@@ -439,6 +446,8 @@ class SNRPipeline(Protocol):
             network_state: Current network state
             affected_range_slots: Consider lightpaths within this many
                                  slots of the new allocation (default: 5)
+            slicing_flag: If True, indicates this is a slicing context
+                         (may affect which lightpaths are checked)
 
         Returns:
             SNRRecheckResult containing:
@@ -515,6 +524,8 @@ class SlicingPipeline(Protocol):
         snr_pipeline: SNRPipeline | None = None,
         connection_index: int | None = None,
         path_index: int = 0,
+        snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult:
         """
         Attempt to slice request into multiple smaller allocations.
@@ -532,6 +543,9 @@ class SlicingPipeline(Protocol):
                 When provided with spectrum_pipeline, enables SNR validation.
             connection_index: External routing index for pre-calculated SNR lookup.
             path_index: Index of which k-path is being tried (0, 1, 2...).
+            snr_accumulator: List to accumulate SNR values from failed attempts
+                            (shared with orchestrator for metrics tracking).
+            path_weight: Path weight in km (from routing, for metrics tracking).
 
         Returns:
             SlicingResult containing:
