@@ -1,9 +1,6 @@
-"""Tests for ControlPolicy protocol.
+"""Tests for ControlPolicy protocol."""
 
-Phase: P5.1 - ControlPolicy Protocol + RLPolicy Adapter
-"""
-
-import pytest
+from typing import Any
 
 from fusion.interfaces.control_policy import ControlPolicy, PolicyAction
 
@@ -17,10 +14,12 @@ class TestControlPolicyProtocol:
         class ValidPolicy:
             """A valid policy implementation."""
 
-            def select_action(self, request, options, network_state) -> int:
+            def select_action(
+                self, request: Any, options: Any, network_state: Any
+            ) -> int:
                 return 0
 
-            def update(self, request, action, reward) -> None:
+            def update(self, request: Any, action: int, reward: float) -> None:
                 pass
 
             def get_name(self) -> str:
@@ -35,7 +34,7 @@ class TestControlPolicyProtocol:
         class InvalidPolicy:
             """Missing select_action method."""
 
-            def update(self, request, action, reward) -> None:
+            def update(self, request: Any, action: int, reward: float) -> None:
                 pass
 
             def get_name(self) -> str:
@@ -50,7 +49,9 @@ class TestControlPolicyProtocol:
         class InvalidPolicy:
             """Missing update method."""
 
-            def select_action(self, request, options, network_state) -> int:
+            def select_action(
+                self, request: Any, options: Any, network_state: Any
+            ) -> int:
                 return 0
 
             def get_name(self) -> str:
@@ -65,10 +66,12 @@ class TestControlPolicyProtocol:
         class InvalidPolicy:
             """Missing get_name method."""
 
-            def select_action(self, request, options, network_state) -> int:
+            def select_action(
+                self, request: Any, options: Any, network_state: Any
+            ) -> int:
                 return 0
 
-            def update(self, request, action, reward) -> None:
+            def update(self, request: Any, action: int, reward: float) -> None:
                 pass
 
         policy = InvalidPolicy()
@@ -80,14 +83,16 @@ class TestControlPolicyProtocol:
         class MinimalPolicy:
             """Minimal implementation that satisfies ControlPolicy protocol."""
 
-            def select_action(self, request, options, network_state) -> int:
+            def select_action(
+                self, request: Any, options: Any, network_state: Any
+            ) -> int:
                 # Select first feasible option
                 for opt in options:
                     if getattr(opt, "is_feasible", False):
                         return getattr(opt, "path_index", 0)
                 return -1
 
-            def update(self, request, action, reward) -> None:
+            def update(self, request: Any, action: int, reward: float) -> None:
                 pass
 
             def get_name(self) -> str:
@@ -107,11 +112,13 @@ class TestControlPolicyProtocol:
                 self.alpha = alpha
                 self.call_count = 0
 
-            def select_action(self, request, options, network_state) -> int:
+            def select_action(
+                self, request: Any, options: Any, network_state: Any
+            ) -> int:
                 self.call_count += 1
                 return 0 if options else -1
 
-            def update(self, request, action, reward) -> None:
+            def update(self, request: Any, action: int, reward: float) -> None:
                 # Could update internal state here
                 pass
 

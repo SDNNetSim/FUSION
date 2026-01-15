@@ -2,7 +2,7 @@
 ControlPolicy protocol for unified path selection.
 
 This module defines the ControlPolicy protocol that all path selection
-strategies must implement: heuristics, RL policies, and ML policies.
+strategies must implement: heuristics, RL policies, and supervised/unsupervised learning policies.
 
 The protocol uses Python's structural typing (Protocol) to allow any class
 with the required methods to be used as a policy without explicit inheritance.
@@ -40,7 +40,7 @@ class ControlPolicy(Protocol):
 
     - Heuristic policies: Rule-based selection (first-fit, shortest-path)
     - RL policies: Reinforcement learning agents (PPO, DQN, etc.)
-    - ML policies: Pre-trained neural networks or classifiers
+    - Supervised/unsupervised policies: Pre-trained neural networks or classifiers
     - Composite policies: FallbackPolicy, TiebreakingPolicy
 
     All policies must:
@@ -75,27 +75,21 @@ class ControlPolicy(Protocol):
         current request, available path options (with feasibility information),
         and read-only network state. It returns the index of the selected path.
 
-        Args:
-            request: The incoming request to serve. Contains source, destination,
-                bandwidth requirements, and timing information.
-            options: List of available path options, each with:
-                - path_index: Index in this list (0 to len-1)
-                - path: Node sequence
-                - weight_km: Path length
-                - is_feasible: Whether spectrum is available
-                - congestion: Current congestion level (0-1)
-                - slots_needed: Required spectrum slots
-                - modulation: Selected modulation format
-                For protected paths, also includes backup_path, backup_feasible.
-            network_state: Current state of the network. This is read-only;
-                policies must not modify network state. Use for additional
-                context (e.g., global congestion, topology info).
+        :param request: The incoming request to serve. Contains source, destination,
+            bandwidth requirements, and timing information.
+        :type request: Request
+        :param options: List of available path options, each with path_index,
+            path, weight_km, is_feasible, congestion, slots_needed, modulation.
+            For protected paths, also includes backup_path, backup_feasible.
+        :type options: list[PathOption]
+        :param network_state: Current state of the network. This is read-only;
+            policies must not modify network state.
+        :type network_state: NetworkState
+        :return: Path index (0 to len(options)-1) for the selected path,
+            or -1 if no valid action exists.
+        :rtype: int
 
-        Returns:
-            int: Path index (0 to len(options)-1) for the selected path,
-                or -1 if no valid action exists.
-
-        Note:
+        .. note::
             - Policies MUST only return indices where options[i].is_feasible is True
             - For protected paths, check options[i].both_paths_feasible for full protection
             - Returning an infeasible index is undefined behavior (orchestrator may reject)
@@ -107,24 +101,21 @@ class ControlPolicy(Protocol):
         Update policy based on experience.
 
         Called after an action is executed and the reward is computed. This
-        enables online learning for RL policies. Heuristic and pre-trained ML
-        policies typically implement this as a no-op.
+        enables online learning for RL policies. Heuristic and pre-trained
+        supervised/unsupervised policies typically implement this as a no-op.
 
-        Args:
-            request: The request that was served
-            action: The action (path index) that was taken
-            reward: The reward received. Typically:
-                - Positive for successful allocation
-                - Negative for blocking
-                - May include shaping terms (fragmentation, utilization)
+        :param request: The request that was served
+        :type request: Request
+        :param action: The action (path index) that was taken
+        :type action: int
+        :param reward: The reward received. Typically positive for successful
+            allocation, negative for blocking.
+        :type reward: float
 
-        Returns:
-            None
-
-        Note:
+        .. note::
             - Heuristic policies should implement this as `pass`
             - RL policies may update internal state, replay buffers, etc.
-            - ML policies (pre-trained) typically implement as `pass`
+            - Supervised/unsupervised policies (pre-trained) typically implement as `pass`
             - This method should not raise exceptions
         """
         ...
@@ -136,16 +127,9 @@ class ControlPolicy(Protocol):
         This method enables meaningful logging messages and metrics tracking.
         Names should be descriptive and include relevant configuration.
 
-        Returns:
-            str: Human-readable policy name
-
-        Examples:
-            - "FirstFeasiblePolicy"
-            - "ShortestFeasiblePolicy"
-            - "LoadBalancedPolicy(alpha=0.5)"
-            - "RLPolicy(PPO)"
-            - "MLControlPolicy(pytorch)"
-            - "FallbackPolicy(MLControlPolicy->FirstFeasiblePolicy)"
+        :return: Human-readable policy name (e.g., "FirstFeasiblePolicy",
+            "RLPolicy(PPO)", "SupervisedPolicy(pytorch)")
+        :rtype: str
         """
         ...
 
