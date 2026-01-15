@@ -38,6 +38,7 @@ Modules
    fusion/configs/index
    fusion/core/index
    fusion/domain/index
+   fusion/interfaces/index
 
 Data Directory
 ==============
