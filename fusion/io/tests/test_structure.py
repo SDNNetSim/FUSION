@@ -468,13 +468,18 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
+    @patch("fusion.io.structure.assign_core_nodes")
     def test_with_spainbackbone30_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
+        self,
+        mock_assign_core_nodes: Mock,
+        mock_assign_link_lengths: Mock,
+        mock_find_project_root: Mock,
     ) -> None:
         """Test loading Spainbackbone30 network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
         mock_assign_link_lengths.return_value = {("S1", "S2"): 150.0}
+        mock_assign_core_nodes.return_value = ["CoreNode1", "CoreNode2"]
 
         # Act
         result = create_network("Spainbackbone30")
@@ -482,6 +487,7 @@ class TestCreateNetwork:
         # Assert
         network_dict, core_nodes = result
         assert network_dict == {("S1", "S2"): 150.0}
+        assert core_nodes == ["CoreNode1", "CoreNode2"]
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")

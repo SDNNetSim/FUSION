@@ -1,5 +1,4 @@
 import json
-import math
 from pathlib import Path
 
 from fusion.utils.os import find_project_root
@@ -21,7 +20,7 @@ def create_pt(
     fiber_props_dict = {
         "attenuation": 0.2 / 4.343 * 1e-3,
         "non_linearity": 1.3e-3,
-        "dispersion": -21.3e-27,  # Match v5 value (-2.13e-26)
+        "dispersion": -21.3e-27,
         "num_cores": cores_per_link,
         "fiber_type": 0,
         "bending_radius": 0.05,
