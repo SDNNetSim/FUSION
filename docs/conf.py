@@ -19,7 +19,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "sphinx.ext.intersphinx",
+    # "sphinx.ext.intersphinx",  # Disabled to speed up builds (not currently used)
     "sphinx.ext.todo",
     "myst_parser",
 ]
@@ -55,13 +55,14 @@ autodoc_class_signature = "separated"  # Cleaner class signatures
 # Autosummary
 autosummary_generate = True
 
-# Intersphinx
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-    "networkx": ("https://networkx.org/documentation/stable/", None),
-    "pandas": ("https://pandas.pydata.org/docs/", None),
-}
+# Intersphinx - disabled to speed up builds (not currently used)
+# To re-enable, uncomment the mapping and add "sphinx.ext.intersphinx" to extensions
+# intersphinx_mapping = {
+#     "python": ("https://docs.python.org/3", None),
+#     "numpy": ("https://numpy.org/doc/stable/", None),
+#     "networkx": ("https://networkx.org/documentation/stable/", None),
+#     "pandas": ("https://pandas.pydata.org/docs/", None),
+# }
 
 # MyST parser
 myst_enable_extensions = [

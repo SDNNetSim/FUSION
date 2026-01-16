@@ -11,16 +11,16 @@
 ## Running Tests
 ```bash
 # Run all ML module tests
-pytest fusion/modules/ml/tests/
+pytest fusion/modules/tests/ml/
 
 # Run specific test file
-pytest fusion/modules/ml/tests/test_preprocessing.py
+pytest fusion/modules/tests/ml/test_preprocessing.py
 
 # Run with coverage
-pytest --cov=fusion.modules.ml fusion/modules/ml/tests/
+pytest --cov=fusion.modules.ml fusion/modules/tests/ml/
 
 # Run with verbose output
-pytest fusion/modules/ml/tests/ -v
+pytest fusion/modules/tests/ml/ -v
 ```
 
 ## Test Data

@@ -26,6 +26,16 @@ Overview
    :Contains: routing/, spectrum/, snr/, rl/, ml/, failures/
    :Used By: ``fusion.core`` (via adapters), ``fusion.pipelines``
 
+.. admonition:: Detailed Module Documentation
+   :class: seealso
+
+   Looking for specific module docs? Jump directly to:
+
+   - :ref:`failures-module` - Network failure injection (beta)
+   - :ref:`ml-module` - Machine learning utilities (beta)
+
+   More module docs coming soon (routing, spectrum, rl, snr).
+
 The ``modules`` directory contains **algorithm implementations** - the actual logic for
 routing paths, assigning spectrum, calculating SNR, and making RL decisions. These are
 the building blocks that the simulation engine uses.
@@ -452,11 +462,9 @@ Quick Reference: Where To Go
    * - Change failure simulation
      - :ref:`failures-module`
 
-Submodule Documentation
-=======================
-
 .. toctree::
    :maxdepth: 1
-   :caption: Detailed Module Docs
+   :hidden:
 
    failures/index
+   ml/index
