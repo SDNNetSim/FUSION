@@ -40,6 +40,7 @@ Modules
    fusion/domain/index
    fusion/interfaces/index
    fusion/io/index
+   fusion/modules/index
 
 Data Directory
 ==============
