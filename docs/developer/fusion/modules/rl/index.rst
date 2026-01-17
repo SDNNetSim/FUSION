@@ -19,6 +19,7 @@ Reinforcement Learning Module
    :caption: Submodules
 
    adapter
+   agents
 
 Overview
 ========

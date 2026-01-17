@@ -119,9 +119,9 @@ class PathAgent(BaseAgent):
 
         self._ensure_initialized()
         assert self.hyperparam_obj is not None  # For mypy
-        assert self.engine_props is not None  # For mypy
-        assert self.reward_penalty_list is not None  # For mypy
-        assert self.algorithm_obj is not None  # For mypy
+        assert self.engine_props is not None
+        assert self.reward_penalty_list is not None
+        assert self.algorithm_obj is not None
 
         if self.hyperparam_obj.iteration >= self.engine_props["max_iters"]:
             raise AgentError(
@@ -193,7 +193,7 @@ class PathAgent(BaseAgent):
         :type random_float: float
         """
         assert self.hyperparam_obj is not None  # Validated by caller
-        assert self.congestion_list is not None  # Validated by caller
+        assert self.congestion_list is not None
 
         if random_float < self.hyperparam_obj.current_epsilon:
             self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)

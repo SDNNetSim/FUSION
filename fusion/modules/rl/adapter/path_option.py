@@ -265,7 +265,7 @@ class PathOption:
         slots_needed: int,
         congestion: float,
         available_slots: float = 1.0,
-    ) -> "PathOption":
+    ) -> PathOption:
         """
         Factory method to create PathOption for 1+1 protected path pair.
 
@@ -327,7 +327,7 @@ class PathOption:
         slots_needed: int,
         congestion: float,
         available_slots: float = 1.0,
-    ) -> "PathOption":
+    ) -> PathOption:
         """
         Factory method to create PathOption for unprotected route.
 

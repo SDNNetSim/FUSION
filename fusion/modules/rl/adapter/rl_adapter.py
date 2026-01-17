@@ -979,7 +979,7 @@ class OfflinePolicyAdapter:
             # Alternative: some policies use predict
             action, _ = self._policy.predict(offline_state, action_masks=mask_list)
             return int(action)
-        elif hasattr(self._policy, "__call__"):
+        elif callable(self._policy):
             # Fallback: callable policy
             return int(self._policy(offline_state, mask_list))
         else:
