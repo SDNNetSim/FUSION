@@ -26,18 +26,18 @@ FUSION supports three categories of RL algorithms:
    +------------------------------------------------------------------+
    |                    ALGORITHM CATEGORIES                          |
    +------------------------------------------------------------------+
-   |                                                                   |
+   |                                                                  |
    |  Traditional RL          Multi-Armed Bandits      Deep RL        |
-   |  ----------------        ------------------       --------        |
+   |  ----------------        ------------------       --------       |
    |  - Q-Learning            - Epsilon-Greedy         - PPO          |
    |    (tabular)             - UCB                    - A2C          |
    |                                                   - DQN          |
    |                                                   - QR-DQN       |
-   |                                                                   |
+   |                                                                  |
    |  State: (src, dst)       State: (src, dst)        State: obs vec |
    |  Action: path index      Action: arm index        Action: int    |
    |  Updates: Q-table        Updates: value est.      Updates: SB3   |
-   |                                                                   |
+   |                                                                  |
    +------------------------------------------------------------------+
 
 .. list-table::

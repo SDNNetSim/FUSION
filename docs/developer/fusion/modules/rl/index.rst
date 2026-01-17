@@ -21,6 +21,8 @@ Reinforcement Learning Module
    adapter
    agents
    algorithms
+   args
+   environments
 
 Overview
 ========

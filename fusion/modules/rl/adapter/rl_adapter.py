@@ -499,9 +499,18 @@ class RLSimulationAdapter:
         if not result.success:
             return self._config.rl_block_penalty
 
-        # Legacy bandit algorithms use raw reward/penalty without modifiers
-        # Slicing/grooming bonuses and bandwidth weighting are for DRL only
-        return self._config.rl_success_reward
+        # Start with base success reward
+        reward = self._config.rl_success_reward
+
+        # Apply grooming bonus if allocation was groomed
+        if getattr(result, "is_groomed", False):
+            reward += self._config.rl_grooming_bonus
+
+        # Apply slicing penalty if allocation required slicing
+        if getattr(result, "is_sliced", False):
+            reward += self._config.rl_slicing_penalty
+
+        return reward
 
     def get_action_mask(self, options: PathOptionList) -> ActionMask:
         """

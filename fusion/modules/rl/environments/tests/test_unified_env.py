@@ -1008,7 +1008,8 @@ class TestSB3Integration:
         )
 
         obs, _ = wrapped.reset(seed=42)
-        action, _ = model.predict(obs, action_masks=wrapped.action_masks())
+        # MultiInputPolicy accepts dict obs; mypy types are incomplete
+        action, _ = model.predict(obs, action_masks=wrapped.action_masks())  # type: ignore[arg-type]
 
         # Action can be int, np.integer, or np.ndarray with single element
         if isinstance(action, np.ndarray):
@@ -1056,7 +1057,7 @@ class TestSB3Integration:
         steps = 0
 
         while True:
-            action, _ = model.predict(obs, action_masks=wrapped.action_masks())
+            action, _ = model.predict(obs, action_masks=wrapped.action_masks())  # type: ignore[arg-type]
             obs, reward, terminated, truncated, info = wrapped.step(int(action))
             total_reward += float(reward)
             steps += 1
@@ -1248,7 +1249,9 @@ class TestUnifiedSimEnvPyGGraphObservations:
 
         assert "edge_index" in env.observation_space.spaces
         # Shape is [2, num_edges] where num_edges is estimated initially
-        assert env.observation_space["edge_index"].shape[0] == 2
+        edge_index_shape = env.observation_space["edge_index"].shape
+        assert edge_index_shape is not None
+        assert edge_index_shape[0] == 2
 
     def test_gnn_mode_adds_edge_attr(self) -> None:
         """GNN mode adds edge_attr."""
@@ -1257,7 +1260,9 @@ class TestUnifiedSimEnvPyGGraphObservations:
 
         assert "edge_attr" in env.observation_space.spaces
         # Shape is [num_edges, edge_dim]
-        assert env.observation_space["edge_attr"].shape[1] == 2  # [utilization, length]
+        edge_attr_shape = env.observation_space["edge_attr"].shape
+        assert edge_attr_shape is not None
+        assert edge_attr_shape[1] == 2  # [utilization, length]
 
     def test_gnn_mode_adds_path_masks(self) -> None:
         """GNN mode adds path_masks."""
@@ -1266,7 +1271,9 @@ class TestUnifiedSimEnvPyGGraphObservations:
 
         assert "path_masks" in env.observation_space.spaces
         # Shape is [k_paths, num_edges]
-        assert env.observation_space["path_masks"].shape[0] == 5
+        path_masks_shape = env.observation_space["path_masks"].shape
+        assert path_masks_shape is not None
+        assert path_masks_shape[0] == 5
 
     def test_edge_index_contains_valid_indices(self) -> None:
         """edge_index values are valid node indices."""

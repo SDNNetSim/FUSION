@@ -16,7 +16,7 @@ Phase: P4.2 - UnifiedSimEnv Wiring
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import gymnasium as gym
 import numpy as np
@@ -29,7 +29,6 @@ from fusion.modules.rl.args.observation_args import OBS_DICT
 if TYPE_CHECKING:
     from fusion.core.orchestrator import SDNOrchestrator
     from fusion.core.simulation import SimulationEngine
-    from fusion.domain.config import SimulationConfig
     from fusion.domain.network_state import NetworkState
     from fusion.domain.request import Request
 
@@ -353,10 +352,10 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
                 dtype=np.float32,
             )
 
-        self.observation_space: spaces.Dict = spaces.Dict(obs_spaces)
+        self.observation_space: spaces.Dict = spaces.Dict(obs_spaces)  # type: ignore[arg-type]
 
         # Action space: Discrete - select one of k paths
-        self.action_space: spaces.Discrete = spaces.Discrete(k_paths)
+        self.action_space: spaces.Discrete = spaces.Discrete(k_paths)  # type: ignore[assignment]
 
     @property
     def config(self) -> RLConfig:
@@ -785,15 +784,19 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
                     self._rl_props.chosen_path_index = actual_action
 
         # Apply action via adapter (routes through orchestrator)
+        # Cast to Request for type checker - SimpleRequest is duck-typed compatible
+        current_req = cast("Request", self._current_request)
+        network_state = self._engine.network_state
+        assert network_state is not None, "Network state must be initialized"
         result = self._adapter.apply_action(
             action=actual_action,
-            request=self._current_request,
-            network_state=self._engine.network_state,
+            request=current_req,
+            network_state=network_state,
             options=self._current_options,
         )
 
         # Compute reward
-        reward = self._adapter.compute_reward(result, self._current_request)
+        reward = self._adapter.compute_reward(result, current_req)
 
         # Update bandit algorithm with reward (for non-DRL algorithms)
         if self._use_rl_agent and self._path_agent is not None and self._is_training:
@@ -811,7 +814,7 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
                 )
 
         # Record result (updates stats, schedules release if success)
-        self._engine.record_allocation_result(self._current_request, result)
+        self._engine.record_allocation_result(current_req, result)
 
         # Advance to next request
         self._request_index += 1
@@ -1054,7 +1057,6 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
             Dict with graph observation components
         """
         n = self._config.num_nodes
-        k = self._config.k_paths
 
         # Adjacency matrix from edge_index
         if self._edge_index is not None:
@@ -1166,8 +1168,8 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         if self._wired_mode and self._engine is not None and self._engine.network_state is not None:
             state = self._engine.network_state
             for e in range(num_edges):
-                src_idx = int(self._edge_index[0, e])
-                dst_idx = int(self._edge_index[1, e])
+                # TODO: Use per-link utilization when NetworkState supports it
+                # src_idx, dst_idx would be used for: state.get_link_utilization(src_idx, dst_idx)
                 # Utilization placeholder (real would query spectrum)
                 edge_attr[e, 0] = state.get_spectrum_utilization() if hasattr(state, "get_spectrum_utilization") else 0.0
                 # Normalized length placeholder
