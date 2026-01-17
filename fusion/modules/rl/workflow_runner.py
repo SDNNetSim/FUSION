@@ -36,9 +36,6 @@ from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-# TODO moved to TODO.md: Support for picking up where you left off (testing)
-
-
 def _run_drl_training(
     env: Any, sim_dict: dict[str, Any], yaml_dict: dict[str, Any] | None = None
 ) -> None:

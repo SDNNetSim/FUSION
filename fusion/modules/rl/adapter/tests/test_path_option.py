@@ -5,6 +5,7 @@ Chunk: 1 - PathOption dataclass
 """
 
 from dataclasses import FrozenInstanceError
+from typing import Any
 
 import numpy as np
 import pytest
@@ -15,9 +16,9 @@ from fusion.modules.rl.adapter import (
 )
 
 
-def create_valid_path_option(**kwargs) -> PathOption:
+def create_valid_path_option(**kwargs: Any) -> PathOption:
     """Helper to create a valid PathOption with defaults."""
-    defaults = {
+    defaults: dict[str, Any] = {
         "path_index": 0,
         "path": ("0", "1", "2"),
         "weight_km": 100.0,

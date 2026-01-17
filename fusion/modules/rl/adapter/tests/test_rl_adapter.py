@@ -96,7 +96,7 @@ class TestAdapterProperties:
         adapter = RLSimulationAdapter(mock_orchestrator)
 
         # Can call methods on the returned pipeline
-        result = adapter.routing.some_method()
+        result = adapter.routing.some_method()  # type: ignore[attr-defined]
         assert result == "routing_result"
 
     def test_spectrum_property_returns_pipeline(self) -> None:
@@ -110,7 +110,7 @@ class TestAdapterProperties:
         adapter = RLSimulationAdapter(mock_orchestrator)
 
         # Can call methods on the returned pipeline
-        result = adapter.spectrum.some_method()
+        result = adapter.spectrum.some_method()  # type: ignore[attr-defined]
         assert result == "spectrum_result"
 
     def test_orchestrator_property_returns_orchestrator(self) -> None:

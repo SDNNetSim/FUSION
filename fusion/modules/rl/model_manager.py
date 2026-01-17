@@ -9,7 +9,7 @@ import os
 from typing import Any
 
 import torch
-import torch.nn as nn  # pylint: disable=consider-using-from-import
+import torch.nn as nn
 
 from fusion.modules.rl.args.registry_args import get_algorithm_registry
 from fusion.modules.rl.errors import (
@@ -79,8 +79,9 @@ def get_model(
     model_type = determine_model_type(sim_dict)
     algorithm = sim_dict[model_type]
 
-    # TODO: Ensure this is consistent acoss the board (other cli, files, etc.)
-    #   We might want to find a better way to do this
+    # TODO(v6.1): Standardize hyperparameter file discovery across CLI and modules.
+    #   Current approach hardcodes path to fusion/configs/hyperparams/{algorithm}_{network}.yml.
+    #   Should use a centralized config lookup or registry pattern instead.
     if yaml_dict is None:
         logger.debug("Current working directory: %s", os.getcwd())
 
