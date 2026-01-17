@@ -20,6 +20,7 @@ Reinforcement Learning Module
 
    adapter
    agents
+   algorithms
 
 Overview
 ========
