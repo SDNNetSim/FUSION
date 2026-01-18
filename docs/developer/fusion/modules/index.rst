@@ -36,8 +36,7 @@ Overview
    - :ref:`rl-module` - Reinforcement learning (transitioning to UnifiedSimEnv)
    - :ref:`routing-module` - Path computation algorithms
    - :ref:`snr-module` - Signal quality assessment
-
-   More module docs coming soon (spectrum).
+   - :ref:`spectrum-module` - Spectrum slot assignment algorithms
 
 The ``modules`` directory contains **algorithm implementations** - the actual logic for
 routing paths, assigning spectrum, calculating SNR, and making RL decisions. These are
@@ -474,3 +473,4 @@ Quick Reference: Where To Go
    rl/index
    routing/index
    snr/index
+   spectrum/index
