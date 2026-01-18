@@ -1,7 +1,24 @@
-"""SNR visualization plugin.
+"""
+SNR visualization plugin (BETA).
+
+Status: BETA
+    This module is currently in BETA and is actively being developed.
+    The API may evolve in future releases.
 
 This plugin provides visualization support for Signal-to-Noise Ratio (SNR)
-analysis in optical networks.
+analysis in optical networks. It extends the core FUSION visualization system
+with SNR-specific renderers and plot types.
+
+Components
+----------
+SNRvsDistancePlotRenderer
+    Renders SNR degradation vs distance plots.
+QFactorPlotRenderer
+    Renders Q-factor and BER analysis plots.
+OSNRMarginPlotRenderer
+    Renders OSNR margin bar charts with safety thresholds.
+SNRVisualizationPlugin
+    Main plugin class that registers metrics and plot types.
 """
 
 from pathlib import Path
@@ -25,14 +42,31 @@ from fusion.visualization.plugins.base_plugin import BasePlugin, PlotTypeRegistr
 
 
 class SNRvsDistancePlotRenderer(BaseRenderer):
-    """Renderer for SNR vs distance plots."""
+    """
+    Renderer for SNR vs distance plots.
+
+    This renderer creates plots showing how SNR degrades with transmission
+    distance, with optional confidence intervals and threshold lines.
+    """
 
     def supports_format(self, format: str) -> bool:
-        """Check if format is supported."""
+        """
+        Check if the given output format is supported.
+
+        :param format: Output format string (e.g., 'png', 'pdf').
+        :type format: str
+        :return: True if format is supported, False otherwise.
+        :rtype: bool
+        """
         return format in ["png", "pdf", "svg", "jpg"]
 
     def get_supported_formats(self) -> list[str]:
-        """Get list of supported formats."""
+        """
+        Get list of supported output formats.
+
+        :return: List of supported format strings.
+        :rtype: list[str]
+        """
         return ["png", "pdf", "svg", "jpg"]
 
     def render(
@@ -42,16 +76,19 @@ class SNRvsDistancePlotRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render SNR vs distance plot.
+        """
+        Render SNR vs distance plot.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification containing data and styling.
+        :type specification: PlotSpecification
+        :param output_path: File path where the plot will be saved.
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch.
+        :type dpi: int
+        :param format: Output format (png, pdf, svg, jpg).
+        :type format: str
+        :return: Result object containing success status and output path.
+        :rtype: PlotResult
         """
         fig, ax = plt.subplots(figsize=specification.figsize)
 
@@ -108,14 +145,31 @@ class SNRvsDistancePlotRenderer(BaseRenderer):
 
 
 class QFactorPlotRenderer(BaseRenderer):
-    """Renderer for Q-factor analysis plots."""
+    """
+    Renderer for Q-factor analysis plots.
+
+    This renderer creates dual-panel plots showing Q-factor vs distance
+    and Bit Error Rate (BER) vs SNR for signal quality analysis.
+    """
 
     def supports_format(self, format: str) -> bool:
-        """Check if format is supported."""
+        """
+        Check if the given output format is supported.
+
+        :param format: Output format string (e.g., 'png', 'pdf').
+        :type format: str
+        :return: True if format is supported, False otherwise.
+        :rtype: bool
+        """
         return format in ["png", "pdf", "svg", "jpg"]
 
     def get_supported_formats(self) -> list[str]:
-        """Get list of supported formats."""
+        """
+        Get list of supported output formats.
+
+        :return: List of supported format strings.
+        :rtype: list[str]
+        """
         return ["png", "pdf", "svg", "jpg"]
 
     def render(
@@ -125,16 +179,19 @@ class QFactorPlotRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render Q-factor plot.
+        """
+        Render Q-factor and BER analysis plot.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification containing data and styling.
+        :type specification: PlotSpecification
+        :param output_path: File path where the plot will be saved.
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch.
+        :type dpi: int
+        :param format: Output format (png, pdf, svg, jpg).
+        :type format: str
+        :return: Result object containing success status and output path.
+        :rtype: PlotResult
         """
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=specification.figsize)
 
@@ -193,14 +250,31 @@ class QFactorPlotRenderer(BaseRenderer):
 
 
 class OSNRMarginPlotRenderer(BaseRenderer):
-    """Renderer for OSNR margin visualization."""
+    """
+    Renderer for OSNR margin visualization.
+
+    This renderer creates bar charts showing OSNR margins with color-coded
+    safety thresholds (green for safe, orange for warning, red for critical).
+    """
 
     def supports_format(self, format: str) -> bool:
-        """Check if format is supported."""
+        """
+        Check if the given output format is supported.
+
+        :param format: Output format string (e.g., 'png', 'pdf').
+        :type format: str
+        :return: True if format is supported, False otherwise.
+        :rtype: bool
+        """
         return format in ["png", "pdf", "svg", "jpg"]
 
     def get_supported_formats(self) -> list[str]:
-        """Get list of supported formats."""
+        """
+        Get list of supported output formats.
+
+        :return: List of supported format strings.
+        :rtype: list[str]
+        """
         return ["png", "pdf", "svg", "jpg"]
 
     def render(
@@ -210,16 +284,19 @@ class OSNRMarginPlotRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render OSNR margin plot.
+        """
+        Render OSNR margin bar chart.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification containing data and styling.
+        :type specification: PlotSpecification
+        :param output_path: File path where the plot will be saved.
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch.
+        :type dpi: int
+        :param format: Output format (png, pdf, svg, jpg).
+        :type format: str
+        :return: Result object containing success status and output path.
+        :rtype: PlotResult
         """
         fig, ax = plt.subplots(figsize=specification.figsize)
 
@@ -297,35 +374,59 @@ class OSNRMarginPlotRenderer(BaseRenderer):
 
 
 class SNRVisualizationPlugin(BasePlugin):
-    """Plugin for SNR-specific visualizations.
+    """
+    Plugin for SNR-specific visualizations.
 
-    This plugin extends the FUSION visualization system with:
-    - SNR vs distance analysis
-    - Q-factor visualization
-    - BER analysis
-    - OSNR margin plots
+    This plugin extends the FUSION visualization system with signal quality
+    analysis capabilities including SNR vs distance, Q-factor, BER, and
+    OSNR margin visualizations.
+
+    Registered Plot Types
+    ---------------------
+    snr_vs_distance
+        Shows SNR degradation with transmission distance.
+    q_factor_plot
+        Dual-panel Q-factor and BER analysis.
+    osnr_margin_plot
+        OSNR margin bar chart with safety thresholds.
     """
 
     @property
     def name(self) -> str:
-        """Return plugin name."""
+        """
+        Return the plugin name.
+
+        :return: Plugin identifier string.
+        :rtype: str
+        """
         return "snr"
 
     @property
     def version(self) -> str:
-        """Return plugin version."""
+        """
+        Return the plugin version.
+
+        :return: Semantic version string.
+        :rtype: str
+        """
         return "1.0.0"
 
     @property
     def description(self) -> str:
-        """Return plugin description."""
+        """
+        Return the plugin description.
+
+        :return: Human-readable description of the plugin.
+        :rtype: str
+        """
         return "Visualization plugin for SNR and signal quality analysis"
 
     def register_metrics(self) -> list[MetricDefinition]:
-        """Register SNR-specific metrics.
+        """
+        Register SNR-specific metrics with the visualization system.
 
-        Returns:
-            List of SNR metric definitions
+        :return: List of metric definitions for SNR-related measurements.
+        :rtype: list[MetricDefinition]
         """
         return [
             MetricDefinition(
@@ -394,10 +495,11 @@ class SNRVisualizationPlugin(BasePlugin):
         ]
 
     def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
-        """Register SNR-specific plot types.
+        """
+        Register SNR-specific plot types with the visualization system.
 
-        Returns:
-            Dictionary of plot type registrations
+        :return: Dictionary mapping plot type names to their registrations.
+        :rtype: dict[str, PlotTypeRegistration]
         """
         from fusion.visualization.domain.strategies.processing_strategies import (
             GenericMetricProcessingStrategy,
@@ -432,10 +534,11 @@ class SNRVisualizationPlugin(BasePlugin):
         }
 
     def get_config_schema(self) -> dict:
-        """Return JSON schema for SNR plugin configuration.
+        """
+        Return JSON schema for SNR plugin configuration.
 
-        Returns:
-            JSON schema dictionary
+        :return: JSON schema dictionary defining valid configuration options.
+        :rtype: dict
         """
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
