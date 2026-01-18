@@ -218,7 +218,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
                     original_dict=self.sdn_props.modulation_formats_dict,
                     nested_key="max_length",
                 )
-                mod_format_list = []
+                mod_format_list: list[str | bool] = []
                 for mod_format in mod_formats_dict:
                     if (
                         self.sdn_props.modulation_formats_dict[mod_format]["max_length"]
@@ -226,7 +226,7 @@ class XTAwareRouting(AbstractRoutingAlgorithm):
                     ):
                         mod_format_list.append(mod_format)
                     else:
-                        mod_format_list.append(False)  # type: ignore[arg-type]
+                        mod_format_list.append(False)
             else:
                 # Fallback to simple modulation selection
                 mod_formats = getattr(self.sdn_props, "mod_formats", {})

@@ -832,6 +832,34 @@ class NetworkState:
         """
         return self.get_link_spectrum(link).length_km
 
+    def get_link_utilization(self, link: tuple[str, str]) -> float:
+        """
+        Get spectrum utilization for a link as a fraction (0.0 to 1.0).
+
+        Calculates the ratio of occupied slots to total slots across all
+        bands and cores. A slot is considered occupied if its value is non-zero
+        (positive for lightpath data, negative for guard bands).
+
+        :param link: (source, destination) tuple.
+        :type link: tuple[str, str]
+        :return: Utilization fraction between 0.0 (empty) and 1.0 (full).
+        :rtype: float
+        :raises KeyError: If link does not exist.
+        """
+        link_spectrum = self.get_link_spectrum(link)
+
+        total_slots = 0
+        occupied_slots = 0
+
+        for band_spectrum in link_spectrum.cores_matrix.values():
+            total_slots += band_spectrum.size
+            occupied_slots += int(np.count_nonzero(band_spectrum))
+
+        if total_slots == 0:
+            return 0.0
+
+        return occupied_slots / total_slots
+
     # =========================================================================
     # Private Helpers
     # =========================================================================

@@ -472,7 +472,7 @@ class Routing:
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key="max_length",
                     )
-                    modulation_formats = list(sorted_formats.keys())
+                    modulation_formats: list[str | bool] = list(sorted_formats.keys())
 
                     self.route_props.paths_matrix.append(path)
                     self.route_props.modulation_formats_matrix.append(

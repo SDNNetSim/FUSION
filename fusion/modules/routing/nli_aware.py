@@ -199,6 +199,7 @@ class NLIAwareRouting(AbstractRoutingAlgorithm):
             # Get modulation format
             modulation_formats = getattr(self.sdn_props, "mod_formats", {})
             modulation_format = get_path_modulation(modulation_formats, path_length)
+            modulation_format_list: list[str | bool]
             if modulation_format and modulation_format is not True:
                 modulation_format_list = [str(modulation_format)]
             else:

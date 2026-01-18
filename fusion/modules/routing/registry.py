@@ -178,8 +178,24 @@ class RoutingRegistry:
             return True
 
 
-# Global registry instance
-_registry = RoutingRegistry()
+# Global registry instance - lazily initialized to avoid circular imports
+_registry: RoutingRegistry | None = None
+
+
+def _get_registry() -> RoutingRegistry:
+    """
+    Get the global registry instance, initializing if needed.
+
+    Uses lazy initialization to avoid circular import issues that occur
+    when the module is first loaded.
+
+    :return: The global RoutingRegistry instance.
+    :rtype: RoutingRegistry
+    """
+    global _registry
+    if _registry is None:
+        _registry = RoutingRegistry()
+    return _registry
 
 
 # Convenience functions for global registry access
@@ -194,7 +210,7 @@ def register_algorithm(name: str, algorithm_class: Any) -> None:
     :raises TypeError: If algorithm_class doesn't implement AbstractRoutingAlgorithm.
     :raises ValueError: If name is already registered.
     """
-    _registry.register(name, algorithm_class)
+    _get_registry().register(name, algorithm_class)
 
 
 def get_algorithm(name: str) -> Any:
@@ -207,7 +223,7 @@ def get_algorithm(name: str) -> Any:
     :rtype: Any
     :raises KeyError: If algorithm is not found.
     """
-    return _registry.get(name)
+    return _get_registry().get(name)
 
 
 def create_algorithm(name: str, engine_props: dict, sdn_props: object) -> Any:
@@ -223,7 +239,7 @@ def create_algorithm(name: str, engine_props: dict, sdn_props: object) -> Any:
     :return: Configured routing algorithm instance.
     :rtype: Any
     """
-    return _registry.create(name, engine_props, sdn_props)
+    return _get_registry().create(name, engine_props, sdn_props)
 
 
 def list_routing_algorithms() -> list[str]:
@@ -233,7 +249,7 @@ def list_routing_algorithms() -> list[str]:
     :return: List of registered algorithm names.
     :rtype: list[str]
     """
-    return _registry.list_algorithms()
+    return _get_registry().list_algorithms()
 
 
 def get_routing_algorithm_info(name: str) -> dict[str, str]:
@@ -246,13 +262,14 @@ def get_routing_algorithm_info(name: str) -> dict[str, str]:
         module, supported topologies, and description.
     :rtype: dict[str, str]
     """
-    return _registry.get_algorithm_info(name)
+    return _get_registry().get_algorithm_info(name)
 
 
 # Dictionary for backward compatibility - populated from global registry
 def _get_routing_algorithms_dict() -> dict[str, Any]:
     """Get dictionary of routing algorithms for backward compatibility."""
-    return {name: _registry.get(name) for name in _registry.list_algorithms()}
+    reg = _get_registry()
+    return {name: reg.get(name) for name in reg.list_algorithms()}
 
 
 # Lazy-loaded dictionary using property-like access
@@ -261,28 +278,30 @@ class _RoutingAlgorithmsDict:
 
     def __getitem__(self, key: str) -> Any:
         """Get algorithm class by name."""
-        return _registry.get(key)
+        return _get_registry().get(key)
 
     def __contains__(self, key: str) -> bool:
         """Check if algorithm name exists."""
-        return key in _registry.list_algorithms()
+        return key in _get_registry().list_algorithms()
 
     def keys(self) -> list[str]:
         """Get all algorithm names."""
-        return _registry.list_algorithms()
+        return _get_registry().list_algorithms()
 
     def values(self) -> list[Any]:
         """Get all algorithm classes."""
-        return [_registry.get(name) for name in _registry.list_algorithms()]
+        reg = _get_registry()
+        return [reg.get(name) for name in reg.list_algorithms()]
 
     def items(self) -> list[tuple[str, Any]]:
         """Get all (name, class) pairs."""
-        return [(name, _registry.get(name)) for name in _registry.list_algorithms()]
+        reg = _get_registry()
+        return [(name, reg.get(name)) for name in reg.list_algorithms()]
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get algorithm class with default."""
         try:
-            return _registry.get(key)
+            return _get_registry().get(key)
         except KeyError:
             return default
 

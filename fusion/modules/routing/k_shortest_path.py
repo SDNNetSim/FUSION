@@ -110,7 +110,8 @@ class KShortestPath(AbstractRoutingAlgorithm):
             path_length = find_path_length(path_list=path, topology=topology)
 
             # Get modulation formats
-            modulation_formats_list: list[str]
+            # Note: False is used as sentinel for infeasible modulation formats
+            modulation_formats_list: list[str | bool]
             chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
             pre_calc = self.engine_props.get("pre_calc_mod_selection", False)
             if chosen_bandwidth and pre_calc:

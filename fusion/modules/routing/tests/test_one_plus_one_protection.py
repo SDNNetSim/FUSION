@@ -19,18 +19,19 @@ from fusion.modules.routing.one_plus_one_protection import OnePlusOneProtection
 def sample_topology() -> nx.Graph:
     """Create a sample topology with multiple disjoint paths."""
     G = nx.Graph()
-    G.add_edges_from(
-        [
-            (0, 1),
-            (1, 2),
-            (2, 3),  # Primary path
-            (0, 4),
-            (4, 5),
-            (5, 3),  # Backup path
-            (1, 4),
-            (2, 5),  # Cross-links
-        ]
-    )
+    # Add edges with length attribute required by find_path_length
+    edges = [
+        (0, 1, 100.0),
+        (1, 2, 100.0),
+        (2, 3, 100.0),  # Primary path
+        (0, 4, 100.0),
+        (4, 5, 100.0),
+        (5, 3, 100.0),  # Backup path
+        (1, 4, 100.0),
+        (2, 5, 100.0),  # Cross-links
+    ]
+    for u, v, length in edges:
+        G.add_edge(u, v, length=length)
     return G
 
 
@@ -38,7 +39,8 @@ def sample_topology() -> nx.Graph:
 def simple_topology() -> nx.Graph:
     """Create a simple topology for basic tests."""
     G = nx.Graph()
-    G.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 4)])
+    for u, v in [(0, 1), (1, 2), (2, 3), (3, 4)]:
+        G.add_edge(u, v, length=100.0)
     return G
 
 
@@ -268,14 +270,8 @@ class TestDualPathDisjointness:
     def test_no_shared_links_simple_topology(self) -> None:
         """Test disjoint paths on a simple topology."""
         G = nx.Graph()
-        G.add_edges_from(
-            [
-                (0, 1),
-                (1, 2),  # Path 1
-                (0, 3),
-                (3, 2),  # Path 2
-            ]
-        )
+        for u, v in [(0, 1), (1, 2), (0, 3), (3, 2)]:
+            G.add_edge(u, v, length=100.0)
 
         engine_props = {"topology": G, "protection_settings": {}}
         sdn_props = SDNProps()
@@ -299,19 +295,19 @@ class TestDualPathDisjointness:
         """Test when multiple disjoint path pairs exist."""
         G = nx.Graph()
         # Create a grid-like topology with multiple disjoint paths
-        G.add_edges_from(
-            [
-                (0, 1),
-                (1, 2),
-                (2, 3),  # Top path
-                (0, 4),
-                (4, 5),
-                (5, 3),  # Middle path
-                (0, 6),
-                (6, 7),
-                (7, 3),  # Bottom path
-            ]
-        )
+        edges = [
+            (0, 1),
+            (1, 2),
+            (2, 3),  # Top path
+            (0, 4),
+            (4, 5),
+            (5, 3),  # Middle path
+            (0, 6),
+            (6, 7),
+            (7, 3),  # Bottom path
+        ]
+        for u, v in edges:
+            G.add_edge(u, v, length=100.0)
 
         engine_props = {"topology": G, "protection_settings": {}}
         sdn_props = SDNProps()
@@ -329,6 +325,9 @@ class TestDualPathDisjointness:
     def test_no_disjoint_paths_linear(self) -> None:
         """Test that linear topology returns None (no disjoint paths)."""
         G = nx.path_graph(5)  # Linear: 0-1-2-3-4
+        # Add length attribute to all edges
+        for u, v in G.edges():
+            G[u][v]["length"] = 100.0
 
         engine_props = {"topology": G, "protection_settings": {}}
         sdn_props = SDNProps()

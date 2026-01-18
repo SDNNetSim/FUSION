@@ -7,7 +7,7 @@ path with fixed protection switchover latency.
 """
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 import networkx as nx
 
@@ -210,7 +210,13 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                 break  # Found feasible pair, exit outer loop
 
         # Check if we found a feasible pair
-        if primary_path is None or backup_path is None:
+        # Note: primary_mods and backup_mods are always set together with paths
+        if (
+            primary_path is None
+            or backup_path is None
+            or primary_mods is None
+            or backup_mods is None
+        ):
             logger.warning(
                 f"1+1 protection: Found {len(all_disjoint_paths)} disjoint paths but "
                 f"no pair where BOTH paths are feasible for {source} -> {destination}"
@@ -480,17 +486,18 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             "revert_to_primary": self.revert_to_primary,
         }
 
-    def _get_modulation_formats_for_path(self, path: list[Any]) -> list[str]:
+    def _get_modulation_formats_for_path(self, path: list[Any]) -> list[str | bool]:
         """
         Get modulation formats for a given path.
 
         Determines appropriate modulation formats based on path length,
         bandwidth requirements, and available modulation format configurations.
+        Returns False for infeasible modulation formats.
 
         :param path: List of nodes representing the path
         :type path: list[Any]
-        :return: List of modulation format strings
-        :rtype: list[str]
+        :return: List of modulation format strings or False for infeasible
+        :rtype: list[str | bool]
         """
         path_length = find_path_length(path_list=path, topology=self.topology)
 
@@ -522,7 +529,8 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                     nested_key="max_length",
                 )
                 # Ensure all keys are strings
-                return [str(key) for key in modulation_formats_dict.keys()][::-1]
+                result = [str(key) for key in modulation_formats_dict.keys()][::-1]
+                return cast(list[str | bool], result)
             else:
                 # Fallback to simple list
                 return ["QPSK"]

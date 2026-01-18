@@ -233,7 +233,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
 
     def _get_modulation_formats(
         self, path_length: float, chosen_bandwidth: Any
-    ) -> list[str]:
+    ) -> list[str | bool]:
         """
         Get appropriate modulation formats for the given path length.
 

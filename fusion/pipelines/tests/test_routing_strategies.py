@@ -309,7 +309,7 @@ class TestProtectionAwareStrategy:
 
         call_count = 0
 
-        def mock_select(*args, **kwargs):
+        def mock_select(*args: object, **kwargs: object) -> RouteResult:
             nonlocal call_count
             call_count += 1
             if call_count == 1:

@@ -39,13 +39,15 @@ class RoutingProps:
         """Initialize routing properties with default values."""
         # Path computation properties - can contain path lists or path data dicts
         self.paths_matrix: list[Any] = []
-        self.modulation_formats_matrix: list[list[str]] = []
+        # Note: modulation_formats_matrix uses False as sentinel for infeasible formats
+        self.modulation_formats_matrix: list[list[str | bool]] = []
         self.weights_list: list[float] = []
         self.path_index_list: list[int] = []
 
         # Backup paths for 1+1 protection (corresponds to paths_matrix)
         self.backup_paths_matrix: list[list[int] | None] = []
-        self.backup_modulation_formats_matrix: list[list[str]] = []
+        # Note: backup_modulation_formats_matrix uses False as sentinel for infeasible formats
+        self.backup_modulation_formats_matrix: list[list[str | bool]] = []
 
         # Physical layer parameters
         self.input_power: float = DEFAULT_INPUT_POWER

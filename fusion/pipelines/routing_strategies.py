@@ -239,7 +239,7 @@ class KShortestPathStrategy:
             paths_gen = nx.shortest_simple_paths(
                 topology, source, destination, weight="weight"
             )
-            paths = []
+            paths: list[tuple[str, ...]] = []
             for path in paths_gen:
                 if len(paths) >= self.k:
                     break

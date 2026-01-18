@@ -34,8 +34,9 @@ Overview
    - :ref:`failures-module` - Network failure injection (beta)
    - :ref:`ml-module` - Machine learning utilities (beta)
    - :ref:`rl-module` - Reinforcement learning (transitioning to UnifiedSimEnv)
+   - :ref:`routing-module` - Path computation algorithms
 
-   More module docs coming soon (routing, spectrum, snr).
+   More module docs coming soon (spectrum, snr).
 
 The ``modules`` directory contains **algorithm implementations** - the actual logic for
 routing paths, assigning spectrum, calculating SNR, and making RL decisions. These are
@@ -470,3 +471,4 @@ Quick Reference: Where To Go
    failures/index
    ml/index
    rl/index
+   routing/index
