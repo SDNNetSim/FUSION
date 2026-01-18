@@ -35,8 +35,9 @@ Overview
    - :ref:`ml-module` - Machine learning utilities (beta)
    - :ref:`rl-module` - Reinforcement learning (transitioning to UnifiedSimEnv)
    - :ref:`routing-module` - Path computation algorithms
+   - :ref:`snr-module` - Signal quality assessment
 
-   More module docs coming soon (spectrum, snr).
+   More module docs coming soon (spectrum).
 
 The ``modules`` directory contains **algorithm implementations** - the actual logic for
 routing paths, assigning spectrum, calculating SNR, and making RL decisions. These are
@@ -472,3 +473,4 @@ Quick Reference: Where To Go
    ml/index
    rl/index
    routing/index
+   snr/index
