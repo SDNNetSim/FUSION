@@ -6,8 +6,6 @@ configuration, supporting:
 - Heuristic policies (first_feasible, shortest, least_congested, random, load_balanced)
 - ML policies (via MLControlPolicy)
 - RL policies (via RLPolicy.from_file)
-
-Phase: P5.5 - Orchestrator Integration
 """
 
 from __future__ import annotations
@@ -35,17 +33,25 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PolicyConfig:
-    """Configuration for policy instantiation.
+    """
+    Configuration for policy instantiation.
 
-    Attributes:
-        policy_type: Type of policy ("heuristic", "ml", "rl")
-        policy_name: Name of specific policy variant
-        model_path: Path to model file (for ml/rl types)
-        fallback_policy: Fallback policy name if primary fails
-        k_paths: Number of candidate paths (for rl)
-        seed: Random seed (for random policies)
-        alpha: Balance parameter (for load_balanced policy)
-        algorithm: RL algorithm name (for rl type, e.g., "PPO", "MaskablePPO")
+    :ivar policy_type: Type of policy ("heuristic", "ml", "rl").
+    :vartype policy_type: str
+    :ivar policy_name: Name of specific policy variant.
+    :vartype policy_name: str
+    :ivar model_path: Path to model file (for ml/rl types).
+    :vartype model_path: str | None
+    :ivar fallback_policy: Fallback policy name if primary fails.
+    :vartype fallback_policy: str
+    :ivar k_paths: Number of candidate paths (for rl).
+    :vartype k_paths: int
+    :ivar seed: Random seed (for random policies).
+    :vartype seed: int | None
+    :ivar alpha: Balance parameter (for load_balanced policy).
+    :vartype alpha: float
+    :ivar algorithm: RL algorithm name (for rl type, e.g., "PPO", "MaskablePPO").
+    :vartype algorithm: str
     """
 
     policy_type: str = "heuristic"
@@ -59,7 +65,7 @@ class PolicyConfig:
 
 
 # Registry of heuristic policies
-HEURISTIC_POLICIES: dict[str, type] = {
+HEURISTIC_POLICIES: dict[str, type[ControlPolicy]] = {
     "first_feasible": FirstFeasiblePolicy,
     "shortest": ShortestFeasiblePolicy,
     "shortest_feasible": ShortestFeasiblePolicy,
@@ -71,7 +77,8 @@ HEURISTIC_POLICIES: dict[str, type] = {
 
 
 class PolicyFactory:
-    """Factory for creating control policy instances.
+    """
+    Factory for creating control policy instances.
 
     This factory instantiates policies based on configuration, supporting
     multiple policy types:
@@ -82,7 +89,8 @@ class PolicyFactory:
 
     Default policy is FirstFeasiblePolicy when not specified.
 
-    Example:
+    Example::
+
         >>> config = PolicyConfig(policy_type="heuristic", policy_name="shortest")
         >>> policy = PolicyFactory.create(config)
         >>> action = policy.select_action(request, options, network_state)
@@ -90,16 +98,14 @@ class PolicyFactory:
 
     @staticmethod
     def create(config: PolicyConfig | None = None) -> ControlPolicy:
-        """Create a policy instance from configuration.
+        """
+        Create a policy instance from configuration.
 
-        Args:
-            config: Policy configuration. If None, creates FirstFeasiblePolicy.
-
-        Returns:
-            ControlPolicy instance
-
-        Raises:
-            ValueError: If policy type/name is unknown or model_path is missing
+        :param config: Policy configuration. If None, creates FirstFeasiblePolicy.
+        :type config: PolicyConfig | None
+        :return: ControlPolicy instance.
+        :rtype: ControlPolicy
+        :raises ValueError: If policy type/name is unknown or model_path is missing.
         """
         if config is None:
             logger.debug("No policy config provided, using FirstFeasiblePolicy")
@@ -118,7 +124,15 @@ class PolicyFactory:
 
     @staticmethod
     def _create_heuristic(config: PolicyConfig) -> ControlPolicy:
-        """Create heuristic policy instance."""
+        """
+        Create heuristic policy instance.
+
+        :param config: Policy configuration.
+        :type config: PolicyConfig
+        :return: Heuristic policy instance.
+        :rtype: ControlPolicy
+        :raises ValueError: If policy name is unknown.
+        """
         policy_name = config.policy_name.lower()
 
         if policy_name not in HEURISTIC_POLICIES:
@@ -143,7 +157,16 @@ class PolicyFactory:
 
     @staticmethod
     def _create_ml(config: PolicyConfig) -> MLControlPolicy:
-        """Create ML policy instance."""
+        """
+        Create ML policy instance.
+
+        :param config: Policy configuration.
+        :type config: PolicyConfig
+        :return: ML policy instance.
+        :rtype: MLControlPolicy
+        :raises ValueError: If model_path is not provided.
+        :raises FileNotFoundError: If model file does not exist.
+        """
         from fusion.policies.ml_policy import MLControlPolicy
 
         if not config.model_path:
@@ -168,7 +191,16 @@ class PolicyFactory:
 
     @staticmethod
     def _create_rl(config: PolicyConfig) -> RLPolicy:
-        """Create RL policy instance."""
+        """
+        Create RL policy instance.
+
+        :param config: Policy configuration.
+        :type config: PolicyConfig
+        :return: RL policy instance.
+        :rtype: RLPolicy
+        :raises ValueError: If model_path is not provided.
+        :raises FileNotFoundError: If model file does not exist.
+        """
         from fusion.policies.rl_policy import RLPolicy
 
         if not config.model_path:
@@ -190,7 +222,14 @@ class PolicyFactory:
 
     @staticmethod
     def _create_fallback(policy_name: str) -> ControlPolicy:
-        """Create a fallback heuristic policy."""
+        """
+        Create a fallback heuristic policy.
+
+        :param policy_name: Name of the fallback policy.
+        :type policy_name: str
+        :return: Fallback policy instance.
+        :rtype: ControlPolicy
+        """
         policy_name = policy_name.lower()
 
         if policy_name not in HEURISTIC_POLICIES:
@@ -205,15 +244,15 @@ class PolicyFactory:
 
     @staticmethod
     def from_dict(config_dict: dict[str, Any]) -> ControlPolicy:
-        """Create policy from dictionary configuration.
+        """
+        Create policy from dictionary configuration.
 
         Convenience method for creating policies from config files.
 
-        Args:
-            config_dict: Dictionary with policy configuration
-
-        Returns:
-            ControlPolicy instance
+        :param config_dict: Dictionary with policy configuration.
+        :type config_dict: dict[str, Any]
+        :return: ControlPolicy instance.
+        :rtype: ControlPolicy
         """
         config = PolicyConfig(
             policy_type=config_dict.get("policy_type", "heuristic"),
@@ -229,9 +268,10 @@ class PolicyFactory:
 
     @staticmethod
     def get_default_policy() -> ControlPolicy:
-        """Get the default policy (FirstFeasiblePolicy).
+        """
+        Get the default policy (FirstFeasiblePolicy).
 
-        Returns:
-            FirstFeasiblePolicy instance
+        :return: FirstFeasiblePolicy instance.
+        :rtype: ControlPolicy
         """
         return FirstFeasiblePolicy()

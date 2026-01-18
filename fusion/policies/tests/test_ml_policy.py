@@ -1,10 +1,7 @@
-"""Tests for MLControlPolicy.
-
-Phase: P5.3 - ML Policy Support
-"""
+"""Tests for MLControlPolicy."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pytest
@@ -22,6 +19,10 @@ from fusion.policies.ml_policy import (
     MLControlPolicy,
     SklearnModelWrapper,
 )
+
+if TYPE_CHECKING:
+    from fusion.domain.network_state import NetworkState
+    from fusion.domain.request import Request
 
 
 @dataclass
@@ -41,6 +42,16 @@ class MockNetworkState:
     """Mock NetworkState for testing."""
 
     pass
+
+
+def mock_request(**kwargs: Any) -> "Request":
+    """Create a mock request cast to Request type for testing."""
+    return cast("Request", MockRequest(**kwargs))
+
+
+def mock_network_state() -> "NetworkState":
+    """Create a mock network state cast to NetworkState type for testing."""
+    return cast("NetworkState", MockNetworkState())
 
 
 def create_path_option(
@@ -125,7 +136,7 @@ class TestFeatureBuilder:
     def test_build_with_all_paths(self) -> None:
         """Should build correct features with full path list."""
         builder = FeatureBuilder(k_paths=3)
-        request = MockRequest(bandwidth_gbps=100.0)
+        request = mock_request(bandwidth_gbps=100.0)
         options = [
             create_path_option(
                 path_index=0, is_feasible=True, weight_km=500.0, congestion=0.3, slots_needed=4
@@ -138,7 +149,7 @@ class TestFeatureBuilder:
             ),
         ]
 
-        features = builder.build(request, options, MockNetworkState())
+        features = builder.build(request, options, mock_network_state())
 
         assert features.shape == (13,)
         # Request feature: 100/1000 = 0.1
@@ -152,12 +163,12 @@ class TestFeatureBuilder:
     def test_build_with_padding(self) -> None:
         """Should pad missing paths correctly."""
         builder = FeatureBuilder(k_paths=3)
-        request = MockRequest(bandwidth_gbps=100.0)
+        request = mock_request(bandwidth_gbps=100.0)
         options = [
             create_path_option(path_index=0, is_feasible=True, weight_km=500.0, congestion=0.3),
         ]
 
-        features = builder.build(request, options, MockNetworkState())
+        features = builder.build(request, options, mock_network_state())
 
         assert features.shape == (13,)
         # Path 1 should be padded: weight=0, congestion=1, feasible=0, slots=0
@@ -169,9 +180,9 @@ class TestFeatureBuilder:
     def test_build_empty_options(self) -> None:
         """Should handle empty options with all padding."""
         builder = FeatureBuilder(k_paths=2)
-        request = MockRequest(bandwidth_gbps=50.0)
+        request = mock_request(bandwidth_gbps=50.0)
 
-        features = builder.build(request, [], MockNetworkState())
+        features = builder.build(request, [], mock_network_state())
 
         assert features.shape == (9,)  # 1 + 2*4
         assert features[0] == pytest.approx(0.05)  # bandwidth
@@ -181,13 +192,14 @@ class TestFeatureBuilder:
     def test_dtype_is_float32(self) -> None:
         """Features should be float32."""
         builder = FeatureBuilder(k_paths=3)
-        features = builder.build(MockRequest(), [], MockNetworkState())
+        features = builder.build(mock_request(), [], mock_network_state())
         assert features.dtype == np.float32
 
     def test_none_request_handled(self) -> None:
         """Should handle None request gracefully."""
         builder = FeatureBuilder(k_paths=2)
-        features = builder.build(None, [], None)
+        # Intentionally pass None to test error handling
+        features = builder.build(None, [], None)  # type: ignore[arg-type]
         assert features.shape == (9,)
         assert features[0] == 0.0  # bandwidth defaults to 0
 
@@ -288,7 +300,7 @@ class TestMLControlPolicySelectAction:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 2
 
@@ -304,7 +316,7 @@ class TestMLControlPolicySelectAction:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Should select index 1 (next highest feasible)
         assert action == 1
@@ -314,7 +326,7 @@ class TestMLControlPolicySelectAction:
         model = CallableModelWrapper(lambda x: np.array([0.5]))
         policy = MLControlPolicy(model=model, k_paths=1)
 
-        action = policy.select_action(MockRequest(), [], MockNetworkState())
+        action = policy.select_action(mock_request(), [], mock_network_state())
 
         assert action == -1
 
@@ -328,7 +340,7 @@ class TestMLControlPolicySelectAction:
             create_path_option(path_index=1, is_feasible=False),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -342,8 +354,8 @@ class TestMLControlPolicySelectAction:
             create_path_option(path_index=1, is_feasible=True, weight_km=200.0, congestion=0.5),
             create_path_option(path_index=2, is_feasible=True, weight_km=150.0, congestion=0.4),
         ]
-        request = MockRequest(bandwidth_gbps=100.0)
-        network_state = MockNetworkState()
+        request = mock_request(bandwidth_gbps=100.0)
+        network_state = mock_network_state()
 
         # Run multiple times - should always get same result
         actions = [
@@ -371,7 +383,7 @@ class TestMLControlPolicySklearnModel:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 1
 
@@ -389,7 +401,7 @@ class TestMLControlPolicySklearnModel:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Should select index 1 (highest feasible)
         assert action == 1
@@ -412,7 +424,7 @@ class TestMLControlPolicyTorchLikeModel:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 2
 
@@ -435,7 +447,7 @@ class TestMLControlPolicyFallback:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Should get valid action from fallback
         assert action >= 0
@@ -453,7 +465,7 @@ class TestMLControlPolicyFallback:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Model selects 0, but it's infeasible, so masking selects 1
         assert action == 1
@@ -474,7 +486,7 @@ class TestMLControlPolicyFallback:
 
         # Make several calls that trigger fallback
         for _ in range(5):
-            policy.select_action(MockRequest(), options, MockNetworkState())
+            policy.select_action(mock_request(), options, mock_network_state())
 
         stats = policy.get_stats()
         assert stats["total_calls"] == 5
@@ -492,7 +504,7 @@ class TestMLControlPolicyFallback:
         policy = MLControlPolicy(model=FailingWrapper(), k_paths=2)
 
         options = [create_path_option(path_index=0, is_feasible=True)]
-        policy.select_action(MockRequest(), options, MockNetworkState())
+        policy.select_action(mock_request(), options, mock_network_state())
 
         assert policy.get_stats()["total_calls"] == 1
 
@@ -513,8 +525,8 @@ class TestMLControlPolicyUpdate:
         policy = MLControlPolicy(model=model, k_paths=1)
 
         # Should not raise
-        policy.update(MockRequest(), 0, 1.0)
-        policy.update(MockRequest(), 1, -1.0)
+        policy.update(mock_request(), 0, 1.0)
+        policy.update(mock_request(), 1, -1.0)
 
 
 class TestMLControlPolicyGetName:
@@ -546,9 +558,9 @@ class TestMLControlPolicyDifferentFromHeuristic:
             create_path_option(path_index=2, is_feasible=True, weight_km=300.0),
         ]
 
-        ml_action = ml_policy.select_action(MockRequest(), options, MockNetworkState())
+        ml_action = ml_policy.select_action(mock_request(), options, mock_network_state())
         heuristic_action = heuristic_policy.select_action(
-            MockRequest(), options, MockNetworkState()
+            mock_request(), options, mock_network_state()
         )
 
         # FirstFeasible selects 0, ML selects 2
@@ -569,9 +581,9 @@ class TestMLControlPolicyDifferentFromHeuristic:
             create_path_option(path_index=2, is_feasible=True, weight_km=300.0),  # Longest, ML pick
         ]
 
-        ml_action = ml_policy.select_action(MockRequest(), options, MockNetworkState())
+        ml_action = ml_policy.select_action(mock_request(), options, mock_network_state())
         heuristic_action = heuristic_policy.select_action(
-            MockRequest(), options, MockNetworkState()
+            mock_request(), options, mock_network_state()
         )
 
         # ShortestFeasible selects 0, ML selects 2

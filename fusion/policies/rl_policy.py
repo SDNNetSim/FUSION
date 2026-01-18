@@ -4,8 +4,6 @@ RL Policy wrapper for Stable-Baselines3 models.
 This module provides the RLPolicy class that wraps pre-trained SB3 models
 to implement the ControlPolicy protocol, enabling unified policy handling
 in the SDNOrchestrator.
-
-Phase: P5.1 - ControlPolicy Protocol + RLPolicy Adapter
 """
 
 from __future__ import annotations
@@ -40,11 +38,13 @@ class RLPolicy:
     The wrapped model is pre-trained and does not learn online. Use
     UnifiedSimEnv and SB3's learn() for online training.
 
-    Attributes:
-        model: Pre-trained SB3 model (PPO, DQN, A2C, etc.)
-        k_paths: Number of path options (for observation space)
+    :ivar model: Pre-trained SB3 model (PPO, DQN, A2C, etc.).
+    :vartype model: BaseAlgorithm
+    :ivar k_paths: Number of path options (for observation space).
+    :vartype k_paths: int
 
-    Example:
+    Example::
+
         >>> from stable_baselines3 import PPO
         >>> model = PPO.load("trained_model.zip")
         >>> policy = RLPolicy(model)
@@ -60,11 +60,14 @@ class RLPolicy:
         """
         Initialize RLPolicy with a trained SB3 model.
 
-        Args:
-            model: Pre-trained SB3 model with predict() method
-            adapter: Optional adapter for observation building. If None,
-                uses internal observation construction.
-            k_paths: Expected number of path options (for obs space size)
+        :param model: Pre-trained SB3 model with predict() method.
+        :type model: BaseAlgorithm
+        :param adapter: Optional adapter for observation building. If None,
+            uses internal observation construction.
+        :type adapter: RLSimulationAdapter | None
+        :param k_paths: Expected number of path options (for obs space size).
+        :type k_paths: int
+        :raises ValueError: If model does not have predict() method.
         """
         self.model = model
         self._adapter = adapter
@@ -94,15 +97,16 @@ class RLPolicy:
         Builds an observation from the inputs, generates an action mask
         from feasibility flags, and uses the model to predict an action.
 
-        Args:
-            request: The incoming request to serve
-            options: Available path options with feasibility information
-            network_state: Current state of the network
+        :param request: The incoming request to serve.
+        :type request: Request
+        :param options: Available path options with feasibility information.
+        :type options: list[PathOption]
+        :param network_state: Current state of the network.
+        :type network_state: NetworkState
+        :return: Path index (0 to len(options)-1), or -1 if no valid action.
+        :rtype: int
 
-        Returns:
-            Path index (0 to len(options)-1), or -1 if no valid action
-
-        Note:
+        .. note::
             The model must support action masking. For models trained with
             sb3-contrib's MaskablePPO, the action_masks parameter is used.
             For standard models, masking is applied post-prediction.
@@ -121,15 +125,17 @@ class RLPolicy:
         try:
             # Try to use native action masking if available
             if self._supports_action_masking():
-                action, _ = self.model.predict(
+                # MaskablePPO supports action_masks parameter
+                raw_action, _ = self.model.predict(
                     obs,
                     deterministic=True,
-                    action_masks=np.array(action_mask),
+                    action_masks=np.array(action_mask),  # type: ignore[call-arg]
                 )
+                action: int = int(raw_action)
             else:
                 # Predict without masking, then validate
-                action, _ = self.model.predict(obs, deterministic=True)
-                action = int(action)
+                raw_action, _ = self.model.predict(obs, deterministic=True)
+                action = int(raw_action)
 
                 # If predicted action is infeasible, find first feasible
                 if action >= len(options) or not action_mask[action]:
@@ -140,7 +146,7 @@ class RLPolicy:
                     )
                     action = self._find_first_feasible(action_mask)
 
-            return int(action) if action >= 0 else -1
+            return action if action >= 0 else -1
 
         except Exception as e:
             logger.warning("Model prediction failed: %s, returning -1", e)
@@ -158,11 +164,22 @@ class RLPolicy:
         If an adapter is available, delegates to adapter.build_observation().
         Otherwise, constructs observation matching training format.
 
-        Returns:
-            numpy array matching model's observation space
+        :param request: The incoming request.
+        :type request: Request
+        :param options: Available path options.
+        :type options: list[PathOption]
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :return: Numpy array matching model's observation space.
+        :rtype: np.ndarray
         """
         if self._adapter is not None:
-            return self._adapter.build_observation(request, options, network_state)
+            obs = self._adapter.build_observation(request, options, network_state)
+            # Adapter may return dict for Dict observation spaces; we expect array
+            if isinstance(obs, np.ndarray):
+                return obs
+            # Fallback: convert to array if possible
+            return np.asarray(obs, dtype=np.float32)
 
         # Internal observation construction
         features: list[float] = []
@@ -192,8 +209,10 @@ class RLPolicy:
         """
         Build action mask from path options.
 
-        Returns:
-            List of booleans, True where action is valid (is_feasible)
+        :param options: Available path options.
+        :type options: list[PathOption]
+        :return: List of booleans, True where action is valid (is_feasible).
+        :rtype: list[bool]
         """
         mask = [opt.is_feasible for opt in options]
 
@@ -204,13 +223,25 @@ class RLPolicy:
         return mask[: self.k_paths]
 
     def _supports_action_masking(self) -> bool:
-        """Check if model supports native action masking."""
+        """
+        Check if model supports native action masking.
+
+        :return: True if model supports action_masks parameter.
+        :rtype: bool
+        """
         # MaskablePPO and similar algorithms support action_masks parameter
         model_name = type(self.model).__name__
         return model_name in ("MaskablePPO", "MaskableRecurrentPPO")
 
     def _find_first_feasible(self, mask: list[bool]) -> int:
-        """Find index of first feasible action."""
+        """
+        Find index of first feasible action.
+
+        :param mask: Action mask with True for feasible actions.
+        :type mask: list[bool]
+        :return: Index of first feasible action, or -1 if none.
+        :rtype: int
+        """
         for i, is_feasible in enumerate(mask):
             if is_feasible:
                 return i
@@ -224,6 +255,13 @@ class RLPolicy:
         This method is a no-op to satisfy the ControlPolicy protocol.
 
         For online RL training, use UnifiedSimEnv with SB3's learn() method.
+
+        :param request: The request that was served (ignored).
+        :type request: Request
+        :param action: The action taken (ignored).
+        :type action: int
+        :param reward: The reward received (ignored).
+        :type reward: float
         """
         pass
 
@@ -231,8 +269,8 @@ class RLPolicy:
         """
         Return policy name for logging and metrics.
 
-        Returns:
-            String identifying this policy and underlying model
+        :return: String identifying this policy and underlying model.
+        :rtype: str
         """
         model_name = type(self.model).__name__
         return f"RLPolicy({model_name})"
@@ -241,8 +279,8 @@ class RLPolicy:
         """
         Set the RL simulation adapter for observation building.
 
-        Args:
-            adapter: Adapter from Phase 4 RL integration
+        :param adapter: RL simulation adapter for observation building.
+        :type adapter: RLSimulationAdapter
         """
         self._adapter = adapter
 
@@ -252,22 +290,21 @@ class RLPolicy:
         model_path: str,
         algorithm: str = "PPO",
         **kwargs: Any,
-    ) -> "RLPolicy":
+    ) -> RLPolicy:
         """
         Load RLPolicy from a saved model file.
 
-        Args:
-            model_path: Path to saved model (e.g., "model.zip")
-            algorithm: SB3 algorithm name ("PPO", "DQN", "A2C", "MaskablePPO", etc.)
-            **kwargs: Additional arguments passed to RLPolicy.__init__
+        :param model_path: Path to saved model (e.g., "model.zip").
+        :type model_path: str
+        :param algorithm: SB3 algorithm name ("PPO", "DQN", "A2C", "MaskablePPO", etc.).
+        :type algorithm: str
+        :param kwargs: Additional arguments passed to RLPolicy.__init__.
+        :return: RLPolicy wrapping the loaded model.
+        :rtype: RLPolicy
+        :raises ValueError: If algorithm is unknown/not installed.
 
-        Returns:
-            RLPolicy wrapping the loaded model
+        Example::
 
-        Raises:
-            ValueError: If algorithm is unknown/not installed
-
-        Example:
             >>> policy = RLPolicy.from_file("trained_ppo.zip", algorithm="PPO")
         """
         import importlib
