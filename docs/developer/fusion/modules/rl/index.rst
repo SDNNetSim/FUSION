@@ -25,6 +25,7 @@ Reinforcement Learning Module
    environments
    feat_extrs
    gymnasium_envs
+   policies
 
 Overview
 ========
