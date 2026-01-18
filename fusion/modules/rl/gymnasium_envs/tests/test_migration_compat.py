@@ -9,10 +9,7 @@ during the migration period.
 from __future__ import annotations
 
 import os
-import warnings
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 
 class TestLegacyImports:
@@ -56,6 +53,10 @@ class TestLegacyImports:
 
         assert DEFAULT_SIMULATION_KEY is not None
         assert SUPPORTED_SPECTRAL_BANDS is not None
+        assert ARRIVAL_DICT_KEYS is not None
+        assert DEFAULT_ARRIVAL_COUNT is not None
+        assert DEFAULT_ITERATION is not None
+        assert DEFAULT_SAVE_SIMULATION is not None
 
 
 class TestLegacyInstantiation:
@@ -67,7 +68,6 @@ class TestLegacyInstantiation:
 
         # We mock the SimEnv to avoid needing full simulation config
         # This tests that the import and class exist
-        mock_env = MagicMock()
         with patch.object(SimEnv, "__init__", return_value=None):
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 # Verify class is callable
@@ -101,8 +101,8 @@ class TestBothEnvsUsable:
 
     def test_can_create_both_env_types(self) -> None:
         """Can create both legacy (mocked) and unified envs."""
-        from fusion.modules.rl.gymnasium_envs import create_sim_env
         from fusion.modules.rl.environments import UnifiedSimEnv
+        from fusion.modules.rl.gymnasium_envs import create_sim_env
 
         config = {"k_paths": 3, "spectral_slots": 320}
 
@@ -196,8 +196,9 @@ class TestUnifiedEnvSmoke:
 
     def test_unified_env_provides_action_mask(self) -> None:
         """Unified env should provide action_mask in info."""
-        from fusion.modules.rl.gymnasium_envs import create_sim_env
         import numpy as np
+
+        from fusion.modules.rl.gymnasium_envs import create_sim_env
 
         config = {"k_paths": 3, "spectral_slots": 320}
         env = create_sim_env(config, env_type="unified", wrap_action_mask=False)
@@ -211,8 +212,9 @@ class TestUnifiedEnvSmoke:
 
     def test_action_mask_wrapper_provides_action_masks_method(self) -> None:
         """ActionMaskWrapper should provide action_masks() method."""
-        from fusion.modules.rl.gymnasium_envs import create_sim_env
         import numpy as np
+
+        from fusion.modules.rl.gymnasium_envs import create_sim_env
 
         config = {"k_paths": 3, "spectral_slots": 320}
         env = create_sim_env(config, env_type="unified", wrap_action_mask=True)

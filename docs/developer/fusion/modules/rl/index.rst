@@ -24,6 +24,7 @@ Reinforcement Learning Module
    args
    environments
    feat_extrs
+   gymnasium_envs
 
 Overview
 ========
@@ -51,6 +52,14 @@ optical networks.
 
    Currently, only the **routing/path selection agent** is functional. Core assignment
    and spectrum allocation use heuristic methods (e.g., ``first_fit``).
+
+.. warning::
+
+   **Spectral Band Limitation:**
+
+   RL environments currently only support **C-band** spectrum allocation.
+   L-band and multi-band scenarios are not yet supported. Multi-band support
+   is planned for a future v6.X release.
 
 **What This Module Provides:**
 

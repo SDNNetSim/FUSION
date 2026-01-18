@@ -16,16 +16,15 @@ import os
 import warnings
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 class TestDeprecationWarning:
     """Test deprecation warning behavior."""
 
     def test_deprecation_warning_code_exists(self) -> None:
         """Deprecation warning code should exist in SimEnv."""
-        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
         import inspect
+
+        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
         # Check that the warning code is in __init__
         source = inspect.getsource(SimEnv.__init__)
@@ -34,24 +33,27 @@ class TestDeprecationWarning:
 
     def test_warning_mentions_unified_env_in_source(self) -> None:
         """Warning message should mention UnifiedSimEnv."""
-        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
         import inspect
+
+        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
         source = inspect.getsource(SimEnv.__init__)
         assert "UnifiedSimEnv" in source
 
     def test_warning_mentions_factory_function_in_source(self) -> None:
         """Warning message should mention create_sim_env factory."""
-        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
         import inspect
+
+        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
         source = inspect.getsource(SimEnv.__init__)
         assert "create_sim_env" in source
 
     def test_warning_mentions_suppression_env_var_in_source(self) -> None:
         """Warning message should mention how to suppress it."""
-        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
         import inspect
+
+        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
         source = inspect.getsource(SimEnv.__init__)
         assert "SUPPRESS_SIMENV_DEPRECATION" in source
@@ -62,8 +64,9 @@ class TestWarningSupressionLogic:
 
     def test_suppression_env_var_checked(self) -> None:
         """SUPPRESS_SIMENV_DEPRECATION should be checked."""
-        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
         import inspect
+
+        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
         source = inspect.getsource(SimEnv.__init__)
         # Verify the env var check is present
@@ -72,8 +75,9 @@ class TestWarningSupressionLogic:
 
     def test_suppression_values_recognized(self) -> None:
         """Various suppression values should be recognized."""
-        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
         import inspect
+
+        from fusion.modules.rl.gymnasium_envs.general_sim_env import SimEnv
 
         source = inspect.getsource(SimEnv.__init__)
         # The suppression logic should check for "1", "true", "yes"
@@ -87,8 +91,8 @@ class TestUnifiedEnvNoWarning:
 
     def test_unified_env_no_deprecation(self) -> None:
         """UnifiedSimEnv should not emit DeprecationWarning."""
-        from fusion.modules.rl.environments import UnifiedSimEnv
         from fusion.modules.rl.adapter import RLConfig
+        from fusion.modules.rl.environments import UnifiedSimEnv
 
         config = RLConfig(k_paths=3)
 

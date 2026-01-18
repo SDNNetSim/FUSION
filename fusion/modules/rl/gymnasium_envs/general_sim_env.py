@@ -7,7 +7,7 @@ The environment handles simulation setup, state management, and reward calculati
 for network resource allocation problems.
 
 .. deprecated:: 4.0
-    SimEnv (GeneralSimEnv) is deprecated and will be removed in v5.0.
+    SimEnv (GeneralSimEnv) is deprecated and will be removed in v6.X.
     Use UnifiedSimEnv instead for better accuracy and unified code paths.
     See migration guide: docs/migration/rl_to_unified_env.md
 """
@@ -69,7 +69,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         super().__init__()
 
         # Emit deprecation warning unless suppressed
-        if not os.environ.get("SUPPRESS_SIMENV_DEPRECATION", "").lower() in (
+        if os.environ.get("SUPPRESS_SIMENV_DEPRECATION", "").lower() not in (
             "1",
             "true",
             "yes",

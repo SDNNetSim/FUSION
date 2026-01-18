@@ -6,10 +6,7 @@ Phase: P4.3 - Migrate Existing RL Experiments
 from __future__ import annotations
 
 import os
-import warnings
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from fusion.modules.rl.gymnasium_envs import EnvType, create_sim_env
 
