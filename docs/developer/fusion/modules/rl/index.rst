@@ -26,6 +26,7 @@ Reinforcement Learning Module
    feat_extrs
    gymnasium_envs
    policies
+   sb3
 
 Overview
 ========
@@ -66,10 +67,17 @@ optical networks.
 
 - **In-house RL algorithms**: Q-learning, Epsilon-Greedy Bandits, UCB Bandits (actively expanded)
 - **Deep RL via Stable-Baselines3**: PPO, A2C, DQN, QR-DQN wrappers
+- **RLZoo3 integration**: Automatic hyperparameter optimization and experiment management (see :ref:`rl-sb3`)
 - **Offline RL policies** *(beta)*: Behavioral Cloning (BC), Implicit Q-Learning (IQL)
 - **GNN-based feature extractors** *(beta)*: GAT, SAGE, GraphConv, Graphormer (see :ref:`rl-feat-extrs`)
 - **Hyperparameter optimization**: Optuna integration with configurable pruning
 - **Action masking**: Safe RL deployment preventing invalid actions
+
+.. tip::
+
+   **RLZoo3 Integration**: FUSION environments can be registered with
+   `RLZoo3 <https://rl-baselines3-zoo.readthedocs.io/>`_ for automated hyperparameter
+   tuning, experiment tracking, and benchmarking. See :ref:`rl-sb3` for details.
 
 .. tip::
 
@@ -982,5 +990,6 @@ Related Documentation
 .. seealso::
 
    - `Stable-Baselines3 Documentation <https://stable-baselines3.readthedocs.io/>`_
+   - `RLZoo3 Documentation <https://rl-baselines3-zoo.readthedocs.io/>`_
    - `Gymnasium Documentation <https://gymnasium.farama.org/>`_
    - `Optuna Documentation <https://optuna.readthedocs.io/>`_
