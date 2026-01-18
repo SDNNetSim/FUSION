@@ -27,6 +27,8 @@ Reinforcement Learning Module
    gymnasium_envs
    policies
    sb3
+   utils
+   visualization
 
 Overview
 ========
@@ -67,6 +69,7 @@ optical networks.
 
 - **In-house RL algorithms**: Q-learning, Epsilon-Greedy Bandits, UCB Bandits (actively expanded)
 - **Deep RL via Stable-Baselines3**: PPO, A2C, DQN, QR-DQN wrappers
+- **Custom SB3 callbacks**: Episodic reward tracking, dynamic learning rate/entropy decay (see :ref:`rl-utils`)
 - **RLZoo3 integration**: Automatic hyperparameter optimization and experiment management (see :ref:`rl-sb3`)
 - **Offline RL policies** *(beta)*: Behavioral Cloning (BC), Implicit Q-Learning (IQL)
 - **GNN-based feature extractors** *(beta)*: GAT, SAGE, GraphConv, Graphormer (see :ref:`rl-feat-extrs`)
@@ -78,6 +81,19 @@ optical networks.
    **RLZoo3 Integration**: FUSION environments can be registered with
    `RLZoo3 <https://rl-baselines3-zoo.readthedocs.io/>`_ for automated hyperparameter
    tuning, experiment tracking, and benchmarking. See :ref:`rl-sb3` for details.
+
+   We are also developing FUSION-native training infrastructure that will provide
+   tighter integration with our simulation stack, custom callbacks, and
+   domain-specific optimizations for optical network environments.
+
+.. note::
+
+   **Multi-Processing Limitation:**
+
+   RL training currently runs in **single-process mode**. Multi-environment
+   parallelization (e.g., ``SubprocVecEnv``) is not yet supported due to the
+   complexity of serializing simulation state across processes. This is planned
+   for a future release.
 
 .. tip::
 

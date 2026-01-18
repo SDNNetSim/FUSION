@@ -1,4 +1,5 @@
-"""RL-specific plot renderers.
+"""
+RL-specific plot renderers.
 
 This module provides specialized plot types for RL visualization:
 - Reward learning curves
@@ -41,16 +42,19 @@ class RewardLearningCurveRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render reward learning curve.
+        """
+        Render reward learning curve.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         fig, ax = plt.subplots(figsize=specification.figsize)
 
@@ -125,16 +129,19 @@ class QValueHeatmapRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render Q-value heatmap.
+        """
+        Render Q-value heatmap.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         data = specification.metadata.get("processed_data", {})
 
@@ -194,16 +201,19 @@ class ConvergencePlotRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render convergence plot.
+        """
+        Render convergence plot.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=specification.figsize)
 
@@ -284,16 +294,19 @@ class MultiMetricDashboardRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render multi-metric dashboard.
+        """
+        Render multi-metric dashboard.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         fig = plt.figure(figsize=(16, 10))
         gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
@@ -350,7 +363,18 @@ class MultiMetricDashboardRenderer(BaseRenderer):
     def _plot_metric(
         self, ax: Any, data: dict[str, Any], ylabel: str, title: str
     ) -> None:
-        """Helper to plot a single metric."""
+        """
+        Helper to plot a single metric.
+
+        :param ax: Matplotlib axes object
+        :type ax: Any
+        :param data: Dictionary of algorithm data
+        :type data: dict[str, Any]
+        :param ylabel: Y-axis label
+        :type ylabel: str
+        :param title: Plot title
+        :type title: str
+        """
         for algo, algo_data in data.items():
             if "episodes" in algo_data and "mean" in algo_data:
                 episodes = algo_data["episodes"]

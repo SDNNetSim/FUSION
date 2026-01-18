@@ -14,7 +14,6 @@ from fusion.modules.rl.args.general_args import (
     VALID_DRL_ALGORITHMS,
     VALID_PATH_ALGORITHMS,
 )
-
 from fusion.modules.rl.args.observation_args import (
     OBS_DICT,
     OBSERVATION_SPACE_DEFINITIONS,

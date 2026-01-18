@@ -1,4 +1,5 @@
-"""RL-specific metric definitions.
+"""
+RL-specific metric definitions.
 
 This module defines metrics specific to reinforcement learning:
 - Episode rewards
@@ -17,10 +18,11 @@ from fusion.visualization.domain.entities.metric import (
 
 
 def get_rl_metrics() -> list[MetricDefinition]:
-    """Get all RL-specific metric definitions.
+    """
+    Get all RL-specific metric definitions.
 
-    Returns:
-        List of RL metric definitions
+    :return: List of RL metric definitions
+    :rtype: list[MetricDefinition]
     """
     return [
         # Episode rewards

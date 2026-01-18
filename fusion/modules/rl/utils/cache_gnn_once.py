@@ -6,15 +6,12 @@ for network configurations, enabling faster training by avoiding
 repetitive embedding calculations.
 """
 
-# Standard library imports
 import os
 from pathlib import Path
 
-# Third-party imports
 import torch
 from gymnasium import spaces
 
-# Local imports
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.path_gnn_cached import PathGNNEncoder
 from fusion.modules.rl.utils.errors import CacheError

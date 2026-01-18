@@ -1,4 +1,5 @@
-"""RL-specific data processing strategies.
+"""
+RL-specific data processing strategies.
 
 This module provides processing strategies for RL-specific metrics:
 - Reward smoothing and aggregation
@@ -23,11 +24,13 @@ class RewardProcessingStrategy(DataProcessorPort):
     """Process episode rewards with smoothing and statistics."""
 
     def __init__(self, window_size: int = 100, confidence_level: float = 0.95):
-        """Initialize reward processor.
+        """
+        Initialize reward processor.
 
-        Args:
-            window_size: Size of smoothing window
-            confidence_level: Confidence level for intervals
+        :param window_size: Size of smoothing window
+        :type window_size: int
+        :param confidence_level: Confidence level for intervals
+        :type confidence_level: float
         """
         self.window_size = window_size
         self.confidence_level = confidence_level
@@ -48,17 +51,21 @@ class RewardProcessingStrategy(DataProcessorPort):
         traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
-        """Process reward data with smoothing.
+        """
+        Process reward data with smoothing.
 
-        Args:
-            runs: List of simulation runs
-            data: Nested dictionary of canonical data
-            metric_name: Name of metric to extract and process
-            traffic_volumes: List of traffic volumes to include
-            include_ci: Whether to include confidence intervals
-
-        Returns:
-            ProcessedData with smoothed rewards and statistics
+        :param runs: List of simulation runs
+        :type runs: list[Run]
+        :param data: Nested dictionary of canonical data
+        :type data: dict[str, dict[float, CanonicalData]]
+        :param metric_name: Name of metric to extract and process
+        :type metric_name: str
+        :param traffic_volumes: List of traffic volumes to include
+        :type traffic_volumes: list[float]
+        :param include_ci: Whether to include confidence intervals
+        :type include_ci: bool
+        :return: ProcessedData with smoothed rewards and statistics
+        :rtype: ProcessedData
         """
         # Extract x_data (traffic volumes) and y_data (algorithm -> values)
         x_data = traffic_volumes
@@ -101,13 +108,13 @@ class RewardProcessingStrategy(DataProcessorPort):
         return None
 
     def _align_sequences(self, sequences: list[np.ndarray]) -> np.ndarray:
-        """Align sequences to common length (truncate to shortest).
+        """
+        Align sequences to common length (truncate to shortest).
 
-        Args:
-            sequences: List of arrays to align
-
-        Returns:
-            2D array with aligned sequences
+        :param sequences: List of arrays to align
+        :type sequences: list[np.ndarray]
+        :return: 2D array with aligned sequences
+        :rtype: np.ndarray
         """
         if not sequences:
             return np.array([])
@@ -116,13 +123,13 @@ class RewardProcessingStrategy(DataProcessorPort):
         return np.array([seq[:min_length] for seq in sequences])
 
     def _smooth(self, data: np.ndarray) -> np.ndarray:
-        """Apply moving average smoothing.
+        """
+        Apply moving average smoothing.
 
-        Args:
-            data: Array to smooth
-
-        Returns:
-            Smoothed array
+        :param data: Array to smooth
+        :type data: np.ndarray
+        :return: Smoothed array
+        :rtype: np.ndarray
         """
         if len(data) < self.window_size:
             return data
@@ -152,17 +159,21 @@ class QValueProcessingStrategy(DataProcessorPort):
         traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
-        """Process Q-value data.
+        """
+        Process Q-value data.
 
-        Args:
-            runs: List of simulation runs
-            data: Nested dictionary of canonical data
-            metric_name: Name of metric to extract and process
-            traffic_volumes: List of traffic volumes to include
-            include_ci: Whether to include confidence intervals
-
-        Returns:
-            ProcessedData with Q-value statistics
+        :param runs: List of simulation runs
+        :type runs: list[Run]
+        :param data: Nested dictionary of canonical data
+        :type data: dict[str, dict[float, CanonicalData]]
+        :param metric_name: Name of metric to extract and process
+        :type metric_name: str
+        :param traffic_volumes: List of traffic volumes to include
+        :type traffic_volumes: list[float]
+        :param include_ci: Whether to include confidence intervals
+        :type include_ci: bool
+        :return: ProcessedData with Q-value statistics
+        :rtype: ProcessedData
         """
         # Extract x_data (traffic volumes) and y_data (algorithm -> values)
         x_data = traffic_volumes
@@ -205,11 +216,13 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
     """Detect convergence in RL training metrics."""
 
     def __init__(self, window_size: int = 100, threshold: float = 0.01):
-        """Initialize convergence detector.
+        """
+        Initialize convergence detector.
 
-        Args:
-            window_size: Window for convergence check
-            threshold: Threshold for convergence (relative change)
+        :param window_size: Window for convergence check
+        :type window_size: int
+        :param threshold: Threshold for convergence (relative change)
+        :type threshold: float
         """
         self.window_size = window_size
         self.threshold = threshold
@@ -230,17 +243,21 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
         traffic_volumes: list[float],
         include_ci: bool = True,
     ) -> ProcessedData:
-        """Detect convergence in training.
+        """
+        Detect convergence in training.
 
-        Args:
-            runs: List of simulation runs
-            data: Nested dictionary of canonical data
-            metric_name: Name of metric to extract and process
-            traffic_volumes: List of traffic volumes to include
-            include_ci: Whether to include confidence intervals
-
-        Returns:
-            ProcessedData with convergence information
+        :param runs: List of simulation runs
+        :type runs: list[Run]
+        :param data: Nested dictionary of canonical data
+        :type data: dict[str, dict[float, CanonicalData]]
+        :param metric_name: Name of metric to extract and process
+        :type metric_name: str
+        :param traffic_volumes: List of traffic volumes to include
+        :type traffic_volumes: list[float]
+        :param include_ci: Whether to include confidence intervals
+        :type include_ci: bool
+        :return: ProcessedData with convergence information
+        :rtype: ProcessedData
         """
         # Extract x_data (traffic volumes) and y_data
         # (algorithm -> convergence episodes)
@@ -289,13 +306,13 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
         return None
 
     def _detect_convergence(self, values: ndarray) -> int | None:
-        """Detect convergence episode.
+        """
+        Detect convergence episode.
 
-        Args:
-            values: Metric values over episodes
-
-        Returns:
-            Episode number where convergence occurred, or None
+        :param values: Metric values over episodes
+        :type values: ndarray
+        :return: Episode number where convergence occurred, or None
+        :rtype: int | None
         """
         if len(values) < self.window_size * 2:
             return None

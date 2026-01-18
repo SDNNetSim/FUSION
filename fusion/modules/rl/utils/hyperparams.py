@@ -1,15 +1,14 @@
 from typing import Any
 
 import numpy as np
-import torch.nn as nn  # pylint: disable=consider-using-from-import
+import torch.nn as nn
 from optuna.trial import Trial
 
 from fusion.modules.rl.algorithms.bandits import get_q_table
 from fusion.modules.rl.args.general_args import EPISODIC_STRATEGIES
 from fusion.modules.rl.utils.errors import HyperparameterError
 
-# NOTE: Future refactoring should consolidate hyperparameter handling
-# across DRL algorithms
+# NOTE: Future refactoring should consolidate hyperparameter handling across DRL algorithms
 # to reduce code duplication and improve maintainability
 
 

@@ -83,18 +83,20 @@ class RLVisualizationPlugin(BasePlugin):
             ) from e
 
     def register_metrics(self) -> list[MetricDefinition]:
-        """Register RL-specific metrics.
+        """
+        Register RL-specific metrics.
 
-        Returns:
-            List of RL metric definitions
+        :return: List of RL metric definitions
+        :rtype: list[MetricDefinition]
         """
         return get_rl_metrics()
 
     def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
-        """Register RL-specific plot types.
+        """
+        Register RL-specific plot types.
 
-        Returns:
-            Dictionary of plot type registrations
+        :return: Dictionary of plot type registrations
+        :rtype: dict[str, PlotTypeRegistration]
         """
         return {
             # New DDD-based plot types
@@ -150,10 +152,11 @@ class RLVisualizationPlugin(BasePlugin):
         }
 
     def get_config_schema(self) -> dict:
-        """Get configuration schema for this plugin.
+        """
+        Get configuration schema for this plugin.
 
-        Returns:
-            JSON schema for plugin configuration
+        :return: JSON schema for plugin configuration
+        :rtype: dict
         """
         return {
             "type": "object",
@@ -177,13 +180,13 @@ class RLVisualizationPlugin(BasePlugin):
         }
 
     def validate_config(self, config: dict) -> bool:
-        """Validate plugin configuration.
+        """
+        Validate plugin configuration.
 
-        Args:
-            config: Configuration dictionary
-
-        Returns:
-            True if configuration is valid
+        :param config: Configuration dictionary
+        :type config: dict
+        :return: True if configuration is valid
+        :rtype: bool
         """
         # Validate window_size
         if "window_size" in config:
@@ -202,10 +205,11 @@ class RLVisualizationPlugin(BasePlugin):
         return True
 
     def register_processors(self) -> dict[str, MetricProcessingStrategy]:
-        """Register RL-specific data processors.
+        """
+        Register RL-specific data processors.
 
-        Returns:
-            Dictionary of processor instances
+        :return: Dictionary of processor instances
+        :rtype: dict[str, MetricProcessingStrategy]
         """
         return {
             "reward_processing": RewardProcessingStrategy(),
@@ -214,10 +218,11 @@ class RLVisualizationPlugin(BasePlugin):
         }
 
     def register_renderers(self) -> dict[str, type[BaseRenderer]]:
-        """Register RL-specific renderers.
+        """
+        Register RL-specific renderers.
 
-        Returns:
-            Dictionary of renderer classes
+        :return: Dictionary of renderer classes
+        :rtype: dict[str, type[BaseRenderer]]
         """
         return {
             "reward_learning_curve": RewardLearningCurveRenderer,

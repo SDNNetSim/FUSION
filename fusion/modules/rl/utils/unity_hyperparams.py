@@ -128,7 +128,7 @@ def collect(in_root: Path, out_root: Path, glob_pattern: str = "**/*.out") -> No
         df.to_csv(dest_dir / csv_name, index=False)
         (dest_dir / "meta.json").write_text(json.dumps(meta, indent=2))
         logger.info(
-            "✓ %s → %s/%s",
+            "Processed %s -> %s/%s",
             fp.relative_to(in_root),
             dest_dir.relative_to(out_root),
             csv_name,
@@ -174,7 +174,7 @@ def _encode_param_matrix(
     logger.debug("[encode] Encoded feature matrix shape: %s", curr_x.shape)
     if np.isnan(curr_x).any():
         raise ValueError(
-            "[encode] ❌ NaNs remain after preprocessing! Investigate source."
+            "[encode] NaNs remain after preprocessing. Investigate source."
         )
     return curr_x, enc, param_cols
 
@@ -330,7 +330,7 @@ def find_best_params_for_topology(topo_dir: Path, out_root: Path | None = None) 
     best_params_path.write_text(json.dumps(best_dict, indent=2))
 
     logger.info(
-        "[Phase 2] 🏆  %s → best_params.json saved (worst=%.2f, mean=%.2f)",
+        "[Phase 2] Best params saved: %s -> best_params.json (worst=%.2f, mean=%.2f)",
         topo_dir.relative_to(out_root),
         best["worst_pred_return"],
         best["mean_pred_return"],
@@ -357,10 +357,10 @@ def sweep_all_topologies(out_root: Path) -> None:
     for alg_dir in out_root.iterdir():
         if not alg_dir.is_dir():
             continue
-        logger.info("[sweep_all_topologies] ▶ Algorithm: %s", alg_dir.name)
+        logger.info("[sweep_all_topologies] Algorithm: %s", alg_dir.name)
         for net_dir in alg_dir.iterdir():
             if net_dir.is_dir():
-                logger.info("[sweep_all_topologies]   └─ Topology: %s", net_dir.name)
+                logger.info("[sweep_all_topologies]   Topology: %s", net_dir.name)
                 find_best_params_for_topology(net_dir, out_root)
 
 

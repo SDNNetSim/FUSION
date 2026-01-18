@@ -30,6 +30,9 @@ from fusion.modules.rl.utils.errors import (
 from fusion.sim.input_setup import create_input, save_input
 from fusion.sim.utils.io import parse_yaml_file
 from fusion.sim.utils.simulation import get_start_time
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def setup_feature_extractor(
@@ -52,14 +55,14 @@ def setup_feature_extractor(
         network = env.engine_obj.engine_props["network"]
         cache_fp = CACHE_DIR / f"{engine_props['network']}.pt"
 
-        if os.path.exists(cache_fp):  # ✔ cache already there
+        if os.path.exists(cache_fp):  # cache already there
             # Loading trusted GNN embedding from local cache
             cached = torch.load(cache_fp)  # nosec B614
             extr_class = CachedPathGNN
             feat_kwargs = {"cached_embedding": cached}
-            print(f"✅  Using cached GNN embedding from {cache_fp}")
-        else:  # ✘ no cache → make one now
-            print(f"⏳  Caching GNN embedding for {network} …")
+            logger.info("Using cached GNN embedding from %s", cache_fp)
+        else:  # no cache - create one now
+            logger.info("Caching GNN embedding for %s", network)
             obs = env.reset()[0]
             enc = PathGNNEncoder(
                 env.observation_space,
@@ -76,7 +79,7 @@ def setup_feature_extractor(
                 ).cpu()
             os.makedirs("gnn_cached", exist_ok=True)
             torch.save(emb, cache_fp)  # nosec B614
-            print(f"✅  Saved cache to {cache_fp}")
+            logger.info("Saved GNN cache to %s", cache_fp)
 
             extr_class = CachedPathGNN
             feat_kwargs = {"cached_embedding": emb}
@@ -339,19 +342,19 @@ def setup_qr_dqn(env: Any, device: str) -> QRDQN:
 
 def print_info(sim_dict: dict[str, Any]) -> None:
     """
-    Prints relevant RL simulation information.
+    Logs relevant RL simulation information.
 
     :param sim_dict: Simulation dictionary (engine props).
     """
     if sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS:
-        print(
-            f"Beginning training process for the PATH AGENT using the "
-            f"{sim_dict['path_algorithm'].title()} algorithm."
+        logger.info(
+            "Beginning training process for the PATH AGENT using the %s algorithm.",
+            sim_dict["path_algorithm"].title(),
         )
     elif sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS:
-        print(
-            f"Beginning training process for the CORE AGENT using the "
-            f"{sim_dict['core_algorithm'].title()} algorithm."
+        logger.info(
+            "Beginning training process for the CORE AGENT using the %s algorithm.",
+            sim_dict["core_algorithm"].title(),
         )
     elif sim_dict["spectrum_algorithm"]:
         raise ModelSetupError(
