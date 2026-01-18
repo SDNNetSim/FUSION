@@ -3,8 +3,6 @@ Protected routing pipeline implementation.
 
 This module provides ProtectedRoutingPipeline for 1+1 protection
 routing scenarios where both working and backup paths are needed.
-
-Phase: P3.1 - Pipeline Factory Scaffolding
 """
 
 from __future__ import annotations
@@ -33,27 +31,27 @@ class ProtectedRoutingPipeline:
     link-disjoint (or node-disjoint based on configuration). It uses
     ProtectionAwareStrategy to ensure backup paths avoid working path.
 
-    Attributes:
-        _config: Simulation configuration
-        _strategy: Protection-aware routing strategy
-        _node_disjoint: Whether to require node-disjoint paths
+    :ivar _config: Simulation configuration.
+    :vartype _config: SimulationConfig
+    :ivar _strategy: Protection-aware routing strategy.
+    :vartype _strategy: ProtectionAwareStrategy
+    :ivar _node_disjoint: Whether to require node-disjoint paths.
+    :vartype _node_disjoint: bool
 
-    Usage:
+    Example:
         >>> pipeline = ProtectedRoutingPipeline(config)
         >>> result = pipeline.find_routes("A", "Z", 100, network_state)
         >>> if result.has_protection:
         ...     print(f"Working: {result.best_path}")
         ...     print(f"Backup: {result.backup_paths[0]}")
-
-    Phase: P3.1 - Pipeline Factory Scaffolding
     """
 
     def __init__(self, config: SimulationConfig) -> None:
         """
         Initialize protected routing pipeline.
 
-        Args:
-            config: Simulation configuration
+        :param config: Simulation configuration.
+        :type config: SimulationConfig
         """
         self._config = config
 
@@ -86,22 +84,23 @@ class ProtectedRoutingPipeline:
         path and a disjoint backup (protection) path. Both paths are
         returned in the RouteResult.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth (for modulation selection)
-            network_state: Current network state
-            forced_path: If provided, use as working path (from grooming)
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth (for modulation selection).
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param forced_path: If provided, use as working path (from grooming).
+        :type forced_path: list[str] | None
+        :return: RouteResult containing paths, backup_paths, weights_km,
+            and modulations for both paths.
+        :rtype: RouteResult
 
-        Returns:
-            RouteResult containing:
-            - paths: Working path candidates
-            - backup_paths: Protection path for each working path
-            - weights_km, modulations for both paths
-
-        Notes:
-            - Returns empty RouteResult if no disjoint pair can be found
-            - backup_paths[i] corresponds to protection for paths[i]
+        .. note::
+            Returns empty RouteResult if no disjoint pair can be found.
+            backup_paths[i] corresponds to protection for paths[i].
         """
         from fusion.domain.results import RouteResult
 
@@ -165,15 +164,18 @@ class ProtectedRoutingPipeline:
         must use the same path as the groomed portion. This method
         finds a protection path for that forced working path.
 
-        Args:
-            forced_path: The working path to use
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-
-        Returns:
-            RouteResult with forced working path and computed protection
+        :param forced_path: The working path to use.
+        :type forced_path: list[str]
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :return: RouteResult with forced working path and computed protection.
+        :rtype: RouteResult
         """
         from fusion.domain.results import RouteResult
 

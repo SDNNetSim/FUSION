@@ -182,6 +182,7 @@ class SpectrumPipeline(Protocol):
         snr_bandwidth: int | None = None,
         request_id: int | None = None,
         slice_bandwidth: int | None = None,
+        excluded_modulations: set[str] | None = None,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
@@ -207,6 +208,8 @@ class SpectrumPipeline(Protocol):
         :type request_id: int | None
         :param slice_bandwidth: Bandwidth per slice when slicing is active
         :type slice_bandwidth: int | None
+        :param excluded_modulations: Modulations to exclude from dynamic slicing
+        :type excluded_modulations: set[str] | None
         :return: SpectrumResult with is_free, start_slot, end_slot, core, band,
             modulation, and slots_needed fields
         :rtype: SpectrumResult

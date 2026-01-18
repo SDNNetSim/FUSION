@@ -10,11 +10,10 @@ Design Pattern:
     interchangeably through a common interface.
 
 Strategies:
-    - KShortestPathStrategy: Basic k-shortest paths
-    - LoadBalancedStrategy: Consider link utilization
-    - ProtectionAwareStrategy: Find disjoint path pairs
 
-Phase: P3.1.e - Routing Strategy Pattern (Gap Analysis)
+- KShortestPathStrategy: Basic k-shortest paths
+- LoadBalancedStrategy: Consider link utilization
+- ProtectionAwareStrategy: Find disjoint path pairs
 """
 
 from __future__ import annotations
@@ -43,14 +42,20 @@ class RouteConstraints:
     particularly for protection path computation where the backup
     must avoid links/nodes used by the primary path.
 
-    Attributes:
-        max_hops: Maximum number of hops allowed (None = no limit)
-        max_length_km: Maximum path length in km (None = no limit)
-        min_bandwidth_gbps: Minimum available bandwidth required
-        exclude_links: Links to avoid (for disjoint paths)
-        exclude_nodes: Nodes to avoid (for node-disjoint paths)
-        required_modulation: Force specific modulation format
-        protection_mode: True if finding protection/backup path
+    :ivar max_hops: Maximum number of hops allowed (None = no limit).
+    :vartype max_hops: int | None
+    :ivar max_length_km: Maximum path length in km (None = no limit).
+    :vartype max_length_km: float | None
+    :ivar min_bandwidth_gbps: Minimum available bandwidth required.
+    :vartype min_bandwidth_gbps: int | None
+    :ivar exclude_links: Links to avoid (for disjoint paths).
+    :vartype exclude_links: frozenset[tuple[str, str]]
+    :ivar exclude_nodes: Nodes to avoid (for node-disjoint paths).
+    :vartype exclude_nodes: frozenset[str]
+    :ivar required_modulation: Force specific modulation format.
+    :vartype required_modulation: str | None
+    :ivar protection_mode: True if finding protection/backup path.
+    :vartype protection_mode: bool
 
     Example:
         >>> # Find backup path avoiding primary path links
@@ -78,12 +83,12 @@ class RouteConstraints:
         """
         Create new constraints with additional exclusions.
 
-        Args:
-            links: Additional links to exclude
-            nodes: Additional nodes to exclude
-
-        Returns:
-            New RouteConstraints with merged exclusions
+        :param links: Additional links to exclude.
+        :type links: set[tuple[str, str]] | None
+        :param nodes: Additional nodes to exclude.
+        :type nodes: set[str] | None
+        :return: New RouteConstraints with merged exclusions.
+        :rtype: RouteConstraints
         """
         new_links = self.exclude_links
         new_nodes = self.exclude_nodes
@@ -144,19 +149,22 @@ class RoutingStrategy(Protocol):
         bandwidth_gbps: int,
         network_state: NetworkState,
         constraints: RouteConstraints | None = None,
-    ) -> "RouteResult":
+    ) -> RouteResult:
         """
         Select candidate routes for the request.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth (for modulation selection)
-            network_state: Current network state
-            constraints: Optional routing constraints
-
-        Returns:
-            RouteResult with ordered candidate routes (best first)
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth (for modulation selection).
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param constraints: Optional routing constraints.
+        :type constraints: RouteConstraints | None
+        :return: RouteResult with ordered candidate routes (best first).
+        :rtype: RouteResult
         """
         ...
 
@@ -174,9 +182,10 @@ class KShortestPathStrategy:
     using path weight (typically distance in km). This is the
     default routing strategy.
 
-    Attributes:
-        k: Number of candidate paths to find
-        _name: Strategy identifier
+    :ivar k: Number of candidate paths to find.
+    :vartype k: int
+    :ivar _name: Strategy identifier.
+    :vartype _name: str
 
     Example:
         >>> strategy = KShortestPathStrategy(k=3)
@@ -187,8 +196,8 @@ class KShortestPathStrategy:
         """
         Initialize k-shortest path strategy.
 
-        Args:
-            k: Number of candidate paths to compute
+        :param k: Number of candidate paths to compute.
+        :type k: int
         """
         self.k = k
         self._name = f"k_shortest_{k}"
@@ -205,19 +214,22 @@ class KShortestPathStrategy:
         bandwidth_gbps: int,
         network_state: NetworkState,
         constraints: RouteConstraints | None = None,
-    ) -> "RouteResult":
+    ) -> RouteResult:
         """
         Select k-shortest paths between source and destination.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-            constraints: Optional routing constraints
-
-        Returns:
-            RouteResult with up to k candidate paths
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param constraints: Optional routing constraints.
+        :type constraints: RouteConstraints | None
+        :return: RouteResult with up to k candidate paths.
+        :rtype: RouteResult
         """
         # Import here to avoid circular imports
         from fusion.domain.results import RouteResult
@@ -297,11 +309,10 @@ class KShortestPathStrategy:
 
     def _apply_constraints(
         self,
-        topology: "nx.Graph",
+        topology: nx.Graph,
         constraints: RouteConstraints,
-    ) -> "nx.Graph":
+    ) -> nx.Graph:
         """Apply constraints by filtering topology."""
-        import networkx as nx
 
         # Create a copy to avoid modifying original
         filtered = topology.copy()
@@ -323,7 +334,7 @@ class KShortestPathStrategy:
     def _calculate_path_weight(
         self,
         path: tuple[str, ...],
-        topology: "nx.Graph",
+        topology: nx.Graph,
     ) -> float:
         """Calculate total path weight (distance in km)."""
         total = 0.0
@@ -395,12 +406,15 @@ class LoadBalancedStrategy:
     Extends k-shortest paths by scoring routes based on both
     path length and link utilization, preferring less congested paths.
 
-    Attributes:
-        k: Number of candidate paths to consider
-        utilization_weight: Weight for utilization in scoring (0-1)
-        _name: Strategy identifier
+    :ivar k: Number of candidate paths to consider.
+    :vartype k: int
+    :ivar utilization_weight: Weight for utilization in scoring (0-1).
+    :vartype utilization_weight: float
+    :ivar _name: Strategy identifier.
+    :vartype _name: str
 
-    Scoring:
+    Scoring::
+
         score = (1 - util_weight) * (1/length) + util_weight * (1 - utilization)
         Higher score = better path
 
@@ -413,9 +427,10 @@ class LoadBalancedStrategy:
         """
         Initialize load-balanced strategy.
 
-        Args:
-            k: Number of candidate paths to consider
-            utilization_weight: Weight for utilization (0=length only, 1=util only)
+        :param k: Number of candidate paths to consider.
+        :type k: int
+        :param utilization_weight: Weight for utilization (0=length only, 1=util only).
+        :type utilization_weight: float
         """
         self.k = k
         self.utilization_weight = max(0.0, min(1.0, utilization_weight))
@@ -433,19 +448,22 @@ class LoadBalancedStrategy:
         bandwidth_gbps: int,
         network_state: NetworkState,
         constraints: RouteConstraints | None = None,
-    ) -> "RouteResult":
+    ) -> RouteResult:
         """
         Select routes balancing path length and utilization.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-            constraints: Optional routing constraints
-
-        Returns:
-            RouteResult with routes sorted by combined score
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param constraints: Optional routing constraints.
+        :type constraints: RouteConstraints | None
+        :return: RouteResult with routes sorted by combined score.
+        :rtype: RouteResult
         """
         from fusion.domain.results import RouteResult
 
@@ -523,14 +541,16 @@ class ProtectionAwareStrategy:
     Used for 1+1 protection scenarios where the backup path must
     be disjoint from the primary path (no shared links or nodes).
 
-    Attributes:
-        node_disjoint: If True, paths must be node-disjoint (stricter)
-        _name: Strategy identifier
+    :ivar node_disjoint: If True, paths must be node-disjoint (stricter).
+    :vartype node_disjoint: bool
+    :ivar _name: Strategy identifier.
+    :vartype _name: str
 
     Usage:
-        1. First call with protection_mode=False to get working path
-        2. Second call with protection_mode=True and exclude_links set
-           to working path's links
+
+    1. First call with protection_mode=False to get working path
+    2. Second call with protection_mode=True and exclude_links set
+       to working path's links
 
     Example:
         >>> strategy = ProtectionAwareStrategy(node_disjoint=True)
@@ -548,8 +568,8 @@ class ProtectionAwareStrategy:
         """
         Initialize protection-aware strategy.
 
-        Args:
-            node_disjoint: If True, require node-disjoint paths
+        :param node_disjoint: If True, require node-disjoint paths.
+        :type node_disjoint: bool
         """
         self.node_disjoint = node_disjoint
         self._name = "protection_aware"
@@ -566,22 +586,25 @@ class ProtectionAwareStrategy:
         bandwidth_gbps: int,
         network_state: NetworkState,
         constraints: RouteConstraints | None = None,
-    ) -> "RouteResult":
+    ) -> RouteResult:
         """
         Select routes for protection scenarios.
 
         When protection_mode=True in constraints, finds paths avoiding
         the excluded links/nodes (typically the working path).
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-            constraints: Constraints including exclusions for protection
-
-        Returns:
-            RouteResult with candidate paths
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param constraints: Constraints including exclusions for protection.
+        :type constraints: RouteConstraints | None
+        :return: RouteResult with candidate paths.
+        :rtype: RouteResult
         """
         from fusion.domain.results import RouteResult
 
@@ -622,20 +645,22 @@ class ProtectionAwareStrategy:
         destination: str,
         bandwidth_gbps: int,
         network_state: NetworkState,
-    ) -> tuple["RouteResult", "RouteResult"]:
+    ) -> tuple[RouteResult, RouteResult]:
         """
         Find a pair of disjoint paths (working + protection).
 
         Convenience method that finds both paths in one call.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
-
-        Returns:
-            Tuple of (working_result, protection_result)
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :return: Tuple of (working_result, protection_result).
+        :rtype: tuple[RouteResult, RouteResult]
         """
         from fusion.domain.results import RouteResult
 
@@ -670,5 +695,6 @@ class ProtectionAwareStrategy:
 # Import RouteResult for type hints at module level
 # This is done at the end to avoid circular imports
 if TYPE_CHECKING:
-    from fusion.domain.results import RouteResult
     import networkx as nx
+
+    from fusion.domain.results import RouteResult

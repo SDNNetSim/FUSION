@@ -2,12 +2,11 @@
 Unit tests for routing strategies.
 
 Tests cover:
+
 - RouteConstraints creation and manipulation
 - KShortestPathStrategy route selection
 - LoadBalancedStrategy utilization scoring
 - ProtectionAwareStrategy disjoint path finding
-
-Phase: P3.1.e - Routing Strategy Pattern (Gap Analysis)
 """
 
 from __future__ import annotations
@@ -22,7 +21,6 @@ from fusion.pipelines.routing_strategies import (
     ProtectionAwareStrategy,
     RouteConstraints,
 )
-
 
 # =============================================================================
 # RouteConstraints Tests

@@ -152,6 +152,10 @@ designed specifically for the orchestrator's pipeline protocol.
 - Adding new orchestrator features -> ``fusion/pipelines/``
 - The adapters bridge the gap when orchestrator needs legacy algorithms
 
+.. seealso::
+
+   For detailed documentation on the pipelines module, see :ref:`pipelines-module`.
+
 Module Directory Structure
 ==========================
 

@@ -3,8 +3,6 @@ Disjoint path finding algorithms for 1+1 protection.
 
 This module provides algorithms for finding link-disjoint and node-disjoint
 path pairs required for 1+1 dedicated protection.
-
-Phase: P5.4 - Protection Pipeline
 """
 
 from __future__ import annotations
@@ -33,6 +31,7 @@ class DisjointPathFinder:
     Finds disjoint path pairs for 1+1 protection.
 
     Supports two disjointness modes:
+
     - LINK: Paths share no common edges (may share intermediate nodes)
     - NODE: Paths share no common intermediate nodes (stronger guarantee)
 
@@ -40,8 +39,8 @@ class DisjointPathFinder:
     algorithm (Suurballe's via NetworkX edge_disjoint_paths).
     For node-disjoint paths, uses node removal in residual graph.
 
-    Attributes:
-        disjointness: Type of disjointness (LINK or NODE)
+    :ivar disjointness: Type of disjointness (LINK or NODE).
+    :vartype disjointness: DisjointnessType
 
     Example:
         >>> finder = DisjointPathFinder(DisjointnessType.LINK)
@@ -54,8 +53,8 @@ class DisjointPathFinder:
         """
         Initialize DisjointPathFinder.
 
-        Args:
-            disjointness: Type of disjointness to enforce
+        :param disjointness: Type of disjointness to enforce.
+        :type disjointness: DisjointnessType
         """
         self.disjointness = disjointness
 
@@ -68,13 +67,14 @@ class DisjointPathFinder:
         """
         Find a disjoint path pair between source and destination.
 
-        Args:
-            topology: Network topology graph
-            source: Source node identifier
-            destination: Destination node identifier
-
-        Returns:
-            Tuple of (primary_path, backup_path) or None if not possible
+        :param topology: Network topology graph.
+        :type topology: nx.Graph
+        :param source: Source node identifier.
+        :type source: str
+        :param destination: Destination node identifier.
+        :type destination: str
+        :return: Tuple of (primary_path, backup_path) or None if not possible.
+        :rtype: tuple[list[str], list[str]] | None
         """
         if self.disjointness == DisjointnessType.LINK:
             return self._find_link_disjoint(topology, source, destination)
@@ -91,14 +91,16 @@ class DisjointPathFinder:
         """
         Find all disjoint paths between source and destination.
 
-        Args:
-            topology: Network topology graph
-            source: Source node
-            destination: Destination node
-            max_paths: Maximum paths to return
-
-        Returns:
-            List of disjoint paths
+        :param topology: Network topology graph.
+        :type topology: nx.Graph
+        :param source: Source node.
+        :type source: str
+        :param destination: Destination node.
+        :type destination: str
+        :param max_paths: Maximum paths to return.
+        :type max_paths: int
+        :return: List of disjoint paths.
+        :rtype: list[list[str]]
         """
         if self.disjointness == DisjointnessType.LINK:
             return self._find_all_link_disjoint(
@@ -243,12 +245,12 @@ class DisjointPathFinder:
         """
         Check if two paths are link-disjoint.
 
-        Args:
-            path1: First path as list of node IDs
-            path2: Second path as list of node IDs
-
-        Returns:
-            True if paths share no common edges (in either direction)
+        :param path1: First path as list of node IDs.
+        :type path1: list[str]
+        :param path2: Second path as list of node IDs.
+        :type path2: list[str]
+        :return: True if paths share no common edges (in either direction).
+        :rtype: bool
         """
         edges1 = {(path1[i], path1[i + 1]) for i in range(len(path1) - 1)}
         edges1.update((path1[i + 1], path1[i]) for i in range(len(path1) - 1))
@@ -262,12 +264,12 @@ class DisjointPathFinder:
         """
         Check if two paths are node-disjoint (except endpoints).
 
-        Args:
-            path1: First path as list of node IDs
-            path2: Second path as list of node IDs
-
-        Returns:
-            True if paths share no common intermediate nodes
+        :param path1: First path as list of node IDs.
+        :type path1: list[str]
+        :param path2: Second path as list of node IDs.
+        :type path2: list[str]
+        :return: True if paths share no common intermediate nodes.
+        :rtype: bool
         """
         nodes1 = set(path1[1:-1])
         nodes2 = set(path2[1:-1])

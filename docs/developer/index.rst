@@ -41,6 +41,7 @@ Modules
    fusion/interfaces/index
    fusion/io/index
    fusion/modules/index
+   fusion/pipelines/index
 
 Data Directory
 ==============
