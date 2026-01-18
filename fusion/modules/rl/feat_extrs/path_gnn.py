@@ -19,7 +19,7 @@ from fusion.modules.rl.feat_extrs.constants import (
     DEFAULT_NUM_LAYERS,
 )
 
-# TODO: (version 5.5-6) Add params to optuna
+# TODO: (v6.X) Integrate PathGNN hyperparameters with Optuna search space
 
 
 class PathGNN(BaseGraphFeatureExtractor):

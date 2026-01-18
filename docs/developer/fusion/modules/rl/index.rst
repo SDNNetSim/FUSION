@@ -23,6 +23,7 @@ Reinforcement Learning Module
    algorithms
    args
    environments
+   feat_extrs
 
 Overview
 ========
@@ -56,7 +57,7 @@ optical networks.
 - **In-house RL algorithms**: Q-learning, Epsilon-Greedy Bandits, UCB Bandits (actively expanded)
 - **Deep RL via Stable-Baselines3**: PPO, A2C, DQN, QR-DQN wrappers
 - **Offline RL policies** *(beta)*: Behavioral Cloning (BC), Implicit Q-Learning (IQL)
-- **GNN-based feature extractors**: GraphConv, GAT, SAGE, Graphormer
+- **GNN-based feature extractors** *(beta)*: GAT, SAGE, GraphConv, Graphormer (see :ref:`rl-feat-extrs`)
 - **Hyperparameter optimization**: Optuna integration with configurable pruning
 - **Action masking**: Safe RL deployment preventing invalid actions
 
@@ -294,19 +295,19 @@ The ``[rl_settings]`` section in your INI file controls all RL behavior:
      - Description
    * - ``feature_extractor``
      - ``path_gnn``
-     - Feature extraction method (path_gnn, mlp)
+     - Feature extraction method (path_gnn, mlp). See :ref:`rl-feat-extrs`
    * - ``gnn_type``
-     - ``graph_conv``
-     - GNN architecture (graph_conv, gat)
+     - ``gat``
+     - GNN architecture: ``gat`` (attention), ``sage`` (sampling), ``graphconv`` (standard)
    * - ``layers``
      - ``2``
-     - Number of neural network layers
+     - Number of GNN convolution layers
    * - ``emb_dim``
      - ``64``
      - Embedding dimension size
    * - ``heads``
      - ``4``
-     - Attention heads (for GAT)
+     - Attention heads (for GraphTransformer)
 
 Command Line Interface
 ----------------------
@@ -365,10 +366,10 @@ Module Structure
    |-- gymnasium_envs/          # Legacy environment (deprecated)
    |   `-- general_sim_env.py   # GeneralSimEnv (SimEnv)
    |
-   |-- feat_extrs/              # GNN feature extractors
-   |   |-- path_gnn.py          # Standard GNN
+   |-- feat_extrs/              # GNN feature extractors (BETA)
+   |   |-- path_gnn.py          # Standard GNN (GAT, SAGE, GraphConv)
    |   |-- path_gnn_cached.py   # Cached GNN for static graphs
-   |   `-- graphormer.py        # Transformer-based GNN
+   |   `-- graphormer.py        # Transformer-based GNN (experimental)
    |
    |-- policies/                # Path selection policies (BETA)
    |   |-- bc_policy.py         # Behavioral Cloning

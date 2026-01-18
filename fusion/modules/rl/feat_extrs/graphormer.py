@@ -19,7 +19,7 @@ from fusion.modules.rl.feat_extrs.constants import (
     EDGE_EMBEDDING_SCALE_FACTOR,
 )
 
-# TODO: (version 5.5-6) Add params to optuna
+# TODO: (v6.X) Integrate Graphormer hyperparameters with Optuna search space
 
 
 class GraphTransformerExtractor(BaseGraphFeatureExtractor):
