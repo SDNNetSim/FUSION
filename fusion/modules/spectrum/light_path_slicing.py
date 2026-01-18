@@ -365,7 +365,6 @@ class LightPathSlicingManager:
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw)
                 break
 
-        total_allocated = initial_remaining - remaining_bw
         return bool(self.sdn_props.was_routed)
 
     def _handle_flex_grid_dynamic_slicing(
