@@ -20,7 +20,7 @@ def _rl_props() -> SimpleNamespace:
         spectral_slots=[1550],
         forced_index=None,
         core_index=None,
-        arrival_list=[{"arrive": 0, "bandwidth": "100G"}],
+        arrival_list=[{"arrive": 0, "bandwidth": "100G", "req_id": 0}],
         depart_list=[],
     )
 
@@ -118,13 +118,13 @@ class TestHandleReleases:
     def test_releases_until_future_time(self) -> None:
         """handle_release called once; index advanced."""
         rl = _rl_props()
-        rl.depart_list = [{"depart": 0}, {"depart": 5}]
+        rl.depart_list = [{"depart": 0, "req_id": 0}, {"depart": 5, "req_id": 1}]
         eng = _engine()
         helper = gu.CoreUtilHelpers(rl, eng, _route())
 
         helper.handle_releases()
 
-        eng.handle_release.assert_called_once_with(current_time=0)
+        eng.handle_release.assert_called_once_with(current_time=(0, 0))
         assert helper._last_processed_index == 1  # pylint: disable=protected-access
 
 

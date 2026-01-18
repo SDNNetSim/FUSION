@@ -53,18 +53,18 @@ def _yaml_dict() -> dict[str, Any]:
 class TestPrintInfo:
     """print_info branch handling."""
 
-    @mock.patch("builtins.print")
-    def test_path_agent_string(self, mock_print: mock.MagicMock) -> None:
-        """Prints correct message for path algorithm."""
+    @mock.patch("fusion.modules.rl.utils.setup.logger")
+    def test_path_agent_string(self, mock_logger: mock.MagicMock) -> None:
+        """Logs correct message for path algorithm."""
         sim = {
             "path_algorithm": "q_learning",
             "core_algorithm": "none",
             "spectrum_algorithm": None,
         }
         su.print_info(sim)
-        mock_print.assert_called_once_with(
-            "Beginning training process for the PATH AGENT using the "
-            "Q_Learning algorithm."
+        mock_logger.info.assert_called_once_with(
+            "Beginning training process for the PATH AGENT using the %s algorithm.",
+            "Q_Learning",
         )
 
     def test_invalid_algorithms_raise(self) -> None:

@@ -37,7 +37,7 @@ def _make_sim_env(
         engine_props=engine_props,
         end_iter=mock.MagicMock(),
         network_spectrum_dict={},
-        reqs_dict={0: {"depart": 10}, 1: {"depart": 15}},
+        reqs_dict={(0, 0.0): {"depart": 10}, (1, 1.0): {"depart": 15}},
         stats_obj=None,
     )
 
@@ -124,13 +124,13 @@ class TestScaleReqHolding:
         scaled = obs._scale_req_holding(holding_time=12)  # pylint:disable=protected-access
         assert scaled == pytest.approx(0.5)
 
-    def test_equal_min_max_returns_one(self) -> None:
-        """When all departures equal, value defaults to 1.0."""
+    def test_equal_min_max_raises_value_error(self) -> None:
+        """When all departures equal, ValueError is raised."""
         senv = _make_sim_env()
-        senv.engine_obj.reqs_dict = {0: {"depart": 10}, 1: {"depart": 10}}
+        senv.engine_obj.reqs_dict = {(0, 0.0): {"depart": 10}, (1, 0.0): {"depart": 10}}
         obs = SimEnvObs(senv)
-        scaled = obs._scale_req_holding(holding_time=10)  # pylint:disable=protected-access
-        assert scaled == 1.0
+        with pytest.raises(ValueError, match="x_max and x_min cannot be the same"):
+            obs._scale_req_holding(holding_time=10)  # pylint:disable=protected-access
 
 
 # ------------------------------------------------------------------ #
