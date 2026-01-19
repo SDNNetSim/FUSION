@@ -83,15 +83,11 @@ class EvaluationPipeline:
             runner = BatchRunner(test_config)
             sim_results = runner.run()
 
-            results["test_results"].append(
-                {"config": test_config, "results": sim_results}
-            )
+            results["test_results"].append({"config": test_config, "results": sim_results})
 
         return results
 
-    def compare_algorithms(
-        self, algorithms: dict[str, dict], test_scenario: dict
-    ) -> dict:
+    def compare_algorithms(self, algorithms: dict[str, dict], test_scenario: dict) -> dict:
         """
         Compare performance of different algorithms/models.
 
@@ -208,23 +204,17 @@ class EvaluationPipeline:
         # Model evaluation
         if "model_evaluation" in eval_config:
             model_config = eval_config["model_evaluation"]
-            results["model"] = self.evaluate_model(
-                model_config["model_path"], model_config["test_configs"]
-            )
+            results["model"] = self.evaluate_model(model_config["model_path"], model_config["test_configs"])
 
         # Algorithm comparison
         if "algorithm_comparison" in eval_config:
             comp_config = eval_config["algorithm_comparison"]
-            results["comparison"] = self.compare_algorithms(
-                comp_config["algorithms"], comp_config["scenario"]
-            )
+            results["comparison"] = self.compare_algorithms(comp_config["algorithms"], comp_config["scenario"])
 
         # RL agent evaluation
         if "rl_evaluation" in eval_config:
             rl_config = eval_config["rl_evaluation"]
-            results["rl"] = self.evaluate_rl_agent(
-                rl_config["agent_path"], rl_config.get("episodes", 100)
-            )
+            results["rl"] = self.evaluate_rl_agent(rl_config["agent_path"], rl_config.get("episodes", 100))
 
         # Generate report
         if eval_config.get("generate_report", True):
@@ -278,9 +268,7 @@ class EvaluationPipeline:
                     report["rankings"][metric] = [algo for algo, _ in sorted_algos]
                 else:
                     # Higher is better for other metrics
-                    report["rankings"][metric] = [
-                        algo for algo, _ in reversed(sorted_algos)
-                    ]
+                    report["rankings"][metric] = [algo for algo, _ in reversed(sorted_algos)]
 
         return report
 
@@ -296,16 +284,12 @@ class EvaluationPipeline:
         }
         return total_reward, stats
 
-    def _generate_comparison_plots(
-        self, _comparison_data: dict, _output_path: Path
-    ) -> None:
+    def _generate_comparison_plots(self, _comparison_data: dict, _output_path: Path) -> None:
         """Generate comparison plots."""
         # Placeholder for visualization integration
         log_message("Comparison plots would be generated here")
 
-    def _generate_excel_report(
-        self, _test_results: list[dict], output_path: Path
-    ) -> None:
+    def _generate_excel_report(self, _test_results: list[dict], output_path: Path) -> None:
         """Generate Excel report from test results."""
         # Placeholder for Excel export integration
         excel_path = output_path / "evaluation_report.xlsx"
@@ -322,10 +306,7 @@ class EvaluationPipeline:
             if "model" in results:
                 f.write("## Model Evaluation\n\n")
                 f.write(f"- Model: {results['model']['model_path']}\n")
-                f.write(
-                    f"- Test configurations: "
-                    f"{len(results['model']['test_results'])}\n\n"
-                )
+                f.write(f"- Test configurations: {len(results['model']['test_results'])}\n\n")
 
             # Algorithm comparison section
             if "comparison" in results:
@@ -347,13 +328,8 @@ class EvaluationPipeline:
                 f.write("\n## RL Agent Evaluation\n\n")
                 rl = results["rl"]
                 f.write(f"- Episodes: {rl['episodes']}\n")
-                f.write(
-                    f"- Mean reward: {rl['mean_reward']:.2f} ± {rl['std_reward']:.2f}\n"
-                )
-                f.write(
-                    f"- Mean blocking: {rl['mean_blocking']:.4f} ± "
-                    f"{rl['std_blocking']:.4f}\n"
-                )
+                f.write(f"- Mean reward: {rl['mean_reward']:.2f} ± {rl['std_reward']:.2f}\n")
+                f.write(f"- Mean blocking: {rl['mean_blocking']:.4f} ± {rl['std_blocking']:.4f}\n")
 
 
 def run_evaluation_pipeline(config: dict) -> dict:

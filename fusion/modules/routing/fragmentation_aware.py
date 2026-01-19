@@ -73,11 +73,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         :return: True if the algorithm can route in this environment.
         :rtype: bool
         """
-        return (
-            hasattr(topology, "nodes")
-            and hasattr(topology, "edges")
-            and hasattr(self.sdn_props, "network_spectrum_dict")
-        )
+        return hasattr(topology, "nodes") and hasattr(topology, "edges") and hasattr(self.sdn_props, "network_spectrum_dict")
 
     def route(self, source: Any, destination: Any, request: Any) -> None:
         """
@@ -127,9 +123,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         based on current spectrum utilization. Updates both directions
         of bidirectional links with the same fragmentation cost.
         """
-        topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, "topology", None)
-        )
+        topology = self.engine_props.get("topology", getattr(self.sdn_props, "topology", None))
 
         # Calculate fragmentation for each direct link
         network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
@@ -145,12 +139,8 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
 
             # Store fragmentation score for both directions if bidirectional
             if topology is not None and hasattr(topology, "edges"):
-                topology[source_node][destination_node]["frag_cost"] = (
-                    fragmentation_score
-                )
-                topology[destination_node][source_node]["frag_cost"] = (
-                    fragmentation_score
-                )
+                topology[source_node][destination_node]["frag_cost"] = fragmentation_score
+                topology[destination_node][source_node]["frag_cost"] = fragmentation_score
 
     def _find_least_weight(self, weight: str) -> None:
         """
@@ -163,9 +153,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             typically 'frag_cost'.
         :type weight: str
         """
-        topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, "topology", None)
-        )
+        topology = self.engine_props.get("topology", getattr(self.sdn_props, "topology", None))
 
         paths_generator = nx.shortest_simple_paths(
             G=topology,
@@ -178,16 +166,14 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             # Calculate path weight as sum across the path
             path_weight = 0.0
             if topology is not None:
-                path_weight = sum(
-                    topology[path_list[i]][path_list[i + 1]][weight]
-                    for i in range(len(path_list) - 1)
-                )
+                path_weight = sum(topology[path_list[i]][path_list[i + 1]][weight] for i in range(len(path_list) - 1))
 
             # Calculate actual path length for modulation format selection
             path_length = find_path_length(path_list=path_list, topology=topology)
             # Get modulation format
             modulation_formats = getattr(self.sdn_props, "mod_formats", {})
             modulation_format = get_path_modulation(modulation_formats, path_length)
+            modulation_format_list: list[str | bool]
             if modulation_format and modulation_format is not True:
                 modulation_format_list = [str(modulation_format)]
             else:
@@ -235,15 +221,11 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
         :rtype: list[list[Any]]
         """
         # Update fragmentation costs first
-        topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, "topology", None)
-        )
+        topology = self.engine_props.get("topology", getattr(self.sdn_props, "topology", None))
         self._update_fragmentation_costs()
 
         try:
-            paths_generator = nx.shortest_simple_paths(
-                topology, source, destination, weight="frag_cost"
-            )
+            paths_generator = nx.shortest_simple_paths(topology, source, destination, weight="frag_cost")
 
             paths_list = []
             for path_index, path in enumerate(paths_generator):
@@ -275,12 +257,8 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             )
 
             if hasattr(topology, "edges"):
-                topology[source_node][destination_node]["frag_cost"] = (
-                    fragmentation_score
-                )
-                topology[destination_node][source_node]["frag_cost"] = (
-                    fragmentation_score
-                )
+                topology[source_node][destination_node]["frag_cost"] = fragmentation_score
+                topology[destination_node][source_node]["frag_cost"] = fragmentation_score
 
     def get_metrics(self) -> dict[str, Any]:
         """
@@ -291,9 +269,7 @@ class FragmentationAwareRouting(AbstractRoutingAlgorithm):
             fragmentation considered.
         :rtype: dict[str, Any]
         """
-        avg_fragmentation = (
-            self._total_fragmentation / self._path_count if self._path_count > 0 else 0
-        )
+        avg_fragmentation = self._total_fragmentation / self._path_count if self._path_count > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

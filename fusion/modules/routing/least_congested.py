@@ -72,11 +72,7 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         :return: True if the algorithm can route in this environment.
         :rtype: bool
         """
-        return (
-            hasattr(topology, "nodes")
-            and hasattr(topology, "edges")
-            and hasattr(self.sdn_props, "network_spectrum_dict")
-        )
+        return hasattr(topology, "nodes") and hasattr(topology, "edges") and hasattr(self.sdn_props, "network_spectrum_dict")
 
     def route(self, source: Any, destination: Any, request: Any) -> None:
         """
@@ -121,13 +117,9 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
         Evaluates paths with hop count within 1 of the minimum and selects
         the one with the least congested bottleneck link.
         """
-        topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, "topology", None)
-        )
+        topology = self.engine_props.get("topology", getattr(self.sdn_props, "topology", None))
 
-        all_paths_generator = nx.shortest_simple_paths(
-            topology, self.sdn_props.source, self.sdn_props.destination
-        )
+        all_paths_generator = nx.shortest_simple_paths(topology, self.sdn_props.source, self.sdn_props.destination)
         minimum_hops = None
 
         for path_index, path_list in enumerate(all_paths_generator):
@@ -162,19 +154,14 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
 
         for link_index in range(len(path_list) - 1):
             network_spectrum_dict = getattr(self.sdn_props, "network_spectrum_dict", {})
-            link_dict = network_spectrum_dict[
-                (path_list[link_index], path_list[link_index + 1])
-            ]
+            link_dict = network_spectrum_dict[(path_list[link_index], path_list[link_index + 1])]
             total_free_slots = 0
             for band in link_dict["cores_matrix"]:
                 cores_matrix = link_dict["cores_matrix"][band]
                 for core_array in cores_matrix:
                     total_free_slots += np.sum(core_array == 0)
 
-            if (
-                total_free_slots < most_congested_free_slots
-                or most_congested_link is None
-            ):
+            if total_free_slots < most_congested_free_slots or most_congested_link is None:
                 most_congested_free_slots = total_free_slots
                 most_congested_link = link_dict
 
@@ -282,9 +269,7 @@ class LeastCongestedRouting(AbstractRoutingAlgorithm):
             congestion considered.
         :rtype: dict[str, Any]
         """
-        avg_congestion = (
-            self._total_congestion / self._path_count if self._path_count > 0 else 0
-        )
+        avg_congestion = self._total_congestion / self._path_count if self._path_count > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

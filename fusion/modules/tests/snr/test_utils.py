@@ -29,11 +29,7 @@ class TestGetLoadedFiles:
         core_num = 0
         cores_per_link = 7
         network = "test_network"
-        file_mapping_dict = {
-            "test_network": {
-                "multi_fiber": {"mf": "mf_multi.npy", "gsnr": "gsnr_multi.npy"}
-            }
-        }
+        file_mapping_dict = {"test_network": {"multi_fiber": {"mf": "mf_multi.npy", "gsnr": "gsnr_multi.npy"}}}
 
         mf_data = np.array([1, 2, 3])
         gsnr_data = np.array([4, 5, 6])
@@ -41,9 +37,7 @@ class TestGetLoadedFiles:
         # Act & Assert
         with patch("fusion.modules.snr.utils.np.load") as mock_load:
             mock_load.side_effect = [mf_data, gsnr_data]
-            result_mf, result_gsnr = get_loaded_files(
-                core_num, cores_per_link, file_mapping_dict, network
-            )
+            result_mf, result_gsnr = get_loaded_files(core_num, cores_per_link, file_mapping_dict, network)
 
             assert np.array_equal(result_mf, mf_data)
             assert np.array_equal(result_gsnr, gsnr_data)
@@ -55,9 +49,7 @@ class TestGetLoadedFiles:
         core_num = 3
         cores_per_link = 7
         network = "test_network"
-        file_mapping_dict = {
-            "test_network": {(3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}}
-        }
+        file_mapping_dict = {"test_network": {(3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}}}
 
         mf_data = np.array([10, 20, 30])
         gsnr_data = np.array([40, 50, 60])
@@ -65,9 +57,7 @@ class TestGetLoadedFiles:
         # Act & Assert
         with patch("fusion.modules.snr.utils.np.load") as mock_load:
             mock_load.side_effect = [mf_data, gsnr_data]
-            result_mf, result_gsnr = get_loaded_files(
-                core_num, cores_per_link, file_mapping_dict, network
-            )
+            result_mf, result_gsnr = get_loaded_files(core_num, cores_per_link, file_mapping_dict, network)
 
             assert np.array_equal(result_mf, mf_data)
             assert np.array_equal(result_gsnr, gsnr_data)
@@ -78,9 +68,7 @@ class TestGetLoadedFiles:
         core_num = 99
         cores_per_link = 7
         network = "test_network"
-        file_mapping_dict = {
-            "test_network": {(3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}}
-        }
+        file_mapping_dict = {"test_network": {(3, 7): {"mf": "mf_core3.npy", "gsnr": "gsnr_core3.npy"}}}
 
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
@@ -96,9 +84,7 @@ class TestGetLoadedFiles:
         core_num = 0
         cores_per_link = 7
         network = "nsfnet"
-        file_mapping_dict = {
-            "nsfnet": {"multi_fiber": {"mf": "mf_test.npy", "gsnr": "gsnr_test.npy"}}
-        }
+        file_mapping_dict = {"nsfnet": {"multi_fiber": {"mf": "mf_test.npy", "gsnr": "gsnr_test.npy"}}}
 
         # Act & Assert
         with patch("fusion.modules.snr.utils.np.load") as mock_load:

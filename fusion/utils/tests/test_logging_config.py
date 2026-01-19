@@ -65,9 +65,7 @@ class TestCreateFileHandler:
         formatter = logging.Formatter(DEFAULT_FORMAT)
 
         # Act
-        handler = _create_file_handler(
-            log_file, log_dir, log_level, formatter, "a", 10485760, 5
-        )
+        handler = _create_file_handler(log_file, log_dir, log_level, formatter, "a", 10485760, 5)
 
         # Assert
         assert isinstance(handler, logging.handlers.RotatingFileHandler)
@@ -83,9 +81,7 @@ class TestCreateFileHandler:
         formatter = logging.Formatter(DEFAULT_FORMAT)
 
         # Act
-        handler = _create_file_handler(
-            log_file, log_dir, log_level, formatter, "w", 5242880, 3
-        )
+        handler = _create_file_handler(log_file, log_dir, log_level, formatter, "w", 5242880, 3)
 
         # Assert
         assert isinstance(handler, logging.handlers.RotatingFileHandler)
@@ -123,9 +119,7 @@ class TestSetupLogger:
         logging_config._loggers.clear()
 
     @patch("fusion.utils.logging_config._create_console_handler")
-    def test_setup_logger_with_console_only_creates_console_handler(
-        self, mock_console_handler: Mock
-    ) -> None:
+    def test_setup_logger_with_console_only_creates_console_handler(self, mock_console_handler: Mock) -> None:
         """Test setup_logger with console output only."""
         # Arrange
         mock_handler = Mock()
@@ -141,9 +135,7 @@ class TestSetupLogger:
 
     @patch("fusion.utils.logging_config._create_file_handler")
     @patch("fusion.utils.logging_config._create_console_handler")
-    def test_setup_logger_with_file_creates_file_handler(
-        self, mock_console_handler: Mock, mock_file_handler: Mock
-    ) -> None:
+    def test_setup_logger_with_file_creates_file_handler(self, mock_console_handler: Mock, mock_file_handler: Mock) -> None:
         """Test setup_logger with file output."""
         # Arrange
         mock_console = Mock()
@@ -168,9 +160,7 @@ class TestSetupLogger:
         assert logger1 is logger2
 
     @patch("fusion.utils.logging_config._create_console_handler")
-    def test_setup_logger_without_console_skips_console_handler(
-        self, mock_console_handler: Mock
-    ) -> None:
+    def test_setup_logger_without_console_skips_console_handler(self, mock_console_handler: Mock) -> None:
         """Test setup_logger without console output."""
         # Act
         setup_logger("test_logger", console=False)
@@ -179,9 +169,7 @@ class TestSetupLogger:
         mock_console_handler.assert_not_called()
 
     @patch("fusion.utils.logging_config._create_console_handler")
-    def test_setup_logger_with_custom_format_uses_custom_format(
-        self, mock_console_handler: Mock
-    ) -> None:
+    def test_setup_logger_with_custom_format_uses_custom_format(self, mock_console_handler: Mock) -> None:
         """Test setup_logger with custom format string."""
         # Arrange
         custom_format = "%(levelname)s - %(message)s"
@@ -200,9 +188,7 @@ class TestSetupLogger:
             assert isinstance(formatter, logging.Formatter)
 
     @patch("fusion.utils.logging_config._create_console_handler")
-    def test_setup_logger_with_debug_level_sets_debug(
-        self, mock_console_handler: Mock
-    ) -> None:
+    def test_setup_logger_with_debug_level_sets_debug(self, mock_console_handler: Mock) -> None:
         """Test setup_logger with DEBUG level."""
         # Arrange
         mock_handler = Mock()
@@ -273,9 +259,7 @@ class TestConfigureSimulationLogging:
 
     @patch("fusion.utils.logging_config.datetime")
     @patch("fusion.utils.logging_config.setup_logger")
-    def test_configure_simulation_logging_without_thread_creates_logger(
-        self, mock_setup: Mock, mock_datetime: Mock
-    ) -> None:
+    def test_configure_simulation_logging_without_thread_creates_logger(self, mock_setup: Mock, mock_datetime: Mock) -> None:
         """Test simulation logging without thread number."""
         # Arrange
         mock_now = Mock()
@@ -296,9 +280,7 @@ class TestConfigureSimulationLogging:
 
     @patch("fusion.utils.logging_config.datetime")
     @patch("fusion.utils.logging_config.setup_logger")
-    def test_configure_simulation_logging_with_thread_includes_thread(
-        self, mock_setup: Mock, mock_datetime: Mock
-    ) -> None:
+    def test_configure_simulation_logging_with_thread_includes_thread(self, mock_setup: Mock, mock_datetime: Mock) -> None:
         """Test simulation logging with thread number."""
         # Arrange
         mock_now = Mock()
@@ -317,9 +299,7 @@ class TestConfigureSimulationLogging:
 
     @patch("fusion.utils.logging_config.datetime")
     @patch("fusion.utils.logging_config.setup_logger")
-    def test_configure_simulation_logging_with_custom_level_uses_level(
-        self, mock_setup: Mock, mock_datetime: Mock
-    ) -> None:
+    def test_configure_simulation_logging_with_custom_level_uses_level(self, mock_setup: Mock, mock_datetime: Mock) -> None:
         """Test simulation logging with custom log level."""
         # Arrange
         mock_now = Mock()

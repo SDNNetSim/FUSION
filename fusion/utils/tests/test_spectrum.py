@@ -30,9 +30,7 @@ class TestFindFreeSlots:
         link_tuple = (1, 2)
 
         # Act
-        result = find_free_slots(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert "c" in result
@@ -54,9 +52,7 @@ class TestFindFreeSlots:
         link_tuple = (1, 2)
 
         # Act
-        result = find_free_slots(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         np.testing.assert_array_equal(result["c"][0], np.array([1, 2]))
@@ -76,9 +72,7 @@ class TestFindFreeSlots:
         link_tuple = (1, 2)
 
         # Act
-        result = find_free_slots(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert "c" in result
@@ -110,9 +104,7 @@ class TestFindFreeSlots:
         network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[0, 1], [1, 0]])}}}
 
         # Act
-        result = find_free_slots(
-            network_spectrum_dict=network_spectrum, link_tuple=(1, 2)
-        )
+        result = find_free_slots(network_spectrum_dict=network_spectrum, link_tuple=(1, 2))
 
         # Assert
         assert "c" in result
@@ -224,9 +216,7 @@ class TestFindFreeChannels:
         with pytest.raises(ValueError) as exc_info:
             find_free_channels(network_spectrum=None, slots_needed=2, link_tuple=(1, 2))
 
-        assert "Must provide network_spectrum, link_tuple, and slots_needed" in str(
-            exc_info.value
-        )
+        assert "Must provide network_spectrum, link_tuple, and slots_needed" in str(exc_info.value)
 
     def test_find_free_channels_with_legacy_parameters_works(self) -> None:
         """Test backward compatibility with legacy parameter names."""
@@ -234,9 +224,7 @@ class TestFindFreeChannels:
         network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0]])}}}
 
         # Act
-        result = find_free_channels(
-            network_spectrum_dict=network_spectrum, slots_needed=2, link_tuple=(1, 2)
-        )
+        result = find_free_channels(network_spectrum_dict=network_spectrum, slots_needed=2, link_tuple=(1, 2))
 
         # Assert
         assert [0, 1] in result["c"][0]
@@ -276,9 +264,7 @@ class TestFindTakenChannels:
         network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[0, 0, 0]])}}}
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=(1, 2)
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=(1, 2))
 
         # Assert
         assert result["c"][0] == []
@@ -295,9 +281,7 @@ class TestFindTakenChannels:
         }
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=(1, 2)
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=(1, 2))
 
         # Assert
         assert [1, 1] in result["c"][0]
@@ -315,9 +299,7 @@ class TestFindTakenChannels:
         }
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=(1, 2)
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=(1, 2))
 
         # Assert
         assert len(result["c"][0]) == 1
@@ -336,9 +318,7 @@ class TestFindTakenChannels:
         }
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=(1, 2)
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=(1, 2))
 
         # Assert
         assert [1] in result["c"][0]
@@ -356,9 +336,7 @@ class TestFindTakenChannels:
         network_spectrum = {(1, 2): {"cores_matrix": {"c": np.array([[1, 1, -1]])}}}
 
         # Act
-        result = find_taken_channels(
-            network_spectrum_dict=network_spectrum, link_tuple=(1, 2)
-        )
+        result = find_taken_channels(network_spectrum_dict=network_spectrum, link_tuple=(1, 2))
 
         # Assert
         assert [1, 1] in result["c"][0]
@@ -372,9 +350,7 @@ class TestGetChannelOverlaps:
         # Arrange - need 7 cores (0-6), nested structure for slots
         cores_slots = {i: np.array([0, 1, 2]) for i in range(7)}
         free_channels_dict = {(1, 2): {"c": {i: [[0, 1, 2]] for i in range(7)}}}
-        free_slots_dict: dict[Any, dict[str, dict[int, dict[int, Any]]]] = {
-            (1, 2): {"c": {i: cores_slots.copy() for i in range(7)}}
-        }
+        free_slots_dict: dict[Any, dict[str, dict[int, dict[int, Any]]]] = {(1, 2): {"c": {i: cores_slots.copy() for i in range(7)}}}
 
         # Act
         result = get_channel_overlaps(free_channels_dict, free_slots_dict)
@@ -389,12 +365,8 @@ class TestGetChannelOverlaps:
         """Test channel overlaps with no free channels."""
         # Arrange - need 7 cores minimum, nested structure
         cores_slots = {i: np.array([]) for i in range(7)}
-        free_channels_dict: dict[tuple[int, int], dict[str, dict[int, list[Any]]]] = {
-            (1, 2): {"c": {i: [] for i in range(7)}}
-        }
-        free_slots_dict: dict[Any, dict[str, dict[int, dict[int, Any]]]] = {
-            (1, 2): {"c": {i: cores_slots.copy() for i in range(7)}}
-        }
+        free_channels_dict: dict[tuple[int, int], dict[str, dict[int, list[Any]]]] = {(1, 2): {"c": {i: [] for i in range(7)}}}
+        free_slots_dict: dict[Any, dict[str, dict[int, dict[int, Any]]]] = {(1, 2): {"c": {i: cores_slots.copy() for i in range(7)}}}
 
         # Act
         result = get_channel_overlaps(free_channels_dict, free_slots_dict)
@@ -516,9 +488,7 @@ class TestFindCommonChannelsOnPaths:
         path = [0, 1, 2]
 
         # Act
-        result = find_common_channels_on_paths(
-            network_spectrum, [path], slots_needed=2, band="c", core=0
-        )
+        result = find_common_channels_on_paths(network_spectrum, [path], slots_needed=2, band="c", core=0)
 
         # Assert - Only slots 0-1 are free on both links
         assert len(result) == 1
@@ -530,9 +500,7 @@ class TestFindCommonChannelsOnPaths:
         network_spectrum = {(0, 1): {"cores_matrix": {"c": np.array([[0, 0]])}}}
 
         # Act
-        result = find_common_channels_on_paths(
-            network_spectrum, [], slots_needed=2, band="c", core=0
-        )
+        result = find_common_channels_on_paths(network_spectrum, [], slots_needed=2, band="c", core=0)
 
         # Assert
         assert result == []
@@ -543,9 +511,7 @@ class TestFindCommonChannelsOnPaths:
         network_spectrum = {(0, 1): {"cores_matrix": {"c": np.array([[0, 0]])}}}
 
         # Act
-        result = find_common_channels_on_paths(
-            network_spectrum, [[0]], slots_needed=2, band="c", core=0
-        )
+        result = find_common_channels_on_paths(network_spectrum, [[0]], slots_needed=2, band="c", core=0)
 
         # Assert
         assert result == []
@@ -560,9 +526,7 @@ class TestFindCommonChannelsOnPaths:
         path = [0, 1, 2]
 
         # Act
-        result = find_common_channels_on_paths(
-            network_spectrum, [path], slots_needed=2, band="c", core=0
-        )
+        result = find_common_channels_on_paths(network_spectrum, [path], slots_needed=2, band="c", core=0)
 
         # Assert
         assert result == []
@@ -576,9 +540,7 @@ class TestFindCommonChannelsOnPaths:
         path = [0, 1]
 
         # Act - Request l-band which doesn't exist
-        result = find_common_channels_on_paths(
-            network_spectrum, [path], slots_needed=2, band="l", core=0
-        )
+        result = find_common_channels_on_paths(network_spectrum, [path], slots_needed=2, band="l", core=0)
 
         # Assert
         assert result == []
@@ -592,9 +554,7 @@ class TestFindCommonChannelsOnPaths:
         path = [0, 1]
 
         # Act - Request core 1 which doesn't exist
-        result = find_common_channels_on_paths(
-            network_spectrum, [path], slots_needed=2, band="c", core=1
-        )
+        result = find_common_channels_on_paths(network_spectrum, [path], slots_needed=2, band="c", core=1)
 
         # Assert
         assert result == []
@@ -638,9 +598,7 @@ class TestFindCommonChannelsOnPaths:
         path3 = [0, 3]
 
         # Act
-        result = find_common_channels_on_paths(
-            network_spectrum, [path1, path2, path3], slots_needed=2, band="c", core=0
-        )
+        result = find_common_channels_on_paths(network_spectrum, [path1, path2, path3], slots_needed=2, band="c", core=0)
 
         # Assert
         assert len(result) == 1
@@ -698,14 +656,10 @@ class TestFindCommonChannelsOnPaths:
         }
 
         # Act - Check core 0 (should fail - no common slots)
-        result_core0 = find_common_channels_on_paths(
-            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=0
-        )
+        result_core0 = find_common_channels_on_paths(network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=0)
 
         # Act - Check core 1 (should succeed - slots 0-1 common)
-        result_core1 = find_common_channels_on_paths(
-            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=1
-        )
+        result_core1 = find_common_channels_on_paths(network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=1)
 
         # Assert
         assert result_core0 == []
@@ -731,14 +685,10 @@ class TestFindCommonChannelsOnPaths:
         }
 
         # Act - Check c-band (should fail)
-        result_c_band = find_common_channels_on_paths(
-            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=0
-        )
+        result_c_band = find_common_channels_on_paths(network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="c", core=0)
 
         # Act - Check l-band (should succeed)
-        result_l_band = find_common_channels_on_paths(
-            network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="l", core=0
-        )
+        result_l_band = find_common_channels_on_paths(network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band="l", core=0)
 
         # Assert
         assert result_c_band == []
@@ -823,10 +773,5 @@ class TestFindCommonChannelsOnPaths:
         ]
 
         for band, core, expected_starts in test_cases:
-            result = find_common_channels_on_paths(
-                network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band=band, core=core
-            )
-            assert result == expected_starts, (
-                f"Failed for band={band}, core={core}: "
-                f"expected {expected_starts}, got {result}"
-            )
+            result = find_common_channels_on_paths(network_spectrum, [[0, 1], [0, 2]], slots_needed=2, band=band, core=core)
+            assert result == expected_starts, f"Failed for band={band}, core={core}: expected {expected_starts}, got {result}"

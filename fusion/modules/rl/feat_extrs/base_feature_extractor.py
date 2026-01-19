@@ -65,9 +65,7 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
 
         return node_features, edge_index, path_masks, batch_size
 
-    def _compute_edge_embeddings(
-        self, node_embeddings: torch.Tensor, edge_index: torch.Tensor
-    ) -> torch.Tensor:
+    def _compute_edge_embeddings(self, node_embeddings: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
         """
         Compute edge embeddings from node embeddings.
 
@@ -79,14 +77,10 @@ class BaseGraphFeatureExtractor(BaseFeaturesExtractor):
         :rtype: torch.Tensor
         """
         source_idx, destination_idx = edge_index
-        edge_embeddings = (
-            node_embeddings[source_idx] + node_embeddings[destination_idx]
-        ) * EDGE_EMBEDDING_SCALE_FACTOR
+        edge_embeddings = (node_embeddings[source_idx] + node_embeddings[destination_idx]) * EDGE_EMBEDDING_SCALE_FACTOR
         return edge_embeddings
 
-    def _compute_path_embeddings(
-        self, edge_embeddings: torch.Tensor, path_masks: torch.Tensor
-    ) -> torch.Tensor:
+    def _compute_path_embeddings(self, edge_embeddings: torch.Tensor, path_masks: torch.Tensor) -> torch.Tensor:
         """
         Compute path embeddings from edge embeddings using path masks.
 

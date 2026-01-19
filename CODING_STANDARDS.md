@@ -15,12 +15,12 @@
 **Note**: Type suffixes like `_dict`, `_list`, `_set` are now discouraged. Modern Python type hints make the type clear without redundant suffixes.
 
 ```python
-# ✅ Modern approach - let type hints show the type
+# Good - let type hints show the type
 user_settings: dict[str, Any] = {}
 active_connections: set[str] = set()
 pending_requests: list[Request] = []
 
-# ❌ Avoid redundant type suffixes
+# Bad - redundant type suffixes
 user_settings_dict: dict[str, Any] = {}  # Redundant
 active_connections_set: set[str] = set()  # Redundant
 pending_requests_list: list[Request] = []  # Redundant
@@ -39,32 +39,12 @@ user_data_dict: dict = {"name": "John"}
 - **Units**: `timeout_seconds`, `distance_km`
 - **Booleans**: `is_valid`, `has_data`, `was_routed`
 
-### 1.4 ⚠️ CRITICAL: Refactoring Names
+### 1.4 CRITICAL: Refactoring Names
 When changing variable/function names:
 1. **Search entire codebase** for ALL occurrences
 2. Check dictionary keys, config files, tests
 3. Preserve external API compatibility
 4. Update consistently across all files
-
-### 1.5 Standardized Names
-Use these standardized names consistently across the codebase:
-
-**Engine/Simulation**:
-- `engine_props` (not `engine_properties`, `props`, `config`)
-- `sim_params` (not `simulation_parameters`, `params`)
-- `network_topology` (not `topology`, `network_topo`)
-
-**Data Structures**:
-- `requests` (not `request_list`, `req_list`)
-- `connections` (not `connection_dict`, `conn_dict`)
-- `stats_collector` (not `statistics`, `stats`)
-
-**File/Path Related**:
-- `config_path` (not `config_file`, `cfg_path`)
-- `output_dir` (not `output_directory`, `out_dir`)
-- `data_file_path` (not `datafile`, `data_path`)
-
-**Add new standardized names here as needed**
 
 ## 2. Code Organization
 
@@ -111,11 +91,11 @@ __all__ = [
 
 ### 2.1.2 Registry.py Guidelines
 **When to include `registry.py`**:
-- ✅ Modules with multiple component types (e.g., algorithms, strategies)
-- ✅ Plugin-style architectures
-- ✅ Factory pattern implementations
-- ❌ Simple utility modules
-- ❌ Single-purpose modules
+- Yes: Modules with multiple component types (e.g., algorithms, strategies)
+- Yes: Plugin-style architectures
+- Yes: Factory pattern implementations
+- No: Simple utility modules
+- No: Single-purpose modules
 
 ```python
 # Example registry.py
@@ -154,39 +134,7 @@ Basic usage examples.
 Internal and external dependencies.
 ```
 
-### 2.2 File Size Limits
-- **Files**: < 500 lines
-- **Functions**: < 50 lines
-- **Single responsibility** per class/function
-
-### 2.2.1 Utils Module Organization
-**When `utils.py` exceeds 500 lines**:
-```
-utils/
-├── __init__.py          # Export main utilities
-├── file_operations.py   # File I/O utilities
-├── data_processing.py   # Data manipulation
-├── validation.py        # Input validation
-└── helpers.py          # General helpers
-```
-
-**Utils module `__init__.py`**:
-```python
-"""Utility functions for the module."""
-
-# Import most commonly used utilities
-from .file_operations import load_config, save_data
-from .validation import validate_input, check_format
-from .helpers import normalize_path, get_timestamp
-
-__all__ = [
-    "load_config", "save_data",
-    "validate_input", "check_format",
-    "normalize_path", "get_timestamp",
-]
-```
-
-### 2.3 Class Organization
+### 2.2 Class Organization
 ```python
 class ExampleClass:
     """Docstring."""
@@ -202,9 +150,9 @@ class ExampleClass:
     def _private_method(self): pass  # Private methods last
 ```
 
-### 2.4 Single Responsibility
+### 2.3 Single Responsibility
 ```python
-# ✅ Good - Single responsibility
+# Good - Single responsibility
 class SimStats:
     def collect_metrics(self): pass
     def calculate_statistics(self): pass
@@ -212,7 +160,7 @@ class SimStats:
 class StatsPersistence:
     def save_stats(self): pass
 
-# ❌ Bad - Multiple responsibilities
+# Bad - Multiple responsibilities
 class SimStats:
     def collect_metrics(self): pass
     def save_to_file(self): pass      # File I/O responsibility
@@ -222,15 +170,15 @@ class SimStats:
 ## 3. Path Handling & State Management
 
 ### 3.1 Path Handling Guidelines
-⚠️ **NEVER hardcode paths** - Use configuration and path utilities
+**NEVER hardcode paths** - Use configuration and path utilities
 
 ```python
-# ❌ Never do this
+# Bad - never do this
 def load_data():
     with open("/home/user/data/config.txt") as f:
         return f.read()
 
-# ✅ Always do this
+# Good - always do this
 from pathlib import Path
 from fusion.core.config import get_data_dir
 
@@ -259,7 +207,7 @@ if not output_file.parent.exists():
 ```
 
 ### 3.2 State Management with StateWrapper
-⚠️ **Use StateWrapper for mutable state objects like `engine_props`**
+**Use StateWrapper for mutable state objects like `engine_props`**
 
 ```python
 # fusion/core/state_wrapper.py
@@ -371,14 +319,14 @@ class ConfigFileNotFoundError(ConfigurationError):
 
 ### 5.2 Exception Handling
 ```python
-# ✅ Specific exceptions
+# Good - specific exceptions
 try:
     config = load_configuration(path)
 except ConfigFileNotFoundError:
     logger.error(f"Config file not found: {path}")
     return default_config()
 
-# ❌ Broad catching
+# Bad - broad catching
 except Exception as e:  # Too broad
     pass
 ```
@@ -412,11 +360,11 @@ logger = get_logger(__name__)
 
 ### 7.2 Usage
 ```python
-# ✅ Always use logger
+# Good - always use logger
 logger.info(f"Processing request {request_id}")
 logger.error(f"Failed to connect: {e}", exc_info=True)
 
-# ❌ Never use print
+# Bad - never use print
 print("Processing request")
 ```
 
@@ -479,16 +427,14 @@ fi
 
 ## Quick Reference Checklist
 
-### Naming ✓
+### Naming
 - [ ] Functions: verb phrases (`load_config`)
 - [ ] Variables: noun phrases (`config_path`)
 - [ ] Avoid redundant type suffixes (use `settings` not `settings_dict`)
 - [ ] Constants: `SCREAMING_SNAKE_CASE`
 - [ ] Classes: `PascalCase`
 
-### Code Quality ✓
-- [ ] Functions < 50 lines
-- [ ] Files < 500 lines (utils -> utils/ if exceeded)
+### Code Quality
 - [ ] Type annotations on all params/returns
 - [ ] Specific exception handling
 - [ ] No print statements (use logging)
@@ -497,12 +443,11 @@ fi
 - [ ] No hardcoded paths (use pathlib + config)
 - [ ] StateWrapper for mutable state objects
 
-### Module Organization ✓
+### Module Organization
 - [ ] __init__.py with proper exports and __all__
 - [ ] README.md in every module
 - [ ] registry.py only when needed (multi-component modules)
 - [ ] tests/ subdirectory with proper structure
-- [ ] Standardized naming (engine_props, sim_params, etc.)
 
 ---
 

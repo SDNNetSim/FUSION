@@ -39,13 +39,15 @@ class RoutingProps:
         """Initialize routing properties with default values."""
         # Path computation properties - can contain path lists or path data dicts
         self.paths_matrix: list[Any] = []
-        self.modulation_formats_matrix: list[list[str]] = []
+        # Note: modulation_formats_matrix uses False as sentinel for infeasible formats
+        self.modulation_formats_matrix: list[list[str | bool]] = []
         self.weights_list: list[float] = []
         self.path_index_list: list[int] = []
 
         # Backup paths for 1+1 protection (corresponds to paths_matrix)
         self.backup_paths_matrix: list[list[int] | None] = []
-        self.backup_modulation_formats_matrix: list[list[str]] = []
+        # Note: backup_modulation_formats_matrix uses False as sentinel for infeasible formats
+        self.backup_modulation_formats_matrix: list[list[str | bool]] = []
 
         # Physical layer parameters
         self.input_power: float = DEFAULT_INPUT_POWER
@@ -110,6 +112,9 @@ class SpectrumProps:
         self.lightpath_id: int | None = None
         self.lightpath_bandwidth: float | None = None
 
+        # Slicing configuration
+        self.slicing_flag: bool = False  # Indicates if request uses slicing
+
     def __repr__(self) -> str:
         """
         Return string representation of SpectrumProps.
@@ -138,6 +143,25 @@ class SNRProps:
         self.request_bit_rate: float = 12.5  # Gb/s
         self.request_snr: float = 8.5  # dB
         self.noise_spectral_density: float = 1.8
+        # Band-specific noise spontaneous parameters (for GSNR calculations)
+        # Values must match v5 (arg_scripts/snr_args.py)
+        self.nsp: dict[str, float] = {
+            "c": 1.77,  # C-band EDFA noise figure
+            "l": 1.99,  # L-band EDFA noise figure
+            "s": 2.0,  # S-band amplifier noise figure
+            "o": 2.0,  # O-band amplifier noise figure
+            "e": 2.0,  # E-band amplifier noise figure
+        }
+        # Required SNR thresholds per modulation format (in dB)
+        # Values must match v5 (arg_scripts/snr_args.py)
+        self.req_snr: dict[str, float] = {
+            "BPSK": 3.71,  # Binary Phase Shift Keying
+            "QPSK": 6.72,  # Quadrature Phase Shift Keying
+            "8-QAM": 10.84,  # 8-Quadrature Amplitude Modulation
+            "16-QAM": 13.24,  # 16-QAM
+            "32-QAM": 16.16,  # 32-QAM
+            "64-QAM": 19.01,  # 64-QAM
+        }
 
         # Current request parameters
         self.center_frequency: float | None = None
@@ -331,6 +355,8 @@ class SDNProps:
         self.core_list: list[int] = []
         self.band_list: list[str] = []
         self.crosstalk_list: list[float] = []
+        self.snr_list: list[float] = []
+        self.xt_list: list[float] = []
         self.start_slot_list: list[int] = []
         self.end_slot_list: list[int] = []
 
@@ -369,6 +395,8 @@ class SDNProps:
         self.stat_key_list: list[str] = [
             "modulation_list",
             "crosstalk_list",
+            "snr_list",
+            "xt_list",
             "core_list",
             "band_list",
             "start_slot_list",
@@ -467,6 +495,8 @@ class SDNProps:
         # Existing resets
         self.modulation_list = []
         self.crosstalk_list = []
+        self.snr_list = []
+        self.xt_list = []
         self.core_list = []
         self.band_list = []
         self.start_slot_list = []
@@ -537,6 +567,10 @@ class StatsProps:
         self.modulations_used_dict: dict[str, Any] = {}
         self.bandwidth_blocking_dict: dict[str | float, int] = {}
         self.link_usage_dict: dict[str, dict[str, Any]] = {}
+        self.demand_realization_ratio: dict[str, Any] = {}
+        self.frag_dict: dict[str, Any] = {}
+        self.lp_bw_utilization_dict: dict[str, Any] = {}
+        self.sim_lp_utilization_list: list[float] = []
 
         # Blocking reasons
         self.block_reasons_dict: dict[str, int | float | None] = {
@@ -554,6 +588,7 @@ class StatsProps:
         self.lengths_list: list[float] = []
         self.route_times_list: list[float] = []
         self.crosstalk_list: list[float] = []
+        self.snr_list: list[float] = []
 
         # Resource allocation tracking
         self.bands_list: list[int] = []

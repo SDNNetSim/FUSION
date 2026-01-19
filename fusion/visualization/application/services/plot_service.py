@@ -71,26 +71,20 @@ class PlotService:
 
         # Initialize use cases (only if we have required dependencies)
         if data_processor and plot_renderer:
-            self.generate_plot_use_case: GeneratePlotUseCase | None = (
-                GeneratePlotUseCase(
-                    simulation_repository=simulation_repository,
-                    data_processor=data_processor,
-                    plot_renderer=plot_renderer,
-                    cache=cache,
-                )
+            self.generate_plot_use_case: GeneratePlotUseCase | None = GeneratePlotUseCase(
+                simulation_repository=simulation_repository,
+                data_processor=data_processor,
+                plot_renderer=plot_renderer,
+                cache=cache,
             )
 
-            self.batch_generate_plots_use_case: BatchGeneratePlotsUseCase | None = (
-                BatchGeneratePlotsUseCase(
-                    generate_plot_use_case=self.generate_plot_use_case
-                )
+            self.batch_generate_plots_use_case: BatchGeneratePlotsUseCase | None = BatchGeneratePlotsUseCase(
+                generate_plot_use_case=self.generate_plot_use_case
             )
 
-            self.compare_algorithms_use_case: CompareAlgorithmsUseCase | None = (
-                CompareAlgorithmsUseCase(
-                    simulation_repository=simulation_repository,
-                    cache=cache,
-                )
+            self.compare_algorithms_use_case: CompareAlgorithmsUseCase | None = CompareAlgorithmsUseCase(
+                simulation_repository=simulation_repository,
+                cache=cache,
             )
         else:
             self.generate_plot_use_case = None
@@ -139,10 +133,7 @@ class PlotService:
         logger.info(f"Generating {plot_type.value} plot for {network} on dates {dates}")
 
         if self.generate_plot_use_case is None:
-            raise RuntimeError(
-                "PlotService not fully initialized with data_processor "
-                "and plot_renderer"
-            )
+            raise RuntimeError("PlotService not fully initialized with data_processor and plot_renderer")
         return self.generate_plot_use_case.execute(request)
 
     def batch_generate(
@@ -197,16 +188,10 @@ class PlotService:
             output_dir=output_dir,
         )
 
-        logger.info(
-            f"Batch generating {len(plot_requests)} plots "
-            f"(parallel={parallel}, workers={max_workers})"
-        )
+        logger.info(f"Batch generating {len(plot_requests)} plots (parallel={parallel}, workers={max_workers})")
 
         if self.batch_generate_plots_use_case is None:
-            raise RuntimeError(
-                "PlotService not fully initialized with data_processor "
-                "and plot_renderer"
-            )
+            raise RuntimeError("PlotService not fully initialized with data_processor and plot_renderer")
         return self.batch_generate_plots_use_case.execute(batch_request)
 
     def compare_algorithms(
@@ -244,16 +229,10 @@ class PlotService:
             **kwargs,
         )
 
-        logger.info(
-            f"Comparing {len(algorithms)} algorithms on metric '{metric}' "
-            f"for {network} on dates {dates}"
-        )
+        logger.info(f"Comparing {len(algorithms)} algorithms on metric '{metric}' for {network} on dates {dates}")
 
         if self.compare_algorithms_use_case is None:
-            raise RuntimeError(
-                "PlotService not fully initialized with data_processor "
-                "and plot_renderer"
-            )
+            raise RuntimeError("PlotService not fully initialized with data_processor and plot_renderer")
         return self.compare_algorithms_use_case.execute(request)
 
     def get_available_networks(self) -> list[str]:

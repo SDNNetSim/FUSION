@@ -75,9 +75,7 @@ class KPathCache:
 
                 try:
                     # Use NetworkX k_shortest_paths
-                    paths = list(
-                        nx.shortest_simple_paths(self.topology, src, dst, weight=weight)
-                    )
+                    paths = list(nx.shortest_simple_paths(self.topology, src, dst, weight=weight))
 
                     # Take up to K paths
                     self.cache[(src, dst)] = paths[: self.k]
@@ -160,9 +158,7 @@ class KPathCache:
             reverse_link = (path[i + 1], path[i])
 
             # Get link spectrum (try both directions)
-            link_spectrum = network_spectrum_dict.get(
-                link, network_spectrum_dict.get(reverse_link, {})
-            )
+            link_spectrum = network_spectrum_dict.get(link, network_spectrum_dict.get(reverse_link, {}))
 
             if not link_spectrum:
                 # Link not in spectrum dict (shouldn't happen)
@@ -212,9 +208,7 @@ class KPathCache:
                             distances.append(0)
                         else:
                             try:
-                                dist = nx.shortest_path_length(
-                                    self.topology, node, center_node
-                                )
+                                dist = nx.shortest_path_length(self.topology, node, center_node)
                                 distances.append(dist)
                             except nx.NetworkXNoPath:
                                 pass

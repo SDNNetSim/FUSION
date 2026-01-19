@@ -91,9 +91,7 @@ def fragmentation_aware(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
 class TestFragmentationAwareRouting:
     """Tests for FragmentationAwareRouting algorithm."""
 
-    def test_init_stores_properties(
-        self, fragmentation_aware: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_stores_properties(self, fragmentation_aware: Any, engine_props: dict[str, Any]) -> None:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert fragmentation_aware.engine_props == engine_props
@@ -114,9 +112,7 @@ class TestFragmentationAwareRouting:
         assert isinstance(topologies, list)
         assert "Generic" in topologies
 
-    def test_validate_environment_with_valid_topology(
-        self, fragmentation_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_validate_environment_with_valid_topology(self, fragmentation_aware: Any, topology: nx.Graph) -> None:
         """Test environment validation succeeds with valid topology."""
         # Act
         is_valid = fragmentation_aware.validate_environment(topology)
@@ -156,9 +152,7 @@ class TestFragmentationAwareRouting:
         # Assert
         assert fragmentation_aware._path_count == initial_count + 1
 
-    def test_update_fragmentation_costs_sets_frag_costs(
-        self, fragmentation_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_fragmentation_costs_sets_frag_costs(self, fragmentation_aware: Any, topology: nx.Graph) -> None:
         """Test that update fragmentation costs sets frag_cost on topology edges."""
         # Act
         with patch("fusion.utils.network.find_path_fragmentation", return_value=0.25):
@@ -168,9 +162,7 @@ class TestFragmentationAwareRouting:
         for source, dest in list(topology.edges())[::2]:
             assert "frag_cost" in topology[source][dest]
 
-    def test_get_paths_returns_paths_ordered_by_fragmentation(
-        self, fragmentation_aware: Any
-    ) -> None:
+    def test_get_paths_returns_paths_ordered_by_fragmentation(self, fragmentation_aware: Any) -> None:
         """Test that get_paths returns paths ordered by fragmentation."""
         # Act
         with patch("fusion.utils.network.find_path_fragmentation", return_value=0.2):
@@ -180,9 +172,7 @@ class TestFragmentationAwareRouting:
         assert isinstance(paths, list)
         assert len(paths) <= 2
 
-    def test_update_weights_sets_fragmentation_costs(
-        self, fragmentation_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_weights_sets_fragmentation_costs(self, fragmentation_aware: Any, topology: nx.Graph) -> None:
         """Test that update_weights sets fragmentation costs on topology edges."""
         # Act
         with patch("fusion.utils.network.find_path_fragmentation", return_value=0.15):
@@ -193,9 +183,7 @@ class TestFragmentationAwareRouting:
             if topology.has_edge(source, dest):
                 assert "frag_cost" in topology[source][dest]
 
-    def test_get_metrics_returns_algorithm_statistics(
-        self, fragmentation_aware: Any
-    ) -> None:
+    def test_get_metrics_returns_algorithm_statistics(self, fragmentation_aware: Any) -> None:
         """Test that get_metrics returns performance statistics."""
         # Arrange
         with patch("fusion.utils.network.find_path_fragmentation", return_value=0.4):
@@ -224,9 +212,7 @@ class TestFragmentationAwareRouting:
         assert fragmentation_aware._path_count == 0
         assert fragmentation_aware._total_fragmentation == 0.0
 
-    def test_calculate_path_fragmentation_returns_valid_metric(
-        self, fragmentation_aware: Any
-    ) -> None:
+    def test_calculate_path_fragmentation_returns_valid_metric(self, fragmentation_aware: Any) -> None:
         """Test path fragmentation calculation returns valid metric."""
         # Arrange
         path = ["A", "B", "C"]
@@ -239,9 +225,7 @@ class TestFragmentationAwareRouting:
         assert isinstance(fragmentation, float)
         assert fragmentation >= 0.0
 
-    def test_calculate_path_fragmentation_with_empty_path(
-        self, fragmentation_aware: Any
-    ) -> None:
+    def test_calculate_path_fragmentation_with_empty_path(self, fragmentation_aware: Any) -> None:
         """Test path fragmentation calculation with empty path returns zero."""
         # Act
         fragmentation = fragmentation_aware._calculate_path_fragmentation([])
@@ -249,9 +233,7 @@ class TestFragmentationAwareRouting:
         # Assert
         assert fragmentation == 0.0
 
-    def test_find_least_weight_populates_route_props(
-        self, fragmentation_aware: Any
-    ) -> None:
+    def test_find_least_weight_populates_route_props(self, fragmentation_aware: Any) -> None:
         """Test that find least weight populates route properties."""
         # Arrange
         fragmentation_aware.sdn_props.source = "A"

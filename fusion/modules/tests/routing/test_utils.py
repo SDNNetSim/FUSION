@@ -59,9 +59,7 @@ def sdn_props() -> Mock:
 
 
 @pytest.fixture
-def routing_helpers(
-    route_props: Mock, engine_props: dict[str, Any], sdn_props: Mock
-) -> Any:
+def routing_helpers(route_props: Mock, engine_props: dict[str, Any], sdn_props: Mock) -> Any:
     """Create RoutingHelpers instance for testing.
 
     :param route_props: Mock routing properties.
@@ -137,9 +135,7 @@ class TestRoutingHelpers:
         assert start_index == expected_start
         assert end_index == expected_end
 
-    def test_get_simulated_link_creates_valid_spectrum(
-        self, routing_helpers: Any
-    ) -> None:
+    def test_get_simulated_link_creates_valid_spectrum(self, routing_helpers: Any) -> None:
         """Test that simulated link has correct structure with free center channel."""
         # Act
         simulated_link = routing_helpers._get_simulated_link()
@@ -166,9 +162,7 @@ class TestRoutingHelpers:
         num_span = 2.0
 
         # Act
-        total_mci = routing_helpers._find_channel_mci(
-            channels_list, center_freq, num_span
-        )
+        total_mci = routing_helpers._find_channel_mci(channels_list, center_freq, num_span)
 
         # Assert
         assert isinstance(total_mci, float)
@@ -184,18 +178,14 @@ class TestRoutingHelpers:
         num_span = 2.0
 
         # Act
-        link_cost = routing_helpers._find_link_cost(
-            free_channels_dict, taken_channels_dict, num_span
-        )
+        link_cost = routing_helpers._find_link_cost(free_channels_dict, taken_channels_dict, num_span)
 
         # Assert
         assert isinstance(link_cost, float)
         assert link_cost > 0
         assert link_cost < FULLY_CONGESTED_LINK_COST
 
-    def test_find_link_cost_with_fully_congested_link(
-        self, routing_helpers: Any
-    ) -> None:
+    def test_find_link_cost_with_fully_congested_link(self, routing_helpers: Any) -> None:
         """Test that fully congested link returns maximum cost."""
         from fusion.modules.routing.utils import FULLY_CONGESTED_LINK_COST
 
@@ -205,16 +195,12 @@ class TestRoutingHelpers:
         num_span = 2.0
 
         # Act
-        link_cost = routing_helpers._find_link_cost(
-            free_channels_dict, taken_channels_dict, num_span
-        )
+        link_cost = routing_helpers._find_link_cost(free_channels_dict, taken_channels_dict, num_span)
 
         # Assert
         assert link_cost == FULLY_CONGESTED_LINK_COST
 
-    def test_find_worst_nli_with_valid_network(
-        self, routing_helpers: Any, sdn_props: Mock
-    ) -> None:
+    def test_find_worst_nli_with_valid_network(self, routing_helpers: Any, sdn_props: Mock) -> None:
         """Test worst NLI calculation for network with spectrum data."""
         # Arrange
         sdn_props.network_spectrum_dict = {
@@ -245,9 +231,7 @@ class TestRoutingHelpers:
         assert isinstance(nli_worst, float)
         assert nli_worst >= 0
 
-    def test_find_worst_nli_with_no_network_spectrum(
-        self, routing_helpers: Any, sdn_props: Mock
-    ) -> None:
+    def test_find_worst_nli_with_no_network_spectrum(self, routing_helpers: Any, sdn_props: Mock) -> None:
         """Test worst NLI returns zero when network spectrum is None."""
         # Arrange
         sdn_props.network_spectrum_dict = None
@@ -269,9 +253,7 @@ class TestRoutingHelpers:
             (5, {4, 6, 0}),
         ],
     )
-    def test_find_adjacent_cores_for_outer_cores(
-        self, core_num: int, expected_neighbors: set[int]
-    ) -> None:
+    def test_find_adjacent_cores_for_outer_cores(self, core_num: int, expected_neighbors: set[int]) -> None:
         """Test adjacent core identification for outer cores.
 
         :param core_num: Core number to test.
@@ -287,9 +269,7 @@ class TestRoutingHelpers:
         # Assert
         assert set(adj_cores) == expected_neighbors
 
-    def test_find_num_overlapped_for_non_center_core(
-        self, routing_helpers: Any
-    ) -> None:
+    def test_find_num_overlapped_for_non_center_core(self, routing_helpers: Any) -> None:
         """Test overlapped channels calculation for non-center core."""
         # Arrange
         core_info_dict = {"c": {i: np.zeros(10) for i in range(7)}}
@@ -298,9 +278,7 @@ class TestRoutingHelpers:
         core_info_dict["c"][6][1] = 1
 
         # Act
-        num_overlapped = routing_helpers._find_num_overlapped(
-            channel=1, core_num=0, core_info_dict=core_info_dict, band="c"
-        )
+        num_overlapped = routing_helpers._find_num_overlapped(channel=1, core_num=0, core_info_dict=core_info_dict, band="c")
 
         # Assert
         assert num_overlapped == 2 / 3
@@ -326,16 +304,12 @@ class TestRoutingHelpers:
         # Assert
         assert num_overlapped == 2 / 6
 
-    def test_find_xt_link_cost_calculates_correctly(
-        self, routing_helpers: Any, sdn_props: Mock
-    ) -> None:
+    def test_find_xt_link_cost_calculates_correctly(self, routing_helpers: Any, sdn_props: Mock) -> None:
         """Test crosstalk link cost calculation."""
         # Arrange
         free_slots_dict = {"c": {0: [1, 2, 3]}, "l": {1: [4, 5, 6]}}
         link_tuple = ("A", "B")
-        sdn_props.network_spectrum_dict = {
-            link_tuple: {"cores_matrix": {"c": np.ones((7, 10)), "l": np.ones((7, 10))}}
-        }
+        sdn_props.network_spectrum_dict = {link_tuple: {"cores_matrix": {"c": np.ones((7, 10)), "l": np.ones((7, 10))}}}
 
         # Act
         with patch.object(routing_helpers, "_find_num_overlapped", return_value=0.5):
@@ -345,9 +319,7 @@ class TestRoutingHelpers:
         assert isinstance(xt_cost, float)
         assert xt_cost > 0
 
-    def test_find_xt_link_cost_with_no_free_slots(
-        self, routing_helpers: Any, sdn_props: Mock
-    ) -> None:
+    def test_find_xt_link_cost_with_no_free_slots(self, routing_helpers: Any, sdn_props: Mock) -> None:
         """Test that XT cost is maximum when no slots are free."""
         from fusion.modules.routing.utils import FULLY_CONGESTED_LINK_COST
 
@@ -361,9 +333,7 @@ class TestRoutingHelpers:
         # Assert
         assert xt_cost == FULLY_CONGESTED_LINK_COST
 
-    def test_find_xt_link_cost_with_no_network_spectrum(
-        self, routing_helpers: Any, sdn_props: Mock
-    ) -> None:
+    def test_find_xt_link_cost_with_no_network_spectrum(self, routing_helpers: Any, sdn_props: Mock) -> None:
         """Test XT cost returns zero when network spectrum is None."""
         # Arrange
         sdn_props.network_spectrum_dict = None
@@ -376,27 +346,21 @@ class TestRoutingHelpers:
         # Assert
         assert xt_cost == 0.0
 
-    def test_get_nli_path_sums_link_costs(
-        self, routing_helpers: Any, route_props: Mock
-    ) -> None:
+    def test_get_nli_path_sums_link_costs(self, routing_helpers: Any, route_props: Mock) -> None:
         """Test NLI path calculation sums costs across all links."""
         # Arrange
         path_list = ["A", "B", "C"]
         route_props.span_length = 50.0
 
         # Act
-        with patch.object(
-            routing_helpers, "get_nli_cost", return_value=10.0
-        ) as mock_get_nli:
+        with patch.object(routing_helpers, "get_nli_cost", return_value=10.0) as mock_get_nli:
             nli_cost = routing_helpers.get_nli_path(path_list)
 
         # Assert
         assert nli_cost == 20.0
         assert mock_get_nli.call_count == 2
 
-    def test_get_max_link_length_finds_maximum(
-        self, routing_helpers: Any, route_props: Mock, engine_props: dict[str, Any]
-    ) -> None:
+    def test_get_max_link_length_finds_maximum(self, routing_helpers: Any, route_props: Mock, engine_props: dict[str, Any]) -> None:
         """Test that maximum link length is correctly identified."""
         # Arrange
         engine_props["topology"].add_edge("C", "D", length=200.0)
@@ -421,9 +385,7 @@ class TestRoutingHelpers:
         route_props.max_link_length = 100.0
         engine_props["beta"] = 0.5
 
-        sdn_props.network_spectrum_dict = {
-            link_tuple: {"cores_matrix": {"c": np.zeros((7, 10))}}
-        }
+        sdn_props.network_spectrum_dict = {link_tuple: {"cores_matrix": {"c": np.zeros((7, 10))}}}
         sdn_props.slots_needed = 3
 
         # Act
@@ -441,18 +403,14 @@ class TestRoutingHelpers:
         expected_cost = (100.0 / 100.0) * 0.5 + (1 - 0.5) * 10.0
         assert nli_cost == expected_cost
 
-    def test_get_nli_cost_auto_calculates_max_link_length(
-        self, routing_helpers: Any, route_props: Mock, sdn_props: Mock
-    ) -> None:
+    def test_get_nli_cost_auto_calculates_max_link_length(self, routing_helpers: Any, route_props: Mock, sdn_props: Mock) -> None:
         """Test get_nli_cost auto-calculates max link length if not set."""
         # Arrange
         link_tuple = ("A", "B")
         num_span = 2.0
         route_props.max_link_length = None
 
-        sdn_props.network_spectrum_dict = {
-            link_tuple: {"cores_matrix": {"c": np.zeros((7, 10))}}
-        }
+        sdn_props.network_spectrum_dict = {link_tuple: {"cores_matrix": {"c": np.zeros((7, 10))}}}
 
         # Act
         with (

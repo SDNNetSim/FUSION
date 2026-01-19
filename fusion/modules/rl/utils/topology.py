@@ -4,9 +4,7 @@ import networkx as nx
 import torch
 
 
-def convert_networkx_topo(
-    graph: nx.Graph, as_directed: bool = True
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]:
+def convert_networkx_topo(graph: nx.Graph, as_directed: bool = True) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]:
     """
     Converts a networkx topology to a tensor.
 
@@ -46,9 +44,7 @@ def convert_networkx_topo(
     return edge_index, edge_attr, node_feats, id2idx
 
 
-def load_topology_from_graph(
-    graph: nx.Graph, **kwargs: Any
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]:
+def load_topology_from_graph(graph: nx.Graph, **kwargs: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[Any, int]]:
     """
     Shortcut to get (edge_index, edge_attr, node_feats) from a NetworkX graph.
 

@@ -9,6 +9,8 @@ import sys
 from collections.abc import Callable
 
 
+# TODO (v6.1.0): Remove create_entry_point_wrapper - it exists only to generate legacy
+# compatibility functions. Replace with create_main_wrapper which is simpler.
 def create_entry_point_wrapper(
     main_func: Callable[[], int],
     _legacy_name: str,
@@ -20,16 +22,21 @@ def create_entry_point_wrapper(
     Generates both a legacy compatibility function and a main entry point
     function that handles sys.exit for any CLI main function.
 
+    TODO (v6.1.0): Remove this function - use create_main_wrapper instead.
+    The _legacy_name and _entry_point_description parameters are unused
+    and only exist for backward compatibility.
+
     :param main_func: The main function that returns an exit code
     :type main_func: Callable[[], int]
-    :param _legacy_name: Name for the legacy compatibility function (unused)
+    :param _legacy_name: Unused - legacy parameter
     :type _legacy_name: str
-    :param _entry_point_description: Description of what the entry point does (unused)
+    :param _entry_point_description: Unused - legacy parameter
     :type _entry_point_description: str
     :return: Tuple of (legacy_function, main_entry_function)
     :rtype: tuple[Callable[[], int], Callable[[], None]]
     """
 
+    # TODO (v6.1.0): Remove legacy_main - callers should use main() directly
     def legacy_main() -> int:
         """
         Legacy function name for main entry point.

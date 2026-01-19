@@ -63,9 +63,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
         if hasattr(request, "slots_needed"):
             self.spectrum_props.slots_needed = request.slots_needed
         elif hasattr(request, "bandwidth"):
-            self.spectrum_props.slots_needed = self._calculate_slots_needed(
-                request.bandwidth
-            )
+            self.spectrum_props.slots_needed = self._calculate_slots_needed(request.bandwidth)
         else:
             self.spectrum_props.slots_needed = 1
 
@@ -105,9 +103,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
         if self.spectrum_props.forced_core is not None:
             core_list = [self.spectrum_props.forced_core]
         else:
-            core_list = list(
-                reversed(range(0, self.engine_props.get("cores_per_link", 1)))
-            )
+            core_list = list(reversed(range(0, self.engine_props.get("cores_per_link", 1))))
 
         if self.spectrum_props.forced_band is not None:
             band_list = [self.spectrum_props.forced_band]
@@ -121,9 +117,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
         return False
 
-    def _find_last_fit_on_path(
-        self, core_list: list[int], band_list: list[str]
-    ) -> bool:
+    def _find_last_fit_on_path(self, core_list: list[int], band_list: list[str]) -> bool:
         """Find last fit spectrum assignment along the entire path."""
         best_assignment = None
 
@@ -145,13 +139,8 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             link_dict = network_dict[link_key]
 
             # Try to find best assignment for this link
-            link_assignment = self._find_best_assignment_for_link(
-                link_dict, core_list, band_list
-            )
-            if link_assignment and (
-                best_assignment is None
-                or link_assignment["start_slot"] > best_assignment["start_slot"]
-            ):
+            link_assignment = self._find_best_assignment_for_link(link_dict, core_list, band_list)
+            if link_assignment and (best_assignment is None or link_assignment["start_slot"] > best_assignment["start_slot"]):
                 best_assignment = link_assignment
 
         if best_assignment:
@@ -164,9 +153,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
         return False
 
-    def _find_best_assignment_for_link(
-        self, link_dict: dict, core_list: list[int], band_list: list[str]
-    ) -> dict | None:
+    def _find_best_assignment_for_link(self, link_dict: dict, core_list: list[int], band_list: list[str]) -> dict | None:
         """Find the best assignment for a single link."""
         best_assignment = None
 
@@ -174,17 +161,12 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
         for core_num in core_list:
             for band in band_list:
                 assignment = self._try_core_band_assignment(link_dict, core_num, band)
-                if assignment and (
-                    best_assignment is None
-                    or assignment["start_slot"] > best_assignment["start_slot"]
-                ):
+                if assignment and (best_assignment is None or assignment["start_slot"] > best_assignment["start_slot"]):
                     best_assignment = assignment
 
         return best_assignment
 
-    def _try_core_band_assignment(
-        self, link_dict: dict, core_num: int, band: str
-    ) -> dict | None:
+    def _try_core_band_assignment(self, link_dict: dict, core_num: int, band: str) -> dict | None:
         """Try to find an assignment for a specific core and band."""
         if band not in link_dict["cores_matrix"]:
             return None
@@ -197,16 +179,12 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             return None
 
         # Verify this assignment works for entire path
-        if self._verify_path_assignment(
-            assignment["start_slot"], assignment["end_slot"], core_num, band
-        ):
+        if self._verify_path_assignment(assignment["start_slot"], assignment["end_slot"], core_num, band):
             return assignment
 
         return None
 
-    def _find_last_contiguous_block(
-        self, core_array: Any, core_num: int, band: str
-    ) -> dict | None:
+    def _find_last_contiguous_block(self, core_array: Any, core_num: int, band: str) -> dict | None:
         """Find the last (highest index) contiguous block that fits the request."""
         if not hasattr(core_array, "__len__"):
             return None
@@ -244,9 +222,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
         return None
 
-    def _verify_path_assignment(
-        self, start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def _verify_path_assignment(self, start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Verify spectrum assignment is available along entire path."""
         path_list = self.spectrum_props.path_list
         if path_list is None:
@@ -255,16 +231,12 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
             source = path_list[i]
             dest = path_list[i + 1]
 
-            if not self.check_spectrum_availability(
-                [source, dest], start_slot, end_slot, core_num, band
-            ):
+            if not self.check_spectrum_availability([source, dest], start_slot, end_slot, core_num, band):
                 return False
 
         return True
 
-    def check_spectrum_availability(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def check_spectrum_availability(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Check if spectrum slots are available along the entire path."""
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
@@ -278,9 +250,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
             link_dict = network_dict[link_key]
 
-            if band not in link_dict["cores_matrix"] or core_num >= len(
-                link_dict["cores_matrix"][band]
-            ):
+            if band not in link_dict["cores_matrix"] or core_num >= len(link_dict["cores_matrix"][band]):
                 return False
 
             core_array = link_dict["cores_matrix"][band][core_num]
@@ -321,9 +291,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
         return True
 
-    def deallocate_spectrum(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def deallocate_spectrum(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Deallocate spectrum resources along the path."""
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
@@ -406,11 +374,7 @@ class LastFitSpectrum(AbstractSpectrumAssigner):
 
     def get_metrics(self) -> dict[str, Any]:
         """Get spectrum assignment algorithm performance metrics."""
-        avg_slots = (
-            self._total_slots_assigned / self._assignments_made
-            if self._assignments_made > 0
-            else 0
-        )
+        avg_slots = self._total_slots_assigned / self._assignments_made if self._assignments_made > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

@@ -7,7 +7,7 @@ offline RL algorithm that avoids out-of-distribution actions.
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import torch
 import torch.nn as nn
@@ -79,7 +79,8 @@ class IQLPolicy(PathPolicy):
             else:
                 actor = checkpoint
 
-            return actor
+            # Cast to nn.Module (torch.load returns Any)
+            return cast(nn.Module, actor)
 
         except Exception as e:
             logger.error(f"Failed to load IQL model: {e}")

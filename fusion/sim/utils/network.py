@@ -90,9 +90,7 @@ def get_path_modulation(
         return False
 
 
-def find_path_congestion(
-    path_list: list[int], network_spectrum: dict, band: str = "c"
-) -> tuple[float, float]:
+def find_path_congestion(path_list: list[int], network_spectrum: dict, band: str = "c") -> tuple[float, float]:
     """
     Compute average path congestion and scaled available capacity.
 
@@ -135,9 +133,7 @@ def find_path_congestion(
     return float(average_path_congestion), scaled_available_capacity
 
 
-def find_path_fragmentation(
-    path_list: list[int], network_spectrum: dict, band: str = "c"
-) -> float:
+def find_path_fragmentation(path_list: list[int], network_spectrum: dict, band: str = "c") -> float:
     """
     Compute the average fragmentation ratio along a path.
 
@@ -187,9 +183,7 @@ def find_path_fragmentation(
     return float(np.mean(fragmentation_ratios)) if fragmentation_ratios else 1.0
 
 
-def find_core_congestion(
-    core_index: int, network_spectrum: dict, path_list: list[int]
-) -> float:
+def find_core_congestion(core_index: int, network_spectrum: dict, path_list: list[int]) -> float:
     """
     Find the current percentage of congestion on a core along a path.
 
@@ -213,9 +207,7 @@ def find_core_congestion(
         for band in cores_matrix:
             # Every core will have the same number of spectral slots
             total_slots += len(cores_matrix[band][0])
-            core_slots_taken = float(
-                len(np.where(cores_matrix[band][core_index] != 0.0)[0])
-            )
+            core_slots_taken = float(len(np.where(cores_matrix[band][core_index] != 0.0)[0]))
             slots_taken += core_slots_taken
 
         link_congestion_list.append(slots_taken / total_slots)
@@ -223,9 +215,7 @@ def find_core_congestion(
     return float(np.mean(link_congestion_list))
 
 
-def find_core_fragmentation_congestion(
-    network_spectrum: dict, path: list[int], core: int, band: str
-) -> tuple[float, float]:
+def find_core_fragmentation_congestion(network_spectrum: dict, path: list[int], core: int, band: str) -> tuple[float, float]:
     """
     Find the congestion and fragmentation scores for a specific request.
 

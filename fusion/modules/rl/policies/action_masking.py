@@ -11,9 +11,7 @@ from typing import Any
 from .base import PathPolicy
 
 
-def compute_action_mask(
-    k_paths: list[list[int]], k_path_features: list[dict[str, Any]], slots_needed: int
-) -> list[bool]:
+def compute_action_mask(k_paths: list[list[int]], k_path_features: list[dict[str, Any]], slots_needed: int) -> list[bool]:
     """
     Compute feasibility mask for K candidate paths.
 
@@ -58,9 +56,7 @@ def compute_action_mask(
     return mask
 
 
-def apply_fallback_policy(
-    state: dict[str, Any], fallback_policy: PathPolicy, action_mask: list[bool]
-) -> int:
+def apply_fallback_policy(state: dict[str, Any], fallback_policy: PathPolicy, action_mask: list[bool]) -> int:
     """
     Apply fallback policy when all actions are masked.
 

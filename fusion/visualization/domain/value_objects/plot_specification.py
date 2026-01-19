@@ -100,17 +100,14 @@ class PlotSpecification:
         for algorithm, y_values in self.y_data.items():
             if len(y_values) != len(self.x_data):
                 raise ValueError(
-                    f"Length mismatch: x_data has {len(self.x_data)} points "
-                    f"but y_data[{algorithm}] has {len(y_values)} points"
+                    f"Length mismatch: x_data has {len(self.x_data)} points but y_data[{algorithm}] has {len(y_values)} points"
                 )
 
         # Validate error bars if present
         if self.error_bars:
             for algorithm, err_values in self.error_bars.items():
                 if algorithm not in self.y_data:
-                    raise ValueError(
-                        f"Error bars specified for {algorithm} but no y_data found"
-                    )
+                    raise ValueError(f"Error bars specified for {algorithm} but no y_data found")
                 if len(err_values) != len(self.x_data):
                     raise ValueError(f"Error bar length mismatch for {algorithm}")
 
@@ -134,9 +131,4 @@ class PlotSpecification:
 
     def __repr__(self) -> str:
         """Return detailed representation."""
-        return (
-            f"PlotSpecification(title='{self.title}', "
-            f"type={self.plot_type.value}, "
-            f"series={self.num_series}, "
-            f"points={len(self.x_data)})"
-        )
+        return f"PlotSpecification(title='{self.title}', type={self.plot_type.value}, series={self.num_series}, points={len(self.x_data)})"

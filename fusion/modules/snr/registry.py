@@ -42,9 +42,7 @@ class SNRRegistry:
         :raises ValueError: If name is already registered
         """
         if not issubclass(algorithm_class, AbstractSNRMeasurer):
-            raise TypeError(
-                f"{algorithm_class.__name__} must implement AbstractSNRMeasurer"
-            )
+            raise TypeError(f"{algorithm_class.__name__} must implement AbstractSNRMeasurer")
 
         if name in self._algorithms:
             raise ValueError(f"SNR algorithm '{name}' is already registered")
@@ -60,10 +58,7 @@ class SNRRegistry:
         :raises KeyError: If algorithm is not found
         """
         if name not in self._algorithms:
-            raise KeyError(
-                f"SNR measurement algorithm '{name}' not found. "
-                f"Available algorithms: {list(self._algorithms.keys())}"
-            )
+            raise KeyError(f"SNR measurement algorithm '{name}' not found. Available algorithms: {list(self._algorithms.keys())}")
 
         return self._algorithms[name]
 
@@ -113,11 +108,7 @@ class SNRRegistry:
             "class": algorithm_class.__name__,
             "module": algorithm_class.__module__,
             "supports_multicore": temp_instance.supports_multicore,
-            "description": (
-                algorithm_class.__doc__.strip()
-                if algorithm_class.__doc__
-                else "No description"
-            ),
+            "description": (algorithm_class.__doc__.strip() if algorithm_class.__doc__ else "No description"),
         }
 
     def get_multicore_algorithms(self) -> list[str]:
@@ -141,9 +132,7 @@ _registry = SNRRegistry()
 
 
 # Convenience functions for global registry access
-def register_snr_algorithm(
-    name: str, algorithm_class: type[AbstractSNRMeasurer]
-) -> None:
+def register_snr_algorithm(name: str, algorithm_class: type[AbstractSNRMeasurer]) -> None:
     """Register an SNR algorithm in the global registry."""
     _registry.register(name, algorithm_class)
 

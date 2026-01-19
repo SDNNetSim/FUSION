@@ -71,9 +71,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             self.spectrum_props.slots_needed = request.slots_needed
         elif hasattr(request, "bandwidth"):
             # Calculate slots needed based on bandwidth
-            self.spectrum_props.slots_needed = self._calculate_slots_needed(
-                request.bandwidth
-            )
+            self.spectrum_props.slots_needed = self._calculate_slots_needed(request.bandwidth)
         else:
             self.spectrum_props.slots_needed = 1
 
@@ -244,9 +242,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
                     return True
         return False
 
-    def _try_assignment_for_core_band(
-        self, link_dict: dict, core_num: int, band: str
-    ) -> bool:
+    def _try_assignment_for_core_band(self, link_dict: dict, core_num: int, band: str) -> bool:
         """Try spectrum assignment for specific core and band."""
         if band not in link_dict["cores_matrix"]:
             return False
@@ -263,9 +259,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             raise ValueError("start_slot and end_slot must not be None")
         return self._verify_path_assignment(start_slot, end_slot, core_num, band)
 
-    def _verify_path_assignment(
-        self, start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def _verify_path_assignment(self, start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Verify spectrum assignment is available along entire path."""
         path_list = self.spectrum_props.path_list
         if path_list is None:
@@ -274,16 +268,12 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
             source = path_list[i]
             dest = path_list[i + 1]
 
-            if not self.check_spectrum_availability(
-                [source, dest], start_slot, end_slot, core_num, band
-            ):
+            if not self.check_spectrum_availability([source, dest], start_slot, end_slot, core_num, band):
                 return False
 
         return True
 
-    def check_spectrum_availability(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def check_spectrum_availability(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """
         Check if spectrum slots are available along the entire path.
 
@@ -306,9 +296,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
 
             link_dict = network_dict[link_key]
 
-            if band not in link_dict["cores_matrix"] or core_num >= len(
-                link_dict["cores_matrix"][band]
-            ):
+            if band not in link_dict["cores_matrix"] or core_num >= len(link_dict["cores_matrix"][band]):
                 return False
 
             core_array = link_dict["cores_matrix"][band][core_num]
@@ -359,9 +347,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
 
         return True
 
-    def deallocate_spectrum(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def deallocate_spectrum(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Deallocate spectrum resources along the path."""
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
@@ -446,11 +432,7 @@ class FirstFitSpectrum(AbstractSpectrumAssigner):
 
     def get_metrics(self) -> dict[str, Any]:
         """Get spectrum assignment algorithm performance metrics."""
-        avg_slots = (
-            self._total_slots_assigned / self._assignments_made
-            if self._assignments_made > 0
-            else 0
-        )
+        avg_slots = self._total_slots_assigned / self._assignments_made if self._assignments_made > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

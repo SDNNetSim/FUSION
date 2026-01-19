@@ -33,9 +33,7 @@ class TestPathLengthCalculations:
         topology.add_edge(3, 4, length=15)
         return topology
 
-    def test_find_path_length_with_simple_path_returns_correct_sum(
-        self, sample_topology: nx.Graph
-    ) -> None:
+    def test_find_path_length_with_simple_path_returns_correct_sum(self, sample_topology: nx.Graph) -> None:
         """Test that path length is calculated correctly for a simple path.
 
         :param sample_topology: Sample network topology
@@ -51,9 +49,7 @@ class TestPathLengthCalculations:
         # Assert
         assert result == expected_length
 
-    def test_find_path_length_with_single_hop_returns_edge_length(
-        self, sample_topology: nx.Graph
-    ) -> None:
+    def test_find_path_length_with_single_hop_returns_edge_length(self, sample_topology: nx.Graph) -> None:
         """Test path length calculation for single hop.
 
         :param sample_topology: Sample network topology
@@ -69,9 +65,7 @@ class TestPathLengthCalculations:
         # Assert
         assert result == expected_length
 
-    def test_find_max_path_length_with_multiple_paths_returns_longest(
-        self, sample_topology: nx.Graph
-    ) -> None:
+    def test_find_max_path_length_with_multiple_paths_returns_longest(self, sample_topology: nx.Graph) -> None:
         """Test finding the maximum path length between two nodes.
 
         :param sample_topology: Sample network topology
@@ -104,9 +98,7 @@ class TestModulationSelection:
             "64-QAM": {"max_length": 500},
         }
 
-    def test_get_path_modulation_with_short_path_selects_64qam(
-        self, modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_short_path_selects_64qam(self, modulation_formats: dict) -> None:
         """Test that short paths select 64-QAM modulation.
 
         :param modulation_formats: Available modulation formats
@@ -117,16 +109,12 @@ class TestModulationSelection:
         expected_mod = "64-QAM"
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == expected_mod
 
-    def test_get_path_modulation_with_medium_path_selects_16qam(
-        self, modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_medium_path_selects_16qam(self, modulation_formats: dict) -> None:
         """Test that medium paths select 16-QAM modulation.
 
         :param modulation_formats: Available modulation formats
@@ -137,16 +125,12 @@ class TestModulationSelection:
         expected_mod = "16-QAM"
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == expected_mod
 
-    def test_get_path_modulation_with_long_path_selects_qpsk(
-        self, modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_long_path_selects_qpsk(self, modulation_formats: dict) -> None:
         """Test that long paths select QPSK modulation.
 
         :param modulation_formats: Available modulation formats
@@ -157,16 +141,12 @@ class TestModulationSelection:
         expected_mod = "QPSK"
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == expected_mod
 
-    def test_get_path_modulation_with_excessive_length_returns_false(
-        self, modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_excessive_length_returns_false(self, modulation_formats: dict) -> None:
         """Test that paths exceeding all formats return False.
 
         :param modulation_formats: Available modulation formats
@@ -176,16 +156,12 @@ class TestModulationSelection:
         path_length = 2500
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result is False
 
-    def test_get_path_modulation_with_boundary_length_selects_correct_format(
-        self, modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_boundary_length_selects_correct_format(self, modulation_formats: dict) -> None:
         """Test modulation selection at boundary conditions.
 
         :param modulation_formats: Available modulation formats
@@ -196,16 +172,12 @@ class TestModulationSelection:
         expected_mod = "64-QAM"
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == expected_mod
 
-    def test_get_path_modulation_with_legacy_parameters_works(
-        self, modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_legacy_parameters_works(self, modulation_formats: dict) -> None:
         """Test backward compatibility with legacy parameter names.
 
         :param modulation_formats: Available modulation formats
@@ -243,9 +215,7 @@ class TestCongestionMetrics:
             (2, 3): {"cores_matrix": {"c": np.array([[1, 0, 0], [0, 0, 1]])}},
         }
 
-    def test_find_path_congestion_with_mixed_allocation_returns_correct_metrics(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_path_congestion_with_mixed_allocation_returns_correct_metrics(self, network_spectrum: dict) -> None:
         """Test path congestion calculation with partially allocated links.
 
         :param network_spectrum: Network spectrum state
@@ -293,9 +263,7 @@ class TestCongestionMetrics:
         # Assert
         assert congestion == expected_congestion
 
-    def test_find_core_congestion_with_specific_core_returns_correct_percentage(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_core_congestion_with_specific_core_returns_correct_percentage(self, network_spectrum: dict) -> None:
         """Test congestion calculation for a specific core.
 
         :param network_spectrum: Network spectrum state
@@ -367,9 +335,7 @@ class TestFragmentationMetrics:
             (2, 3): {"cores_matrix": {"c": [np.zeros(256), np.zeros(256)]}},
         }
 
-    def test_find_core_fragmentation_congestion_with_empty_spectrum_returns_zero(
-        self, network_spectrum_256: dict
-    ) -> None:
+    def test_find_core_fragmentation_congestion_with_empty_spectrum_returns_zero(self, network_spectrum_256: dict) -> None:
         """Test fragmentation and congestion on empty spectrum.
 
         :param network_spectrum_256: Empty 256-slot spectrum
@@ -381,9 +347,7 @@ class TestFragmentationMetrics:
         band = "c"
 
         # Act
-        frag, cong = find_core_fragmentation_congestion(
-            network_spectrum_256, path_list, core, band
-        )
+        frag, cong = find_core_fragmentation_congestion(network_spectrum_256, path_list, core, band)
 
         # Assert
         assert frag == 0

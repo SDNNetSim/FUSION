@@ -10,6 +10,7 @@ DEFAULT_SIMULATION_KEY: str = "s1"
 DEFAULT_SAVE_SIMULATION: bool = False
 
 # Supported spectral bands
+# TODO: (v6.X) Extend RL environment support to L-band and multi-band scenarios
 SUPPORTED_SPECTRAL_BANDS: list[str] = ["c"]  # Currently only C-band supported
 
 # Configuration dictionary keys for arrival parameters

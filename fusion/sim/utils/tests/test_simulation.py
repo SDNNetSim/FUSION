@@ -31,9 +31,7 @@ class TestLogging:
         log_queue.put.assert_called_once_with(message)
 
     @patch("fusion.sim.utils.simulation.logger")
-    def test_log_message_without_queue_uses_logger(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_log_message_without_queue_uses_logger(self, mock_logger: MagicMock) -> None:
         """Test logging message to logger when queue is None.
 
         :param mock_logger: Mock logger
@@ -50,9 +48,7 @@ class TestLogging:
         mock_logger.info.assert_called_once_with(message)
 
     @patch("fusion.sim.utils.simulation.logger")
-    def test_log_message_with_false_queue_uses_logger(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_log_message_with_false_queue_uses_logger(self, mock_logger: MagicMock) -> None:
         """Test logging with falsy queue value uses logger.
 
         :param mock_logger: Mock logger
@@ -274,9 +270,7 @@ class TestSimulationExecution:
         mock_run_func = MagicMock(return_value=100)
 
         # Act
-        run_simulation_for_erlangs(
-            mock_env, erlang_list, mock_env.sim_dict, mock_run_func, [], None
-        )
+        run_simulation_for_erlangs(mock_env, erlang_list, mock_env.sim_dict, mock_run_func, [], None)
 
         # Assert
         assert mock_env.engine_obj.engine_props["erlang"] == 20.0
@@ -292,9 +286,7 @@ class TestSimulationExecution:
         mock_run_func = MagicMock()
 
         # Act
-        result = run_simulation_for_erlangs(
-            mock_env, erlang_list, mock_env.sim_dict, mock_run_func, [], None
-        )
+        result = run_simulation_for_erlangs(mock_env, erlang_list, mock_env.sim_dict, mock_run_func, [], None)
 
         # Assert
         assert np.isnan(result)
@@ -337,14 +329,10 @@ class TestStudyResultsSaving:
         best_sim_start = 0
 
         # Act
-        save_study_results(
-            study, mock_env, study_name, best_params, best_reward, best_sim_start
-        )
+        save_study_results(study, mock_env, study_name, best_params, best_reward, best_sim_start)
 
         # Assert
-        expected_dir = os.path.join(
-            "logs", "q_learning", "test_network", "2025-01-01", "12:00:00"
-        )
+        expected_dir = os.path.join("logs", "q_learning", "test_network", "2025-01-01", "12:00:00")
         mock_makedirs.assert_called_once_with(expected_dir, exist_ok=True)
         mock_pickle_dump.assert_called_once()
 
@@ -381,9 +369,7 @@ class TestStudyResultsSaving:
         best_sim_start = 123456
 
         # Act
-        save_study_results(
-            study, mock_env, study_name, best_params, best_reward, best_sim_start
-        )
+        save_study_results(study, mock_env, study_name, best_params, best_reward, best_sim_start)
 
         # Assert
         expected_hyperparams_path = os.path.join(
@@ -429,12 +415,8 @@ class TestStudyResultsSaving:
         best_sim_start = 0
 
         # Act
-        save_study_results(
-            study, mock_env, study_name, best_params, best_reward, best_sim_start
-        )
+        save_study_results(study, mock_env, study_name, best_params, best_reward, best_sim_start)
 
         # Assert
-        expected_dir = os.path.join(
-            "logs", "dijkstra", "my_network", "2025-02-15", "08:30:00"
-        )
+        expected_dir = os.path.join("logs", "dijkstra", "my_network", "2025-02-15", "08:30:00")
         mock_makedirs.assert_called_once_with(expected_dir, exist_ok=True)

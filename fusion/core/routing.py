@@ -25,6 +25,9 @@ get_path_mod = get_path_modulation
 sort_nested_dict_vals = sort_nested_dict_values
 
 # Legacy method mappings to new algorithm names
+# TODO: Remove LEGACY_METHOD_MAPPING once all config files and CLI arguments have been
+# migrated to use the new standardized algorithm names. This mapping exists for backwards
+# compatibility with older configurations. Deprecation warning should be added first.
 LEGACY_METHOD_MAPPING = {
     "shortest_path": "k_shortest_path",  # k=1 shortest path
     "k_shortest_path": "k_shortest_path",
@@ -100,13 +103,9 @@ class Routing:
         try:
             algorithm_class = self.routing_registry.get(algorithm_name)
         except KeyError:
-            available_methods = (
-                list(LEGACY_METHOD_MAPPING.keys())
-                + self.routing_registry.list_algorithms()
-            )
+            available_methods = list(LEGACY_METHOD_MAPPING.keys()) + self.routing_registry.list_algorithms()
             raise NotImplementedError(
-                f"Routing method '{route_method}' not recognized. "
-                f"Available methods: {', '.join(set(available_methods))}"
+                f"Routing method '{route_method}' not recognized. Available methods: {', '.join(set(available_methods))}"
             ) from None
 
         # Create algorithm instance
@@ -137,8 +136,7 @@ class Routing:
             self.load_k_shortest()
         except (FileNotFoundError, ValueError) as e:
             logger.warning(
-                "External KSP loading failed: %s. "
-                "Falling back to computed k-shortest paths.",
+                "External KSP loading failed: %s. Falling back to computed k-shortest paths.",
                 e,
             )
             # Fallback to computed k-shortest paths
@@ -153,18 +151,15 @@ class Routing:
         :param algorithm: Algorithm instance with results
         :type algorithm: Any
         """
+        # TODO: Refactor to eliminate this copy pattern. Algorithms should return results
+        # directly rather than storing in route_props. The Routing class should not need
+        # to know about algorithm internals. Consider returning a RouteResult dataclass.
         if hasattr(algorithm, "route_props"):
             self.route_props.paths_matrix = algorithm.route_props.paths_matrix
-            self.route_props.modulation_formats_matrix = (
-                algorithm.route_props.modulation_formats_matrix
-            )
+            self.route_props.modulation_formats_matrix = algorithm.route_props.modulation_formats_matrix
             self.route_props.weights_list = algorithm.route_props.weights_list
-            self.route_props.path_index_list = getattr(
-                algorithm.route_props, "path_index_list", []
-            )
-            self.route_props.connection_index = getattr(
-                algorithm.route_props, "connection_index", None
-            )
+            self.route_props.path_index_list = getattr(algorithm.route_props, "path_index_list", [])
+            self.route_props.connection_index = getattr(algorithm.route_props, "connection_index", None)
 
     def _init_route_info(self) -> None:
         """Initialize route properties to empty state."""
@@ -183,21 +178,6 @@ class Routing:
 
         :raises NotImplementedError: If routing method is not recognized
         """
-        # TODO(survivability-v1): Optimize routing under failures by removing failed
-        # links from topology BEFORE path computation. Current implementation computes
-        # paths on full topology and validates afterward via is_path_feasible(), which
-        # is correct but may waste computation on infeasible paths.
-        # Example optimization:
-        #     if hasattr(self.sdn_props, 'failure_manager') and
-        #        self.sdn_props.failure_manager:
-        #         topology_view = self.engine_props['topology'].copy()
-        #         for failed_link in self.sdn_props.failure_manager.active_failures:
-        #             u, v = failed_link
-        #             if topology_view.has_edge(u, v):
-        #                 topology_view.remove_edge(u, v)
-        #         self.engine_props['topology'] = topology_view
-        #
-        # Initialize route properties
         self._init_route_info()
 
         route_method = self.engine_props.get("route_method", None)
@@ -215,30 +195,29 @@ class Routing:
             self._handle_external_ksp()
         else:
             # Use modular algorithms for all other routing methods
+            if route_method is None:
+                raise NotImplementedError("Routing method not specified.")
             try:
-                algorithm = self._get_algorithm_for_method(route_method)
+                algorithm = self._get_algorithm_for_method(str(route_method))
                 algorithm.route(self.sdn_props.source, self.sdn_props.destination, None)
                 self._copy_results_from_algorithm(algorithm)
             except (KeyError, NotImplementedError) as exc:
-                raise NotImplementedError(
-                    f"Routing method '{route_method}' not recognized."
-                ) from exc
+                raise NotImplementedError(f"Routing method '{route_method}' not recognized.") from exc
 
         # Log results
         if self.route_props.paths_matrix:
             logger.debug(
                 "Found %s paths, best weight: %s",
                 len(self.route_props.paths_matrix),
-                (
-                    self.route_props.weights_list[0]
-                    if self.route_props.weights_list
-                    else "N/A"
-                ),
+                (self.route_props.weights_list[0] if self.route_props.weights_list else "N/A"),
             )
         else:
             logger.warning("No paths found by routing algorithm")
 
     # Legacy methods for backward compatibility
+    # TODO: Remove find_least_weight and find_k_shortest once all callers have been
+    # migrated to use get_route() with the appropriate route_method configuration.
+    # These methods exist only for backwards compatibility with older code paths.
     def find_least_weight(self, weight: str) -> None:
         """
         Legacy method: Find path with minimum weight.
@@ -246,10 +225,7 @@ class Routing:
         :param weight: Edge weight attribute to minimize
         :type weight: str
         """
-        logger.warning(
-            "find_least_weight is deprecated. "
-            "Use get_route() with appropriate route_method."
-        )
+        logger.warning("find_least_weight is deprecated. Use get_route() with appropriate route_method.")
 
         # Simple implementation for basic weights
         if weight == "length":
@@ -265,22 +241,13 @@ class Routing:
             )
 
             for path_list in paths:
-                path_weight = find_path_length(
-                    path_list=path_list, topology=self.sdn_props.topology
-                )
+                path_weight = find_path_length(path_list=path_list, topology=self.sdn_props.topology)
 
                 # Try to get modulation format, fall back to QPSK if issues
                 try:
-                    if (
-                        hasattr(self.sdn_props, "mod_formats")
-                        and self.sdn_props.mod_formats
-                    ):
-                        mod_result = get_path_modulation(
-                            self.sdn_props.mod_formats, path_weight
-                        )
-                        modulation_format = (
-                            mod_result if isinstance(mod_result, str) else "QPSK"
-                        )
+                    if hasattr(self.sdn_props, "mod_formats") and self.sdn_props.mod_formats:
+                        mod_result = get_path_modulation(self.sdn_props.mod_formats, path_weight)
+                        modulation_format = mod_result if isinstance(mod_result, str) else "QPSK"
                     else:
                         modulation_format = "QPSK"  # Fallback
                 except (TypeError, AttributeError):
@@ -298,10 +265,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='k_shortest_path' instead.
         """
-        logger.warning(
-            "find_k_shortest is deprecated. "
-            "Use get_route() with route_method='k_shortest_path'."
-        )
+        logger.warning("find_k_shortest is deprecated. Use get_route() with route_method='k_shortest_path'.")
         self.engine_props["route_method"] = "k_shortest_path"
         self.get_route()
 
@@ -312,10 +276,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='nli_aware' instead.
         """
-        logger.warning(
-            "find_least_nli is deprecated. "
-            "Use get_route() with route_method='nli_aware'."
-        )
+        logger.warning("find_least_nli is deprecated. Use get_route() with route_method='nli_aware'.")
         self.engine_props["route_method"] = "nli_aware"
         self.get_route()
 
@@ -326,9 +287,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='xt_aware' instead.
         """
-        logger.warning(
-            "find_least_xt is deprecated. Use get_route() with route_method='xt_aware'."
-        )
+        logger.warning("find_least_xt is deprecated. Use get_route() with route_method='xt_aware'.")
         self.engine_props["route_method"] = "xt_aware"
         self.get_route()
 
@@ -342,10 +301,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='least_congested' instead.
         """
-        logger.warning(
-            "find_least_cong is deprecated. "
-            "Use get_route() with route_method='least_congested'."
-        )
+        logger.warning("find_least_cong is deprecated. Use get_route() with route_method='least_congested'.")
         self.engine_props["route_method"] = "least_congested"
         self.get_route()
 
@@ -356,10 +312,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='frag_aware' instead.
         """
-        logger.warning(
-            "find_least_frag is deprecated. "
-            "Use get_route() with route_method='frag_aware'."
-        )
+        logger.warning("find_least_frag is deprecated. Use get_route() with route_method='frag_aware'.")
         self.engine_props["route_method"] = "frag_aware"
         self.get_route()
 
@@ -370,9 +323,7 @@ class Routing:
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.network_spectrum_dict[
-                (path_list[i], path_list[i + 1])
-            ]
+            link_dict = self.sdn_props.network_spectrum_dict[(path_list[i], path_list[i + 1])]
             free_slots = 0
             for band in link_dict["cores_matrix"]:
                 cores_matrix = link_dict["cores_matrix"][band]
@@ -384,9 +335,7 @@ class Routing:
                 most_cong_link = link_dict
 
         # Store with expected test structure for backward compatibility
-        self.route_props.paths_matrix.append(
-            {"path_list": path_list, "link_dict": {"link": most_cong_link}}
-        )
+        self.route_props.paths_matrix.append({"path_list": path_list, "link_dict": {"link": most_cong_link}})
 
     def find_cong_aware(self) -> None:
         """
@@ -404,10 +353,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='cong_aware' instead.
         """
-        logger.warning(
-            "find_cong_aware is deprecated. "
-            "Use get_route() with route_method='cong_aware'."
-        )
+        logger.warning("find_cong_aware is deprecated. Use get_route() with route_method='cong_aware'.")
         self.engine_props["route_method"] = "cong_aware"
         self.get_route()
 
@@ -417,10 +363,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='external_ksp' instead.
         """
-        logger.warning(
-            "load_k_shortest is deprecated. "
-            "Use get_route() with route_method='external_ksp'."
-        )
+        logger.warning("load_k_shortest is deprecated. Use get_route() with route_method='external_ksp'.")
 
         # This is a simplified implementation - the full logic should be moved
         # to a dedicated external routing algorithm in the modules
@@ -476,12 +419,10 @@ class Routing:
                         original_dict=self.sdn_props.modulation_formats_dict,
                         nested_key="max_length",
                     )
-                    modulation_formats = list(sorted_formats.keys())
+                    modulation_formats: list[str | bool] = list(sorted_formats.keys())
 
                     self.route_props.paths_matrix.append(path)
-                    self.route_props.modulation_formats_matrix.append(
-                        modulation_formats[::-1]
-                    )
+                    self.route_props.modulation_formats_matrix.append(modulation_formats[::-1])
                     self.route_props.weights_list.append(path_length)
                     self.route_props.path_index_list.append(paths_found)
 

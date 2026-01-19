@@ -34,9 +34,7 @@ class TestBaseAgent:
             "core_beta": 1.0,
         }
 
-    def _new_agent(
-        self, algorithm: str = "q_learning", mock_hpc: Any = None
-    ) -> base_agent.BaseAgent:
+    def _new_agent(self, algorithm: str = "q_learning", mock_hpc: Any = None) -> base_agent.BaseAgent:
         """Return BaseAgent with stubbed props."""
         agent = base_agent.BaseAgent(
             algorithm=algorithm,
@@ -67,9 +65,7 @@ class TestBaseAgent:
     def test_get_reward_dynamic_allocated(self, mock_hpc: mock.MagicMock) -> None:
         """Allocated+dynamic delegates to dynamic reward."""
         agent = self._new_agent(mock_hpc=mock_hpc)
-        with mock.patch.object(
-            agent, "calculate_dynamic_reward", return_value=7.7
-        ) as dyn_reward:
+        with mock.patch.object(agent, "calculate_dynamic_reward", return_value=7.7) as dyn_reward:
             assert agent.get_reward(True, True, 3, 4) == 7.7
             dyn_reward.assert_called_once_with(3, 4)
 
@@ -82,24 +78,18 @@ class TestBaseAgent:
     def test_get_reward_dynamic_not_allocated(self, mock_hpc: mock.MagicMock) -> None:
         """Blocked+dynamic delegates to dynamic penalty."""
         agent = self._new_agent(mock_hpc=mock_hpc)
-        with mock.patch.object(
-            agent, "calculate_dynamic_penalty", return_value=-9.9
-        ) as dyn_pen:
+        with mock.patch.object(agent, "calculate_dynamic_penalty", return_value=-9.9) as dyn_pen:
             assert agent.get_reward(False, True, 5, 6) == -9.9
             dyn_pen.assert_called_once_with(5, 6)
 
     # ------- setup_env -------------------------------------------------
     @mock.patch("fusion.modules.rl.agents.base_agent.QLearning")
-    def test_setup_env_chooses_q_learning(
-        self, mock_qlearn: mock.MagicMock, mock_hpc: mock.MagicMock
-    ) -> None:
+    def test_setup_env_chooses_q_learning(self, mock_qlearn: mock.MagicMock, mock_hpc: mock.MagicMock) -> None:
         """setup_env instantiates QLearning."""
         mock_qlearn.return_value = mock.MagicMock()
         agent = self._new_agent("q_learning", mock_hpc=mock_hpc)
         agent.setup_env(is_path=False)
-        mock_qlearn.assert_called_once_with(
-            rl_props=agent.rl_props, engine_props=agent.engine_props
-        )
+        mock_qlearn.assert_called_once_with(rl_props=agent.rl_props, engine_props=agent.engine_props)
         assert agent.algorithm_obj is mock_qlearn.return_value
 
     def test_setup_env_bad_algorithm_raises(self, mock_hpc: mock.MagicMock) -> None:
@@ -109,9 +99,7 @@ class TestBaseAgent:
             agent.setup_env(is_path=False)
 
     # ------- load_model -----------------------------------------------
-    @mock.patch(
-        "fusion.modules.rl.agents.base_agent.np.load", return_value="dummy_matrix"
-    )
+    @mock.patch("fusion.modules.rl.agents.base_agent.np.load", return_value="dummy_matrix")
     @mock.patch(
         "fusion.modules.rl.agents.base_agent.os.path.join",
         return_value="joined/path.npy",

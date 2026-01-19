@@ -147,9 +147,7 @@ def migrate_config(
         click.echo("  3. Update your scripts to use the new config")
         if not no_backup:
             backup_path = input_path.with_suffix(".bak.yml")
-            click.echo(
-                f"  4. Once confirmed working, you can delete the backup: {backup_path}"
-            )
+            click.echo(f"  4. Once confirmed working, you can delete the backup: {backup_path}")
     elif not result.success:
         click.echo(click.style("\n❌ Migration failed!", fg="red", bold=True))
         raise click.Abort()
@@ -309,9 +307,7 @@ def _display_migration_result(result: MigrationResult, verbose: bool = False) ->
             click.echo(f"  • {warning}")
 
     if result.errors:
-        click.echo(
-            click.style(f"\n❌ {len(result.errors)} error(s):", fg="red", bold=True)
-        )
+        click.echo(click.style(f"\n❌ {len(result.errors)} error(s):", fg="red", bold=True))
         for error in result.errors:
             click.echo(f"  • {error}")
 
@@ -319,9 +315,7 @@ def _display_migration_result(result: MigrationResult, verbose: bool = False) ->
         click.echo("\n📄 New configuration preview:")
         import yaml
 
-        config_preview = yaml.dump(
-            result.new_config, default_flow_style=False, sort_keys=False
-        )
+        config_preview = yaml.dump(result.new_config, default_flow_style=False, sort_keys=False)
         # Show first 30 lines
         lines = config_preview.split("\n")[:30]
         click.echo("  " + "\n  ".join(lines))

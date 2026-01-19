@@ -173,9 +173,7 @@ class TestGetPathModulation:
         path_length = 500.0
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == "64-QAM"
@@ -191,9 +189,7 @@ class TestGetPathModulation:
         path_length = 1500.0
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == "16-QAM"
@@ -209,9 +205,7 @@ class TestGetPathModulation:
         path_length = 2500.0
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == "QPSK"
@@ -227,9 +221,7 @@ class TestGetPathModulation:
         path_length = 3500.0
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result is False
@@ -245,9 +237,7 @@ class TestGetPathModulation:
         path_length = 1000.0
 
         # Act
-        result = get_path_modulation(
-            modulation_formats=modulation_formats, path_length=path_length
-        )
+        result = get_path_modulation(modulation_formats=modulation_formats, path_length=path_length)
 
         # Assert
         assert result == "64-QAM"

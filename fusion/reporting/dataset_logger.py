@@ -116,9 +116,7 @@ class DatasetLogger:
         """
         if self.file_handle:
             self.file_handle.close()
-            logger.info(
-                f"Dataset logger closed: {self.transition_count} transitions logged"
-            )
+            logger.info(f"Dataset logger closed: {self.transition_count} transitions logged")
 
     def __enter__(self) -> "DatasetLogger":
         """Context manager entry."""
@@ -129,9 +127,7 @@ class DatasetLogger:
         self.close()
 
 
-def select_path_with_epsilon_mix(
-    policy: Any, state: dict[str, Any], action_mask: list[bool], epsilon: float = 0.1
-) -> int:
+def select_path_with_epsilon_mix(policy: Any, state: dict[str, Any], action_mask: list[bool], epsilon: float = 0.1) -> int:
     """
     Select path with epsilon probability of picking second-best.
 

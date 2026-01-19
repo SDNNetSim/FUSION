@@ -129,9 +129,7 @@ class TestSnrMeasurements(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             snr_measurements._calculate_sci_psd()
 
-        self.assertIn(
-            "Required SNR properties are not initialized", str(context.exception)
-        )
+        self.assertIn("Required SNR properties are not initialized", str(context.exception))
 
     def test_calculate_sci_psd_with_missing_center_psd_raises_error(self) -> None:
         """Test SCI PSD calculation with missing center PSD raises error."""
@@ -151,9 +149,7 @@ class TestSnrMeasurements(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             snr_measurements._calculate_sci_psd()
 
-        self.assertIn(
-            "Required SNR properties are not initialized", str(context.exception)
-        )
+        self.assertIn("Required SNR properties are not initialized", str(context.exception))
 
     def test_calculate_sci_psd_with_missing_bandwidth_raises_error(self) -> None:
         """Test SCI PSD calculation with missing bandwidth raises error."""
@@ -173,9 +169,7 @@ class TestSnrMeasurements(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             snr_measurements._calculate_sci_psd()
 
-        self.assertIn(
-            "Required SNR properties are not initialized", str(context.exception)
-        )
+        self.assertIn("Required SNR properties are not initialized", str(context.exception))
 
     def test_update_link_xci_with_valid_parameters_returns_updated_xci(self) -> None:
         """Test XCI update with valid parameters."""
@@ -192,9 +186,7 @@ class TestSnrMeasurements(unittest.TestCase):
         current_link = np.zeros((7, 40))
         current_link[self.spectrum_props.core_number][slot_index] = req_id
 
-        snr_measurements.snr_props.center_frequency = (
-            self.spectrum_props.start_slot * self.engine_props["bw_per_slot"] * 10**9
-        )
+        snr_measurements.snr_props.center_frequency = self.spectrum_props.start_slot * self.engine_props["bw_per_slot"] * 10**9
 
         new_xci = snr_measurements._update_link_xci(
             request_id=req_id,
@@ -220,9 +212,7 @@ class TestSnrMeasurements(unittest.TestCase):
         current_xci = 0.5
         current_link = np.zeros((7, 40))  # Empty link
 
-        snr_measurements.snr_props.center_frequency = (
-            self.spectrum_props.start_slot * self.engine_props["bw_per_slot"] * 10**9
-        )
+        snr_measurements.snr_props.center_frequency = self.spectrum_props.start_slot * self.engine_props["bw_per_slot"] * 10**9
 
         new_xci = snr_measurements._update_link_xci(
             request_id=req_id,
@@ -244,9 +234,7 @@ class TestSnrMeasurements(unittest.TestCase):
         )
         snr_measurements.spectrum_props.start_slot = 10
         snr_measurements.spectrum_props.end_slot = 15
-        snr_measurements.number_of_slots = (
-            self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
-        )
+        snr_measurements.number_of_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
 
         resp, cross_talk = snr_measurements.check_xt()
 
@@ -380,9 +368,7 @@ class TestSnrMeasurements(unittest.TestCase):
             route_props=self.route_props,
         )
 
-        snr_ok, interference = snr_measurements.recheck_snr_after_allocation(
-            lightpath_id=1
-        )
+        snr_ok, interference = snr_measurements.recheck_snr_after_allocation(lightpath_id=1)
 
         self.assertTrue(snr_ok)
         self.assertEqual(interference, 0.0)
@@ -407,12 +393,8 @@ class TestSnrMeasurements(unittest.TestCase):
         snr_measurements.snr_props.request_snr = 10.0
 
         # Mock the complex SNR calculation to avoid overflow
-        with patch.object(
-            snr_measurements, "_calculate_snr_with_interference", return_value=15.0
-        ):
-            snr_ok, interference = snr_measurements.recheck_snr_after_allocation(
-                lightpath_id=1
-            )
+        with patch.object(snr_measurements, "_calculate_snr_with_interference", return_value=15.0):
+            snr_ok, interference = snr_measurements.recheck_snr_after_allocation(lightpath_id=1)
 
         self.assertIsInstance(snr_ok, bool)
         self.assertIsInstance(interference, float)
@@ -446,12 +428,8 @@ class TestSnrMeasurements(unittest.TestCase):
         self.engine_props["cores_per_link"] = 7
 
         # Add 'l' band to network spectrum dict
-        self.sdn_props.network_spectrum_dict[("A", "B")]["cores_matrix"]["l"] = (
-            np.zeros((7, 40))
-        )
-        self.sdn_props.network_spectrum_dict[("B", "C")]["cores_matrix"]["l"] = (
-            np.zeros((7, 40))
-        )
+        self.sdn_props.network_spectrum_dict[("A", "B")]["cores_matrix"]["l"] = np.zeros((7, 40))
+        self.sdn_props.network_spectrum_dict[("B", "C")]["cores_matrix"]["l"] = np.zeros((7, 40))
 
         snr_measurements = SnrMeasurements(
             engine_props_dict=self.engine_props,
@@ -461,9 +439,7 @@ class TestSnrMeasurements(unittest.TestCase):
         )
         snr_measurements.spectrum_props.current_band = "c"
 
-        interference = snr_measurements._calculate_crossband_interference(
-            path_list=["A", "B", "C"], core_num=3, start_slot=10, end_slot=15
-        )
+        interference = snr_measurements._calculate_crossband_interference(path_list=["A", "B", "C"], core_num=3, start_slot=10, end_slot=15)
 
         self.assertIsInstance(interference, float)
         self.assertGreaterEqual(interference, 0.0)
@@ -550,19 +526,13 @@ class TestSnrMeasurements(unittest.TestCase):
             "attenuation": 0.0002,  # Much smaller to avoid overflow
             "dispersion": 16.7,
         }
-        snr_measurements.snr_props.length = (
-            0.08  # Much smaller length (80m instead of 80km)
-        )
+        snr_measurements.snr_props.length = 0.08  # Much smaller length (80m instead of 80km)
 
         # Mock internal methods that would require full network state
         with patch.object(snr_measurements, "_init_center_frequency_and_bandwidth"):
             with patch.object(snr_measurements, "_update_link_parameters"):
-                with patch.object(
-                    snr_measurements, "_calculate_psd_nli", return_value=1e-12
-                ):
-                    snr_margin = snr_measurements._calculate_snr_with_interference(
-                        interference=0.01
-                    )
+                with patch.object(snr_measurements, "_calculate_psd_nli", return_value=1e-12):
+                    snr_margin = snr_measurements._calculate_snr_with_interference(interference=0.01)
 
         self.assertIsInstance(snr_margin, float)
 

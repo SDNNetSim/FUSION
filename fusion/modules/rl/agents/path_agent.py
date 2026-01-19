@@ -42,13 +42,9 @@ class PathAgent(BaseAgent):
         if self.engine_props is None:
             raise ValueError("engine_props must be set before using PathAgent")
         if self.hyperparam_obj is None:
-            raise ValueError(
-                "hyperparam_obj must be initialized - call setup_env first"
-            )
+            raise ValueError("hyperparam_obj must be initialized - call setup_env first")
         if self.reward_penalty_list is None:
-            raise ValueError(
-                "reward_penalty_list must be initialized - call setup_env first"
-            )
+            raise ValueError("reward_penalty_list must be initialized - call setup_env first")
         if self.algorithm_obj is None:
             raise ValueError("algorithm_obj must be initialized - call setup_env first")
 
@@ -80,9 +76,7 @@ class PathAgent(BaseAgent):
         if not self.hyperparam_obj.fully_episodic:
             self.state_action_pair = (self.rl_props.source, self.rl_props.destination)
             self.action_index = self.rl_props.chosen_path_index
-            self.hyperparam_obj.update_timestep_data(
-                state_action_pair=self.state_action_pair, action_index=self.action_index
-            )
+            self.hyperparam_obj.update_timestep_data(state_action_pair=self.state_action_pair, action_index=self.action_index)
         if self.hyperparam_obj.alpha_strategy not in EPISODIC_STRATEGIES:
             if "bandit" not in self.engine_props["path_algorithm"]:
                 self.hyperparam_obj.update_alpha()
@@ -119,9 +113,9 @@ class PathAgent(BaseAgent):
 
         self._ensure_initialized()
         assert self.hyperparam_obj is not None  # For mypy
-        assert self.engine_props is not None  # For mypy
-        assert self.reward_penalty_list is not None  # For mypy
-        assert self.algorithm_obj is not None  # For mypy
+        assert self.engine_props is not None
+        assert self.reward_penalty_list is not None
+        assert self.algorithm_obj is not None
 
         if self.hyperparam_obj.iteration >= self.engine_props["max_iters"]:
             raise AgentError(
@@ -193,7 +187,7 @@ class PathAgent(BaseAgent):
         :type random_float: float
         """
         assert self.hyperparam_obj is not None  # Validated by caller
-        assert self.congestion_list is not None  # Validated by caller
+        assert self.congestion_list is not None
 
         if random_float < self.hyperparam_obj.current_epsilon:
             self.rl_props.chosen_path_index = np.random.choice(self.rl_props.k_paths)
@@ -202,22 +196,16 @@ class PathAgent(BaseAgent):
 
             if self.rl_props.chosen_path_index == 1 and self.rl_props.k_paths == 1:
                 self.rl_props.chosen_path_index = 0
-            self.rl_props.chosen_path_list = self.rl_props.paths_list[
-                self.rl_props.chosen_path_index
-            ]
+            self.rl_props.chosen_path_list = self.rl_props.paths_list[self.rl_props.chosen_path_index]
         else:
             if self.algorithm_obj is None:
                 raise ValueError("algorithm_obj must be initialized")
             # For Q-learning, we know algorithm_obj has get_max_curr_q method
             if hasattr(self.algorithm_obj, "get_max_curr_q"):
-                result = self.algorithm_obj.get_max_curr_q(
-                    cong_list=self.congestion_list, matrix_flag="routes_matrix"
-                )
+                result = self.algorithm_obj.get_max_curr_q(cong_list=self.congestion_list, matrix_flag="routes_matrix")
                 self.rl_props.chosen_path_index, self.rl_props.chosen_path_list = result
             else:
-                raise ValueError(
-                    f"Algorithm {self.algorithm} does not have get_max_curr_q method"
-                )
+                raise ValueError(f"Algorithm {self.algorithm} does not have get_max_curr_q method")
             self.level_index = self.congestion_list[self.rl_props.chosen_path_index][-1]
 
     def _ql_route(self) -> None:
@@ -232,18 +220,12 @@ class PathAgent(BaseAgent):
         # For Q-learning, we know algorithm_obj has props attribute
         if hasattr(self.algorithm_obj, "props"):
             props_matrix = self.algorithm_obj.props.routes_matrix
-            routes_matrix = props_matrix[
-                self.rl_props.source, self.rl_props.destination
-            ]["path"]
+            routes_matrix = props_matrix[self.rl_props.source, self.rl_props.destination]["path"]
             self.rl_props.paths_list = routes_matrix
         else:
-            raise ValueError(
-                f"Algorithm {self.algorithm} does not have props attribute"
-            )
+            raise ValueError(f"Algorithm {self.algorithm} does not have props attribute")
 
-        self.congestion_list = self.rl_help_obj.classify_paths(
-            paths_list=self.rl_props.paths_list
-        )
+        self.congestion_list = self.rl_help_obj.classify_paths(paths_list=self.rl_props.paths_list)
         if self.rl_props.paths_list.ndim != 1:
             self.rl_props.paths_list = self.rl_props.paths_list[:, 0]
 
@@ -275,13 +257,9 @@ class PathAgent(BaseAgent):
         if hasattr(self.algorithm_obj, "epsilon"):
             self.algorithm_obj.epsilon = self.hyperparam_obj.current_epsilon
         if hasattr(self.algorithm_obj, "select_path_arm"):
-            self.rl_props.chosen_path_index = self.algorithm_obj.select_path_arm(
-                source=int(source), dest=int(dest)
-            )
+            self.rl_props.chosen_path_index = self.algorithm_obj.select_path_arm(source=int(source), dest=int(dest))
         else:
-            raise ValueError(
-                f"Algorithm {self.algorithm} does not have select_path_arm method"
-            )
+            raise ValueError(f"Algorithm {self.algorithm} does not have select_path_arm method")
         paths_matrix = route_obj.route_props.paths_matrix
         self.rl_props.chosen_path_list = paths_matrix[self.rl_props.chosen_path_index]
 
@@ -300,8 +278,7 @@ class PathAgent(BaseAgent):
             self.rl_props.chosen_path_list = route_obj.route_props.paths_matrix[action]
         else:
             raise InvalidActionError(
-                f"Algorithm '{self.algorithm}' is not supported for DRL routing. "
-                f"Supported DRL algorithms: ppo, a2c, dqn, qr_dqn"
+                f"Algorithm '{self.algorithm}' is not supported for DRL routing. Supported DRL algorithms: ppo, a2c, dqn, qr_dqn"
             )
 
     def get_route(self, **kwargs: Any) -> None:

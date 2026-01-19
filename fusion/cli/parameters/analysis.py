@@ -51,12 +51,17 @@ def add_statistics_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.0.0): Plotting functionality is being revamped - these arguments are not
+# currently functional. Full plotting support will be available in v6.0.0.
 def add_plotting_args(parser: argparse.ArgumentParser) -> None:
     """
     Add plotting and visualization arguments to the parser.
 
     Configures arguments for plot generation, display options, and
     visualization formatting parameters.
+
+    NOTE: Plotting is currently being revamped and these arguments are not
+    functional. Full support coming in v6.0.0.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
@@ -83,12 +88,14 @@ def add_plotting_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.1.0): Currently only JSON export is supported. Add support for csv, excel,
+# and tsv formats in v6.1.0.
 def add_export_args(parser: argparse.ArgumentParser) -> None:
     """
     Add data export and file handling arguments to the parser.
 
-    Configures arguments for exporting simulation results to various
-    formats including Excel, CSV, JSON, and TSV.
+    NOTE: Currently only JSON export is officially supported. Additional formats
+    (csv, excel, tsv) will be available in v6.1.0.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
@@ -101,7 +108,7 @@ def add_export_args(parser: argparse.ArgumentParser) -> None:
         type=str,
         choices=["json", "csv", "excel", "tsv"],
         default=None,
-        help="Default file format for data export",
+        help="Default file format for data export (only json currently supported)",
     )
 
 
@@ -118,15 +125,9 @@ def add_filtering_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     filter_group = parser.add_argument_group("Filtering Configuration")
-    filter_group.add_argument(
-        "--filter_mods", action="store_true", help="Filter results by modulation format"
-    )
-    filter_group.add_argument(
-        "--min_erlang", type=float, help="Minimum Erlang load to include in analysis"
-    )
-    filter_group.add_argument(
-        "--max_erlang", type=float, help="Maximum Erlang load to include in analysis"
-    )
+    filter_group.add_argument("--filter_mods", action="store_true", help="Filter results by modulation format")
+    filter_group.add_argument("--min_erlang", type=float, help="Minimum Erlang load to include in analysis")
+    filter_group.add_argument("--max_erlang", type=float, help="Maximum Erlang load to include in analysis")
 
 
 def add_comparison_args(parser: argparse.ArgumentParser) -> None:
@@ -142,12 +143,8 @@ def add_comparison_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     comparison_group = parser.add_argument_group("Comparison Configuration")
-    comparison_group.add_argument(
-        "--compare_runs", type=str, nargs="+", help="List of run IDs to compare"
-    )
-    comparison_group.add_argument(
-        "--baseline_run", type=str, help="Run ID to use as baseline for comparison"
-    )
+    comparison_group.add_argument("--compare_runs", type=str, nargs="+", help="List of run IDs to compare")
+    comparison_group.add_argument("--baseline_run", type=str, help="Run ID to use as baseline for comparison")
     comparison_group.add_argument(
         "--metrics",
         type=str,

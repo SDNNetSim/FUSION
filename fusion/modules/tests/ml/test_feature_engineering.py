@@ -19,9 +19,7 @@ class TestExtractMLFeatures:
     @patch("fusion.modules.ml.feature_engineering.find_path_len")
     @patch("fusion.modules.ml.feature_engineering._calculate_congestion_metrics")
     @patch("fusion.modules.ml.feature_engineering._format_features_for_prediction")
-    def test_extract_calls_path_length_calculation(
-        self, mock_format: Mock, mock_cong: Mock, mock_path_len: Mock
-    ) -> None:
+    def test_extract_calls_path_length_calculation(self, mock_format: Mock, mock_cong: Mock, mock_path_len: Mock) -> None:
         """Test that path length is calculated."""
         # Arrange
         mock_path_len.return_value = 150.0
@@ -43,9 +41,7 @@ class TestExtractMLFeatures:
     @patch("fusion.modules.ml.feature_engineering.find_path_len")
     @patch("fusion.modules.ml.feature_engineering._calculate_congestion_metrics")
     @patch("fusion.modules.ml.feature_engineering._format_features_for_prediction")
-    def test_extract_calls_congestion_calculation(
-        self, mock_format: Mock, mock_cong: Mock, mock_path_len: Mock
-    ) -> None:
+    def test_extract_calls_congestion_calculation(self, mock_format: Mock, mock_cong: Mock, mock_path_len: Mock) -> None:
         """Test that congestion metrics are calculated."""
         # Arrange
         mock_path_len.return_value = 150.0
@@ -65,9 +61,7 @@ class TestExtractMLFeatures:
     @patch("fusion.modules.ml.feature_engineering.find_path_len")
     @patch("fusion.modules.ml.feature_engineering._calculate_congestion_metrics")
     @patch("fusion.modules.ml.feature_engineering._format_features_for_prediction")
-    def test_extract_returns_dataframe(
-        self, mock_format: Mock, mock_cong: Mock, mock_path_len: Mock
-    ) -> None:
+    def test_extract_returns_dataframe(self, mock_format: Mock, mock_cong: Mock, mock_path_len: Mock) -> None:
         """Test that extract_ml_features returns a DataFrame."""
         # Arrange
         mock_path_len.return_value = 150.0

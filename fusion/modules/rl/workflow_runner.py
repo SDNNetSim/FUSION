@@ -36,12 +36,7 @@ from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-# TODO moved to TODO.md: Support for picking up where you left off (testing)
-
-
-def _run_drl_training(
-    env: Any, sim_dict: dict[str, Any], yaml_dict: dict[str, Any] | None = None
-) -> None:
+def _run_drl_training(env: Any, sim_dict: dict[str, Any], yaml_dict: dict[str, Any] | None = None) -> None:
     """
     Train a deep reinforcement learning model using Stable-Baselines3.
 
@@ -55,9 +50,7 @@ def _run_drl_training(
     :param yaml_dict: Optional hyperparameters dictionary
     :type yaml_dict: Optional[Dict[str, Any]]
     """
-    model, yaml_dict = get_model(
-        sim_dict=sim_dict, device=sim_dict["device"], env=env, yaml_dict=yaml_dict
-    )
+    model, yaml_dict = get_model(sim_dict=sim_dict, device=sim_dict["device"], env=env, yaml_dict=yaml_dict)
     model.learn(
         total_timesteps=yaml_dict["n_timesteps"],
         log_interval=sim_dict["print_step"],
@@ -126,9 +119,7 @@ def _train_drl_trial(
     callback_list.callbacks[1].iter = 0
     env.iteration = 0
 
-    logger.info(
-        "%d trials completed out of %d.", completed_trials, sim_dict["n_trials"]
-    )
+    logger.info("%d trials completed out of %d.", completed_trials, sim_dict["n_trials"])
     observation, _ = env.reset(seed=completed_trials)
     return observation, completed_trials
 
@@ -197,16 +188,12 @@ def _update_episode_stats(
     completed_episodes += 1
 
     if trial is not None:
-        current_mean_reward = (
-            np.mean(episodic_reward_array) if episodic_reward_array.size else 0
-        )
+        current_mean_reward = np.mean(episodic_reward_array) if episodic_reward_array.size else 0
         trial.report(current_mean_reward, completed_episodes)
         if trial.should_prune():
             raise optuna.TrialPruned()
 
-    logger.info(
-        "%d episodes completed out of %d.", completed_episodes, sim_dict["max_iters"]
-    )
+    logger.info("%d episodes completed out of %d.", completed_episodes, sim_dict["max_iters"])
 
     if completed_episodes == sim_dict["max_iters"]:
         env.iteration = 0
@@ -215,9 +202,7 @@ def _update_episode_stats(
         episodic_reward_array = np.array([])
         completed_trials += 1
         completed_episodes = 0
-        logger.info(
-            "%d trials completed out of %d.", completed_trials, sim_dict["n_trials"]
-        )
+        logger.info("%d trials completed out of %d.", completed_trials, sim_dict["n_trials"])
 
     # Only reset if we haven't completed all trials yet
     if completed_trials < sim_dict["n_trials"]:
@@ -332,9 +317,7 @@ def _handle_training_completion(
         save_arr(np.array(memory_usage_list), sim_dict, "memory_usage.npy")
         return sum_reward
 
-    raise TrainingError(
-        "Testing mode is not yet implemented. Please use training mode."
-    )
+    raise TrainingError("Testing mode is not yet implemented. Please use training mode.")
 
 
 def run_iters(
@@ -389,15 +372,11 @@ def run_iters(
         memory_usage_list.append(process.memory_info().rss / (1024 * 1024))
 
         if is_training and drl_agent:
-            observation, completed_trials = _train_drl_trial(
-                env, sim_dict, callback_list, completed_trials, rewards_matrix
-            )
+            observation, completed_trials = _train_drl_trial(env, sim_dict, callback_list, completed_trials, rewards_matrix)
             continue
 
         # Process single step
-        observation, reward, terminated, truncated = _process_episode_step(
-            env, is_training, model, observation
-        )
+        observation, reward, terminated, truncated = _process_episode_step(env, is_training, model, observation)
 
         # Update episode statistics
         (
@@ -421,9 +400,7 @@ def run_iters(
             trial,
         )
 
-    return _handle_training_completion(
-        is_training, rewards_matrix, memory_usage_list, sim_dict
-    )
+    return _handle_training_completion(is_training, rewards_matrix, memory_usage_list, sim_dict)
 
 
 def run_testing() -> None:
@@ -437,9 +414,7 @@ def run_testing() -> None:
     :raises TrainingError: Always raised as testing functionality is not yet implemented
     :rtype: None
     """
-    raise TrainingError(
-        "Testing functionality is not yet implemented. Please use training mode."
-    )
+    raise TrainingError("Testing functionality is not yet implemented. Please use training mode.")
 
 
 def run(
@@ -473,10 +448,7 @@ def run(
     if sim_dict["is_training"]:
         # Print info function should already error check valid input,
         # no need to raise an error here
-        if (
-            sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS
-            or sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS
-        ):
+        if sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS or sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS:
             sum_returns = run_iters(
                 env=env,
                 sim_dict=sim_dict,
@@ -492,9 +464,7 @@ def run(
                 f"Core algorithm: {sim_dict.get('core_algorithm')}"
             )
     else:
-        raise TrainingError(
-            "Testing mode is not yet implemented. Please set 'is_training' to True."
-        )
+        raise TrainingError("Testing mode is not yet implemented. Please set 'is_training' to True.")
 
     return sum_returns
 
@@ -518,9 +488,7 @@ def run_optuna_study(sim_dict: dict[str, Any], callback_list: Any) -> None:
 
     # Define the Optuna objective function
     def objective(trial: optuna.Trial) -> float:
-        env = SimEnv(
-            render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim()
-        )
+        env = SimEnv(render_mode=None, custom_callback=callback_list, sim_dict=setup_rl_sim())
 
         for callback_obj in callback_list.callbacks:
             callback_obj.sim_dict = env.sim_dict
@@ -528,18 +496,10 @@ def run_optuna_study(sim_dict: dict[str, Any], callback_list: Any) -> None:
         env.sim_dict["callback"] = callback_list.callbacks
 
         hyperparam_dict = get_optuna_hyperparams(sim_dict=sim_dict, trial=trial)
-        update_list = [
-            (param, value)
-            for param, value in hyperparam_dict.items()
-            if param in sim_dict
-        ]
+        update_list = [(param, value) for param, value in hyperparam_dict.items() if param in sim_dict]
 
-        modify_multiple_json_values(
-            trial_num=trial.number, file_path=file_path, update_list=update_list
-        )
-        env.sim_dict = update_dict_from_list(
-            input_dict=env.sim_dict, updates_list=update_list
-        )
+        modify_multiple_json_values(trial_num=trial.number, file_path=file_path, update_list=update_list)
+        env.sim_dict = update_dict_from_list(input_dict=env.sim_dict, updates_list=update_list)
         erlang_list = get_erlang_values(sim_dict=sim_dict)
 
         mean_reward = run_simulation_for_erlangs(
@@ -562,15 +522,9 @@ def run_optuna_study(sim_dict: dict[str, Any], callback_list: Any) -> None:
 
     # Run the optimization
     study_name = "hyperparam_study.pkl"
-    file_path = os.path.join(
-        "data", "input", sim_dict["network"], sim_dict["date"], sim_dict["sim_start"]
-    )
-    pruner = HyperbandPruner(
-        min_resource=20, max_resource=sim_dict["max_iters"], reduction_factor=3
-    )
-    study = optuna.create_study(
-        direction="maximize", study_name=study_name, pruner=pruner
-    )
+    file_path = os.path.join("data", "input", sim_dict["network"], sim_dict["date"], sim_dict["sim_start"])
+    pruner = HyperbandPruner(min_resource=20, max_resource=sim_dict["max_iters"], reduction_factor=3)
+    study = optuna.create_study(direction="maximize", study_name=study_name, pruner=pruner)
     n_trials = sim_dict["optuna_trials"]
     study.optimize(objective, n_trials=n_trials)
 

@@ -2,12 +2,20 @@ name: Unit Tests
 
 on:
   pull_request:
+    branches:
+      - develop
+      - main
+      - 'release/**'
     types:
       - opened
       - edited
       - reopened
       - synchronize
   pull_request_target:
+    branches:
+      - develop
+      - main
+      - 'release/**'
     types:
       - opened
       - edited
@@ -15,7 +23,9 @@ on:
       - synchronize
   push:
     branches:
+      - develop
       - main
+      - 'release/**'
 
 jobs:
 

@@ -113,9 +113,7 @@ def export_aggregated_results(
     logger.info("Exported %d aggregated metrics to %s", len(rows), output_path)
 
 
-def export_comparison_table(
-    comparison: dict[str, dict[str, Any]], output_path: str
-) -> None:
+def export_comparison_table(comparison: dict[str, dict[str, Any]], output_path: str) -> None:
     """
     Export comparison table (baseline vs RL) to CSV.
 

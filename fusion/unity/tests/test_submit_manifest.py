@@ -48,9 +48,7 @@ class TestParseCli:
 class TestReadFirstRow:
     """Tests for read_first_row function."""
 
-    def test_read_first_row_with_valid_manifest_returns_data_and_count(
-        self, tmp_path: Path
-    ) -> None:
+    def test_read_first_row_with_valid_manifest_returns_data_and_count(self, tmp_path: Path) -> None:
         """Test read_first_row returns first row and total count."""
         # Arrange
         manifest_data = [
@@ -95,9 +93,7 @@ class TestReadFirstRow:
         assert first_row["path_algorithm"] == "ppo"
         assert first_row["network"] == "test_network"
 
-    def test_read_first_row_with_empty_manifest_raises_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_read_first_row_with_empty_manifest_raises_error(self, tmp_path: Path) -> None:
         """Test read_first_row raises ManifestNotFoundError for empty manifest."""
         # Arrange
         manifest_path = tmp_path / "manifest.csv"
@@ -110,9 +106,7 @@ class TestReadFirstRow:
 
         assert "empty" in str(exc_info.value).lower()
 
-    def test_read_first_row_with_nonexistent_file_raises_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_read_first_row_with_nonexistent_file_raises_error(self, tmp_path: Path) -> None:
         """Test read_first_row raises ManifestNotFoundError for missing file."""
         # Arrange
         manifest_path = tmp_path / "nonexistent_manifest.csv"
@@ -123,9 +117,7 @@ class TestReadFirstRow:
 
         assert "Cannot read manifest file" in str(exc_info.value)
 
-    def test_read_first_row_with_single_row_returns_correct_count(
-        self, tmp_path: Path
-    ) -> None:
+    def test_read_first_row_with_single_row_returns_correct_count(self, tmp_path: Path) -> None:
         """Test read_first_row returns correct count for single-row manifest."""
         # Arrange
         manifest_data = [

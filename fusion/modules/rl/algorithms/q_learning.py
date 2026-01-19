@@ -40,9 +40,7 @@ class QLearning:
         assert hasattr(self.rl_props, "k_paths"), "rl_props must have k_paths"
         assert hasattr(self.rl_props, "source"), "rl_props must have source"
         assert hasattr(self.rl_props, "destination"), "rl_props must have destination"
-        assert hasattr(self.rl_props, "chosen_path_index"), (
-            "rl_props must have chosen_path_index"
-        )
+        assert hasattr(self.rl_props, "chosen_path_index"), "rl_props must have chosen_path_index"
         assert hasattr(self.rl_props, "paths_list"), "rl_props must have paths_list"
         assert hasattr(self.rl_props, "cores_list"), "rl_props must have cores_list"
 
@@ -98,9 +96,7 @@ class QLearning:
 
                 for k, path in enumerate(
                     islice(
-                        ssp(
-                            topology, source=str(src), target=str(dst), weight="length"
-                        ),
+                        ssp(topology, source=str(src), target=str(dst), weight="length"),
                         self._rl_props.k_paths,
                     )
                 ):
@@ -128,9 +124,7 @@ class QLearning:
 
         if flag == "core":
             assert core_index is not None, "core_index must be provided for core flag"
-            congestion_result = find_core_congestion(
-                core_index, network_spectrum_dict, path_list
-            )
+            congestion_result = find_core_congestion(core_index, network_spectrum_dict, path_list)
             # Handle both tuple and single value returns for core
             if isinstance(congestion_result, tuple):
                 new_cong = float(congestion_result[0])
@@ -140,13 +134,9 @@ class QLearning:
             # find_path_congestion returns a tuple
             congestion_tuple = find_path_congestion(path_list, network_spectrum_dict)
             new_cong = float(congestion_tuple[0])
-        new_cong_index = classify_congestion(
-            new_cong, congestion_cutoff=self.engine_props["cong_cutoff"]
-        )
+        new_cong_index = classify_congestion(new_cong, congestion_cutoff=self.engine_props["cong_cutoff"])
 
-        max_future_q = matrix[core_index if flag == "core" else new_cong_index][
-            "q_value"
-        ]
+        max_future_q = matrix[core_index if flag == "core" else new_cong_index]["q_value"]
         return float(max_future_q)
 
     def get_max_curr_q(self, cong_list: list, matrix_flag: str) -> tuple[int, Any]:
@@ -165,16 +155,9 @@ class QLearning:
             ]
         )
 
-        q_values = [
-            matrix[obj_index, level_index]["q_value"]
-            for obj_index, _, level_index in cong_list
-        ]
+        q_values = [matrix[obj_index, level_index]["q_value"] for obj_index, _, level_index in cong_list]
         max_index = np.argmax(q_values)
-        max_obj = (
-            self._rl_props.paths_list[max_index]
-            if matrix_flag == "routes_matrix"
-            else self._rl_props.cores_list[max_index]
-        )
+        max_obj = self._rl_props.paths_list[max_index] if matrix_flag == "routes_matrix" else self._rl_props.cores_list[max_index]
 
         return int(max_index), max_obj
 
@@ -219,9 +202,7 @@ class QLearning:
         )
         matrix[core_index if flag == "core" else level_index]["q_value"] = new_q
 
-    def update_q_stats(
-        self, reward: float, td_error: float, stats_flag: str, trial: int
-    ) -> None:
+    def update_q_stats(self, reward: float, td_error: float, stats_flag: str, trial: int) -> None:
         """Updates statistics related to Q-learning performance."""
         episode = str(self.iteration)
         if episode not in self.props.rewards_dict[stats_flag]["rewards"]:
@@ -231,10 +212,7 @@ class QLearning:
             self.props.rewards_dict[stats_flag]["rewards"][episode].append(reward)
             self.props.errors_dict[stats_flag]["errors"][episode].append(td_error)
 
-        if (
-            self.iteration % self.engine_props["save_step"] == 0
-            or self.iteration == self.engine_props["max_iters"] - 1
-        ) and len(
+        if (self.iteration % self.engine_props["save_step"] == 0 or self.iteration == self.engine_props["max_iters"] - 1) and len(
             self.props.rewards_dict[stats_flag]["rewards"][episode]
         ) == self.engine_props["num_requests"]:
             self._calc_q_averages(stats_flag, trial=trial)
@@ -251,12 +229,8 @@ class QLearning:
         :param trial: Current trial number
         :type trial: int
         """
-        self.rewards_stats_dict = calculate_matrix_statistics(
-            self.props.rewards_dict[stats_flag]["rewards"]
-        )
-        self.error_stats_dict = calculate_matrix_statistics(
-            self.props.errors_dict[stats_flag]["errors"]
-        )
+        self.rewards_stats_dict = calculate_matrix_statistics(self.props.rewards_dict[stats_flag]["rewards"])
+        self.error_stats_dict = calculate_matrix_statistics(self.props.errors_dict[stats_flag]["errors"])
         self.save_model(trial)
 
     def _convert_q_tables_to_dict(self, which_table: str) -> dict[str, list]:
@@ -286,8 +260,7 @@ class QLearning:
                     q_dict[str((src, dst))] = q_vals_list
         elif which_table == "cores":
             raise AlgorithmNotFoundError(
-                "Core table conversion is not yet implemented. "
-                "Only routes table conversion is currently supported."
+                "Core table conversion is not yet implemented. Only routes table conversion is currently supported."
             )
 
         return q_dict
@@ -304,23 +277,14 @@ class QLearning:
         assert self.rewards_stats_dict is not None
 
         save_dir_path = (
-            Path("logs")
-            / "q_learning"
-            / self.engine_props["network"]
-            / self.engine_props["date"]
-            / self.engine_props["sim_start"]
+            Path("logs") / "q_learning" / self.engine_props["network"] / self.engine_props["date"] / self.engine_props["sim_start"]
         )
         create_directory(str(save_dir_path))
 
         erlang = self.engine_props["erlang"]
         cores_per_link = self.engine_props["cores_per_link"]
-        base_str = (
-            "routes" if self.engine_props["path_algorithm"] == "q_learning" else "cores"
-        )
-        filename_npy = (
-            f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}"
-            f"_iter_{self.iteration}.npy"
-        )
+        base_str = "routes" if self.engine_props["path_algorithm"] == "q_learning" else "cores"
+        filename_npy = f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}_iter_{self.iteration}.npy"
         save_path_npy = save_dir_path / filename_npy
 
         if "routes" in base_str:
@@ -328,13 +292,10 @@ class QLearning:
             q_dict = self._convert_q_tables_to_dict("routes")
         else:
             raise AlgorithmNotFoundError(
-                "Core Q-learning model saving is not yet implemented. "
-                "Only routes Q-learning models are currently supported."
+                "Core Q-learning model saving is not yet implemented. Only routes Q-learning models are currently supported."
             )
 
-        json_filename = (
-            f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
-        )
+        json_filename = f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
         save_path_json = save_dir_path / json_filename
         with open(save_path_json, "w", encoding="utf-8") as file_obj:
             json.dump(q_dict, file_obj)

@@ -27,9 +27,7 @@ def sample_network_spectrum() -> dict:
 class TestFindFreeSlots:
     """Tests for find_free_slots function."""
 
-    def test_find_free_slots_returns_correct_indices(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_free_slots_returns_correct_indices(self, sample_network_spectrum: dict) -> None:
         """Test that free slot indices are identified correctly."""
         # Arrange
         link_tuple = (0, 1)
@@ -43,17 +41,13 @@ class TestFindFreeSlots:
         assert np.array_equal(result["c"][0], expected_core_0)
         assert np.array_equal(result["c"][1], expected_core_1)
 
-    def test_find_free_slots_with_legacy_params_works(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_free_slots_with_legacy_params_works(self, sample_network_spectrum: dict) -> None:
         """Test backward compatibility with legacy parameter names."""
         # Arrange
         link_tuple = (0, 1)
 
         # Act
-        result = find_free_slots(
-            network_spectrum_dict=sample_network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum_dict=sample_network_spectrum, link_tuple=link_tuple)
 
         # Assert
         expected_core_0 = np.array([0, 2, 3])
@@ -62,18 +56,14 @@ class TestFindFreeSlots:
     def test_find_free_slots_without_params_raises_error(self) -> None:
         """Test that missing required parameters raises ValueError."""
         # Act & Assert
-        with pytest.raises(
-            ValueError, match="Must provide network_spectrum and link_tuple"
-        ):
+        with pytest.raises(ValueError, match="Must provide network_spectrum and link_tuple"):
             find_free_slots()
 
 
 class TestFindFreeChannels:
     """Tests for find_free_channels function."""
 
-    def test_find_free_channels_with_slots_needed_returns_channels(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_free_channels_with_slots_needed_returns_channels(self, sample_network_spectrum: dict) -> None:
         """Test that free channels are found for given slot requirement."""
         # Arrange
         slots_needed = 2
@@ -89,9 +79,7 @@ class TestFindFreeChannels:
     def test_find_free_channels_with_no_contiguous_slots_returns_empty(self) -> None:
         """Test that no channels are returned when slots are fragmented."""
         # Arrange
-        network_spectrum = {
-            (0, 1): {"cores_matrix": {"c": np.array([[1, 0, 1, 0, 1]])}}
-        }
+        network_spectrum = {(0, 1): {"cores_matrix": {"c": np.array([[1, 0, 1, 0, 1]])}}}
         slots_needed = 2
         link_tuple = (0, 1)
 
@@ -114,9 +102,7 @@ class TestFindFreeChannels:
 class TestFindTakenChannels:
     """Tests for find_taken_channels function."""
 
-    def test_find_taken_channels_identifies_occupied_blocks(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_taken_channels_identifies_occupied_blocks(self, sample_network_spectrum: dict) -> None:
         """Test that taken channel blocks are identified correctly."""
         # Arrange
         link_tuple = (3, 4)
@@ -129,17 +115,13 @@ class TestFindTakenChannels:
         expected = {"c": {0: [[1, 1]], 1: []}}
         assert result == expected
 
-    def test_find_taken_channels_with_legacy_params_works(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_taken_channels_with_legacy_params_works(self, sample_network_spectrum: dict) -> None:
         """Test backward compatibility with legacy parameter names."""
         # Arrange
         link_tuple = (3, 4)
 
         # Act
-        result = find_taken_channels(
-            network_spectrum_dict=sample_network_spectrum, link_tuple=link_tuple
-        )
+        result = find_taken_channels(network_spectrum_dict=sample_network_spectrum, link_tuple=link_tuple)
 
         # Assert
         expected = {"c": {0: [[1, 1]], 1: []}}
@@ -242,9 +224,7 @@ class TestGetShannonEntropyFragmentation:
         expected_sc_index = np.array([[0, 3], [1, 4], [2, 5], [3, 6], [4, 7]])
         assert np.array_equal(sc_index_mat, expected_sc_index)
         # Fragmentation array should have specific pattern
-        expected_frag = np.array(
-            [1.386, -np.inf, -np.inf, -np.inf, 1.386, np.inf, np.inf, np.inf]
-        )
+        expected_frag = np.array([1.386, -np.inf, -np.inf, -np.inf, 1.386, np.inf, np.inf, np.inf])
         assert np.array_equal(resp_frag_arr, expected_frag)
 
     def test_get_hfrag_with_none_core_defaults_to_zero(self) -> None:

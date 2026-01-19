@@ -1,7 +1,22 @@
-"""Spectrum visualization plugin.
+"""
+Spectrum visualization plugin (BETA).
+
+Status: BETA
+    This module is currently in BETA and is actively being developed.
+    The API may evolve in future releases.
 
 This plugin provides visualization support for spectrum allocation and
-utilization analysis in optical networks.
+utilization analysis in optical networks. It extends the core FUSION
+visualization system with spectrum-specific renderers and plot types.
+
+Components
+----------
+SpectrumHeatmapRenderer
+    Renders spectrum utilization as heatmaps across links and slots.
+FragmentationPlotRenderer
+    Renders fragmentation analysis with traffic correlation.
+SpectrumVisualizationPlugin
+    Main plugin class that registers metrics and plot types.
 """
 
 from pathlib import Path
@@ -25,14 +40,32 @@ from fusion.visualization.plugins.base_plugin import BasePlugin, PlotTypeRegistr
 
 
 class SpectrumHeatmapRenderer(BaseRenderer):
-    """Renderer for spectrum utilization heatmaps."""
+    """
+    Renderer for spectrum utilization heatmaps.
+
+    This renderer creates heatmap visualizations showing spectrum slot
+    utilization across network links, with color intensity indicating
+    occupancy levels.
+    """
 
     def supports_format(self, format: str) -> bool:
-        """Check if format is supported."""
+        """
+        Check if the given output format is supported.
+
+        :param format: Output format string (e.g., 'png', 'pdf').
+        :type format: str
+        :return: True if format is supported, False otherwise.
+        :rtype: bool
+        """
         return format in ["png", "pdf", "svg", "jpg"]
 
     def get_supported_formats(self) -> list[str]:
-        """Get list of supported formats."""
+        """
+        Get list of supported output formats.
+
+        :return: List of supported format strings.
+        :rtype: list[str]
+        """
         return ["png", "pdf", "svg", "jpg"]
 
     def render(
@@ -42,16 +75,19 @@ class SpectrumHeatmapRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render spectrum utilization heatmap.
+        """
+        Render spectrum utilization heatmap.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification containing data and styling.
+        :type specification: PlotSpecification
+        :param output_path: File path where the plot will be saved.
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch.
+        :type dpi: int
+        :param format: Output format (png, pdf, svg, jpg).
+        :type format: str
+        :return: Result object containing success status and output path.
+        :rtype: PlotResult
         """
         data = specification.metadata.get("processed_data", {})
 
@@ -63,9 +99,7 @@ class SpectrumHeatmapRenderer(BaseRenderer):
 
         if spectrum_matrix.size > 0:
             # Create heatmap
-            im = ax.imshow(
-                spectrum_matrix, aspect="auto", cmap="YlOrRd", interpolation="nearest"
-            )
+            im = ax.imshow(spectrum_matrix, aspect="auto", cmap="YlOrRd", interpolation="nearest")
 
             # Add colorbar
             cbar = plt.colorbar(im, ax=ax)
@@ -94,14 +128,31 @@ class SpectrumHeatmapRenderer(BaseRenderer):
 
 
 class FragmentationPlotRenderer(BaseRenderer):
-    """Renderer for spectrum fragmentation analysis."""
+    """
+    Renderer for spectrum fragmentation analysis.
+
+    This renderer creates dual-panel plots showing fragmentation trends
+    vs traffic load and average fragment size distribution across algorithms.
+    """
 
     def supports_format(self, format: str) -> bool:
-        """Check if format is supported."""
+        """
+        Check if the given output format is supported.
+
+        :param format: Output format string (e.g., 'png', 'pdf').
+        :type format: str
+        :return: True if format is supported, False otherwise.
+        :rtype: bool
+        """
         return format in ["png", "pdf", "svg", "jpg"]
 
     def get_supported_formats(self) -> list[str]:
-        """Get list of supported formats."""
+        """
+        Get list of supported output formats.
+
+        :return: List of supported format strings.
+        :rtype: list[str]
+        """
         return ["png", "pdf", "svg", "jpg"]
 
     def render(
@@ -111,16 +162,19 @@ class FragmentationPlotRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render fragmentation analysis plot.
+        """
+        Render fragmentation analysis plot.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification containing data and styling.
+        :type specification: PlotSpecification
+        :param output_path: File path where the plot will be saved.
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch.
+        :type dpi: int
+        :param format: Output format (png, pdf, svg, jpg).
+        :type format: str
+        :return: Result object containing success status and output path.
+        :rtype: PlotResult
         """
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=specification.figsize)
 
@@ -139,9 +193,7 @@ class FragmentationPlotRenderer(BaseRenderer):
 
         ax1.set_xlabel("Traffic Volume (Erlang)", fontsize=12)
         ax1.set_ylabel("Fragmentation Index", fontsize=12)
-        ax1.set_title(
-            "Spectrum Fragmentation vs Traffic", fontsize=12, fontweight="bold"
-        )
+        ax1.set_title("Spectrum Fragmentation vs Traffic", fontsize=12, fontweight="bold")
         ax1.legend(loc="best")
         ax1.grid(True, alpha=0.3)
 
@@ -176,34 +228,57 @@ class FragmentationPlotRenderer(BaseRenderer):
 
 
 class SpectrumVisualizationPlugin(BasePlugin):
-    """Plugin for spectrum-specific visualizations.
+    """
+    Plugin for spectrum-specific visualizations.
 
-    This plugin extends the FUSION visualization system with:
-    - Spectrum utilization metrics
-    - Fragmentation analysis
-    - Spectrum allocation visualizations
+    This plugin extends the FUSION visualization system with spectrum
+    allocation analysis capabilities including utilization heatmaps,
+    fragmentation tracking, and efficiency metrics.
+
+    Registered Plot Types
+    ---------------------
+    spectrum_heatmap
+        Shows spectrum slot utilization across network links.
+    fragmentation_plot
+        Analyzes fragmentation trends vs traffic load.
     """
 
     @property
     def name(self) -> str:
-        """Return plugin name."""
+        """
+        Return the plugin name.
+
+        :return: Plugin identifier string.
+        :rtype: str
+        """
         return "spectrum"
 
     @property
     def version(self) -> str:
-        """Return plugin version."""
+        """
+        Return the plugin version.
+
+        :return: Semantic version string.
+        :rtype: str
+        """
         return "1.0.0"
 
     @property
     def description(self) -> str:
-        """Return plugin description."""
+        """
+        Return the plugin description.
+
+        :return: Human-readable description of the plugin.
+        :rtype: str
+        """
         return "Visualization plugin for spectrum allocation and utilization analysis"
 
     def register_metrics(self) -> list[MetricDefinition]:
-        """Register spectrum-specific metrics.
+        """
+        Register spectrum-specific metrics with the visualization system.
 
-        Returns:
-            List of spectrum metric definitions
+        :return: List of metric definitions for spectrum-related measurements.
+        :rtype: list[MetricDefinition]
         """
         return [
             MetricDefinition(
@@ -222,10 +297,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
                 source_path="$.spectrum.fragmentation_index",
                 aggregation=AggregationStrategy.MEAN,
                 unit="index",
-                description=(
-                    "Measure of spectrum fragmentation "
-                    "(0=no fragmentation, 1=max fragmentation)"
-                ),
+                description=("Measure of spectrum fragmentation (0=no fragmentation, 1=max fragmentation)"),
             ),
             MetricDefinition(
                 name="avg_fragment_size",
@@ -266,10 +338,11 @@ class SpectrumVisualizationPlugin(BasePlugin):
         ]
 
     def register_plot_types(self) -> dict[str, PlotTypeRegistration]:
-        """Register spectrum-specific plot types.
+        """
+        Register spectrum-specific plot types with the visualization system.
 
-        Returns:
-            Dictionary of plot type registrations
+        :return: Dictionary mapping plot type names to their registrations.
+        :rtype: dict[str, PlotTypeRegistration]
         """
         from fusion.visualization.domain.strategies.processing_strategies import (
             GenericMetricProcessingStrategy,
@@ -279,9 +352,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
             "spectrum_heatmap": PlotTypeRegistration(
                 processor=GenericMetricProcessingStrategy(),
                 renderer=SpectrumHeatmapRenderer(),
-                description=(
-                    "Heatmap showing spectrum utilization across links and slots"
-                ),
+                description=("Heatmap showing spectrum utilization across links and slots"),
                 required_metrics=["spectrum_utilization"],
                 default_config={"colormap": "YlOrRd", "show_colorbar": True},
             ),
@@ -295,10 +366,11 @@ class SpectrumVisualizationPlugin(BasePlugin):
         }
 
     def get_config_schema(self) -> dict:
-        """Return JSON schema for spectrum plugin configuration.
+        """
+        Return JSON schema for spectrum plugin configuration.
 
-        Returns:
-            JSON schema dictionary
+        :return: JSON schema dictionary defining valid configuration options.
+        :rtype: dict
         """
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",

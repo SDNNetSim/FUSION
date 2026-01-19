@@ -56,10 +56,7 @@ class CompareAlgorithmsUseCase:
         """
         started_at = datetime.now()
 
-        logger.info(
-            f"Starting comparison of {len(request.algorithms)} algorithms "
-            f"on metric '{request.metric}'"
-        )
+        logger.info(f"Starting comparison of {len(request.algorithms)} algorithms on metric '{request.metric}'")
 
         try:
             # Validate request
@@ -94,10 +91,7 @@ class CompareAlgorithmsUseCase:
 
             completed_at = datetime.now()
 
-            logger.info(
-                f"Completed {len(comparisons)} pairwise comparisons "
-                f"in {(completed_at - started_at).total_seconds():.2f}s"
-            )
+            logger.info(f"Completed {len(comparisons)} pairwise comparisons in {(completed_at - started_at).total_seconds():.2f}s")
 
             return ComparisonResultDTO(
                 network=request.network,
@@ -127,18 +121,14 @@ class CompareAlgorithmsUseCase:
                 duration=datetime.now() - started_at,
             )
 
-    def _load_algorithm_data(
-        self, request: ComparisonRequestDTO
-    ) -> dict[str, list[float]]:
+    def _load_algorithm_data(self, request: ComparisonRequestDTO) -> dict[str, list[float]]:
         """
         Load metric data for all algorithms.
 
         Returns:
             Dictionary mapping algorithm names to lists of metric values
         """
-        algorithm_data: dict[str, list[float]] = {
-            algo: [] for algo in request.algorithms
-        }
+        algorithm_data: dict[str, list[float]] = {algo: [] for algo in request.algorithms}
 
         for algorithm in request.algorithms:
             # Find runs for this algorithm
@@ -149,19 +139,14 @@ class CompareAlgorithmsUseCase:
             )
 
             if not runs:
-                logger.warning(
-                    f"No runs found for algorithm {algorithm} "
-                    f"(network={request.network}, dates={request.dates})"
-                )
+                logger.warning(f"No runs found for algorithm {algorithm} (network={request.network}, dates={request.dates})")
                 continue
 
             # Get traffic volumes
             traffic_volumes = request.traffic_volumes
             if not traffic_volumes:
                 # Use traffic volumes from first run
-                traffic_volumes = (
-                    self.simulation_repository.get_available_traffic_volumes(runs[0])
-                )
+                traffic_volumes = self.simulation_repository.get_available_traffic_volumes(runs[0])
 
             # Load metric values for each run and traffic volume
             for run in runs:
@@ -173,19 +158,12 @@ class CompareAlgorithmsUseCase:
                             algorithm_data[algorithm].append(value)
 
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to load data for {algorithm} run {run.id} "
-                            f"at {tv} Erlang: {e}"
-                        )
+                        logger.warning(f"Failed to load data for {algorithm} run {run.id} at {tv} Erlang: {e}")
 
         # Validate we have data
-        empty_algorithms = [
-            algo for algo, values in algorithm_data.items() if not values
-        ]
+        empty_algorithms = [algo for algo, values in algorithm_data.items() if not values]
         if empty_algorithms:
-            raise RepositoryError(
-                f"No data found for algorithms: {', '.join(empty_algorithms)}"
-            )
+            raise RepositoryError(f"No data found for algorithms: {', '.join(empty_algorithms)}")
 
         return algorithm_data
 
@@ -302,10 +280,7 @@ class CompareAlgorithmsUseCase:
 
         # Effect size (Cohen's d)
         if include_effect_sizes:
-            pooled_std = np.sqrt(
-                ((len(data_a) - 1) * std_a**2 + (len(data_b) - 1) * std_b**2)
-                / (len(data_a) + len(data_b) - 2)
-            )
+            pooled_std = np.sqrt(((len(data_a) - 1) * std_a**2 + (len(data_b) - 1) * std_b**2) / (len(data_a) + len(data_b) - 2))
             if pooled_std > 0:
                 cohens_d = (mean_b - mean_a) / pooled_std
                 comparison.cohens_d = float(cohens_d)

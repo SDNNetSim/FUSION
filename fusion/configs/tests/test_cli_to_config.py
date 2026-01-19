@@ -95,9 +95,7 @@ class TestCLIToConfigMapper:
             # Temporarily modify the mapper to cause an exception
             original_mapping = self.mapper.arg_mapping
             self.mapper.arg_mapping = Mock()
-            self.mapper.arg_mapping.__contains__ = Mock(
-                side_effect=Exception("Test error")
-            )
+            self.mapper.arg_mapping.__contains__ = Mock(side_effect=Exception("Test error"))
 
             try:
                 self.mapper.map_args_to_config(args)
@@ -212,19 +210,24 @@ class TestCLIToConfigMapper:
         """Test consistency of argument mappings."""
         # Verify that all mapped arguments point to valid sections
         valid_sections = {
+            # Core settings (used by both legacy engine and orchestrator)
             "general_settings",
             "topology_settings",
             "spectrum_settings",
             "snr_settings",
+            "file_settings",
+            # Legacy settings (to be phased out)
             "rl_settings",
             "ml_settings",
-            "file_settings",
+            # Orchestrator settings (v6.0+)
+            "policy_settings",
+            "heuristic_settings",
+            "protection_settings",
+            "routing_settings",
         }
 
         for cli_arg, (section, key) in self.mapper.arg_mapping.items():
-            assert section in valid_sections, (
-                f"Invalid section '{section}' for arg '{cli_arg}'"
-            )
+            assert section in valid_sections, f"Invalid section '{section}' for arg '{cli_arg}'"
             assert isinstance(key, str), f"Key must be string for arg '{cli_arg}'"
             assert len(key) > 0, f"Key cannot be empty for arg '{cli_arg}'"
 

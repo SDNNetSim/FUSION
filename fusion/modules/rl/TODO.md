@@ -4,29 +4,27 @@
 
 ### High Priority
 
-1. **Support for resuming interrupted training** (workflow_runner.py:21)
+1. **Support for resuming interrupted training** (v6.1)
    - Implement functionality to pick up where training left off
    - Save and restore training state
    - Handle checkpoint management
-   - Target version: 5.5-6
+
+2. **Implement testing mode** (v6.1)
+   - Currently raises `TrainingError` when `is_training=False`
+   - Add support for model evaluation without training
 
 ### Medium Priority
 
-2. **Ensure hyperparam file consistency** (model_manager.py:35)
+3. **Standardize hyperparameter file discovery** (v6.1)
    - Standardize hyperparameter file loading across CLI tools
    - Create unified approach for yaml file discovery
    - Remove hardcoded paths where possible
 
 ### Low Priority
 
-3. **Deprecated code cleanup**
+4. **Deprecated code cleanup** (v6.1+)
    - Review and remove deprecated pointer_policy.py if no longer needed
    - Clean up any other deprecated components
-
-## Completed Tasks
-
-- [x] Implement custom exception hierarchy for better error handling
-- [x] Apply coding standards to RL module components
 
 ## Notes
 

@@ -52,10 +52,7 @@ class StatsPersistence:
         :param base_file_path: Base path for output files
         """
         if self.engine_props["file_type"] not in ("json", "csv"):
-            raise NotImplementedError(
-                f"Invalid file type: {self.engine_props['file_type']}, expected csv or "
-                "json."
-            )
+            raise NotImplementedError(f"Invalid file type: {self.engine_props['file_type']}, expected csv or json.")
 
         # Try to load existing data first to preserve accumulated iterations
         try:
@@ -87,13 +84,17 @@ class StatsPersistence:
         save_dict["ci_percent_block"] = blocking_stats.get("block_ci_percent")
 
         save_dict["bit_rate_blocking_mean"] = blocking_stats.get("bit_rate_block_mean")
-        save_dict["bit_rate_blocking_variance"] = blocking_stats.get(
-            "bit_rate_block_variance"
-        )
+        save_dict["bit_rate_blocking_variance"] = blocking_stats.get("bit_rate_block_variance")
         save_dict["ci_rate_bit_rate_block"] = blocking_stats.get("bit_rate_block_ci")
-        save_dict["ci_percent_bit_rate_block"] = blocking_stats.get(
-            "bit_rate_block_ci_percent"
-        )
+        save_dict["ci_percent_bit_rate_block"] = blocking_stats.get("bit_rate_block_ci_percent")
+
+        # Add lightpath utilization if available
+        if hasattr(stats_props, "sim_lp_utilization_list") and stats_props.sim_lp_utilization_list:
+            from statistics import mean as stats_mean
+
+            save_dict["lightpath_utilization"] = stats_mean(stats_props.sim_lp_utilization_list)
+        else:
+            save_dict["lightpath_utilization"] = None
 
         # Prepare iteration statistics
         if "iter_stats" not in save_dict:
@@ -125,9 +126,7 @@ class StatsPersistence:
             # CSV implementation would go here
             raise NotImplementedError("CSV output not yet implemented")
 
-    def _prepare_iteration_stats(
-        self, stats_props: Any, iteration: int | float | None = 0
-    ) -> dict[str, Any]:  # pylint: disable=unused-argument
+    def _prepare_iteration_stats(self, stats_props: Any, iteration: int | float | None = 0) -> dict[str, Any]:  # pylint: disable=unused-argument
         """
         Prepare iteration statistics for saving.
 
@@ -147,6 +146,7 @@ class StatsPersistence:
                 "lengths_list",
                 "route_times_list",
                 "crosstalk_list",
+                "snr_list",
             ):
                 # Map new property names to old output key names for backward
                 # compatibility
@@ -154,14 +154,13 @@ class StatsPersistence:
                     save_key = "trans_"
                 elif stat_key == "crosstalk_list":
                     save_key = "xt_"
+                elif stat_key == "snr_list":
+                    save_key = "snr_"
                 else:
                     save_key = f"{stat_key.split('_list')[0]}_"
 
-                if stat_key == "crosstalk_list":
-                    stat_array = [
-                        0 if stat is None else stat
-                        for stat in getattr(stats_props, stat_key)
-                    ]
+                if stat_key in ("crosstalk_list", "snr_list"):
+                    stat_array = [0 if stat is None else stat for stat in getattr(stats_props, stat_key)]
                 else:
                     stat_array = getattr(stats_props, stat_key)
 
@@ -198,9 +197,7 @@ class StatsPersistence:
                 ] and not self.engine_props.get("save_start_end_slots", False):
                     iter_stats[output_key] = []
                 else:
-                    iter_stats[output_key] = copy.deepcopy(
-                        getattr(stats_props, stat_key)
-                    )
+                    iter_stats[output_key] = copy.deepcopy(getattr(stats_props, stat_key))
 
         return iter_stats
 
@@ -236,9 +233,7 @@ class StatsPersistence:
                 loaded_data = json.load(file)
                 if not isinstance(loaded_data, dict):
                     data_type = type(loaded_data)
-                    raise ValueError(
-                        f"Expected dictionary in JSON file, got {data_type}"
-                    )
+                    raise ValueError(f"Expected dictionary in JSON file, got {data_type}")
                 return loaded_data
         else:
             raise NotImplementedError(f"Loading from {file_path} not supported")

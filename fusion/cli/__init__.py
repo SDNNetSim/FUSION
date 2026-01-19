@@ -16,7 +16,6 @@ Features:
 Entry Points:
 - run_sim.py: Main network simulation runner with multiprocessing support
 - run_train.py: Machine learning and reinforcement learning agent training
-- run_gui.py: Graphical user interface launcher with dependency management
 
 Core Modules:
 - parameters/: Modular argument definitions and centralized registry system
@@ -28,11 +27,8 @@ Backward Compatibility:
 All legacy function names are maintained through compatibility aliases.
 """
 
-# Modern function imports
 from .config_setup import ConfigManager, setup_config_from_cli
 from .constants import ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, SUCCESS_EXIT_CODE
-
-# Legacy function imports
 from .main_parser import (
     build_main_argument_parser,
     build_parser,
@@ -41,16 +37,15 @@ from .main_parser import (
     get_gui_args,
     get_train_args,
 )
-
-# Core functionality imports
 from .parameters.registry import args_registry
 
+# TODO (v6.1.0): Remove legacy function aliases (build_parser, get_train_args, get_gui_args)
+# and their corresponding exports. Users should migrate to the modern function names.
 __all__ = [
-    # Modern function names
     "build_main_argument_parser",
     "create_training_argument_parser",
     "create_gui_argument_parser",
-    # Legacy function names
+    # Legacy aliases - deprecated, remove in v6.1.0
     "build_parser",
     "get_train_args",
     "get_gui_args",

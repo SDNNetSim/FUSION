@@ -115,10 +115,7 @@ def extract_topology_from_path(output_directory_path: PurePosixPath) -> str:
 
     output_index = path_parts_list.index("output")
     if output_index + 1 >= len(path_parts_list):
-        msg = (
-            f"No topology directory found after 'output' in path: "
-            f"{output_directory_path}"
-        )
+        msg = f"No topology directory found after 'output' in path: {output_directory_path}"
         raise RemotePathError(msg)
 
     return path_parts_list[output_index + 1]
@@ -169,9 +166,7 @@ def synchronize_remote_directory(
         >>> local_root = Path("/local/data")
         >>> synchronize_remote_directory(remote_root, remote_path, local_root, False)
     """
-    relative_path = get_last_path_segments(
-        absolute_directory_path, OUTPUT_TO_INPUT_SEGMENTS
-    )
+    relative_path = get_last_path_segments(absolute_directory_path, OUTPUT_TO_INPUT_SEGMENTS)
     local_target_directory = destination_root_path / relative_path
     local_target_directory.parent.mkdir(parents=True, exist_ok=True)
 
@@ -186,9 +181,7 @@ def synchronize_remote_directory(
         _execute_command_with_delay(rsync_command, is_dry_run)
         logger.info("Successfully synchronized directory: %s", absolute_directory_path)
     except subprocess.CalledProcessError as error:
-        logger.error(
-            "Failed to synchronize directory %s: %s", absolute_directory_path, error
-        )
+        logger.error("Failed to synchronize directory %s: %s", absolute_directory_path, error)
 
 
 def synchronize_remote_file(
@@ -252,15 +245,8 @@ def synchronize_simulation_logs(
     :param is_dry_run: If True, only log operations without executing
     :type is_dry_run: bool
     """
-    remote_logs_path = (
-        PurePosixPath(path_algorithm_name) / topology_name / date_timestamp_path
-    )
-    local_logs_path = (
-        destination_root_path
-        / path_algorithm_name
-        / topology_name
-        / date_timestamp_path
-    )
+    remote_logs_path = PurePosixPath(path_algorithm_name) / topology_name / date_timestamp_path
+    local_logs_path = destination_root_path / path_algorithm_name / topology_name / date_timestamp_path
     local_logs_path.mkdir(parents=True, exist_ok=True)
 
     rsync_command = [
@@ -325,9 +311,7 @@ def extract_path_algorithm_from_input(input_directory_path: Path) -> str | None:
             )
             continue
 
-    logger.warning(
-        "No valid path algorithm found in directory: %s", input_directory_path
-    )
+    logger.warning("No valid path algorithm found in directory: %s", input_directory_path)
     return None
 
 
@@ -402,11 +386,7 @@ def main() -> None:
     destination_directory = Path(configuration_data["dest"]).expanduser()
 
     # Normalize destination – ensure we have exactly one /data layer
-    data_destination_directory = (
-        destination_directory
-        if destination_directory.name == "data"
-        else destination_directory / "data"
-    )
+    data_destination_directory = destination_directory if destination_directory.name == "data" else destination_directory / "data"
 
     experiment_relative_path = PurePosixPath(configuration_data["experiment"])
     is_dry_run = configuration_data.get("dry_run", False)
@@ -420,9 +400,7 @@ def main() -> None:
     runs_index_local_path = temporary_directory / RUNS_INDEX_FILE
 
     logger.info("Downloading runs index file")
-    synchronize_remote_file(
-        metadata_root_path, runs_index_remote_path, runs_index_local_path, is_dry_run
-    )
+    synchronize_remote_file(metadata_root_path, runs_index_remote_path, runs_index_local_path, is_dry_run)
 
     processed_run_directories_set = set()
 
@@ -430,38 +408,28 @@ def main() -> None:
     for output_directory_path in iterate_runs_index_file(runs_index_local_path):
         # Skip failed jobs with empty directory names
         if output_directory_path.name == "":
-            logger.debug(
-                "Skipping failed job with empty directory: %s", output_directory_path
-            )
+            logger.debug("Skipping failed job with empty directory: %s", output_directory_path)
             continue
 
         parent_run_directory = output_directory_path.parent
         if parent_run_directory in processed_run_directories_set:
-            logger.debug(
-                "Skipping already processed run directory: %s", parent_run_directory
-            )
+            logger.debug("Skipping already processed run directory: %s", parent_run_directory)
             continue
         processed_run_directories_set.add(parent_run_directory)
 
         # Synchronize output and input directories
         logger.info("Synchronizing run directory: %s", parent_run_directory)
-        synchronize_remote_directory(
-            data_root_path, parent_run_directory, data_destination_directory, is_dry_run
-        )
+        synchronize_remote_directory(data_root_path, parent_run_directory, data_destination_directory, is_dry_run)
 
         input_directory_path = convert_output_to_input_path(output_directory_path)
-        synchronize_remote_directory(
-            data_root_path, input_directory_path, data_destination_directory, is_dry_run
-        )
+        synchronize_remote_directory(data_root_path, input_directory_path, data_destination_directory, is_dry_run)
 
         # Extract algorithm information and sync logs
         local_input_directory = Path(CLUSTER_RESULTS_DIR) / input_directory_path
         path_algorithm = extract_path_algorithm_from_input(local_input_directory)
 
         if not path_algorithm:
-            logger.warning(
-                "No path algorithm found in input directory: %s", local_input_directory
-            )
+            logger.warning("No path algorithm found in input directory: %s", local_input_directory)
             continue
 
         topology_name = extract_topology_from_path(output_directory_path)

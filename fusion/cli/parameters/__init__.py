@@ -31,6 +31,14 @@ from .network import (
     add_spectrum_bands_args,
     add_topology_args,
 )
+from .policy import (
+    add_all_policy_args,
+    add_heuristic_args,
+    add_policy_args,
+)
+from .policy import (
+    add_protection_args as add_orchestrator_protection_args,
+)
 from .registry import ArgumentRegistry, args_registry
 from .routing import (
     add_all_routing_args,
@@ -129,4 +137,9 @@ __all__ = [
     "add_dataset_logging_args",
     "add_recovery_timing_args",
     "add_reporting_args",
+    # Orchestrator policy arguments (v6.0.0)
+    "add_all_policy_args",
+    "add_policy_args",
+    "add_heuristic_args",
+    "add_orchestrator_protection_args",
 ]

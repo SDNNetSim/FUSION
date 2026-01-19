@@ -14,6 +14,7 @@ import numpy as np
 from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
 from fusion.core.snr_measurements import SnrMeasurements
 from fusion.modules.spectrum.utils import SpectrumHelpers
+from fusion.utils.data import sort_nested_dict_values
 from fusion.utils.logging_config import get_logger
 from fusion.utils.spectrum import find_common_channels_on_paths
 
@@ -58,9 +59,7 @@ class SpectrumAssignment:
             spectrum_props=self.spectrum_props,
         )
 
-    def _allocate_best_fit_spectrum(
-        self, candidate_channels_list: list[dict[str, Any]]
-    ) -> None:
+    def _allocate_best_fit_spectrum(self, candidate_channels_list: list[dict[str, Any]]) -> None:
         """
         Allocate spectrum using best-fit strategy.
 
@@ -69,33 +68,21 @@ class SpectrumAssignment:
         """
         for channel_dict in candidate_channels_list:
             for start_index in channel_dict["channel"]:
-                end_index = (
-                    start_index
-                    + self.spectrum_props.slots_needed
-                    + self.engine_props_dict["guard_slots"]
-                ) - 1
+                end_index = (start_index + self.spectrum_props.slots_needed + self.engine_props_dict["guard_slots"]) - 1
                 if end_index not in channel_dict["channel"]:
                     break
 
-                if (
-                    self.spectrum_props.path_list is not None
-                    and len(self.spectrum_props.path_list) > 2
-                ):
+                if self.spectrum_props.path_list is not None and len(self.spectrum_props.path_list) > 2:
                     self.spectrum_helpers.start_index = start_index
                     self.spectrum_helpers.end_index = end_index
                     self.spectrum_helpers.core_number = channel_dict["core"]
                     self.spectrum_helpers.current_band = channel_dict["band"]
                     self.spectrum_helpers.check_other_links()
 
-                if self.spectrum_props.is_free or (
-                    self.spectrum_props.path_list is not None
-                    and len(self.spectrum_props.path_list) <= 2
-                ):
+                if self.spectrum_props.is_free or (self.spectrum_props.path_list is not None and len(self.spectrum_props.path_list) <= 2):
                     self.spectrum_props.is_free = True
                     self.spectrum_props.start_slot = start_index
-                    self.spectrum_props.end_slot = (
-                        end_index + self.engine_props_dict["guard_slots"]
-                    )
+                    self.spectrum_props.end_slot = end_index + self.engine_props_dict["guard_slots"]
                     self.spectrum_props.end_slot = end_index
                     self.spectrum_props.core_number = channel_dict["core"]
                     self.spectrum_props.current_band = channel_dict["band"]
@@ -115,25 +102,19 @@ class SpectrumAssignment:
             strict=False,
         ):
             for core_number in range(self.engine_props_dict["cores_per_link"]):
-                if (
-                    self.spectrum_props.forced_core is not None
-                    and self.spectrum_props.forced_core != core_number
-                ):
+                if self.spectrum_props.forced_core is not None and self.spectrum_props.forced_core != core_number:
                     continue
 
                 for band in self.engine_props_dict["band_list"]:
-                    if (
-                        self.spectrum_props.forced_band is not None
-                        and self.spectrum_props.forced_band != band
-                    ):
+                    if self.spectrum_props.forced_band is not None and self.spectrum_props.forced_band != band:
                         continue
 
                     if self.sdn_props.network_spectrum_dict is None:
                         raise ValueError("Network spectrum dict must be initialized")
 
-                    core_spectrum_array = self.sdn_props.network_spectrum_dict[
-                        (source_node, destination_node)
-                    ]["cores_matrix"][band][core_number]
+                    core_spectrum_array = self.sdn_props.network_spectrum_dict[(source_node, destination_node)]["cores_matrix"][band][
+                        core_number
+                    ]
                     available_slots_array = np.where(core_spectrum_array == 0)[0]
 
                     contiguous_blocks_matrix = [
@@ -145,10 +126,7 @@ class SpectrumAssignment:
                     ]
                     for contiguous_channel_list in contiguous_blocks_matrix:
                         slots_needed = self.spectrum_props.slots_needed
-                        if (
-                            slots_needed is not None
-                            and len(contiguous_channel_list) >= slots_needed
-                        ):
+                        if slots_needed is not None and len(contiguous_channel_list) >= slots_needed:
                             candidate_channels_list.append(
                                 {
                                     "link": (source_node, destination_node),
@@ -163,9 +141,7 @@ class SpectrumAssignment:
             candidate_channels_list,
             key=lambda channel_dict: len(channel_dict["channel"]),
         )
-        self._allocate_best_fit_spectrum(
-            candidate_channels_list=candidate_channels_list
-        )
+        self._allocate_best_fit_spectrum(candidate_channels_list=candidate_channels_list)
 
     def _get_cores_and_bands_lists(self) -> tuple[list[int], list[str]]:
         """
@@ -223,9 +199,7 @@ class SpectrumAssignment:
             self.engine_props_dict["band_list"],
         )
 
-    def _get_available_slots_matrix(
-        self, available_slots_array: np.ndarray, allocation_flag: str
-    ) -> list[list[int]]:
+    def _get_available_slots_matrix(self, available_slots_array: np.ndarray, allocation_flag: str) -> list[list[int]]:
         """
         Convert array of available slots into matrix of contiguous blocks.
 
@@ -255,10 +229,7 @@ class SpectrumAssignment:
                 )
             ]
 
-        raise NotImplementedError(
-            f"Invalid allocation flag, got: {allocation_flag} and expected "
-            f"'last_fit' or 'first_fit'."
-        )
+        raise NotImplementedError(f"Invalid allocation flag, got: {allocation_flag} and expected 'last_fit' or 'first_fit'.")
 
     def handle_first_last_allocation(self, allocation_flag: str) -> None:
         """
@@ -267,26 +238,16 @@ class SpectrumAssignment:
         :param allocation_flag: A flag to determine which allocation method to be used
         :type allocation_flag: str
         """
-        (cores_spectrum_matrix, core_numbers_list, band_list) = (
-            self._setup_first_last_allocation()
-        )
+        (cores_spectrum_matrix, core_numbers_list, band_list) = self._setup_first_last_allocation()
 
-        for core_spectrum_array, core_number in zip(
-            cores_spectrum_matrix, core_numbers_list, strict=False
-        ):
+        for core_spectrum_array, core_number in zip(cores_spectrum_matrix, core_numbers_list, strict=False):
             for band_index, band in enumerate(band_list):
-                available_slots_array = np.where(core_spectrum_array[band_index] == 0)[
-                    0
-                ]
-                available_slots_matrix = self._get_available_slots_matrix(
-                    available_slots_array, allocation_flag
-                )
+                available_slots_array = np.where(core_spectrum_array[band_index] == 0)[0]
+                available_slots_matrix = self._get_available_slots_matrix(available_slots_array, allocation_flag)
 
                 self.spectrum_helpers.core_number = core_number
                 self.spectrum_helpers.current_band = band
-                was_allocated = self.spectrum_helpers.check_super_channels(
-                    open_slots_matrix=available_slots_matrix, flag=allocation_flag
-                )
+                was_allocated = self.spectrum_helpers.check_super_channels(open_slots_matrix=available_slots_matrix, flag=allocation_flag)
                 if was_allocated:
                     return
 
@@ -297,35 +258,22 @@ class SpectrumAssignment:
         :param allocation_flag: A flag to determine which allocation method to be used
         :type allocation_flag: str
         """
-        (cores_spectrum_matrix, core_numbers_list, band_list) = (
-            self._setup_first_last_allocation()
-        )
+        (cores_spectrum_matrix, core_numbers_list, band_list) = self._setup_first_last_allocation()
 
         for band_index, band in enumerate(band_list):
-            for core_spectrum_array, core_number in zip(
-                cores_spectrum_matrix, core_numbers_list, strict=False
-            ):
-                available_slots_array = np.where(core_spectrum_array[band_index] == 0)[
-                    0
-                ]
-                available_slots_matrix = self._get_available_slots_matrix(
-                    available_slots_array, allocation_flag
-                )
+            for core_spectrum_array, core_number in zip(cores_spectrum_matrix, core_numbers_list, strict=False):
+                available_slots_array = np.where(core_spectrum_array[band_index] == 0)[0]
+                available_slots_matrix = self._get_available_slots_matrix(available_slots_array, allocation_flag)
 
                 self.spectrum_helpers.core_number = core_number
                 self.spectrum_helpers.current_band = band
-                was_allocated = self.spectrum_helpers.check_super_channels(
-                    open_slots_matrix=available_slots_matrix, flag=allocation_flag
-                )
+                was_allocated = self.spectrum_helpers.check_super_channels(open_slots_matrix=available_slots_matrix, flag=allocation_flag)
                 if was_allocated:
                     if (
                         self.engine_props_dict["cores_per_link"] in [13, 19]
-                        and self.engine_props_dict["snr_type"]
-                        == "snr_e2e_external_resources"
+                        and self.engine_props_dict["snr_type"] == "snr_e2e_external_resources"
                     ):
-                        if self._handle_snr_external_resources(
-                            allocation_flag, available_slots_matrix
-                        ):
+                        if self._handle_snr_external_resources(allocation_flag, available_slots_matrix):
                             return
 
                         self.spectrum_props.is_free = False
@@ -340,44 +288,30 @@ class SpectrumAssignment:
         :param allocation_flag: A flag to determine which allocation method to be used
         :type allocation_flag: str
         """
-        (cores_spectrum_matrix, core_numbers_list, band_list) = (
-            self._setup_first_last_allocation()
-        )
+        (cores_spectrum_matrix, core_numbers_list, band_list) = self._setup_first_last_allocation()
 
-        for core_spectrum_array, core_number in zip(
-            cores_spectrum_matrix, core_numbers_list, strict=False
-        ):
+        for core_spectrum_array, core_number in zip(cores_spectrum_matrix, core_numbers_list, strict=False):
             for band_index, band in enumerate(band_list):
-                available_slots_array = np.where(core_spectrum_array[band_index] == 0)[
-                    0
-                ]
-                available_slots_matrix = self._get_available_slots_matrix(
-                    available_slots_array, allocation_flag
-                )
+                available_slots_array = np.where(core_spectrum_array[band_index] == 0)[0]
+
+                available_slots_matrix = self._get_available_slots_matrix(available_slots_array, allocation_flag)
 
                 self.spectrum_helpers.core_number = core_number
                 self.spectrum_helpers.current_band = band
-                was_allocated = self.spectrum_helpers.check_super_channels(
-                    open_slots_matrix=available_slots_matrix, flag=allocation_flag
-                )
+                was_allocated = self.spectrum_helpers.check_super_channels(open_slots_matrix=available_slots_matrix, flag=allocation_flag)
                 if was_allocated:
                     if (
                         self.engine_props_dict["cores_per_link"] in [13, 19]
-                        and self.engine_props_dict["snr_type"]
-                        == "snr_e2e_external_resources"
+                        and self.engine_props_dict["snr_type"] == "snr_e2e_external_resources"
                     ):
-                        if self._handle_snr_external_resources(
-                            allocation_flag, available_slots_matrix
-                        ):
+                        if self._handle_snr_external_resources(allocation_flag, available_slots_matrix):
                             return
 
                         self.spectrum_props.is_free = False
                         continue
                     return
 
-    def _handle_snr_external_resources(
-        self, allocation_flag: str, available_slots_matrix: list[list[int]]
-    ) -> bool:
+    def _handle_snr_external_resources(self, allocation_flag: str, available_slots_matrix: list[list[int]]) -> bool:
         """
         Handle SNR external resource checks during allocation.
 
@@ -392,16 +326,10 @@ class SpectrumAssignment:
         for slots_row in available_slots_matrix:
             while slots_row:
                 if self.sdn_props.path_index is None:
-                    raise ValueError(
-                        "Path index must be initialized for external SNR checks"
-                    )
-                slots_row = self.snr_measurements.check_snr_ext_open_slots(
-                    self.sdn_props.path_index, slots_row
-                )
+                    raise ValueError("Path index must be initialized for external SNR checks")
+                slots_row = self.snr_measurements.check_snr_ext_open_slots(self.sdn_props.path_index, slots_row)
                 if slots_row:
-                    was_allocated = self.spectrum_helpers.check_super_channels(
-                        open_slots_matrix=[slots_row], flag=allocation_flag
-                    )
+                    was_allocated = self.spectrum_helpers.check_super_channels(open_slots_matrix=[slots_row], flag=allocation_flag)
                     if was_allocated:
                         return True
 
@@ -437,23 +365,28 @@ class SpectrumAssignment:
             "priority_last",
         ):
             if self.engine_props_dict["spectrum_priority"] == "BSC":
-                self.handle_first_last_priority_bsc(
-                    allocation_flag=self.engine_props_dict["allocation_method"]
-                )
+                self.handle_first_last_priority_bsc(allocation_flag=self.engine_props_dict["allocation_method"])
             else:
-                self.handle_first_last_priority_band(
-                    allocation_flag=self.engine_props_dict["allocation_method"]
-                )
+                self.handle_first_last_priority_band(allocation_flag=self.engine_props_dict["allocation_method"])
         elif self.engine_props_dict["allocation_method"] == "xt_aware":
             self.handle_crosstalk_aware_allocation()
         else:
-            raise NotImplementedError(
-                f"Expected first_fit or best_fit, got: "
-                f"{self.engine_props_dict['allocation_method']}"
-            )
+            raise NotImplementedError(f"Expected first_fit or best_fit, got: {self.engine_props_dict['allocation_method']}")
 
     def _initialize_spectrum_information(self) -> None:
         """Initialize spectrum information for the request."""
+        # Reset properties to prevent carryover from previous requests
+        self.spectrum_props.lightpath_bandwidth = None
+        self.spectrum_props.crosstalk_cost = None
+        self.spectrum_props.lightpath_id = None
+        self.spectrum_props.modulation = None
+        self.spectrum_props.start_slot = None
+        self.spectrum_props.end_slot = None
+        self.spectrum_props.slots_needed = None
+        self.spectrum_props.current_band = None
+        self.spectrum_props.core_number = None
+        self.spectrum_props.is_free = False
+        self.spectrum_props.slicing_flag = False  # Reset slicing flag for each request
         path_list = self.spectrum_props.path_list
         if path_list is None or len(path_list) < 2:
             raise ValueError("Path list must be initialized with at least 2 nodes")
@@ -469,17 +402,11 @@ class SpectrumAssignment:
         if self.sdn_props.network_spectrum_dict is None:
             raise ValueError("Network spectrum dict must be initialized")
 
-        self.spectrum_props.cores_matrix = self.sdn_props.network_spectrum_dict[
-            forward_link_tuple
-        ]["cores_matrix"]
-        self.spectrum_props.reverse_cores_matrix = self.sdn_props.network_spectrum_dict[
-            reverse_link_tuple
-        ]["cores_matrix"]
+        self.spectrum_props.cores_matrix = self.sdn_props.network_spectrum_dict[forward_link_tuple]["cores_matrix"]
+        self.spectrum_props.reverse_cores_matrix = self.sdn_props.network_spectrum_dict[reverse_link_tuple]["cores_matrix"]
         self.spectrum_props.is_free = False
 
-    def _find_protected_spectrum(
-        self, primary_path: list[int], backup_path: list[int]
-    ) -> None:
+    def _find_protected_spectrum(self, primary_path: list[int], backup_path: list[int]) -> None:
         """
         Find spectrum available on both primary and backup paths for 1+1 protection.
 
@@ -494,9 +421,7 @@ class SpectrumAssignment:
             raise ValueError("Network spectrum dict must be initialized")
 
         if self.spectrum_props.slots_needed is None:
-            raise ValueError(
-                "Slots needed must be set before finding protected spectrum"
-            )
+            raise ValueError("Slots needed must be set before finding protected spectrum")
 
         # Dispatch based on spectrum priority (same pattern as normal allocation)
         if self.engine_props_dict.get("spectrum_priority") == "BSC":
@@ -504,9 +429,7 @@ class SpectrumAssignment:
         else:
             self._find_protected_spectrum_band(primary_path, backup_path)
 
-    def _find_protected_spectrum_bsc(
-        self, primary_path: list[int], backup_path: list[int]
-    ) -> None:
+    def _find_protected_spectrum_bsc(self, primary_path: list[int], backup_path: list[int]) -> None:
         """
         Find protected spectrum with band-first priority (BSC).
 
@@ -523,18 +446,14 @@ class SpectrumAssignment:
         # Band-first priority: iterate bands in outer loop
         for band in available_bands_list:
             for core in core_numbers_list:
-                if self._try_protected_allocation(
-                    primary_path, backup_path, band, core
-                ):
+                if self._try_protected_allocation(primary_path, backup_path, band, core):
                     return
 
         # No spectrum found on any core/band combination
         self.spectrum_props.is_free = False
         self.sdn_props.block_reason = "no_common_spectrum"
 
-    def _find_protected_spectrum_band(
-        self, primary_path: list[int], backup_path: list[int]
-    ) -> None:
+    def _find_protected_spectrum_band(self, primary_path: list[int], backup_path: list[int]) -> None:
         """
         Find protected spectrum with core-first priority (non-BSC).
 
@@ -551,18 +470,14 @@ class SpectrumAssignment:
         # Core-first priority: iterate cores in outer loop
         for core in core_numbers_list:
             for band in available_bands_list:
-                if self._try_protected_allocation(
-                    primary_path, backup_path, band, core
-                ):
+                if self._try_protected_allocation(primary_path, backup_path, band, core):
                     return
 
         # No spectrum found on any core/band combination
         self.spectrum_props.is_free = False
         self.sdn_props.block_reason = "no_common_spectrum"
 
-    def _try_protected_allocation(
-        self, primary_path: list[int], backup_path: list[int], band: str, core: int
-    ) -> bool:
+    def _try_protected_allocation(self, primary_path: list[int], backup_path: list[int], band: str, core: int) -> bool:
         """
         Try to allocate protected spectrum on specific band and core.
 
@@ -577,10 +492,7 @@ class SpectrumAssignment:
         :return: True if allocation successful, False otherwise
         :rtype: bool
         """
-        if (
-            self.sdn_props.network_spectrum_dict is None
-            or self.spectrum_props.slots_needed is None
-        ):
+        if self.sdn_props.network_spectrum_dict is None or self.spectrum_props.slots_needed is None:
             return False
 
         # Find common available slot starting indices on both paths
@@ -609,16 +521,11 @@ class SpectrumAssignment:
         # Store backup path for allocation phase
         self.spectrum_props.backup_path = backup_path
 
-        logger.debug(
-            f"1+1 protection: Found common spectrum slots {start_slot}-{end_slot} "
-            f"on band {band}, core {core}"
-        )
+        logger.debug(f"1+1 protection: Found common spectrum slots {start_slot}-{end_slot} on band {band}, core {core}")
 
         return True
 
-    def _calculate_slots_needed(
-        self, modulation: str, slice_bandwidth: str | None = None
-    ) -> int | None:
+    def _calculate_slots_needed(self, modulation: str, slice_bandwidth: str | None = None) -> int | None:
         """
         Calculate slots needed for modulation and bandwidth.
 
@@ -643,27 +550,19 @@ class SpectrumAssignment:
             remaining_bw = int(self.sdn_props.remaining_bw)
 
             # Find next higher bandwidth tier
-            available_bw_tiers = [
-                int(k)
-                for k in self.engine_props_dict["mod_per_bw"].keys()
-                if int(k) >= remaining_bw
-            ]
+            available_bw_tiers = [int(k) for k in self.engine_props_dict["mod_per_bw"].keys() if int(k) >= remaining_bw]
 
             if not available_bw_tiers:
                 return None
 
             bw_tmp = min(available_bw_tiers)
-            slots_needed: int = self.engine_props_dict["mod_per_bw"][str(bw_tmp)][
-                modulation
-            ]["slots_needed"]
+            slots_needed: int = self.engine_props_dict["mod_per_bw"][str(bw_tmp)][modulation]["slots_needed"]
 
             return slots_needed
 
         # Standard case
         if slice_bandwidth:
-            result: int = self.engine_props_dict["mod_per_bw"][slice_bandwidth][
-                modulation
-            ]["slots_needed"]
+            result: int = self.engine_props_dict["mod_per_bw"][slice_bandwidth][modulation]["slots_needed"]
             return result
 
         if self.sdn_props.modulation_formats_dict is None:
@@ -676,9 +575,10 @@ class SpectrumAssignment:
         Update lightpath status dictionary after allocation.
 
         Called after spectrum is allocated to track the new lightpath
-        for future grooming operations.
+        for future grooming operations and dynamic slicing bandwidth tracking.
         """
-        if not self.engine_props_dict.get("is_grooming_enabled", False):
+        # Only skip if both grooming and dynamic_lps are disabled
+        if not self.engine_props_dict.get("is_grooming_enabled", False) and not self.engine_props_dict.get("dynamic_lps", False):
             return
 
         if self.sdn_props.source is None or self.sdn_props.destination is None:
@@ -689,6 +589,12 @@ class SpectrumAssignment:
 
         if lp_id is None:
             raise ValueError("Lightpath ID must be initialized")
+
+        # Only track NEW lightpaths (matching v5 behavior)
+        # Groomed requests reuse existing lightpaths and shouldn't create new entries
+        was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
+        if lp_id not in was_new_lps:
+            return
 
         # Initialize light_id entry if needed
         if self.sdn_props.lightpath_status_dict is None:
@@ -703,16 +609,35 @@ class SpectrumAssignment:
             # Calculate from modulation and slots if not set by SNR
             mod = self.spectrum_props.modulation
             if mod is not None and self.sdn_props.modulation_formats_dict is not None:
-                lp_bandwidth = self.sdn_props.modulation_formats_dict[mod].get(
-                    "bandwidth", 0
-                )
+                lp_bandwidth = self.sdn_props.modulation_formats_dict[mod].get("bandwidth", 0)
             else:
                 lp_bandwidth = 0
 
         if self.sdn_props.path_list is None:
             raise ValueError("Path list must be initialized")
 
-        # Create lightpath entry
+        # Calculate initial utilization based on dedicated vs total bandwidth
+        # For dynamic slicing: dedicated_bw might be < lightpath_bandwidth
+        # Convert lp_bandwidth to float for calculations
+        lp_bandwidth_float = float(lp_bandwidth) if lp_bandwidth else 0.0
+        dedicated_bw = lp_bandwidth_float  # Default: full capacity used
+        if self.sdn_props.bandwidth_list and len(self.sdn_props.bandwidth_list) > 0:
+            # Get the most recently allocated bandwidth (the dedicated amount)
+            dedicated_bw = float(self.sdn_props.bandwidth_list[-1])
+
+        initial_utilization = (dedicated_bw / lp_bandwidth_float) * 100.0 if lp_bandwidth_float > 0 else 0.0
+
+        # Skip creating lightpath entry if bandwidth is 0 or None
+        # This prevents phantom 0-bandwidth lightpaths from being tracked
+        if lp_bandwidth_float == 0:
+            return
+
+        remaining_bw_calc = lp_bandwidth_float - dedicated_bw
+
+        # For NEW lightpaths, populate requests_dict with current request
+        # For groomed lightpaths, this will be updated by the grooming module
+        requests_dict_initial = {self.sdn_props.request_id: int(dedicated_bw)}
+
         self.sdn_props.lightpath_status_dict[light_id][lp_id] = {
             "path": self.sdn_props.path_list,
             "path_weight": self.sdn_props.path_weight,
@@ -721,13 +646,14 @@ class SpectrumAssignment:
             "start_slot": self.spectrum_props.start_slot,
             "end_slot": self.spectrum_props.end_slot,
             "mod_format": self.spectrum_props.modulation,
-            "lightpath_bandwidth": lp_bandwidth,
-            "remaining_bandwidth": lp_bandwidth,  # Initially all available
+            "lightpath_bandwidth": lp_bandwidth_float,  # Use float version for calculations
+            "remaining_bandwidth": remaining_bw_calc,  # Account for dedicated bandwidth
             "snr_cost": self.spectrum_props.crosstalk_cost,
+            "xt_cost": self.spectrum_props.crosstalk_cost,
             "is_degraded": False,
-            "requests_dict": {},  # Will be populated when requests are groomed
+            "requests_dict": requests_dict_initial,  # Populated with current request
             "time_bw_usage": {
-                self.sdn_props.arrive: 0.0
+                self.sdn_props.arrive: initial_utilization  # Correct initial utilization
             },  # Track utilization over time
         }
 
@@ -765,10 +691,7 @@ class SpectrumAssignment:
             if not backup_has_feasible:
                 # Backup path has no feasible modulation formats
                 self.sdn_props.block_reason = "backup_path_distance"
-                logger.debug(
-                    f"1+1 protection: Backup path has no feasible modulation formats. "
-                    f"Backup mods: {backup_mod_format_list}"
-                )
+                logger.debug(f"1+1 protection: Backup path has no feasible modulation formats. Backup mods: {backup_mod_format_list}")
                 return
 
         for modulation_format in mod_format_list:
@@ -786,9 +709,7 @@ class SpectrumAssignment:
 
             # Validate modulation format exists in the appropriate dictionary
             if slice_bandwidth:
-                modulation_bandwidth_dict = self.engine_props_dict["mod_per_bw"][
-                    slice_bandwidth
-                ]
+                modulation_bandwidth_dict = self.engine_props_dict["mod_per_bw"][slice_bandwidth]
                 if modulation_format not in modulation_bandwidth_dict:
                     self.sdn_props.block_reason = "distance"
                     continue
@@ -800,9 +721,7 @@ class SpectrumAssignment:
                     continue
 
             # Calculate slots needed using the new method
-            self.spectrum_props.slots_needed = self._calculate_slots_needed(
-                modulation_format, slice_bandwidth
-            )
+            self.spectrum_props.slots_needed = self._calculate_slots_needed(modulation_format, slice_bandwidth)
 
             if self.spectrum_props.slots_needed is None:
                 continue
@@ -810,29 +729,10 @@ class SpectrumAssignment:
             # Check if this is a protected (1+1) request
             backup_path = getattr(self.sdn_props, "backup_path", None)
 
-            # TEMP: Force log to appear (use warning to ensure it shows)
-            logger.warning(
-                f"[DEBUG] Spectrum search: backup_path={backup_path is not None}, "
-                f"path_list={self.spectrum_props.path_list is not None}, "
-                f"slots_needed={self.spectrum_props.slots_needed}"
-            )
-
             if backup_path is not None and self.spectrum_props.path_list is not None:
                 # Protected request - find spectrum on both paths
-                logger.debug(
-                    f"1+1 protection: Finding common spectrum on primary "
-                    f"{self.spectrum_props.path_list} and backup {backup_path}"
-                )
-                self._find_protected_spectrum(
-                    self.spectrum_props.path_list, backup_path
-                )
-                # TEMP: Force log to appear
-                logger.warning(
-                    f"[DEBUG] After 1+1 search - is_free={self.spectrum_props.is_free}, "
-                    f"start_slot={self.spectrum_props.start_slot}, "
-                    f"end_slot={self.spectrum_props.end_slot}, "
-                    f"band={self.spectrum_props.current_band}, core={self.spectrum_props.core_number}"
-                )
+                logger.debug(f"1+1 protection: Finding common spectrum on primary {self.spectrum_props.path_list} and backup {backup_path}")
+                self._find_protected_spectrum(self.spectrum_props.path_list, backup_path)
             else:
                 # Regular request - use existing logic
                 self._determine_spectrum_allocation()
@@ -841,19 +741,13 @@ class SpectrumAssignment:
                 self.spectrum_props.modulation = modulation_format
 
                 # Handle SNR checks
-                if (
-                    self.engine_props_dict["snr_type"] != "None"
-                    and self.engine_props_dict["snr_type"] is not None
-                ):
+                if self.engine_props_dict["snr_type"] != "None" and self.engine_props_dict["snr_type"] is not None:
                     if self.sdn_props.path_index is None:
-                        raise ValueError(
-                            "Path index must be initialized for SNR calculations"
-                        )
-                    snr_is_acceptable, crosstalk_cost, lp_bw = (
-                        self.snr_measurements.handle_snr(self.sdn_props.path_index)
-                    )
+                        raise ValueError("Path index must be initialized for SNR calculations")
+                    snr_is_acceptable, crosstalk_cost, lp_bw = self.snr_measurements.handle_snr(self.sdn_props.path_index)
                     self.spectrum_props.crosstalk_cost = crosstalk_cost
-                    self.spectrum_props.lightpath_bandwidth = lp_bw
+                    # Don't set lightpath_bandwidth here - LEGACY calculates LP capacity
+                    # from modulation_formats_dict in _create_lightpath_info, not from SNR lp_bw
 
                     if not snr_is_acceptable:
                         self.spectrum_props.is_free = False
@@ -863,17 +757,9 @@ class SpectrumAssignment:
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
 
-                # Generate lightpath ID
-                lp_id = self.sdn_props.get_lightpath_id()
-                self.spectrum_props.lightpath_id = lp_id
-
-                # Mark that a new lightpath was established (for grooming)
-                if self.engine_props_dict.get("is_grooming_enabled", False):
-                    self.sdn_props.was_new_lp_established.append(lp_id)
-
-                # Update lightpath status for grooming
-                self._update_lightpath_status()
-
+                # Lightpath ID will be generated by sdn_controller after get_spectrum() returns
+                # This matches v5 behavior where get_spectrum() only finds spectrum,
+                # and the caller (sdn_controller) generates the lightpath ID
                 return
 
             self.sdn_props.block_reason = "congestion"
@@ -884,6 +770,7 @@ class SpectrumAssignment:
         _mod_format_list: list[str],
         _slice_bandwidth: str | None = None,
         path_index: int | None = None,
+        mod_format_dict: dict[str, Any] | None = None,
     ) -> tuple[str | bool, int | bool]:
         """
         Find available spectrum for dynamic slicing.
@@ -894,28 +781,28 @@ class SpectrumAssignment:
         :type _slice_bandwidth: str | None
         :param path_index: Index of the path for dynamic slicing
         :type path_index: int | None
+        :param mod_format_dict: Modulation format dictionary for flex-grid slicing
+        :type mod_format_dict: dict[str, Any] | None
         :return: Tuple of modulation format and bandwidth
         :rtype: tuple[str | bool, int | bool]
         """
         self._initialize_spectrum_information()
+
+        # Set slicing flag for dynamic slicing mode
+        self.spectrum_props.slicing_flag = True
 
         if self.engine_props_dict["fixed_grid"]:
             self.spectrum_props.slots_needed = 1
             self._determine_spectrum_allocation()
             if self.spectrum_props.is_free:
                 if path_index is None:
-                    raise ValueError(
-                        "Path index must be initialized for dynamic slicing "
-                        "SNR calculations"
-                    )
-                modulation_format, bandwidth, snr_value = (
-                    self.snr_measurements.handle_snr_dynamic_slicing(path_index)
-                )
+                    raise ValueError("Path index must be initialized for dynamic slicing SNR calculations")
+                modulation_format, bandwidth, snr_value = self.snr_measurements.handle_snr_dynamic_slicing(path_index)
                 if bandwidth == 0:
                     self.spectrum_props.is_free = False
                     self.sdn_props.block_reason = "xt_threshold"
                 else:
-                    self.spectrum_props.modulation = modulation_format
+                    self.spectrum_props.modulation = modulation_format  # type: ignore[assignment]
                     self.spectrum_props.crosstalk_cost = snr_value
                     self.spectrum_props.is_free = True
                     self.sdn_props.block_reason = None
@@ -924,5 +811,30 @@ class SpectrumAssignment:
             failed_modulation_format, failed_bandwidth = (False, False)
             return failed_modulation_format, failed_bandwidth
 
-        no_allocation_modulation_format, no_allocation_bandwidth = False, False
-        return no_allocation_modulation_format, no_allocation_bandwidth
+        # Flex-grid dynamic slicing
+        if mod_format_dict is None:
+            logger.warning("mod_format_dict is required for flex-grid dynamic slicing")
+            return False, False
+
+        # Sort modulation formats by max_length (highest first for shortest reach)
+        sorted_mod_formats = sort_nested_dict_values(original_dict=mod_format_dict, nested_key="max_length")
+        mod_format_list = list(sorted_mod_formats.keys())
+
+        for mod in mod_format_list:
+            self.spectrum_props.slots_needed = mod_format_dict[mod]["slots_needed"]
+            self.spectrum_props.modulation = mod
+            self._determine_spectrum_allocation()
+
+            if self.spectrum_props.is_free:
+                if path_index is None:
+                    raise ValueError("Path index must be initialized for dynamic slicing SNR calculations")
+                resp, bandwidth, snr_value = self.snr_measurements.handle_snr_dynamic_slicing(path_index)
+                if not resp:
+                    continue
+                self.spectrum_props.crosstalk_cost = snr_value
+                self.spectrum_props.is_free = True
+                self.sdn_props.block_reason = None
+                return mod, int(bandwidth)
+
+        self.spectrum_props.is_free = False
+        return False, False

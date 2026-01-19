@@ -34,9 +34,7 @@ class RoutingHelpers:
     :type sdn_props: Any
     """
 
-    def __init__(
-        self, route_props: Any, engine_props: dict[str, Any], sdn_props: Any
-    ) -> None:
+    def __init__(self, route_props: Any, engine_props: dict[str, Any], sdn_props: Any) -> None:
         self.route_props = route_props
         self.engine_props = engine_props
         self.sdn_props = sdn_props
@@ -85,9 +83,7 @@ class RoutingHelpers:
         sim_link_list[start_index:end_index] = 0
         return sim_link_list
 
-    def _find_channel_mci(
-        self, channels_list: list[Any], center_freq: float, num_span: float
-    ) -> float:
+    def _find_channel_mci(self, channels_list: list[Any], center_freq: float, num_span: float) -> float:
         """
         Calculate modulation cross-influence for a channel.
 
@@ -110,9 +106,7 @@ class RoutingHelpers:
             power_spec_dens = self.route_props.input_power / bandwidth
 
             curr_mci = abs(center_freq - curr_freq) + (bandwidth / 2.0)
-            curr_mci = math.log(
-                curr_mci / (abs(center_freq - curr_freq) - (bandwidth / 2.0))
-            )
+            curr_mci = math.log(curr_mci / (abs(center_freq - curr_freq) - (bandwidth / 2.0)))
             curr_mci *= power_spec_dens**2
 
             total_mci += curr_mci
@@ -147,9 +141,7 @@ class RoutingHelpers:
                     num_channels += 1
                     # Calculate the center frequency for the open channel
                     center_freq = channel[0] * self.route_props.frequency_spacing
-                    center_freq += (
-                        self.sdn_props.slots_needed * self.route_props.frequency_spacing
-                    ) / 2
+                    center_freq += (self.sdn_props.slots_needed * self.route_props.frequency_spacing) / 2
 
                     nli_cost += self._find_channel_mci(
                         channels_list=taken_channels_dict[band][core_num],
@@ -180,12 +172,8 @@ class RoutingHelpers:
         links_list = list(self.sdn_props.network_spectrum_dict.keys())
         sim_link_list = self._get_simulated_link()
 
-        orig_link_list = copy.copy(
-            self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band]
-        )
-        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band][0] = (
-            sim_link_list
-        )
+        orig_link_list = copy.copy(self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band])
+        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band][0] = sim_link_list
 
         free_channels_dict = find_free_channels(
             network_spectrum_dict=self.sdn_props.network_spectrum_dict,
@@ -202,9 +190,7 @@ class RoutingHelpers:
             num_span=span_count,
         )
 
-        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band] = (
-            orig_link_list
-        )
+        self.sdn_props.network_spectrum_dict[links_list[0]]["cores_matrix"][band] = orig_link_list
         return nli_worst
 
     @staticmethod
@@ -262,10 +248,7 @@ class RoutingHelpers:
             adj_cores_list = self._find_adjacent_cores(core_num=core_num)
             for curr_core in adj_cores_list:
                 # Check bounds before accessing
-                if (
-                    curr_core < num_cores
-                    and core_info_dict[band][curr_core][channel] > 0
-                ):
+                if curr_core < num_cores and core_info_dict[band][curr_core][channel] > 0:
                     num_overlapped += 1
 
             # Avoid division by zero
@@ -282,9 +265,7 @@ class RoutingHelpers:
 
         return num_overlapped
 
-    def find_xt_link_cost(
-        self, free_slots_dict: dict[str, Any], link_list: tuple[Any, Any]
-    ) -> float:
+    def find_xt_link_cost(self, free_slots_dict: dict[str, Any], link_list: tuple[Any, Any]) -> float:
         """
         Find the intra-core crosstalk cost for a single link.
 
@@ -307,9 +288,7 @@ class RoutingHelpers:
             for core_num in free_slots_dict[band]:
                 free_slots += len(free_slots_dict[band][core_num])
                 for channel in free_slots_dict[band][core_num]:
-                    core_info_dict = self.sdn_props.network_spectrum_dict[link_list][
-                        "cores_matrix"
-                    ]
+                    core_info_dict = self.sdn_props.network_spectrum_dict[link_list]["cores_matrix"]
                     num_overlapped = self._find_num_overlapped(
                         channel=channel,
                         core_num=core_num,
@@ -351,9 +330,7 @@ class RoutingHelpers:
         found in the network topology.
         """
         topology = self.engine_props["topology"]
-        self.route_props.max_link_length = max(
-            nx.get_edge_attributes(topology, "length").values(), default=0.0
-        )
+        self.route_props.max_link_length = max(nx.get_edge_attributes(topology, "length").values(), default=0.0)
 
     def get_nli_cost(self, link_tuple: tuple[Any, Any], num_span: float) -> float:
         """

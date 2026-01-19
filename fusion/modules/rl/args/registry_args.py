@@ -38,25 +38,27 @@ def get_algorithm_registry() -> dict[str, AlgorithmConfig]:
             setup_qr_dqn,
         )
 
+        # TODO: Implement "load" functions for each algorithm to support
+        # loading pre-trained SB3 models from disk (e.g., model.load())
         _algorithm_registry = {
             "a2c": {
                 "class": A2C,
-                "load": None,  # TODO: Implement model loading functionality
+                "load": None,
                 "setup": setup_a2c,
             },
             "dqn": {
                 "class": DQN,
-                "load": None,  # TODO: Implement model loading functionality
+                "load": None,
                 "setup": setup_dqn,
             },
             "ppo": {
                 "class": PPO,
-                "load": None,  # TODO: Implement model loading functionality
+                "load": None,
                 "setup": setup_ppo,
             },
             "qr_dqn": {
                 "class": QrDQN,
-                "load": None,  # TODO: Implement model loading functionality
+                "load": None,
                 "setup": setup_qr_dqn,
             },
         }

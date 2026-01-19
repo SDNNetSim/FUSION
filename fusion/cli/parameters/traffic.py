@@ -11,15 +11,9 @@ def add_erlang_args(parser: argparse.ArgumentParser) -> None:
     Add Erlang load configuration arguments to the parser.
     """
     erlang_group = parser.add_argument_group("Erlang Load Configuration")
-    erlang_group.add_argument(
-        "--erlang_start", type=float, default=None, help="Starting Erlang load"
-    )
-    erlang_group.add_argument(
-        "--erlang_stop", type=float, default=None, help="Ending Erlang load"
-    )
-    erlang_group.add_argument(
-        "--erlang_step", type=float, default=None, help="Erlang load increment"
-    )
+    erlang_group.add_argument("--erlang_start", type=float, default=None, help="Starting Erlang load")
+    erlang_group.add_argument("--erlang_stop", type=float, default=None, help="Ending Erlang load")
+    erlang_group.add_argument("--erlang_step", type=float, default=None, help="Erlang load increment")
 
 
 def add_request_args(parser: argparse.ArgumentParser) -> None:

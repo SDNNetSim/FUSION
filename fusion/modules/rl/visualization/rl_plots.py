@@ -1,4 +1,5 @@
-"""RL-specific plot renderers.
+"""
+RL-specific plot renderers.
 
 This module provides specialized plot types for RL visualization:
 - Reward learning curves
@@ -41,16 +42,19 @@ class RewardLearningCurveRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render reward learning curve.
+        """
+        Render reward learning curve.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         fig, ax = plt.subplots(figsize=specification.figsize)
 
@@ -125,16 +129,19 @@ class QValueHeatmapRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render Q-value heatmap.
+        """
+        Render Q-value heatmap.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         data = specification.metadata.get("processed_data", {})
 
@@ -160,9 +167,7 @@ class QValueHeatmapRenderer(BaseRenderer):
                 ax.set_xlabel("Action")
                 ax.set_ylabel("State/Episode")
 
-        fig.suptitle(
-            specification.title or "Q-Value Analysis", fontsize=14, fontweight="bold"
-        )
+        fig.suptitle(specification.title or "Q-Value Analysis", fontsize=14, fontweight="bold")
         plt.tight_layout()
 
         # Save
@@ -194,16 +199,19 @@ class ConvergencePlotRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render convergence plot.
+        """
+        Render convergence plot.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=specification.figsize)
 
@@ -235,9 +243,7 @@ class ConvergencePlotRenderer(BaseRenderer):
 
         # Bottom plot: convergence statistics
         algos = list(data.keys())
-        convergence_episodes = [
-            data[a].get("mean_convergence_episode", 0) for a in algos
-        ]
+        convergence_episodes = [data[a].get("mean_convergence_episode", 0) for a in algos]
         convergence_std = [data[a].get("std_convergence_episode", 0) for a in algos]
 
         x_pos = np.arange(len(algos))
@@ -284,16 +290,19 @@ class MultiMetricDashboardRenderer(BaseRenderer):
         dpi: int = 300,
         format: str = "png",
     ) -> PlotResult:
-        """Render multi-metric dashboard.
+        """
+        Render multi-metric dashboard.
 
-        Args:
-            specification: Plot specification
-            output_path: Where to save the plot
-            dpi: Resolution in dots per inch
-            format: Output format (png, pdf, svg)
-
-        Returns:
-            PlotResult with rendered figure
+        :param specification: Plot specification
+        :type specification: PlotSpecification
+        :param output_path: Where to save the plot
+        :type output_path: Path
+        :param dpi: Resolution in dots per inch
+        :type dpi: int
+        :param format: Output format (png, pdf, svg)
+        :type format: str
+        :return: PlotResult with rendered figure
+        :rtype: PlotResult
         """
         fig = plt.figure(figsize=(16, 10))
         gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
@@ -303,33 +312,23 @@ class MultiMetricDashboardRenderer(BaseRenderer):
 
         # Plot 1: Rewards
         ax1 = fig.add_subplot(gs[0, :])
-        self._plot_metric(
-            ax1, metrics_data.get("rewards", {}), "Episode Reward", "Rewards"
-        )
+        self._plot_metric(ax1, metrics_data.get("rewards", {}), "Episode Reward", "Rewards")
 
         # Plot 2: Policy Loss
         ax2 = fig.add_subplot(gs[1, 0])
-        self._plot_metric(
-            ax2, metrics_data.get("policy_loss", {}), "Policy Loss", "Policy Loss"
-        )
+        self._plot_metric(ax2, metrics_data.get("policy_loss", {}), "Policy Loss", "Policy Loss")
 
         # Plot 3: Value Loss
         ax3 = fig.add_subplot(gs[1, 1])
-        self._plot_metric(
-            ax3, metrics_data.get("value_loss", {}), "Value Loss", "Value Loss"
-        )
+        self._plot_metric(ax3, metrics_data.get("value_loss", {}), "Value Loss", "Value Loss")
 
         # Plot 4: Entropy
         ax4 = fig.add_subplot(gs[2, 0])
-        self._plot_metric(
-            ax4, metrics_data.get("entropy", {}), "Entropy", "Policy Entropy"
-        )
+        self._plot_metric(ax4, metrics_data.get("entropy", {}), "Entropy", "Policy Entropy")
 
         # Plot 5: Q-Values
         ax5 = fig.add_subplot(gs[2, 1])
-        self._plot_metric(
-            ax5, metrics_data.get("q_values", {}), "Q-Value", "Mean Q-Value"
-        )
+        self._plot_metric(ax5, metrics_data.get("q_values", {}), "Q-Value", "Mean Q-Value")
 
         fig.suptitle(
             specification.title or "RL Training Dashboard",
@@ -347,10 +346,19 @@ class MultiMetricDashboardRenderer(BaseRenderer):
             metadata={"plot_type": "multi_metric_dashboard"},
         )
 
-    def _plot_metric(
-        self, ax: Any, data: dict[str, Any], ylabel: str, title: str
-    ) -> None:
-        """Helper to plot a single metric."""
+    def _plot_metric(self, ax: Any, data: dict[str, Any], ylabel: str, title: str) -> None:
+        """
+        Helper to plot a single metric.
+
+        :param ax: Matplotlib axes object
+        :type ax: Any
+        :param data: Dictionary of algorithm data
+        :type data: dict[str, Any]
+        :param ylabel: Y-axis label
+        :type ylabel: str
+        :param title: Plot title
+        :type title: str
+        """
         for algo, algo_data in data.items():
             if "episodes" in algo_data and "mean" in algo_data:
                 episodes = algo_data["episodes"]

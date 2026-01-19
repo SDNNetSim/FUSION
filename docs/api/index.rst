@@ -1,93 +1,350 @@
+.. _api-reference:
+
 =============
 API Reference
 =============
 
-Complete API documentation for all FUSION modules.
+This section provides auto-generated API documentation from source code docstrings.
+Use this reference for looking up specific classes, functions, and their parameters.
 
-.. contents:: Table of Contents
+For conceptual documentation, tutorials, and examples, see the :ref:`developer-docs`.
+
+.. tip::
+
+   Use your browser's search (Ctrl+F / Cmd+F) or the documentation search box
+   to quickly find specific classes or functions.
+
+.. contents:: Module Index
    :local:
-   :depth: 2
+   :depth: 1
 
-Package Overview
-================
+----
 
-FUSION is organized into the following main packages:
+Configuration System
+====================
 
-Core Packages
--------------
+fusion.configs
+--------------
 
-:doc:`core`
-   Core simulation engine, SDN controller, routing, spectrum assignment, and SNR measurements
+Configuration loading, validation, and management.
 
-:doc:`modules`
-   Pluggable algorithm implementations:
+.. automodule:: fusion.configs.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   * **Routing**: Path computation algorithms
-   * **Spectrum**: Spectrum assignment strategies
-   * **SNR**: Signal-to-noise ratio calculation
-   * **ML**: Machine learning algorithms and utilities
-   * **RL**: Reinforcement learning agents, algorithms, and environments
+.. automodule:: fusion.configs.validate
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-:doc:`sim`
-   High-level simulation pipelines and workflow orchestration
+.. automodule:: fusion.configs.registry
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-Configuration & CLI
--------------------
+.. automodule:: fusion.configs.cli_to_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-:doc:`configs`
-   Configuration management, validation, and schema definition
+.. automodule:: fusion.configs.schema
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-:doc:`cli`
-   Command-line interface for running simulations and training
+.. automodule:: fusion.configs.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-Data & I/O
+.. automodule:: fusion.configs.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+Command Line Interface
+======================
+
+fusion.cli
 ----------
 
-:doc:`io`
-   Data generation, export, and structured file handling
+CLI entry points and argument parsing.
 
-:doc:`utils`
-   General-purpose utilities (logging, network, random, spectrum operations)
+.. automodule:: fusion.cli.run_sim
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-Interfaces
-----------
+.. automodule:: fusion.cli.run_train
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-:doc:`interfaces`
-   Abstract base classes for plugin architecture
+.. automodule:: fusion.cli.config_setup
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-Analysis & Reporting
---------------------
+.. automodule:: fusion.cli.main_parser
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-:doc:`analysis`
-   Network analysis and metrics computation
+----
 
-:doc:`reporting`
-   Simulation reporting and results generation
+Core Simulation
+===============
 
-:doc:`visualization`
-   Plotting and visualization tools
-
-Integration
+fusion.core
 -----------
 
-:doc:`unity`
-   Unity ML-Agents integration for distributed RL training
+Core simulation engine and orchestration.
 
-API Documentation
-=================
+.. automodule:: fusion.core.simulation
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-.. toctree::
-   :maxdepth: 2
+.. automodule:: fusion.core.orchestrator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
 
-   core
-   modules
-   sim
-   configs
-   cli
-   io
-   utils
-   interfaces
-   analysis
-   reporting
-   visualization
-   unity
+.. automodule:: fusion.core.sdn_controller
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: fusion.core.pipeline_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+.. automodule:: fusion.core.request
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: fusion.core.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+Domain Models
+=============
+
+fusion.domain
+-------------
+
+Domain objects and data structures.
+
+.. automodule:: fusion.domain.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+.. automodule:: fusion.domain.request
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+.. automodule:: fusion.domain.lightpath
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+.. automodule:: fusion.domain.network_state
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+.. automodule:: fusion.domain.results
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+----
+
+Interfaces
+==========
+
+fusion.interfaces
+-----------------
+
+Abstract base classes and protocols.
+
+.. automodule:: fusion.interfaces
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+----
+
+Policies
+========
+
+fusion.policies
+---------------
+
+Routing and allocation policies.
+
+.. automodule:: fusion.policies.policy_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+.. automodule:: fusion.policies.heuristic_policy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: fusion.policies.rl_policy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: fusion.policies.ml_policy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+----
+
+Pipelines
+=========
+
+fusion.pipelines
+----------------
+
+Processing pipelines for routing, spectrum, and SNR.
+
+.. automodule:: fusion.pipelines
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+----
+
+Modules
+=======
+
+fusion.modules
+--------------
+
+Algorithm implementations for routing, spectrum assignment, and SNR.
+
+fusion.modules.routing
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: fusion.modules.routing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fusion.modules.spectrum
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: fusion.modules.spectrum
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fusion.modules.snr
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: fusion.modules.snr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fusion.modules.failures
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: fusion.modules.failures
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fusion.modules.ml
+~~~~~~~~~~~~~~~~~
+
+.. automodule:: fusion.modules.ml
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+Analysis
+========
+
+fusion.analysis
+---------------
+
+Statistics and results analysis.
+
+.. automodule:: fusion.analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+Reporting
+=========
+
+fusion.reporting
+----------------
+
+Results export and dataset logging.
+
+.. automodule:: fusion.reporting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+I/O Operations
+==============
+
+fusion.io
+---------
+
+File input/output and topology loading.
+
+.. automodule:: fusion.io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+Utilities
+=========
+
+fusion.utils
+------------
+
+Helper functions and utilities.
+
+.. automodule:: fusion.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -30,6 +30,9 @@ from fusion.modules.rl.utils.errors import (
 from fusion.sim.input_setup import create_input, save_input
 from fusion.sim.utils.io import parse_yaml_file
 from fusion.sim.utils.simulation import get_start_time
+from fusion.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def setup_feature_extractor(
@@ -52,14 +55,14 @@ def setup_feature_extractor(
         network = env.engine_obj.engine_props["network"]
         cache_fp = CACHE_DIR / f"{engine_props['network']}.pt"
 
-        if os.path.exists(cache_fp):  # ✔ cache already there
+        if os.path.exists(cache_fp):  # cache already there
             # Loading trusted GNN embedding from local cache
             cached = torch.load(cache_fp)  # nosec B614
             extr_class = CachedPathGNN
             feat_kwargs = {"cached_embedding": cached}
-            print(f"✅  Using cached GNN embedding from {cache_fp}")
-        else:  # ✘ no cache → make one now
-            print(f"⏳  Caching GNN embedding for {network} …")
+            logger.info("Using cached GNN embedding from %s", cache_fp)
+        else:  # no cache - create one now
+            logger.info("Caching GNN embedding for %s", network)
             obs = env.reset()[0]
             enc = PathGNNEncoder(
                 env.observation_space,
@@ -76,7 +79,7 @@ def setup_feature_extractor(
                 ).cpu()
             os.makedirs("gnn_cached", exist_ok=True)
             torch.save(emb, cache_fp)  # nosec B614
-            print(f"✅  Saved cache to {cache_fp}")
+            logger.info("Saved GNN cache to %s", cache_fp)
 
             extr_class = CachedPathGNN
             feat_kwargs = {"cached_embedding": emb}
@@ -94,9 +97,7 @@ def setup_feature_extractor(
     return extr_class, feat_kwargs
 
 
-def get_drl_dicts(
-    env: Any, yaml_path: str
-) -> tuple[dict[str, Any], dict[str, Any], str]:
+def get_drl_dicts(env: Any, yaml_path: str) -> tuple[dict[str, Any], dict[str, Any], str]:
     """
     Gets dictionaries related to DRL algorithms.
     """
@@ -134,9 +135,7 @@ def setup_rl_sim(config_path: str | None = None) -> dict[str, Any]:
     return config.get()  # returns sim_dict['s1']
 
 
-def _get_common_model_parameters(
-    yaml_dict: dict[str, Any], env_name: str, kwargs_dict: dict[str, Any], env: Any
-) -> dict[str, Any]:
+def _get_common_model_parameters(yaml_dict: dict[str, Any], env_name: str, kwargs_dict: dict[str, Any], env: Any) -> dict[str, Any]:
     """
     Extract common parameters used across different model types.
 
@@ -235,9 +234,7 @@ def setup_a2c(env: Any, device: str) -> A2C:
     }
 
     # Override default _init_setup_model for A2C
-    common_params["_init_setup_model"] = yaml_dict[env_name].get(
-        "_init_setup_model", True
-    )
+    common_params["_init_setup_model"] = yaml_dict[env_name].get("_init_setup_model", True)
 
     # Combine parameters and create model
     all_params = {**common_params, **a2c_params}
@@ -272,24 +269,18 @@ def setup_dqn(env: Any, device: str) -> DQN:
         "train_freq": yaml_dict[env_name]["train_freq"],
         "gradient_steps": yaml_dict[env_name]["gradient_steps"],
         "target_update_interval": yaml_dict[env_name]["target_update_interval"],
-        "exploration_initial_eps": yaml_dict[env_name].get(
-            "exploration_initial_eps", 1.0
-        ),
+        "exploration_initial_eps": yaml_dict[env_name].get("exploration_initial_eps", 1.0),
         "exploration_fraction": yaml_dict[env_name]["exploration_fraction"],
         "exploration_final_eps": yaml_dict[env_name]["exploration_final_eps"],
         "max_grad_norm": yaml_dict[env_name].get("max_grad_norm"),
         "replay_buffer_class": yaml_dict[env_name].get("replay_buffer_class", None),
         "replay_buffer_kwargs": yaml_dict[env_name].get("replay_buffer_kwargs", None),
-        "optimize_memory_usage": yaml_dict[env_name].get(
-            "optimize_memory_usage", False
-        ),
+        "optimize_memory_usage": yaml_dict[env_name].get("optimize_memory_usage", False),
     }
 
     # Override defaults for DQN
     common_params["verbose"] = yaml_dict[env_name].get("verbose", 1)
-    common_params["_init_setup_model"] = yaml_dict[env_name].get(
-        "_init_setup_model", True
-    )
+    common_params["_init_setup_model"] = yaml_dict[env_name].get("_init_setup_model", True)
 
     # Combine parameters and create model
     all_params = {**common_params, **dqn_params}
@@ -339,24 +330,23 @@ def setup_qr_dqn(env: Any, device: str) -> QRDQN:
 
 def print_info(sim_dict: dict[str, Any]) -> None:
     """
-    Prints relevant RL simulation information.
+    Logs relevant RL simulation information.
 
     :param sim_dict: Simulation dictionary (engine props).
     """
     if sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS:
-        print(
-            f"Beginning training process for the PATH AGENT using the "
-            f"{sim_dict['path_algorithm'].title()} algorithm."
+        logger.info(
+            "Beginning training process for the PATH AGENT using the %s algorithm.",
+            sim_dict["path_algorithm"].title(),
         )
     elif sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS:
-        print(
-            f"Beginning training process for the CORE AGENT using the "
-            f"{sim_dict['core_algorithm'].title()} algorithm."
+        logger.info(
+            "Beginning training process for the CORE AGENT using the %s algorithm.",
+            sim_dict["core_algorithm"].title(),
         )
     elif sim_dict["spectrum_algorithm"]:
         raise ModelSetupError(
-            "Spectrum algorithm setup is not yet implemented. "
-            "This feature requires additional development for spectrum-based RL agents."
+            "Spectrum algorithm setup is not yet implemented. This feature requires additional development for spectrum-based RL agents."
         )
     else:
         raise ModelSetupError(
@@ -399,9 +389,7 @@ class SetupHelper:
             sdn_props=self.sim_env.rl_props.mock_sdn_dict,
         )
 
-        self.sim_env.sim_props = create_input(
-            base_fp=base_fp, engine_props=self.sim_env.sim_dict
-        )
+        self.sim_env.sim_props = create_input(base_fp=base_fp, engine_props=self.sim_env.sim_dict)
         self.sim_env.modified_props = copy.deepcopy(self.sim_env.sim_props)
 
         save_input(
@@ -416,16 +404,10 @@ class SetupHelper:
         Sets up environments for RL agents based on the simulation configuration.
         """
         # Environment initialization logic (from the original _init_envs method)
-        if (
-            self.sim_env.sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS
-            and self.sim_env.sim_dict["is_training"]
-        ):
+        if self.sim_env.sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS and self.sim_env.sim_dict["is_training"]:
             self.sim_env.path_agent.engine_props = self.sim_env.engine_obj.engine_props
             self.sim_env.path_agent.setup_env(is_path=True)
-        elif (
-            self.sim_env.sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS
-            and self.sim_env.sim_dict["is_training"]
-        ):
+        elif self.sim_env.sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS and self.sim_env.sim_dict["is_training"]:
             self.sim_env.core_agent.engine_props = self.sim_env.engine_obj.engine_props
             self.sim_env.core_agent.setup_env(is_path=False)
 

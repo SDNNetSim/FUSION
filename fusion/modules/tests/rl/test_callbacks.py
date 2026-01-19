@@ -102,9 +102,7 @@ class TestEpisodicRewardCallback:
         mock_save.assert_not_called()
 
     @mock.patch.object(cb.EpisodicRewardCallback, "_save_drl_trial_rewards")
-    def test_done_saves_and_resets(
-        self, mock_save: mock.MagicMock, callback: cb.EpisodicRewardCallback
-    ) -> None:
+    def test_done_saves_and_resets(self, mock_save: mock.MagicMock, callback: cb.EpisodicRewardCallback) -> None:
         """Episode end saves trial rewards and resets counters."""
         callback.rewards_matrix = np.zeros((2, 3))
         callback.locals = {"rewards": [1.0], "dones": [True]}
@@ -133,9 +131,7 @@ class TestLearnRateEntCallback:
         lr_cb.model = _dummy_model()
         return lr_cb
 
-    def test_first_done_initialises_and_sets_params(
-        self, lr_callback: cb.LearnRateEntCallback
-    ) -> None:
+    def test_first_done_initialises_and_sets_params(self, lr_callback: cb.LearnRateEntCallback) -> None:
         """First done sets ent_coef and learning_rate."""
         lr_callback.locals = {"dones": [True]}
         assert lr_callback._on_step() is True  # pylint: disable=protected-access
@@ -145,9 +141,7 @@ class TestLearnRateEntCallback:
         assert lr_callback.model.ent_coef == pytest.approx(0.25)  # type: ignore[attr-defined]
         assert lr_callback.model.learning_rate == pytest.approx(0.00075)  # type: ignore[attr-defined]
 
-    def test_subsequent_done_decays_and_updates(
-        self, lr_callback: cb.LearnRateEntCallback
-    ) -> None:
+    def test_subsequent_done_decays_and_updates(self, lr_callback: cb.LearnRateEntCallback) -> None:
         """Later episodes decay ent_coef and adjust lr linearly."""
         # Pretend first episode already ran
         lr_callback.current_entropy = 0.4

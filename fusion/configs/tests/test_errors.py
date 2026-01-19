@@ -109,9 +109,7 @@ class TestMissingRequiredOptionError:
 
     def test_error_with_option_details(self) -> None:
         """Test error with missing option details."""
-        message = (
-            "Required option 'holding_time' is missing from section 'general_settings'"
-        )
+        message = "Required option 'holding_time' is missing from section 'general_settings'"
         error = MissingRequiredOptionError(message)
 
         assert str(error) == message

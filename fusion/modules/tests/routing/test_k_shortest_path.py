@@ -86,9 +86,7 @@ def k_shortest_path(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
 class TestKShortestPath:
     """Tests for KShortestPath routing algorithm."""
 
-    def test_init_stores_properties(
-        self, k_shortest_path: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_stores_properties(self, k_shortest_path: Any, engine_props: dict[str, Any]) -> None:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert k_shortest_path.engine_props == engine_props
@@ -110,9 +108,7 @@ class TestKShortestPath:
         assert "NSFNet" in topologies
         assert "Generic" in topologies
 
-    def test_validate_environment_with_connected_topology(
-        self, k_shortest_path: Any, topology: nx.Graph
-    ) -> None:
+    def test_validate_environment_with_connected_topology(self, k_shortest_path: Any, topology: nx.Graph) -> None:
         """Test environment validation succeeds with connected topology."""
         # Act
         is_valid = k_shortest_path.validate_environment(topology)
@@ -120,9 +116,7 @@ class TestKShortestPath:
         # Assert
         assert is_valid is True
 
-    def test_validate_environment_with_disconnected_topology(
-        self, k_shortest_path: Any
-    ) -> None:
+    def test_validate_environment_with_disconnected_topology(self, k_shortest_path: Any) -> None:
         """Test environment validation fails with disconnected topology."""
         # Arrange
         disconnected_topology = nx.Graph()
@@ -186,9 +180,7 @@ class TestKShortestPath:
         assert paths[0][0] == "A"
         assert paths[0][-1] == "C"
 
-    def test_get_paths_with_no_paths_returns_empty_list(
-        self, k_shortest_path: Any
-    ) -> None:
+    def test_get_paths_with_no_paths_returns_empty_list(self, k_shortest_path: Any) -> None:
         """Test that get_paths returns empty list when no paths exist."""
         # Act
         paths = k_shortest_path.get_paths("A", "Z", k=3)
@@ -204,9 +196,7 @@ class TestKShortestPath:
             (5, 5),
         ],
     )
-    def test_get_paths_respects_k_parameter(
-        self, k_shortest_path: Any, k_value: int, expected_max_paths: int
-    ) -> None:
+    def test_get_paths_respects_k_parameter(self, k_shortest_path: Any, k_value: int, expected_max_paths: int) -> None:
         """Test that get_paths respects the k parameter.
 
         :param k_shortest_path: KShortestPath fixture instance.
@@ -222,16 +212,12 @@ class TestKShortestPath:
         # Assert
         assert len(paths) <= expected_max_paths
 
-    def test_update_weights_does_not_raise_error(
-        self, k_shortest_path: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_weights_does_not_raise_error(self, k_shortest_path: Any, topology: nx.Graph) -> None:
         """Test that update_weights method runs without error."""
         # Act & Assert (should not raise)
         k_shortest_path.update_weights(topology)
 
-    def test_get_metrics_returns_algorithm_statistics(
-        self, k_shortest_path: Any
-    ) -> None:
+    def test_get_metrics_returns_algorithm_statistics(self, k_shortest_path: Any) -> None:
         """Test that get_metrics returns performance statistics."""
         # Arrange
         k_shortest_path.route("A", "D", request=None)

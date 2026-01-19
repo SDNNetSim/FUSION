@@ -3,9 +3,7 @@ from pathlib import Path
 from fusion.utils.os import find_project_root
 
 
-def assign_link_lengths(
-    network_fp: Path, node_pairs_dict: dict[str, str], constant_weight: bool = False
-) -> dict[tuple[str, str], float]:
+def assign_link_lengths(network_fp: Path, node_pairs_dict: dict[str, str], constant_weight: bool = False) -> dict[tuple[str, str], float]:
     """Assign length to each link in a given topology.
 
     :param network_fp: Path to the network topology file
@@ -100,14 +98,15 @@ def create_network(
 
     network_fp = base_path / network_files[net_name]
 
-    if net_name == "USbackbone60" and not is_only_core_node:
-        core_nodes_fp = base_path / "USB6014_core_nodes.txt"
-        core_nodes_list = assign_core_nodes(core_nodes_fp)
+    if not is_only_core_node:
+        if net_name == "USbackbone60":
+            core_nodes_fp = base_path / "USB6014_core_nodes.txt"
+            core_nodes_list = assign_core_nodes(core_nodes_fp)
+        elif net_name == "Spainbackbone30":
+            core_nodes_fp = base_path / "SPNB3014_core_nodes.txt"
+            core_nodes_list = assign_core_nodes(core_nodes_fp)
+        # Future: Add other core node files here if needed
 
-    # Future: Add other core node files here if needed
-
-    network_dict = assign_link_lengths(
-        network_fp=network_fp, node_pairs_dict={}, constant_weight=const_weight
-    )
+    network_dict = assign_link_lengths(network_fp=network_fp, node_pairs_dict={}, constant_weight=const_weight)
 
     return network_dict, core_nodes_list

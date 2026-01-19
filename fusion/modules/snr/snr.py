@@ -130,9 +130,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         self.snr_props.bandwidth = self.num_slots * slot_width
         if self.num_slots is not None:
-            self.snr_props.center_frequency = (
-                start_slot + self.num_slots / 2
-            ) * slot_width
+            self.snr_props.center_frequency = (start_slot + self.num_slots / 2) * slot_width
         else:
             self.snr_props.center_frequency = start_slot * slot_width
 
@@ -140,9 +138,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         input_power = self.engine_props.get("input_power", 1e-3)  # W
         self.snr_props.center_psd = input_power / self.snr_props.bandwidth
 
-    def calculate_link_snr(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_link_snr(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> float:
         """
         Calculate the SNR for a single link.
 
@@ -157,19 +153,12 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         if source is None or destination is None:
             raise ValueError("Source and destination cannot be None")
 
-        if (
-            not hasattr(self.sdn_props, "network_spectrum_dict")
-            or link_key not in self.sdn_props.network_spectrum_dict
-        ):
+        if not hasattr(self.sdn_props, "network_spectrum_dict") or link_key not in self.sdn_props.network_spectrum_dict:
             return 0.0
 
         # Get link properties
-        if hasattr(self.sdn_props, "topology") and self.sdn_props.topology.has_edge(
-            source, destination
-        ):
-            link_length = self.sdn_props.topology[source][destination].get(
-                "length", 100
-            )  # km
+        if hasattr(self.sdn_props, "topology") and self.sdn_props.topology.has_edge(source, destination):
+            link_length = self.sdn_props.topology[source][destination].get("length", 100)  # km
         else:
             link_length = 100  # Default link length
 
@@ -177,9 +166,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
             "length": link_length,
             "attenuation": self.engine_props.get("fiber_attenuation", 0.2),  # dB/km
             "dispersion": self.engine_props.get("fiber_dispersion", 16.7),  # ps/nm/km
-            "nonlinear_coeff": self.engine_props.get(
-                "nonlinear_coefficient", 1.3e-3
-            ),  # 1/W/km
+            "nonlinear_coeff": self.engine_props.get("nonlinear_coefficient", 1.3e-3),  # 1/W/km
             "bending_radius": self.engine_props.get("bending_radius", 7.5e-3),  # m
         }
 
@@ -187,21 +174,15 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         ase_noise = self._calculate_ase_noise(link_length)
 
         # Calculate nonlinear noise
-        nonlinear_noise = self._calculate_nonlinear_noise(
-            source, destination, spectrum_info
-        )
+        nonlinear_noise = self._calculate_nonlinear_noise(source, destination, spectrum_info)
 
         # Calculate cross-talk noise (if multi-core)
         xt_noise = 0.0
         if self.supports_multicore and spectrum_info.get("core_num", 0) is not None:
-            xt_noise = self._calculate_crosstalk_noise(
-                source, destination, spectrum_info
-            )
+            xt_noise = self._calculate_crosstalk_noise(source, destination, spectrum_info)
 
         # Total noise
-        total_noise = (
-            ase_noise + nonlinear_noise["sci"] + nonlinear_noise["xci"] + xt_noise
-        )
+        total_noise = ase_noise + nonlinear_noise["sci"] + nonlinear_noise["xci"] + xt_noise
 
         # Signal power
         signal_power = self.engine_props.get("input_power", 1e-3)  # W
@@ -237,9 +218,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         return float(ase_power * num_amps)
 
-    def calculate_nonlinear_noise(
-        self, path: list[Any], spectrum_info: dict[str, Any]
-    ) -> dict[str, float]:
+    def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
         """
         Calculate nonlinear noise components.
 
@@ -267,9 +246,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         # Calculate nonlinear noise for each link in the path
         for i in range(len(path) - 1):
-            link_noise = self._calculate_nonlinear_noise(
-                path[i], path[i + 1], spectrum_info
-            )
+            link_noise = self._calculate_nonlinear_noise(path[i], path[i + 1], spectrum_info)
             total_sci += link_noise["sci"]
             total_xci += link_noise["xci"]
 
@@ -280,9 +257,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
             "fwm": 0.0,  # Four-wave mixing (simplified)
         }
 
-    def _calculate_nonlinear_noise(
-        self, _source: Any, _destination: Any, _spectrum_info: dict[str, Any]
-    ) -> dict[str, float]:
+    def _calculate_nonlinear_noise(self, _source: Any, _destination: Any, _spectrum_info: dict[str, Any]) -> dict[str, float]:
         """
         Calculate nonlinear noise components for a single link.
 
@@ -336,9 +311,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
         xci_noise = 0.0
 
         # Get spectrum state for the link
-        if not hasattr(self.spectrum_props, "path_list") or not hasattr(
-            self.sdn_props, "network_spectrum_dict"
-        ):
+        if not hasattr(self.spectrum_props, "path_list") or not hasattr(self.sdn_props, "network_spectrum_dict"):
             return 0.0
 
         path_list = getattr(self.spectrum_props, "path_list", [])
@@ -370,21 +343,13 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
             req_id = core_array[slot_index]
 
             # Spectrum is occupied by another request
-            if (
-                req_id > 0
-                and self.channels_list is not None
-                and req_id not in self.channels_list
-            ):
+            if req_id > 0 and self.channels_list is not None and req_id not in self.channels_list:
                 self.channels_list.append(req_id)
-                xci_noise = self._update_link_xci(
-                    req_id, core_array, slot_index, xci_noise
-                )
+                xci_noise = self._update_link_xci(req_id, core_array, slot_index, xci_noise)
 
         return xci_noise
 
-    def _update_link_xci(
-        self, req_id: float, curr_link: Any, slot_index: int, curr_xci: float
-    ) -> float:
+    def _update_link_xci(self, req_id: float, curr_link: Any, slot_index: int, curr_xci: float) -> float:
         """
         Update cross-channel interference from a specific interfering channel.
 
@@ -406,19 +371,13 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         channel_bw *= self.engine_props.get("bw_per_slot", 12.5e9)
 
-        channel_freq = (slot_index * self.engine_props.get("bw_per_slot", 12.5e9)) + (
-            channel_bw / 2
-        )
+        channel_freq = (slot_index * self.engine_props.get("bw_per_slot", 12.5e9)) + (channel_bw / 2)
 
         channel_psd = self.engine_props.get("input_power", 1e-3) / channel_bw
 
         if self.snr_props.center_frequency != channel_freq:
-            log_term = abs(self.snr_props.center_frequency - channel_freq) + (
-                channel_bw / 2
-            )
-            log_term /= abs(self.snr_props.center_frequency - channel_freq) - (
-                channel_bw / 2
-            )
+            log_term = abs(self.snr_props.center_frequency - channel_freq) + (channel_bw / 2)
+            log_term /= abs(self.snr_props.center_frequency - channel_freq) - (channel_bw / 2)
 
             calculated_xci = (channel_psd**2) * math.log(abs(log_term))
             new_xci = curr_xci + calculated_xci
@@ -427,23 +386,17 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         return float(new_xci)
 
-    def calculate_crosstalk(
-        self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_crosstalk(self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]) -> float:
         """Calculate crosstalk noise for the given path and core."""
         total_xt = 0.0
 
         for i in range(len(path) - 1):
-            link_xt = self._calculate_crosstalk_noise(
-                path[i], path[i + 1], spectrum_info
-            )
+            link_xt = self._calculate_crosstalk_noise(path[i], path[i + 1], spectrum_info)
             total_xt += link_xt
 
         return float(total_xt)
 
-    def _calculate_crosstalk_noise(
-        self, _source: Any, _destination: Any, spectrum_info: dict[str, Any]
-    ) -> float:
+    def _calculate_crosstalk_noise(self, _source: Any, _destination: Any, spectrum_info: dict[str, Any]) -> float:
         """
         Calculate crosstalk noise for a single link in multi-core fiber.
 
@@ -518,15 +471,11 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
         return float(base_threshold + reach_penalty)
 
-    def is_snr_acceptable(
-        self, calculated_snr: float, required_snr: float, margin: float = 0.0
-    ) -> bool:
+    def is_snr_acceptable(self, calculated_snr: float, required_snr: float, margin: float = 0.0) -> bool:
         """Check if calculated SNR meets the requirement with optional margin."""
         return calculated_snr >= (required_snr + margin)
 
-    def update_link_state(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> None:
+    def update_link_state(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> None:
         """
         Update link state based on new spectrum allocation.
 
@@ -543,11 +492,7 @@ class StandardSNRMeasurer(AbstractSNRMeasurer):
 
     def get_metrics(self) -> dict[str, Any]:
         """Get SNR measurement algorithm performance metrics."""
-        avg_snr = (
-            self._total_snr_computed / self._calculations_performed
-            if self._calculations_performed > 0
-            else 0
-        )
+        avg_snr = self._total_snr_computed / self._calculations_performed if self._calculations_performed > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

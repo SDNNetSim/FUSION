@@ -1,42 +1,42 @@
 """
 GUI launcher CLI arguments.
-Arguments specific to launching and configuring the graphical interface.
+
+NOTE: The GUI is currently under active development and not supported.
+This module will be updated in version 6.1.0.
 """
 
 import argparse
 
-from .shared import add_config_args
+
+class GUINotSupportedError(Exception):
+    """Raised when attempting to use the unsupported GUI module."""
+
+    pass
 
 
 def add_gui_args(parser: argparse.ArgumentParser) -> None:
     """
     Add GUI launcher arguments to the parser.
 
-    Currently includes only basic configuration arguments.
-    GUI-specific arguments will be added as needed.
-
     :param parser: ArgumentParser instance to add arguments to
-    :type parser: argparse.ArgumentParser
-    :return: None
-    :rtype: None
+    :raises GUINotSupportedError: Always raised - GUI is not currently supported
     """
-    # Basic configuration (shared with other modules)
-    add_config_args(parser)
-
-    # GUI-specific arguments pending - see cli/TODO.md for planned features
-    # Future: window size, theme, display options, etc.
+    raise GUINotSupportedError(
+        "The FUSION GUI is currently under active development and not supported. "
+        "This feature will be available in version 6.1.0. "
+        "Please use the CLI interface instead."
+    )
 
 
 def add_all_gui_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all GUI-related argument groups to the parser.
 
-    Convenience function that adds all GUI arguments in a single call.
-    Alias for add_gui_args to maintain consistency with other modules.
-
     :param parser: ArgumentParser instance to add arguments to
-    :type parser: argparse.ArgumentParser
-    :return: None
-    :rtype: None
+    :raises GUINotSupportedError: Always raised - GUI is not currently supported
     """
-    add_gui_args(parser)
+    raise GUINotSupportedError(
+        "The FUSION GUI is currently under active development and not supported. "
+        "This feature will be available in version 6.1.0. "
+        "Please use the CLI interface instead."
+    )

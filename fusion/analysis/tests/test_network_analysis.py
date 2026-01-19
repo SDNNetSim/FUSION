@@ -58,8 +58,8 @@ class TestGetLinkUsageSummary:
         assert result["A-B"]["throughput"] == 100.5
         assert result["A-B"]["link_num"] == 1
 
-    def test_bidirectional_links_processed_once(self) -> None:
-        """Test that bidirectional links are processed only once."""
+    def test_bidirectional_links_processed_separately(self) -> None:
+        """Test that bidirectional links are processed separately."""
         # Arrange
         network_spectrum = {
             ("A", "B"): {
@@ -68,9 +68,9 @@ class TestGetLinkUsageSummary:
                 "link_num": 1,
             },
             ("B", "A"): {
-                "usage_count": 10,
-                "throughput": 100.5,
-                "link_num": 1,
+                "usage_count": 8,
+                "throughput": 90.5,
+                "link_num": 2,
             },
         }
 
@@ -78,22 +78,23 @@ class TestGetLinkUsageSummary:
         result = NetworkAnalyzer.get_link_usage_summary(network_spectrum)
 
         # Assert
-        assert len(result) == 1
+        assert len(result) == 2
         assert "A-B" in result
+        assert "B-A" in result
+        assert result["A-B"]["usage_count"] == 10
+        assert result["B-A"]["usage_count"] == 8
 
-    def test_canonical_link_key_uses_sorted_nodes(self) -> None:
-        """Test that canonical link key uses alphabetically sorted nodes."""
+    def test_link_key_preserves_direction(self) -> None:
+        """Test that link keys preserve the direction of the link."""
         # Arrange
-        network_spectrum = {
-            ("Z", "A"): {"usage_count": 5, "throughput": 50.0, "link_num": 2}
-        }
+        network_spectrum = {("Z", "A"): {"usage_count": 5, "throughput": 50.0, "link_num": 2}}
 
         # Act
         result = NetworkAnalyzer.get_link_usage_summary(network_spectrum)
 
         # Assert
-        assert "A-Z" in result
-        assert "Z-A" not in result
+        assert "Z-A" in result
+        assert "A-Z" not in result
 
     def test_missing_fields_use_default_values(self) -> None:
         """Test that missing fields use default values."""
@@ -121,7 +122,7 @@ class TestGetLinkUsageSummary:
         NetworkAnalyzer.get_link_usage_summary(network_spectrum)
 
         # Assert
-        mock_logger.debug.assert_called_once_with("Processed %d unique links", 2)
+        mock_logger.debug.assert_called_once_with("Processed %d directional links", 2)
 
 
 class TestAnalyzeNetworkCongestion:
@@ -199,9 +200,7 @@ class TestAnalyzeNetworkCongestion:
         specific_paths = [("A", "B")]
 
         # Act
-        result = NetworkAnalyzer.analyze_network_congestion(
-            network_spectrum, specific_paths
-        )
+        result = NetworkAnalyzer.analyze_network_congestion(network_spectrum, specific_paths)
 
         # Assert
         assert result["links_analyzed"] == 1
@@ -353,9 +352,7 @@ class TestIdentifyBottleneckLinks:
         network_spectrum = {("A", "B"): {"cores_matrix": [core]}}
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.5
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.5)
 
         # Assert
         assert len(result) == 0
@@ -374,9 +371,7 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.8
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.8)
 
         # Assert
         assert len(result) == 1
@@ -400,18 +395,14 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.9
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.9)
 
         # Assert
         assert len(result) == 1
         assert result[0]["utilization"] == 1.0
 
     @patch("fusion.analysis.network_analysis.logger")
-    def test_bottlenecks_sorted_by_utilization_descending(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_bottlenecks_sorted_by_utilization_descending(self, mock_logger: MagicMock) -> None:
         """Test that bottlenecks are sorted by utilization in descending order."""
         # Arrange
         core_90 = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 0])  # 90%
@@ -425,9 +416,7 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.8
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.8)
 
         # Assert
         assert len(result) == 3
@@ -446,9 +435,7 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.8
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.8)
 
         # Assert
         assert len(result) == 1
@@ -471,14 +458,10 @@ class TestIdentifyBottleneckLinks:
         assert mock_logger.info.called
 
     @patch("fusion.analysis.network_analysis.logger")
-    def test_empty_cores_matrix_handled_gracefully(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_empty_cores_matrix_handled_gracefully(self, mock_logger: MagicMock) -> None:
         """Test that empty cores matrix is handled gracefully."""
         # Arrange
-        network_spectrum: dict[tuple[str, str], dict[str, Any]] = {
-            ("A", "B"): {"cores_matrix": []}
-        }
+        network_spectrum: dict[tuple[str, str], dict[str, Any]] = {("A", "B"): {"cores_matrix": []}}
 
         # Act
         result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum)
@@ -517,14 +500,14 @@ class TestIdentifyBottleneckLinks:
     "src,dst,expected_key",
     [
         ("A", "B", "A-B"),
-        ("B", "A", "A-B"),
-        ("Z", "A", "A-Z"),
+        ("B", "A", "B-A"),
+        ("Z", "A", "Z-A"),
         ("Node1", "Node2", "Node1-Node2"),
-        ("2", "1", "1-2"),
+        ("2", "1", "2-1"),
     ],
 )
-def test_canonical_link_representation(src: str, dst: str, expected_key: str) -> None:
-    """Test that canonical link representation is consistent."""
+def test_directional_link_representation(src: str, dst: str, expected_key: str) -> None:
+    """Test that directional link representation preserves source-destination order."""
     # Arrange
     network_spectrum = {(src, dst): {"usage_count": 1}}
 

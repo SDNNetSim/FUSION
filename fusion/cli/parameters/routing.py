@@ -21,9 +21,7 @@ def add_routing_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     routing_group = parser.add_argument_group("Routing Configuration")
-    routing_group.add_argument(
-        "--route_method", type=str, help="Routing algorithm method"
-    )
+    routing_group.add_argument("--route_method", type=str, help="Routing algorithm method")
     routing_group.add_argument(
         "--k_paths",
         type=int,
@@ -45,9 +43,7 @@ def add_spectrum_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     spectrum_group = parser.add_argument_group("Spectrum Assignment Configuration")
-    spectrum_group.add_argument(
-        "--allocation_method", type=str, help="Spectrum allocation method"
-    )
+    spectrum_group.add_argument("--allocation_method", type=str, help="Spectrum allocation method")
     spectrum_group.add_argument(
         "--guard_slots",
         type=int,

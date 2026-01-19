@@ -6,15 +6,12 @@ for network configurations, enabling faster training by avoiding
 repetitive embedding calculations.
 """
 
-# Standard library imports
 import os
 from pathlib import Path
 
-# Third-party imports
 import torch
 from gymnasium import spaces
 
-# Local imports
 from fusion.modules.rl.feat_extrs.constants import CACHE_DIR
 from fusion.modules.rl.feat_extrs.path_gnn_cached import PathGNNEncoder
 from fusion.modules.rl.utils.errors import CacheError
@@ -51,8 +48,7 @@ def main() -> None:
         obs, _ = env.reset()
     except Exception as e:
         raise CacheError(
-            f"Failed to create environment from config '{config_path}': {e}. "
-            "Please verify the configuration file exists and is valid."
+            f"Failed to create environment from config '{config_path}': {e}. Please verify the configuration file exists and is valid."
         ) from e
 
     cache_path = CACHE_DIR / f"{sim_dict['network']}.pt"
@@ -64,9 +60,7 @@ def main() -> None:
     try:
         # Ensure observation_space is a Dict space
         if not isinstance(env.observation_space, spaces.Dict):
-            raise ValueError(
-                f"Expected Dict observation space, got {type(env.observation_space)}"
-            )
+            raise ValueError(f"Expected Dict observation space, got {type(env.observation_space)}")
 
         enc = (
             PathGNNEncoder(
@@ -81,9 +75,7 @@ def main() -> None:
 
         device = torch.device(sim_dict.get("device", "cpu"))
 
-        def to_tensor(
-            arr: torch.Tensor | list | tuple, *, dtype: torch.dtype | None = None
-        ) -> torch.Tensor:
+        def to_tensor(arr: torch.Tensor | list | tuple, *, dtype: torch.dtype | None = None) -> torch.Tensor:
             """
             Return a torch.Tensor on the correct device.
 
@@ -109,9 +101,7 @@ def main() -> None:
         logger.info("Saved cache to %s", cache_path)
     except Exception as e:
         raise CacheError(
-            f"Failed to generate or save GNN cache for network "
-            f"'{sim_dict.get('network')}': {e}. "
-            f"Cache path: {cache_path}"
+            f"Failed to generate or save GNN cache for network '{sim_dict.get('network')}': {e}. Cache path: {cache_path}"
         ) from e
 
 

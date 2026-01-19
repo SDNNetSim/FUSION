@@ -76,9 +76,7 @@ def least_congested(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
 class TestLeastCongestedRouting:
     """Tests for LeastCongestedRouting algorithm."""
 
-    def test_init_stores_properties(
-        self, least_congested: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_stores_properties(self, least_congested: Any, engine_props: dict[str, Any]) -> None:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert least_congested.engine_props == engine_props
@@ -99,9 +97,7 @@ class TestLeastCongestedRouting:
         assert isinstance(topologies, list)
         assert "Generic" in topologies
 
-    def test_validate_environment_with_valid_topology(
-        self, least_congested: Any, topology: nx.Graph
-    ) -> None:
+    def test_validate_environment_with_valid_topology(self, least_congested: Any, topology: nx.Graph) -> None:
         """Test environment validation succeeds with valid topology."""
         # Act
         is_valid = least_congested.validate_environment(topology)
@@ -140,9 +136,7 @@ class TestLeastCongestedRouting:
         # Assert
         assert least_congested._path_count == initial_count + 1
 
-    def test_find_most_cong_link_identifies_bottleneck(
-        self, least_congested: Any
-    ) -> None:
+    def test_find_most_cong_link_identifies_bottleneck(self, least_congested: Any) -> None:
         """Test that find most congested link identifies the bottleneck."""
         # Arrange
         path_list = ["A", "B", "C"]
@@ -156,9 +150,7 @@ class TestLeastCongestedRouting:
         assert "path_list" in path_data
         assert "link_dict" in path_data
 
-    def test_select_least_congested_sorts_by_free_slots(
-        self, least_congested: Any
-    ) -> None:
+    def test_select_least_congested_sorts_by_free_slots(self, least_congested: Any) -> None:
         """Test that select least congested sorts paths by free slots."""
         # Arrange
         least_congested.route_props.paths_matrix = [
@@ -186,16 +178,12 @@ class TestLeastCongestedRouting:
         assert isinstance(paths, list)
         assert len(paths) <= 1
 
-    def test_update_weights_does_not_raise_error(
-        self, least_congested: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_weights_does_not_raise_error(self, least_congested: Any, topology: nx.Graph) -> None:
         """Test that update_weights method runs without error."""
         # Act & Assert (should not raise)
         least_congested.update_weights(topology)
 
-    def test_get_metrics_returns_algorithm_statistics(
-        self, least_congested: Any
-    ) -> None:
+    def test_get_metrics_returns_algorithm_statistics(self, least_congested: Any) -> None:
         """Test that get_metrics returns performance statistics."""
         # Arrange
         least_congested.route("A", "C", request=None)
@@ -222,9 +210,7 @@ class TestLeastCongestedRouting:
         assert least_congested._path_count == 0
         assert least_congested._total_congestion == 0.0
 
-    def test_calculate_path_congestion_returns_valid_metric(
-        self, least_congested: Any
-    ) -> None:
+    def test_calculate_path_congestion_returns_valid_metric(self, least_congested: Any) -> None:
         """Test path congestion calculation returns valid metric."""
         # Arrange
         path = ["A", "B", "C"]
@@ -236,9 +222,7 @@ class TestLeastCongestedRouting:
         assert isinstance(congestion, float)
         assert 0.0 <= congestion <= 1.0
 
-    def test_calculate_path_congestion_with_empty_path(
-        self, least_congested: Any
-    ) -> None:
+    def test_calculate_path_congestion_with_empty_path(self, least_congested: Any) -> None:
         """Test path congestion calculation with empty path returns zero."""
         # Act
         congestion = least_congested._calculate_path_congestion([])

@@ -16,9 +16,7 @@ class TestCreateEntryPointWrapper:
         def dummy_main() -> int:
             return 0
 
-        legacy_func, main_func = create_entry_point_wrapper(
-            dummy_main, "test", "Test description"
-        )
+        legacy_func, main_func = create_entry_point_wrapper(dummy_main, "test", "Test description")
 
         assert callable(legacy_func)
         assert callable(main_func)
@@ -27,9 +25,7 @@ class TestCreateEntryPointWrapper:
         """Test that legacy function calls the main function correctly."""
         mock_main = Mock(return_value=42)
 
-        legacy_func, _ = create_entry_point_wrapper(
-            mock_main, "test", "Test description"
-        )
+        legacy_func, _ = create_entry_point_wrapper(mock_main, "test", "Test description")
         result = legacy_func()
 
         assert result == 42
@@ -59,9 +55,7 @@ class TestCreateEntryPointWrapper:
         """Test that wrapper handles non-zero exit code correctly."""
         mock_main = Mock(return_value=1)
 
-        legacy_func, main_func = create_entry_point_wrapper(
-            mock_main, "test", "Test description"
-        )
+        legacy_func, main_func = create_entry_point_wrapper(mock_main, "test", "Test description")
 
         # Test legacy function
         assert legacy_func() == 1
@@ -77,9 +71,7 @@ class TestCreateEntryPointWrapper:
 
         for code in test_codes:
             mock_main = Mock(return_value=code)
-            legacy_func, main_func = create_entry_point_wrapper(
-                mock_main, "test", "Test description"
-            )
+            legacy_func, main_func = create_entry_point_wrapper(mock_main, "test", "Test description")
 
             # Test legacy function returns the code
             assert legacy_func() == code

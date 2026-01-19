@@ -151,9 +151,7 @@ class TestSchemaValidator:
             # Should not raise exception, just log warning
             validator.validate(config, "nonexistent")
 
-            mock_logger.warning.assert_called_with(
-                "Schema 'nonexistent' not found, skipping validation"
-            )
+            mock_logger.warning.assert_called_with("Schema 'nonexistent' not found, skipping validation")
 
     def test_validate_type_string(self) -> None:
         """Test type validation for string values."""
@@ -421,9 +419,7 @@ class TestSchemaValidator:
         """Test that error messages include proper field paths."""
         schema = {
             "type": "object",
-            "properties": {
-                "user": {"type": "object", "properties": {"name": {"type": "string"}}}
-            },
+            "properties": {"user": {"type": "object", "properties": {"name": {"type": "string"}}}},
         }
 
         schema_path = os.path.join(self.schema_dir, "paths.json")

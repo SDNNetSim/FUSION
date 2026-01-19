@@ -16,10 +16,8 @@ from .ppo import PPO
 from .q_learning import QLearning
 from .qr_dqn import QrDQN
 
-# Version info
 __version__ = "1.0.0"
 
-# Public API - explicitly define what's exported
 __all__ = [
     "BaseDRLAlgorithm",
     "QLearning",

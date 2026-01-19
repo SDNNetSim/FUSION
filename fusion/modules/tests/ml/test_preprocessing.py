@@ -86,9 +86,7 @@ class TestBalanceTrainingData:
     """Tests for balance_training_data function."""
 
     @patch("fusion.modules.ml.preprocessing.process_training_data")
-    def test_balance_without_num_segments_returns_processed_data(
-        self, mock_process: Mock
-    ) -> None:
+    def test_balance_without_num_segments_returns_processed_data(self, mock_process: Mock) -> None:
         """Test balancing data without num_segments column."""
         # Arrange
         df = pd.DataFrame({"feature1": [1, 2, 3]})
@@ -122,9 +120,7 @@ class TestBalanceTrainingData:
     def test_balance_weighted_applies_weights(self, mock_process: Mock) -> None:
         """Test weighted balancing applies correct weights."""
         # Arrange
-        df = pd.DataFrame(
-            {"num_segments": [1] * 100 + [2] * 100 + [4] * 100 + [8] * 100}
-        )
+        df = pd.DataFrame({"num_segments": [1] * 100 + [2] * 100 + [4] * 100 + [8] * 100})
         mock_process.return_value = df
         sim_dict = {"train_file_path": "test"}
         erlang = 1000.0
@@ -205,9 +201,7 @@ class TestSplitFeaturesLabels:
     def test_split_with_valid_data_returns_features_and_labels(self) -> None:
         """Test successful split of features and labels."""
         # Arrange
-        df = pd.DataFrame(
-            {"feature1": [1, 2, 3], "feature2": [4, 5, 6], "target": [0, 1, 0]}
-        )
+        df = pd.DataFrame({"feature1": [1, 2, 3], "feature2": [4, 5, 6], "target": [0, 1, 0]})
 
         # Act
         features, labels = split_features_labels(df, "target")
@@ -260,9 +254,7 @@ class TestNormalizeFeatures:
     ) -> None:
         """Test standard normalization returns scaled data."""
         # Arrange
-        df = pd.DataFrame(
-            {"feature1": [1, 2, 3, 4, 5], "feature2": [10, 20, 30, 40, 50]}
-        )
+        df = pd.DataFrame({"feature1": [1, 2, 3, 4, 5], "feature2": [10, 20, 30, 40, 50]})
 
         # Act
         normalized, scaler = normalize_features(df, "standard")
@@ -277,9 +269,7 @@ class TestNormalizeFeatures:
     def test_normalize_with_minmax_scaler_returns_scaled_data(self) -> None:
         """Test minmax normalization returns scaled data."""
         # Arrange
-        df = pd.DataFrame(
-            {"feature1": [1, 2, 3, 4, 5], "feature2": [10, 20, 30, 40, 50]}
-        )
+        df = pd.DataFrame({"feature1": [1, 2, 3, 4, 5], "feature2": [10, 20, 30, 40, 50]})
 
         # Act
         normalized, scaler = normalize_features(df, "minmax")
