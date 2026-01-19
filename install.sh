@@ -42,11 +42,12 @@ echo "🖥️  Platform: $platform ($arch)"
 echo "📦 Upgrading pip..."
 python -m pip install --upgrade pip setuptools wheel
 
-# Install core dependencies first (this includes PyTorch)
-echo "🔧 Installing core dependencies..."
-pip install -e .
+# Install PyTorch first (required before PyG packages can be installed)
+echo "🔥 Installing PyTorch..."
+pip install torch==2.2.2
 
 # Install PyTorch Geometric dependencies with platform-specific handling
+# Must be done BEFORE pip install -e . to avoid build failures
 echo "🧠 Installing PyTorch Geometric dependencies..."
 
 if [[ "$platform" == "darwin" ]]; then
@@ -64,6 +65,10 @@ else
     echo "🐧 Detected Linux/Windows - using standard installation"
     pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
 fi
+
+# Install core dependencies
+echo "🔧 Installing core dependencies..."
+pip install -e .
 
 # Install PyTorch Geometric
 echo "📐 Installing PyTorch Geometric..."
