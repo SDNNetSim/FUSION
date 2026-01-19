@@ -45,6 +45,7 @@ Modules
    fusion/policies/index
    fusion/reporting/index
    fusion/sim/index
+   fusion/stats/index
 
 Data Directory
 ==============

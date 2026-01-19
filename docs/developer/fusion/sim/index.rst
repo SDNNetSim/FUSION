@@ -200,7 +200,7 @@ Multi-Processing Architecture
    - Some utility functions (e.g., ``modify_multiple_json_values``) are single-process only
    - Protection/failure scenarios have limited parallel support
 
-   **Planned for v6.2+**: Full multi-processing support across all features.
+   **Planned for future release**: Full multi-processing support across all features.
 
 Modern Approach (batch_runner.py)
 ---------------------------------
@@ -618,7 +618,7 @@ Beta Features and TODOs
 
       - RL training/inference may fail in parallel mode
       - Some configs require ``parallel=False``
-      - Planned fix: v6.2+
+      - Planned fix: future release
 
    2. **Hardcoded values in some utilities:**
 

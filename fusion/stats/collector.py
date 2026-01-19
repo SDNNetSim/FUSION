@@ -31,44 +31,71 @@ class StatsCollector:
     Owned by SimulationEngine, receives recording calls after
     each request is processed.
 
-    Attributes:
-        config: Simulation configuration (for context)
+    :ivar config: Simulation configuration (for context)
+    :vartype config: SimulationConfig
 
-        Request Counters:
-            total_requests: Total arrivals processed
-            successful_requests: Requests that were routed
-            blocked_requests: Requests that were blocked
+    **Request Counters:**
 
-        Block Reasons:
-            block_reasons: Maps reason string -> count
+    :ivar total_requests: Total arrivals processed
+    :vartype total_requests: int
+    :ivar successful_requests: Requests that were routed
+    :vartype successful_requests: int
+    :ivar blocked_requests: Requests that were blocked
+    :vartype blocked_requests: int
 
-        Feature Tracking:
-            groomed_requests: Fully groomed requests
-            partially_groomed_requests: Partially groomed requests
-            sliced_requests: Sliced requests
-            protected_requests: Protected requests
+    **Block Reasons:**
 
-        Modulation Tracking:
-            modulations_used: Maps format name -> count
+    :ivar block_reasons: Maps reason string to count
+    :vartype block_reasons: dict[str, int]
 
-        SNR Tracking:
-            snr_values: List of SNR measurements
+    **Feature Tracking:**
 
-        Bandwidth Tracking:
-            total_bandwidth_requested_gbps: Sum of request bandwidths
-            total_bandwidth_allocated_gbps: Sum of allocated bandwidths
+    :ivar groomed_requests: Fully groomed requests
+    :vartype groomed_requests: int
+    :ivar partially_groomed_requests: Partially groomed requests
+    :vartype partially_groomed_requests: int
+    :ivar sliced_requests: Sliced requests
+    :vartype sliced_requests: int
+    :ivar protected_requests: Protected requests
+    :vartype protected_requests: int
 
-        Protection Tracking:
-            switchover_count: Number of protection switchovers
-            protection_failures: Number of protection failures
-            failure_induced_blocks: Blocks due to network failures
-            switchover_times: List of switchover event times
+    **Modulation Tracking:**
 
-        Path Tracking:
-            hop_counts: List of path hop counts
-            path_lengths_km: List of path lengths in km
+    :ivar modulations_used: Maps format name to count
+    :vartype modulations_used: dict[str, int]
 
-    Example:
+    **SNR Tracking:**
+
+    :ivar snr_values: List of SNR measurements
+    :vartype snr_values: list[float]
+
+    **Bandwidth Tracking:**
+
+    :ivar total_bandwidth_requested_gbps: Sum of request bandwidths
+    :vartype total_bandwidth_requested_gbps: int
+    :ivar total_bandwidth_allocated_gbps: Sum of allocated bandwidths
+    :vartype total_bandwidth_allocated_gbps: int
+
+    **Protection Tracking:**
+
+    :ivar switchover_count: Number of protection switchovers
+    :vartype switchover_count: int
+    :ivar protection_failures: Number of protection failures
+    :vartype protection_failures: int
+    :ivar failure_induced_blocks: Blocks due to network failures
+    :vartype failure_induced_blocks: int
+    :ivar switchover_times: List of switchover event times
+    :vartype switchover_times: list[float]
+
+    **Path Tracking:**
+
+    :ivar hop_counts: List of path hop counts
+    :vartype hop_counts: list[int]
+    :ivar path_lengths_km: List of path lengths in km
+    :vartype path_lengths_km: list[float]
+
+    Example::
+
         >>> from fusion.domain.config import SimulationConfig
         >>> config = SimulationConfig(...)
         >>> collector = StatsCollector(config)
@@ -76,7 +103,7 @@ class StatsCollector:
         >>> print(f"BP: {collector.blocking_probability:.2%}")
     """
 
-    config: "SimulationConfig"
+    config: SimulationConfig
 
     # =========================================================================
     # Request Counters
@@ -159,9 +186,9 @@ class StatsCollector:
         """
         Calculate blocking probability.
 
-        Returns:
-            Ratio of blocked to total requests (0.0 to 1.0).
+        :return: Ratio of blocked to total requests (0.0 to 1.0).
             Returns 0.0 if no requests have been processed.
+        :rtype: float
         """
         if self.total_requests == 0:
             return 0.0
@@ -172,8 +199,8 @@ class StatsCollector:
         """
         Calculate success rate (complement of blocking probability).
 
-        Returns:
-            Ratio of successful to total requests (0.0 to 1.0).
+        :return: Ratio of successful to total requests (0.0 to 1.0).
+        :rtype: float
         """
         return 1.0 - self.blocking_probability
 
@@ -182,8 +209,8 @@ class StatsCollector:
         """
         Calculate average SNR across all measurements.
 
-        Returns:
-            Mean SNR in dB, or 0.0 if no measurements.
+        :return: Mean SNR in dB, or 0.0 if no measurements.
+        :rtype: float
         """
         if not self.snr_values:
             return 0.0
@@ -194,8 +221,8 @@ class StatsCollector:
         """
         Get minimum SNR value.
 
-        Returns:
-            Minimum SNR in dB, or 0.0 if no measurements.
+        :return: Minimum SNR in dB, or 0.0 if no measurements.
+        :rtype: float
         """
         if not self.snr_values:
             return 0.0
@@ -206,8 +233,8 @@ class StatsCollector:
         """
         Get maximum SNR value.
 
-        Returns:
-            Maximum SNR in dB, or 0.0 if no measurements.
+        :return: Maximum SNR in dB, or 0.0 if no measurements.
+        :rtype: float
         """
         if not self.snr_values:
             return 0.0
@@ -220,8 +247,8 @@ class StatsCollector:
 
         Includes both fully and partially groomed requests.
 
-        Returns:
-            Ratio (0.0 to 1.0), or 0.0 if no successful requests.
+        :return: Ratio (0.0 to 1.0), or 0.0 if no successful requests.
+        :rtype: float
         """
         if self.successful_requests == 0:
             return 0.0
@@ -233,8 +260,8 @@ class StatsCollector:
         """
         Ratio of sliced requests to successful requests.
 
-        Returns:
-            Ratio (0.0 to 1.0), or 0.0 if no successful requests.
+        :return: Ratio (0.0 to 1.0), or 0.0 if no successful requests.
+        :rtype: float
         """
         if self.successful_requests == 0:
             return 0.0
@@ -245,8 +272,8 @@ class StatsCollector:
         """
         Ratio of protected requests to successful requests.
 
-        Returns:
-            Ratio (0.0 to 1.0), or 0.0 if no successful requests.
+        :return: Ratio (0.0 to 1.0), or 0.0 if no successful requests.
+        :rtype: float
         """
         if self.successful_requests == 0:
             return 0.0
@@ -257,8 +284,8 @@ class StatsCollector:
         """
         Ratio of allocated bandwidth to requested bandwidth.
 
-        Returns:
-            Ratio (0.0 to 1.0), or 0.0 if no bandwidth requested.
+        :return: Ratio (0.0 to 1.0), or 0.0 if no bandwidth requested.
+        :rtype: float
         """
         if self.total_bandwidth_requested_gbps == 0:
             return 0.0
@@ -269,8 +296,8 @@ class StatsCollector:
         """
         Calculate average path hop count.
 
-        Returns:
-            Mean hop count, or 0.0 if no paths recorded.
+        :return: Mean hop count, or 0.0 if no paths recorded.
+        :rtype: float
         """
         if not self.hop_counts:
             return 0.0
@@ -281,8 +308,8 @@ class StatsCollector:
         """
         Calculate average path length in kilometers.
 
-        Returns:
-            Mean path length, or 0.0 if no paths recorded.
+        :return: Mean path length, or 0.0 if no paths recorded.
+        :rtype: float
         """
         if not self.path_lengths_km:
             return 0.0
@@ -293,8 +320,8 @@ class StatsCollector:
     # =========================================================================
     def record_arrival(
         self,
-        request: "Request",
-        result: "AllocationResult",
+        request: Request,
+        result: AllocationResult,
     ) -> None:
         """
         Record the outcome of a request arrival.
@@ -303,11 +330,13 @@ class StatsCollector:
         after each arrival is processed. Updates all relevant counters
         based on the allocation result.
 
-        Args:
-            request: The request that was processed
-            result: The allocation result (success or blocked)
+        :param request: The request that was processed
+        :type request: Request
+        :param result: The allocation result (success or blocked)
+        :type result: AllocationResult
 
-        Example:
+        Example::
+
             >>> stats.record_arrival(request, result)
             >>> stats.total_requests
             1
@@ -323,15 +352,16 @@ class StatsCollector:
 
     def _record_success(
         self,
-        request: "Request",
-        result: "AllocationResult",
+        request: Request,
+        result: AllocationResult,
     ) -> None:
         """
         Record a successful allocation.
 
-        Args:
-            request: The routed request
-            result: The successful allocation result
+        :param request: The routed request
+        :type request: Request
+        :param result: The successful allocation result
+        :type result: AllocationResult
         """
         self.successful_requests += 1
         self.total_bandwidth_allocated_gbps += result.total_bandwidth_allocated_gbps
@@ -406,12 +436,12 @@ class StatsCollector:
             if not result.protection_result.is_fully_protected and result.is_protected:
                 self.protection_failures += 1
 
-    def _record_block(self, result: "AllocationResult") -> None:
+    def _record_block(self, result: AllocationResult) -> None:
         """
         Record a blocked request.
 
-        Args:
-            result: The failed allocation result
+        :param result: The failed allocation result
+        :type result: AllocationResult
         """
         self.blocked_requests += 1
 
@@ -430,10 +460,11 @@ class StatsCollector:
         Called during SNR validation to track signal quality.
         Can be called multiple times per request (e.g., per link).
 
-        Args:
-            snr_db: SNR value in dB
+        :param snr_db: SNR value in dB
+        :type snr_db: float
 
-        Example:
+        Example::
+
             >>> stats.record_snr(18.5)
             >>> stats.record_snr(15.5)
             >>> stats.average_snr
@@ -448,27 +479,30 @@ class StatsCollector:
         Called during XT validation to track inter-core crosstalk.
         Can be called multiple times per request.
 
-        Args:
-            xt_value: Crosstalk value (typically negative dB or linear)
+        :param xt_value: Crosstalk value (typically negative dB or linear)
+        :type xt_value: float
 
-        Example:
+        Example::
+
             >>> stats.record_xt(-30.5)
             >>> stats.record_xt(-28.0)
         """
         self.xt_values.append(xt_value)
 
-    def record_release(self, request: "Request") -> None:
+    def record_release(self, request: Request) -> None:
         """
         Record a request release.
 
         Called when a request departs and resources are freed.
         In Phase 1, this is a placeholder for future utilization tracking.
 
-        Args:
-            request: The request being released
+        :param request: The request being released
+        :type request: Request
 
-        Note:
+        .. note::
+
             Currently a no-op in Phase 1. Future phases may track:
+
             - Active request count over time
             - Resource utilization during request lifetime
             - Departure rate metrics
@@ -484,9 +518,10 @@ class StatsCollector:
         """
         Record a protection switchover event.
 
-        Args:
-            switchover_time_ms: Time taken for switchover in milliseconds
-            success: Whether the switchover was successful
+        :param switchover_time_ms: Time taken for switchover in milliseconds
+        :type switchover_time_ms: float
+        :param success: Whether the switchover was successful
+        :type success: bool
         """
         self.switchover_count += 1
         if success:
@@ -504,28 +539,17 @@ class StatsCollector:
         This method produces a dictionary compatible with the existing
         comparison scripts and result analysis tools.
 
-        Returns:
-            Dictionary with the following keys:
-                - blocking_probability: float (0.0 to 1.0)
-                - success_rate: float (0.0 to 1.0)
-                - total_requests: int
-                - successful_requests: int
-                - blocked_requests: int
-                - block_reasons: dict[str, int]
-                - grooming_ratio: float
-                - slicing_ratio: float
-                - protection_ratio: float
-                - groomed_requests: int
-                - sliced_requests: int
-                - protected_requests: int
-                - modulations_used: dict[str, int]
-                - average_snr: float
-                - snr_values: list[float]
-                - bandwidth_utilization: float
-                - total_bandwidth_requested_gbps: int
-                - total_bandwidth_allocated_gbps: int
+        :return: Dictionary with keys including blocking_probability (float 0.0-1.0),
+            success_rate (float 0.0-1.0), total_requests (int), successful_requests (int),
+            blocked_requests (int), block_reasons (dict[str, int]), grooming_ratio (float),
+            slicing_ratio (float), protection_ratio (float), groomed_requests (int),
+            sliced_requests (int), protected_requests (int), modulations_used (dict[str, int]),
+            average_snr (float), snr_values (list[float]), bandwidth_utilization (float),
+            total_bandwidth_requested_gbps (int), total_bandwidth_allocated_gbps (int)
+        :rtype: dict[str, Any]
 
-        Example:
+        Example::
+
             >>> results = stats.to_comparison_format()
             >>> results["blocking_probability"]
             0.15
@@ -611,8 +635,8 @@ class StatsCollector:
         This method produces output matching the legacy StatsProps
         structure for gradual migration of existing code.
 
-        Returns:
-            Dictionary matching legacy stats structure
+        :return: Dictionary matching legacy stats structure
+        :rtype: dict[str, Any]
         """
         return {
             # Match legacy key names
@@ -644,7 +668,8 @@ class StatsCollector:
         Called between simulation iterations or when starting
         a new simulation run.
 
-        Example:
+        Example::
+
             >>> stats.record_arrival(request, result)
             >>> stats.total_requests
             1
@@ -693,14 +718,14 @@ class StatsCollector:
         # Crosstalk tracking
         self.xt_values.clear()
 
-    def merge(self, other: "StatsCollector") -> None:
+    def merge(self, other: StatsCollector) -> None:
         """
         Merge statistics from another collector into this one.
 
         Useful for combining statistics from parallel simulation runs.
 
-        Args:
-            other: Another StatsCollector to merge from
+        :param other: Another StatsCollector to merge from
+        :type other: StatsCollector
         """
         # Request counters
         self.total_requests += other.total_requests
