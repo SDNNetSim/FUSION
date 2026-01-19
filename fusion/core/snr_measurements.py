@@ -1608,7 +1608,7 @@ class SnrMeasurements:
 
     def handle_snr_dynamic_slicing(
         self, path_index: int
-    ) -> tuple[str | None, float, float]:
+    ) -> tuple[bool | str, float, float]:
         """
         Controls the methods of this class.
 
@@ -1639,8 +1639,9 @@ class SnrMeasurements:
                 raise ValueError(
                     f"Unexpected band_list: {self.engine_props_dict['band_list']}"
                 )
-            # Convert bool|str result to str|None: False -> None, string stays as-is
-            modulation_format = gsnr_result if isinstance(gsnr_result, str) else None
+            # Pass through result directly - can be bool (True/False) or str (modulation name)
+            # True = SNR passed (flex-grid), False = SNR failed, str = modulation format (fixed-grid dynamic)
+            modulation_format = gsnr_result
         else:
             raise NotImplementedError(
                 f"Unexpected snr_type flag got: {self.engine_props_dict['snr_type']}"

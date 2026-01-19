@@ -259,7 +259,8 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
             # Set path in spectrum_props (path is list of node IDs as strings)
-            legacy_spectrum.spectrum_props.path_list = [int(node) if node.isdigit() else hash(node) % 10000 for node in path]
+            # Keep as strings to match network_spectrum_dict keys which are string tuples
+            legacy_spectrum.spectrum_props.path_list = list(path)
 
             # NOTE: Don't pre-set lightpath_bandwidth here - get_spectrum may clear it.
             # We set it AFTER get_spectrum as a fallback (matching legacy sdn_controller behavior).
@@ -407,9 +408,9 @@ class SpectrumAdapter(SpectrumPipeline):
                 route_props=cast(RoutingProps, route_props),
             )
 
-            # Set paths in spectrum_props (convert string node IDs to ints)
-            legacy_spectrum.spectrum_props.path_list = [int(node) if node.isdigit() else hash(node) % 10000 for node in primary_path]
-            legacy_spectrum.spectrum_props.backup_path = [int(node) if node.isdigit() else hash(node) % 10000 for node in backup_path]
+            # Set paths in spectrum_props (keep as strings to match network_spectrum_dict keys)
+            legacy_spectrum.spectrum_props.path_list = list(primary_path)
+            legacy_spectrum.spectrum_props.backup_path = list(backup_path)
 
             # Call legacy get_spectrum with backup modulation
             legacy_spectrum.get_spectrum(

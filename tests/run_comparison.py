@@ -41,6 +41,8 @@ IGNORE_KEYS = {
     "protection_switchovers",
     "protection_failures",
     "failure_induced_blocks",
+    "ci_rate_block",
+    "ci_percent_block",
 }
 
 # Temporary: Only run these specific test cases
@@ -557,8 +559,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'baseline_kspf_ff':
-            all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
+        all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
         LOGGER.info("All %d cases passed ✓", len(cases))
