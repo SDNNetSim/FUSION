@@ -43,6 +43,7 @@ Modules
    fusion/modules/index
    fusion/pipelines/index
    fusion/policies/index
+   fusion/reporting/index
 
 Data Directory
 ==============
