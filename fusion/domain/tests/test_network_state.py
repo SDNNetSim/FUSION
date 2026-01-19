@@ -19,14 +19,12 @@ Tests cover:
 
 from __future__ import annotations
 
-import numpy as np
 import networkx as nx
+import numpy as np
 import pytest
 
 from fusion.domain.config import SimulationConfig
-from fusion.domain.lightpath import Lightpath
 from fusion.domain.network_state import LinkSpectrum, NetworkState
-
 
 # =============================================================================
 # Test Fixtures
@@ -41,7 +39,7 @@ def create_test_config(
 ) -> SimulationConfig:
     """Create a test SimulationConfig with minimal required fields."""
     if band_slots is None:
-        band_slots = {band: 320 for band in band_list}
+        band_slots = dict.fromkeys(band_list, 320)
 
     return SimulationConfig(
         network_name="test_network",
@@ -1957,7 +1955,7 @@ class TestLightpathQueriesWithData:
             bandwidth_gbps=100,
             path_weight_km=250.0,
         )
-        lp2 = state.create_lightpath(
+        _lp2 = state.create_lightpath(
             path=["B", "C"],
             start_slot=20,
             end_slot=30,

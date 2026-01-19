@@ -1,7 +1,5 @@
 """Backward compatibility tests for gymnasium_envs migration.
 
-Phase: P4.3 - Migrate Existing RL Experiments
-
 These tests ensure that existing code patterns continue to work
 during the migration period.
 """

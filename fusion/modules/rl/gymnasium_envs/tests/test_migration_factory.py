@@ -1,7 +1,4 @@
-"""Tests for create_sim_env factory function.
-
-Phase: P4.3 - Migrate Existing RL Experiments
-"""
+"""Tests for create_sim_env factory function."""
 
 from __future__ import annotations
 

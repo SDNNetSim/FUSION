@@ -1,7 +1,5 @@
 """Tests for deprecation warnings in gymnasium_envs migration.
 
-Phase: P4.3 - Migrate Existing RL Experiments
-
 These tests verify that deprecation warnings are emitted correctly
 and can be suppressed when needed.
 

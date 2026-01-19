@@ -46,14 +46,12 @@ from fusion.modules.ml.evaluation import (
     evaluate_model_stability,
     evaluate_regressor,
 )
-
 from fusion.modules.ml.feature_engineering import (
     create_interaction_features,
     create_polynomial_features,
     engineer_network_features,
     extract_ml_features,
 )
-
 from fusion.modules.ml.model_io import (
     check_model_compatibility,
     export_model_for_deployment,
@@ -62,7 +60,6 @@ from fusion.modules.ml.model_io import (
     save_model,
     save_model_ensemble,
 )
-
 from fusion.modules.ml.preprocessing import (
     balance_training_data,
     normalize_features,
@@ -70,7 +67,6 @@ from fusion.modules.ml.preprocessing import (
     process_training_data,
     split_features_labels,
 )
-
 from fusion.modules.ml.visualization import (
     plot_2d_clusters,
     plot_3d_clusters,

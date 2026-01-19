@@ -1,11 +1,4 @@
-"""Tests for RLSimulationAdapter.
-
-Phase: P4.1 - RLSimulationAdapter Scaffolding
-Chunk: 2 - Adapter skeleton
-Chunk: 3 - get_path_options method
-Chunk: 4 - apply_action method
-Chunk: 5 - compute_reward method
-"""
+"""Tests for RLSimulationAdapter."""
 
 from unittest.mock import MagicMock
 

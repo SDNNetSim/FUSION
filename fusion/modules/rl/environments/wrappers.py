@@ -2,8 +2,6 @@
 
 This module provides wrappers that adapt UnifiedSimEnv for use with
 various RL libraries, particularly Stable-Baselines3's MaskablePPO.
-
-Phase: P4.2 - UnifiedSimEnv Wiring
 """
 
 from __future__ import annotations

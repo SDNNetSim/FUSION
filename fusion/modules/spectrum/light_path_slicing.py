@@ -304,7 +304,6 @@ class LightPathSlicingManager:
         sdn_controller: Any,
     ) -> bool:
         """Handle fixed-grid dynamic slicing."""
-        initial_remaining = remaining_bw
         iteration = 0
         while remaining_bw > 0:
             iteration += 1

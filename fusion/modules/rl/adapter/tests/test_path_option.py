@@ -1,8 +1,4 @@
-"""Tests for PathOption dataclass.
-
-Phase: P4.1 - RLSimulationAdapter Scaffolding
-Chunk: 1 - PathOption dataclass
-"""
+"""Tests for PathOption dataclass."""
 
 from dataclasses import FrozenInstanceError
 from typing import Any
@@ -241,7 +237,7 @@ class TestComputeActionMask:
 
 
 class TestPathOptionProtection:
-    """Tests for PathOption protection fields (P5.1)."""
+    """Tests for PathOption protection fields."""
 
     def test_unprotected_default_values(self) -> None:
         """Unprotected PathOption has None backup fields."""

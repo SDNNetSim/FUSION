@@ -6,20 +6,17 @@ Phase: P2.4 - Legacy Adapters
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import networkx as nx
 import pytest
 
 from fusion.core.adapters.snr_adapter import (
-    RoutePropsProxyForSNR,
     SDNPropsProxyForSNR,
     SNRAdapter,
     SpectrumPropsProxyForSNR,
 )
 from fusion.domain.config import SimulationConfig
-from fusion.domain.lightpath import Lightpath
 from fusion.domain.network_state import NetworkState
 
 

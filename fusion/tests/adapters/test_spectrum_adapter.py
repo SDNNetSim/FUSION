@@ -6,14 +6,12 @@ Phase: P2.4 - Legacy Adapters
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import networkx as nx
 import pytest
 
 from fusion.core.adapters.spectrum_adapter import (
-    RoutePropsProxy,
     SDNPropsProxyForSpectrum,
     SpectrumAdapter,
 )

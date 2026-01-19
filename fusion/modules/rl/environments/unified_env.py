@@ -9,8 +9,6 @@ Key Invariants:
 - Uses RLSimulationAdapter for all simulation interactions
 - Same pipelines as SDNOrchestrator (no forked simulator)
 - Action mask in info["action_mask"] for SB3 MaskablePPO
-
-Phase: P4.2 - UnifiedSimEnv Wiring
 """
 
 from __future__ import annotations

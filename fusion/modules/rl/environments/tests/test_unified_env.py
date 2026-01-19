@@ -1,8 +1,5 @@
 """Tests for UnifiedSimEnv.
 
-Phase: P4.2 - UnifiedSimEnv Wiring
-Chunks 6-8: Environment skeleton, reset(), and step() tests
-
 These tests verify that:
 1. Environment can be instantiated
 2. Observation and action spaces are valid Gymnasium spaces

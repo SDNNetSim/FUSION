@@ -707,7 +707,7 @@ class SNRRecheckResult:
         return min(self.violations.items(), key=lambda x: x[1])
 
     @classmethod
-    def success(cls, checked_count: int = 0) -> "SNRRecheckResult":
+    def success(cls, checked_count: int = 0) -> SNRRecheckResult:
         """Create result when all affected lightpaths still pass."""
         return cls(
             all_pass=True,
@@ -722,7 +722,7 @@ class SNRRecheckResult:
         degraded_ids: list[int],
         violations: dict[int, float],
         checked_count: int = 0,
-    ) -> "SNRRecheckResult":
+    ) -> SNRRecheckResult:
         """Create result when some lightpaths are now degraded."""
         return cls(
             all_pass=False,
@@ -796,7 +796,7 @@ class ProtectionResult:
         cls,
         primary_spectrum: SpectrumResult,
         backup_spectrum: SpectrumResult | None = None,
-    ) -> "ProtectionResult":
+    ) -> ProtectionResult:
         """Create result for successfully established protection."""
         return cls(
             primary_established=True,
@@ -806,7 +806,7 @@ class ProtectionResult:
         )
 
     @classmethod
-    def primary_only(cls, primary_spectrum: SpectrumResult) -> "ProtectionResult":
+    def primary_only(cls, primary_spectrum: SpectrumResult) -> ProtectionResult:
         """Create result when only primary path established (backup failed)."""
         return cls(
             primary_established=True,
@@ -815,7 +815,7 @@ class ProtectionResult:
         )
 
     @classmethod
-    def failed(cls) -> "ProtectionResult":
+    def failed(cls) -> ProtectionResult:
         """Create result for failed protection establishment."""
         return cls(
             primary_established=False,
@@ -829,7 +829,7 @@ class ProtectionResult:
         switchover_time_ms: float,
         failure_type: str,
         recovery_type: str = "protection",
-    ) -> "ProtectionResult":
+    ) -> ProtectionResult:
         """Create result for a switchover event."""
         return cls(
             primary_established=True,
@@ -910,7 +910,7 @@ class AllocationResult:
     is_protected: bool = False
 
     # Failure info
-    block_reason: "BlockReason | None" = None
+    block_reason: BlockReason | None = None
 
     # Per-segment tracking (for sliced/multi-lightpath allocations)
     bandwidth_allocations: tuple[int, ...] = ()
@@ -971,11 +971,11 @@ class AllocationResult:
     @classmethod
     def blocked(
         cls,
-        reason: "BlockReason",
+        reason: BlockReason,
         route_result: RouteResult | None = None,
         spectrum_result: SpectrumResult | None = None,
         snr_result: SNRResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for blocked request."""
         return cls(
             success=False,
@@ -994,7 +994,7 @@ class AllocationResult:
         spectrum_result: SpectrumResult | None = None,
         snr_result: SNRResult | None = None,
         is_protected: bool = False,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for successful allocation with new lightpath."""
         return cls(
             success=True,
@@ -1012,7 +1012,7 @@ class AllocationResult:
         lightpath_ids: list[int],
         bandwidth_gbps: int,
         grooming_result: GroomingResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for fully groomed request."""
         return cls(
             success=True,
@@ -1032,7 +1032,7 @@ class AllocationResult:
         route_result: RouteResult | None = None,
         spectrum_result: SpectrumResult | None = None,
         snr_result: SNRResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for partially groomed request."""
         return cls(
             success=True,
@@ -1053,7 +1053,7 @@ class AllocationResult:
         bandwidth_gbps: int,
         slicing_result: SlicingResult | None = None,
         route_result: RouteResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for sliced request."""
         return cls(
             success=True,
