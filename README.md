@@ -6,6 +6,33 @@ Welcome to **FUSION**, an open-source venture into the future of networking! Our
 
 We need your insight and creativity! The true strength of open-source lies in community collaboration. Join us in pioneering the networks of tomorrow by contributing your unique simulations and features. Your expertise in AI and networking can help shape the future of this field.
 
+## Documentation
+
+Full documentation is available at: **[https://sdnnetsim.github.io/FUSION/](https://sdnnetsim.github.io/FUSION/)**
+
+Key sections:
+- [Getting Started](https://sdnnetsim.github.io/FUSION/getting-started/) - Installation and setup guides
+- [Developer Guide](https://sdnnetsim.github.io/FUSION/developer/) - Module documentation and architecture
+- [API Reference](https://sdnnetsim.github.io/FUSION/api/) - Auto-generated API documentation
+
+### Building Documentation Locally
+
+If you prefer to build the documentation locally:
+
+```bash
+# Install documentation dependencies
+pip install -r docs/requirements.txt
+
+# Build the documentation
+cd docs
+make html          # macOS/Linux
+.\make.bat html    # Windows
+
+# View locally
+make serve         # Then visit http://localhost:8000
+# Or open docs/_build/html/index.html directly
+```
+
 ## Getting Started
 
 ### Supported Operating Systems
@@ -102,132 +129,6 @@ pip install -r requirements-dev.txt
 
 ---
 
-## Generating the Documentation
-
-After installing the dependencies, you can generate the Sphinx documentation.
-
-### Install Documentation Dependencies
-
-```bash
-pip install -r docs/requirements.txt
-```
-
-### Build the Documentation
-
-Navigate to the docs directory and build:
-
-On macOS/Linux:
-
-```bash
-cd docs
-make html
-```
-
-On Windows:
-
-```powershell
-cd docs
-.\make.bat html
-```
-
-### View the Documentation
-
-Open `docs/_build/html/index.html` in your browser, or serve locally:
-
-```bash
-cd docs
-make serve
-```
-
-Then visit http://localhost:8000 in your browser.
-
----
-
-## Survivability Experiments
-
-FUSION now supports comprehensive survivability testing with failure injection, protection mechanisms, and offline RL policy evaluation.
-
-### Key Features
-
-- **Failure Types**: Link (F1), Node (F2), SRLG (F3), and Geographic (F4) failures
-- **Protection Mechanisms**: 1+1 disjoint path protection with configurable recovery times
-- **RL Policies**: Baseline (KSP-FF, 1+1) and offline RL policies (BC, IQL) with action masking
-- **Metrics**: Blocking probability, recovery time (mean, P95), fragmentation, decision time
-- **Dataset Generation**: Log offline RL training data in JSONL format
-
-### Quick Start
-
-```bash
-# Run survivability experiment with geographic failure and 1+1 protection
-python -m fusion.cli.run_sim \
-  --config_path fusion/configs/templates/survivability_experiment.ini \
-  --failure_type geo \
-  --geo_center_node 5 \
-  --geo_hop_radius 2 \
-  --route_method 1plus1_protection
-```
-
-### Example Configurations
-
-**Link Failure with KSP-FF (Baseline):**
-```ini
-[failure_settings]
-failure_type = link
-failed_link_src = 3
-failed_link_dst = 9
-
-[offline_rl_settings]
-policy_type = ksp_ff
-```
-
-**Geographic Failure with 1+1 Protection:**
-```ini
-[failure_settings]
-failure_type = geo
-geo_center_node = 5
-geo_hop_radius = 2
-
-[routing_settings]
-route_method = 1plus1_protection
-
-[protection_settings]
-protection_switchover_ms = 50.0
-```
-
-**RL Policy Evaluation:**
-```ini
-[offline_rl_settings]
-policy_type = bc
-bc_model_path = models/bc_model.pt
-fallback_policy = ksp_ff
-```
-
-### Supported Failure Types
-
-| Type | Description | Parameters |
-|------|-------------|------------|
-| **F1 (Link)** | Single link failure | `failed_link_src`, `failed_link_dst` |
-| **F2 (Node)** | Node and adjacent links | `failed_node_id` |
-| **F3 (SRLG)** | Shared Risk Link Group | `srlg_links` |
-| **F4 (Geographic)** | Hop-radius disaster | `geo_center_node`, `geo_hop_radius` |
-
-### Metrics Collected
-
-- **Blocking Probability**: Overall and within failure window
-- **Recovery Time**: Mean, P95, max recovery times
-- **Fragmentation**: Spectrum efficiency proxy
-- **Decision Time**: Policy inference latency
-
-### Documentation
-
-For detailed documentation on survivability features, see:
-- [Survivability v1 Documentation](docs/survivability-v1/README.md)
-- [Failures Module](fusion/modules/failures/README.md)
-- [RL Policies Module](fusion/modules/rl/policies/README.md)
-- [Configuration Guide](fusion/configs/templates/survivability_experiment.ini)
-
----
-
 ## Standards and Guidelines
 
 To maintain the quality and consistency of the codebase, we adhere to the following standards and guidelines:
@@ -316,6 +217,9 @@ make test
 # Run linting (using pre-commit)
 make lint
 
+# Full validation (lint + tests)
+make validate
+
 # Clean up generated files
 make clean
 ```
@@ -339,4 +243,4 @@ Pre-commit hooks check:
 5. Run tests: `make test` or `pytest`
 6. Submit your PR - all checks should pass
 
-**Note:** The `fusion/gui` module is excluded from all checks as it's deprecated and requires a revamp.
+For more details, see [CONTRIBUTING.md](CONTRIBUTING.md).
