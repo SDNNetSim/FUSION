@@ -1,0 +1,57 @@
+"""
+FUSION Domain Model Package.
+
+This package contains the typed domain objects for FUSION:
+- SimulationConfig: Immutable simulation configuration
+- Request: Network service request with lifecycle tracking
+- Lightpath: Allocated optical path with capacity management
+- Result objects: Immutable pipeline stage outputs
+
+All domain objects support legacy conversion via from_legacy_dict/to_legacy_dict.
+"""
+
+from fusion.domain.config import SimulationConfig
+from fusion.domain.lightpath import Lightpath
+from fusion.domain.network_state import LinkSpectrum, NetworkState
+from fusion.domain.request import (
+    BlockReason,
+    ProtectionStatus,
+    Request,
+    RequestStatus,
+    RequestType,
+)
+from fusion.domain.results import (
+    AllocationResult,
+    GroomingResult,
+    ProtectionResult,
+    RouteResult,
+    SlicingResult,
+    SNRRecheckResult,
+    SNRResult,
+    SpectrumResult,
+)
+
+__all__ = [
+    # Config
+    "SimulationConfig",
+    # Request
+    "Request",
+    "RequestType",
+    "RequestStatus",
+    "BlockReason",
+    "ProtectionStatus",
+    # Lightpath
+    "Lightpath",
+    # Network State
+    "LinkSpectrum",
+    "NetworkState",
+    # Results
+    "RouteResult",
+    "SpectrumResult",
+    "GroomingResult",
+    "SlicingResult",
+    "SNRResult",
+    "SNRRecheckResult",
+    "ProtectionResult",
+    "AllocationResult",
+]

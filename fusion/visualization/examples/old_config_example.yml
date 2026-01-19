@@ -1,0 +1,31 @@
+# Example of OLD (legacy) configuration format
+# This format is DEPRECATED and will be removed in version 7.0
+
+network: NSFNet
+dates:
+  - 0606
+  - 0611
+
+# Old format: separate algorithms and observation spaces
+algorithms:
+  - ppo
+  - dqn
+observation_spaces:
+  - obs_7
+  - obs_10
+
+# Simple plot list (no customization)
+plots:
+  - blocking
+  - rewards
+
+# Deprecated field names
+save_format: png
+plot_style: seaborn
+use_cache: true
+dpi: 300
+
+# Old run filters
+runs:
+  drl: true
+  non_drl: true

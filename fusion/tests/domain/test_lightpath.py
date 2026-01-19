@@ -1,0 +1,1051 @@
+"""Tests for Lightpath dataclass."""
+
+from __future__ import annotations
+
+import pytest
+
+from fusion.domain.lightpath import Lightpath
+
+
+class TestLightpathCreation:
+    """Test Lightpath instantiation."""
+
+    def test_create_minimal_lightpath(self) -> None:
+        """Test creating lightpath with required fields only."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+
+        assert lp.lightpath_id == 1
+        assert lp.path == ["0", "5"]
+        assert lp.modulation == "QPSK"
+        assert lp.request_allocations == {}
+
+    def test_create_full_lightpath(self) -> None:
+        """Test creating lightpath with all fields."""
+        lp = Lightpath(
+            lightpath_id=42,
+            path=["A", "B", "C", "D"],
+            start_slot=100,
+            end_slot=108,
+            core=3,
+            band="l",
+            modulation="16-QAM",
+            total_bandwidth_gbps=400,
+            remaining_bandwidth_gbps=200,
+            path_weight_km=1500.5,
+            request_allocations={10: 100, 20: 100},
+            snr_db=18.5,
+            xt_cost=0.015,
+            is_degraded=False,
+        )
+
+        assert lp.num_hops == 3
+        assert lp.snr_db == 18.5
+        assert lp.utilization == 0.5
+
+    def test_create_protected_lightpath(self) -> None:
+        """Test creating protected lightpath with backup path."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "2", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+            backup_path=["0", "3", "5"],
+            backup_start_slot=8,
+            backup_end_slot=16,
+            backup_core=0,
+            backup_band="c",
+            is_protected=True,
+        )
+
+        assert lp.is_protected is True
+        assert lp.backup_path == ["0", "3", "5"]
+        assert lp.active_path == "primary"
+
+
+class TestLightpathValidation:
+    """Test Lightpath validation in __post_init__."""
+
+    def test_short_path_raises(self) -> None:
+        """Test that single-node path raises ValueError."""
+        with pytest.raises(ValueError, match="path must have at least 2 nodes"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+            )
+
+    def test_empty_path_raises(self) -> None:
+        """Test that empty path raises ValueError."""
+        with pytest.raises(ValueError, match="path must have at least 2 nodes"):
+            Lightpath(
+                lightpath_id=1,
+                path=[],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+            )
+
+    def test_invalid_slot_range_raises(self) -> None:
+        """Test that start_slot >= end_slot raises ValueError."""
+        with pytest.raises(ValueError, match="start_slot must be < end_slot"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=10,
+                end_slot=10,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+            )
+
+    def test_invalid_slot_range_reversed_raises(self) -> None:
+        """Test that start_slot > end_slot raises ValueError."""
+        with pytest.raises(ValueError, match="start_slot must be < end_slot"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=10,
+                end_slot=5,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+            )
+
+    def test_negative_core_raises(self) -> None:
+        """Test that negative core raises ValueError."""
+        with pytest.raises(ValueError, match="core must be >= 0"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=-1,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+            )
+
+    def test_zero_bandwidth_raises(self) -> None:
+        """Test that zero total bandwidth raises ValueError."""
+        with pytest.raises(ValueError, match="total_bandwidth_gbps must be > 0"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=0,
+                remaining_bandwidth_gbps=0,
+            )
+
+    def test_negative_total_bandwidth_raises(self) -> None:
+        """Test that negative total bandwidth raises ValueError."""
+        with pytest.raises(ValueError, match="total_bandwidth_gbps must be > 0"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=-100,
+                remaining_bandwidth_gbps=-100,
+            )
+
+    def test_negative_remaining_raises(self) -> None:
+        """Test that negative remaining bandwidth raises ValueError."""
+        with pytest.raises(ValueError, match="remaining_bandwidth_gbps must be >= 0"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=-10,
+            )
+
+    def test_remaining_exceeds_total_raises(self) -> None:
+        """Test that remaining > total raises ValueError."""
+        with pytest.raises(ValueError, match="remaining_bandwidth_gbps cannot exceed"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=150,
+            )
+
+    def test_invalid_active_path_raises(self) -> None:
+        """Test that invalid active_path raises ValueError."""
+        with pytest.raises(ValueError, match="active_path must be"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+                active_path="invalid",
+            )
+
+    def test_protected_without_backup_raises(self) -> None:
+        """Test that is_protected=True without backup_path raises."""
+        with pytest.raises(ValueError, match="is_protected=True requires backup_path"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+                is_protected=True,
+            )
+
+    def test_backup_without_protected_raises(self) -> None:
+        """Test that backup_path without is_protected=True raises."""
+        with pytest.raises(ValueError, match="backup_path requires is_protected=True"):
+            Lightpath(
+                lightpath_id=1,
+                path=["0", "5"],
+                start_slot=0,
+                end_slot=8,
+                core=0,
+                band="c",
+                modulation="QPSK",
+                total_bandwidth_gbps=100,
+                remaining_bandwidth_gbps=100,
+                backup_path=["0", "3", "5"],
+                is_protected=False,
+            )
+
+
+class TestLightpathComputedProperties:
+    """Test Lightpath computed properties."""
+
+    @pytest.fixture
+    def lightpath(self) -> Lightpath:
+        """Create a standard lightpath for testing."""
+        return Lightpath(
+            lightpath_id=1,
+            path=["A", "B", "C", "D"],
+            start_slot=10,
+            end_slot=18,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=50,
+            path_weight_km=1200.0,
+            request_allocations={42: 50},
+        )
+
+    def test_source(self, lightpath: Lightpath) -> None:
+        """Test source property."""
+        assert lightpath.source == "A"
+
+    def test_destination(self, lightpath: Lightpath) -> None:
+        """Test destination property."""
+        assert lightpath.destination == "D"
+
+    def test_endpoint_key(self, lightpath: Lightpath) -> None:
+        """Test endpoint_key is sorted."""
+        assert lightpath.endpoint_key == ("A", "D")
+
+    def test_endpoint_key_reverse(self) -> None:
+        """Test endpoint_key for reverse direction."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["Z", "Y", "A"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        assert lp.endpoint_key == ("A", "Z")
+
+    def test_num_slots(self, lightpath: Lightpath) -> None:
+        """Test num_slots calculation."""
+        assert lightpath.num_slots == 8  # 18 - 10
+
+    def test_num_hops(self, lightpath: Lightpath) -> None:
+        """Test num_hops calculation."""
+        assert lightpath.num_hops == 3  # len(path) - 1
+
+    def test_utilization(self, lightpath: Lightpath) -> None:
+        """Test utilization calculation."""
+        assert lightpath.utilization == 0.5  # 50 used of 100
+
+    def test_utilization_full(self) -> None:
+        """Test utilization at 100%."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=0,
+        )
+        assert lp.utilization == 1.0
+
+    def test_utilization_empty(self) -> None:
+        """Test utilization at 0%."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        assert lp.utilization == 0.0
+
+    def test_utilization_zero_capacity(self) -> None:
+        """Test utilization with zero capacity returns 0."""
+        # Can't create with 0 total, but test the edge case logic
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        # Hack to test edge case (normally would violate invariant)
+        object.__setattr__(lp, "total_bandwidth_gbps", 0)
+        assert lp.utilization == 0.0
+
+    def test_has_capacity(self, lightpath: Lightpath) -> None:
+        """Test has_capacity property."""
+        assert lightpath.has_capacity is True
+
+    def test_has_capacity_when_full(self) -> None:
+        """Test has_capacity when no remaining capacity."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=0,
+        )
+        assert lp.has_capacity is False
+
+    def test_num_requests(self, lightpath: Lightpath) -> None:
+        """Test num_requests property."""
+        assert lightpath.num_requests == 1
+
+    def test_num_requests_empty(self) -> None:
+        """Test num_requests when empty."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        assert lp.num_requests == 0
+
+    def test_is_empty(self, lightpath: Lightpath) -> None:
+        """Test is_empty property."""
+        assert lightpath.is_empty is False
+
+        empty_lp = Lightpath(
+            lightpath_id=2,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        assert empty_lp.is_empty is True
+
+
+class TestLightpathCapacityManagement:
+    """Test Lightpath capacity management methods."""
+
+    @pytest.fixture
+    def lightpath(self) -> Lightpath:
+        """Create a fresh lightpath for each test."""
+        return Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+
+    def test_can_accommodate_true(self, lightpath: Lightpath) -> None:
+        """Test can_accommodate returns True when sufficient capacity."""
+        assert lightpath.can_accommodate(50) is True
+        assert lightpath.can_accommodate(100) is True
+
+    def test_can_accommodate_false(self, lightpath: Lightpath) -> None:
+        """Test can_accommodate returns False when insufficient capacity."""
+        assert lightpath.can_accommodate(150) is False
+
+    def test_can_accommodate_exact(self, lightpath: Lightpath) -> None:
+        """Test can_accommodate returns True for exact capacity."""
+        assert lightpath.can_accommodate(100) is True
+
+    def test_allocate_bandwidth_success(self, lightpath: Lightpath) -> None:
+        """Test successful bandwidth allocation."""
+        result = lightpath.allocate_bandwidth(42, 50)
+
+        assert result is True
+        assert lightpath.remaining_bandwidth_gbps == 50
+        assert lightpath.request_allocations[42] == 50
+
+    def test_allocate_bandwidth_full_capacity(self, lightpath: Lightpath) -> None:
+        """Test allocating full capacity."""
+        result = lightpath.allocate_bandwidth(42, 100)
+
+        assert result is True
+        assert lightpath.remaining_bandwidth_gbps == 0
+        assert lightpath.has_capacity is False
+
+    def test_allocate_bandwidth_insufficient(self, lightpath: Lightpath) -> None:
+        """Test allocation fails when insufficient capacity."""
+        result = lightpath.allocate_bandwidth(42, 150)
+
+        assert result is False
+        assert lightpath.remaining_bandwidth_gbps == 100
+        assert 42 not in lightpath.request_allocations
+
+    def test_allocate_bandwidth_duplicate_raises(self, lightpath: Lightpath) -> None:
+        """Test duplicate allocation raises ValueError."""
+        lightpath.allocate_bandwidth(42, 50)
+
+        with pytest.raises(ValueError, match="already has allocation"):
+            lightpath.allocate_bandwidth(42, 25)
+
+    def test_allocate_bandwidth_zero_raises(self, lightpath: Lightpath) -> None:
+        """Test zero bandwidth raises ValueError."""
+        with pytest.raises(ValueError, match="bandwidth_gbps must be > 0"):
+            lightpath.allocate_bandwidth(42, 0)
+
+    def test_allocate_bandwidth_negative_raises(self, lightpath: Lightpath) -> None:
+        """Test negative bandwidth raises ValueError."""
+        with pytest.raises(ValueError, match="bandwidth_gbps must be > 0"):
+            lightpath.allocate_bandwidth(42, -10)
+
+    def test_release_bandwidth(self, lightpath: Lightpath) -> None:
+        """Test bandwidth release."""
+        lightpath.allocate_bandwidth(42, 50)
+        released = lightpath.release_bandwidth(42)
+
+        assert released == 50
+        assert lightpath.remaining_bandwidth_gbps == 100
+        assert 42 not in lightpath.request_allocations
+
+    def test_release_bandwidth_not_found_raises(self, lightpath: Lightpath) -> None:
+        """Test release of non-existent allocation raises KeyError."""
+        with pytest.raises(KeyError, match="has no allocation"):
+            lightpath.release_bandwidth(99)
+
+    def test_get_allocation_exists(self, lightpath: Lightpath) -> None:
+        """Test get_allocation for existing request."""
+        lightpath.allocate_bandwidth(42, 50)
+        assert lightpath.get_allocation(42) == 50
+
+    def test_get_allocation_not_exists(self, lightpath: Lightpath) -> None:
+        """Test get_allocation for non-existent request."""
+        assert lightpath.get_allocation(99) is None
+
+    def test_multiple_allocations(self, lightpath: Lightpath) -> None:
+        """Test multiple allocations maintain invariant."""
+        lightpath.allocate_bandwidth(1, 25)
+        lightpath.allocate_bandwidth(2, 25)
+        lightpath.allocate_bandwidth(3, 25)
+
+        assert lightpath.remaining_bandwidth_gbps == 25
+        assert lightpath.num_requests == 3
+        assert lightpath.utilization == 0.75
+
+    def test_allocate_release_cycle(self, lightpath: Lightpath) -> None:
+        """Test allocate/release cycle restores capacity."""
+        lightpath.allocate_bandwidth(1, 50)
+        lightpath.allocate_bandwidth(2, 30)
+        assert lightpath.remaining_bandwidth_gbps == 20
+
+        lightpath.release_bandwidth(1)
+        assert lightpath.remaining_bandwidth_gbps == 70
+
+        lightpath.release_bandwidth(2)
+        assert lightpath.remaining_bandwidth_gbps == 100
+        assert lightpath.is_empty is True
+
+
+class TestLightpathProtection:
+    """Test Lightpath protection methods."""
+
+    @pytest.fixture
+    def protected_lightpath(self) -> Lightpath:
+        """Create a protected lightpath for testing."""
+        return Lightpath(
+            lightpath_id=1,
+            path=["0", "2", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+            backup_path=["0", "3", "5"],
+            backup_start_slot=8,
+            backup_end_slot=16,
+            backup_core=0,
+            backup_band="c",
+            is_protected=True,
+        )
+
+    def test_switch_to_backup(self, protected_lightpath: Lightpath) -> None:
+        """Test switching to backup path."""
+        result = protected_lightpath.switch_to_backup()
+
+        assert result is True
+        assert protected_lightpath.active_path == "backup"
+
+    def test_switch_to_backup_unprotected(self) -> None:
+        """Test switch_to_backup returns False for unprotected."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        result = lp.switch_to_backup()
+        assert result is False
+
+    def test_switch_to_backup_already_on_backup_raises(self, protected_lightpath: Lightpath) -> None:
+        """Test switching when already on backup raises."""
+        protected_lightpath.switch_to_backup()
+
+        with pytest.raises(ValueError, match="Already on backup path"):
+            protected_lightpath.switch_to_backup()
+
+    def test_switch_to_primary(self, protected_lightpath: Lightpath) -> None:
+        """Test switching back to primary."""
+        protected_lightpath.switch_to_backup()
+        result = protected_lightpath.switch_to_primary()
+
+        assert result is True
+        assert protected_lightpath.active_path == "primary"
+
+    def test_switch_to_primary_unprotected(self) -> None:
+        """Test switch_to_primary returns False for unprotected."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        result = lp.switch_to_primary()
+        assert result is False
+
+    def test_switch_to_primary_already_on_primary_raises(self, protected_lightpath: Lightpath) -> None:
+        """Test switching when already on primary raises."""
+        with pytest.raises(ValueError, match="Already on primary path"):
+            protected_lightpath.switch_to_primary()
+
+    def test_current_path_primary(self, protected_lightpath: Lightpath) -> None:
+        """Test current_path returns primary path."""
+        assert protected_lightpath.current_path == ["0", "2", "5"]
+
+    def test_current_path_backup(self, protected_lightpath: Lightpath) -> None:
+        """Test current_path returns backup path after switch."""
+        protected_lightpath.switch_to_backup()
+        assert protected_lightpath.current_path == ["0", "3", "5"]
+
+    def test_current_path_unprotected(self) -> None:
+        """Test current_path returns primary path for unprotected."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "2", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        assert lp.current_path == ["0", "2", "5"]
+
+
+class TestLightpathLegacyConversion:
+    """Test Lightpath legacy adapter methods."""
+
+    def test_from_legacy_dict_basic(self) -> None:
+        """Test basic conversion from legacy dict."""
+        lp_info = {
+            "path": ["0", "2", "5"],
+            "start_slot": 10,
+            "end_slot": 18,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 50.0,
+            "requests_dict": {42: 50.0},
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert lp.lightpath_id == 1
+        assert lp.path == ["0", "2", "5"]
+        assert lp.modulation == "QPSK"
+        assert lp.total_bandwidth_gbps == 100
+        assert lp.remaining_bandwidth_gbps == 50
+        assert lp.request_allocations == {42: 50}
+
+    def test_from_legacy_dict_minimal(self) -> None:
+        """Test conversion with minimal fields."""
+        lp_info = {
+            "path": ["0", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 100.0,
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert lp.snr_db is None
+        assert lp.xt_cost is None
+        assert lp.request_allocations == {}
+        assert lp.is_protected is False
+
+    def test_from_legacy_dict_with_quality(self) -> None:
+        """Test conversion with quality metrics."""
+        lp_info = {
+            "path": ["0", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 100.0,
+            "snr_cost": 15.5,
+            "xt_cost": 0.02,
+            "path_weight": 1200.5,
+            "is_degraded": True,
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert lp.snr_db == 15.5
+        assert lp.xt_cost == 0.02
+        assert lp.path_weight_km == 1200.5
+        assert lp.is_degraded is True
+
+    def test_from_legacy_dict_protected(self) -> None:
+        """Test conversion with protection fields."""
+        lp_info = {
+            "path": ["0", "2", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 100.0,
+            "backup_path": ["0", "3", "5"],
+            "backup_start_slot": 8,
+            "backup_end_slot": 16,
+            "backup_core": 1,
+            "backup_band": "c",
+            "is_protected": True,
+            "active_path": "primary",
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert lp.is_protected is True
+        assert lp.backup_path == ["0", "3", "5"]
+        assert lp.backup_start_slot == 8
+        assert lp.backup_end_slot == 16
+        assert lp.backup_core == 1
+        assert lp.backup_band == "c"
+
+    def test_from_legacy_dict_infers_protected(self) -> None:
+        """Test that backup_path implies is_protected."""
+        lp_info = {
+            "path": ["0", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 100.0,
+            "backup_path": ["0", "3", "5"],
+            # is_protected not set
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert lp.is_protected is True
+
+    def test_from_legacy_dict_string_request_ids(self) -> None:
+        """Test that string request IDs are converted to int."""
+        lp_info = {
+            "path": ["0", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 50.0,
+            "requests_dict": {"42": 50.0},
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert 42 in lp.request_allocations
+        assert lp.request_allocations[42] == 50
+
+    def test_from_legacy_dict_alternative_field_names(self) -> None:
+        """Test that alternative field names work."""
+        lp_info = {
+            "path": ["0", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "modulation": "QPSK",  # alternative to mod_format
+            "total_bandwidth_gbps": 100,  # alternative to lightpath_bandwidth
+            "remaining_bandwidth_gbps": 100,  # alternative to remaining_bandwidth
+            "path_weight_km": 500.0,  # alternative to path_weight
+            "snr_db": 18.0,  # alternative to snr_cost
+        }
+        lp = Lightpath.from_legacy_dict(1, lp_info)
+
+        assert lp.modulation == "QPSK"
+        assert lp.total_bandwidth_gbps == 100
+        assert lp.path_weight_km == 500.0
+        assert lp.snr_db == 18.0
+
+    def test_to_legacy_dict_basic(self) -> None:
+        """Test basic conversion to legacy dict."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "2", "5"],
+            start_slot=10,
+            end_slot=18,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=50,
+            request_allocations={42: 50},
+        )
+        legacy = lp.to_legacy_dict()
+
+        assert legacy["path"] == ["0", "2", "5"]
+        assert legacy["start_slot"] == 10
+        assert legacy["end_slot"] == 18
+        assert legacy["mod_format"] == "QPSK"
+        assert legacy["lightpath_bandwidth"] == 100.0
+        assert legacy["remaining_bandwidth"] == 50.0
+        assert legacy["requests_dict"] == {42: 50.0}
+
+    def test_to_legacy_dict_with_quality(self) -> None:
+        """Test conversion with quality metrics."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+            snr_db=15.5,
+            xt_cost=0.02,
+            path_weight_km=1200.5,
+            is_degraded=True,
+        )
+        legacy = lp.to_legacy_dict()
+
+        assert legacy["snr_cost"] == 15.5
+        assert legacy["xt_cost"] == 0.02
+        assert legacy["path_weight"] == 1200.5
+        assert legacy["is_degraded"] is True
+
+    def test_to_legacy_dict_protected(self) -> None:
+        """Test conversion with protection fields."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+            backup_path=["0", "3", "5"],
+            backup_start_slot=8,
+            backup_end_slot=16,
+            backup_core=1,
+            backup_band="l",
+            is_protected=True,
+        )
+        legacy = lp.to_legacy_dict()
+
+        assert legacy["backup_path"] == ["0", "3", "5"]
+        assert legacy["backup_start_slot"] == 8
+        assert legacy["backup_end_slot"] == 16
+        assert legacy["backup_core"] == 1
+        assert legacy["backup_band"] == "l"
+        assert legacy["is_protected"] is True
+
+    def test_to_legacy_dict_unprotected_no_backup_fields(self) -> None:
+        """Test that unprotected lightpath doesn't include backup slot fields."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["0", "5"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        legacy = lp.to_legacy_dict()
+
+        assert "backup_start_slot" not in legacy
+        assert "backup_end_slot" not in legacy
+        assert "backup_core" not in legacy
+        assert "backup_band" not in legacy
+
+    def test_to_legacy_key(self) -> None:
+        """Test legacy key generation."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["5", "2", "0"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        key = lp.to_legacy_key()
+        assert key == ("0", "5")  # Sorted
+
+    def test_to_legacy_key_same_as_endpoint_key(self) -> None:
+        """Test that to_legacy_key matches endpoint_key."""
+        lp = Lightpath(
+            lightpath_id=1,
+            path=["A", "B", "C"],
+            start_slot=0,
+            end_slot=8,
+            core=0,
+            band="c",
+            modulation="QPSK",
+            total_bandwidth_gbps=100,
+            remaining_bandwidth_gbps=100,
+        )
+        assert lp.to_legacy_key() == lp.endpoint_key
+
+
+class TestLightpathRoundtrip:
+    """Test roundtrip conversion preserves data."""
+
+    def test_roundtrip_basic(self) -> None:
+        """Test basic roundtrip conversion."""
+        original = {
+            "path": ["0", "2", "5"],
+            "start_slot": 10,
+            "end_slot": 18,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 50.0,
+            "requests_dict": {42: 50.0},
+            "snr_cost": 15.5,
+            "xt_cost": 0.02,
+            "path_weight": 1200.5,
+            "is_degraded": False,
+            "is_protected": False,
+            "active_path": "primary",
+        }
+
+        lp = Lightpath.from_legacy_dict(1, original)
+        roundtrip = lp.to_legacy_dict()
+
+        assert roundtrip["path"] == original["path"]
+        assert roundtrip["start_slot"] == original["start_slot"]
+        assert roundtrip["end_slot"] == original["end_slot"]
+        assert roundtrip["mod_format"] == original["mod_format"]
+        assert roundtrip["lightpath_bandwidth"] == original["lightpath_bandwidth"]
+        assert roundtrip["remaining_bandwidth"] == original["remaining_bandwidth"]
+        assert roundtrip["snr_cost"] == original["snr_cost"]
+        assert roundtrip["xt_cost"] == original["xt_cost"]
+        assert roundtrip["path_weight"] == original["path_weight"]
+        assert roundtrip["is_degraded"] == original["is_degraded"]
+
+    def test_roundtrip_protected(self) -> None:
+        """Test roundtrip with protection fields."""
+        original = {
+            "path": ["0", "2", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 100.0,
+            "backup_path": ["0", "3", "5"],
+            "backup_start_slot": 8,
+            "backup_end_slot": 16,
+            "backup_core": 1,
+            "backup_band": "c",
+            "is_protected": True,
+            "active_path": "primary",
+        }
+
+        lp = Lightpath.from_legacy_dict(1, original)
+        roundtrip = lp.to_legacy_dict()
+
+        assert roundtrip["backup_path"] == original["backup_path"]
+        assert roundtrip["backup_start_slot"] == original["backup_start_slot"]
+        assert roundtrip["backup_end_slot"] == original["backup_end_slot"]
+        assert roundtrip["backup_core"] == original["backup_core"]
+        assert roundtrip["backup_band"] == original["backup_band"]
+        assert roundtrip["is_protected"] == original["is_protected"]
+        assert roundtrip["active_path"] == original["active_path"]
+
+    def test_roundtrip_request_allocations(self) -> None:
+        """Test roundtrip preserves request allocations."""
+        original = {
+            "path": ["0", "5"],
+            "start_slot": 0,
+            "end_slot": 8,
+            "core": 0,
+            "band": "c",
+            "mod_format": "QPSK",
+            "lightpath_bandwidth": 100.0,
+            "remaining_bandwidth": 25.0,
+            "requests_dict": {1: 25.0, 2: 25.0, 3: 25.0},
+        }
+
+        lp = Lightpath.from_legacy_dict(1, original)
+        roundtrip = lp.to_legacy_dict()
+
+        # Verify all allocations preserved (as float)
+        assert roundtrip["requests_dict"] == {1: 25.0, 2: 25.0, 3: 25.0}
+        assert roundtrip["remaining_bandwidth"] == 25.0
+
+    def test_roundtrip_double(self) -> None:
+        """Test double roundtrip (legacy -> domain -> legacy -> domain)."""
+        original = {
+            "path": ["A", "B", "C"],
+            "start_slot": 5,
+            "end_slot": 15,
+            "core": 2,
+            "band": "l",
+            "mod_format": "16-QAM",
+            "lightpath_bandwidth": 200.0,
+            "remaining_bandwidth": 100.0,
+            "requests_dict": {10: 100.0},
+            "snr_cost": 20.0,
+            "xt_cost": 0.01,
+            "path_weight": 800.0,
+            "is_degraded": False,
+        }
+
+        lp1 = Lightpath.from_legacy_dict(1, original)
+        legacy1 = lp1.to_legacy_dict()
+        lp2 = Lightpath.from_legacy_dict(1, legacy1)
+        legacy2 = lp2.to_legacy_dict()
+
+        # Second roundtrip should be identical to first
+        assert legacy1 == legacy2

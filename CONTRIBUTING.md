@@ -1,10 +1,14 @@
-# Contributing to the Simulator
+# Contributing to FUSION
 
-Thank you for your interest in contributing to the simulator! We value your contributions and want to make the process as smooth as possible for everyone involved. This document outlines how you can contribute, our coding guidelines, the pull request process, and our code of conduct.
+Thank you for your interest in contributing to FUSION! We value your contributions and want to make the process as smooth as possible for everyone involved. This document outlines how you can contribute, our coding guidelines, the pull request process, and our code of conduct.
 
-## Introduction
+## Getting Started
 
-This simulator is an open-source initiative, and we welcome contributions from everyone. Whether you're fixing a bug, adding a new feature, or improving documentation, your help is appreciated. Before contributing, please take a moment to read through this document to understand our processes and guidelines.
+Before contributing, we recommend:
+
+1. **Read the Documentation**: Our comprehensive documentation is available at [https://sdnnetsim.github.io/FUSION/](https://sdnnetsim.github.io/FUSION/)
+2. **Understand the Codebase**: Review the [Developer Documentation](https://sdnnetsim.github.io/FUSION/developer/) to understand the project structure
+3. **Set Up Your Environment**: Follow the [Installation Guide](https://sdnnetsim.github.io/FUSION/getting-started/installation.html) to get started
 
 ## How to Contribute
 
@@ -16,65 +20,93 @@ This simulator is an open-source initiative, and we welcome contributions from e
 
 ## Coding Guidelines
 
-### 1. Naming Conventions
+FUSION follows strict coding standards to ensure consistency and maintainability. Please review our comprehensive coding standards document before contributing:
 
-1. **Helper Scripts**: Files in the `helper_scripts` directory should be named using the
-   pattern `<script_name>_helpers.py`.
-2. **Data Structures**: Name variables with their type, e.g., `<name>_list`, `<name>_dict`, `<name>_set`.
-3. **Class Properties**: Include a dictionary named `<ClassName>_props` in class constructors for properties.
-4. **Inner Classes**: Name classes within a constructor `<ClassName>_Obj` to indicate scope and relationship.
+**See [CODING_STANDARDS.md](CODING_STANDARDS.md) for complete guidelines.**
 
-### 2. Directory and File Structure
+### Key Highlights
 
-1. **Argument Scripts**: Place external files with arguments in the `arg_scripts` directory,
-   named `<file_name>_args.py`.
-2. **Module Naming**: Directories with Python scripts should follow `<name>_scripts` naming convention.
+1. **Naming Conventions**:
+   - Functions: `snake_case` verbs (e.g., `load_config`, `validate_data`)
+   - Classes: `PascalCase`
+   - Use type hints instead of type suffixes in variable names
 
-### 3. Coding Practices
+2. **Code Organization**:
+   - Each module must have a `README.md`
+   - Tests in `tests/` subdirectory within each module
 
-1. **Function Names**: Use assertive and descriptive names like `get`, `create`, `update`.
-2. **Type Annotations**: Explicitly list variable types in all function parameters.
-3. **Commenting and Documentation**:
-    - Use `# FIXME:` for areas needing future fixes, with a brief explanation if necessary.
-    - Use `# TODO:` for planned enhancements or tasks, with a concise description.
-4. **Argument Labeling**: Label arguments explicitly when calling functions.
+3. **Type Annotations**:
+   - All function parameters and returns must have type annotations
+   - Use modern Python type hints
 
-### 4. Testing and Quality Assurance
+4. **Documentation**:
+   - Use Sphinx-style docstrings
+   - Use `# TODO:` for planned enhancements
+   - Use `# FIXME:` for areas needing fixes
 
-1. **Comprehensive Testing**: Test every function and its branches thoroughly.
-2. **Formatting**: Use an auto-formatting tool to maintain consistent code formatting, adhering to a style guide like
-   PEP 8.
-
-### 5. Additional Considerations
-
-1. **Class and File Naming Alignment**: Ensure class names match their `.py` file names.
-2. **Argument Documentation**: Comment each argument in argument scripts to explain its purpose and expected values.
+5. **Quality Tools**:
+   - Format and lint code with `ruff`
+   - Type check with `mypy`
+   - Test with `pytest`
+   - Run `make validate` before submitting
 
 ## Pull Request Process
 
-1. Fork the repository and create your branch from `main`.
-2. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-3. Increase the version numbers in any examples files and the README.md to the new version that this Pull Request would represent. The versioning scheme we use is semantic.
-4. You may merge* the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
+1. **Fork and Branch**: Fork the repository and create your branch from `main`.
+2. **Code Quality**: Ensure your code passes all quality checks:
+   ```bash
+   make lint        # Run all pre-commit checks
+   make test        # Run unit tests
+   make validate    # Full validation (lint + tests)
+   ```
+3. **Documentation**: Update relevant documentation and add tests for new features.
+4. **Commit Messages**: Follow [conventional commit](https://www.conventionalcommits.org/) format. See our [Commit Message Guide](.github/COMMIT_MESSAGE_GUIDE.md).
+5. **PR Template**: Fill out the PR template completely when submitting.
+6. **Review**: You need sign-off from two other developers before merging.
 
-*Check to ensure that your pull request meets the requirements as outlined by the [PR template](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/pull_request_template.md) before merging.
+Check the [PR template](https://github.com/SDNNetSim/FUSION/blob/main/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) for specific requirements.
 
 ## Issue Reporting Process
-The github issue tracker is our primary medium for raising and resolving issues. Specific information related to reporting bugs and requesting features can be found below.
+
+The GitHub issue tracker is our primary medium for raising and resolving issues.
 
 ### Bug Reports
-For bug reports, please be sure the structure of your report is consistent with the [bug report](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/issue_template/bug_report.md) template.
+When reporting bugs, please use the [bug report template](https://github.com/SDNNetSim/FUSION/blob/main/.github/ISSUE_TEMPLATE/01_bug_report.yml) and include:
+- Clear description of the issue
+- Steps to reproduce
+- Expected vs actual behavior
+- Environment details (OS, Python version, etc.)
+- Relevant logs or error messages
 
 ### Feature Requests
-For feature requests, please be sure the structure of your request is consistent with the [feature request](https://github.com/SDNNetSim/SDON_simulator/blob/v1_1/.github/issue_template/feature_request.md) template.
+When requesting features, please use the [feature request template](https://github.com/SDNNetSim/FUSION/blob/main/.github/ISSUE_TEMPLATE/02_feature_request.yml) and include:
+- Clear description of the proposed feature
+- Use case and motivation
+- Potential implementation approach
+- Any relevant examples or references
 
+## Documentation
+
+We use Sphinx for documentation. The full documentation is hosted at:
+
+**[https://sdnnetsim.github.io/FUSION/](https://sdnnetsim.github.io/FUSION/)**
+
+Key documentation sections:
+- [Getting Started](https://sdnnetsim.github.io/FUSION/getting-started/) - Installation and setup
+- [Developer Guide](https://sdnnetsim.github.io/FUSION/developer/) - Module documentation and architecture
+- [API Reference](https://sdnnetsim.github.io/FUSION/api/) - Auto-generated API docs
+
+When contributing documentation:
+- Source files are in `docs/` directory
+- Use reStructuredText (`.rst`) format
+- Build locally with `make -C docs html`
 
 ## Code of Conduct
 
-Our project adheres to a Code of Conduct that we expect all contributors to follow. Please read the [code of conduct](CODE_OF_CONDUCT.md) document before participating in our community.
+Our project adheres to a Code of Conduct that we expect all contributors to follow. Please read the [Code of Conduct](CODE_OF_CONDUCT.md) document before participating in our community.
 
 ## Questions or Comments
 
-If you have any questions or comments about contributing to the ACNL project, please feel free to reach out to us. We're more than happy to help you get started or clarify any points.
+If you have any questions or comments about contributing to the FUSION project, please feel free to reach out to us. We're more than happy to help you get started or clarify any points.
 
-Thank you for contributing to the ACNL project!
+Thank you for contributing to the FUSION project!

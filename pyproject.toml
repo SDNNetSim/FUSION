@@ -1,0 +1,65 @@
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+exclude = ["venv", "build", "dist", "fusion/gui"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = ["E203"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["fusion"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["fusion"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# Coverage disabled temporarily due to venv setup issues
+# addopts = "--cov=fusion --cov-report=html:reports/coverage/htmlcov --cov-report=term-missing --cov-report=xml:reports/coverage/coverage.xml"
+
+[tool.coverage.run]
+source = ["fusion"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "venv/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.bandit]
+exclude_dirs = ["venv", "build", "dist", "fusion/gui"]
+# B101: Assert statements are acceptable for type narrowing and test files
+# B108: Hardcoded /tmp paths in test files are safe (test fixtures only)
+# B403/B404: pickle and subprocess imports are intentional and necessary
+# B602/B603: subprocess calls are properly validated
+# B614: PyTorch save/load with nosec comments where appropriate
+skips = ["B101", "B108", "B403", "B404", "B602", "B603"]

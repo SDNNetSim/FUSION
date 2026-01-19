@@ -1,0 +1,113 @@
+# Advanced configuration example
+# Shows all available options and customizations
+
+network: NSFNet
+dates:
+  - "0606"
+  - "0611"
+  - "0615"
+
+plots:
+  # Comprehensive blocking plot with all options
+  - type: blocking
+    algorithms:
+      - ppo_obs_7
+      - ppo_obs_10
+      - dqn_obs_7
+      - k_shortest_path_1
+      - k_shortest_path_4
+      - cong_aware
+    traffic_volumes: [600, 650, 700, 750, 800, 850, 900, 950, 1000]
+    title: "Blocking Probability Comparison"
+    x_label: "Traffic Volume (Erlang)"
+    y_label: "Blocking Probability"
+    include_ci: true
+    include_baselines: true
+    include_legend: true
+    include_grid: true
+    save_path: ./figures/blocking_comprehensive.png
+    # Plot-specific style overrides
+    style: seaborn-whitegrid
+    dpi: 400
+    figsize: [12, 8]
+
+  # Custom rewards plot with advanced options
+  - type: rewards
+    algorithms:
+      - ppo_obs_7
+      - ppo_obs_10
+      - dqn_obs_7
+    title: "RL Training Progress"
+    x_label: "Training Episode"
+    y_label: "Average Reward"
+    episodes: [0, 50, 100, 150, 200, 250, 300]
+    smoothing: 0.6  # Exponential smoothing factor
+    include_ci: true
+    save_path: ./figures/rewards_advanced.png
+
+  # Memory usage plot
+  - type: memory
+    algorithms:
+      - ppo_obs_7
+      - dqn_obs_7
+    title: "Memory Usage Comparison"
+    x_label: "Time (s)"
+    y_label: "Memory (MB)"
+    save_path: ./figures/memory.png
+
+  # Computation time plot
+  - type: computation
+    algorithms:
+      - ppo_obs_7
+      - k_shortest_path_4
+      - cong_aware
+    title: "Path Computation Time"
+    x_label: "Traffic Volume (Erlang)"
+    y_label: "Computation Time (ms)"
+    traffic_volumes: [600, 700, 800, 900, 1000]
+    log_scale: true  # Use log scale for y-axis
+    save_path: ./figures/computation.png
+
+# Global defaults
+defaults:
+  format: png
+  dpi: 300
+  style: seaborn-whitegrid
+  cache_enabled: true
+  figure_size: [10, 6]
+  font_size: 12
+  line_width: 2.0
+  marker_size: 6
+  colors:
+    - "#1f77b4"
+    - "#ff7f0e"
+    - "#2ca02c"
+    - "#d62728"
+    - "#9467bd"
+
+# Run filters
+run_filters:
+  drl: true
+  non_drl: true
+  min_episodes: 100  # Minimum episodes for RL runs
+  exclude_failed: true  # Exclude runs that failed
+
+# Statistical analysis options
+statistics:
+  confidence_level: 0.95  # 95% confidence intervals
+  min_samples: 3  # Minimum runs needed for statistics
+  effect_size: true  # Compute Cohen's d effect size
+  significance_tests: true  # Run t-tests for comparisons
+
+# Output options
+output:
+  save_data: true  # Save processed data to CSV
+  save_metadata: true  # Save plot metadata JSON
+  data_dir: ./data/processed/
+  metadata_dir: ./data/metadata/
+
+# Performance options
+performance:
+  parallel: true  # Generate plots in parallel
+  max_workers: 4  # Number of parallel workers
+  cache_ttl: 3600  # Cache TTL in seconds (1 hour)

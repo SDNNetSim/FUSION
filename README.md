@@ -1,10 +1,45 @@
-# Flexible Unified System for Intelligent Optical Networking (FUSION)
+# FUSION
+
+**Flexible, Unified Simulator for Intelligent Optical Networking**
+
+---
+
+**Documentation: [https://sdnnetsim.github.io/FUSION/](https://sdnnetsim.github.io/FUSION/)**
+
+---
 
 ## About This Project
 
-Welcome to **FUSION**, an open-source venture into the future of networking! Our core focus is on simulating **Software Defined Elastic Optical Networks (SD-EONs)**, a cutting-edge approach that promises to revolutionize how data is transmitted over optical fibers. But that's just the beginning. We envision FUSION as a versatile simulation framework that can evolve to simulate a wide array of networking paradigms, now including the integration of **artificial intelligence** to enhance network optimization, performance, and decision-making processes.
+FUSION is an open-source discrete-event simulation framework for **Software-Defined Elastic Optical Networks (SD-EONs)**. It provides researchers and engineers with tools to model, analyze, and optimize optical network behavior under realistic conditions, with built-in support for reinforcement learning integration and network survivability experiments.
 
-We need your insight and creativity! The true strength of open-source lies in community collaboration. Join us in pioneering the networks of tomorrow by contributing your unique simulations and features. Your expertise in AI and networking can help shape the future of this field.
+We welcome contributions from the community. See our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+## Documentation
+
+Full documentation is available at: **[https://sdnnetsim.github.io/FUSION/](https://sdnnetsim.github.io/FUSION/)**
+
+Key sections:
+- [Getting Started](https://sdnnetsim.github.io/FUSION/getting-started/) - Installation and setup guides
+- [Developer Guide](https://sdnnetsim.github.io/FUSION/developer/) - Module documentation and architecture
+- [API Reference](https://sdnnetsim.github.io/FUSION/api/) - Auto-generated API documentation
+
+### Building Documentation Locally
+
+If you prefer to build the documentation locally:
+
+```bash
+# Install documentation dependencies
+pip install -r docs/requirements.txt
+
+# Build the documentation
+cd docs
+make html          # macOS/Linux
+.\make.bat html    # Windows
+
+# View locally
+make serve         # Then visit http://localhost:8000
+# Or open docs/_build/html/index.html directly
+```
 
 ## Getting Started
 
@@ -23,12 +58,13 @@ We need your insight and creativity! The true strength of open-source lies in co
 
 ## Installation Instructions
 
-To get started with FUSION, first clone the repository and create a Python 3.11 virtual environment:
+FUSION offers multiple installation methods. Choose the one that best fits your needs:
+
+### Automatic Installation (Recommended)
+
+For the easiest setup experience, use our automated installation script:
 
 ```bash
-# Navigate to your desired directory
-cd /your/desired/path
-
 # Clone the repository
 git clone git@github.com:SDNNetSim/FUSION.git
 cd FUSION
@@ -36,89 +72,68 @@ cd FUSION
 # Create and activate a Python 3.11 virtual environment
 python3.11 -m venv venv
 source venv/bin/activate
+
+# Run automated installation
+./install.sh
 ```
 
-Next, follow the specific instructions for your operating system.
+The script automatically:
+- Detects your platform (macOS, Linux, Windows)
+- Handles PyTorch Geometric compilation issues
+- Installs all dependencies in the correct order
+- Sets up development tools
+- Installs and configures pre-commit hooks
+- Verifies the installation
 
----
+### Package Installation
 
-### macOS Installation
-
-Installation on macOS is a multi-step process that requires compiling packages from source. Please follow these steps carefully.
-
-**Step 1: Install Prerequisites**
-
-Ensure you have Apple’s Command Line Tools installed:
-
-```bash
-xcode-select --install
-```
-
-**Step 2: Install PyTorch**
+For a more controlled installation using Python packaging:
 
 ```bash
-pip install torch==2.2.2
-```
+# Clone and create venv (same as above)
+git clone git@github.com:SDNNetSim/FUSION.git
+cd FUSION
+python3.11 -m venv venv
+source venv/bin/activate
 
-**Step 3: Install PyTorch Geometric (PyG) Packages**
+# Install core package
+pip install -e .
 
-These packages require special flags to compile correctly on macOS:
+# Install optional components as needed:
+pip install -e .[dev]        # Development tools (ruff, mypy, pytest, pre-commit)
+pip install -e .[rl]         # Reinforcement learning (stable-baselines3)
+pip install -e .[all]        # Everything except PyTorch Geometric
 
-```bash
+# Install pre-commit hooks (for development)
+pre-commit install
+pre-commit install --hook-type commit-msg
+
+# PyTorch Geometric requires manual installation:
+# macOS (Apple Silicon):
+MACOSX_DEPLOYMENT_TARGET=11.0 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# macOS (Intel):
 MACOSX_DEPLOYMENT_TARGET=10.15 pip install --no-build-isolation torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# Linux/Windows:
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+# Finally install PyTorch Geometric:
+pip install torch-geometric==2.6.1
 ```
 
-**Step 4: Install Remaining Dependencies**
+### Legacy Requirements Installation
+
+If you prefer using requirements files:
 
 ```bash
-pip install -r requirements.txt
-```
-
----
-
-### Linux & Windows Installation
-
-Installation on Linux and Windows is more straightforward.
-
-**Step 1: Install PyTorch**
-
-```bash
+# Core dependencies
 pip install torch==2.2.2
-```
-
-**Step 2: Install All Other Dependencies**
-
-```bash
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
----
-
-## Generating the Documentation
-
-After installing the dependencies, you can generate the Sphinx documentation.
-
-Navigate to the docs directory:
-
-```bash
-cd docs
-```
-
-Build the HTML documentation:
-
-On macOS/Linux:
-
-```bash
-make html
-```
-
-On Windows:
-
-```powershell
-.\make.bat html
-```
-
-Finally, navigate to `_build/html/` and open `index.html` in a browser of your choice to view the documentation.
+**Note**: This method may fail on PyTorch Geometric packages. Use the automatic installer instead.
 
 ---
 
@@ -129,8 +144,8 @@ To maintain the quality and consistency of the codebase, we adhere to the follow
 1. **Commit Formatting**: Follow the commit format specified [here](https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53).
 2. **Code Style**: All code should follow the [PEP 8](https://peps.python.org/pep-0008/) coding style guidelines.
 3. **Versioning**: Use the [semantic versioning system](https://semver.org/) for all git tags.
-4. **Coding Guidelines**: Adhere to the team's [coding guidelines document](https://github.com/SDNNetSim/sdn_simulator/blob/main/CONTRIBUTING.md).
-5. **Unit Testing**: Each unit test should follow the [community unit testing guidelines](https://pylonsproject.org/community-unit-testing-guidelines.html).
+4. **Coding Guidelines**: Adhere to the team's [coding guidelines document](CODING_STANDARDS.md).
+5. **Unit Testing**: Each unit test should follow the [FUSION testing standards](TESTING_STANDARDS.md).
 
 ---
 
@@ -140,24 +155,100 @@ This project is brought to you by the efforts of **Arash Rezaee**, **Ryan McCann
 
 ---
 
-## 📖 How to Cite This Work
+## Publications
+
+### Primary Citation
 
 If you use FUSION in your research, please cite the following paper:
 
-R. McCann, A. Rezaee, and V. M. Vokkarane,  
-"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"  
-*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.  
+R. McCann, A. Rezaee, and V. M. Vokkarane,
+"FUSION: A Flexible Unified Simulator for Intelligent Optical Networking,"
+*2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)*, Guwahati, India, 2024, pp. 1-6.
 DOI: [10.1109/ANTS63515.2024.10898199](https://doi.org/10.1109/ANTS63515.2024.10898199)
 
-### 📄 BibTeX
+### BibTeX
 
 ```bibtex
 @INPROCEEDINGS{10898199,
   author={McCann, Ryan and Rezaee, Arash and Vokkarane, Vinod M.},
-  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)}, 
-  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking}, 
+  booktitle={2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS)},
+  title={FUSION: A Flexible Unified Simulator for Intelligent Optical Networking},
   year={2024},
   pages={1-6},
   doi={10.1109/ANTS63515.2024.10898199}
 }
 ```
+
+### Related Publications
+
+*This section will be updated as research using FUSION is published. If you have published work using FUSION, please open an issue or pull request to add it here.*
+
+---
+
+## Development & Contributing
+
+### Setting Up Pre-commit Hooks
+
+The project uses pre-commit hooks for code quality checks. Set them up once:
+
+```bash
+# Install pre-commit (if not already installed)
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+
+# Install commit message hook
+pre-commit install --hook-type commit-msg
+```
+
+### Running Code Quality Checks
+
+**Pre-commit hooks (recommended):**
+```bash
+# Run all checks on staged files
+pre-commit run
+
+# Run all checks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run ruff --all-files
+pre-commit run mypy --all-files
+```
+
+**Using Makefile:**
+```bash
+# Run tests
+make test
+
+# Run linting (using pre-commit)
+make lint
+
+# Full validation (lint + tests)
+make validate
+
+# Clean up generated files
+make clean
+```
+
+### What Gets Validated
+
+Pre-commit hooks check:
+- **Ruff** - Code linting and formatting (replaces pylint)
+- **Mypy** - Type checking
+- **Vulture** - Dead code detection
+- **Bandit** - Security vulnerability scanning
+- **Pre-commit hooks** - Trailing whitespace, file endings, YAML validation
+- **Conventional commits** - Commit message format
+
+### Development Workflow
+
+1. Install pre-commit hooks (one time): `pre-commit install`
+2. Make your changes
+3. Stage files: `git add .`
+4. Hooks run automatically on commit, or run manually: `pre-commit run`
+5. Run tests: `make test` or `pytest`
+6. Submit your PR - all checks should pass
+
+For more details, see [CONTRIBUTING.md](CONTRIBUTING.md).

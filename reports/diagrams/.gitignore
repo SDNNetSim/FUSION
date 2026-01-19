@@ -1,0 +1,4 @@
+# Ignore generated diagram files
+*.png
+*.svg
+*.pdf

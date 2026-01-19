@@ -1,0 +1,4 @@
+# Documentation build requirements
+sphinx>=8.0.0
+sphinx-rtd-theme
+myst-parser>=4.0.0
