@@ -352,15 +352,16 @@ class RLSimulationAdapter:
         max_util = 0.0
         for i in range(len(path) - 1):
             src, dst = path[i], path[i + 1]
+            link = (src, dst)
             # Try to get utilization from network state
             if hasattr(network_state, "get_link_utilization"):
-                util = network_state.get_link_utilization(src, dst)
+                util = network_state.get_link_utilization(link)
                 max_util = max(max_util, util)
             # Fallback: compute from available slots
             elif hasattr(network_state, "get_available_slots"):
                 total = self._config.total_slots
                 if total > 0:
-                    avail = network_state.get_available_slots(src, dst)
+                    avail = network_state.get_available_slots(link)
                     util = 1.0 - (avail / total)
                     max_util = max(max_util, util)
 

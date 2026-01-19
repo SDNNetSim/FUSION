@@ -800,8 +800,9 @@ class SDNController:
             route_matrix = force_route_matrix
             if force_mod_format:
                 # Handle both string and list formats for force_mod_format
+                formats_matrix: list[list[str | bool]]
                 if isinstance(force_mod_format, list):
-                    formats_matrix = [force_mod_format]
+                    formats_matrix = [force_mod_format]  # type: ignore[list-item]
                 else:
                     formats_matrix = [[force_mod_format]]
             else:
@@ -1168,14 +1169,14 @@ class SDNController:
                     success = self._process_single_path(
                         path_list,
                         path_index,
-                        mod_format_list,
+                        mod_format_list,  # type: ignore[arg-type]
                         forced_segments,
                         force_slicing,
                         segment_slicing,
                         forced_index,
                         force_core,
                         forced_band,
-                        backup_mod_format_list,
+                        backup_mod_format_list,  # type: ignore[arg-type]
                     )
 
                     if success:

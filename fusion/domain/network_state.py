@@ -20,8 +20,9 @@ Spectrum Array Values:
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, Iterator
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import networkx as nx
 import numpy as np
@@ -31,7 +32,6 @@ if TYPE_CHECKING:
     from fusion.domain.config import SimulationConfig
 
 from fusion.domain.lightpath import Lightpath
-
 
 # =============================================================================
 # LinkSpectrum Dataclass
@@ -905,7 +905,7 @@ class NetworkState:
         """
         # Clear all spectrum allocations
         for link_spectrum in self._spectrum.values():
-            for band, arr in link_spectrum.cores_matrix.items():
+            for _band, arr in link_spectrum.cores_matrix.items():
                 arr.fill(0)
             link_spectrum.usage_count = 0
             link_spectrum.throughput = 0.0

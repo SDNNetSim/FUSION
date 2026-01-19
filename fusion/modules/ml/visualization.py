@@ -447,7 +447,7 @@ def plot_3d_clusters(
     ax.set_title("Predicted Clusters (3D PCA Projection)", weight="bold", fontsize=14)
     ax.set_xlabel("Principal Component 1", fontsize=12)
     ax.set_ylabel("Principal Component 2", fontsize=12)
-    ax.set_zlabel("Principal Component 3", fontsize=12)
+    ax.set_zlabel("Principal Component 3", fontsize=12)  # type: ignore[attr-defined]
 
     # Add colorbar
     fig.colorbar(scatter, label="Predicted Class", pad=0.1)

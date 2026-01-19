@@ -143,7 +143,8 @@ def iql_model(monkeypatch: Any, tmp_path: Any) -> str:
     def mock_load_model(self: Any, model_path: Any) -> nn.Module:
         """Mock _load_model to return actor from in-memory checkpoint."""
         actor_state = checkpoint["actor"]
-        return self._build_actor_from_state_dict(actor_state)
+        result: nn.Module = self._build_actor_from_state_dict(actor_state)
+        return result
 
     # Patch the _load_model method on IQLPolicy
     monkeypatch.setattr(

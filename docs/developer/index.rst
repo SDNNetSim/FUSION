@@ -47,6 +47,7 @@ Modules
    fusion/sim/index
    fusion/stats/index
    fusion/unity/index
+   fusion/utils/index
 
 Data Directory
 ==============

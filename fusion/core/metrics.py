@@ -1035,14 +1035,6 @@ class SimStats:
 
         :param base_fp: Base file path for saving
         """
-        # Save mods_dict updates log for debugging
-        import json
-        from pathlib import Path
-        if base_fp:
-            log_fp = str(Path(base_fp).with_name(Path(base_fp).stem + '_mods_dict_log.json'))
-            with open(log_fp, 'w') as f:
-                json.dump(self.mods_dict_updates_log, f, indent=2)
-
         # Import here to avoid circular imports
         from fusion.core.persistence import (
             StatsPersistence,  # pylint: disable=import-outside-toplevel

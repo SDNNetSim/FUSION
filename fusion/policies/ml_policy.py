@@ -531,7 +531,7 @@ class MLControlPolicy:
             ShortestFeasiblePolicy,
         )
 
-        fallback_map: dict[str, type] = {
+        fallback_map: dict[str, type[ControlPolicy]] = {
             "first_feasible": FirstFeasiblePolicy,
             "shortest_feasible": ShortestFeasiblePolicy,
             "least_congested": LeastCongestedPolicy,

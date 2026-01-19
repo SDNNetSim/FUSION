@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import Any
 
 from fusion.configs.constants import (
-    CONFIG_DIR_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_THREAD_NAME,
     REQUIRED_SECTION,
@@ -49,7 +48,6 @@ from fusion.utils.config import (
     safe_type_convert,
 )
 from fusion.utils.logging_config import get_logger
-from fusion.utils.os import create_directory
 
 logger = get_logger(__name__)
 
@@ -201,7 +199,6 @@ def _process_optional_options(
 
 def _validate_config_structure(config: ConfigParser) -> None:
     if not config.has_section(REQUIRED_SECTION):
-        create_directory(CONFIG_DIR_PATH)
         raise ConfigParseError(
             f"Missing required '{REQUIRED_SECTION}' section in config file. "
             "Ensure your config file exists and contains all required options."

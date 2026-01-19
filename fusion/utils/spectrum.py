@@ -409,7 +409,7 @@ def edge_set(path: list, bidirectional: bool = True) -> set[tuple]:
     :rtype: set[tuple]
     """
     # Always normalize edges like V5 - sort to collapse direction
-    return {tuple(sorted((u, v))) for u, v in zip(path, path[1:])}
+    return {tuple(sorted((u, v))) for u, v in zip(path, path[1:], strict=False)}
 
 
 def get_overlapping_lightpaths(

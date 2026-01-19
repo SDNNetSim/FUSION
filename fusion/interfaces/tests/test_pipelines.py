@@ -97,6 +97,7 @@ class MockSpectrumPipeline:
         snr_bandwidth: int | None = None,
         request_id: int | None = None,
         slice_bandwidth: int | None = None,
+        excluded_modulations: set[str] | None = None,
     ) -> SpectrumResult:
         """Return not found result."""
         from fusion.domain.results import SpectrumResult
