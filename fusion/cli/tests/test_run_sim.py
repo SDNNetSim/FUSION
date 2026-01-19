@@ -11,9 +11,7 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_success_returns_zero(
-        self, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_success_returns_zero(self, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main returns 0 on successful execution."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -28,9 +26,7 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_handles_keyboard_interrupt(
-        self, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_handles_keyboard_interrupt(self, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main handles KeyboardInterrupt gracefully."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -44,9 +40,7 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_handles_general_exception(
-        self, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_handles_general_exception(self, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main handles general exceptions."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -60,9 +54,7 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_passes_args_to_pipeline(
-        self, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_passes_args_to_pipeline(self, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main passes parsed arguments to simulation pipeline."""
         mock_parser = Mock()
         mock_args = Mock(config_path="test.ini")
@@ -78,9 +70,7 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_creates_parser_before_running_pipeline(
-        self, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_creates_parser_before_running_pipeline(self, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main creates parser before running pipeline."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -96,9 +86,7 @@ class TestSimMain:
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
     @patch("fusion.cli.run_sim.logger")
-    def test_sim_main_logs_interrupt_message(
-        self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_logs_interrupt_message(self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main logs appropriate message on KeyboardInterrupt."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -115,9 +103,7 @@ class TestSimMain:
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
     @patch("fusion.cli.run_sim.logger")
-    def test_sim_main_logs_error_message_on_exception(
-        self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_logs_error_message_on_exception(self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main logs error message on general exception."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -132,9 +118,7 @@ class TestSimMain:
     @patch("fusion.cli.run_sim.multiprocessing.Event")
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_creates_stop_flag_when_none_provided(
-        self, mock_build_parser: Any, mock_run_pipeline: Any, mock_event: Any
-    ) -> None:
+    def test_sim_main_creates_stop_flag_when_none_provided(self, mock_build_parser: Any, mock_run_pipeline: Any, mock_event: Any) -> None:
         """Test sim main creates multiprocessing Event when no stop_flag provided."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -150,9 +134,7 @@ class TestSimMain:
 
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
-    def test_sim_main_uses_provided_stop_flag(
-        self, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_uses_provided_stop_flag(self, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main uses provided stop_flag parameter."""
         mock_parser = Mock()
         mock_args = Mock()
@@ -167,9 +149,7 @@ class TestSimMain:
     @patch("fusion.cli.run_sim.run_simulation_pipeline")
     @patch("fusion.cli.run_sim.build_parser")
     @patch("fusion.cli.run_sim.logger")
-    def test_sim_main_logs_exception_with_traceback(
-        self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any
-    ) -> None:
+    def test_sim_main_logs_exception_with_traceback(self, mock_logger: Any, mock_build_parser: Any, mock_run_pipeline: Any) -> None:
         """Test sim main logs exception with traceback info."""
         mock_parser = Mock()
         mock_args = Mock()

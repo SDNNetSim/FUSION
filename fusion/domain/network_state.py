@@ -139,10 +139,7 @@ class LinkSpectrum:
             raise ValueError(msg)
 
         if not self.is_range_free(start_slot, end_slot, core, band):
-            msg = (
-                f"Spectrum range [{start_slot}:{end_slot}] on "
-                f"core {core} band {band} is not free"
-            )
+            msg = f"Spectrum range [{start_slot}:{end_slot}] on core {core} band {band} is not free"
             raise ValueError(msg)
 
         spectrum = self.cores_matrix[band]
@@ -466,9 +463,7 @@ class NetworkState:
             link_num = 0
             for u, v, edge_data in self._topology.edges(data=True):
                 # Get link length from edge data (try multiple common attribute names)
-                length_km = float(
-                    edge_data.get("length", edge_data.get("weight", edge_data.get("distance", 0.0)))
-                )
+                length_km = float(edge_data.get("length", edge_data.get("weight", edge_data.get("distance", 0.0))))
 
                 # Create single LinkSpectrum for both directions
                 link_spectrum = LinkSpectrum.from_config(
@@ -557,9 +552,7 @@ class NetworkState:
         result: list[Lightpath] = []
         for lp in self._lightpaths.values():
             # Check both directions
-            if (lp.source == source and lp.destination == destination) or (
-                lp.source == destination and lp.destination == source
-            ):
+            if (lp.source == source and lp.destination == destination) or (lp.source == destination and lp.destination == source):
                 result.append(lp)
         return result
 
@@ -585,9 +578,7 @@ class NetworkState:
         :rtype: list[Lightpath]
         """
         candidates = self.get_lightpaths_between(source, destination)
-        with_capacity = [
-            lp for lp in candidates if lp.remaining_bandwidth_gbps >= min_bandwidth_gbps
-        ]
+        with_capacity = [lp for lp in candidates if lp.remaining_bandwidth_gbps >= min_bandwidth_gbps]
         # Sort by remaining bandwidth, highest first
         return sorted(
             with_capacity,
@@ -611,9 +602,7 @@ class NetworkState:
         for lp in self._lightpaths.values():
             path = lp.path
             for i in range(len(path) - 1):
-                if (path[i] == u and path[i + 1] == v) or (
-                    path[i] == v and path[i + 1] == u
-                ):
+                if (path[i] == u and path[i + 1] == v) or (path[i] == v and path[i + 1] == u):
                     result.append(lp)
                     break
         return result
@@ -1012,9 +1001,7 @@ class NetworkState:
             assert backup_core is not None
             assert backup_band is not None
 
-            if not self.is_spectrum_available(
-                backup_path, backup_start_slot, backup_end_slot, backup_core, backup_band
-            ):
+            if not self.is_spectrum_available(backup_path, backup_start_slot, backup_end_slot, backup_core, backup_band):
                 msg = f"Spectrum [{backup_start_slot}:{backup_end_slot}] not available on backup path"
                 raise ValueError(msg)
 
@@ -1045,9 +1032,7 @@ class NetworkState:
         # Create Lightpath object
         # Note: Lightpath stores data slot range (excludes guard slots)
         data_end_slot = end_slot - guard_slots
-        backup_data_end_slot = (
-            backup_end_slot - guard_slots if backup_end_slot is not None else None
-        )
+        backup_data_end_slot = backup_end_slot - guard_slots if backup_end_slot is not None else None
 
         # Set initial time_bw_usage for utilization tracking
         # New lightpaths start with 0% utilization (no requests allocated yet)
@@ -1170,10 +1155,7 @@ class NetworkState:
         # Delegate to Lightpath's allocate_bandwidth method
         success = lightpath.allocate_bandwidth(request_id, bandwidth_gbps, timestamp)
         if not success:
-            msg = (
-                f"Insufficient bandwidth: need {bandwidth_gbps}, "
-                f"have {lightpath.remaining_bandwidth_gbps}"
-            )
+            msg = f"Insufficient bandwidth: need {bandwidth_gbps}, have {lightpath.remaining_bandwidth_gbps}"
             raise ValueError(msg)
 
     def release_request_bandwidth(
@@ -1395,10 +1377,7 @@ class NetworkState:
                 "end_slot": lp.end_slot - 1,
                 "modulation": lp.modulation,
                 "mod_format": lp.modulation,  # Alternate key for modulation
-                "requests_dict": {
-                    req_id: float(bw)
-                    for req_id, bw in lp.request_allocations.items()
-                },
+                "requests_dict": {req_id: float(bw) for req_id, bw in lp.request_allocations.items()},
                 "time_bw_usage": {},  # Empty by default, populated during simulation
                 "is_degraded": lp.is_degraded,
                 # Additional fields from gap analysis

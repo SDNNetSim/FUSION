@@ -113,10 +113,7 @@ setup(
     },
     include_package_data=True,
     zip_safe=False,
-    keywords=(
-        "optical networks, machine learning, simulation, "
-        "reinforcement learning, software defined networks"
-    ),
+    keywords=("optical networks, machine learning, simulation, reinforcement learning, software defined networks"),
     project_urls={
         "Bug Reports": "https://github.com/fusion-dev/FUSION/issues",
         "Source": "https://github.com/fusion-dev/FUSION",

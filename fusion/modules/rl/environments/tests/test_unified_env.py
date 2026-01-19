@@ -230,9 +230,7 @@ class TestUnifiedSimEnvObservationValidity:
         env = UnifiedSimEnv()
         obs, _ = env.reset()
 
-        assert env.observation_space.contains(obs), (
-            "Reset observation not in observation space"
-        )
+        assert env.observation_space.contains(obs), "Reset observation not in observation space"
 
     def test_step_observation_in_space(self) -> None:
         """Observation from step() is contained in observation_space."""
@@ -240,9 +238,7 @@ class TestUnifiedSimEnvObservationValidity:
         env.reset()
         obs, _, _, _, _ = env.step(0)
 
-        assert env.observation_space.contains(obs), (
-            "Step observation not in observation space"
-        )
+        assert env.observation_space.contains(obs), "Step observation not in observation space"
 
 
 class TestUnifiedSimEnvZeroObservation:
@@ -385,11 +381,7 @@ class TestUnifiedSimEnvSeeding:
         assert req1 is not None
         assert req2 is not None
         # Very unlikely to have same src, dst, and bandwidth with different seeds
-        different = (
-            req1.source != req2.source
-            or req1.destination != req2.destination
-            or req1.bandwidth_gbps != req2.bandwidth_gbps
-        )
+        different = req1.source != req2.source or req1.destination != req2.destination or req1.bandwidth_gbps != req2.bandwidth_gbps
         assert different, "Different seeds should produce different requests"
 
     def test_reset_without_seed_uses_random(self) -> None:

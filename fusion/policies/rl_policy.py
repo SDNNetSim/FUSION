@@ -75,9 +75,7 @@ class RLPolicy:
 
         # Validate model has predict method
         if not hasattr(model, "predict"):
-            raise ValueError(
-                f"Model {type(model).__name__} does not have predict() method"
-            )
+            raise ValueError(f"Model {type(model).__name__} does not have predict() method")
 
         logger.info(
             "RLPolicy initialized with %s, k_paths=%d",
@@ -140,8 +138,7 @@ class RLPolicy:
                 # If predicted action is infeasible, find first feasible
                 if action >= len(options) or not action_mask[action]:
                     logger.debug(
-                        "Model predicted infeasible action %d, "
-                        "selecting first feasible",
+                        "Model predicted infeasible action %d, selecting first feasible",
                         action,
                     )
                     action = self._find_first_feasible(action_mask)
@@ -327,10 +324,7 @@ class RLPolicy:
                 pass
 
         if algorithm_class is None:
-            raise ValueError(
-                f"Unknown algorithm: {algorithm}. "
-                "Ensure stable_baselines3 or sb3_contrib is installed."
-            )
+            raise ValueError(f"Unknown algorithm: {algorithm}. Ensure stable_baselines3 or sb3_contrib is installed.")
 
         model = algorithm_class.load(model_path)
         return cls(model, **kwargs)

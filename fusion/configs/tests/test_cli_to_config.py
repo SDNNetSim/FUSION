@@ -95,9 +95,7 @@ class TestCLIToConfigMapper:
             # Temporarily modify the mapper to cause an exception
             original_mapping = self.mapper.arg_mapping
             self.mapper.arg_mapping = Mock()
-            self.mapper.arg_mapping.__contains__ = Mock(
-                side_effect=Exception("Test error")
-            )
+            self.mapper.arg_mapping.__contains__ = Mock(side_effect=Exception("Test error"))
 
             try:
                 self.mapper.map_args_to_config(args)
@@ -229,9 +227,7 @@ class TestCLIToConfigMapper:
         }
 
         for cli_arg, (section, key) in self.mapper.arg_mapping.items():
-            assert section in valid_sections, (
-                f"Invalid section '{section}' for arg '{cli_arg}'"
-            )
+            assert section in valid_sections, f"Invalid section '{section}' for arg '{cli_arg}'"
             assert isinstance(key, str), f"Key must be string for arg '{cli_arg}'"
             assert len(key) > 0, f"Key cannot be empty for arg '{cli_arg}'"
 

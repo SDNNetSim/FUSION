@@ -405,9 +405,7 @@ class TestPathOptionProtection:
 
     def test_validation_is_protected_requires_backup_feasible(self) -> None:
         """is_protected=True requires backup_feasible."""
-        with pytest.raises(
-            ValueError, match="is_protected=True requires backup_feasible"
-        ):
+        with pytest.raises(ValueError, match="is_protected=True requires backup_feasible"):
             PathOption(
                 path_index=0,
                 path=("A", "B"),

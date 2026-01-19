@@ -37,9 +37,7 @@ class TestSchemaConstants:
             assert isinstance(options, dict), f"Section '{section_name}' is not a dict"
 
             for option_name, converter in options.items():
-                assert callable(converter), (
-                    f"Converter for '{section_name}.{option_name}' is not callable"
-                )
+                assert callable(converter), f"Converter for '{section_name}.{option_name}' is not callable"
 
     def test_optional_options_dict_structure(self) -> None:
         """Test that OPTIONAL_OPTIONS_DICT has correct structure."""
@@ -71,9 +69,7 @@ class TestSchemaConstants:
             assert isinstance(options, dict), f"Section '{section_name}' is not a dict"
 
             for option_name, converter in options.items():
-                assert callable(converter), (
-                    f"Converter for '{section_name}.{option_name}' is not callable"
-                )
+                assert callable(converter), f"Converter for '{section_name}.{option_name}' is not callable"
 
     def test_general_settings_required_options(self) -> None:
         """Test specific required options in general_settings section."""
@@ -334,9 +330,7 @@ class TestSchemaConstants:
         }
 
         unexpected_overlaps = overlaps - allowed_duplicates
-        assert len(unexpected_overlaps) == 0, (
-            f"Found unexpected duplicate options: {unexpected_overlaps}"
-        )
+        assert len(unexpected_overlaps) == 0, f"Found unexpected duplicate options: {unexpected_overlaps}"
 
     def test_schema_constants_immutability(self) -> None:
         """Test that schema constants maintain their expected structure."""
@@ -361,10 +355,7 @@ class TestSchemaConstants:
 
         for section_name, options in all_options.items():
             for option_name, converter in options.items():
-                assert converter in valid_converters, (
-                    f"Unexpected converter '{converter}' for option "
-                    f"'{section_name}.{option_name}'"
-                )
+                assert converter in valid_converters, f"Unexpected converter '{converter}' for option '{section_name}.{option_name}'"
 
     def test_section_naming_consistency(self) -> None:
         """Test that section names follow consistent naming conventions."""
@@ -374,9 +365,7 @@ class TestSchemaConstants:
 
         for section in all_sections:
             # All sections should end with '_settings'
-            assert section.endswith("_settings"), (
-                f"Section '{section}' doesn't end with '_settings'"
-            )
+            assert section.endswith("_settings"), f"Section '{section}' doesn't end with '_settings'"
 
             # Section names should be lowercase with underscores
             assert section.islower(), f"Section '{section}' is not lowercase"

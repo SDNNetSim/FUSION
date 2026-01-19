@@ -265,10 +265,7 @@ def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDT
     try:
         plot_type = PlotType(plot_type_str)
     except ValueError as exc:
-        raise click.UsageError(
-            f"Invalid plot type: {plot_type_str}. "
-            f"Supported: {', '.join(pt.value for pt in PlotType)}"
-        ) from exc
+        raise click.UsageError(f"Invalid plot type: {plot_type_str}. Supported: {', '.join(pt.value for pt in PlotType)}") from exc
 
     # Create request DTO
     return PlotRequestDTO(
@@ -283,9 +280,7 @@ def _load_request_from_config(config_path: Path, verbose: bool) -> PlotRequestDT
         y_label=plot_config.get("y_label"),
         include_ci=plot_config.get("include_ci", True),
         include_baselines=plot_config.get("include_baselines", False),
-        save_path=Path(plot_config["save_path"])
-        if "save_path" in plot_config
-        else None,
+        save_path=Path(plot_config["save_path"]) if "save_path" in plot_config else None,
         dpi=config.get("defaults", {}).get("dpi", 300),
         figsize=tuple(plot_config.get("figsize", (10, 6))),
         format=config.get("defaults", {}).get("format", "png"),
@@ -321,10 +316,7 @@ def _create_request_from_args(
     try:
         plot_type_enum = PlotType(plot_type)
     except ValueError as exc:
-        raise click.UsageError(
-            f"Invalid plot type: {plot_type}. "
-            f"Supported: {', '.join(pt.value for pt in PlotType)}"
-        ) from exc
+        raise click.UsageError(f"Invalid plot type: {plot_type}. Supported: {', '.join(pt.value for pt in PlotType)}") from exc
 
     return PlotRequestDTO(
         network=network,
@@ -353,9 +345,7 @@ def _display_request_summary(request: PlotRequestDTO) -> None:
         click.echo(f"  Algorithms:  {', '.join(request.algorithms)}")
 
     if request.traffic_volumes:
-        click.echo(
-            f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}"
-        )
+        click.echo(f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}")
 
     click.echo(f"  Output DPI:  {request.dpi}")
     click.echo(f"  Format:      {request.format}")
@@ -365,9 +355,7 @@ def _display_request_summary(request: PlotRequestDTO) -> None:
 def _display_result(result: PlotResultDTO, verbose: bool) -> None:
     """Display plot generation result."""
     if result.success:
-        click.echo(
-            click.style("\n✅ Plot generated successfully!", fg="green", bold=True)
-        )
+        click.echo(click.style("\n✅ Plot generated successfully!", fg="green", bold=True))
         click.echo(f"\n📁 Output: {result.output_path}")
 
         if verbose:

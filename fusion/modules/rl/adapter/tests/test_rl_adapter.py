@@ -202,9 +202,7 @@ class TestGetPathOptions:
         adapter, mock_routing, _ = self._create_adapter_with_mocks()
 
         # Setup routing to return empty result
-        mock_routing.find_routes.return_value = self._create_mock_route_result(
-            paths=[], weights_km=[], modulations=[]
-        )
+        mock_routing.find_routes.return_value = self._create_mock_route_result(paths=[], weights_km=[], modulations=[])
 
         mock_request = MagicMock()
         mock_request.source = "A"
@@ -230,9 +228,7 @@ class TestGetPathOptions:
         )
 
         # Setup spectrum to return feasible for all
-        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(
-            is_free=True, slots_needed=4
-        )
+        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(is_free=True, slots_needed=4)
 
         mock_request = MagicMock()
         mock_request.source = "A"
@@ -329,9 +325,7 @@ class TestGetPathOptions:
         """Routing pipeline should be called with request parameters."""
         adapter, mock_routing, mock_spectrum = self._create_adapter_with_mocks()
 
-        mock_routing.find_routes.return_value = self._create_mock_route_result(
-            paths=[], weights_km=[], modulations=[]
-        )
+        mock_routing.find_routes.return_value = self._create_mock_route_result(paths=[], weights_km=[], modulations=[])
 
         mock_request = MagicMock()
         mock_request.source = "NodeA"
@@ -359,9 +353,7 @@ class TestGetPathOptions:
             modulations=[("QPSK",), ("16-QAM",)],
         )
 
-        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(
-            is_free=True
-        )
+        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(is_free=True)
 
         mock_request = MagicMock()
         mock_request.source = "A"
@@ -409,9 +401,7 @@ class TestGetPathOptions:
             modulations=[("QPSK",)],
         )
 
-        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(
-            is_free=True
-        )
+        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(is_free=True)
 
         mock_request = MagicMock()
         mock_request.source = "A"

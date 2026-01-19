@@ -10,9 +10,7 @@ else:
         np = None
 
 
-def get_loaded_files(
-    core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str
-) -> tuple[Any, Any]:
+def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str) -> tuple[Any, Any]:
     """
     Fetch the appropriate modulation format and GSNR files based on core_num
     and cores_per_link.
@@ -40,10 +38,7 @@ def get_loaded_files(
             np.load(mf_path, allow_pickle=True),
             np.load(gsnr_path, allow_pickle=True),
         )
-    raise ValueError(
-        f"No matching file found for core_num={core_num}, "
-        f"cores_per_link={cores_per_link}"
-    )
+    raise ValueError(f"No matching file found for core_num={core_num}, cores_per_link={cores_per_link}")
 
 
 def get_slot_index(current_band: str, start_slot: int, engine_props: dict) -> int:
@@ -66,9 +61,7 @@ def get_slot_index(current_band: str, start_slot: int, engine_props: dict) -> in
     return int(band_offset[current_band] + start_slot)
 
 
-def compute_response(
-    mod_format: Any, snr_props: Any, spectrum_props: Any, sdn_props: Any
-) -> bool:
+def compute_response(mod_format: Any, snr_props: Any, spectrum_props: Any, sdn_props: Any) -> bool:
     """
     Compute whether the SNR threshold can be met and validate modulation.
 
@@ -79,11 +72,6 @@ def compute_response(
     :return: Whether the SNR threshold is met.
     :rtype: bool
     """
-    is_valid_modulation = (
-        snr_props.modulation_format_mapping_dict[mod_format]
-        == spectrum_props.modulation
-    )
-    meets_bw_requirements = snr_props.bandwidth_mapping_dict[
-        spectrum_props.modulation
-    ] >= int(sdn_props.bandwidth)
+    is_valid_modulation = snr_props.modulation_format_mapping_dict[mod_format] == spectrum_props.modulation
+    meets_bw_requirements = snr_props.bandwidth_mapping_dict[spectrum_props.modulation] >= int(sdn_props.bandwidth)
     return bool(mod_format != 0 and is_valid_modulation and meets_bw_requirements)

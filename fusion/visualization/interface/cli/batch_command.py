@@ -143,9 +143,7 @@ def batch_command(
             # Convert to BatchPlotResultDTO for display
             from datetime import datetime
 
-            batch_result = BatchPlotResultDTO(
-                results=result, started_at=datetime.now(), completed_at=datetime.now()
-            )
+            batch_result = BatchPlotResultDTO(results=result, started_at=datetime.now(), completed_at=datetime.now())
             _display_batch_result(batch_result, verbose)
             if any(not r.success for r in result):
                 raise click.Abort()
@@ -206,9 +204,7 @@ def _load_batch_request_from_config(
     # Parse plot specifications
     plot_configs = config.get("plots", [])
     if not plot_configs:
-        raise click.UsageError(
-            "Configuration must specify at least one plot in 'plots'"
-        )
+        raise click.UsageError("Configuration must specify at least one plot in 'plots'")
 
     # Create PlotRequestDTO for each plot
     plot_requests = []
@@ -219,10 +215,7 @@ def _load_batch_request_from_config(
             try:
                 plot_type = PlotType(plot_type_str)
             except ValueError as exc:
-                raise ValueError(
-                    f"Invalid plot type: {plot_type_str}. "
-                    f"Supported: {', '.join(pt.value for pt in PlotType)}"
-                ) from exc
+                raise ValueError(f"Invalid plot type: {plot_type_str}. Supported: {', '.join(pt.value for pt in PlotType)}") from exc
 
             # Determine output path
             save_path = None
@@ -314,8 +307,7 @@ def _display_batch_result(result: BatchPlotResultDTO, verbose: bool) -> None:
     else:
         click.echo(
             click.style(
-                f"⚠️  {successful}/{len(result.results)} plots succeeded, "
-                f"{failed} failed",
+                f"⚠️  {successful}/{len(result.results)} plots succeeded, {failed} failed",
                 fg="yellow" if successful > 0 else "red",
                 bold=True,
             )
@@ -340,11 +332,7 @@ def _display_batch_result(result: BatchPlotResultDTO, verbose: bool) -> None:
 
             if verbose and plot_result.success:
                 click.echo(f"      Type: {plot_result.plot_type}")
-                duration = (
-                    plot_result.duration.total_seconds()
-                    if plot_result.duration
-                    else 0.0
-                )
+                duration = plot_result.duration.total_seconds() if plot_result.duration else 0.0
                 click.echo(f"      Duration: {duration:.2f}s")
 
     # Output directory summary

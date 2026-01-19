@@ -266,9 +266,7 @@ class ProtectionStatus(Enum):
         return self != ProtectionStatus.UNPROTECTED
 
     @classmethod
-    def from_legacy(
-        cls, is_protected: bool, active_path: str | None
-    ) -> ProtectionStatus:
+    def from_legacy(cls, is_protected: bool, active_path: str | None) -> ProtectionStatus:
         """
         Convert legacy protection fields to enum.
 
@@ -657,9 +655,7 @@ class Request:
         :raises ValueError: If transition is invalid or no lightpaths provided.
         """
         if not self.status.can_transition_to(RequestStatus.PARTIALLY_GROOMED):
-            raise ValueError(
-                f"Cannot transition from {self.status} to PARTIALLY_GROOMED"
-            )
+            raise ValueError(f"Cannot transition from {self.status} to PARTIALLY_GROOMED")
         if not lightpath_ids:
             raise ValueError("Must provide at least one lightpath_id")
 
@@ -789,9 +785,7 @@ class Request:
         bandwidth_raw = request_dict.get("bandwidth", "0Gbps")
         if isinstance(bandwidth_raw, str):
             # Handle formats like "100Gbps", "50 Gbps", "100"
-            bandwidth_gbps = int(
-                bandwidth_raw.lower().replace("gbps", "").replace(" ", "")
-            )
+            bandwidth_gbps = int(bandwidth_raw.lower().replace("gbps", "").replace(" ", ""))
         else:
             bandwidth_gbps = int(bandwidth_raw)
 

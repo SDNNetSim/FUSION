@@ -109,30 +109,19 @@ def _validate_orchestrator_config(engine_props: dict[str, Any]) -> None:
     warnings: list[str] = []
 
     if protection_enabled and slicing_enabled:
-        errors.append(
-            "protection_enabled and slicing_enabled cannot both be True. "
-            "Protection requires single lightpath per request."
-        )
+        errors.append("protection_enabled and slicing_enabled cannot both be True. Protection requires single lightpath per request.")
 
     # ERROR: node_disjoint without protection
     if node_disjoint and not protection_enabled:
-        errors.append(
-            "node_disjoint_protection requires protection_enabled=True "
-            "(route_method='1plus1_protection')"
-        )
+        errors.append("node_disjoint_protection requires protection_enabled=True (route_method='1plus1_protection')")
 
     # WARNING: slicing without grooming (P3.3.e - Combination 1)
     if slicing_enabled and not grooming_enabled:
-        warnings.append(
-            "slicing_enabled without grooming_enabled may cause inefficient "
-            "allocations (slices may use different paths)"
-        )
+        warnings.append("slicing_enabled without grooming_enabled may cause inefficient allocations (slices may use different paths)")
 
     # WARNING: congestion check (snr_recheck) without SNR (P3.3.e - Combination 3)
     if snr_recheck and not snr_enabled:
-        warnings.append(
-            "snr_recheck has no effect without snr_enabled (snr_type must be set)"
-        )
+        warnings.append("snr_recheck has no effect without snr_enabled (snr_type must be set)")
 
     # Log warnings
     for warning in warnings:
@@ -140,9 +129,7 @@ def _validate_orchestrator_config(engine_props: dict[str, Any]) -> None:
 
     # Raise on errors
     if errors:
-        error_msg = "Invalid orchestrator configuration:\n" + "\n".join(
-            f"  - {e}" for e in errors
-        )
+        error_msg = "Invalid orchestrator configuration:\n" + "\n".join(f"  - {e}" for e in errors)
         raise ValueError(error_msg)
 
     logger.debug("Orchestrator configuration validation passed")
@@ -312,13 +299,9 @@ class SimulationEngine:
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         # FailureManager reference will be set after topology creation
         self.sdn_obj.failure_manager = None
-        self.stats_obj = SimStats(
-            engine_props=self.engine_props, sim_info=self.sim_info
-        )
+        self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
         self.reporter = SimulationReporter(logger=logger)
-        self.persistence = StatsPersistence(
-            engine_props=self.engine_props, sim_info=self.sim_info
-        )
+        self.persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
 
         # Initialize ML metrics collector if needed
         self.ml_metrics: MLMetricsCollector | None = (
@@ -395,10 +378,7 @@ class SimulationEngine:
                 }
 
             was_groomed = hasattr(sdn_props, "was_groomed") and sdn_props.was_groomed
-            was_partially = (
-                hasattr(sdn_props, "was_partially_groomed")
-                and sdn_props.was_partially_groomed
-            )
+            was_partially = hasattr(sdn_props, "was_partially_groomed") and sdn_props.was_partially_groomed
             if was_groomed:
                 self.grooming_stats["fully_groomed"] += 1
             elif was_partially:
@@ -409,9 +389,7 @@ class SimulationEngine:
             # Track new lightpaths
             has_new_lp = hasattr(sdn_props, "was_new_lp_established")
             if has_new_lp and sdn_props.was_new_lp_established:
-                self.grooming_stats["lightpaths_created"] += len(
-                    sdn_props.was_new_lp_established
-                )
+                self.grooming_stats["lightpaths_created"] += len(sdn_props.was_new_lp_established)
 
         if sdn_props.was_routed:
             if sdn_props.number_of_transponders is not None:
@@ -502,7 +480,6 @@ class SimulationEngine:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
 
-
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
 
@@ -551,9 +528,7 @@ class SimulationEngine:
     # TODO: Rename "v5" references to something clearer. The "v5" naming is a legacy
     # artifact from internal versioning and is confusing. Consider renaming to
     # "_get_or_create_request" and "_requests_cache" (drop the "v5" prefix entirely).
-    def _get_or_create_v5_request(
-        self, current_time: tuple[int, float]
-    ) -> Request | None:
+    def _get_or_create_v5_request(self, current_time: tuple[int, float]) -> Request | None:
         """
         Get or create a Request domain object from legacy request dict.
 
@@ -711,18 +686,13 @@ class SimulationEngine:
             if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
-            self.sdn_obj.handle_event(
-                self.reqs_dict[current_time], request_type="release"
-            )
+            self.sdn_obj.handle_event(self.reqs_dict[current_time], request_type="release")
 
             # Update lightpath bandwidth utilization statistics
             # For non-grooming cases, populate utilization from reqs_status_dict if not already done
             if not self.engine_props.get("is_grooming_enabled", False):
                 # Check if sdn_controller already populated utilization (e.g., via dynamic slicing)
-                if (
-                    self.sdn_obj.sdn_props.lp_bw_utilization_dict is None
-                    or len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) == 0
-                ):
+                if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None or len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) == 0:
                     # Only use 100% fallback if dict is empty (not already calculated)
                     lightpath_ids = req_status.get("lightpath_id_list", [])
                     bandwidth_list = req_status.get("bandwidth_list", [])
@@ -746,13 +716,8 @@ class SimulationEngine:
                                 "utilization": 100.0,  # 100% for non-grooming non-slicing
                             }
 
-            if (
-                self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None
-                and len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) > 0
-            ):
-                self.stats_obj.update_utilization_dict(
-                    self.sdn_obj.sdn_props.lp_bw_utilization_dict
-                )
+            if self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None and len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) > 0:
+                self.stats_obj.update_utilization_dict(self.sdn_obj.sdn_props.lp_bw_utilization_dict)
                 # Clear the dict after aggregation to prevent duplicate counting
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
@@ -797,9 +762,7 @@ class SimulationEngine:
                     break
 
         if request is None:
-            logger.warning(
-                "Request %d not found in v5 cache for release", req_id
-            )
+            logger.warning("Request %d not found in v5 cache for release", req_id)
             return
 
         # Collect utilization stats before release (need LP objects to exist)
@@ -820,9 +783,7 @@ class SimulationEngine:
                 # Calculate time-weighted average utilization using history
                 # Don't add entry at departure_time here - release_bandwidth() handles that
                 if lp.time_bw_usage:
-                    utilization = average_bandwidth_usage(
-                        lp.time_bw_usage, departure_time
-                    )
+                    utilization = average_bandwidth_usage(lp.time_bw_usage, departure_time)
                 else:
                     # Fallback to point-in-time if no history
                     utilization = lp.utilization * 100.0
@@ -914,9 +875,7 @@ class SimulationEngine:
             "arrival_time": current_time,
             "erlang": self.engine_props["erlang"],
             "iteration": self.iteration,
-            "decision_time_ms": (sdn_props.route_time * 1000)
-            if hasattr(sdn_props, "route_time") and sdn_props.route_time
-            else 0.0,
+            "decision_time_ms": (sdn_props.route_time * 1000) if hasattr(sdn_props, "route_time") and sdn_props.route_time else 0.0,
         }
 
         # Log the transition
@@ -956,9 +915,7 @@ class SimulationEngine:
             cores_matrix: dict[str, np.ndarray] = {}
             for band in self.engine_props["band_list"]:
                 band_slots = self.engine_props[f"{band}_band"]
-                cores_matrix[band] = np.zeros(
-                    (link_data["fiber"]["num_cores"], band_slots)
-                )
+                cores_matrix[band] = np.zeros((link_data["fiber"]["num_cores"], band_slots))
 
             self.network_spectrum_dict[(source, dest)] = {
                 "cores_matrix": cores_matrix,
@@ -972,9 +929,7 @@ class SimulationEngine:
                 "usage_count": 0,
                 "throughput": 0,
             }
-            self.topology.add_edge(
-                source, dest, length=link_data["length"], nli_cost=None
-            )
+            self.topology.add_edge(source, dest, length=link_data["length"], nli_cost=None)
 
         self.engine_props["topology"] = self.topology
         self.stats_obj.topology = self.topology
@@ -1053,10 +1008,7 @@ class SimulationEngine:
             old_request_info_dict = copy.deepcopy(self.reqs_dict[current_time])
             self.handle_arrival(current_time=current_time)
 
-            if (
-                self.engine_props["save_snapshots"]
-                and request_number % self.engine_props["snapshot_step"] == 0
-            ):
+            if self.engine_props["save_snapshots"] and request_number % self.engine_props["snapshot_step"] == 0:
                 self.stats_obj.update_snapshot(
                     network_spectrum_dict=self.network_spectrum_dict,
                     request_number=request_number,
@@ -1066,9 +1018,7 @@ class SimulationEngine:
                 was_routed = self.sdn_obj.sdn_props.was_routed
                 if was_routed:
                     if self.reqs_dict is not None and current_time in self.reqs_dict:
-                        request_info_dict = self.reqs_status_dict[
-                            self.reqs_dict[current_time]["req_id"]
-                        ]
+                        request_info_dict = self.reqs_status_dict[self.reqs_dict[current_time]["req_id"]]
                         if self.ml_metrics:
                             self.ml_metrics.update_train_data(
                                 old_request_info_dict=old_request_info_dict,
@@ -1080,10 +1030,7 @@ class SimulationEngine:
         elif request_type == "release":
             self.handle_release(current_time=current_time)
         else:
-            raise NotImplementedError(
-                f"Request type unrecognized. Expected arrival or release, "
-                f"got: {request_type}"
-            )
+            raise NotImplementedError(f"Request type unrecognized. Expected arrival or release, got: {request_type}")
 
     def reset(self) -> None:
         """
@@ -1134,9 +1081,7 @@ class SimulationEngine:
                 self.sdn_obj.grooming_obj.grooming_props.lightpath_status_dict = {}
             logger.debug("Reset grooming structures for new iteration")
 
-    def end_iter(
-        self, iteration: int, print_flag: bool = True, base_file_path: str | None = None
-    ) -> bool:
+    def end_iter(self, iteration: int, print_flag: bool = True, base_file_path: str | None = None) -> bool:
         """
         Update iteration statistics.
 
@@ -1161,11 +1106,7 @@ class SimulationEngine:
             resp = bool(self.stats_obj.calculate_confidence_interval())
         else:
             resp = False
-        if (
-            (iteration + 1) % self.engine_props["print_step"] == 0
-            or iteration == 0
-            or (iteration + 1) == self.engine_props["max_iters"]
-        ):
+        if (iteration + 1) % self.engine_props["print_step"] == 0 or iteration == 0 or (iteration + 1) == self.engine_props["max_iters"]:
             # Use the reporter for output instead of metrics class
             if hasattr(self, "reporter"):
                 self.reporter.report_iteration_stats(
@@ -1283,15 +1224,12 @@ class SimulationEngine:
         elif self.engine_props.get("seed") is not None:
             # Use general seed as constant RL seed
             rl_seed = self.engine_props["seed"]
-            logger.info(
-                "Using constant rl_seed=%d from general seed for RL components", rl_seed
-            )
+            logger.info("Using constant rl_seed=%d from general seed for RL components", rl_seed)
             seed_rl_components(rl_seed)
         else:
             # No RL seed specified - use same as request seed (varies per iteration)
             logger.debug(
-                "No rl_seed specified, using request_seed=%d for RL "
-                "(varies per iteration)",
+                "No rl_seed specified, using request_seed=%d for RL (varies per iteration)",
                 request_seed,
             )
             seed_rl_components(request_seed)
@@ -1324,10 +1262,7 @@ class SimulationEngine:
             return
 
         # Debug: Log topology info
-        logger.info(
-            f"Topology has {self.topology.number_of_nodes()} nodes and "
-            f"{self.topology.number_of_edges()} edges"
-        )
+        logger.info(f"Topology has {self.topology.number_of_nodes()} nodes and {self.topology.number_of_edges()} edges")
         logger.debug(f"Topology nodes: {sorted(self.topology.nodes())}")
         logger.debug(f"Topology edges (first 10): {list(self.topology.edges())[:10]}")
 
@@ -1354,13 +1289,7 @@ class SimulationEngine:
         failure_type = self.engine_props.get("failure_type", "none")
 
         # Get actual arrival times from generated requests
-        arrival_times = sorted(
-            [
-                t
-                for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "arrival"
-            ]
-        )
+        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"])
 
         if not arrival_times:
             logger.warning("No arrival times available to schedule failure")
@@ -1426,20 +1355,12 @@ class SimulationEngine:
                     t_repair=t_repair,
                     link_id=(failed_src, failed_dst),
                 )
-                logger.info(
-                    f"Link failure scheduled: {event['failed_links']} "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                logger.info(f"Link failure scheduled: {event['failed_links']} from t={t_fail:.2f} to t={t_repair:.2f}")
 
             elif failure_type == "srlg":
                 srlg_links = self.engine_props.get("srlg_links", [])
-                event = self.failure_manager.inject_failure(
-                    "srlg", t_fail=t_fail, t_repair=t_repair, srlg_links=srlg_links
-                )
-                logger.info(
-                    f"SRLG failure scheduled: {len(event['failed_links'])} links "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                event = self.failure_manager.inject_failure("srlg", t_fail=t_fail, t_repair=t_repair, srlg_links=srlg_links)
+                logger.info(f"SRLG failure scheduled: {len(event['failed_links'])} links from t={t_fail:.2f} to t={t_repair:.2f}")
 
             elif failure_type == "geo":
                 # Convert center node ID to match topology node type
@@ -1456,10 +1377,7 @@ class SimulationEngine:
                     center_node=center_node,
                     hop_radius=self.engine_props["geo_hop_radius"],
                 )
-                logger.info(
-                    f"Geographic failure scheduled: {len(event['failed_links'])} links "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                logger.info(f"Geographic failure scheduled: {len(event['failed_links'])} links from t={t_fail:.2f} to t={t_repair:.2f}")
 
             elif failure_type == "node":
                 # Convert node ID to match topology node type
@@ -1475,10 +1393,7 @@ class SimulationEngine:
                     t_repair=t_repair,
                     node_id=node_id,
                 )
-                logger.info(
-                    f"Node failure scheduled: {len(event['failed_links'])} links "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                logger.info(f"Node failure scheduled: {len(event['failed_links'])} links from t={t_fail:.2f} to t={t_repair:.2f}")
 
         except Exception as e:
             logger.error(f"Failed to schedule {failure_type} failure: {e}")
@@ -1506,9 +1421,7 @@ class SimulationEngine:
             if self._should_stop_simulation(simulation_context):
                 break
 
-            simulation_context["done_units"] = self._run_single_iteration(
-                iteration, seed, simulation_context
-            )
+            simulation_context["done_units"] = self._run_single_iteration(iteration, seed, simulation_context)
 
             if simulation_context["end_iter"]:
                 break
@@ -1533,9 +1446,7 @@ class SimulationEngine:
             "max_iters": self.engine_props["max_iters"],
             "progress_queue": self.engine_props.get("progress_queue"),
             "thread_num": self.engine_props.get("thread_num", "unknown"),
-            "my_iteration_units": self.engine_props.get(
-                "my_iteration_units", self.engine_props["max_iters"]
-            ),
+            "my_iteration_units": self.engine_props.get("my_iteration_units", self.engine_props["max_iters"]),
             "done_offset": self.engine_props.get("done_offset", 0),
             "done_units": self.engine_props.get("done_offset", 0),
             "end_iter": False,
@@ -1569,18 +1480,13 @@ class SimulationEngine:
         """
         if self.stop_flag is not None and self.stop_flag.is_set():
             log_message(
-                message=(
-                    f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
-                    f"simulation number: {context['thread_num']}.\n"
-                ),
+                message=(f"Simulation stopped for Erlang: {self.engine_props['erlang']} simulation number: {context['thread_num']}.\n"),
                 log_queue=context["log_queue"],
             )
             return True
         return False
 
-    def _run_single_iteration(
-        self, iteration: int, seed: int | None, context: dict[str, Any]
-    ) -> int:
+    def _run_single_iteration(self, iteration: int, seed: int | None, context: dict[str, Any]) -> int:
         """
         Execute a single simulation iteration.
 
@@ -1604,9 +1510,7 @@ class SimulationEngine:
 
         return int(context["done_units"])
 
-    def _find_affected_requests(
-        self, failed_links: list[tuple[Any, Any]]
-    ) -> list[dict[str, Any]]:
+    def _find_affected_requests(self, failed_links: list[tuple[Any, Any]]) -> list[dict[str, Any]]:
         """
         Find all allocated requests affected by failed links.
 
@@ -1627,11 +1531,7 @@ class SimulationEngine:
 
         for _request_id, request_info in self.sdn_obj.sdn_props.allocated_requests.items():
             # Determine which path to check based on active_path
-            active_path_key = (
-                "primary_path"
-                if request_info.get("active_path") == "primary"
-                else "backup_path"
-            )
+            active_path_key = "primary_path" if request_info.get("active_path") == "primary" else "backup_path"
             active_path = request_info.get(active_path_key)
 
             if active_path is None:
@@ -1663,9 +1563,7 @@ class SimulationEngine:
 
         return self.failure_manager.is_path_feasible(path)
 
-    def _handle_failure_impact(
-        self, current_time: tuple[int, float], failed_links: list[tuple[Any, Any]]
-    ) -> None:
+    def _handle_failure_impact(self, current_time: tuple[int, float], failed_links: list[tuple[Any, Any]]) -> None:
         """
         Handle impact of failures on already-allocated requests.
 
@@ -1684,10 +1582,7 @@ class SimulationEngine:
             logger.debug("No allocated requests affected by failures")
             return
 
-        logger.info(
-            f"Found {len(affected_requests)} allocated request(s) "
-            f"affected by failures at t={current_time:.2f}"
-        )
+        logger.info(f"Found {len(affected_requests)} allocated request(s) affected by failures at t={current_time:.2f}")
 
         switchover_count = 0
         dropped_count = 0
@@ -1696,45 +1591,28 @@ class SimulationEngine:
             request_id = request_info["request_id"]
 
             # Check if this is a protected request with viable backup
-            if (
-                request_info.get("is_protected")
-                and request_info.get("active_path") == "primary"
-            ):
+            if request_info.get("is_protected") and request_info.get("active_path") == "primary":
                 backup_path = request_info.get("backup_path")
 
                 if self._is_path_feasible(backup_path):
                     # Backup path is viable - switch to it
                     self._switch_to_backup(request_info, current_time)
                     switchover_count += 1
-                    logger.info(
-                        f"Request {request_id}: Switched to backup path "
-                        f"{backup_path} at t={current_time:.2f}"
-                    )
+                    logger.info(f"Request {request_id}: Switched to backup path {backup_path} at t={current_time:.2f}")
                 else:
                     # Backup path also failed - release and count as blocked
                     self._release_failed_request(request_info, current_time)
                     dropped_count += 1
-                    logger.warning(
-                        f"Request {request_id}: Both primary and backup paths "
-                        f"failed, releasing at t={current_time:.2f}"
-                    )
+                    logger.warning(f"Request {request_id}: Both primary and backup paths failed, releasing at t={current_time:.2f}")
             else:
                 # Unprotected request or already on backup - release
                 self._release_failed_request(request_info, current_time)
                 dropped_count += 1
-                logger.warning(
-                    f"Request {request_id}: Unprotected request failed, "
-                    f"releasing at t={current_time:.2f}"
-                )
+                logger.warning(f"Request {request_id}: Unprotected request failed, releasing at t={current_time:.2f}")
 
-        logger.info(
-            f"Failure impact: {switchover_count} switchovers, "
-            f"{dropped_count} dropped requests"
-        )
+        logger.info(f"Failure impact: {switchover_count} switchovers, {dropped_count} dropped requests")
 
-    def _switch_to_backup(
-        self, request_info: dict[str, Any], current_time: tuple[int, float]
-    ) -> None:
+    def _switch_to_backup(self, request_info: dict[str, Any], current_time: tuple[int, float]) -> None:
         """
         Switch a protected request to its backup path.
 
@@ -1760,9 +1638,7 @@ class SimulationEngine:
 
         # Note: Spectrum is already allocated on backup path, no need to reallocate
 
-    def _release_failed_request(
-        self, request_info: dict[str, Any], current_time: tuple[int, float]
-    ) -> None:
+    def _release_failed_request(self, request_info: dict[str, Any], current_time: tuple[int, float]) -> None:
         """
         Release a request that failed due to link failures.
 
@@ -1804,9 +1680,7 @@ class SimulationEngine:
 
         # Also update failure-specific counters
         current_failure_count = self.stats_obj.stats_props.block_reasons_dict.get("failure", 0)
-        self.stats_obj.stats_props.block_reasons_dict["failure"] = (
-            (current_failure_count if current_failure_count is not None else 0) + 1
-        )
+        self.stats_obj.stats_props.block_reasons_dict["failure"] = (current_failure_count if current_failure_count is not None else 0) + 1
         self.stats_obj.stats_props.failure_induced_blocks += 1
 
         # Update bit rate blocking if bandwidth info available
@@ -1828,10 +1702,7 @@ class SimulationEngine:
             if self.failure_manager:
                 activated_links = self.failure_manager.activate_failures(time_val)
                 if activated_links:
-                    logger.info(
-                        f"Activated {len(activated_links)} failed link(s) at time "
-                        f"{time_val:.2f}: {activated_links}"
-                    )
+                    logger.info(f"Activated {len(activated_links)} failed link(s) at time {time_val:.2f}: {activated_links}")
                     # Handle already-allocated requests affected by failures
                     self._handle_failure_impact(current_time, activated_links)
 
@@ -1839,20 +1710,11 @@ class SimulationEngine:
             if self.failure_manager:
                 repaired_links = self.failure_manager.repair_failures(time_val)
                 if repaired_links:
-                    logger.info(
-                        f"Repaired {len(repaired_links)} link(s) at time "
-                        f"{time_val:.2f}: {repaired_links}"
-                    )
+                    logger.info(f"Repaired {len(repaired_links)} link(s) at time {time_val:.2f}: {repaired_links}")
 
-            self.handle_request(
-                current_time=current_time, request_number=request_number
-            )
+            self.handle_request(current_time=current_time, request_number=request_number)
 
-            if (
-                self.reqs_dict is not None
-                and current_time in self.reqs_dict
-                and self.reqs_dict[current_time]["request_type"] == "arrival"
-            ):
+            if self.reqs_dict is not None and current_time in self.reqs_dict and self.reqs_dict[current_time]["request_type"] == "arrival":
                 request_number += 1
 
     def _update_progress(self, iteration: int, context: dict[str, Any]) -> None:
@@ -1865,15 +1727,10 @@ class SimulationEngine:
         :type context: Dict[str, Any]
         """
         if context["progress_queue"]:
-            context["progress_queue"].put(
-                (context["thread_num"], context["done_units"])
-            )
+            context["progress_queue"].put((context["thread_num"], context["done_units"]))
 
         log_message(
-            message=(
-                f"CHILD={context['thread_num']} iteration={iteration}, "
-                f"done_units={context['done_units']}\n"
-            ),
+            message=(f"CHILD={context['thread_num']} iteration={iteration}, done_units={context['done_units']}\n"),
             log_queue=context["log_queue"],
         )
 
@@ -1886,8 +1743,7 @@ class SimulationEngine:
         """
         log_message(
             message=(
-                f"Simulation finished for Erlang: {self.engine_props['erlang']} "
-                f"finished for simulation number: {context['thread_num']}.\n"
+                f"Simulation finished for Erlang: {self.engine_props['erlang']} finished for simulation number: {context['thread_num']}.\n"
             ),
             log_queue=context["log_queue"],
         )
@@ -1915,10 +1771,7 @@ class SimulationEngine:
         # Validate SNR rechecking settings
         if self.engine_props.get("snr_recheck", False):
             if self.engine_props.get("snr_type") in ["None", None]:
-                logger.warning(
-                    "snr_recheck enabled but snr_type is None - "
-                    "rechecking will be skipped"
-                )
+                logger.warning("snr_recheck enabled but snr_type is None - rechecking will be skipped")
 
         # Validate partial service setting
         if self.engine_props.get("can_partially_serve", False):
@@ -1973,10 +1826,7 @@ class SimulationEngine:
 
         # Calculate average lightpath utilization
         if self.sdn_obj.sdn_props.lp_bw_utilization_dict:
-            utilizations = [
-                lp_info["utilization"]
-                for lp_info in self.sdn_obj.sdn_props.lp_bw_utilization_dict.values()
-            ]
+            utilizations = [lp_info["utilization"] for lp_info in self.sdn_obj.sdn_props.lp_bw_utilization_dict.values()]
             avg_util = sum(utilizations) / len(utilizations) if utilizations else 0.0
             self.grooming_stats["avg_lightpath_utilization"].append(avg_util)
 
@@ -2036,10 +1886,7 @@ class SimulationEngine:
         """
         if self.reqs_dict is None:
             return 0
-        return sum(
-            1 for req in self.reqs_dict.values()
-            if req.get("request_type") == "arrival"
-        )
+        return sum(1 for req in self.reqs_dict.values() if req.get("request_type") == "arrival")
 
     @property
     def network_state(self) -> NetworkState | None:
@@ -2065,13 +1912,7 @@ class SimulationEngine:
             return None
 
         # Get sorted arrival times
-        arrival_times = sorted(
-            [
-                t
-                for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "arrival"
-            ]
-        )
+        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"])
 
         # Find next unprocessed request using _rl_request_index
         if not hasattr(self, "_rl_request_index"):
@@ -2102,13 +1943,7 @@ class SimulationEngine:
         # Find and process all release events at or before given time
         # NOTE: Use <= to match legacy behavior where releases at exactly
         # the same time as the next arrival are processed before that arrival
-        release_times = sorted(
-            [
-                t
-                for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "release" and t[1] <= time
-            ]
-        )
+        release_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "release" and t[1] <= time])
 
         for release_time in release_times:
             # Check if we've already processed this release
@@ -2170,22 +2005,10 @@ class SimulationEngine:
                 "band": list(result.bands) if result.bands else [],
                 "start_slot_list": list(result.start_slots) if result.start_slots else [],
                 "end_slot_list": list(result.end_slots) if result.end_slots else [],
-                "bandwidth_list": (
-                    list(result.bandwidth_allocations)
-                    if result.bandwidth_allocations
-                    else [request.bandwidth_gbps]
-                ),
-                "lightpath_id_list": (
-                    list(result.all_lightpath_ids) if result.all_lightpath_ids else []
-                ),
-                "lightpath_bandwidth_list": (
-                    list(result.lightpath_bandwidths)
-                    if result.lightpath_bandwidths
-                    else []
-                ),
-                "was_new_lp_established": (
-                    list(result.lightpaths_created) if result.lightpaths_created else []
-                ),
+                "bandwidth_list": (list(result.bandwidth_allocations) if result.bandwidth_allocations else [request.bandwidth_gbps]),
+                "lightpath_id_list": (list(result.all_lightpath_ids) if result.all_lightpath_ids else []),
+                "lightpath_bandwidth_list": (list(result.lightpath_bandwidths) if result.lightpath_bandwidths else []),
+                "was_new_lp_established": (list(result.lightpaths_created) if result.lightpaths_created else []),
             }
 
         # Advance to next request

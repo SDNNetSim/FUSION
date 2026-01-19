@@ -64,9 +64,7 @@ class BatchGeneratePlotsUseCase:
         self.processor = processor
         self.renderer = renderer
 
-    def execute(
-        self, request: BatchPlotRequestDTO | list[PlotRequestDTO]
-    ) -> BatchPlotResultDTO | list[PlotResultDTO]:
+    def execute(self, request: BatchPlotRequestDTO | list[PlotRequestDTO]) -> BatchPlotResultDTO | list[PlotResultDTO]:
         """
         Execute batch plot generation.
 
@@ -80,9 +78,7 @@ class BatchGeneratePlotsUseCase:
 
         # Handle legacy list input
         if isinstance(request, list):
-            logger.info(
-                f"Starting batch generation of {len(request)} plots (legacy list mode)"
-            )
+            logger.info(f"Starting batch generation of {len(request)} plots (legacy list mode)")
             # Create a BatchPlotRequestDTO from the list
             batch_request = BatchPlotRequestDTO(
                 network=request[0].network if request else "",
@@ -95,16 +91,11 @@ class BatchGeneratePlotsUseCase:
             return result.results
 
         # Normal BatchPlotRequestDTO handling
-        logger.info(
-            f"Starting batch generation of {len(request.plots)} plots "
-            f"(parallel={request.parallel})"
-        )
+        logger.info(f"Starting batch generation of {len(request.plots)} plots (parallel={request.parallel})")
 
         return self._execute_batch(request, started_at)
 
-    def _execute_batch(
-        self, request: BatchPlotRequestDTO, started_at: datetime
-    ) -> BatchPlotResultDTO:
+    def _execute_batch(self, request: BatchPlotRequestDTO, started_at: datetime) -> BatchPlotResultDTO:
         """Execute batch plot generation with a BatchPlotRequestDTO."""
         # Validate request
         errors = request.validate()
@@ -155,9 +146,7 @@ class BatchGeneratePlotsUseCase:
 
                 # Stop on error if requested
                 if not result.success and request.stop_on_error:
-                    logger.warning(
-                        f"Stopping batch generation due to error: {result.error}"
-                    )
+                    logger.warning(f"Stopping batch generation due to error: {result.error}")
                     break
 
             except Exception as e:
@@ -185,8 +174,7 @@ class BatchGeneratePlotsUseCase:
         with ThreadPoolExecutor(max_workers=request.max_workers) as executor:
             # Submit all tasks
             future_to_index = {
-                executor.submit(self.generate_plot_use_case.execute, plot_request): i
-                for i, plot_request in enumerate(request.plots)
+                executor.submit(self.generate_plot_use_case.execute, plot_request): i for i, plot_request in enumerate(request.plots)
             }
 
             # Collect results as they complete

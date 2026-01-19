@@ -328,9 +328,7 @@ def _load_torch_model(model_path: Path, device: str) -> TorchModelWrapper:
     try:
         import torch
     except ImportError as e:
-        raise ImportError(
-            "PyTorch not installed. Install with: pip install torch"
-        ) from e
+        raise ImportError("PyTorch not installed. Install with: pip install torch") from e
 
     model = torch.load(
         model_path,
@@ -341,9 +339,7 @@ def _load_torch_model(model_path: Path, device: str) -> TorchModelWrapper:
     # Handle state_dict or full model
     if isinstance(model, dict):
         raise ValueError(
-            "Model file contains state_dict only. "
-            "Please save the full model with torch.save(model, path) "
-            "or provide model architecture."
+            "Model file contains state_dict only. Please save the full model with torch.save(model, path) or provide model architecture."
         )
 
     return TorchModelWrapper(model, device)
@@ -362,9 +358,7 @@ def _load_sklearn_model(model_path: Path) -> SklearnModelWrapper:
     try:
         import joblib
     except ImportError as e:
-        raise ImportError(
-            "joblib not installed. Install with: pip install joblib"
-        ) from e
+        raise ImportError("joblib not installed. Install with: pip install joblib") from e
 
     model = joblib.load(model_path)
     return SklearnModelWrapper(model)
@@ -383,9 +377,7 @@ def _load_onnx_model(model_path: Path) -> OnnxModelWrapper:
     try:
         import onnxruntime as ort
     except ImportError as e:
-        raise ImportError(
-            "onnxruntime not installed. Install with: pip install onnxruntime"
-        ) from e
+        raise ImportError("onnxruntime not installed. Install with: pip install onnxruntime") from e
 
     session = ort.InferenceSession(str(model_path))
     return OnnxModelWrapper(session)
@@ -424,10 +416,7 @@ def load_model(model_path: str, device: str = "cpu") -> ModelWrapper:
     elif suffix == ".onnx":
         return _load_onnx_model(path)
     else:
-        raise ValueError(
-            f"Unsupported model format: {suffix}. "
-            "Supported: .pt, .pth, .joblib, .pkl, .onnx"
-        )
+        raise ValueError(f"Unsupported model format: {suffix}. Supported: .pt, .pth, .joblib, .pkl, .onnx")
 
 
 class MLControlPolicy:
@@ -539,10 +528,7 @@ class MLControlPolicy:
         }
 
         if fallback_type not in fallback_map:
-            raise ValueError(
-                f"Unknown fallback type: {fallback_type}. "
-                f"Options: {list(fallback_map.keys())}"
-            )
+            raise ValueError(f"Unknown fallback type: {fallback_type}. Options: {list(fallback_map.keys())}")
 
         return fallback_map[fallback_type]()
 
@@ -636,9 +622,7 @@ class MLControlPolicy:
 
             # Step 3: Validate output
             if not self._validate_output(raw_output, len(options)):
-                return self._use_fallback(
-                    request, options, network_state, "invalid_output"
-                )
+                return self._use_fallback(request, options, network_state, "invalid_output")
 
             # Step 4: Apply mask and select
             action = self._apply_mask_and_select(raw_output, options)
@@ -648,9 +632,7 @@ class MLControlPolicy:
                 return action
 
             # Invalid action - fallback
-            return self._use_fallback(
-                request, options, network_state, "infeasible_action"
-            )
+            return self._use_fallback(request, options, network_state, "infeasible_action")
 
         except ImportError as e:
             logger.error("ML framework import error: %s", e)
@@ -691,9 +673,7 @@ class MLControlPolicy:
         # Multi-dimensional - unexpected for inference
         return False
 
-    def _apply_mask_and_select(
-        self, raw_output: np.ndarray, options: list[PathOption]
-    ) -> int:
+    def _apply_mask_and_select(self, raw_output: np.ndarray, options: list[PathOption]) -> int:
         """
         Apply feasibility mask and select best action.
 

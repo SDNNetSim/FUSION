@@ -124,14 +124,10 @@ class TestSDNController(unittest.TestCase):
         controller = SDNController(engine_props=self.engine_props)
 
         # Check that spectrum assignment gets route props
-        self.assertEqual(
-            controller.spectrum_obj.route_props, controller.route_obj.route_props
-        )
+        self.assertEqual(controller.spectrum_obj.route_props, controller.route_obj.route_props)
         # Check that slicing manager gets proper references
         self.assertEqual(controller.slicing_manager.sdn_props, controller.sdn_props)
-        self.assertEqual(
-            controller.slicing_manager.spectrum_obj, controller.spectrum_obj
-        )
+        self.assertEqual(controller.slicing_manager.spectrum_obj, controller.spectrum_obj)
 
     def test_allocate_with_valid_spectrum_allocates_correctly(self) -> None:
         """Test spectrum allocation with valid spectrum properties."""
@@ -152,9 +148,7 @@ class TestSDNController(unittest.TestCase):
         for link in zip(path_list, path_list[1:], strict=False):
             link_tuple = (link[0], link[1])
             core_matrix = network_dict[link_tuple]["cores_matrix"]["c"][0]
-            self.assertTrue(
-                np.all(core_matrix[:2] == self.controller.sdn_props.request_id)
-            )
+            self.assertTrue(np.all(core_matrix[:2] == self.controller.sdn_props.request_id))
             self.assertEqual(core_matrix[2], self.controller.sdn_props.request_id * -1)
 
     def test_allocate_without_guard_slots_allocates_correctly(self) -> None:
@@ -178,9 +172,7 @@ class TestSDNController(unittest.TestCase):
             link_tuple = (link[0], link[1])
             core_matrix = network_dict[link_tuple]["cores_matrix"]["c"][0]
             # Check allocation without guard band
-            self.assertTrue(
-                np.all(core_matrix[:3] == self.controller.sdn_props.request_id)
-            )
+            self.assertTrue(np.all(core_matrix[:3] == self.controller.sdn_props.request_id))
             # Ensure no guard band is allocated
             self.assertNotIn(self.controller.sdn_props.request_id * -1, core_matrix)
 
@@ -255,13 +247,9 @@ class TestSDNController(unittest.TestCase):
         expected_throughput = 500  # 100 Gbps * 5 seconds
         for link in zip(path_list, path_list[1:], strict=False):
             link_tuple = (link[0], link[1])
-            self.assertEqual(
-                network_dict[link_tuple]["throughput"], expected_throughput
-            )
+            self.assertEqual(network_dict[link_tuple]["throughput"], expected_throughput)
             reverse_link = (link_tuple[1], link_tuple[0])
-            self.assertEqual(
-                network_dict[reverse_link]["throughput"], expected_throughput
-            )
+            self.assertEqual(network_dict[reverse_link]["throughput"], expected_throughput)
 
     def test_release_with_missing_timing_fields_handles_gracefully(self) -> None:
         """Test that release handles missing timing fields gracefully."""
@@ -314,9 +302,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.sdn_props.bandwidth = 100  # Required for remaining_bw calculation
         mock_get_spectrum.return_value = None
 
-        self.controller._allocate_slicing(
-            num_segments=2, mod_format="QPSK", path_list=[0, 1], bandwidth="50.0"
-        )
+        self.controller._allocate_slicing(num_segments=2, mod_format="QPSK", path_list=[0, 1], bandwidth="50.0")
 
         mock_get_spectrum.assert_called()
         mock_allocate.assert_called()
@@ -376,9 +362,7 @@ class TestSDNController(unittest.TestCase):
                 return_value=100,
             ) as mock_find_path_len,
         ):
-            self.controller._handle_dynamic_slicing(
-                path_list=["A", "B", "C"], path_index=0, forced_segments=1
-            )
+            self.controller._handle_dynamic_slicing(path_list=["A", "B", "C"], path_index=0, forced_segments=1)
 
             mock_get_spectrum.assert_called()
             mock_allocate.assert_called()
@@ -425,9 +409,7 @@ class TestSDNController(unittest.TestCase):
                 # Simulate no free spectrum
                 self.controller.spectrum_obj.spectrum_props.is_free = False
 
-                self.controller._handle_dynamic_slicing(
-                    path_list=["A", "B", "C"], path_index=0, forced_segments=1
-                )
+                self.controller._handle_dynamic_slicing(path_list=["A", "B", "C"], path_index=0, forced_segments=1)
 
                 mock_get_spectrum.assert_called()
                 mock_handle_congestion.assert_called_with(remaining_bw=100)
@@ -491,15 +473,11 @@ class TestSDNController(unittest.TestCase):
 
         # Verify spectrum was released but transponders unchanged
         self.assertEqual(
-            self.controller.sdn_props.transponder_usage_dict["0"][
-                "available_transponder"
-            ],
+            self.controller.sdn_props.transponder_usage_dict["0"]["available_transponder"],
             5,
         )
         self.assertEqual(
-            self.controller.sdn_props.transponder_usage_dict["2"][
-                "available_transponder"
-            ],
+            self.controller.sdn_props.transponder_usage_dict["2"]["available_transponder"],
             5,
         )
 
@@ -534,12 +512,8 @@ class TestSDNController(unittest.TestCase):
         end_slot = 5
 
         assert self.controller.sdn_props.network_spectrum_dict is not None
-        core_matrix = self.controller.sdn_props.network_spectrum_dict[(0, 1)][
-            "cores_matrix"
-        ]
-        reverse_core_matrix = self.controller.sdn_props.network_spectrum_dict[(1, 0)][
-            "cores_matrix"
-        ]
+        core_matrix = self.controller.sdn_props.network_spectrum_dict[(0, 1)]["cores_matrix"]
+        reverse_core_matrix = self.controller.sdn_props.network_spectrum_dict[(1, 0)]["cores_matrix"]
 
         self.controller._allocate_guard_band(
             band=band,
@@ -552,9 +526,7 @@ class TestSDNController(unittest.TestCase):
 
         # Verify guard band uses lightpath_id
         self.assertEqual(core_matrix[band][core_num][end_slot], lightpath_id * -1)
-        self.assertEqual(
-            reverse_core_matrix[band][core_num][end_slot], lightpath_id * -1
-        )
+        self.assertEqual(reverse_core_matrix[band][core_num][end_slot], lightpath_id * -1)
 
     def test_check_snr_after_allocation_disabled(self) -> None:
         """Test _check_snr_after_allocation when disabled."""

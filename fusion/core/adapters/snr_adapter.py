@@ -33,12 +33,8 @@ class SDNPropsProxyForSNR:
     destination: str = ""
     bandwidth: float = 0.0
     path_index: int = 0
-    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(
-        default_factory=dict
-    )
-    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
-        default_factory=dict
-    )
+    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
+    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(default_factory=dict)
     # Additional fields for snr_recheck_after_allocation
     lightpath_id_list: list[int] = field(default_factory=list)
     request_id: int | None = None
@@ -259,7 +255,7 @@ class SNRAdapter(SNRPipeline):
         new_lightpath_id: int,
         network_state: NetworkState,
         *,
-        affected_range_slots: int = 5,
+        _affected_range_slots: int = 5,
         slicing_flag: bool = False,
     ) -> SNRRecheckResult:
         """
@@ -315,7 +311,7 @@ class SNRAdapter(SNRPipeline):
 
             # Create proxies for legacy SnrMeasurements
             # Get modulation_formats_dict from mod_per_bw (pick any bandwidth's formats)
-            mod_per_bw = self._engine_props.get('mod_per_bw', {})
+            mod_per_bw = self._engine_props.get("mod_per_bw", {})
             # Use first available bandwidth's modulation formats
             modulation_formats_dict = {}
             if mod_per_bw:
@@ -391,6 +387,7 @@ class SNRAdapter(SNRPipeline):
 
         except Exception as e:
             import traceback
+
             logger.warning("SNRAdapter.recheck_affected failed: %s", e)
             traceback.print_exc()
             # On error, assume no violations (fail open)

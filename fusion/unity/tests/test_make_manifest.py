@@ -421,9 +421,7 @@ class TestExpandGrid:
     """Tests for _expand_grid function."""
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_expand_grid_with_basic_config_generates_correct_rows(
-        self, _mock_validate: Any
-    ) -> None:
+    def test_expand_grid_with_basic_config_generates_correct_rows(self, _mock_validate: Any) -> None:
         """Test _expand_grid generates correct number of job rows."""
         # Arrange
         grid = {
@@ -442,9 +440,7 @@ class TestExpandGrid:
         assert final_rid == 4
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_expand_grid_generates_rows_with_required_fields(
-        self, _mock_validate: Any
-    ) -> None:
+    def test_expand_grid_generates_rows_with_required_fields(self, _mock_validate: Any) -> None:
         """Test _expand_grid includes all required fields in rows."""
         # Arrange
         grid = {
@@ -470,9 +466,7 @@ class TestExpandGrid:
         assert "network" in first_row
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_expand_grid_calculates_erlang_stop_correctly(
-        self, _mock_validate: Any
-    ) -> None:
+    def test_expand_grid_calculates_erlang_stop_correctly(self, _mock_validate: Any) -> None:
         """Test _expand_grid sets erlang_stop to erlang_start + 50."""
         # Arrange
         grid = {
@@ -490,9 +484,7 @@ class TestExpandGrid:
         assert rows[0]["erlang_stop"] == 150
 
     @patch("fusion.unity.make_manifest._validate_keys")
-    def test_expand_grid_with_starting_rid_continues_numbering(
-        self, _mock_validate: Any
-    ) -> None:
+    def test_expand_grid_with_starting_rid_continues_numbering(self, _mock_validate: Any) -> None:
         """Test _expand_grid continues run_id numbering from starting_rid."""
         # Arrange
         grid = {
@@ -641,9 +633,7 @@ class TestWriteCsv:
         assert read_rows[0]["run_id"] == "00001"
         assert read_rows[0]["algorithm"] == "ppo"
 
-    def test_write_csv_handles_missing_fields_with_empty_string(
-        self, tmp_path: Path
-    ) -> None:
+    def test_write_csv_handles_missing_fields_with_empty_string(self, tmp_path: Path) -> None:
         """Test _write_csv fills missing fields with empty strings."""
         # Arrange
         rows = [
@@ -699,9 +689,7 @@ class TestReadSpec:
         assert result == spec_data
 
     @patch("fusion.unity.make_manifest.yaml")
-    def test_read_spec_with_yaml_file_returns_dict(
-        self, mock_yaml: Any, tmp_path: Path
-    ) -> None:
+    def test_read_spec_with_yaml_file_returns_dict(self, mock_yaml: Any, tmp_path: Path) -> None:
         """Test _read_spec correctly parses YAML specification files."""
         # Arrange
         spec_data = {"grid": {"path_algorithm": ["ppo"]}}
@@ -719,9 +707,7 @@ class TestReadSpec:
 class TestResolveSpecPath:
     """Tests for _resolve_spec_path function."""
 
-    def test_resolve_spec_path_with_existing_absolute_path_returns_path(
-        self, tmp_path: Path
-    ) -> None:
+    def test_resolve_spec_path_with_existing_absolute_path_returns_path(self, tmp_path: Path) -> None:
         """Test _resolve_spec_path returns existing absolute path."""
         # Arrange
         spec_file = tmp_path / "test_spec.json"

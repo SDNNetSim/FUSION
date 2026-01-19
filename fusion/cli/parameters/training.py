@@ -68,12 +68,8 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     )
 
     # Model configuration
-    rl_group.add_argument(
-        "--path_model", type=str, help="Path to pre-trained path selection model"
-    )
-    rl_group.add_argument(
-        "--core_model", type=str, help="Path to pre-trained core selection model"
-    )
+    rl_group.add_argument("--path_model", type=str, help="Path to pre-trained path selection model")
+    rl_group.add_argument("--core_model", type=str, help="Path to pre-trained core selection model")
     rl_group.add_argument(
         "--spectrum_model",
         type=str,
@@ -92,9 +88,7 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Learning rate for RL algorithms",
     )
-    rl_group.add_argument(
-        "--gamma", type=float, default=None, help="Discount factor for future rewards"
-    )
+    rl_group.add_argument("--gamma", type=float, default=None, help="Discount factor for future rewards")
     rl_group.add_argument(
         "--epsilon_start",
         type=float,
@@ -116,9 +110,7 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     )
 
     # Reward configuration
-    rl_group.add_argument(
-        "--reward", type=float, default=None, help="Reward value for successful actions"
-    )
+    rl_group.add_argument("--reward", type=float, default=None, help="Reward value for successful actions")
     rl_group.add_argument(
         "--penalty",
         type=float,
@@ -157,9 +149,7 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
         choices=["gcn", "gat", "sage", "graphconv"],
         help="Graph Neural Network architecture type",
     )
-    feature_group.add_argument(
-        "--layers", type=int, default=None, help="Number of layers in neural network"
-    )
+    feature_group.add_argument("--layers", type=int, default=None, help="Number of layers in neural network")
     feature_group.add_argument(
         "--emb_dim",
         type=int,
@@ -197,9 +187,7 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     ml_group = parser.add_argument_group("Supervised Learning Configuration")
-    ml_group.add_argument(
-        "--ml_training", action="store_true", help="Enable SL training mode"
-    )
+    ml_group.add_argument("--ml_training", action="store_true", help="Enable SL training mode")
     ml_group.add_argument(
         "--ml_model",
         type=str,
@@ -212,21 +200,15 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
         ],
         help="Supervised learning model type",
     )
-    ml_group.add_argument(
-        "--train_file_path", type=str, help="Path to training data file"
-    )
+    ml_group.add_argument("--train_file_path", type=str, help="Path to training data file")
     ml_group.add_argument(
         "--test_size",
         type=float,
         default=None,
         help="Fraction of data to use for testing (0.0-1.0)",
     )
-    ml_group.add_argument(
-        "--output_train_data", action="store_true", help="Save training data to file"
-    )
-    ml_group.add_argument(
-        "--deploy_model", action="store_true", help="Deploy trained model for inference"
-    )
+    ml_group.add_argument("--output_train_data", action="store_true", help="Save training data to file")
+    ml_group.add_argument("--deploy_model", action="store_true", help="Deploy trained model for inference")
 
 
 def add_optimization_args(parser: argparse.ArgumentParser) -> None:
@@ -242,9 +224,7 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     opt_group = parser.add_argument_group("Optimization Configuration")
-    opt_group.add_argument(
-        "--optimize", action="store_true", help="Enable hyperparameter optimization"
-    )
+    opt_group.add_argument("--optimize", action="store_true", help="Enable hyperparameter optimization")
     opt_group.add_argument(
         "--optimize_hyperparameters",
         action="store_true",

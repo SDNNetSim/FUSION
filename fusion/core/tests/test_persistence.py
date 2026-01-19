@@ -165,9 +165,7 @@ class TestStatsPersistenceSaveStats:
         assert saved_data["iter_stats"]["0"]["old"] == "data"
         assert 5 in saved_data["iter_stats"]  # New iteration data added
 
-    def test_save_stats_with_csv_file_type_raises_not_implemented(
-        self, sample_persistence: Any, sample_stats_data: Any
-    ) -> None:
+    def test_save_stats_with_csv_file_type_raises_not_implemented(self, sample_persistence: Any, sample_stats_data: Any) -> None:
         """Test that CSV file type raises NotImplementedError."""
         # Arrange
         sample_persistence.engine_props["file_type"] = "csv"
@@ -177,9 +175,7 @@ class TestStatsPersistenceSaveStats:
         with pytest.raises(NotImplementedError, match="CSV output not yet implemented"):
             sample_persistence.save_stats(stats_dict, stats_props, blocking_stats)
 
-    def test_save_stats_with_invalid_file_type_raises_not_implemented(
-        self, sample_persistence: Any, sample_stats_data: Any
-    ) -> None:
+    def test_save_stats_with_invalid_file_type_raises_not_implemented(self, sample_persistence: Any, sample_stats_data: Any) -> None:
         """Test invalid file type raises NotImplementedError."""
         # Arrange
         sample_persistence.engine_props["file_type"] = "xml"
@@ -228,9 +224,7 @@ class TestStatsPersistenceIterationStats:
         engine_props = {"save_start_end_slots": True}
         return StatsPersistence(engine_props, "iter_test")
 
-    def test_prepare_iteration_stats_calculates_list_statistics(
-        self, persistence_for_iter_stats: Any
-    ) -> None:
+    def test_prepare_iteration_stats_calculates_list_statistics(self, persistence_for_iter_stats: Any) -> None:
         """Test calculation of mean, min, max for list statistics."""
         # Arrange - use SimpleNamespace so vars() works properly
         stats_props = SimpleNamespace(
@@ -262,9 +256,7 @@ class TestStatsPersistenceIterationStats:
         assert result["route_times_mean"] == 0.2
         assert result["xt_mean"] == 0.77  # rounded to 2 decimal places
 
-    def test_prepare_iteration_stats_handles_empty_lists(
-        self, persistence_for_iter_stats: Any
-    ) -> None:
+    def test_prepare_iteration_stats_handles_empty_lists(self, persistence_for_iter_stats: Any) -> None:
         """Test handling of empty statistical lists."""
         # Arrange - use SimpleNamespace so vars() works properly
         stats_props = SimpleNamespace(
@@ -293,9 +285,7 @@ class TestStatsPersistenceIterationStats:
         assert result["trans_max"] is None
         assert result["hops_mean"] is None
 
-    def test_prepare_iteration_stats_handles_crosstalk_with_none_values(
-        self, persistence_for_iter_stats: Any
-    ) -> None:
+    def test_prepare_iteration_stats_handles_crosstalk_with_none_values(self, persistence_for_iter_stats: Any) -> None:
         """Test crosstalk handling with None values converted to 0."""
         # Arrange - use SimpleNamespace so vars() works properly
         stats_props = SimpleNamespace(
@@ -322,9 +312,7 @@ class TestStatsPersistenceIterationStats:
         # Mean of [0.5, 0, 0.8, 0] = 0.325
         assert result["xt_mean"] == 0.33  # rounded to 2 decimal places
 
-    def test_prepare_iteration_stats_maps_property_names_correctly(
-        self, persistence_for_iter_stats: Any
-    ) -> None:
+    def test_prepare_iteration_stats_maps_property_names_correctly(self, persistence_for_iter_stats: Any) -> None:
         """Test correct mapping of property names to output keys."""
         # Arrange - use SimpleNamespace so vars() works properly
         stats_props = SimpleNamespace(
@@ -391,9 +379,7 @@ class TestStatsPersistenceFileOperations:
         read_data='{"test": "data", "value": 42}',
     )
     @patch("json.load")
-    def test_load_stats_reads_json_file_successfully(
-        self, mock_json_load: Any, mock_file_open: Any
-    ) -> None:
+    def test_load_stats_reads_json_file_successfully(self, mock_json_load: Any, mock_file_open: Any) -> None:
         """Test successful loading of JSON statistics file."""
         # Arrange
         persistence = StatsPersistence({}, "load_test")
@@ -415,9 +401,7 @@ class TestStatsPersistenceFileOperations:
         read_data='["not", "a", "dict"]',
     )
     @patch("json.load")
-    def test_load_stats_raises_error_for_non_dict_json(
-        self, mock_json_load: Any, mock_file_open: Any
-    ) -> None:
+    def test_load_stats_raises_error_for_non_dict_json(self, mock_json_load: Any, mock_file_open: Any) -> None:
         """Test error handling when JSON file contains non-dictionary data."""
         # Arrange
         persistence = StatsPersistence({}, "error_test")
@@ -425,9 +409,7 @@ class TestStatsPersistenceFileOperations:
         file_path = "/path/to/invalid.json"
 
         # Act & Assert
-        with pytest.raises(
-            ValueError, match="Expected dictionary in JSON file, got <class 'list'>"
-        ):
+        with pytest.raises(ValueError, match="Expected dictionary in JSON file, got <class 'list'>"):
             persistence.load_stats(file_path)
 
     def test_load_stats_raises_error_for_unsupported_format(self) -> None:
@@ -437,9 +419,7 @@ class TestStatsPersistenceFileOperations:
         file_path = "/path/to/stats.csv"
 
         # Act & Assert
-        with pytest.raises(
-            NotImplementedError, match="Loading from .*/stats.csv not supported"
-        ):
+        with pytest.raises(NotImplementedError, match="Loading from .*/stats.csv not supported"):
             persistence.load_stats(file_path)
 
 
@@ -449,9 +429,7 @@ class TestStatsPersistenceEdgeCases:
     def test_save_stats_handles_corrupted_existing_file(self) -> None:
         """Test handling of corrupted existing JSON file."""
         # Arrange
-        persistence = StatsPersistence(
-            {"file_type": "json", "erlang": 100.0, "thread_num": "s1"}, "corrupt_test"
-        )
+        persistence = StatsPersistence({"file_type": "json", "erlang": 100.0, "thread_num": "s1"}, "corrupt_test")
         stats_dict: dict[str, float | None] = {}
         # Use SimpleNamespace so vars() works properly
         stats_props = SimpleNamespace(

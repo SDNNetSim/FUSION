@@ -34,20 +34,12 @@ class SDNPropsProxy:
     source: str = ""
     destination: str = ""
     bandwidth: float = 0.0
-    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(
-        default_factory=dict
-    )
-    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
-        default_factory=dict
-    )
+    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
+    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(default_factory=dict)
     # Required for modulation format selection in routing algorithms
-    modulation_formats_dict: dict[str, dict[str, Any]] = field(
-        default_factory=dict
-    )
+    modulation_formats_dict: dict[str, dict[str, Any]] = field(default_factory=dict)
     # Alias used by some routing algorithms
-    mod_formats: dict[str, dict[str, Any]] = field(
-        default_factory=dict
-    )
+    mod_formats: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @classmethod
     def from_network_state(
@@ -155,7 +147,6 @@ class RoutingAdapter(RoutingPipeline):
             # Use mod_per_bw for bandwidth-specific modulations, or global modulation_formats
             mod_formats_dict = self._get_modulation_formats_for_bandwidth(bandwidth_gbps)
 
-
             # Create proxy for legacy code
             sdn_props = SDNPropsProxy.from_network_state(
                 network_state,
@@ -187,9 +178,7 @@ class RoutingAdapter(RoutingPipeline):
             logger.warning("RoutingAdapter.find_routes failed: %s", e)
             return RouteResult.empty("legacy_error")
 
-    def _get_modulation_formats_for_bandwidth(
-        self, bandwidth_gbps: int
-    ) -> dict[str, dict[str, Any]]:
+    def _get_modulation_formats_for_bandwidth(self, bandwidth_gbps: int) -> dict[str, dict[str, Any]]:
         """
         Get modulation formats dict for the given bandwidth.
 
@@ -278,9 +267,7 @@ class RoutingAdapter(RoutingPipeline):
             u, v = path[i], path[i + 1]
             if topology.has_edge(u, v):
                 edge_data = topology.edges[u, v]
-                total += float(
-                    edge_data.get("length", edge_data.get("weight", 0.0))
-                )
+                total += float(edge_data.get("length", edge_data.get("weight", 0.0)))
 
         return total
 
@@ -318,10 +305,7 @@ class RoutingAdapter(RoutingPipeline):
         """
         # First try global modulation_formats
         mod_formats = self._config.modulation_formats
-        modulations = [
-            name for name, info in mod_formats.items()
-            if isinstance(info, dict)
-        ]
+        modulations = [name for name, info in mod_formats.items() if isinstance(info, dict)]
 
         # If empty, collect from mod_per_bw (fixed_grid mode)
         if not modulations:
@@ -432,26 +416,19 @@ class RoutingAdapter(RoutingPipeline):
 
         # Check for empty results
         if not route_props.paths_matrix:
-            return RouteResult.empty(
-                self._engine_props.get("route_method", "legacy")
-            )
+            return RouteResult.empty(self._engine_props.get("route_method", "legacy"))
 
         # Convert lists to tuples for immutability
-        paths = tuple(
-            tuple(str(n) for n in p) for p in route_props.paths_matrix
-        )
+        paths = tuple(tuple(str(n) for n in p) for p in route_props.paths_matrix)
         weights = tuple(route_props.weights_list)
 
         # Handle modulation formats
         if route_props.modulation_formats_matrix:
-            modulations = tuple(
-                tuple(mods) for mods in route_props.modulation_formats_matrix
-            )
+            modulations = tuple(tuple(mods) for mods in route_props.modulation_formats_matrix)
         else:
             # No modulation formats from routing - this is an error condition
             logger.error(
-                "Routing returned paths but no modulation_formats_matrix. "
-                "Check that modulation_formats_dict is properly configured."
+                "Routing returned paths but no modulation_formats_matrix. Check that modulation_formats_dict is properly configured."
             )
             return RouteResult.empty("no_modulation_formats")
 
@@ -463,18 +440,13 @@ class RoutingAdapter(RoutingPipeline):
         # Check for backup paths - must be a list with content (not just truthy MagicMock)
         backup_matrix = getattr(route_props, "backup_paths_matrix", None)
         if isinstance(backup_matrix, list) and backup_matrix:
-            backup_paths = tuple(
-                tuple(str(n) for n in p) if p else ()
-                for p in backup_matrix
-            )
+            backup_paths = tuple(tuple(str(n) for n in p) if p else () for p in backup_matrix)
             backup_weights_raw = getattr(route_props, "backup_weights_list", None)
             if isinstance(backup_weights_raw, list) and backup_weights_raw:
                 backup_weights = tuple(backup_weights_raw)
             backup_mods_raw = getattr(route_props, "backup_modulation_formats_matrix", None)
             if isinstance(backup_mods_raw, list) and backup_mods_raw:
-                backup_mods = tuple(
-                    tuple(mods) for mods in backup_mods_raw
-                )
+                backup_mods = tuple(tuple(mods) for mods in backup_mods_raw)
 
         strategy_name = self._engine_props.get("route_method", "legacy")
 

@@ -8,9 +8,7 @@ from fusion.sim.utils.data import update_matrices
 # for reuse across different components (plotting, analysis, etc.)
 
 
-def _not_filters(
-    filter_dict: dict[str, list[list[Any]]], file_dict: dict[str, Any]
-) -> bool:
+def _not_filters(filter_dict: dict[str, list[list[Any]]], file_dict: dict[str, Any]) -> bool:
     """
     Apply "not" filters to the file dictionary.
 
@@ -40,9 +38,7 @@ def _not_filters(
     return True
 
 
-def _or_filters(
-    filter_dict: dict[str, list[list[Any]]], file_dict: dict[str, Any]
-) -> bool:
+def _or_filters(filter_dict: dict[str, list[list[Any]]], file_dict: dict[str, Any]) -> bool:
     """
     Apply "or" filters to the file dictionary.
 
@@ -74,9 +70,7 @@ def _or_filters(
     return False
 
 
-def _and_filters(
-    filter_dict: dict[str, list[list[Any]]], file_dict: dict[str, Any]
-) -> bool:
+def _and_filters(filter_dict: dict[str, list[list[Any]]], file_dict: dict[str, Any]) -> bool:
     """
     Apply "and" filters to the file dictionary.
 
@@ -103,9 +97,7 @@ def _and_filters(
     return True
 
 
-def _check_filters(
-    file_dict: dict[str, Any], filter_dict: dict[str, list[list[Any]]]
-) -> bool:
+def _check_filters(file_dict: dict[str, Any], filter_dict: dict[str, list[list[Any]]]) -> bool:
     """
     Check all filters on a file dictionary.
 
@@ -119,9 +111,7 @@ def _check_filters(
     return _not_filters(filter_dict, file_dict)
 
 
-def find_times(
-    dates_dict: dict[str, str], filter_dict: dict[str, list[list[Any]]]
-) -> dict[str, list]:
+def find_times(dates_dict: dict[str, str], filter_dict: dict[str, list[list[Any]]]) -> dict[str, list]:
     """
     Searches output directories based on filters and retrieves simulation
     directory information.
@@ -141,19 +131,11 @@ def find_times(
         if not os.path.isdir(times_path):
             continue
 
-        times_list = [
-            curr_dir
-            for curr_dir in os.listdir(times_path)
-            if os.path.isdir(os.path.join(times_path, curr_dir))
-        ]
+        times_list = [curr_dir for curr_dir in os.listdir(times_path) if os.path.isdir(os.path.join(times_path, curr_dir))]
 
         for curr_time in times_list:
             sims_path = os.path.join(times_path, curr_time)
-            input_file_list = [
-                input_file
-                for input_file in os.listdir(sims_path)
-                if "sim" in input_file
-            ]
+            input_file_list = [input_file for input_file in os.listdir(sims_path) if "sim" in input_file]
 
             for input_file in input_file_list:
                 file_path = os.path.join(sims_path, input_file)

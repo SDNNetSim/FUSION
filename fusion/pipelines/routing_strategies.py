@@ -68,9 +68,7 @@ class RouteConstraints:
     max_hops: int | None = None
     max_length_km: float | None = None
     min_bandwidth_gbps: int | None = None
-    exclude_links: frozenset[tuple[str, str]] = field(
-        default_factory=frozenset
-    )
+    exclude_links: frozenset[tuple[str, str]] = field(default_factory=frozenset)
     exclude_nodes: frozenset[str] = field(default_factory=frozenset)
     required_modulation: str | None = None
     protection_mode: bool = False
@@ -248,9 +246,7 @@ class KShortestPathStrategy:
 
         # Find k-shortest simple paths
         try:
-            paths_gen = nx.shortest_simple_paths(
-                topology, source, destination, weight="weight"
-            )
+            paths_gen = nx.shortest_simple_paths(topology, source, destination, weight="weight")
             paths: list[tuple[str, ...]] = []
             for path in paths_gen:
                 if len(paths) >= self.k:
@@ -469,9 +465,7 @@ class LoadBalancedStrategy:
 
         # First get k-shortest paths
         ksp = KShortestPathStrategy(k=self.k * 2)  # Get more candidates
-        base_result = ksp.select_routes(
-            source, destination, bandwidth_gbps, network_state, constraints
-        )
+        base_result = ksp.select_routes(source, destination, bandwidth_gbps, network_state, constraints)
 
         if base_result.is_empty:
             return RouteResult.empty(self._name)
@@ -486,10 +480,7 @@ class LoadBalancedStrategy:
             length_score = 1.0 / max(weight_km, 1.0)
             util_score = 1.0 - utilization
 
-            score = (
-                (1.0 - self.utilization_weight) * length_score
-                + self.utilization_weight * util_score
-            )
+            score = (1.0 - self.utilization_weight) * length_score + self.utilization_weight * util_score
             scored_paths.append((score, i))
 
         # Sort by score (descending) and take top k
@@ -624,9 +615,7 @@ class ProtectionAwareStrategy:
 
                 constraints = constraints.with_exclusions(nodes=nodes_to_exclude)
 
-        result = ksp.select_routes(
-            source, destination, bandwidth_gbps, network_state, constraints
-        )
+        result = ksp.select_routes(source, destination, bandwidth_gbps, network_state, constraints)
 
         # Update strategy name
         if not result.is_empty:
@@ -665,9 +654,7 @@ class ProtectionAwareStrategy:
         from fusion.domain.results import RouteResult
 
         # Find working path
-        working = self.select_routes(
-            source, destination, bandwidth_gbps, network_state
-        )
+        working = self.select_routes(source, destination, bandwidth_gbps, network_state)
 
         if working.is_empty or working.best_path is None:
             return working, RouteResult.empty(self._name)
@@ -685,9 +672,7 @@ class ProtectionAwareStrategy:
             protection_mode=True,
         )
 
-        protection = self.select_routes(
-            source, destination, bandwidth_gbps, network_state, constraints
-        )
+        protection = self.select_routes(source, destination, bandwidth_gbps, network_state, constraints)
 
         return working, protection
 

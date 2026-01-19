@@ -100,7 +100,6 @@ class ActionMaskWrapper(gym.Wrapper[dict[str, np.ndarray], int, dict[str, np.nda
         """
         if self._current_mask is None:
             raise RuntimeError(
-                "No action mask available. Call reset() first, or ensure "
-                "the wrapped environment returns info['action_mask']."
+                "No action mask available. Call reset() first, or ensure the wrapped environment returns info['action_mask']."
             )
         return self._current_mask

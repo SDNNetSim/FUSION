@@ -57,18 +57,22 @@ class TestAllAdaptersImport:
 
     def test_import_routing_adapter(self) -> None:
         from fusion.core.adapters import RoutingAdapter
+
         assert RoutingAdapter is not None
 
     def test_import_spectrum_adapter(self) -> None:
         from fusion.core.adapters import SpectrumAdapter
+
         assert SpectrumAdapter is not None
 
     def test_import_grooming_adapter(self) -> None:
         from fusion.core.adapters import GroomingAdapter
+
         assert GroomingAdapter is not None
 
     def test_import_snr_adapter(self) -> None:
         from fusion.core.adapters import SNRAdapter
+
         assert SNRAdapter is not None
 
 
@@ -77,21 +81,25 @@ class TestAllAdaptersInstantiation:
 
     def test_instantiate_routing_adapter(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import RoutingAdapter
+
         adapter = RoutingAdapter(config)
         assert adapter is not None
 
     def test_instantiate_spectrum_adapter(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import SpectrumAdapter
+
         adapter = SpectrumAdapter(config)
         assert adapter is not None
 
     def test_instantiate_grooming_adapter(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import GroomingAdapter
+
         adapter = GroomingAdapter(config)
         assert adapter is not None
 
     def test_instantiate_snr_adapter(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import SNRAdapter
+
         adapter = SNRAdapter(config)
         assert adapter is not None
 
@@ -102,24 +110,28 @@ class TestAllAdaptersProtocol:
     def test_routing_implements_protocol(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import RoutingAdapter
         from fusion.interfaces import RoutingPipeline
+
         adapter = RoutingAdapter(config)
         assert isinstance(adapter, RoutingPipeline)
 
     def test_spectrum_implements_protocol(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import SpectrumAdapter
         from fusion.interfaces import SpectrumPipeline
+
         adapter = SpectrumAdapter(config)
         assert isinstance(adapter, SpectrumPipeline)
 
     def test_grooming_implements_protocol(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import GroomingAdapter
         from fusion.interfaces import GroomingPipeline
+
         adapter = GroomingAdapter(config)
         assert isinstance(adapter, GroomingPipeline)
 
     def test_snr_implements_protocol(self, config: SimulationConfig) -> None:
         from fusion.core.adapters import SNRAdapter
         from fusion.interfaces import SNRPipeline
+
         adapter = SNRAdapter(config)
         assert isinstance(adapter, SNRPipeline)
 
@@ -129,20 +141,24 @@ class TestAllAdaptersHaveAdapterDocstring:
 
     def test_routing_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import RoutingAdapter
+
         docstring = RoutingAdapter.__doc__ or ""
         assert "ADAPTER" in docstring
 
     def test_spectrum_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import SpectrumAdapter
+
         docstring = SpectrumAdapter.__doc__ or ""
         assert "ADAPTER" in docstring
 
     def test_grooming_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import GroomingAdapter
+
         docstring = GroomingAdapter.__doc__ or ""
         assert "ADAPTER" in docstring
 
     def test_snr_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import SNRAdapter
+
         docstring = SNRAdapter.__doc__ or ""
         assert "ADAPTER" in docstring

@@ -74,9 +74,7 @@ class Grooming:
                         "lp_id_list": [],
                     }
 
-                path_groups[normalized_path_key]["total_remaining_bandwidth"] += (
-                    lp_info["remaining_bandwidth"]
-                )
+                path_groups[normalized_path_key]["total_remaining_bandwidth"] += lp_info["remaining_bandwidth"]
                 path_groups[normalized_path_key]["lightpaths"].append((lp_id, lp_info))
                 path_groups[normalized_path_key]["lp_id_list"].append(lp_id)
 
@@ -128,15 +126,11 @@ class Grooming:
                 self.sdn_props.is_sliced = True
 
             # Update lightpath status
-            lp_info["requests_dict"].update(
-                {self.sdn_props.request_id: tmp_remaining_bw}
-            )
+            lp_info["requests_dict"].update({self.sdn_props.request_id: tmp_remaining_bw})
             lp_info["remaining_bandwidth"] -= tmp_remaining_bw
 
             # Calculate utilization percentage
-            lp_usage = 1 - (
-                lp_info["remaining_bandwidth"] / lp_info["lightpath_bandwidth"]
-            )
+            lp_usage = 1 - (lp_info["remaining_bandwidth"] / lp_info["lightpath_bandwidth"])
             lp_info["time_bw_usage"].update({self.sdn_props.arrive: lp_usage * 100})
 
             # Update SDN properties with this lightpath's allocation
@@ -149,9 +143,7 @@ class Grooming:
             self.sdn_props.path_list = lp_info["path"]
             self.sdn_props.snr_list.append(lp_info["snr_cost"])
             self.sdn_props.xt_list.append(lp_info["xt_cost"])
-            self.sdn_props.lightpath_bandwidth_list.append(
-                lp_info["lightpath_bandwidth"]
-            )
+            self.sdn_props.lightpath_bandwidth_list.append(lp_info["lightpath_bandwidth"])
             self.sdn_props.lightpath_id_list.append(lp_id)
             self.sdn_props.path_weight = lp_info["path_weight"]
 
@@ -200,7 +192,6 @@ class Grooming:
         if self.sdn_props.remaining_bw is None:
             self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
 
-
         for lp_id in self.sdn_props.lightpath_id_list[:]:
             index = self.sdn_props.lightpath_id_list.index(lp_id)
             lp_info = self.sdn_props.lightpath_status_dict[light_id][lp_id]
@@ -222,9 +213,7 @@ class Grooming:
                 release_lp.append(lp_id)
             else:
                 # Update utilization for partially used lightpath
-                lp_usage = 1 - (
-                    lp_info["remaining_bandwidth"] / float(lp_info["lightpath_bandwidth"])
-                )
+                lp_usage = 1 - (lp_info["remaining_bandwidth"] / float(lp_info["lightpath_bandwidth"]))
                 lp_info["time_bw_usage"].update({self.sdn_props.depart: lp_usage * 100})
 
         logger.debug(

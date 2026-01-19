@@ -57,9 +57,7 @@ def network_state(simple_topology: nx.Graph, config: SimulationConfig) -> Networ
 class TestSDNPropsProxy:
     """Tests for SDNPropsProxy."""
 
-    def test_from_network_state(
-        self, network_state: NetworkState, simple_topology: nx.Graph
-    ) -> None:
+    def test_from_network_state(self, network_state: NetworkState, simple_topology: nx.Graph) -> None:
         """Test creating proxy from NetworkState."""
         proxy = SDNPropsProxy.from_network_state(
             network_state=network_state,

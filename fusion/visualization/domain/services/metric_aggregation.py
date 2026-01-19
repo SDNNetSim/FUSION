@@ -77,9 +77,7 @@ class MetricAggregationService:
             metadata={
                 "aggregation": "mean",
                 "n_samples": len(values),
-                "std": float(np.std(numeric_values, ddof=1))
-                if len(values) > 1
-                else 0.0,
+                "std": float(np.std(numeric_values, ddof=1)) if len(values) > 1 else 0.0,
             },
         )
 
@@ -158,9 +156,7 @@ class MetricAggregationService:
     ) -> MetricValue:
         """Aggregate with confidence interval."""
         if len(values) < 2:
-            raise InsufficientDataError(
-                "Need at least 2 values for confidence interval"
-            )
+            raise InsufficientDataError("Need at least 2 values for confidence interval")
 
         numeric_values = [v.as_float for v in values]
         mean_value = np.mean(numeric_values)

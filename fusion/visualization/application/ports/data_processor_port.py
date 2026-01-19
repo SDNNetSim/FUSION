@@ -16,9 +16,7 @@ class ProcessedData:
 
     x_data: list[float]  # e.g., traffic volumes
     y_data: dict[str, list[float]]  # algorithm -> values
-    errors: dict[str, list[float]] | None = (
-        None  # algorithm -> error bars (std, CI, etc.)
-    )
+    errors: dict[str, list[float]] | None = None  # algorithm -> error bars (std, CI, etc.)
     metadata: dict[str, Any] | None = None
 
 

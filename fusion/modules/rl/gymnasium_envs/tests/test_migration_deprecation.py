@@ -68,8 +68,8 @@ class TestWarningSupressionLogic:
 
         source = inspect.getsource(SimEnv.__init__)
         # Verify the env var check is present
-        assert 'SUPPRESS_SIMENV_DEPRECATION' in source
-        assert 'os.environ.get' in source
+        assert "SUPPRESS_SIMENV_DEPRECATION" in source
+        assert "os.environ.get" in source
 
     def test_suppression_values_recognized(self) -> None:
         """Various suppression values should be recognized."""
@@ -100,12 +100,7 @@ class TestUnifiedEnvNoWarning:
             env.close()
 
             # No deprecation warnings from UnifiedSimEnv
-            unified_warnings = [
-                x
-                for x in w
-                if issubclass(x.category, DeprecationWarning)
-                and "UnifiedSimEnv" in str(x.message)
-            ]
+            unified_warnings = [x for x in w if issubclass(x.category, DeprecationWarning) and "UnifiedSimEnv" in str(x.message)]
             assert len(unified_warnings) == 0
 
     def test_factory_unified_no_deprecation(self) -> None:
@@ -120,12 +115,7 @@ class TestUnifiedEnvNoWarning:
             env.close()
 
             # No SimEnv deprecation warnings
-            simenv_warnings = [
-                x
-                for x in w
-                if issubclass(x.category, DeprecationWarning)
-                and "SimEnv" in str(x.message)
-            ]
+            simenv_warnings = [x for x in w if issubclass(x.category, DeprecationWarning) and "SimEnv" in str(x.message)]
             assert len(simenv_warnings) == 0
 
 
@@ -139,9 +129,7 @@ class TestFactoryLegacyRouting:
         config = {"k_paths": 3, "spectral_slots": 320}
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 env = create_sim_env(config, env_type="legacy")
 

@@ -29,9 +29,7 @@ class TestSimulationEngineInitialization:
             "stop_flag": None,
         }
 
-    def test_init_creates_simulation_engine_with_required_components(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_creates_simulation_engine_with_required_components(self, basic_engine_props: dict[str, Any]) -> None:
         """Test successful initialization with all required components."""
         # Act
         engine = SimulationEngine(basic_engine_props)
@@ -50,9 +48,7 @@ class TestSimulationEngineInitialization:
         assert engine.persistence is not None
         assert engine.ml_metrics is None  # output_train_data is False
 
-    def test_init_with_ml_metrics_enabled_creates_ml_collector(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_with_ml_metrics_enabled_creates_ml_collector(self, basic_engine_props: dict[str, Any]) -> None:
         """Test initialization with ML metrics collection enabled."""
         # Arrange
         basic_engine_props["output_train_data"] = True
@@ -63,9 +59,7 @@ class TestSimulationEngineInitialization:
         # Assert
         assert engine.ml_metrics is not None
 
-    def test_init_with_stop_flag_sets_flag_correctly(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_with_stop_flag_sets_flag_correctly(self, basic_engine_props: dict[str, Any]) -> None:
         """Test initialization with stop flag."""
         # Arrange
         stop_flag = Mock()
@@ -117,9 +111,7 @@ class TestSimulationEngineTopologyCreation:
             "e_band": 0,
         }
 
-    def test_create_topology_adds_nodes_from_topology_info(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_create_topology_adds_nodes_from_topology_info(self, topology_engine_props: dict[str, Any]) -> None:
         """Test that create_topology adds all nodes from topology_info."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -130,9 +122,7 @@ class TestSimulationEngineTopologyCreation:
         # Assert
         assert list(engine.topology.nodes()) == ["A", "B", "C"]
 
-    def test_create_topology_creates_bidirectional_links(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_create_topology_creates_bidirectional_links(self, topology_engine_props: dict[str, Any]) -> None:
         """Test that create_topology creates bidirectional network links."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -148,9 +138,7 @@ class TestSimulationEngineTopologyCreation:
         assert ("B", "C") in engine.network_spectrum_dict
         assert ("C", "B") in engine.network_spectrum_dict
 
-    def test_create_topology_initializes_spectrum_matrices(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_create_topology_initializes_spectrum_matrices(self, topology_engine_props: dict[str, Any]) -> None:
         """Test spectrum matrices initialization for each link."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -206,9 +194,7 @@ class TestSimulationEngineTopologyCreation:
         assert link_data["cores_matrix"]["c"].shape == (2, 80)
         assert link_data["cores_matrix"]["l"].shape == (2, 60)
 
-    def test_create_topology_updates_engine_props_and_components(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_create_topology_updates_engine_props_and_components(self, topology_engine_props: dict[str, Any]) -> None:
         """Test that create_topology updates engine properties and components."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -277,9 +263,7 @@ class TestSimulationEngineRequestHandling:
         }
         return engine
 
-    def test_handle_arrival_updates_sdn_controller_with_request_data(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_arrival_updates_sdn_controller_with_request_data(self, engine_with_requests: SimulationEngine) -> None:
         """Test that handle_arrival updates SDN controller with request parameters."""
         # Arrange
         current_time = (0, 1.0)
@@ -298,9 +282,7 @@ class TestSimulationEngineRequestHandling:
         assert engine_with_requests.sdn_obj.sdn_props.update_params.called
         assert engine_with_requests.sdn_obj.handle_event.called
 
-    def test_handle_arrival_with_forced_parameters_passes_to_sdn(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_arrival_with_forced_parameters_passes_to_sdn(self, engine_with_requests: SimulationEngine) -> None:
         """Test handle_arrival with forced routing parameters."""
         # Arrange
         current_time = (0, 1.0)
@@ -335,9 +317,7 @@ class TestSimulationEngineRequestHandling:
         assert call_args[1]["forced_index"] == forced_index
         assert call_args[1]["force_mod_format"] == force_mod_format
 
-    def test_handle_release_calls_sdn_controller_for_teardown(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_release_calls_sdn_controller_for_teardown(self, engine_with_requests: SimulationEngine) -> None:
         """Test that handle_release calls SDN controller for resource teardown."""
         # Arrange
         current_time = (0, 5.0)
@@ -354,9 +334,7 @@ class TestSimulationEngineRequestHandling:
         call_args = engine_with_requests.sdn_obj.handle_event.call_args
         assert call_args[1]["request_type"] == "release"
 
-    def test_handle_release_with_missing_request_id_handles_gracefully(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_release_with_missing_request_id_handles_gracefully(self, engine_with_requests: SimulationEngine) -> None:
         """Test handle_release when request ID not in status dict."""
         # Arrange
         current_time = (0, 5.0)
@@ -367,9 +345,7 @@ class TestSimulationEngineRequestHandling:
         # Act & Assert - should not raise exception
         engine_with_requests.handle_release(current_time)
 
-    def test_handle_request_processes_arrival_type_correctly(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_request_processes_arrival_type_correctly(self, engine_with_requests: SimulationEngine) -> None:
         """Test handle_request processes arrival request type."""
         # Arrange
         current_time = (0, 1.0)
@@ -384,9 +360,7 @@ class TestSimulationEngineRequestHandling:
             # Assert
             mock_arrival.assert_called_once_with(current_time=current_time)
 
-    def test_handle_request_processes_release_type_correctly(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_request_processes_release_type_correctly(self, engine_with_requests: SimulationEngine) -> None:
         """Test handle_request processes release request type."""
         # Arrange
         current_time = (0, 5.0)
@@ -397,9 +371,7 @@ class TestSimulationEngineRequestHandling:
             engine_with_requests.handle_request(current_time, request_number)
             mock_release.assert_called_once_with(current_time=current_time)
 
-    def test_handle_request_with_invalid_type_raises_error(
-        self, engine_with_requests: SimulationEngine
-    ) -> None:
+    def test_handle_request_with_invalid_type_raises_error(self, engine_with_requests: SimulationEngine) -> None:
         """Test handle_request raises error for invalid request type."""
         # Arrange
         assert engine_with_requests.reqs_dict is not None
@@ -446,16 +418,12 @@ class TestSimulationEngineIterationManagement:
         engine.stats_obj.calculate_confidence_interval = calc_conf_mock
         return engine
 
-    def test_init_iter_initializes_iteration_state(
-        self, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_init_iter_initializes_iteration_state(self, iteration_engine: SimulationEngine) -> None:
         """Test init_iter properly initializes iteration state."""
         # Arrange
         iteration = 5
         seed = 42
-        iteration_engine.network_spectrum_dict = {
-            ("A", "B"): {"usage_count": 10, "throughput": 1000}
-        }
+        iteration_engine.network_spectrum_dict = {("A", "B"): {"usage_count": 10, "throughput": 1000}}
 
         with patch.object(iteration_engine, "generate_requests"):
             # Act
@@ -470,9 +438,7 @@ class TestSimulationEngineIterationManagement:
             assert link_data["usage_count"] == 0
             assert link_data["throughput"] == 0
 
-    def test_init_iter_with_trial_updates_thread_num(
-        self, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_init_iter_with_trial_updates_thread_num(self, iteration_engine: SimulationEngine) -> None:
         """Test init_iter updates thread_num when trial is provided."""
         # Arrange
         iteration = 0
@@ -486,9 +452,7 @@ class TestSimulationEngineIterationManagement:
             assert iteration_engine.engine_props["thread_num"] == "s3"  # trial + 1
 
     @patch("fusion.core.simulation.load_model")
-    def test_init_iter_loads_ml_model_when_deploy_model_enabled(
-        self, mock_load_model: Mock, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_init_iter_loads_ml_model_when_deploy_model_enabled(self, mock_load_model: Mock, iteration_engine: SimulationEngine) -> None:
         """Test init_iter loads ML model when deploy_model is True."""
         # Arrange
         iteration_engine.engine_props["deploy_model"] = True
@@ -503,9 +467,7 @@ class TestSimulationEngineIterationManagement:
             mock_load_model.assert_called_once()
             assert iteration_engine.ml_model == mock_model
 
-    def test_init_iter_uses_seed_from_list_when_provided(
-        self, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_init_iter_uses_seed_from_list_when_provided(self, iteration_engine: SimulationEngine) -> None:
         """Test init_iter uses seed from seeds list when available."""
         # Arrange
         iteration_engine.engine_props["seeds"] = [10, 20, 30]
@@ -518,9 +480,7 @@ class TestSimulationEngineIterationManagement:
             # Assert
             mock_gen.assert_called_once_with(20)  # seeds[1]
 
-    def test_init_iter_uses_iteration_plus_one_as_default_seed(
-        self, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_init_iter_uses_iteration_plus_one_as_default_seed(self, iteration_engine: SimulationEngine) -> None:
         """Test init_iter uses iteration+1 as default seed."""
         # Arrange
         iteration = 3
@@ -621,9 +581,7 @@ class TestSimulationEngineIterationManagement:
             mock_seed_rl.assert_called_once_with(3)  # iteration + 1
             mock_seed_request.assert_called_once_with(3)  # iteration + 1
 
-    def test_end_iter_calculates_statistics_and_saves_on_save_step(
-        self, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_end_iter_calculates_statistics_and_saves_on_save_step(self, iteration_engine: SimulationEngine) -> None:
         """Test end_iter calculates statistics and saves on appropriate steps."""
         # Arrange
         # save_step is 5, so should save on iteration 4 (4+1=5)
@@ -641,9 +599,7 @@ class TestSimulationEngineIterationManagement:
             mock_save.assert_called_once_with("data")
             assert result is False
 
-    def test_end_iter_skips_confidence_interval_during_training(
-        self, iteration_engine: SimulationEngine
-    ) -> None:
+    def test_end_iter_skips_confidence_interval_during_training(self, iteration_engine: SimulationEngine) -> None:
         """Test end_iter skips confidence interval calculation during training."""
         # Arrange
         iteration = 1
@@ -687,9 +643,7 @@ class TestSimulationEngineFullExecution:
         }
         return SimulationEngine(engine_props)
 
-    def test_run_executes_complete_simulation_workflow(
-        self, execution_engine: SimulationEngine
-    ) -> None:
+    def test_run_executes_complete_simulation_workflow(self, execution_engine: SimulationEngine) -> None:
         """Test run method executes complete simulation workflow."""
         # Arrange
         execution_engine.reqs_dict = {(0, 1.0): {"request_type": "arrival"}}
@@ -707,18 +661,14 @@ class TestSimulationEngineFullExecution:
             assert mock_end.call_count == 3
             assert result == 3  # Number of completed iterations
 
-    def test_run_stops_early_when_confidence_interval_reached(
-        self, execution_engine: SimulationEngine
-    ) -> None:
+    def test_run_stops_early_when_confidence_interval_reached(self, execution_engine: SimulationEngine) -> None:
         """Test run stops early when confidence interval is reached."""
         # Arrange
         execution_engine.reqs_dict = {(0, 1.0): {"request_type": "arrival"}}
 
         with (
             patch.object(execution_engine, "init_iter"),
-            patch.object(
-                execution_engine, "end_iter", side_effect=[False, True, False]
-            ),
+            patch.object(execution_engine, "end_iter", side_effect=[False, True, False]),
             patch.object(execution_engine, "handle_request"),
         ):
             # Act
@@ -727,9 +677,7 @@ class TestSimulationEngineFullExecution:
             # Assert
             assert result == 2  # Stopped after 2 iterations
 
-    def test_run_stops_when_stop_flag_is_set(
-        self, execution_engine: SimulationEngine
-    ) -> None:
+    def test_run_stops_when_stop_flag_is_set(self, execution_engine: SimulationEngine) -> None:
         """Test run stops when stop flag is set."""
         # Arrange
         stop_flag = Mock()
@@ -764,9 +712,7 @@ class TestSimulationEngineSignalHandling:
         }
         return SimulationEngine(engine_props)
 
-    def test_signal_save_handler_calls_save_all_stats(
-        self, signal_engine: SimulationEngine
-    ) -> None:
+    def test_signal_save_handler_calls_save_all_stats(self, signal_engine: SimulationEngine) -> None:
         """Test signal handler calls save_all_stats."""
         # Arrange
         signum = signal.SIGINT
@@ -842,9 +788,7 @@ class TestSimulationEngineEdgeCases:
             engine.generate_requests(seed)
 
             # Assert
-            mock_get_requests.assert_called_once_with(
-                seed=seed, engine_props=engine.engine_props
-            )
+            mock_get_requests.assert_called_once_with(seed=seed, engine_props=engine.engine_props)
             assert engine.reqs_dict == {
                 (1, 1.0): {"req_id": 1},
                 (2, 2.0): {"req_id": 2},
@@ -873,6 +817,4 @@ class TestSimulationEngineEdgeCases:
             engine._save_all_stats("test_data")
 
             # Assert
-            engine.ml_metrics.save_train_data.assert_called_once_with(
-                iteration=5, max_iterations=10, base_file_path="test_data"
-            )
+            engine.ml_metrics.save_train_data.assert_called_once_with(iteration=5, max_iterations=10, base_file_path="test_data")

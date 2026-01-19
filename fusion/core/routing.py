@@ -103,13 +103,9 @@ class Routing:
         try:
             algorithm_class = self.routing_registry.get(algorithm_name)
         except KeyError:
-            available_methods = (
-                list(LEGACY_METHOD_MAPPING.keys())
-                + self.routing_registry.list_algorithms()
-            )
+            available_methods = list(LEGACY_METHOD_MAPPING.keys()) + self.routing_registry.list_algorithms()
             raise NotImplementedError(
-                f"Routing method '{route_method}' not recognized. "
-                f"Available methods: {', '.join(set(available_methods))}"
+                f"Routing method '{route_method}' not recognized. Available methods: {', '.join(set(available_methods))}"
             ) from None
 
         # Create algorithm instance
@@ -140,8 +136,7 @@ class Routing:
             self.load_k_shortest()
         except (FileNotFoundError, ValueError) as e:
             logger.warning(
-                "External KSP loading failed: %s. "
-                "Falling back to computed k-shortest paths.",
+                "External KSP loading failed: %s. Falling back to computed k-shortest paths.",
                 e,
             )
             # Fallback to computed k-shortest paths
@@ -161,16 +156,10 @@ class Routing:
         # to know about algorithm internals. Consider returning a RouteResult dataclass.
         if hasattr(algorithm, "route_props"):
             self.route_props.paths_matrix = algorithm.route_props.paths_matrix
-            self.route_props.modulation_formats_matrix = (
-                algorithm.route_props.modulation_formats_matrix
-            )
+            self.route_props.modulation_formats_matrix = algorithm.route_props.modulation_formats_matrix
             self.route_props.weights_list = algorithm.route_props.weights_list
-            self.route_props.path_index_list = getattr(
-                algorithm.route_props, "path_index_list", []
-            )
-            self.route_props.connection_index = getattr(
-                algorithm.route_props, "connection_index", None
-            )
+            self.route_props.path_index_list = getattr(algorithm.route_props, "path_index_list", [])
+            self.route_props.connection_index = getattr(algorithm.route_props, "connection_index", None)
 
     def _init_route_info(self) -> None:
         """Initialize route properties to empty state."""
@@ -213,20 +202,14 @@ class Routing:
                 algorithm.route(self.sdn_props.source, self.sdn_props.destination, None)
                 self._copy_results_from_algorithm(algorithm)
             except (KeyError, NotImplementedError) as exc:
-                raise NotImplementedError(
-                    f"Routing method '{route_method}' not recognized."
-                ) from exc
+                raise NotImplementedError(f"Routing method '{route_method}' not recognized.") from exc
 
         # Log results
         if self.route_props.paths_matrix:
             logger.debug(
                 "Found %s paths, best weight: %s",
                 len(self.route_props.paths_matrix),
-                (
-                    self.route_props.weights_list[0]
-                    if self.route_props.weights_list
-                    else "N/A"
-                ),
+                (self.route_props.weights_list[0] if self.route_props.weights_list else "N/A"),
             )
         else:
             logger.warning("No paths found by routing algorithm")
@@ -242,10 +225,7 @@ class Routing:
         :param weight: Edge weight attribute to minimize
         :type weight: str
         """
-        logger.warning(
-            "find_least_weight is deprecated. "
-            "Use get_route() with appropriate route_method."
-        )
+        logger.warning("find_least_weight is deprecated. Use get_route() with appropriate route_method.")
 
         # Simple implementation for basic weights
         if weight == "length":
@@ -261,22 +241,13 @@ class Routing:
             )
 
             for path_list in paths:
-                path_weight = find_path_length(
-                    path_list=path_list, topology=self.sdn_props.topology
-                )
+                path_weight = find_path_length(path_list=path_list, topology=self.sdn_props.topology)
 
                 # Try to get modulation format, fall back to QPSK if issues
                 try:
-                    if (
-                        hasattr(self.sdn_props, "mod_formats")
-                        and self.sdn_props.mod_formats
-                    ):
-                        mod_result = get_path_modulation(
-                            self.sdn_props.mod_formats, path_weight
-                        )
-                        modulation_format = (
-                            mod_result if isinstance(mod_result, str) else "QPSK"
-                        )
+                    if hasattr(self.sdn_props, "mod_formats") and self.sdn_props.mod_formats:
+                        mod_result = get_path_modulation(self.sdn_props.mod_formats, path_weight)
+                        modulation_format = mod_result if isinstance(mod_result, str) else "QPSK"
                     else:
                         modulation_format = "QPSK"  # Fallback
                 except (TypeError, AttributeError):
@@ -294,10 +265,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='k_shortest_path' instead.
         """
-        logger.warning(
-            "find_k_shortest is deprecated. "
-            "Use get_route() with route_method='k_shortest_path'."
-        )
+        logger.warning("find_k_shortest is deprecated. Use get_route() with route_method='k_shortest_path'.")
         self.engine_props["route_method"] = "k_shortest_path"
         self.get_route()
 
@@ -308,10 +276,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='nli_aware' instead.
         """
-        logger.warning(
-            "find_least_nli is deprecated. "
-            "Use get_route() with route_method='nli_aware'."
-        )
+        logger.warning("find_least_nli is deprecated. Use get_route() with route_method='nli_aware'.")
         self.engine_props["route_method"] = "nli_aware"
         self.get_route()
 
@@ -322,9 +287,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='xt_aware' instead.
         """
-        logger.warning(
-            "find_least_xt is deprecated. Use get_route() with route_method='xt_aware'."
-        )
+        logger.warning("find_least_xt is deprecated. Use get_route() with route_method='xt_aware'.")
         self.engine_props["route_method"] = "xt_aware"
         self.get_route()
 
@@ -338,10 +301,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='least_congested' instead.
         """
-        logger.warning(
-            "find_least_cong is deprecated. "
-            "Use get_route() with route_method='least_congested'."
-        )
+        logger.warning("find_least_cong is deprecated. Use get_route() with route_method='least_congested'.")
         self.engine_props["route_method"] = "least_congested"
         self.get_route()
 
@@ -352,10 +312,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='frag_aware' instead.
         """
-        logger.warning(
-            "find_least_frag is deprecated. "
-            "Use get_route() with route_method='frag_aware'."
-        )
+        logger.warning("find_least_frag is deprecated. Use get_route() with route_method='frag_aware'.")
         self.engine_props["route_method"] = "frag_aware"
         self.get_route()
 
@@ -366,9 +323,7 @@ class Routing:
         most_cong_slots = -1
 
         for i in range(len(path_list) - 1):
-            link_dict = self.sdn_props.network_spectrum_dict[
-                (path_list[i], path_list[i + 1])
-            ]
+            link_dict = self.sdn_props.network_spectrum_dict[(path_list[i], path_list[i + 1])]
             free_slots = 0
             for band in link_dict["cores_matrix"]:
                 cores_matrix = link_dict["cores_matrix"][band]
@@ -380,9 +335,7 @@ class Routing:
                 most_cong_link = link_dict
 
         # Store with expected test structure for backward compatibility
-        self.route_props.paths_matrix.append(
-            {"path_list": path_list, "link_dict": {"link": most_cong_link}}
-        )
+        self.route_props.paths_matrix.append({"path_list": path_list, "link_dict": {"link": most_cong_link}})
 
     def find_cong_aware(self) -> None:
         """
@@ -400,10 +353,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='cong_aware' instead.
         """
-        logger.warning(
-            "find_cong_aware is deprecated. "
-            "Use get_route() with route_method='cong_aware'."
-        )
+        logger.warning("find_cong_aware is deprecated. Use get_route() with route_method='cong_aware'.")
         self.engine_props["route_method"] = "cong_aware"
         self.get_route()
 
@@ -413,10 +363,7 @@ class Routing:
         .. deprecated:: 2.0.0
             Use get_route() with route_method='external_ksp' instead.
         """
-        logger.warning(
-            "load_k_shortest is deprecated. "
-            "Use get_route() with route_method='external_ksp'."
-        )
+        logger.warning("load_k_shortest is deprecated. Use get_route() with route_method='external_ksp'.")
 
         # This is a simplified implementation - the full logic should be moved
         # to a dedicated external routing algorithm in the modules
@@ -475,9 +422,7 @@ class Routing:
                     modulation_formats: list[str | bool] = list(sorted_formats.keys())
 
                     self.route_props.paths_matrix.append(path)
-                    self.route_props.modulation_formats_matrix.append(
-                        modulation_formats[::-1]
-                    )
+                    self.route_props.modulation_formats_matrix.append(modulation_formats[::-1])
                     self.route_props.weights_list.append(path_length)
                     self.route_props.path_index_list.append(paths_found)
 

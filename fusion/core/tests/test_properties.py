@@ -399,9 +399,7 @@ class TestGroomingProps(unittest.TestCase):
         props.lightpath_status_dict = {("A", "B"): {1: {"bandwidth": 100}}}
 
         self.assertEqual(props.grooming_type, "end_to_end")
-        self.assertEqual(
-            props.lightpath_status_dict, {("A", "B"): {1: {"bandwidth": 100}}}
-        )
+        self.assertEqual(props.lightpath_status_dict, {("A", "B"): {1: {"bandwidth": 100}}})
 
 
 class TestSDNPropsGrooming(unittest.TestCase):

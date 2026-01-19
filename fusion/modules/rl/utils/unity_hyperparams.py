@@ -91,9 +91,7 @@ def _parse_one_out(path: Path) -> tuple[dict[str, str | None], pd.DataFrame]:
     return meta_small_dict, trials_df
 
 
-def _destination(
-    meta: dict[str, str | None], out_root: Path, orig_path: Path
-) -> tuple[Path, str]:
+def _destination(meta: dict[str, str | None], out_root: Path, orig_path: Path) -> tuple[Path, str]:
     """Build destination directory & filename for a given (meta, source_path)."""
     alg = meta["path_algorithm"] or "unknown_algorithm"
     net = meta["network"] or "unknown_network"
@@ -156,9 +154,7 @@ def _encode_param_matrix(
     )
 
     # Categorical → one-hot
-    cat_tf = Pipeline(
-        [("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]
-    )
+    cat_tf = Pipeline([("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))])
 
     enc = ColumnTransformer(
         transformers=[
@@ -173,15 +169,11 @@ def _encode_param_matrix(
 
     logger.debug("[encode] Encoded feature matrix shape: %s", curr_x.shape)
     if np.isnan(curr_x).any():
-        raise ValueError(
-            "[encode] NaNs remain after preprocessing. Investigate source."
-        )
+        raise ValueError("[encode] NaNs remain after preprocessing. Investigate source.")
     return curr_x, enc, param_cols
 
 
-def _knn_predict_matrix(
-    df: pd.DataFrame, curr_x: np.ndarray, k: int = 5
-) -> tuple[np.ndarray, list[float]]:
+def _knn_predict_matrix(df: pd.DataFrame, curr_x: np.ndarray, k: int = 5) -> tuple[np.ndarray, list[float]]:
     """
     Build one k‑NN model per Erlang load and return a (n_samples, n_loads) matrix
     where entry (i, j) is the *predicted* objective of config i at load j.
@@ -249,9 +241,7 @@ def _knn_robust_aggregate(df: pd.DataFrame, k: int = 5) -> pd.DataFrame:
         )
 
     out = pd.DataFrame(summary_rows)
-    out = out.sort_values(
-        ["worst_pred_return", "mean_pred_return"], ascending=[False, False]
-    )  # higher is better
+    out = out.sort_values(["worst_pred_return", "mean_pred_return"], ascending=[False, False])  # higher is better
     logger.info("[knn_agg] Aggregation complete")
     return out
 
@@ -290,9 +280,7 @@ def find_best_params_for_topology(topo_dir: Path, out_root: Path | None = None) 
     out_root = out_root or DEFAULT_OUT_ROOT
     csv_files = _gather_csvs(topo_dir)
     if not csv_files:
-        logger.warning(
-            "[Phase 2] No CSVs under %s; skipping.", topo_dir.relative_to(out_root)
-        )
+        logger.warning("[Phase 2] No CSVs under %s; skipping.", topo_dir.relative_to(out_root))
         return
 
     frames = []
@@ -321,9 +309,7 @@ def find_best_params_for_topology(topo_dir: Path, out_root: Path | None = None) 
 
     best_params_path = topo_dir / "best_params.json"
     best_dict = {
-        str(k): (
-            v.item() if hasattr(v, "item") else v
-        )  # converts np.int64, np.float64, np.bool_ to int/float/bool
+        str(k): (v.item() if hasattr(v, "item") else v)  # converts np.int64, np.float64, np.bool_ to int/float/bool
         for k, v in best.items()
         if k != "_key"
     }

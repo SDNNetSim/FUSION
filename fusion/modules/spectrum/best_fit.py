@@ -66,9 +66,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
         if hasattr(request, "slots_needed"):
             self.spectrum_props.slots_needed = request.slots_needed
         elif hasattr(request, "bandwidth"):
-            self.spectrum_props.slots_needed = self._calculate_slots_needed(
-                request.bandwidth
-            )
+            self.spectrum_props.slots_needed = self._calculate_slots_needed(request.bandwidth)
         else:
             self.spectrum_props.slots_needed = 1
 
@@ -140,10 +138,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
                     # Group consecutive slots into channels
                     tmp_matrix = [
-                        list(map(itemgetter(1), g))
-                        for k, g in itertools.groupby(
-                            enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1]
-                        )
+                        list(map(itemgetter(1), g)) for k, g in itertools.groupby(enumerate(open_slots_arr), lambda i_x: i_x[0] - i_x[1])
                     ]
 
                     slots_needed = self.spectrum_props.slots_needed
@@ -170,9 +165,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
         for channel_dict in channels_list:
             for start_index in channel_dict["channel"]:
                 slots_needed = self.spectrum_props.slots_needed
-                end_index = (
-                    start_index + slots_needed + self.engine_props.get("guard_slots", 0)
-                ) - 1
+                end_index = (start_index + slots_needed + self.engine_props.get("guard_slots", 0)) - 1
 
                 if end_index not in channel_dict["channel"]:
                     break
@@ -198,9 +191,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
         return False
 
-    def check_spectrum_availability(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def check_spectrum_availability(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Check if spectrum slots are available along the entire path."""
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
@@ -214,9 +205,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
             link_dict = network_dict[link_key]
 
-            if band not in link_dict["cores_matrix"] or core_num >= len(
-                link_dict["cores_matrix"][band]
-            ):
+            if band not in link_dict["cores_matrix"] or core_num >= len(link_dict["cores_matrix"][band]):
                 return False
 
             core_array = link_dict["cores_matrix"][band][core_num]
@@ -257,9 +246,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
         return True
 
-    def deallocate_spectrum(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def deallocate_spectrum(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """Deallocate spectrum resources along the path."""
         for i in range(len(path) - 1):
             source, dest = path[i], path[i + 1]
@@ -327,11 +314,7 @@ class BestFitSpectrum(AbstractSpectrumAssigner):
 
     def get_metrics(self) -> dict[str, Any]:
         """Get spectrum assignment algorithm performance metrics."""
-        avg_slots = (
-            self._total_slots_assigned / self._assignments_made
-            if self._assignments_made > 0
-            else 0
-        )
+        avg_slots = self._total_slots_assigned / self._assignments_made if self._assignments_made > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

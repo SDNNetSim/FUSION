@@ -206,9 +206,9 @@ def _create_unified_env(
             cores_per_link = inner_config.get("cores_per_link", 1)
             erlang_val = inner_config.get("erlang", inner_config.get("erlang_start", 300))
             holding_time = inner_config.get("holding_time", 1)
-            inner_config["arrival_rate"] = (
-                cores_per_link * float(erlang_val if erlang_val is not None else 300)
-            ) / float(holding_time if holding_time is not None else 1)
+            inner_config["arrival_rate"] = (cores_per_link * float(erlang_val if erlang_val is not None else 300)) / float(
+                holding_time if holding_time is not None else 1
+            )
 
         # Enable orchestrator mode for V4 stack integration
         inner_config["use_orchestrator"] = True
@@ -220,8 +220,7 @@ def _create_unified_env(
         except (KeyError, ValueError, TypeError) as e:
             # If we can't create a full SimulationConfig, fall back to standalone mode
             warnings.warn(
-                f"Could not create SimulationConfig from dict ({e}), "
-                "using standalone mode. For full simulation, provide complete config.",
+                f"Could not create SimulationConfig from dict ({e}), using standalone mode. For full simulation, provide complete config.",
                 RuntimeWarning,
                 stacklevel=3,
             )
@@ -255,8 +254,7 @@ def _create_unified_env(
             engine.create_topology()
         except (KeyError, ValueError, TypeError) as e:
             warnings.warn(
-                f"Could not create SimulationEngine ({e}), "
-                "stats tracking will be disabled.",
+                f"Could not create SimulationEngine ({e}), stats tracking will be disabled.",
                 RuntimeWarning,
                 stacklevel=3,
             )

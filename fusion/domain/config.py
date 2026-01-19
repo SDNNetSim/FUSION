@@ -24,9 +24,9 @@ DEFAULT_MCI_WORST = 6.3349755556585961e-27  # Worst-case mutual coupling interfe
 DEFAULT_NSP_PER_BAND: dict[str, float] = {
     "c": 1.77,  # C-band EDFA noise figure
     "l": 1.99,  # L-band EDFA noise figure
-    "s": 2.0,   # S-band amplifier noise figure
-    "o": 2.0,   # O-band amplifier noise figure
-    "e": 2.0,   # E-band amplifier noise figure
+    "s": 2.0,  # S-band amplifier noise figure
+    "o": 2.0,  # O-band amplifier noise figure
+    "e": 2.0,  # E-band amplifier noise figure
 }
 
 # Default modulation format mappings
@@ -196,9 +196,7 @@ class SimulationConfig:
     planck_constant: float = DEFAULT_PLANCK_CONSTANT
     noise_spectral_density: float = 1.8
     mci_worst: float = DEFAULT_MCI_WORST
-    nsp_per_band: dict[str, float] = field(
-        default_factory=lambda: dict(DEFAULT_NSP_PER_BAND)
-    )
+    nsp_per_band: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_NSP_PER_BAND))
 
     # =========================================================================
     # SNR Configuration (from SNRProps)
@@ -220,12 +218,8 @@ class SimulationConfig:
     # =========================================================================
     modulation_formats: dict[str, Any] = field(default_factory=dict)
     mod_per_bw: dict[str, Any] = field(default_factory=dict)
-    mod_format_map: dict[int, str] = field(
-        default_factory=lambda: dict(DEFAULT_MOD_FORMAT_MAP)
-    )
-    bandwidth_map: dict[str, int] = field(
-        default_factory=lambda: dict(DEFAULT_BANDWIDTH_MAP)
-    )
+    mod_format_map: dict[int, str] = field(default_factory=lambda: dict(DEFAULT_MOD_FORMAT_MAP))
+    bandwidth_map: dict[str, int] = field(default_factory=lambda: dict(DEFAULT_BANDWIDTH_MAP))
     pre_calc_mod_selection: bool = False  # Use pre-calculated modulation selection
 
     # =========================================================================
@@ -345,12 +339,8 @@ class SimulationConfig:
         mod_per_bw = engine_props.get("mod_per_bw", {})
         modulation_formats = engine_props.get("modulation_formats", {})
         snr_thresholds = engine_props.get("snr_thresholds", {})
-        mod_format_map = engine_props.get(
-            "modulation_format_mapping_dict", dict(DEFAULT_MOD_FORMAT_MAP)
-        )
-        bandwidth_map = engine_props.get(
-            "bandwidth_mapping_dict", dict(DEFAULT_BANDWIDTH_MAP)
-        )
+        mod_format_map = engine_props.get("modulation_format_mapping_dict", dict(DEFAULT_MOD_FORMAT_MAP))
+        bandwidth_map = engine_props.get("bandwidth_mapping_dict", dict(DEFAULT_BANDWIDTH_MAP))
 
         # Extract physical layer parameters
         nsp_per_band = engine_props.get("nsp", dict(DEFAULT_NSP_PER_BAND))
@@ -394,22 +384,14 @@ class SimulationConfig:
             multi_fiber=engine_props.get("multi_fiber", False),
             dynamic_lps=engine_props.get("dynamic_lps", False),
             # Protection
-            protection_switchover_ms=engine_props.get(
-                "protection_switchover_ms", 50.0
-            ),
+            protection_switchover_ms=engine_props.get("protection_switchover_ms", 50.0),
             restoration_latency_ms=engine_props.get("restoration_latency_ms", 100.0),
             # Physical layer
             bw_per_slot=engine_props.get("bw_per_slot", 12.5),
             input_power=engine_props.get("input_power", DEFAULT_INPUT_POWER),
-            frequency_spacing=engine_props.get(
-                "frequency_spacing", DEFAULT_FREQUENCY_SPACING
-            ),
-            light_frequency=engine_props.get(
-                "light_frequency", DEFAULT_LIGHT_FREQUENCY
-            ),
-            planck_constant=engine_props.get(
-                "planck_constant", DEFAULT_PLANCK_CONSTANT
-            ),
+            frequency_spacing=engine_props.get("frequency_spacing", DEFAULT_FREQUENCY_SPACING),
+            light_frequency=engine_props.get("light_frequency", DEFAULT_LIGHT_FREQUENCY),
+            planck_constant=engine_props.get("planck_constant", DEFAULT_PLANCK_CONSTANT),
             noise_spectral_density=engine_props.get("noise_spectral_density", 1.8),
             mci_worst=engine_props.get("mci_worst", DEFAULT_MCI_WORST),
             nsp_per_band=nsp_per_band,

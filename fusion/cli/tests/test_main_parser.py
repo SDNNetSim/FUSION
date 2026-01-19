@@ -58,9 +58,7 @@ class TestBuildMainArgumentParser:
         assert isinstance(parser, ArgumentParser)
 
     @patch("fusion.cli.main_parser.args_registry.create_main_parser")
-    def test_build_main_argument_parser_delegates_to_registry(
-        self, mock_create_parser: Mock
-    ) -> None:
+    def test_build_main_argument_parser_delegates_to_registry(self, mock_create_parser: Mock) -> None:
         """Test that build_main_argument_parser delegates to args_registry."""
         mock_parser = Mock(spec=ArgumentParser)
         mock_create_parser.return_value = mock_parser
@@ -76,9 +74,7 @@ class TestCreateTrainingArgumentParser:
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
     @patch("sys.argv", ["prog", "--agent_type", "rl"])
-    def test_create_training_argument_parser_with_valid_args(
-        self, mock_create_parser: Mock
-    ) -> None:
+    def test_create_training_argument_parser_with_valid_args(self, mock_create_parser: Mock) -> None:
         """Test create_training_argument_parser with valid arguments."""
         mock_parser = Mock()
         mock_namespace = Namespace(agent_type="rl")
@@ -96,9 +92,7 @@ class TestCreateTrainingArgumentParser:
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
     @patch("sys.argv", ["prog", "--agent_type", "sl"])
-    def test_create_training_argument_parser_with_sl_agent(
-        self, mock_create_parser: Mock
-    ) -> None:
+    def test_create_training_argument_parser_with_sl_agent(self, mock_create_parser: Mock) -> None:
         """Test create_training_argument_parser with SL agent type."""
         mock_parser = Mock()
         mock_namespace = Namespace(agent_type="sl")
@@ -110,9 +104,7 @@ class TestCreateTrainingArgumentParser:
         assert result.agent_type == "sl"
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
-    def test_create_training_argument_parser_adds_agent_type_argument(
-        self, mock_create_parser: Mock
-    ) -> None:
+    def test_create_training_argument_parser_adds_agent_type_argument(self, mock_create_parser: Mock) -> None:
         """Test that create_training_argument_parser adds agent_type argument."""
         mock_parser = Mock()
         mock_parser.parse_args.return_value = Namespace(agent_type="rl")
@@ -131,9 +123,7 @@ class TestCreateTrainingArgumentParser:
 
     @patch("fusion.cli.main_parser.args_registry.create_parser_with_groups")
     @patch("sys.argv", ["prog"])
-    def test_create_training_argument_parser_exits_on_missing_required_arg(
-        self, mock_create_parser: Mock
-    ) -> None:
+    def test_create_training_argument_parser_exits_on_missing_required_arg(self, mock_create_parser: Mock) -> None:
         """Test that parser exits when required agent_type is missing."""
         mock_parser = Mock()
         mock_parser.parse_args.side_effect = SystemExit(2)
@@ -179,9 +169,7 @@ class TestLegacyFunctions:
 
     def test_get_train_args_delegates_to_create_training_argument_parser(self) -> None:
         """Test that get_train_args is legacy wrapper."""
-        with patch(
-            "fusion.cli.main_parser.create_training_argument_parser"
-        ) as mock_create:
+        with patch("fusion.cli.main_parser.create_training_argument_parser") as mock_create:
             mock_namespace = Mock()
             mock_create.return_value = mock_namespace
 

@@ -30,9 +30,7 @@ class TestFactoryBasic:
 
         # Mock SimEnv since it requires full simulation config
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 env = create_sim_env(config)
 
@@ -49,9 +47,7 @@ class TestFactoryEnvTypeParameter:
         config = {"k_paths": 3, "spectral_slots": 320}
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 env = create_sim_env(config, env_type=EnvType.LEGACY)
 
@@ -126,9 +122,7 @@ class TestFactoryEnvVars:
         config = {"k_paths": 3, "spectral_slots": 320}
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(
                 os.environ,
                 {"USE_UNIFIED_ENV": "0", "SUPPRESS_SIMENV_DEPRECATION": "1"},
@@ -155,9 +149,7 @@ class TestFactoryEnvVars:
         config = {"k_paths": 3, "spectral_slots": 320}
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(
                 os.environ,
                 {"RL_ENV_TYPE": "legacy", "SUPPRESS_SIMENV_DEPRECATION": "1"},
@@ -172,9 +164,7 @@ class TestFactoryEnvVars:
         config = {"k_paths": 3, "spectral_slots": 320}
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             # Set env var to unified, but explicitly request legacy
             with patch.dict(
                 os.environ,
@@ -191,9 +181,7 @@ class TestFactoryEnvVars:
         config = {"k_paths": 3, "spectral_slots": 320}
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             # USE_UNIFIED_ENV=1 but RL_ENV_TYPE=legacy
             with patch.dict(
                 os.environ,
@@ -222,9 +210,7 @@ class TestFactoryConfigFormats:
         }
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 env = create_sim_env(config, env_type="legacy")
 
@@ -260,9 +246,7 @@ class TestFactoryConfigFormats:
         }
 
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 env = create_sim_env(config, env_type="legacy")
 

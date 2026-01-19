@@ -69,10 +69,7 @@ class PathGNN(BaseGraphFeatureExtractor):
         }
 
         if gnn_type not in convolution_type_mapping:
-            raise ValueError(
-                f"Unknown GNN type: {gnn_type}. "
-                f"Valid types: {list(convolution_type_mapping.keys())}"
-            )
+            raise ValueError(f"Unknown GNN type: {gnn_type}. Valid types: {list(convolution_type_mapping.keys())}")
 
         selected_convolution_class = convolution_type_mapping[gnn_type]
         x_shape = obs_space["x"].shape
@@ -81,12 +78,7 @@ class PathGNN(BaseGraphFeatureExtractor):
 
         # Create convolution layers
         self.convolution_layers = torch.nn.ModuleList(
-            [
-                selected_convolution_class(
-                    input_dimension if layer_idx == 0 else emb_dim, emb_dim
-                )
-                for layer_idx in range(layers)
-            ]
+            [selected_convolution_class(input_dimension if layer_idx == 0 else emb_dim, emb_dim) for layer_idx in range(layers)]
         )
 
         # Readout layer for final transformation
@@ -116,11 +108,7 @@ class PathGNN(BaseGraphFeatureExtractor):
         path_masks_list = observation["path_masks"]
 
         # Process batch dimensions
-        node_features_list, edge_index, path_masks_list, _ = (
-            self._process_batch_dimensions(
-                node_features_list, edge_index, path_masks_list
-            )
-        )
+        node_features_list, edge_index, path_masks_list, _ = self._process_batch_dimensions(node_features_list, edge_index, path_masks_list)
 
         # Process each sample in the batch
         batch_outputs: list[torch.Tensor] = []
@@ -135,19 +123,13 @@ class PathGNN(BaseGraphFeatureExtractor):
             # Process through convolution layers
             node_embeddings = node_features_batch
             for convolution_layer in self.convolution_layers:
-                node_embeddings = convolution_layer(
-                    node_embeddings, edge_index_batch
-                ).relu()
+                node_embeddings = convolution_layer(node_embeddings, edge_index_batch).relu()
 
             # Compute edge embeddings
-            edge_embeddings = self._compute_edge_embeddings(
-                node_embeddings, edge_index_batch
-            )
+            edge_embeddings = self._compute_edge_embeddings(node_embeddings, edge_index_batch)
 
             # Aggregate edge embeddings according to path masks
-            path_embeddings = self._compute_path_embeddings(
-                edge_embeddings, path_masks_batch
-            )
+            path_embeddings = self._compute_path_embeddings(edge_embeddings, path_masks_batch)
 
             # Apply readout layer and flatten
             path_vectors = self.readout_layer(path_embeddings).flatten()

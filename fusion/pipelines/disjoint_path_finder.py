@@ -103,13 +103,9 @@ class DisjointPathFinder:
         :rtype: list[list[str]]
         """
         if self.disjointness == DisjointnessType.LINK:
-            return self._find_all_link_disjoint(
-                topology, source, destination, max_paths
-            )
+            return self._find_all_link_disjoint(topology, source, destination, max_paths)
         else:
-            return self._find_all_node_disjoint(
-                topology, source, destination, max_paths
-            )
+            return self._find_all_node_disjoint(topology, source, destination, max_paths)
 
     def _find_link_disjoint(
         self,
@@ -138,9 +134,7 @@ class DisjointPathFinder:
             )
             if len(paths) >= 2:
                 return ([str(n) for n in paths[0]], [str(n) for n in paths[1]])
-            logger.debug(
-                f"No link-disjoint backup for {source}->{destination}"
-            )
+            logger.debug(f"No link-disjoint backup for {source}->{destination}")
             return None
         except (nx.NetworkXNoPath, nx.NetworkXError):
             logger.debug(f"No path exists from {source} to {destination}")
@@ -162,9 +156,7 @@ class DisjointPathFinder:
         """
         try:
             # Find primary path
-            primary = nx.shortest_path(
-                topology, source, destination, weight="weight"
-            )
+            primary = nx.shortest_path(topology, source, destination, weight="weight")
             primary = [str(n) for n in primary]
 
             # Create residual graph without intermediate nodes
@@ -174,15 +166,11 @@ class DisjointPathFinder:
 
             # Find backup in residual
             try:
-                backup = nx.shortest_path(
-                    residual, source, destination, weight="weight"
-                )
+                backup = nx.shortest_path(residual, source, destination, weight="weight")
                 backup = [str(n) for n in backup]
                 return (primary, backup)
             except nx.NetworkXNoPath:
-                logger.debug(
-                    f"No node-disjoint backup for {source}->{destination}"
-                )
+                logger.debug(f"No node-disjoint backup for {source}->{destination}")
                 return None
 
         except nx.NetworkXNoPath:
@@ -223,9 +211,7 @@ class DisjointPathFinder:
 
         while len(paths) < max_paths:
             try:
-                path = nx.shortest_path(
-                    residual, source, destination, weight="weight"
-                )
+                path = nx.shortest_path(residual, source, destination, weight="weight")
                 path = [str(n) for n in path]
                 paths.append(path)
 
@@ -239,9 +225,7 @@ class DisjointPathFinder:
 
         return paths
 
-    def are_link_disjoint(
-        self, path1: list[str], path2: list[str]
-    ) -> bool:
+    def are_link_disjoint(self, path1: list[str], path2: list[str]) -> bool:
         """
         Check if two paths are link-disjoint.
 
@@ -258,9 +242,7 @@ class DisjointPathFinder:
         edges2.update((path2[i + 1], path2[i]) for i in range(len(path2) - 1))
         return not edges1.intersection(edges2)
 
-    def are_node_disjoint(
-        self, path1: list[str], path2: list[str]
-    ) -> bool:
+    def are_node_disjoint(self, path1: list[str], path2: list[str]) -> bool:
         """
         Check if two paths are node-disjoint (except endpoints).
 

@@ -99,9 +99,7 @@ class SpectrumHeatmapRenderer(BaseRenderer):
 
         if spectrum_matrix.size > 0:
             # Create heatmap
-            im = ax.imshow(
-                spectrum_matrix, aspect="auto", cmap="YlOrRd", interpolation="nearest"
-            )
+            im = ax.imshow(spectrum_matrix, aspect="auto", cmap="YlOrRd", interpolation="nearest")
 
             # Add colorbar
             cbar = plt.colorbar(im, ax=ax)
@@ -195,9 +193,7 @@ class FragmentationPlotRenderer(BaseRenderer):
 
         ax1.set_xlabel("Traffic Volume (Erlang)", fontsize=12)
         ax1.set_ylabel("Fragmentation Index", fontsize=12)
-        ax1.set_title(
-            "Spectrum Fragmentation vs Traffic", fontsize=12, fontweight="bold"
-        )
+        ax1.set_title("Spectrum Fragmentation vs Traffic", fontsize=12, fontweight="bold")
         ax1.legend(loc="best")
         ax1.grid(True, alpha=0.3)
 
@@ -301,10 +297,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
                 source_path="$.spectrum.fragmentation_index",
                 aggregation=AggregationStrategy.MEAN,
                 unit="index",
-                description=(
-                    "Measure of spectrum fragmentation "
-                    "(0=no fragmentation, 1=max fragmentation)"
-                ),
+                description=("Measure of spectrum fragmentation (0=no fragmentation, 1=max fragmentation)"),
             ),
             MetricDefinition(
                 name="avg_fragment_size",
@@ -359,9 +352,7 @@ class SpectrumVisualizationPlugin(BasePlugin):
             "spectrum_heatmap": PlotTypeRegistration(
                 processor=GenericMetricProcessingStrategy(),
                 renderer=SpectrumHeatmapRenderer(),
-                description=(
-                    "Heatmap showing spectrum utilization across links and slots"
-                ),
+                description=("Heatmap showing spectrum utilization across links and slots"),
                 required_metrics=["spectrum_utilization"],
                 default_config={"colormap": "YlOrRd", "show_colorbar": True},
             ),

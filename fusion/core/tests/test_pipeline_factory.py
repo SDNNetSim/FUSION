@@ -163,9 +163,7 @@ class TestPipelineFactoryRouting:
         mock_config = MagicMock()
         mock_config.route_method = "k_shortest_path"
 
-        with patch(
-            "fusion.core.adapters.routing_adapter.RoutingAdapter"
-        ) as MockAdapter:
+        with patch("fusion.core.adapters.routing_adapter.RoutingAdapter") as MockAdapter:
             MockAdapter.return_value = MagicMock()
 
             result = PipelineFactory.create_routing(mock_config)
@@ -178,9 +176,7 @@ class TestPipelineFactoryRouting:
         mock_config = MagicMock()
         mock_config.route_method = "congestion_aware"
 
-        with patch(
-            "fusion.core.adapters.routing_adapter.RoutingAdapter"
-        ) as MockAdapter:
+        with patch("fusion.core.adapters.routing_adapter.RoutingAdapter") as MockAdapter:
             MockAdapter.return_value = MagicMock()
 
             result = PipelineFactory.create_routing(mock_config)
@@ -193,9 +189,7 @@ class TestPipelineFactoryRouting:
         mock_config = MagicMock()
         mock_config.route_method = "1plus1_protection"
 
-        with patch(
-            "fusion.pipelines.routing_pipeline.ProtectedRoutingPipeline"
-        ) as MockPipeline:
+        with patch("fusion.pipelines.routing_pipeline.ProtectedRoutingPipeline") as MockPipeline:
             MockPipeline.return_value = MagicMock()
 
             result = PipelineFactory.create_routing(mock_config)
@@ -217,9 +211,7 @@ class TestPipelineFactorySpectrum:
         mock_config = MagicMock()
         mock_config.allocation_method = "first_fit"
 
-        with patch(
-            "fusion.core.adapters.spectrum_adapter.SpectrumAdapter"
-        ) as MockAdapter:
+        with patch("fusion.core.adapters.spectrum_adapter.SpectrumAdapter") as MockAdapter:
             MockAdapter.return_value = MagicMock()
 
             result = PipelineFactory.create_spectrum(mock_config)
@@ -232,9 +224,7 @@ class TestPipelineFactorySpectrum:
         mock_config = MagicMock()
         mock_config.allocation_method = "best_fit"
 
-        with patch(
-            "fusion.core.adapters.spectrum_adapter.SpectrumAdapter"
-        ) as MockAdapter:
+        with patch("fusion.core.adapters.spectrum_adapter.SpectrumAdapter") as MockAdapter:
             MockAdapter.return_value = MagicMock()
 
             result = PipelineFactory.create_spectrum(mock_config)
@@ -265,9 +255,7 @@ class TestPipelineFactoryGrooming:
         mock_config = MagicMock()
         mock_config.grooming_enabled = True
 
-        with patch(
-            "fusion.core.adapters.grooming_adapter.GroomingAdapter"
-        ) as MockAdapter:
+        with patch("fusion.core.adapters.grooming_adapter.GroomingAdapter") as MockAdapter:
             MockAdapter.return_value = MagicMock()
 
             result = PipelineFactory.create_grooming(mock_config)
@@ -298,9 +286,7 @@ class TestPipelineFactorySNR:
         mock_config = MagicMock()
         mock_config.snr_enabled = True
 
-        with patch(
-            "fusion.core.adapters.snr_adapter.SNRAdapter"
-        ) as MockAdapter:
+        with patch("fusion.core.adapters.snr_adapter.SNRAdapter") as MockAdapter:
             MockAdapter.return_value = MagicMock()
 
             result = PipelineFactory.create_snr(mock_config)
@@ -331,9 +317,7 @@ class TestPipelineFactorySlicing:
         mock_config = MagicMock()
         mock_config.slicing_enabled = True
 
-        with patch(
-            "fusion.pipelines.slicing_pipeline.StandardSlicingPipeline"
-        ) as MockPipeline:
+        with patch("fusion.pipelines.slicing_pipeline.StandardSlicingPipeline") as MockPipeline:
             MockPipeline.return_value = MagicMock()
 
             result = PipelineFactory.create_slicing(mock_config)
@@ -429,9 +413,7 @@ class TestPipelineFactoryOrchestrator:
         mock_pipeline_set = MagicMock(spec=PipelineSet)
 
         with (
-            patch.object(
-                PipelineFactory, "create_pipeline_set"
-            ) as mock_create_set,
+            patch.object(PipelineFactory, "create_pipeline_set") as mock_create_set,
             patch("fusion.core.orchestrator.SDNOrchestrator") as MockOrch,
         ):
             mock_create_set.return_value = mock_pipeline_set

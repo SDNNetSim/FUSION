@@ -154,38 +154,25 @@ class RouteResult:
         :rtype: RouteResult
         """
         # Handle empty case
-        if (
-            not hasattr(routing_props, "paths_matrix")
-            or not routing_props.paths_matrix
-        ):
+        if not hasattr(routing_props, "paths_matrix") or not routing_props.paths_matrix:
             return cls.empty()
 
         # Convert lists to tuples for immutability
         paths = tuple(tuple(str(n) for n in p) for p in routing_props.paths_matrix)
         weights = tuple(routing_props.weights_list)
-        modulations = tuple(
-            tuple(mods) for mods in routing_props.modulation_formats_matrix
-        )
+        modulations = tuple(tuple(mods) for mods in routing_props.modulation_formats_matrix)
 
         # Handle backup paths if present
         backup_paths = None
         backup_weights = None
         backup_mods = None
 
-        if (
-            hasattr(routing_props, "backup_paths_matrix")
-            and routing_props.backup_paths_matrix
-        ):
-            backup_paths = tuple(
-                tuple(str(n) for n in p) if p else ()
-                for p in routing_props.backup_paths_matrix
-            )
+        if hasattr(routing_props, "backup_paths_matrix") and routing_props.backup_paths_matrix:
+            backup_paths = tuple(tuple(str(n) for n in p) if p else () for p in routing_props.backup_paths_matrix)
             if hasattr(routing_props, "backup_weights_list"):
                 backup_weights = tuple(routing_props.backup_weights_list)
             if hasattr(routing_props, "backup_modulation_formats_matrix"):
-                backup_mods = tuple(
-                    tuple(mods) for mods in routing_props.backup_modulation_formats_matrix
-                )
+                backup_mods = tuple(tuple(mods) for mods in routing_props.backup_modulation_formats_matrix)
 
         return cls(
             paths=paths,

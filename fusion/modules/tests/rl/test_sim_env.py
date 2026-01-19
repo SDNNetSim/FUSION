@@ -11,9 +11,7 @@ from fusion.modules.rl.utils.sim_env import SimEnvObs, SimEnvUtils
 # ------------------------------------------------------------------ #
 #  minimal sim_env object builder                                     #
 # ------------------------------------------------------------------ #
-def _make_sim_env(
-    path_algo: str = "q_learning", is_drl: bool = True
-) -> SimpleNamespace:
+def _make_sim_env(path_algo: str = "q_learning", is_drl: bool = True) -> SimpleNamespace:
     """Return a stub with the attributes SimEnv helpers access."""
     rl_props = SimpleNamespace(
         arrival_count=1,

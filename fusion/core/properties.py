@@ -148,19 +148,19 @@ class SNRProps:
         self.nsp: dict[str, float] = {
             "c": 1.77,  # C-band EDFA noise figure
             "l": 1.99,  # L-band EDFA noise figure
-            "s": 2.0,   # S-band amplifier noise figure
-            "o": 2.0,   # O-band amplifier noise figure
-            "e": 2.0,   # E-band amplifier noise figure
+            "s": 2.0,  # S-band amplifier noise figure
+            "o": 2.0,  # O-band amplifier noise figure
+            "e": 2.0,  # E-band amplifier noise figure
         }
         # Required SNR thresholds per modulation format (in dB)
         # Values must match v5 (arg_scripts/snr_args.py)
         self.req_snr: dict[str, float] = {
-            "BPSK": 3.71,   # Binary Phase Shift Keying
-            "QPSK": 6.72,   # Quadrature Phase Shift Keying
-            "8-QAM": 10.84, # 8-Quadrature Amplitude Modulation
-            "16-QAM": 13.24, # 16-QAM
-            "32-QAM": 16.16, # 32-QAM
-            "64-QAM": 19.01, # 64-QAM
+            "BPSK": 3.71,  # Binary Phase Shift Keying
+            "QPSK": 6.72,  # Quadrature Phase Shift Keying
+            "8-QAM": 10.84,  # 8-Quadrature Amplitude Modulation
+            "16-QAM": 13.24,  # 16-QAM
+            "32-QAM": 16.16,  # 32-QAM
+            "64-QAM": 19.01,  # 64-QAM
         }
 
         # Current request parameters

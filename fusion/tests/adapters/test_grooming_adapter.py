@@ -92,9 +92,7 @@ def mock_request() -> MagicMock:
 class TestSDNPropsProxyForGrooming:
     """Tests for SDNPropsProxyForGrooming."""
 
-    def test_from_network_state(
-        self, network_state: NetworkState
-    ) -> None:
+    def test_from_network_state(self, network_state: NetworkState) -> None:
         """Test creating proxy from NetworkState."""
         proxy = SDNPropsProxyForGrooming.from_network_state(
             network_state=network_state,
@@ -113,9 +111,7 @@ class TestSDNPropsProxyForGrooming:
         assert proxy.network_spectrum_dict is not None
         assert proxy.lightpath_status_dict is not None
 
-    def test_proxy_lists_initialized(
-        self, network_state: NetworkState
-    ) -> None:
+    def test_proxy_lists_initialized(self, network_state: NetworkState) -> None:
         """Test that proxy lists are initialized empty."""
         proxy = SDNPropsProxyForGrooming.from_network_state(
             network_state=network_state,
@@ -170,9 +166,7 @@ class TestGroomingAdapter:
         """Test successful full grooming."""
         adapter = GroomingAdapter(config)
 
-        with patch(
-            "fusion.core.grooming.Grooming"
-        ) as MockGrooming:
+        with patch("fusion.core.grooming.Grooming") as MockGrooming:
             mock_grooming = MagicMock()
             mock_grooming.handle_grooming.return_value = True
             MockGrooming.return_value = mock_grooming
@@ -194,9 +188,7 @@ class TestGroomingAdapter:
         """Test when no grooming is possible."""
         adapter = GroomingAdapter(config)
 
-        with patch(
-            "fusion.core.grooming.Grooming"
-        ) as MockGrooming:
+        with patch("fusion.core.grooming.Grooming") as MockGrooming:
             mock_grooming = MagicMock()
             mock_grooming.handle_grooming.return_value = False
             MockGrooming.return_value = mock_grooming
@@ -240,9 +232,7 @@ class TestGroomingAdapter:
         """Test rollback grooming."""
         adapter = GroomingAdapter(config)
 
-        with patch(
-            "fusion.core.grooming.Grooming"
-        ) as MockGrooming:
+        with patch("fusion.core.grooming.Grooming") as MockGrooming:
             mock_grooming = MagicMock()
             MockGrooming.return_value = mock_grooming
 

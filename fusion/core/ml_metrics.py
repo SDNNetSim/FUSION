@@ -70,17 +70,13 @@ class MLMetricsCollector:
             congestion_array = np.append(congestion_array, current_congestion)
 
         # Calculate path length
-        path_length = find_path_length(
-            path_list=path_list, topology=self.engine_props["topology"]
-        )
+        path_length = find_path_length(path_list=path_list, topology=self.engine_props["topology"])
 
         # Prepare training data entry
         training_info_dict = {
             "old_bandwidth": old_request_info_dict["bandwidth"],
             "path_length": path_length,
-            "longest_reach": np.max(
-                old_request_info_dict["mod_formats"]["QPSK"]["max_length"]
-            ),
+            "longest_reach": np.max(old_request_info_dict["mod_formats"]["QPSK"]["max_length"]),
             "average_congestion": float(np.mean(congestion_array)),
             "num_segments": current_transponders,
         }
@@ -89,9 +85,7 @@ class MLMetricsCollector:
 
         logger.debug("Added training data entry: %s", training_info_dict)
 
-    def save_train_data(
-        self, iteration: int, max_iterations: int, base_file_path: str = "data"
-    ) -> None:
+    def save_train_data(self, iteration: int, max_iterations: int, base_file_path: str = "data") -> None:
         """
         Save training data to CSV file.
 

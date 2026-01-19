@@ -408,7 +408,7 @@ class SNRPipeline(Protocol):
         new_lightpath_id: int,
         network_state: NetworkState,
         *,
-        affected_range_slots: int = 5,
+        _affected_range_slots: int = 5,
         slicing_flag: bool = False,
     ) -> SNRRecheckResult:
         """

@@ -62,33 +62,21 @@ def evaluate_classifier(
     }
 
     # Per-class metrics
-    metrics["precision_per_class"] = precision_score(
-        true_labels, predictions, average=None
-    ).tolist()
-    metrics["recall_per_class"] = recall_score(
-        true_labels, predictions, average=None
-    ).tolist()
-    metrics["f1_score_per_class"] = f1_score(
-        true_labels, predictions, average=None
-    ).tolist()
+    metrics["precision_per_class"] = precision_score(true_labels, predictions, average=None).tolist()
+    metrics["recall_per_class"] = recall_score(true_labels, predictions, average=None).tolist()
+    metrics["f1_score_per_class"] = f1_score(true_labels, predictions, average=None).tolist()
 
     # Confusion matrix
     metrics["confusion_matrix"] = confusion_matrix(true_labels, predictions).tolist()
 
     # Classification report
     if class_names:
-        metrics["classification_report"] = classification_report(
-            true_labels, predictions, target_names=class_names, output_dict=True
-        )
+        metrics["classification_report"] = classification_report(true_labels, predictions, target_names=class_names, output_dict=True)
     else:
-        metrics["classification_report"] = classification_report(
-            true_labels, predictions, output_dict=True
-        )
+        metrics["classification_report"] = classification_report(true_labels, predictions, output_dict=True)
 
     # Per-class accuracy
-    metrics["accuracy_per_class"] = _calculate_per_class_accuracy(
-        true_labels, predictions
-    )
+    metrics["accuracy_per_class"] = _calculate_per_class_accuracy(true_labels, predictions)
 
     # Try to calculate AUC if applicable
     try:
@@ -107,9 +95,7 @@ def evaluate_classifier(
     return metrics
 
 
-def evaluate_regressor(
-    true_values: np.ndarray, predictions: np.ndarray
-) -> dict[str, float]:
+def evaluate_regressor(true_values: np.ndarray, predictions: np.ndarray) -> dict[str, float]:
     """
     Comprehensive evaluation of regression model performance.
 
@@ -133,21 +119,15 @@ def evaluate_regressor(
         "r2": r2_score(true_values, predictions),
         "mape": _calculate_mape(true_values, predictions),
         "max_error": np.max(np.abs(true_values - predictions)),
-        "explained_variance": (
-            1 - np.var(true_values - predictions) / np.var(true_values)
-        ),
+        "explained_variance": (1 - np.var(true_values - predictions) / np.var(true_values)),
     }
 
-    logger.info(
-        "Model evaluation - RMSE: %.4f, R²: %.4f", metrics["rmse"], metrics["r2"]
-    )
+    logger.info("Model evaluation - RMSE: %.4f, R²: %.4f", metrics["rmse"], metrics["r2"])
 
     return metrics
 
 
-def _calculate_per_class_accuracy(
-    true_labels: np.ndarray, predictions: np.ndarray
-) -> dict[str, float]:
+def _calculate_per_class_accuracy(true_labels: np.ndarray, predictions: np.ndarray) -> dict[str, float]:
     """Calculate accuracy for each class separately."""
     per_class_accuracy = {}
 
@@ -166,10 +146,7 @@ def _calculate_mape(true_values: np.ndarray, predictions: np.ndarray) -> float:
     if not any(mask):
         return float("inf")
 
-    mape = (
-        np.mean(np.abs((true_values[mask] - predictions[mask]) / true_values[mask]))
-        * 100
-    )
+    mape = np.mean(np.abs((true_values[mask] - predictions[mask]) / true_values[mask])) * 100
     return float(mape)
 
 
@@ -287,9 +264,7 @@ def evaluate_model_stability(
 
     for i in range(n_iterations):
         # Random split
-        x_train, x_test, y_train, y_test = train_test_split(
-            features, labels, test_size=test_size, random_state=i
-        )
+        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=test_size, random_state=i)
 
         # Clone model to avoid contamination
         model_clone = clone(model)
@@ -300,15 +275,9 @@ def evaluate_model_stability(
 
         # Calculate metrics
         metrics_over_iterations["accuracy"].append(accuracy_score(y_test, predictions))
-        metrics_over_iterations["precision"].append(
-            precision_score(y_test, predictions, average="weighted")
-        )
-        metrics_over_iterations["recall"].append(
-            recall_score(y_test, predictions, average="weighted")
-        )
-        metrics_over_iterations["f1_score"].append(
-            f1_score(y_test, predictions, average="weighted")
-        )
+        metrics_over_iterations["precision"].append(precision_score(y_test, predictions, average="weighted"))
+        metrics_over_iterations["recall"].append(recall_score(y_test, predictions, average="weighted"))
+        metrics_over_iterations["f1_score"].append(f1_score(y_test, predictions, average="weighted"))
 
     # Calculate statistics
     stability_results = {}
@@ -320,11 +289,7 @@ def evaluate_model_stability(
             "min": np.min(values),
             "max": np.max(values),
             "range": np.max(values) - np.min(values),
-            "cv": (
-                np.std(values) / np.mean(values)
-                if np.mean(values) > 0
-                else float("inf")
-            ),
+            "cv": (np.std(values) / np.mean(values) if np.mean(values) > 0 else float("inf")),
         }
 
     return stability_results
@@ -363,9 +328,7 @@ def compare_models(
         >>> print(comparison.sort_values('f1_score', ascending=False))
     """
     # Split data
-    x_train, x_test, y_train, y_test = train_test_split(
-        features, labels, test_size=test_size, random_state=random_state
-    )
+    x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=test_size, random_state=random_state)
 
     results = []
 
@@ -402,9 +365,7 @@ def compare_models(
     return comparison_df
 
 
-def analyze_prediction_errors(
-    true_labels: np.ndarray, predictions: np.ndarray, features: pd.DataFrame = None
-) -> dict[str, Any]:
+def analyze_prediction_errors(true_labels: np.ndarray, predictions: np.ndarray, features: pd.DataFrame = None) -> dict[str, Any]:
     """
     Analyze prediction errors to identify patterns.
 

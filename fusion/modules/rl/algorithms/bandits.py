@@ -72,9 +72,7 @@ def _save_model(
     :param trial: Trial number
     :type trial: int
     """
-    BanditModelPersistence.save_model(
-        state_values_dict, erlang, cores_per_link, save_dir, is_path, trial
-    )
+    BanditModelPersistence.save_model(state_values_dict, erlang, cores_per_link, save_dir, is_path, trial)
 
 
 def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None:
@@ -96,29 +94,21 @@ def save_model(iteration: int, algorithm: str, self: object, trial: int) -> None
     max_iters = bandit.engine_props["max_iters"]
     rewards_matrix = bandit.props.rewards_matrix
 
-    should_save = (
-        iteration % bandit.engine_props["save_step"] == 0 or iteration == max_iters - 1
-    ) and len(bandit.props.rewards_matrix[iteration]) == bandit.engine_props[
-        "num_requests"
-    ]
+    should_save = (iteration % bandit.engine_props["save_step"] == 0 or iteration == max_iters - 1) and len(
+        bandit.props.rewards_matrix[iteration]
+    ) == bandit.engine_props["num_requests"]
 
     if should_save:
         rewards_matrix = np.array(rewards_matrix)
         rewards_arr = rewards_matrix.mean(axis=0)
 
-        date_time_path = (
-            Path(bandit.engine_props["network"])
-            / bandit.engine_props["date"]
-            / bandit.engine_props["sim_start"]
-        )
+        date_time_path = Path(bandit.engine_props["network"]) / bandit.engine_props["date"] / bandit.engine_props["sim_start"]
         save_dir = Path("logs") / algorithm / date_time_path
         create_directory(directory_path=str(save_dir))
 
         erlang = bandit.engine_props["erlang"]
         cores_per_link = bandit.engine_props["cores_per_link"]
-        base_fp = _get_base_fp(
-            is_path=bandit.is_path, erlang=erlang, cores_per_link=cores_per_link
-        )
+        base_fp = _get_base_fp(is_path=bandit.is_path, erlang=erlang, cores_per_link=cores_per_link)
 
         rewards_fp = f"rewards_{base_fp}_t{trial + 1}_iter_{iteration}.npy"
         save_fp = Path.cwd() / save_dir / rewards_fp
@@ -170,9 +160,7 @@ def get_q_table(self: object) -> tuple[dict, dict]:
     return bandit.counts, bandit.values
 
 
-def _update_bandit(
-    self: object, iteration: int, reward: float, arm: int, algorithm: str, trial: int
-) -> None:
+def _update_bandit(self: object, iteration: int, reward: float, arm: int, algorithm: str, trial: int) -> None:
     """
     Update bandit values with new reward.
 
@@ -359,9 +347,7 @@ class UCBBandit:
 
         conf_param = self.engine_props["conf_param"]
         total_counts = sum(self.counts[state_action_pair])
-        ucb_values = self.values[state_action_pair] + np.sqrt(
-            conf_param * np.log(total_counts) / self.counts[state_action_pair]
-        )
+        ucb_values = self.values[state_action_pair] + np.sqrt(conf_param * np.log(total_counts) / self.counts[state_action_pair])
         return int(np.argmax(ucb_values))
 
     def select_path_arm(self, source: int, dest: int) -> int:

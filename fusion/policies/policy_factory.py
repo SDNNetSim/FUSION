@@ -137,10 +137,7 @@ class PolicyFactory:
 
         if policy_name not in HEURISTIC_POLICIES:
             available = ", ".join(HEURISTIC_POLICIES.keys())
-            raise ValueError(
-                f"Unknown heuristic policy: {policy_name}. "
-                f"Available: {available}"
-            )
+            raise ValueError(f"Unknown heuristic policy: {policy_name}. Available: {available}")
 
         policy_class = HEURISTIC_POLICIES[policy_name]
 
@@ -185,8 +182,7 @@ class PolicyFactory:
             k_paths=config.k_paths,
         )
 
-        logger.info("Created ML policy from %s with fallback %s",
-                    model_path.name, fallback.get_name())
+        logger.info("Created ML policy from %s with fallback %s", model_path.name, fallback.get_name())
         return policy
 
     @staticmethod
@@ -216,8 +212,7 @@ class PolicyFactory:
             k_paths=config.k_paths,
         )
 
-        logger.info("Created RL policy from %s (algorithm=%s)",
-                    model_path.name, config.algorithm)
+        logger.info("Created RL policy from %s (algorithm=%s)", model_path.name, config.algorithm)
         return policy
 
     @staticmethod

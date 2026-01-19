@@ -59,14 +59,9 @@ class ProtectedRoutingPipeline:
         self._node_disjoint = getattr(config, "node_disjoint_protection", False)
 
         # Create protection-aware strategy
-        self._strategy = ProtectionAwareStrategy(
-            node_disjoint=self._node_disjoint
-        )
+        self._strategy = ProtectionAwareStrategy(node_disjoint=self._node_disjoint)
 
-        logger.debug(
-            f"ProtectedRoutingPipeline initialized "
-            f"(node_disjoint={self._node_disjoint})"
-        )
+        logger.debug(f"ProtectedRoutingPipeline initialized (node_disjoint={self._node_disjoint})")
 
     def find_routes(
         self,
@@ -106,14 +101,10 @@ class ProtectedRoutingPipeline:
 
         # Handle forced path (from partial grooming)
         if forced_path is not None:
-            return self._handle_forced_path(
-                forced_path, source, destination, bandwidth_gbps, network_state
-            )
+            return self._handle_forced_path(forced_path, source, destination, bandwidth_gbps, network_state)
 
         # Find disjoint path pair
-        working, protection = self._strategy.find_disjoint_pair(
-            source, destination, bandwidth_gbps, network_state
-        )
+        working, protection = self._strategy.find_disjoint_pair(source, destination, bandwidth_gbps, network_state)
 
         # Check if we got valid paths
         if working.is_empty:
@@ -121,10 +112,7 @@ class ProtectedRoutingPipeline:
             return RouteResult.empty("protected_routing")
 
         if protection.is_empty:
-            logger.warning(
-                f"No protection path found from {source} to {destination}. "
-                f"Working path exists but protection unavailable."
-            )
+            logger.warning(f"No protection path found from {source} to {destination}. Working path exists but protection unavailable.")
             # Return working path without protection
             # Caller must decide whether to proceed without protection
             return RouteResult(
@@ -195,14 +183,10 @@ class ProtectedRoutingPipeline:
             exclude_links=frozenset(exclude_links),
             protection_mode=True,
         )
-        protection = self._strategy.select_routes(
-            source, destination, bandwidth_gbps, network_state, constraints
-        )
+        protection = self._strategy.select_routes(source, destination, bandwidth_gbps, network_state, constraints)
 
         if protection.is_empty:
-            logger.warning(
-                f"No protection path for forced path from {source} to {destination}"
-            )
+            logger.warning(f"No protection path for forced path from {source} to {destination}")
             return RouteResult(
                 paths=(path_tuple,),
                 weights_km=(weight_km,),
@@ -256,8 +240,6 @@ class ProtectedRoutingPipeline:
         valid_mods = [mod for mod, reach in default_reach.items() if weight_km <= reach]
 
         efficiency_order = ["64-QAM", "32-QAM", "16-QAM", "8-QAM", "QPSK", "BPSK"]
-        valid_mods.sort(
-            key=lambda m: efficiency_order.index(m) if m in efficiency_order else 99
-        )
+        valid_mods.sort(key=lambda m: efficiency_order.index(m) if m in efficiency_order else 99)
 
         return tuple(valid_mods) if valid_mods else ("BPSK",)

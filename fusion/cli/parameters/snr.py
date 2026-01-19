@@ -18,9 +18,7 @@ def add_snr_args(parser: argparse.ArgumentParser) -> None:
     :return: None
     :rtype: None
     """
-    parser.add_argument(
-        "--mod_assumption", type=str, help="Modulation format selection strategy"
-    )
+    parser.add_argument("--mod_assumption", type=str, help="Modulation format selection strategy")
     parser.add_argument(
         "--mod_assumption_path",
         type=str,
@@ -32,9 +30,7 @@ def add_snr_args(parser: argparse.ArgumentParser) -> None:
         choices=["linear", "nonlinear", "egn"],
         help="SNR calculation method",
     )
-    parser.add_argument(
-        "--input_power", type=float, default=None, help="Input power in Watts"
-    )
+    parser.add_argument("--input_power", type=float, default=None, help="Input power in Watts")
     parser.add_argument(
         "--egn_model",
         action="store_true",

@@ -36,12 +36,8 @@ class SDNPropsProxyForSpectrum:
     request_id: int = 0
     path_index: int = 0
     modulation_formats_dict: dict[str, Any] = field(default_factory=dict)
-    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(
-        default_factory=dict
-    )
-    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
-        default_factory=dict
-    )
+    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
+    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(default_factory=dict)
     block_reason: str | None = None
 
     # Grooming fields
@@ -260,7 +256,7 @@ class SpectrumAdapter(SpectrumPipeline):
 
             # Set path in spectrum_props (path is list of node IDs as strings)
             # Keep as strings to match network_spectrum_dict keys which are string tuples
-            legacy_spectrum.spectrum_props.path_list = list(path)
+            legacy_spectrum.spectrum_props.path_list = list(path)  # type: ignore[arg-type]
 
             # NOTE: Don't pre-set lightpath_bandwidth here - get_spectrum may clear it.
             # We set it AFTER get_spectrum as a fallback (matching legacy sdn_controller behavior).
@@ -274,10 +270,7 @@ class SpectrumAdapter(SpectrumPipeline):
                     mod_format_dict = mod_per_bw.get(str(slice_bandwidth), {})
                     # Filter out excluded modulations (v5.5 behavior: try lower mods on SNR fail)
                     if excluded_modulations:
-                        mod_format_dict = {
-                            k: v for k, v in mod_format_dict.items()
-                            if k not in excluded_modulations
-                        }
+                        mod_format_dict = {k: v for k, v in mod_format_dict.items() if k not in excluded_modulations}
                     result_mod, result_bw = legacy_spectrum.get_spectrum_dynamic_slicing(
                         _mod_format_list=[],
                         path_index=path_index,
@@ -409,8 +402,8 @@ class SpectrumAdapter(SpectrumPipeline):
             )
 
             # Set paths in spectrum_props (keep as strings to match network_spectrum_dict keys)
-            legacy_spectrum.spectrum_props.path_list = list(primary_path)
-            legacy_spectrum.spectrum_props.backup_path = list(backup_path)
+            legacy_spectrum.spectrum_props.path_list = list(primary_path)  # type: ignore[arg-type]
+            legacy_spectrum.spectrum_props.backup_path = list(backup_path)  # type: ignore[arg-type]
 
             # Call legacy get_spectrum with backup modulation
             legacy_spectrum.get_spectrum(

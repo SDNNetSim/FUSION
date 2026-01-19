@@ -85,9 +85,7 @@ def test_fail_node_adjacent_links(sample_topology: nx.Graph) -> None:
 def test_fail_srlg_valid(sample_topology: nx.Graph) -> None:
     """Test that valid SRLG failure works correctly."""
     srlg_links = [(0, 1), (2, 3), (5, 6)]
-    event = fail_srlg(
-        sample_topology, srlg_links=srlg_links, t_fail=10.0, t_repair=20.0
-    )
+    event = fail_srlg(sample_topology, srlg_links=srlg_links, t_fail=10.0, t_repair=20.0)
 
     assert event["failure_type"] == "srlg"
     assert len(event["failed_links"]) == 3
@@ -111,18 +109,14 @@ def test_fail_srlg_mixed_directions(sample_topology: nx.Graph) -> None:
     """Test that SRLG handles mixed link directions."""
     # Mix forward and reverse directions
     srlg_links = [(0, 1), (3, 2), (5, 6)]
-    event = fail_srlg(
-        sample_topology, srlg_links=srlg_links, t_fail=10.0, t_repair=20.0
-    )
+    event = fail_srlg(sample_topology, srlg_links=srlg_links, t_fail=10.0, t_repair=20.0)
 
     assert len(event["failed_links"]) == 3
 
 
 def test_fail_geo_valid(sample_topology: nx.Graph) -> None:
     """Test that valid geographic failure works correctly."""
-    event = fail_geo(
-        sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
-    )
+    event = fail_geo(sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0)
 
     assert event["failure_type"] == "geo"
     assert event["meta"]["center_node"] == 1
@@ -137,30 +131,22 @@ def test_fail_geo_valid(sample_topology: nx.Graph) -> None:
 def test_fail_geo_invalid_center_node(sample_topology: nx.Graph) -> None:
     """Test that invalid center node raises error."""
     with pytest.raises(FailureConfigError, match="does not exist"):
-        fail_geo(
-            sample_topology, center_node=99, hop_radius=2, t_fail=10.0, t_repair=20.0
-        )
+        fail_geo(sample_topology, center_node=99, hop_radius=2, t_fail=10.0, t_repair=20.0)
 
 
 def test_fail_geo_invalid_radius(sample_topology: nx.Graph) -> None:
     """Test that non-positive radius raises error."""
     with pytest.raises(FailureConfigError, match="must be positive"):
-        fail_geo(
-            sample_topology, center_node=1, hop_radius=0, t_fail=10.0, t_repair=20.0
-        )
+        fail_geo(sample_topology, center_node=1, hop_radius=0, t_fail=10.0, t_repair=20.0)
 
     with pytest.raises(FailureConfigError, match="must be positive"):
-        fail_geo(
-            sample_topology, center_node=1, hop_radius=-1, t_fail=10.0, t_repair=20.0
-        )
+        fail_geo(sample_topology, center_node=1, hop_radius=-1, t_fail=10.0, t_repair=20.0)
 
 
 def test_fail_geo_radius_calculation(sample_topology: nx.Graph) -> None:
     """Test that geographic failure correctly calculates affected nodes."""
     # Radius 1 from node 1
-    event = fail_geo(
-        sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
-    )
+    event = fail_geo(sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0)
     affected = event["meta"]["affected_nodes"]
 
     # Should include node 1 and its immediate neighbors (0, 2, 6)
@@ -176,12 +162,8 @@ def test_fail_geo_radius_calculation(sample_topology: nx.Graph) -> None:
 
 def test_fail_geo_increasing_radius(sample_topology: nx.Graph) -> None:
     """Test that larger radius affects more nodes."""
-    event1 = fail_geo(
-        sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
-    )
-    event2 = fail_geo(
-        sample_topology, center_node=1, hop_radius=2, t_fail=10.0, t_repair=20.0
-    )
+    event1 = fail_geo(sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0)
+    event2 = fail_geo(sample_topology, center_node=1, hop_radius=2, t_fail=10.0, t_repair=20.0)
 
     affected1 = len(event1["meta"]["affected_nodes"])
     affected2 = len(event2["meta"]["affected_nodes"])
@@ -192,9 +174,7 @@ def test_fail_geo_increasing_radius(sample_topology: nx.Graph) -> None:
 
 def test_fail_geo_links_with_endpoint_in_region(sample_topology: nx.Graph) -> None:
     """Test that links with at least one endpoint in region are failed."""
-    event = fail_geo(
-        sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0
-    )
+    event = fail_geo(sample_topology, center_node=1, hop_radius=1, t_fail=10.0, t_repair=20.0)
 
     failed_links = event["failed_links"]
     affected_nodes = set(event["meta"]["affected_nodes"])

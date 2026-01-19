@@ -182,9 +182,7 @@ class TestRLPolicySelectAction:
         mock_model.predict.return_value = (0, None)
 
         policy = RLPolicy(mock_model)
-        infeasible_options = [
-            create_path_option(path_index=i, is_feasible=False) for i in range(3)
-        ]
+        infeasible_options = [create_path_option(path_index=i, is_feasible=False) for i in range(3)]
 
         action = policy.select_action(mock_request(), infeasible_options, mock_network_state())
 
@@ -266,9 +264,7 @@ class TestRLPolicyActionMasking:
         # Check that action_masks was passed
         call_kwargs = mock_model.predict.call_args[1]
         assert "action_masks" in call_kwargs
-        np.testing.assert_array_equal(
-            call_kwargs["action_masks"], np.array([True, True, False])
-        )
+        np.testing.assert_array_equal(call_kwargs["action_masks"], np.array([True, True, False]))
 
 
 class TestRLPolicyUpdate:

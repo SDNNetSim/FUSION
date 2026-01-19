@@ -106,9 +106,7 @@ class TestBothEnvsUsable:
 
         # Create legacy (mocked since it requires full config)
         mock_env = MagicMock()
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ) as mock_simenv:
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env) as mock_simenv:
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 legacy_env = create_sim_env(config, env_type="legacy")
 
@@ -133,9 +131,7 @@ class TestBothEnvsUsable:
         mock_env.reset = MagicMock()
         mock_env.step = MagicMock()
 
-        with patch(
-            "fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env
-        ):
+        with patch("fusion.modules.rl.gymnasium_envs.SimEnv", return_value=mock_env):
             with patch.dict(os.environ, {"SUPPRESS_SIMENV_DEPRECATION": "1"}):
                 legacy_env = create_sim_env(config, env_type="legacy")
 

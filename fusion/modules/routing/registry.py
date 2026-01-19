@@ -57,9 +57,7 @@ class RoutingRegistry:
         }
 
         for algorithm_class in algorithm_classes:
-            algorithm_name = algorithm_name_mapping.get(
-                algorithm_class, algorithm_class.__name__.lower().replace("routing", "")
-            )
+            algorithm_name = algorithm_name_mapping.get(algorithm_class, algorithm_class.__name__.lower().replace("routing", ""))
             self.register(algorithm_name, algorithm_class)
 
     def register(self, name: str, algorithm_class: Any) -> None:
@@ -75,9 +73,7 @@ class RoutingRegistry:
         :raises ValueError: If name is already registered.
         """
         if not issubclass(algorithm_class, AbstractRoutingAlgorithm):
-            raise TypeError(
-                f"{algorithm_class.__name__} must implement AbstractRoutingAlgorithm"
-            )
+            raise TypeError(f"{algorithm_class.__name__} must implement AbstractRoutingAlgorithm")
 
         if name in self._algorithms:
             raise ValueError(f"Algorithm '{name}' is already registered")
@@ -95,10 +91,7 @@ class RoutingRegistry:
         :raises KeyError: If algorithm is not found.
         """
         if name not in self._algorithms:
-            raise KeyError(
-                f"Routing algorithm '{name}' not found. "
-                f"Available algorithms: {list(self._algorithms.keys())}"
-            )
+            raise KeyError(f"Routing algorithm '{name}' not found. Available algorithms: {list(self._algorithms.keys())}")
 
         return self._algorithms[name]
 
@@ -151,11 +144,7 @@ class RoutingRegistry:
             "class": algorithm_class.__name__,
             "module": algorithm_class.__module__,
             "supported_topologies": supported_topologies,
-            "description": (
-                algorithm_class.__doc__.strip()
-                if algorithm_class.__doc__
-                else "No description"
-            ),
+            "description": (algorithm_class.__doc__.strip() if algorithm_class.__doc__ else "No description"),
         }
 
     def validate_algorithm(self, name: str, topology: Any) -> Any:

@@ -52,9 +52,7 @@ def legacy_plot_wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         # Issue deprecation warning
-        legacy_deprecation_warning(
-            old_api=func.__name__, new_api="fusion.visualization.generate_plot"
-        )
+        legacy_deprecation_warning(old_api=func.__name__, new_api="fusion.visualization.generate_plot")
 
         # Call original function
         return func(*args, **kwargs)
@@ -93,9 +91,7 @@ class LegacyPlotAdapter:
             base_path: Base path for data files
             **kwargs: Additional legacy parameters
         """
-        legacy_deprecation_warning(
-            old_api="PlotStats", new_api="fusion.visualization.generate_plot"
-        )
+        legacy_deprecation_warning(old_api="PlotStats", new_api="fusion.visualization.generate_plot")
 
         self.sims_info_dict = sims_info_dict or {}
         self.base_path = base_path or Path("../../data/output")
@@ -159,9 +155,7 @@ class LegacyPlotAdapter:
         if "path_algorithm_matrix" in self.sims_info_dict:
             algos = self.sims_info_dict["path_algorithm_matrix"]
             if algos and len(algos) > 0:
-                params["algorithms"] = (
-                    algos[0] if isinstance(algos[0], list) else [algos[0]]
-                )
+                params["algorithms"] = algos[0] if isinstance(algos[0], list) else [algos[0]]
 
         # Extract traffic volumes (from erlangs or similar)
         if "erlangs" in self.sims_info_dict:
@@ -216,9 +210,7 @@ class LegacyPlotAdapter:
         result = self.use_case.execute(request)
 
         if not result.success:
-            warnings.warn(
-                f"Plot generation failed: {result.error_message}", stacklevel=2
-            )
+            warnings.warn(f"Plot generation failed: {result.error_message}", stacklevel=2)
 
         return result
 
@@ -262,9 +254,7 @@ class LegacyPlotAdapter:
         result = self.use_case.execute(request)
 
         if not result.success:
-            warnings.warn(
-                f"Plot generation failed: {result.error_message}", stacklevel=2
-            )
+            warnings.warn(f"Plot generation failed: {result.error_message}", stacklevel=2)
 
         return result
 
@@ -276,8 +266,7 @@ class LegacyPlotAdapter:
         as the new system handles saving automatically.
         """
         warnings.warn(
-            "The _save_plot method is deprecated. "
-            "Plots are now saved automatically by the new system.",
+            "The _save_plot method is deprecated. Plots are now saved automatically by the new system.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -330,9 +319,7 @@ class LegacyConfigAdapter:
             algorithms = combined_algorithms
 
         # Extract traffic volumes
-        traffic_volumes = legacy_config.get(
-            "traffic_volumes", [600, 700, 800, 900, 1000]
-        )
+        traffic_volumes = legacy_config.get("traffic_volumes", [600, 700, 800, 900, 1000])
 
         # Create request
         request = PlotRequestDTO(
@@ -345,9 +332,7 @@ class LegacyConfigAdapter:
             title=legacy_config.get("title", f"{plot_type_str.title()} Plot"),
             x_label=legacy_config.get("x_label", "Traffic Volume (Erlang)"),
             y_label=legacy_config.get("y_label", "Value"),
-            save_path=Path(
-                legacy_config.get("save_path", f"./figures/{plot_type_str}.png")
-            ),
+            save_path=Path(legacy_config.get("save_path", f"./figures/{plot_type_str}.png")),
             include_ci=legacy_config.get("include_ci", True),
         )
 
@@ -373,9 +358,7 @@ def legacy_find_times(
     Returns:
         Legacy-format sims_info_dict
     """
-    legacy_deprecation_warning(
-        old_api="find_times", new_api="SimulationRepository.find_runs"
-    )
+    legacy_deprecation_warning(old_api="find_times", new_api="SimulationRepository.find_runs")
 
     base_path = base_path or Path("../../data/output")
 

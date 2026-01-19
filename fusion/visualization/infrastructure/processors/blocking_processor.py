@@ -44,8 +44,7 @@ class BlockingProbabilityProcessor(DataProcessorPort):
         metric_name: str = "blocking_probability",
         traffic_volumes: list[float] | None = None,
         include_ci: bool = True,
-        run_data: dict[str, dict[float, CanonicalData]]
-        | None = None,  # Legacy alias for data
+        run_data: dict[str, dict[float, CanonicalData]] | None = None,  # Legacy alias for data
     ) -> ProcessedData:
         """
         Process blocking probability data.
@@ -73,10 +72,7 @@ class BlockingProbabilityProcessor(DataProcessorPort):
         if traffic_volumes is None:
             raise ValueError("traffic_volumes parameter must be provided")
 
-        logger.info(
-            f"Processing blocking probability for {len(runs)} runs "
-            f"across {len(traffic_volumes)} traffic volumes"
-        )
+        logger.info(f"Processing blocking probability for {len(runs)} runs across {len(traffic_volumes)} traffic volumes")
 
         try:
             # Group runs by algorithm
@@ -129,9 +125,7 @@ class BlockingProbabilityProcessor(DataProcessorPort):
                 errors=errors,
                 metadata={
                     "metric": metric_name,
-                    "num_runs_by_algorithm": {
-                        algo: len(runs) for algo, runs in runs_by_algorithm.items()
-                    },
+                    "num_runs_by_algorithm": {algo: len(runs) for algo, runs in runs_by_algorithm.items()},
                 },
             )
 
@@ -174,9 +168,7 @@ class BlockingProbabilityProcessor(DataProcessorPort):
                     values_array = np.array(values)
 
                     mean = float(np.mean(values_array))
-                    std = (
-                        float(np.std(values_array, ddof=1)) if len(values) > 1 else 0.0
-                    )
+                    std = float(np.std(values_array, ddof=1)) if len(values) > 1 else 0.0
 
                     # 95% confidence interval (1.96 * SEM)
                     sem = std / np.sqrt(len(values)) if len(values) > 0 else 0.0
@@ -192,9 +184,7 @@ class BlockingProbabilityProcessor(DataProcessorPort):
                         "max": float(np.max(values_array)),
                     }
                 else:
-                    logger.warning(
-                        f"No data for algorithm {algorithm} at traffic volume {tv}"
-                    )
+                    logger.warning(f"No data for algorithm {algorithm} at traffic volume {tv}")
 
             aggregated[algorithm] = tv_stats
 

@@ -113,37 +113,27 @@ def _process_required_options(
     for category, options_dict in required_dict.items():
         for option, type_obj in options_dict.items():
             if not config.has_option(category, option):
-                raise MissingRequiredOptionError(
-                    f"Missing required option '{option}' in section [{category}]"
-                )
+                raise MissingRequiredOptionError(f"Missing required option '{option}' in section [{category}]")
 
             config_value = config[category][option]
             # Convert the config value to the appropriate type
             try:
-                config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(
-                    config_value, type_obj, option
-                )
+                config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(config_value, type_obj, option)
                 type_converter = type_obj
             except ConfigTypeConversionError:
                 # Try fallback to optional_dict if available
                 if category in optional_dict and option in optional_dict[category]:
                     type_converter = optional_dict[category][option]
-                    config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(
-                        config_value, type_converter, option
-                    )
+                    config_dict[DEFAULT_THREAD_NAME][option] = safe_type_convert(config_value, type_converter, option)
                 else:
                     raise
 
             # Handle dictionary parameters
-            config_dict[DEFAULT_THREAD_NAME][option] = convert_dict_params_if_needed(
-                config_dict[DEFAULT_THREAD_NAME][option], option
-            )
+            config_dict[DEFAULT_THREAD_NAME][option] = convert_dict_params_if_needed(config_dict[DEFAULT_THREAD_NAME][option], option)
 
             # Apply CLI override if provided
             cli_value = args_dict.get(option)
-            final_value = apply_cli_override(
-                config_dict[DEFAULT_THREAD_NAME][option], cli_value, type_converter
-            )
+            final_value = apply_cli_override(config_dict[DEFAULT_THREAD_NAME][option], cli_value, type_converter)
             config_dict[DEFAULT_THREAD_NAME][option] = final_value
 
 
@@ -176,15 +166,11 @@ def _process_optional_options(
                     config_value = config[category][option]
                     converted_value = safe_type_convert(config_value, type_obj, option)
 
-                    converted_value = convert_dict_params_if_needed(
-                        converted_value, option
-                    )
+                    converted_value = convert_dict_params_if_needed(converted_value, option)
 
                     # Apply CLI override
                     cli_value = args_dict.get(option)
-                    final_value = apply_cli_override(
-                        converted_value, cli_value, type_obj
-                    )
+                    final_value = apply_cli_override(converted_value, cli_value, type_obj)
 
                     # Store in appropriate location (flat or nested)
                     if flatten_section:
@@ -226,9 +212,7 @@ def _resolve_config_path(config_path: str | None) -> str:
     return config_path
 
 
-def load_config(
-    config_path: str | None, args_dict: dict[str, Any] | None = None
-) -> dict[str, Any]:
+def load_config(config_path: str | None, args_dict: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Load an existing config from a config file.
 
@@ -313,15 +297,11 @@ def _setup_threads(
         config_dict = _copy_dict_vals(dest_key=new_thread, dictionary=config_dict)
 
         for key, value in config.items(new_thread):
-            category = _find_category(types_dict, key) or _find_category(
-                optional_dict, key
-            )
+            category = _find_category(types_dict, key) or _find_category(optional_dict, key)
             if category is None:
                 continue
 
-            type_obj = types_dict.get(category, {}).get(key) or optional_dict.get(
-                category, {}
-            ).get(key)
+            type_obj = types_dict.get(category, {}).get(key) or optional_dict.get(category, {}).get(key)
             if type_obj is None:
                 continue
 
@@ -330,9 +310,7 @@ def _setup_threads(
 
                 # Apply CLI override
                 cli_value = args_dict.get(key)
-                config_dict[new_thread][key] = apply_cli_override(
-                    converted_value, cli_value, type_obj
-                )
+                config_dict[new_thread][key] = apply_cli_override(converted_value, cli_value, type_obj)
             except ConfigTypeConversionError:
                 # Skip options that can't be converted in threads
                 continue
@@ -348,9 +326,7 @@ def _copy_dict_vals(dest_key: str, dictionary: dict[str, Any]) -> dict[str, Any]
 
 
 # NOTE: Keeping in config_setup.py as it's config-specific logic
-def _find_category(
-    category_dict: dict[str, dict[str, Any]], target_key: str
-) -> str | None:
+def _find_category(category_dict: dict[str, dict[str, Any]], target_key: str) -> str | None:
     """Find which category contains a given config key."""
     for category, subdict in category_dict.items():
         if target_key in subdict:
@@ -460,9 +436,7 @@ class ConfigManager:
             raise ConfigError(f"Failed to create ConfigManager: {e}") from e
 
     @classmethod
-    def from_file(
-        cls, config_path: str, args_dict: dict[str, Any] | None = None
-    ) -> "ConfigManager":
+    def from_file(cls, config_path: str, args_dict: dict[str, Any] | None = None) -> "ConfigManager":
         """
         Create ConfigManager from config file path.
 
@@ -499,9 +473,7 @@ class ConfigManager:
         result = self._config.get(thread, {})
         return result if result is not None else {}
 
-    def get_value(
-        self, key: str, thread: str = DEFAULT_THREAD_NAME, default: Any = None
-    ) -> Any:
+    def get_value(self, key: str, thread: str = DEFAULT_THREAD_NAME, default: Any = None) -> Any:
         """
         Get a specific configuration value.
 

@@ -70,9 +70,7 @@ def spectrum_obj() -> MagicMock:
 
 
 @pytest.fixture
-def slicing_manager(
-    engine_props: dict[str, Any], sdn_props: MagicMock, spectrum_obj: MagicMock
-) -> LightPathSlicingManager:
+def slicing_manager(engine_props: dict[str, Any], sdn_props: MagicMock, spectrum_obj: MagicMock) -> LightPathSlicingManager:
     """Provide LightPathSlicingManager instance for tests."""
     return LightPathSlicingManager(engine_props, sdn_props, spectrum_obj)
 
@@ -97,9 +95,7 @@ class TestLightPathSlicingManagerInit:
 class TestAllocateSlicing:
     """Tests for allocate_slicing method."""
 
-    def test_allocate_slicing_with_successful_allocation_yields_allocate(
-        self, slicing_manager: LightPathSlicingManager
-    ) -> None:
+    def test_allocate_slicing_with_successful_allocation_yields_allocate(self, slicing_manager: LightPathSlicingManager) -> None:
         """Test successful slicing allocation."""
         # Arrange
         num_segments = 2
@@ -108,11 +104,7 @@ class TestAllocateSlicing:
         bandwidth = "50"
 
         # Act
-        results = list(
-            slicing_manager.allocate_slicing(
-                num_segments, mod_format, path_list, bandwidth
-            )
-        )
+        results = list(slicing_manager.allocate_slicing(num_segments, mod_format, path_list, bandwidth))
 
         # Assert
         assert len(results) == 2
@@ -131,11 +123,7 @@ class TestAllocateSlicing:
         bandwidth = "50"
 
         # Act
-        results = list(
-            slicing_manager.allocate_slicing(
-                num_segments, mod_format, path_list, bandwidth
-            )
-        )
+        results = list(slicing_manager.allocate_slicing(num_segments, mod_format, path_list, bandwidth))
 
         # Assert
         assert len(results) == 1
@@ -195,9 +183,7 @@ class TestHandleStaticSlicingDirect:
         sdn_controller = MagicMock()
 
         # Act
-        result = slicing_manager.handle_static_slicing_direct(
-            path_list, forced_segments, sdn_controller
-        )
+        result = slicing_manager.handle_static_slicing_direct(path_list, forced_segments, sdn_controller)
 
         # Assert
         assert result is True
@@ -224,9 +210,7 @@ class TestHandleStaticSlicingDirect:
         sdn_controller._handle_congestion = MagicMock(side_effect=set_congestion_state)
 
         # Act
-        result = slicing_manager.handle_static_slicing_direct(
-            path_list, forced_segments, sdn_controller
-        )
+        result = slicing_manager.handle_static_slicing_direct(path_list, forced_segments, sdn_controller)
 
         # Assert
         assert result is False
@@ -247,9 +231,7 @@ class TestHandleDynamicSlicing:
         forced_segments = -1
 
         # Act & Assert
-        gen = slicing_manager.handle_dynamic_slicing(
-            path_list, path_index, forced_segments
-        )
+        gen = slicing_manager.handle_dynamic_slicing(path_list, path_index, forced_segments)
         with pytest.raises(
             NotImplementedError,
             match="Dynamic slicing for non-fixed grid is not implemented",
@@ -267,11 +249,7 @@ class TestHandleDynamicSlicing:
         forced_segments = -1
 
         # Act
-        results = list(
-            slicing_manager.handle_dynamic_slicing(
-                path_list, path_index, forced_segments
-            )
-        )
+        results = list(slicing_manager.handle_dynamic_slicing(path_list, path_index, forced_segments))
 
         # Assert
         assert len(results) > 0
@@ -302,9 +280,7 @@ class TestHandleDynamicSlicingDirect:
         sdn_controller._check_snr_after_allocation = MagicMock(return_value=True)
 
         # Act
-        result = slicing_manager.handle_dynamic_slicing_direct(
-            path_list, path_index, forced_segments, sdn_controller
-        )
+        result = slicing_manager.handle_dynamic_slicing_direct(path_list, path_index, forced_segments, sdn_controller)
 
         # Assert
         assert result is True
@@ -326,9 +302,7 @@ class TestHandleDynamicSlicingDirect:
         spectrum_obj.spectrum_props.is_free = True
         spectrum_obj.spectrum_props.modulation = "QPSK"
         # Mock get_spectrum_dynamic_slicing to return (mod_format, bandwidth) tuple
-        spectrum_obj.get_spectrum_dynamic_slicing = MagicMock(
-            return_value=("QPSK", 50)
-        )
+        spectrum_obj.get_spectrum_dynamic_slicing = MagicMock(return_value=("QPSK", 50))
         spectrum_obj._update_lightpath_status = MagicMock()
         path_list = [1, 2, 3]
         path_index = 0
@@ -337,9 +311,7 @@ class TestHandleDynamicSlicingDirect:
         sdn_controller._check_snr_after_allocation = MagicMock(return_value=True)
 
         # Act - flex-grid slicing is now implemented
-        result = slicing_manager.handle_dynamic_slicing_direct(
-            path_list, path_index, forced_segments, sdn_controller
-        )
+        result = slicing_manager.handle_dynamic_slicing_direct(path_list, path_index, forced_segments, sdn_controller)
 
         # Assert - should return a boolean (True/False) without raising error
         assert isinstance(result, bool)
@@ -360,9 +332,7 @@ class TestAllocateSlicingDirect:
         sdn_controller = MagicMock()
 
         # Act
-        slicing_manager.allocate_slicing_direct(
-            num_segments, mod_format, path_list, bandwidth, sdn_controller
-        )
+        slicing_manager.allocate_slicing_direct(num_segments, mod_format, path_list, bandwidth, sdn_controller)
 
         # Assert
         assert sdn_props.number_of_transponders == 2
@@ -393,9 +363,7 @@ class TestAllocateSlicingDirect:
         sdn_controller._handle_congestion = MagicMock(side_effect=set_congestion_state)
 
         # Act
-        slicing_manager.allocate_slicing_direct(
-            num_segments, mod_format, path_list, bandwidth, sdn_controller
-        )
+        slicing_manager.allocate_slicing_direct(num_segments, mod_format, path_list, bandwidth, sdn_controller)
 
         # Assert
         assert sdn_props.was_routed is False

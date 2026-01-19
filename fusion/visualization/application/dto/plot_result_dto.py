@@ -74,9 +74,7 @@ class PlotResultDTO:
             "traffic_volumes": self.traffic_volumes,
             "num_runs": self.num_runs,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "duration_seconds": self.duration_seconds,
             "error": self.error,
             "error_details": self.error_details,
@@ -141,12 +139,8 @@ class BatchPlotResultDTO:
             "total_count": self.total_count,
             "success_rate": self.success_rate,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
-            "duration_seconds": self.duration.total_seconds()
-            if self.duration
-            else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "duration_seconds": self.duration.total_seconds() if self.duration else None,
         }
 
 
@@ -235,9 +229,7 @@ class ComparisonResultDTO:
                     std_a=comp.std_b,
                     std_b=comp.std_a,
                     p_value=comp.p_value,
-                    test_statistic=-comp.test_statistic
-                    if comp.test_statistic
-                    else None,
+                    test_statistic=-comp.test_statistic if comp.test_statistic else None,
                     test_name=comp.test_name,
                     cohens_d=-comp.cohens_d if comp.cohens_d else None,
                     ci_lower_a=comp.ci_lower_b,
@@ -272,7 +264,5 @@ class ComparisonResultDTO:
             "output_path": str(self.output_path) if self.output_path else None,
             "success": self.success,
             "error": self.error,
-            "duration_seconds": self.duration.total_seconds()
-            if self.duration
-            else None,
+            "duration_seconds": self.duration.total_seconds() if self.duration else None,
         }

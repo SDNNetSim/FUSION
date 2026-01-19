@@ -125,9 +125,7 @@ def bc_model(monkeypatch: Any, tmp_path: Any) -> str:
         return model
 
     # Patch the _load_model method on BCPolicy
-    monkeypatch.setattr(
-        "fusion.modules.rl.policies.bc_policy.BCPolicy._load_model", mock_load_model
-    )
+    monkeypatch.setattr("fusion.modules.rl.policies.bc_policy.BCPolicy._load_model", mock_load_model)
     return str(model_path)
 
 
@@ -147,9 +145,7 @@ def iql_model(monkeypatch: Any, tmp_path: Any) -> str:
         return result
 
     # Patch the _load_model method on IQLPolicy
-    monkeypatch.setattr(
-        "fusion.modules.rl.policies.iql_policy.IQLPolicy._load_model", mock_load_model
-    )
+    monkeypatch.setattr("fusion.modules.rl.policies.iql_policy.IQLPolicy._load_model", mock_load_model)
     return str(model_path)
 
 
@@ -168,9 +164,7 @@ class TestBCPolicy:
         with pytest.raises(FileNotFoundError):
             BCPolicy("nonexistent_model.pt", device="cpu")
 
-    def test_bc_policy_respects_action_mask(
-        self, bc_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_bc_policy_respects_action_mask(self, bc_model: str, sample_state: dict[str, Any]) -> None:
         """Test that masked actions are not selected."""
         policy = BCPolicy(bc_model, device="cpu")
 
@@ -182,9 +176,7 @@ class TestBCPolicy:
         # Should select the only feasible path
         assert selected == 1
 
-    def test_bc_policy_state_tensor_format(
-        self, bc_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_bc_policy_state_tensor_format(self, bc_model: str, sample_state: dict[str, Any]) -> None:
         """Test that state dict converts to correct tensor shape."""
         policy = BCPolicy(bc_model, device="cpu")
 
@@ -193,9 +185,7 @@ class TestBCPolicy:
         # Expected: [1, input_dim] where input_dim = 5 + (5 * 3)
         assert tensor.shape == (1, 20)
 
-    def test_bc_policy_returns_negative_one_when_all_masked(
-        self, bc_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_bc_policy_returns_negative_one_when_all_masked(self, bc_model: str, sample_state: dict[str, Any]) -> None:
         """Test that -1 returned when all paths masked."""
         policy = BCPolicy(bc_model, device="cpu")
 
@@ -204,9 +194,7 @@ class TestBCPolicy:
         selected = policy.select_path(sample_state, action_mask)
         assert selected == -1
 
-    def test_bc_policy_forward_pass(
-        self, bc_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_bc_policy_forward_pass(self, bc_model: str, sample_state: dict[str, Any]) -> None:
         """Test that forward pass completes without errors."""
         policy = BCPolicy(bc_model, device="cpu")
 
@@ -238,9 +226,7 @@ class TestIQLPolicy:
         with pytest.raises(FileNotFoundError):
             IQLPolicy("nonexistent_model.pt", device="cpu")
 
-    def test_iql_policy_respects_action_mask(
-        self, iql_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_iql_policy_respects_action_mask(self, iql_model: str, sample_state: dict[str, Any]) -> None:
         """Test that masked actions are not selected."""
         policy = IQLPolicy(iql_model, device="cpu")
 
@@ -252,9 +238,7 @@ class TestIQLPolicy:
         # Should select the only feasible path
         assert selected == 0
 
-    def test_iql_policy_state_tensor_format(
-        self, iql_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_iql_policy_state_tensor_format(self, iql_model: str, sample_state: dict[str, Any]) -> None:
         """Test that state dict converts to correct tensor shape."""
         policy = IQLPolicy(iql_model, device="cpu")
 
@@ -263,9 +247,7 @@ class TestIQLPolicy:
         # Expected: [1, input_dim] where input_dim = 5 + (5 * 3)
         assert tensor.shape == (1, 20)
 
-    def test_iql_policy_returns_negative_one_when_all_masked(
-        self, iql_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_iql_policy_returns_negative_one_when_all_masked(self, iql_model: str, sample_state: dict[str, Any]) -> None:
         """Test that -1 returned when all paths masked."""
         policy = IQLPolicy(iql_model, device="cpu")
 
@@ -274,9 +256,7 @@ class TestIQLPolicy:
         selected = policy.select_path(sample_state, action_mask)
         assert selected == -1
 
-    def test_iql_policy_forward_pass(
-        self, iql_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_iql_policy_forward_pass(self, iql_model: str, sample_state: dict[str, Any]) -> None:
         """Test that forward pass completes without errors."""
         policy = IQLPolicy(iql_model, device="cpu")
 
@@ -287,9 +267,7 @@ class TestIQLPolicy:
 
         assert 0 <= selected < 3
 
-    def test_iql_policy_probability_renormalization(
-        self, iql_model: str, sample_state: dict[str, Any]
-    ) -> None:
+    def test_iql_policy_probability_renormalization(self, iql_model: str, sample_state: dict[str, Any]) -> None:
         """Test that probabilities renormalize after masking."""
         policy = IQLPolicy(iql_model, device="cpu")
 

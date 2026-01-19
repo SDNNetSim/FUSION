@@ -49,9 +49,7 @@ class V2DataAdapter(DataAdapter):
 
         # Check for V2 structure indicators
         has_metrics = "metrics" in data
-        has_iterations_list = "iterations" in data and isinstance(
-            data["iterations"], list
-        )
+        has_iterations_list = "iterations" in data and isinstance(data["iterations"], list)
 
         return has_metrics or has_iterations_list
 
@@ -104,19 +102,13 @@ class V2DataAdapter(DataAdapter):
         rl_data = raw_data.get("reinforcement_learning", {})
         rewards = rl_data.get("rewards", raw_data.get("rewards"))
         td_errors = rl_data.get("td_errors", raw_data.get("td_errors"))
-        episode_lengths = rl_data.get(
-            "episode_lengths", raw_data.get("episode_lengths")
-        )
+        episode_lengths = rl_data.get("episode_lengths", raw_data.get("episode_lengths"))
         q_values = rl_data.get("q_values")
 
         # Extract timing information
         timing = raw_data.get("timing", {})
-        sim_start_time = timing.get(
-            "start_time", metadata.get("sim_start_time", raw_data.get("sim_start_time"))
-        )
-        sim_end_time = timing.get(
-            "end_time", metadata.get("sim_end_time", raw_data.get("sim_end_time"))
-        )
+        sim_start_time = timing.get("start_time", metadata.get("sim_start_time", raw_data.get("sim_start_time")))
+        sim_end_time = timing.get("end_time", metadata.get("sim_end_time", raw_data.get("sim_end_time")))
         duration_seconds = timing.get("duration_seconds")
 
         # Extract network metrics

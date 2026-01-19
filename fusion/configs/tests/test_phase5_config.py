@@ -261,9 +261,7 @@ def full_phase5_config_file(full_phase5_config_content: str) -> Path:
 class TestBackwardCompatibility:
     """Tests for backward compatibility when P5.6 sections are absent."""
 
-    def test_load_config_without_phase5_sections(
-        self, minimal_config_file: Path
-    ) -> None:
+    def test_load_config_without_phase5_sections(self, minimal_config_file: Path) -> None:
         """Config loads successfully without policy/protection sections."""
         manager = ConfigManager()
         config = manager.load_config(str(minimal_config_file))
@@ -272,9 +270,7 @@ class TestBackwardCompatibility:
         assert config.general["holding_time"] == 0.2
         assert config.topology["network"] == "NSFNet"
 
-    def test_phase5_sections_absent_returns_empty_dicts(
-        self, minimal_config_file: Path
-    ) -> None:
+    def test_phase5_sections_absent_returns_empty_dicts(self, minimal_config_file: Path) -> None:
         """Missing P5.6 sections result in empty dicts in raw config."""
         manager = ConfigManager()
         manager.load_config(str(minimal_config_file))
@@ -361,9 +357,7 @@ class TestCLIOverride:
         # CLI should override
         assert manager._raw_config["policy_settings"]["policy_type"] == "ml"
 
-    def test_cli_overrides_heuristic_alpha(
-        self, full_phase5_config_file: Path
-    ) -> None:
+    def test_cli_overrides_heuristic_alpha(self, full_phase5_config_file: Path) -> None:
         """CLI heuristic_alpha overrides INI value."""
         manager = ConfigManager()
         manager.load_config(str(full_phase5_config_file))
@@ -378,9 +372,7 @@ class TestCLIOverride:
         # CLI should override
         assert manager._raw_config["heuristic_settings"]["alpha"] == 0.3
 
-    def test_cli_overrides_protection_enabled(
-        self, full_phase5_config_file: Path
-    ) -> None:
+    def test_cli_overrides_protection_enabled(self, full_phase5_config_file: Path) -> None:
         """CLI protection_enabled overrides INI value."""
         manager = ConfigManager()
         manager.load_config(str(full_phase5_config_file))
@@ -482,9 +474,7 @@ class TestCLIToConfigMapper:
 class TestPolicyFactoryIntegration:
     """Tests for config -> PolicyFactory integration."""
 
-    def test_create_heuristic_from_config(
-        self, full_phase5_config_file: Path
-    ) -> None:
+    def test_create_heuristic_from_config(self, full_phase5_config_file: Path) -> None:
         """PolicyFactory creates correct heuristic from config."""
         from fusion.policies import LoadBalancedPolicy, PolicyConfig, PolicyFactory
 
@@ -505,9 +495,7 @@ class TestPolicyFactoryIntegration:
         assert isinstance(policy, LoadBalancedPolicy)
         assert policy.alpha == 0.7
 
-    def test_create_default_policy_from_empty_config(
-        self, minimal_config_file: Path
-    ) -> None:
+    def test_create_default_policy_from_empty_config(self, minimal_config_file: Path) -> None:
         """PolicyFactory creates FirstFeasible when config has no policy section."""
         from fusion.policies import FirstFeasiblePolicy, PolicyConfig, PolicyFactory
 
@@ -563,9 +551,7 @@ class TestProtectionConfigIntegration:
         assert "protection_switchover_ms" in protection
         assert "restoration_latency_ms" in protection
 
-    def test_create_protection_pipeline_from_config(
-        self, full_phase5_config_file: Path
-    ) -> None:
+    def test_create_protection_pipeline_from_config(self, full_phase5_config_file: Path) -> None:
         """ProtectionPipeline created with correct disjointness from config."""
         from fusion.pipelines import DisjointnessType, ProtectionPipeline
 

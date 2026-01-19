@@ -32,16 +32,12 @@ class TestPPO:
         "fusion.modules.rl.algorithms.base_drl.get_observation_space",
         return_value={"a": 1},
     )
-    def test_get_obs_space_wraps_dict(
-        self, mock_get_obs: mock.MagicMock, mock_dict_space: mock.MagicMock
-    ) -> None:
+    def test_get_obs_space_wraps_dict(self, mock_get_obs: mock.MagicMock, mock_dict_space: mock.MagicMock) -> None:
         """get_obs_space returns gym Dict from helper output."""
         agent = self._mk_agent()
         result = agent.get_obs_space()
 
-        mock_get_obs.assert_called_once_with(
-            rl_props=agent.rl_props, engine_props=agent.engine_obj
-        )
+        mock_get_obs.assert_called_once_with(rl_props=agent.rl_props, engine_props=agent.engine_obj)
         mock_dict_space.assert_called_once_with({"a": 1})
         assert result is mock_dict_space.return_value
 

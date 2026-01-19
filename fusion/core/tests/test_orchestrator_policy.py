@@ -619,9 +619,7 @@ class TestProtectionGating:
             ["A", "D", "C"],
         )
         mock_protection.verify_disjointness.return_value = True
-        mock_protection.allocate_protected.return_value = MagicMock(
-            success=False, failure_reason="no_common_spectrum"
-        )
+        mock_protection.allocate_protected.return_value = MagicMock(success=False, failure_reason="no_common_spectrum")
 
         # Setup route result for fallback
         route_result = MagicMock()

@@ -42,12 +42,8 @@ class SDNPropsProxyForGrooming:
     bandwidth: float = 0.0
     request_id: int = 0
     arrive: float = 0.0
-    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(
-        default_factory=dict
-    )
-    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
-        default_factory=dict
-    )
+    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
+    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(default_factory=dict)
 
     # Lists populated by Grooming during allocation
     bandwidth_list: list[str] = field(default_factory=list)
@@ -199,20 +195,15 @@ class GroomingAdapter(GroomingPipeline):
             grooming_result = legacy_grooming.handle_grooming("arrival")
             was_fully_groomed = bool(grooming_result)  # Always bool for arrivals
 
-
             # CRITICAL: Sync grooming changes back to actual Lightpath objects
             # The legacy grooming code modifies lightpath_status_dict in place,
             # but in new architecture this is a rebuilt property. We must sync
             # remaining_bandwidth and requests_dict back to the domain model.
             if was_fully_groomed or sdn_props.was_partially_groomed:
-                self._sync_grooming_changes(
-                    network_state, sdn_props, request.request_id
-                )
+                self._sync_grooming_changes(network_state, sdn_props, request.request_id)
 
             # Convert results
-            return self._convert_grooming_result(
-                sdn_props, was_fully_groomed, request.bandwidth_gbps
-            )
+            return self._convert_grooming_result(sdn_props, was_fully_groomed, request.bandwidth_gbps)
 
         except Exception as e:
             logger.warning("GroomingAdapter.try_groom failed: %s", e)
@@ -291,9 +282,7 @@ class GroomingAdapter(GroomingPipeline):
         # Determine grooming outcome
         if was_fully_groomed:
             # Fully groomed - no new lightpath needed
-            bandwidth_groomed = sum(
-                int(float(bw)) for bw in sdn_props.bandwidth_list
-            ) if sdn_props.bandwidth_list else original_bandwidth
+            bandwidth_groomed = sum(int(float(bw)) for bw in sdn_props.bandwidth_list) if sdn_props.bandwidth_list else original_bandwidth
 
             return GroomingResult.full(
                 bandwidth_gbps=bandwidth_groomed,

@@ -205,16 +205,11 @@ class CLIToConfigMapper:
                         config["general_settings"] = {}
                     config["general_settings"][arg_name] = value
             except Exception as e:
-                raise ConfigTypeConversionError(
-                    f"Failed to map argument '{arg_name}' with value "
-                    f"'{value}': {str(e)}"
-                ) from e
+                raise ConfigTypeConversionError(f"Failed to map argument '{arg_name}' with value '{value}': {str(e)}") from e
 
         return config
 
-    def map_namespace_to_config(
-        self, args: argparse.Namespace
-    ) -> dict[str, dict[str, Any]]:
+    def map_namespace_to_config(self, args: argparse.Namespace) -> dict[str, dict[str, Any]]:
         """
         Map argparse Namespace to configuration structure.
 
@@ -230,13 +225,9 @@ class CLIToConfigMapper:
         try:
             return self.map_args_to_config(vars(args))
         except AttributeError as e:
-            raise AttributeError(
-                f"Invalid argparse.Namespace object provided: {str(e)}"
-            ) from e
+            raise AttributeError(f"Invalid argparse.Namespace object provided: {str(e)}") from e
 
-    def get_cli_override_config(
-        self, cli_args: dict[str, Any], base_config: dict[str, Any]
-    ) -> dict[str, Any]:
+    def get_cli_override_config(self, cli_args: dict[str, Any], base_config: dict[str, Any]) -> dict[str, Any]:
         """
         Get configuration with CLI arguments overriding base config.
 
@@ -259,9 +250,7 @@ class CLIToConfigMapper:
         """
         # Validate inputs
         if not isinstance(base_config, dict):
-            raise TypeError(
-                f"base_config must be a dictionary, got {type(base_config).__name__}"
-            )
+            raise TypeError(f"base_config must be a dictionary, got {type(base_config).__name__}")
 
         # Start with deep copy of base config to avoid modifying original
         result: dict[str, Any] = {}

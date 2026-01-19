@@ -46,6 +46,7 @@ class NetworkStateLike(Protocol):
         """Get link spectrum for a link."""
         ...
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -201,12 +202,8 @@ class ProtectionPipeline:
         4. Return allocation details
         """
         # Get spectrum availability on both paths
-        primary_available = self._get_path_spectrum_availability(
-            primary_path, network_state, core, band
-        )
-        backup_available = self._get_path_spectrum_availability(
-            backup_path, network_state, core, band
-        )
+        primary_available = self._get_path_spectrum_availability(primary_path, network_state, core, band)
+        backup_available = self._get_path_spectrum_availability(backup_path, network_state, core, band)
 
         if primary_available is None or backup_available is None:
             return ProtectedAllocationResult.no_common_spectrum()
@@ -218,18 +215,12 @@ class ProtectionPipeline:
         start_slot = self._find_first_fit_block(common_free, slots_needed)
 
         if start_slot < 0:
-            logger.debug(
-                f"No common spectrum block of {slots_needed} slots "
-                f"available on both paths"
-            )
+            logger.debug(f"No common spectrum block of {slots_needed} slots available on both paths")
             return ProtectedAllocationResult.no_common_spectrum()
 
         end_slot = start_slot + slots_needed
 
-        logger.debug(
-            f"Protected allocation: slots [{start_slot}:{end_slot}] "
-            f"on primary {primary_path} and backup {backup_path}"
-        )
+        logger.debug(f"Protected allocation: slots [{start_slot}:{end_slot}] on primary {primary_path} and backup {backup_path}")
 
         return ProtectedAllocationResult.allocated(start_slot, end_slot)
 

@@ -18,9 +18,7 @@ def add_config_args(parser: argparse.ArgumentParser) -> None:
     :return: None
     :rtype: None
     """
-    parser.add_argument(
-        "--config_path", type=str, required=True, help="Path to INI configuration file"
-    )
+    parser.add_argument("--config_path", type=str, required=True, help="Path to INI configuration file")
     parser.add_argument(
         "--run_id",
         type=str,
@@ -41,9 +39,7 @@ def add_debug_args(parser: argparse.ArgumentParser) -> None:
     :return: None
     :rtype: None
     """
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
 
@@ -60,30 +56,18 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     parser.add_argument("--output_dir", type=str, help="Directory to save output files")
-    parser.add_argument(
-        "--save_results", action="store_true", help="Save simulation results to file"
-    )
-    parser.add_argument(
-        "--save_snapshots", action="store_true", help="Save simulation snapshots"
-    )
-    parser.add_argument(
-        "--snapshot_step", type=int, help="Step interval for saving snapshots"
-    )
-    parser.add_argument(
-        "--print_step", type=int, help="Step interval for printing progress"
-    )
-    parser.add_argument(
-        "--save_step", type=int, help="Step interval for saving results"
-    )
+    parser.add_argument("--save_results", action="store_true", help="Save simulation results to file")
+    parser.add_argument("--save_snapshots", action="store_true", help="Save simulation snapshots")
+    parser.add_argument("--snapshot_step", type=int, help="Step interval for saving snapshots")
+    parser.add_argument("--print_step", type=int, help="Step interval for printing progress")
+    parser.add_argument("--save_step", type=int, help="Step interval for saving results")
     parser.add_argument(
         "--save_start_end_slots",
         action="store_true",
         help="Save start and end slots information",
     )
     parser.add_argument("--file_type", type=str, help="Output file format type")
-    parser.add_argument(
-        "--filter_mods", action="store_true", help="Enable modulation filtering"
-    )
+    parser.add_argument("--filter_mods", action="store_true", help="Enable modulation filtering")
 
 
 # TODO (v6.1.0): Plotting functionality is not currently supported. These arguments

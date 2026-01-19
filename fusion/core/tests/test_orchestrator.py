@@ -84,9 +84,7 @@ def orchestrator(mock_config: MagicMock, mock_pipelines: MagicMock) -> SDNOrches
 class TestSDNOrchestratorInit:
     """Tests for SDNOrchestrator initialization."""
 
-    def test_init_stores_config(
-        self, mock_config: MagicMock, mock_pipelines: MagicMock
-    ) -> None:
+    def test_init_stores_config(self, mock_config: MagicMock, mock_pipelines: MagicMock) -> None:
         """Orchestrator stores config reference."""
         from fusion.core.orchestrator import SDNOrchestrator
 
@@ -94,9 +92,7 @@ class TestSDNOrchestratorInit:
 
         assert orchestrator.config is mock_config
 
-    def test_init_extracts_pipelines(
-        self, mock_config: MagicMock, mock_pipelines: MagicMock
-    ) -> None:
+    def test_init_extracts_pipelines(self, mock_config: MagicMock, mock_pipelines: MagicMock) -> None:
         """Orchestrator extracts pipelines from PipelineSet."""
         from fusion.core.orchestrator import SDNOrchestrator
 
@@ -108,9 +104,7 @@ class TestSDNOrchestratorInit:
         assert orchestrator.snr is mock_pipelines.snr
         assert orchestrator.slicing is mock_pipelines.slicing
 
-    def test_init_does_not_store_network_state(
-        self, mock_config: MagicMock, mock_pipelines: MagicMock
-    ) -> None:
+    def test_init_does_not_store_network_state(self, mock_config: MagicMock, mock_pipelines: MagicMock) -> None:
         """Orchestrator does not have network_state attribute."""
         from fusion.core.orchestrator import SDNOrchestrator
 
@@ -751,6 +745,7 @@ class TestHandleRelease:
         # Simulate release_bandwidth clearing the allocation
         def release_bw_side_effect(*args: Any, **kwargs: Any) -> None:
             mock_lp.request_allocations = {}
+
         mock_lp.release_bandwidth.side_effect = release_bw_side_effect
 
         mock_network_state.get_lightpath.return_value = mock_lp

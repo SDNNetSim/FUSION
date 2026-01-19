@@ -107,9 +107,7 @@ class SNRvsDistancePlotRenderer(BaseRenderer):
                 # Add confidence interval if available
                 if std is not None:
                     color = line[0].get_color()
-                    ax.fill_between(
-                        distances, snr - std, snr + std, alpha=0.2, color=color
-                    )
+                    ax.fill_between(distances, snr - std, snr + std, alpha=0.2, color=color)
 
         # Add SNR threshold lines if specified
         if "snr_threshold" in specification.metadata:
@@ -125,9 +123,7 @@ class SNRvsDistancePlotRenderer(BaseRenderer):
         # Styling
         ax.set_xlabel(specification.x_label or "Distance (km)", fontsize=12)
         ax.set_ylabel(specification.y_label or "SNR (dB)", fontsize=12)
-        ax.set_title(
-            specification.title or "SNR vs Distance", fontsize=14, fontweight="bold"
-        )
+        ax.set_title(specification.title or "SNR vs Distance", fontsize=14, fontweight="bold")
         ax.legend(loc="best", frameon=True, shadow=True)
         ax.grid(True, alpha=0.3)
 

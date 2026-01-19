@@ -125,15 +125,9 @@ def add_filtering_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     filter_group = parser.add_argument_group("Filtering Configuration")
-    filter_group.add_argument(
-        "--filter_mods", action="store_true", help="Filter results by modulation format"
-    )
-    filter_group.add_argument(
-        "--min_erlang", type=float, help="Minimum Erlang load to include in analysis"
-    )
-    filter_group.add_argument(
-        "--max_erlang", type=float, help="Maximum Erlang load to include in analysis"
-    )
+    filter_group.add_argument("--filter_mods", action="store_true", help="Filter results by modulation format")
+    filter_group.add_argument("--min_erlang", type=float, help="Minimum Erlang load to include in analysis")
+    filter_group.add_argument("--max_erlang", type=float, help="Maximum Erlang load to include in analysis")
 
 
 def add_comparison_args(parser: argparse.ArgumentParser) -> None:
@@ -149,12 +143,8 @@ def add_comparison_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     comparison_group = parser.add_argument_group("Comparison Configuration")
-    comparison_group.add_argument(
-        "--compare_runs", type=str, nargs="+", help="List of run IDs to compare"
-    )
-    comparison_group.add_argument(
-        "--baseline_run", type=str, help="Run ID to use as baseline for comparison"
-    )
+    comparison_group.add_argument("--compare_runs", type=str, nargs="+", help="List of run IDs to compare")
+    comparison_group.add_argument("--baseline_run", type=str, help="Run ID to use as baseline for comparison")
     comparison_group.add_argument(
         "--metrics",
         type=str,

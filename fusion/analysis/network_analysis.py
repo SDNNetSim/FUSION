@@ -60,9 +60,7 @@ class NetworkAnalyzer:
         return usage_summary
 
     @staticmethod
-    def analyze_network_congestion(
-        network_spectrum: dict, specific_paths: list | None = None
-    ) -> dict[str, Any]:
+    def analyze_network_congestion(network_spectrum: dict, specific_paths: list | None = None) -> dict[str, Any]:
         """
         Analyze network congestion levels.
 
@@ -95,12 +93,8 @@ class NetworkAnalyzer:
             "total_guard_slots": total_guard_slots,
             "active_requests": len(active_requests),
             "links_analyzed": links_analyzed,
-            "avg_occupied_per_link": (
-                total_occupied_slots / links_analyzed if links_analyzed > 0 else 0
-            ),
-            "avg_guard_per_link": (
-                total_guard_slots / links_analyzed if links_analyzed > 0 else 0
-            ),
+            "avg_occupied_per_link": (total_occupied_slots / links_analyzed if links_analyzed > 0 else 0),
+            "avg_guard_per_link": (total_guard_slots / links_analyzed if links_analyzed > 0 else 0),
         }
 
     @staticmethod
@@ -141,24 +135,16 @@ class NetworkAnalyzer:
 
         return {
             "overall_utilization": overall_utilization,
-            "average_link_utilization": (
-                float(np.mean(link_utilization_list)) if link_utilization_list else 0.0
-            ),
-            "max_link_utilization": (
-                float(np.max(link_utilization_list)) if link_utilization_list else 0.0
-            ),
-            "min_link_utilization": (
-                float(np.min(link_utilization_list)) if link_utilization_list else 0.0
-            ),
+            "average_link_utilization": (float(np.mean(link_utilization_list)) if link_utilization_list else 0.0),
+            "max_link_utilization": (float(np.max(link_utilization_list)) if link_utilization_list else 0.0),
+            "min_link_utilization": (float(np.min(link_utilization_list)) if link_utilization_list else 0.0),
             "total_slots": total_slots,
             "occupied_slots": occupied_slots,
             "links_processed": len(processed_links),
         }
 
     @staticmethod
-    def identify_bottleneck_links(
-        network_spectrum: dict, threshold: float = 0.8
-    ) -> list:
+    def identify_bottleneck_links(network_spectrum: dict, threshold: float = 0.8) -> list:
         """
         Identify links that are above a utilization threshold.
 

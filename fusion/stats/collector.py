@@ -115,9 +115,7 @@ class StatsCollector:
     # =========================================================================
     # Block Reasons (uses string keys for legacy compatibility)
     # =========================================================================
-    block_reasons: dict[str, int] = field(
-        default_factory=lambda: defaultdict(int)
-    )
+    block_reasons: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     # =========================================================================
     # Feature Tracking
@@ -130,9 +128,7 @@ class StatsCollector:
     # =========================================================================
     # Modulation Tracking
     # =========================================================================
-    modulations_used: dict[str, int] = field(
-        default_factory=lambda: defaultdict(int)
-    )
+    modulations_used: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     # =========================================================================
     # SNR Tracking
@@ -162,16 +158,12 @@ class StatsCollector:
     # =========================================================================
     # Core Usage Tracking
     # =========================================================================
-    core_usage: dict[int, int] = field(
-        default_factory=lambda: defaultdict(int)
-    )
+    core_usage: dict[int, int] = field(default_factory=lambda: defaultdict(int))
 
     # =========================================================================
     # Band Usage Tracking
     # =========================================================================
-    band_usage: dict[str, int] = field(
-        default_factory=lambda: defaultdict(int)
-    )
+    band_usage: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     # =========================================================================
     # Crosstalk (XT) Tracking (from StatsProps.crosstalk_list)
@@ -430,9 +422,7 @@ class StatsCollector:
             if result.protection_result.switchover_triggered:
                 self.switchover_count += 1
                 if result.protection_result.switchover_time_ms:
-                    self.switchover_times.append(
-                        result.protection_result.switchover_time_ms
-                    )
+                    self.switchover_times.append(result.protection_result.switchover_time_ms)
             if not result.protection_result.is_fully_protected and result.is_protected:
                 self.protection_failures += 1
 
@@ -558,60 +548,48 @@ class StatsCollector:
             # Primary metrics
             "blocking_probability": self.blocking_probability,
             "success_rate": self.success_rate,
-
             # Request counts
             "total_requests": self.total_requests,
             "successful_requests": self.successful_requests,
             "blocked_requests": self.blocked_requests,
-
             # Block reasons (convert defaultdict to regular dict)
             "block_reasons": dict(self.block_reasons),
-
             # Feature ratios
             "grooming_ratio": self.grooming_ratio,
             "slicing_ratio": self.slicing_ratio,
             "protection_ratio": self.protection_ratio,
-
             # Feature counts
             "groomed_requests": self.groomed_requests,
             "partially_groomed_requests": self.partially_groomed_requests,
             "sliced_requests": self.sliced_requests,
             "protected_requests": self.protected_requests,
-
             # Modulation usage (convert defaultdict to regular dict)
             "modulations_used": dict(self.modulations_used),
-
             # SNR metrics
             "average_snr": self.average_snr,
             "min_snr": self.min_snr,
             "max_snr": self.max_snr,
             "snr_values": self.snr_values.copy(),  # Copy to prevent mutation
-
             # Bandwidth metrics
             "bandwidth_utilization": self.bandwidth_utilization,
             "total_bandwidth_requested_gbps": self.total_bandwidth_requested_gbps,
             "total_bandwidth_allocated_gbps": self.total_bandwidth_allocated_gbps,
-
             # Path metrics
             "average_hop_count": self.average_hop_count,
             "average_path_length_km": self.average_path_length_km,
             "hop_counts": self.hop_counts.copy(),
             "path_lengths_km": self.path_lengths_km.copy(),
-
             # Core and band usage
             "core_usage": dict(self.core_usage),
             "band_usage": dict(self.band_usage),
-
             # Crosstalk metrics
             "xt_values": self.xt_values.copy(),
             "average_xt": sum(self.xt_values) / len(self.xt_values) if self.xt_values else 0.0,
-
             # Protection metrics
             "switchover_count": self.switchover_count,
             "protection_failures": self.protection_failures,
             "failure_induced_blocks": self.failure_induced_blocks,
             "switchover_times": self.switchover_times.copy(),
-
             # Configuration context
             "config": {
                 "network_name": self.config.network_name,
@@ -641,11 +619,7 @@ class StatsCollector:
         return {
             # Match legacy key names
             "simulation_blocking_list": [self.blocking_probability],
-            "simulation_bitrate_blocking_list": [
-                1.0 - self.bandwidth_utilization
-                if self.total_bandwidth_requested_gbps > 0
-                else 0.0
-            ],
+            "simulation_bitrate_blocking_list": [1.0 - self.bandwidth_utilization if self.total_bandwidth_requested_gbps > 0 else 0.0],
             "block_reasons_dict": dict(self.block_reasons),
             "modulations_used_dict": dict(self.modulations_used),
             "snr_list": self.snr_values.copy(),

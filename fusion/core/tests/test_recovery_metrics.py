@@ -106,9 +106,7 @@ class TestRecoveryStatistics:
         assert recovery_stats["max_ms"] == 0.0
         assert recovery_stats["count"] == 0
 
-    def test_get_recovery_stats_single_event(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_get_recovery_stats_single_event(self, stats_with_recovery: SimStats) -> None:
         """Test recovery stats with single event."""
         stats = stats_with_recovery
 
@@ -120,9 +118,7 @@ class TestRecoveryStatistics:
         assert recovery_stats["max_ms"] == 50.0
         assert recovery_stats["count"] == 1
 
-    def test_get_recovery_stats_multiple_events(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_get_recovery_stats_multiple_events(self, stats_with_recovery: SimStats) -> None:
         """Test recovery stats with multiple events."""
         stats = stats_with_recovery
 
@@ -173,9 +169,7 @@ class TestRecoveryStatistics:
 class TestFailureWindowBP:
     """Test suite for failure window blocking probability."""
 
-    def test_compute_failure_window_bp_no_blocks(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_compute_failure_window_bp_no_blocks(self, stats_with_recovery: SimStats) -> None:
         """Test failure window BP with no blocks."""
         stats = stats_with_recovery
 
@@ -194,9 +188,7 @@ class TestFailureWindowBP:
         assert bp == 0.0
         assert len(stats.failure_window_bp) == 1
 
-    def test_compute_failure_window_bp_with_blocks(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_compute_failure_window_bp_with_blocks(self, stats_with_recovery: SimStats) -> None:
         """Test failure window BP with blocked requests."""
         stats = stats_with_recovery
 
@@ -215,9 +207,7 @@ class TestFailureWindowBP:
         # Expected: 50 blocks / 1000 arrivals = 0.05
         assert bp == pytest.approx(0.05, rel=0.01)
 
-    def test_compute_failure_window_bp_window_size(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_compute_failure_window_bp_window_size(self, stats_with_recovery: SimStats) -> None:
         """Test that window size parameter is respected."""
         stats = stats_with_recovery
         stats.failure_window_size = 500  # Set smaller window
@@ -236,9 +226,7 @@ class TestFailureWindowBP:
         # Only first 500 arrivals after failure: 50 blocks / 500 arrivals = 0.1
         assert bp == pytest.approx(0.1, rel=0.01)
 
-    def test_compute_failure_window_bp_at_end(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_compute_failure_window_bp_at_end(self, stats_with_recovery: SimStats) -> None:
         """Test failure window BP when failure is near end of simulation."""
         stats = stats_with_recovery
 
@@ -261,9 +249,7 @@ class TestFailureWindowBP:
 class TestFailureWindowStatistics:
     """Test suite for failure window statistics."""
 
-    def test_get_failure_window_stats_empty(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_get_failure_window_stats_empty(self, stats_with_recovery: SimStats) -> None:
         """Test failure window stats with no data."""
         stats = stats_with_recovery
         window_stats = stats.get_failure_window_stats()
@@ -272,9 +258,7 @@ class TestFailureWindowStatistics:
         assert window_stats["p95"] == 0.0
         assert window_stats["count"] == 0
 
-    def test_get_failure_window_stats_single(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_get_failure_window_stats_single(self, stats_with_recovery: SimStats) -> None:
         """Test failure window stats with single measurement."""
         stats = stats_with_recovery
 
@@ -293,9 +277,7 @@ class TestFailureWindowStatistics:
         assert window_stats["p95"] == pytest.approx(0.1, rel=0.01)
         assert window_stats["count"] == 1
 
-    def test_get_failure_window_stats_multiple(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_get_failure_window_stats_multiple(self, stats_with_recovery: SimStats) -> None:
         """Test failure window stats with multiple measurements."""
         stats = stats_with_recovery
 
@@ -344,9 +326,7 @@ class TestRecoveryCSVExport:
         assert csv_row["bp_window_fail_p95"] == 0.0
         assert csv_row["failure_window_count"] == 0
 
-    def test_get_recovery_csv_row_with_data(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_get_recovery_csv_row_with_data(self, stats_with_recovery: SimStats) -> None:
         """Test CSV export with recovery data."""
         stats = stats_with_recovery
 
@@ -390,9 +370,7 @@ class TestRecoveryCSVExport:
 class TestIntegration:
     """Integration tests for recovery tracking."""
 
-    def test_full_recovery_tracking_workflow(
-        self, stats_with_recovery: SimStats
-    ) -> None:
+    def test_full_recovery_tracking_workflow(self, stats_with_recovery: SimStats) -> None:
         """Test complete recovery tracking workflow."""
         stats = stats_with_recovery
 

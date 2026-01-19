@@ -69,9 +69,7 @@ def create_input(base_fp: str, engine_props: dict) -> dict:
             pass
         time.sleep(0.5)
     else:
-        raise RuntimeError(
-            f"File {save_path} is empty or invalid after multiple attempts"
-        )
+        raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
 
     network_dict, core_nodes_list = create_network(
         base_fp=os.path.join(PROJECT_ROOT, base_fp),

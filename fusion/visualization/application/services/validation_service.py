@@ -78,10 +78,7 @@ class ValidationService:
         if "network" not in config:
             errors.append("Missing required field: network")
         elif config["network"] not in self.VALID_NETWORKS:
-            warnings.append(
-                f"Unknown network: {config['network']}. "
-                f"Valid networks: {', '.join(self.VALID_NETWORKS)}"
-            )
+            warnings.append(f"Unknown network: {config['network']}. Valid networks: {', '.join(self.VALID_NETWORKS)}")
 
         if "dates" not in config:
             errors.append("Missing required field: dates")
@@ -96,10 +93,7 @@ class ValidationService:
         if "plot_type" not in config:
             errors.append("Missing required field: plot_type")
         elif config["plot_type"] not in self.VALID_PLOT_TYPES:
-            errors.append(
-                f"Invalid plot_type: {config['plot_type']}. "
-                f"Valid types: {', '.join(self.VALID_PLOT_TYPES)}"
-            )
+            errors.append(f"Invalid plot_type: {config['plot_type']}. Valid types: {', '.join(self.VALID_PLOT_TYPES)}")
 
         # Optional fields validation
         if "algorithms" in config:
@@ -117,27 +111,19 @@ class ValidationService:
                 # Check for valid values
                 for tv in config["traffic_volumes"]:
                     if not isinstance(tv, (int, float)) or tv <= 0:
-                        errors.append(
-                            f"Invalid traffic volume: {tv} (must be positive number)"
-                        )
+                        errors.append(f"Invalid traffic volume: {tv} (must be positive number)")
 
         # Output configuration
         if "save_path" in config:
             save_path = Path(config["save_path"])
             parent = save_path.parent
             if not parent.exists():
-                warnings.append(
-                    f"Output directory does not exist: {parent} "
-                    "(will be created automatically)"
-                )
+                warnings.append(f"Output directory does not exist: {parent} (will be created automatically)")
 
         if "format" in config:
             fmt = config["format"]
             if fmt not in self.VALID_FORMATS:
-                errors.append(
-                    f"Invalid format: {fmt}. "
-                    f"Valid formats: {', '.join(self.VALID_FORMATS)}"
-                )
+                errors.append(f"Invalid format: {fmt}. Valid formats: {', '.join(self.VALID_FORMATS)}")
 
         if "dpi" in config:
             dpi = config["dpi"]
@@ -154,9 +140,7 @@ class ValidationService:
                 or len(figsize) != 2
                 or not all(isinstance(x, (int, float)) and x > 0 for x in figsize)
             ):
-                errors.append(
-                    "Invalid figsize: must be (width, height) with positive numbers"
-                )
+                errors.append("Invalid figsize: must be (width, height) with positive numbers")
 
         is_valid = len(errors) == 0
 
@@ -217,10 +201,7 @@ class ValidationService:
             if not isinstance(max_workers, int) or max_workers < 1:
                 errors.append("max_workers must be positive integer")
             elif max_workers > 16:
-                warnings.append(
-                    f"High max_workers value: {max_workers} "
-                    "(may cause resource contention)"
-                )
+                warnings.append(f"High max_workers value: {max_workers} (may cause resource contention)")
 
         is_valid = len(errors) == 0
 
@@ -266,9 +247,7 @@ class ValidationService:
         if "confidence_level" in config:
             cl = config["confidence_level"]
             if not isinstance(cl, (int, float)) or not (0 < cl < 1):
-                errors.append(
-                    "confidence_level must be between 0 and 1 (e.g., 0.95 for 95%)"
-                )
+                errors.append("confidence_level must be between 0 and 1 (e.g., 0.95 for 95%)")
 
         is_valid = len(errors) == 0
 
@@ -294,14 +273,10 @@ class ValidationService:
             if "network" in error.lower():
                 suggestions["network"] = f"Use one of: {', '.join(self.VALID_NETWORKS)}"
             elif "plot_type" in error.lower():
-                suggestions["plot_type"] = (
-                    f"Use one of: {', '.join(self.VALID_PLOT_TYPES)}"
-                )
+                suggestions["plot_type"] = f"Use one of: {', '.join(self.VALID_PLOT_TYPES)}"
             elif "dates" in error.lower():
                 suggestions["dates"] = 'Use MMDD format, e.g., ["0606", "0611"]'
             elif "traffic_volumes" in error.lower():
-                suggestions["traffic_volumes"] = (
-                    "Use list of positive numbers, e.g., [600, 700, 800]"
-                )
+                suggestions["traffic_volumes"] = "Use list of positive numbers, e.g., [600, 700, 800]"
 
         return suggestions

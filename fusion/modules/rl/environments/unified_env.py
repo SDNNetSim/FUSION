@@ -177,14 +177,10 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
         self._is_training = is_training
 
         # Determine operating mode
-        self._wired_mode = (
-            engine is not None and orchestrator is not None and adapter is not None
-        )
+        self._wired_mode = engine is not None and orchestrator is not None and adapter is not None
 
         # Determine if using non-DRL path selection (bandits, Q-learning)
-        self._use_rl_agent = path_agent is not None and (
-            "bandit" in path_algorithm or path_algorithm == "q_learning"
-        )
+        self._use_rl_agent = path_agent is not None and ("bandit" in path_algorithm or path_algorithm == "q_learning")
 
         # Initialize observation and action spaces
         self._setup_spaces()
@@ -646,9 +642,7 @@ class UnifiedSimEnv(gym.Env[dict[str, np.ndarray], int]):
             bandwidth = int(self.np_random.choice(bandwidth_options))
 
             # Generate holding time (exponential distribution)
-            holding_time = float(
-                self.np_random.exponential(max_holding_time / 2)
-            )
+            holding_time = float(self.np_random.exponential(max_holding_time / 2))
             holding_time = min(holding_time, max_holding_time)
 
             # Generate inter-arrival time (Poisson process)
@@ -1380,4 +1374,4 @@ class PathEncoder:
     @property
     def num_edges(self) -> int:
         """Number of edges in the graph."""
-        return self._num_edges
+        return self._num_edges  # type: ignore[no-any-return]

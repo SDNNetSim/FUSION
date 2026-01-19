@@ -42,21 +42,12 @@ class SimEnvUtils:
         :return: A boolean indicating if the simulation is terminated
         :rtype: bool
         """
-        if (
-            self.sim_env.rl_props.arrival_count
-            == (self.sim_env.engine_obj.engine_props["num_requests"])
-        ):
+        if self.sim_env.rl_props.arrival_count == (self.sim_env.engine_obj.engine_props["num_requests"]):
             terminated = True
             base_fp = os.path.join("data")
-            if (
-                self.sim_env.sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS
-                and self.sim_env.sim_dict["is_training"]
-            ):
+            if self.sim_env.sim_dict["path_algorithm"] in VALID_PATH_ALGORITHMS and self.sim_env.sim_dict["is_training"]:
                 self.sim_env.path_agent.end_iter()
-            elif (
-                self.sim_env.sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS
-                and self.sim_env.sim_dict["is_training"]
-            ):
+            elif self.sim_env.sim_dict["core_algorithm"] in VALID_CORE_ALGORITHMS and self.sim_env.sim_dict["is_training"]:
                 self.sim_env.core_agent.end_iter()
             self.sim_env.engine_obj.end_iter(
                 iteration=self.sim_env.iteration,
@@ -69,9 +60,7 @@ class SimEnvUtils:
 
         return terminated
 
-    def handle_test_train_step(
-        self, was_allocated: bool, path_length: int, trial: int, req_id: int = 0
-    ) -> None:
+    def handle_test_train_step(self, was_allocated: bool, path_length: int, trial: int, req_id: int = 0) -> None:
         """
         Handles updates specific to training or testing during the current
         simulation step.
@@ -136,15 +125,9 @@ class SimEnvUtils:
             self.sim_env.route_obj.engine_props["route_method"] = "k_shortest_path"
             self.sim_env.route_obj.get_route()
 
-        self.sim_env.path_agent.get_route(
-            route_obj=self.sim_env.route_obj, action=action
-        )
-        self.sim_env.rl_help_obj.rl_props.chosen_path_list = [
-            self.sim_env.rl_props.chosen_path_list
-        ]
-        self.sim_env.route_obj.route_props.paths_matrix = (
-            self.sim_env.rl_help_obj.rl_props.chosen_path_list
-        )
+        self.sim_env.path_agent.get_route(route_obj=self.sim_env.route_obj, action=action)
+        self.sim_env.rl_help_obj.rl_props.chosen_path_list = [self.sim_env.rl_props.chosen_path_list]
+        self.sim_env.route_obj.route_props.paths_matrix = self.sim_env.rl_help_obj.rl_props.chosen_path_list
         self.sim_env.rl_props.core_index = None
         self.sim_env.rl_props.forced_index = None
 
@@ -168,12 +151,8 @@ class SimEnvUtils:
         self.sim_env.route_obj.sdn_props = self.sim_env.rl_props.mock_sdn_dict
         self.sim_env.route_obj.engine_props["route_method"] = "shortest_path"
         self.sim_env.route_obj.get_route()
-        self.sim_env.rl_props.paths_list = (
-            self.sim_env.route_obj.route_props.paths_matrix
-        )
-        self.sim_env.rl_props.chosen_path = (
-            self.sim_env.route_obj.route_props.paths_matrix
-        )
+        self.sim_env.rl_props.paths_list = self.sim_env.route_obj.route_props.paths_matrix
+        self.sim_env.rl_props.chosen_path = self.sim_env.route_obj.route_props.paths_matrix
         self.sim_env.rl_props.path_index = 0
         self.sim_env.rl_props.core_index = None
 
@@ -188,28 +167,17 @@ class SimEnvUtils:
         :return: A dictionary containing observation components
         :rtype: dict[str, Any]
         """
-        if (
-            self.sim_env.rl_props.arrival_count
-            == self.sim_env.engine_obj.engine_props["num_requests"]
-        ):
-            curr_req = self.sim_env.rl_props.arrival_list[
-                self.sim_env.rl_props.arrival_count - 1
-            ]
+        if self.sim_env.rl_props.arrival_count == self.sim_env.engine_obj.engine_props["num_requests"]:
+            curr_req = self.sim_env.rl_props.arrival_list[self.sim_env.rl_props.arrival_count - 1]
         else:
-            curr_req = self.sim_env.rl_props.arrival_list[
-                self.sim_env.rl_props.arrival_count
-            ]
+            curr_req = self.sim_env.rl_props.arrival_list[self.sim_env.rl_props.arrival_count]
 
         self.sim_env.rl_help_obj.handle_releases()
         self.sim_env.rl_props.source = int(curr_req["source"])
         self.sim_env.rl_props.destination = int(curr_req["destination"])
-        self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(
-            current_request=curr_req
-        )
+        self.sim_env.rl_props.mock_sdn_dict = self.sim_env.rl_help_obj.update_mock_sdn(current_request=curr_req)
 
-        resp_dict = self.sim_env.sim_env_helper.get_drl_obs(
-            bandwidth=bandwidth, holding_time=holding_time
-        )
+        resp_dict = self.sim_env.sim_env_helper.get_drl_obs(bandwidth=bandwidth, holding_time=holding_time)
         return dict(resp_dict)
 
 
@@ -262,25 +230,17 @@ class SimEnvObs:
         self.sim_env.rl_help_obj.rl_props = self.sim_env.rl_props
         self.sim_env.rl_help_obj.engine_props = self.sim_env.engine_obj
         self.sim_env.rl_help_obj.handle_releases()
-        self.sim_env.rl_help_obj.update_route_props(
-            chosen_path=self.sim_env.rl_props.chosen_path_list, bandwidth=bandwidth
-        )
+        self.sim_env.rl_help_obj.update_route_props(chosen_path=self.sim_env.rl_props.chosen_path_list, bandwidth=bandwidth)
 
     def determine_core_penalty(self) -> None:
         """
         Determines penalty for the core algorithm based on path availability.
         """
         # Default to first fit if all paths fail
-        self.sim_env.rl_props.chosen_path = [
-            self.sim_env.route_obj.route_props.paths_matrix[0]
-        ]
+        self.sim_env.rl_props.chosen_path = [self.sim_env.route_obj.route_props.paths_matrix[0]]
         self.sim_env.rl_props.chosen_path_index = 0
-        for path_index, path_list in enumerate(
-            self.sim_env.route_obj.route_props.paths_matrix
-        ):
-            mod_format_list = (
-                self.sim_env.route_obj.route_props.modulation_formats_matrix[path_index]
-            )
+        for path_index, path_list in enumerate(self.sim_env.route_obj.route_props.paths_matrix):
+            mod_format_list = self.sim_env.route_obj.route_props.modulation_formats_matrix[path_index]
 
             was_allocated = self.sim_env.rl_help_obj.mock_handle_arrival(
                 engine_props=self.sim_env.engine_obj.engine_props,
@@ -323,9 +283,7 @@ class SimEnvObs:
         """
         req_dict = self.sim_env.engine_obj.reqs_dict
         if self.lowest_holding is None or self.highest_holding is None:
-            differences = [
-                value["depart"] - arrival[1] for arrival, value in req_dict.items()
-            ]
+            differences = [value["depart"] - arrival[1] for arrival, value in req_dict.items()]
 
             self.lowest_holding = min(differences)
             self.highest_holding = max(differences)
@@ -339,9 +297,7 @@ class SimEnvObs:
         scaled_holding = (holding_time - lowest_val) / (highest_val - lowest_val)
         return float(scaled_holding)
 
-    def _get_paths_slots(
-        self, bandwidth: str
-    ) -> tuple[list[int], list[float], list[float], list[float]]:
+    def _get_paths_slots(self, bandwidth: str) -> tuple[list[int], list[float], list[float], list[float]]:
         """
         Gets path-related information including slots needed and congestion metrics.
 
@@ -369,11 +325,7 @@ class SimEnvObs:
         mod_bw_dict = self.sim_env.engine_obj.engine_props["mod_per_bw"]
         for mod_format in route_props.modulation_formats_matrix:
             # Check for invalid modulation formats (False, None, empty, etc.)
-            if (
-                not mod_format[0]
-                or mod_format[0] is False
-                or mod_format[0] not in mod_bw_dict.get(bandwidth, {})
-            ):
+            if not mod_format[0] or mod_format[0] is False or mod_format[0] not in mod_bw_dict.get(bandwidth, {}):
                 slots_needed = -1
             else:
                 slots_needed = mod_bw_dict[bandwidth][mod_format[0]]["slots_needed"]
@@ -419,21 +371,14 @@ class SimEnvObs:
         edge_map = {pair: idx for idx, pair in enumerate(edge_pairs)}
         edge_shape = self.edge_index.shape[1] if self.edge_index is not None else 0
 
-        paths_matrix: list[list[str]] = (
-            self.routing_obj.route_props.paths_matrix
-            if self.routing_obj is not None
-            else []
-        )
+        paths_matrix: list[list[str]] = self.routing_obj.route_props.paths_matrix if self.routing_obj is not None else []
         k_shape = self.sim_env.rl_props.k_paths
         masks = np.zeros((k_shape, edge_shape), dtype=np.float32)
 
         if self.str2idx is not None:
             for i, path in enumerate(paths_matrix[:k_shape]):
                 idx_path = [self.str2idx[label] for label in path]
-                e_idxs = [
-                    edge_map[(u, v)]
-                    for u, v in zip(idx_path, idx_path[1:], strict=False)
-                ]
+                e_idxs = [edge_map[(u, v)] for u, v in zip(idx_path, idx_path[1:], strict=False)]
                 masks[i, e_idxs] = 1.0
 
         resp_dict["path_masks"] = masks
@@ -456,9 +401,7 @@ class SimEnvObs:
         obs_space_key = self.sim_env.engine_obj.engine_props["obs_space"]
         if "graph" in obs_space_key:
             if None in (self.node_feats, self.edge_attr, self.edge_index):
-                self.edge_index, self.edge_attr, self.node_feats, self.id2idx = (
-                    convert_networkx_topo(topo_graph, as_directed=True)
-                )
+                self.edge_index, self.edge_attr, self.node_feats, self.id2idx = convert_networkx_topo(topo_graph, as_directed=True)
                 if self.id2idx is not None:
                     self.str2idx = {str(n): idx for n, idx in self.id2idx.items()}
             include_graph = True
@@ -474,9 +417,7 @@ class SimEnvObs:
 
         if not hasattr(self.sim_env, "bw_obs_list"):
             des_dict = self.sim_env.sim_dict["request_distribution"]
-            self.sim_env.bw_obs_list = sorted(
-                [k for k, v in des_dict.items() if v != 0], key=int
-            )
+            self.sim_env.bw_obs_list = sorted([k for k, v in des_dict.items() if v != 0], key=int)
         if "request_bandwidth" in OBS_DICT[obs_space_key]:
             bw_index = self.sim_env.bw_obs_list.index(bandwidth)
             req_band = np.zeros(len(self.sim_env.bw_obs_list))
@@ -489,9 +430,7 @@ class SimEnvObs:
 
         # NOTE: Consider adding bandwidth as instance variable for better performance
         # NOTE: These features may not always be in the observation space
-        slots_needed, path_lengths, paths_cong, available_slots = self._get_paths_slots(
-            bandwidth=bandwidth
-        )
+        slots_needed, path_lengths, paths_cong, available_slots = self._get_paths_slots(bandwidth=bandwidth)
 
         if "slots_needed" in OBS_DICT[obs_space_key]:
             resp_dict["slots_needed"] = list(slots_needed)

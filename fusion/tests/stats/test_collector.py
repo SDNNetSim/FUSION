@@ -156,9 +156,7 @@ class TestStatsCollectorCreation:
 class TestRecordArrivalSuccess:
     """Test record_arrival method for successful allocations."""
 
-    def test_record_success_basic(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_success_basic(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording successful allocation."""
         result = AllocationResult.success_new_lightpath(
             lightpath_id=42,
@@ -173,9 +171,7 @@ class TestRecordArrivalSuccess:
         assert collector.blocking_probability == 0.0
         assert collector.success_rate == 1.0
 
-    def test_record_success_bandwidth_tracking(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_success_bandwidth_tracking(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test bandwidth tracking on success."""
         result = AllocationResult.success_new_lightpath(
             lightpath_id=42,
@@ -248,9 +244,7 @@ class TestRecordArrivalSuccess:
         assert collector.average_hop_count == 2.0
         assert collector.average_path_length_km == 150.0
 
-    def test_record_groomed_request(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_groomed_request(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording groomed request."""
         result = AllocationResult.success_groomed(
             lightpath_ids=[10],
@@ -262,9 +256,7 @@ class TestRecordArrivalSuccess:
         assert collector.groomed_requests == 1
         assert collector.grooming_ratio == 1.0
 
-    def test_record_partially_groomed_request(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_partially_groomed_request(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording partially groomed request."""
         result = AllocationResult.success_partial_groom(
             groomed_ids=[10],
@@ -277,9 +269,7 @@ class TestRecordArrivalSuccess:
         assert collector.partially_groomed_requests == 1
         assert collector.grooming_ratio == 1.0  # Includes partial
 
-    def test_record_sliced_request(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_sliced_request(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording sliced request."""
         result = AllocationResult.success_sliced(
             lightpath_ids=[1, 2, 3, 4],
@@ -291,9 +281,7 @@ class TestRecordArrivalSuccess:
         assert collector.sliced_requests == 1
         assert collector.slicing_ratio == 1.0
 
-    def test_record_protected_request(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_protected_request(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording protected request."""
         result = AllocationResult.success_new_lightpath(
             lightpath_id=42,
@@ -315,9 +303,7 @@ class TestRecordArrivalSuccess:
 class TestRecordArrivalBlocked:
     """Test record_arrival method for blocked requests."""
 
-    def test_record_blocked_basic(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_blocked_basic(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording blocked request."""
         result = AllocationResult.blocked(BlockReason.CONGESTION)
 
@@ -329,9 +315,7 @@ class TestRecordArrivalBlocked:
         assert collector.blocking_probability == 1.0
         assert collector.success_rate == 0.0
 
-    def test_record_blocked_tracks_reason(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_blocked_tracks_reason(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test that block reasons are tracked."""
         result = AllocationResult.blocked(BlockReason.CONGESTION)
 
@@ -339,9 +323,7 @@ class TestRecordArrivalBlocked:
 
         assert collector.block_reasons["congestion"] == 1
 
-    def test_record_blocked_bandwidth_not_allocated(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_blocked_bandwidth_not_allocated(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test that blocked requests don't count as allocated bandwidth."""
         result = AllocationResult.blocked(BlockReason.CONGESTION)
 
@@ -351,9 +333,7 @@ class TestRecordArrivalBlocked:
         assert collector.total_bandwidth_allocated_gbps == 0
         assert collector.bandwidth_utilization == 0.0
 
-    def test_record_blocked_no_path(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_blocked_no_path(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording blocked request due to no path."""
         result = AllocationResult.blocked(BlockReason.NO_PATH)
 
@@ -361,9 +341,7 @@ class TestRecordArrivalBlocked:
 
         assert collector.block_reasons["no_path"] == 1
 
-    def test_record_blocked_snr_fail(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_blocked_snr_fail(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording blocked request due to SNR failure."""
         result = AllocationResult.blocked(BlockReason.SNR_THRESHOLD)
 
@@ -371,9 +349,7 @@ class TestRecordArrivalBlocked:
 
         assert collector.block_reasons["snr_fail"] == 1
 
-    def test_record_blocked_failure_induced(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_blocked_failure_induced(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording failure-induced block."""
         result = AllocationResult.blocked(BlockReason.LINK_FAILURE)
 
@@ -382,9 +358,7 @@ class TestRecordArrivalBlocked:
         assert collector.block_reasons["link_failure"] == 1
         assert collector.failure_induced_blocks == 1
 
-    def test_record_multiple_block_reasons(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_multiple_block_reasons(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test tracking multiple different block reasons."""
         reasons = [
             BlockReason.CONGESTION,
@@ -411,9 +385,7 @@ class TestRecordArrivalBlocked:
 class TestRecordMultipleArrivals:
     """Test recording multiple arrivals."""
 
-    def test_record_multiple_arrivals_mixed(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_multiple_arrivals_mixed(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test recording multiple arrivals with mixed results."""
         success = AllocationResult.success_new_lightpath(1, 100)
         blocked = AllocationResult.blocked(BlockReason.CONGESTION)
@@ -518,9 +490,7 @@ class TestRecordXT:
 class TestRecordRelease:
     """Test record_release method."""
 
-    def test_record_release_noop(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_record_release_noop(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test that record_release is a no-op in Phase 1."""
         # Should not raise
         collector.record_release(sample_request)
@@ -563,9 +533,7 @@ class TestRecordSwitchover:
 class TestComputedProperties:
     """Test computed properties."""
 
-    def test_blocking_probability_calculation(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_blocking_probability_calculation(self, collector: StatsCollector) -> None:
         """Test blocking probability calculation."""
         collector.total_requests = 100
         collector.blocked_requests = 15
@@ -585,9 +553,7 @@ class TestComputedProperties:
         assert collector.min_snr == 0.0
         assert collector.max_snr == 0.0
 
-    def test_grooming_ratio_includes_partial(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_grooming_ratio_includes_partial(self, collector: StatsCollector) -> None:
         """Test that grooming ratio includes partially groomed."""
         collector.successful_requests = 100
         collector.groomed_requests = 20
@@ -611,9 +577,7 @@ class TestComputedProperties:
 class TestToComparisonFormat:
     """Test to_comparison_format method."""
 
-    def test_basic_export(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_basic_export(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test basic export format."""
         result = AllocationResult.success_new_lightpath(42, 100)
         collector.record_arrival(sample_request, result)
@@ -640,9 +604,7 @@ class TestToComparisonFormat:
         assert output["config"]["snr_enabled"] is True
         assert output["config"]["cores_per_link"] == 7
 
-    def test_export_block_reasons_is_regular_dict(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_export_block_reasons_is_regular_dict(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test that block_reasons is exported as regular dict."""
         result = AllocationResult.blocked(BlockReason.NO_PATH)
         collector.record_arrival(sample_request, result)
@@ -652,9 +614,7 @@ class TestToComparisonFormat:
         # Should be regular dict, not defaultdict
         assert type(output["block_reasons"]) is dict
 
-    def test_export_snr_values_is_copy(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_export_snr_values_is_copy(self, collector: StatsCollector) -> None:
         """Test that snr_values is a copy."""
         collector.record_snr(18.5)
         output = collector.to_comparison_format()
@@ -665,9 +625,7 @@ class TestToComparisonFormat:
         # Original should not be affected
         assert len(collector.snr_values) == 1
 
-    def test_export_contains_protection_metrics(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_export_contains_protection_metrics(self, collector: StatsCollector) -> None:
         """Test that export contains protection metrics."""
         collector.record_switchover(50.0, success=True)
         collector.record_switchover(0.0, success=False)
@@ -697,9 +655,7 @@ class TestToComparisonFormat:
         assert output["average_hop_count"] == 2.0
         assert output["average_path_length_km"] == 150.0
 
-    def test_export_contains_xt_metrics(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_export_contains_xt_metrics(self, collector: StatsCollector) -> None:
         """Test that export contains crosstalk metrics."""
         collector.record_xt(-30.0)
         collector.record_xt(-28.0)
@@ -732,9 +688,7 @@ class TestToLegacyStatsDict:
         assert "modulations_used_dict" in legacy
         assert "snr_list" in legacy
 
-    def test_legacy_contains_protection_stats(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_legacy_contains_protection_stats(self, collector: StatsCollector) -> None:
         """Test legacy format contains protection stats."""
         collector.switchover_count = 5
         collector.protection_failures = 2
@@ -744,9 +698,7 @@ class TestToLegacyStatsDict:
         assert legacy["protection_switchovers"] == 5
         assert legacy["protection_failures"] == 2
 
-    def test_legacy_contains_crosstalk_list(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_legacy_contains_crosstalk_list(self, collector: StatsCollector) -> None:
         """Test legacy format contains crosstalk_list."""
         collector.record_xt(-30.0)
         collector.record_xt(-28.0)
@@ -765,9 +717,7 @@ class TestToLegacyStatsDict:
 class TestReset:
     """Test reset method."""
 
-    def test_reset_counters(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_reset_counters(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test that reset clears counters."""
         result = AllocationResult.success_new_lightpath(42, 100)
         collector.record_arrival(sample_request, result)
@@ -782,17 +732,13 @@ class TestReset:
         assert len(collector.block_reasons) == 0
         assert len(collector.modulations_used) == 0
 
-    def test_reset_preserves_config(
-        self, collector: StatsCollector, config: SimulationConfig
-    ) -> None:
+    def test_reset_preserves_config(self, collector: StatsCollector, config: SimulationConfig) -> None:
         """Test that reset preserves config."""
         collector.reset()
 
         assert collector.config is config
 
-    def test_reset_clears_all_lists(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_reset_clears_all_lists(self, collector: StatsCollector) -> None:
         """Test that reset clears all lists."""
         collector.snr_values.append(18.5)
         collector.hop_counts.append(3)
@@ -808,9 +754,7 @@ class TestReset:
         assert len(collector.switchover_times) == 0
         assert len(collector.xt_values) == 0
 
-    def test_reset_clears_all_dicts(
-        self, collector: StatsCollector
-    ) -> None:
+    def test_reset_clears_all_dicts(self, collector: StatsCollector) -> None:
         """Test that reset clears all dicts."""
         collector.block_reasons["congestion"] = 5
         collector.modulations_used["QPSK"] = 10
@@ -931,9 +875,7 @@ class TestStringRepresentations:
 class TestIntegration:
     """Integration tests for StatsCollector."""
 
-    def test_full_simulation_flow(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_full_simulation_flow(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test full simulation recording flow."""
         # Create spectrum result with modulation
         spectrum = SpectrumResult(
@@ -993,9 +935,7 @@ class TestIntegration:
         assert output["blocking_probability"] == 0.3
         assert output["block_reasons"]["congestion"] == 15
 
-    def test_reset_and_reuse(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_reset_and_reuse(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test resetting and reusing collector."""
         # First run
         for _ in range(50):
@@ -1053,9 +993,7 @@ class TestIntegration:
         assert collector.partially_groomed_requests == 1
         assert collector.grooming_ratio == 1.0
 
-    def test_per_segment_tracking(
-        self, collector: StatsCollector, sample_request: Request
-    ) -> None:
+    def test_per_segment_tracking(self, collector: StatsCollector, sample_request: Request) -> None:
         """Test tracking of per-segment allocation data."""
         # Create result with per-segment data
         result = AllocationResult(
@@ -1127,11 +1065,7 @@ class TestIntegration:
     ) -> None:
         """Test protection failure tracking when not fully protected."""
         # Create result with partial protection (backup failed)
-        protection = ProtectionResult.primary_only(
-            primary_spectrum=SpectrumResult(
-                is_free=True, start_slot=0, end_slot=8, slots_needed=8
-            )
-        )
+        protection = ProtectionResult.primary_only(primary_spectrum=SpectrumResult(is_free=True, start_slot=0, end_slot=8, slots_needed=8))
 
         result = AllocationResult(
             success=True,

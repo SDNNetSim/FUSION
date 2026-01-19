@@ -256,9 +256,7 @@ class _DummyCoreUtilHelpers:
         """
         Mocking reset reqs dict.
         """
-        self.rl_props.arrival_list.append(
-            {"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0}
-        )
+        self.rl_props.arrival_list.append({"req_id": 0, "bandwidth": 10, "depart": 20, "arrive": 0})
 
     def allocate(self) -> None:
         """No-op."""

@@ -55,9 +55,7 @@ def aggregate_seed_results(
     aggregated = {}
 
     for key in metric_keys:
-        values = [
-            r[key] for r in results if key in r and isinstance(r[key], (int, float))
-        ]
+        values = [r[key] for r in results if key in r and isinstance(r[key], (int, float))]
 
         if not values:
             logger.warning("No values found for metric: %s", key)
@@ -111,9 +109,7 @@ def create_comparison_table(
 
     for metric in metrics:
         if metric not in baseline_agg or metric not in rl_agg:
-            logger.warning(
-                "Metric %s not found in both baseline and RL results", metric
-            )
+            logger.warning("Metric %s not found in both baseline and RL results", metric)
             continue
 
         baseline_val = baseline_agg[metric]["mean"]
@@ -165,9 +161,7 @@ def format_comparison_for_display(comparison: dict[str, dict[str, Any]]) -> str:
         return "No comparison data available"
 
     lines = []
-    lines.append(
-        "Metric                | Baseline           | RL                 | Improvement"
-    )
+    lines.append("Metric                | Baseline           | RL                 | Improvement")
     lines.append("-" * 79)
 
     for metric, stats in comparison.items():
@@ -175,8 +169,6 @@ def format_comparison_for_display(comparison: dict[str, dict[str, Any]]) -> str:
         rl_str = f"{stats['rl_mean']:.4f} ± {stats['rl_std']:.4f}"
         improvement_str = f"{stats['improvement_pct']:+.2f}%"
 
-        lines.append(
-            f"{metric:<21} | {baseline_str:<18} | {rl_str:<18} | {improvement_str}"
-        )
+        lines.append(f"{metric:<21} | {baseline_str:<18} | {rl_str:<18} | {improvement_str}")
 
     return "\n".join(lines)

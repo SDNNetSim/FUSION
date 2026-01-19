@@ -55,9 +55,7 @@ class SimStats:
         self.recovery_events: list[dict[str, Any]] = []
 
         # Failure window parameters
-        self.failure_window_size = engine_props.get("recovery_timing_settings", {}).get(
-            "failure_window_size", 1000
-        )
+        self.failure_window_size = engine_props.get("recovery_timing_settings", {}).get("failure_window_size", 1000)
 
         # Fragmentation and decision time metrics
         self.fragmentation_scores: list[float] = []
@@ -67,7 +65,7 @@ class SimStats:
         self.groomed_requests: int = 0
         self.sliced_requests: int = 0
         self.protected_requests: int = 0
-        self.snapshot_interval: int = engine_props.get('snapshot_interval', 100)
+        self.snapshot_interval: int = engine_props.get("snapshot_interval", 100)
 
         self.mods_dict_updates_log: list[dict[str, Any]] = []
 
@@ -121,14 +119,10 @@ class SimStats:
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
-        logger.debug(
-            "update_snapshot called but not functional - will be implemented in v6.1"
-        )
+        logger.debug("update_snapshot called but not functional - will be implemented in v6.1")
 
     def _init_snapshots(self) -> None:
-        for req_num in range(
-            0, self.engine_props["num_requests"] + 1, self.engine_props["snapshot_step"]
-        ):
+        for req_num in range(0, self.engine_props["num_requests"] + 1, self.engine_props["snapshot_step"]):
             self.stats_props.snapshots_dict[req_num] = {}
             for key in SNAP_KEYS_LIST:
                 self.stats_props.snapshots_dict[req_num][key] = []
@@ -182,9 +176,7 @@ class SimStats:
                 ):
                     self.stats_props.modulations_used_dict[modulation] = {}
                     self.stats_props.modulations_used_dict[modulation]["length"] = {}
-                    self.stats_props.modulations_used_dict[modulation]["length"][
-                        "overall"
-                    ] = []
+                    self.stats_props.modulations_used_dict[modulation]["length"]["overall"] = []
                     self.stats_props.modulations_used_dict[modulation]["hop"] = {}
                     self.stats_props.modulations_used_dict[modulation]["hop"]["overall"] = []
                     self.stats_props.modulations_used_dict[modulation]["snr"] = {}
@@ -193,9 +185,7 @@ class SimStats:
                     self.stats_props.modulations_used_dict[modulation]["xt_cost"]["overall"] = []
                     for band in self.engine_props["band_list"]:
                         self.stats_props.modulations_used_dict[modulation][band] = 0
-                        self.stats_props.modulations_used_dict[modulation]["length"][
-                            band
-                        ] = []
+                        self.stats_props.modulations_used_dict[modulation]["length"][band] = []
                         self.stats_props.modulations_used_dict[modulation]["hop"][band] = []
                         self.stats_props.modulations_used_dict[modulation]["snr"][band] = []
                         self.stats_props.modulations_used_dict[modulation]["xt_cost"][band] = []
@@ -316,9 +306,7 @@ class SimStats:
             num_requests = self.engine_props["num_requests"]
             blocking_prob = float(self.blocked_requests) / float(num_requests)
             if self.bit_rate_request > 0:
-                bit_rate_blocking_prob = float(self.bit_rate_blocked) / float(
-                    self.bit_rate_request
-                )
+                bit_rate_blocking_prob = float(self.bit_rate_blocked) / float(self.bit_rate_request)
             else:
                 bit_rate_blocking_prob = 0.0
 
@@ -375,74 +363,86 @@ class SimStats:
                         if data in bw_dict:
                             old_bw_count = bw_dict[data]
                             bw_dict[data] += 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': bandwidth_key,
-                                'band': None,
-                                'action': 'bw_count_increment',
-                                'old': old_bw_count,
-                                'new': bw_dict[data]
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": bandwidth_key,
+                                    "band": None,
+                                    "action": "bw_count_increment",
+                                    "old": old_bw_count,
+                                    "new": bw_dict[data],
+                                }
+                            )
                         else:
                             # Initialize if not present
                             bw_dict[data] = 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': bandwidth_key,
-                                'band': None,
-                                'action': 'bw_count_init',
-                                'value': 1
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": bandwidth_key,
+                                    "band": None,
+                                    "action": "bw_count_init",
+                                    "value": 1,
+                                }
+                            )
                     data_mod_dict = mod_dict.get(data)
                     if isinstance(data_mod_dict, dict):
                         if band in data_mod_dict:
                             old_band_count = data_mod_dict[band]
                             data_mod_dict[band] += 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': None,
-                                'band': band,
-                                'action': 'band_count_increment',
-                                'old': old_band_count,
-                                'new': data_mod_dict[band]
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": None,
+                                    "band": band,
+                                    "action": "band_count_increment",
+                                    "old": old_band_count,
+                                    "new": data_mod_dict[band],
+                                }
+                            )
                         else:
                             # Initialize if not present
                             data_mod_dict[band] = 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': None,
-                                'band': band,
-                                'action': 'band_count_init',
-                                'value': 1
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": None,
+                                    "band": band,
+                                    "action": "band_count_init",
+                                    "value": 1,
+                                }
+                            )
                         length_dict = data_mod_dict.get("length")
                         has_length = "length" in data_mod_dict
                         if has_length and isinstance(length_dict, dict):
                             if band in length_dict:
                                 length_dict[band].append(sdn_data.path_weight)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': band,
-                                    'action': 'length_append',
-                                    'value': sdn_data.path_weight
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": band,
+                                        "action": "length_append",
+                                        "value": sdn_data.path_weight,
+                                    }
+                                )
                             if "overall" in length_dict:
                                 length_dict["overall"].append(sdn_data.path_weight)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': 'overall',
-                                    'action': 'length_append',
-                                    'value': sdn_data.path_weight
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": "overall",
+                                        "action": "length_append",
+                                        "value": sdn_data.path_weight,
+                                    }
+                                )
 
                         # Track hop count
                         hop_dict = data_mod_dict.get("hop")
@@ -450,24 +450,28 @@ class SimStats:
                             num_hops = len(sdn_data.path_list) - 1
                             if band in hop_dict:
                                 hop_dict[band].append(num_hops)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': band,
-                                    'action': 'hop_append',
-                                    'value': num_hops
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": band,
+                                        "action": "hop_append",
+                                        "value": num_hops,
+                                    }
+                                )
                             if "overall" in hop_dict:
                                 hop_dict["overall"].append(num_hops)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': 'overall',
-                                    'action': 'hop_append',
-                                    'value': num_hops
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": "overall",
+                                        "action": "hop_append",
+                                        "value": num_hops,
+                                    }
+                                )
 
                         # Track SNR or XT cost
                         if self.engine_props.get("snr_type") != "None":
@@ -478,24 +482,28 @@ class SimStats:
                                     if xt_cost_dict and isinstance(xt_cost_dict, dict):
                                         if band in xt_cost_dict:
                                             xt_cost_dict[band].append(sdn_data.snr_list[i])
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': band,
-                                                'action': 'xt_cost_append',
-                                                'value': sdn_data.snr_list[i]
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": band,
+                                                    "action": "xt_cost_append",
+                                                    "value": sdn_data.snr_list[i],
+                                                }
+                                            )
                                         if "overall" in xt_cost_dict:
                                             xt_cost_dict["overall"].append(sdn_data.snr_list[i])
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': 'overall',
-                                                'action': 'xt_cost_append',
-                                                'value': sdn_data.snr_list[i]
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": "overall",
+                                                    "action": "xt_cost_append",
+                                                    "value": sdn_data.snr_list[i],
+                                                }
+                                            )
                                 else:
                                     # Track snr
                                     snr_val = sdn_data.snr_list[i]
@@ -503,24 +511,28 @@ class SimStats:
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
                                             snr_dict[band].append(snr_val)
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': band,
-                                                'action': 'snr_append',
-                                                'value': snr_val
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": band,
+                                                    "action": "snr_append",
+                                                    "value": snr_val,
+                                                }
+                                            )
                                         if "overall" in snr_dict:
                                             snr_dict["overall"].append(snr_val)
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': 'overall',
-                                                'action': 'snr_append',
-                                                'value': snr_val
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": "overall",
+                                                    "action": "snr_append",
+                                                    "value": snr_val,
+                                                }
+                                            )
                 elif stat_key == "start_slot_list":
                     self.stats_props.start_slot_list.append(int(data))
                 elif stat_key == "end_slot_list":
@@ -550,10 +562,7 @@ class SimStats:
             if sdn_data.bandwidth is not None:
                 self.bit_rate_blocked += int(sdn_data.bandwidth)
                 self.bit_rate_request += int(sdn_data.bandwidth)
-            if (
-                sdn_data.block_reason is not None
-                and sdn_data.block_reason in self.stats_props.block_reasons_dict
-            ):
+            if sdn_data.block_reason is not None and sdn_data.block_reason in self.stats_props.block_reasons_dict:
                 block_reason = sdn_data.block_reason
                 current_val = self.stats_props.block_reasons_dict[block_reason]
                 if current_val is not None:
@@ -588,9 +597,7 @@ class SimStats:
                 num_hops = len(sdn_data.path_list) - 1
                 self.stats_props.hops_list.append(float(num_hops))
 
-                path_len = find_path_length(
-                    path_list=sdn_data.path_list, topology=self.topology
-                )
+                path_len = find_path_length(path_list=sdn_data.path_list, topology=self.topology)
                 if path_len is not None:
                     self.stats_props.lengths_list.append(round(float(path_len), 2))
 
@@ -608,9 +615,7 @@ class SimStats:
                 self.total_transponders += sdn_data.number_of_transponders
 
             if sdn_data.modulation_list and len(sdn_data.modulation_list) > 0:
-                if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(
-                    self.stats_props.path_index_list
-                ):
+                if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(self.stats_props.path_index_list):
                     self.stats_props.path_index_list[sdn_data.path_index] += 1
 
             # Track weights for NEW lightpaths only when grooming is enabled
@@ -643,14 +648,10 @@ class SimStats:
 
                         if mod_format and bandwidth_key in self.stats_props.weights_dict:
                             if mod_format in self.stats_props.weights_dict[bandwidth_key]:
-                                self.stats_props.weights_dict[bandwidth_key][mod_format].append(
-                                    round(float(sdn_data.path_weight), 2)
-                                )
+                                self.stats_props.weights_dict[bandwidth_key][mod_format].append(round(float(sdn_data.path_weight), 2))
                             else:
                                 # Initialize if not present
-                                self.stats_props.weights_dict[bandwidth_key][mod_format] = [
-                                    round(float(sdn_data.path_weight), 2)
-                                ]
+                                self.stats_props.weights_dict[bandwidth_key][mod_format] = [round(float(sdn_data.path_weight), 2)]
 
             # Track demand realization ratio for partial grooming
             if self.engine_props.get("can_partially_serve"):
@@ -666,9 +667,7 @@ class SimStats:
                     realization_ratio = served_bw / original_bw
                     self.stats_props.demand_realization_ratio[demand_bw_key].append(realization_ratio)
                     self.stats_props.demand_realization_ratio["overall"].append(realization_ratio)
-            self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(
-                network_spectrum_dict
-            )
+            self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
 
     def update_utilization_dict(self, utilization_dict: dict[int, dict[str, Any]]) -> None:
         """
@@ -690,9 +689,7 @@ class SimStats:
 
             # Track per-bandwidth/band/core
             # If keys don't exist, KeyError will surface the configuration issue
-            self.stats_props.lp_bw_utilization_dict[bit_rate_key][band][core].append(
-                utilization
-            )
+            self.stats_props.lp_bw_utilization_dict[bit_rate_key][band][core].append(utilization)
 
             # Track overall
             self.stats_props.lp_bw_utilization_dict["overall"].append(utilization)
@@ -770,9 +767,7 @@ class SimStats:
                                     deviation = 0.0
                                 else:
                                     deviation = stdev(filtered_value)
-                                self.stats_props.modulations_used_dict[modulation][
-                                    "length"
-                                ][key] = {
+                                self.stats_props.modulations_used_dict[modulation]["length"][key] = {
                                     "mean": round(float(mean(filtered_value)), 2),
                                     "std": round(float(deviation), 2),
                                     "min": round(float(min(filtered_value)), 2),
@@ -799,9 +794,7 @@ class SimStats:
                                         }
                                     else:
                                         deviation = 0.0 if len(value) == 1 else stdev(value)
-                                        self.stats_props.modulations_used_dict[modulation][
-                                            route_spec
-                                        ][key] = {
+                                        self.stats_props.modulations_used_dict[modulation][route_spec][key] = {
                                             "mean": round(float(mean(value)), 2),
                                             "std": round(float(deviation), 2),
                                             "min": round(float(min(value)), 2),
@@ -902,19 +895,13 @@ class SimStats:
         if self.engine_props["num_requests"] == self.blocked_requests:
             self.stats_props.transponders_list.append(0)
         else:
-            trans_mean = self.total_transponders / float(
-                self.engine_props["num_requests"] - self.blocked_requests
-            )
+            trans_mean = self.total_transponders / float(self.engine_props["num_requests"] - self.blocked_requests)
             self.stats_props.transponders_list.append(trans_mean)
 
         if self.blocked_requests > 0:
             # Check if already normalized (values are between 0 and 1)
             current_values = list(self.stats_props.block_reasons_dict.values())
-            is_already_normalized = all(
-                isinstance(v, float) and 0 <= v <= 1
-                for v in current_values
-                if v is not None and v > 0
-            )
+            is_already_normalized = all(isinstance(v, float) and 0 <= v <= 1 for v in current_values if v is not None and v > 0)
 
             if not is_already_normalized:
                 for (
@@ -922,9 +909,7 @@ class SimStats:
                     num_times,
                 ) in self.stats_props.block_reasons_dict.items():
                     if num_times is not None:
-                        self.stats_props.block_reasons_dict[block_type] = (
-                            num_times / float(self.blocked_requests)
-                        )
+                        self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_requests)
 
         self._get_iter_means()
 
@@ -936,9 +921,7 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props.simulation_blocking_list)
-        self.bit_rate_block_mean = mean(
-            self.stats_props.simulation_bitrate_blocking_list
-        )
+        self.bit_rate_block_mean = mean(self.stats_props.simulation_bitrate_blocking_list)
         if len(self.stats_props.simulation_blocking_list) <= 1:
             # With only 1 data point, variance is 0.0 (no variation)
             self.block_variance = 0.0
@@ -950,22 +933,17 @@ class SimStats:
             return False
 
         self.block_variance = variance(self.stats_props.simulation_blocking_list)
-        self.bit_rate_block_variance = variance(
-            self.stats_props.simulation_bitrate_blocking_list
-        )
+        self.bit_rate_block_variance = variance(self.stats_props.simulation_bitrate_blocking_list)
 
         # Calculate bit rate blocking CI separately (always calculate, even when blocking is 0)
         # When variance is 0, this evaluates to 0.0
         try:
             bit_rate_block_ci = 1.645 * (
-                math.sqrt(self.bit_rate_block_variance)
-                / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
+                math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
             )
             self.bit_rate_block_ci = bit_rate_block_ci
             if self.bit_rate_block_mean > 0:
-                bit_rate_block_ci_percent = (
-                    (2 * bit_rate_block_ci) / self.bit_rate_block_mean
-                ) * 100
+                bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
                 self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
         except (ZeroDivisionError, ValueError):
             # If calculation fails, leave as None
@@ -978,10 +956,7 @@ class SimStats:
 
         try:
             # Using 1.645 for 90% confidence level
-            block_ci_rate = 1.645 * (
-                math.sqrt(self.block_variance)
-                / math.sqrt(len(self.stats_props.simulation_blocking_list))
-            )
+            block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.simulation_blocking_list)))
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
@@ -1044,9 +1019,7 @@ class SimStats:
         if self.iteration is None:
             self.iteration = 0
 
-        persistence = StatsPersistence(
-            engine_props=self.engine_props, sim_info=self.sim_info
-        )
+        persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
 
         # Prepare save dict with iter_stats structure
         save_dict: dict[str, Any] = {"iter_stats": {}}
@@ -1180,9 +1153,7 @@ class SimStats:
 
         # Count arrivals and blocks in window
         window_arrivals = window_end - failure_index
-        window_blocks = sum(
-            1 for req_id in blocked_requests if failure_index <= req_id < window_end
-        )
+        window_blocks = sum(1 for req_id in blocked_requests if failure_index <= req_id < window_end)
 
         if window_arrivals == 0:
             return 0.0
@@ -1270,9 +1241,7 @@ class SimStats:
             link = (path[i], path[i + 1])
             reverse_link = (path[i + 1], path[i])
 
-            link_spectrum = network_spectrum_dict.get(
-                link, network_spectrum_dict.get(reverse_link, {})
-            )
+            link_spectrum = network_spectrum_dict.get(link, network_spectrum_dict.get(reverse_link, {}))
 
             if not link_spectrum:
                 continue
@@ -1414,17 +1383,9 @@ class SimStats:
             "seed": self.engine_props.get("seed", 0),
             # Standard metrics
             "bp_overall": self.block_mean if self.block_mean is not None else 0.0,
-            "bp_variance": self.block_variance
-            if self.block_variance is not None
-            else 0.0,
-            "bp_ci_percent": (
-                self.block_ci_percent if self.block_ci_percent is not None else 0.0
-            ),
-            "bit_rate_bp": (
-                self.bit_rate_block_mean
-                if self.bit_rate_block_mean is not None
-                else 0.0
-            ),
+            "bp_variance": self.block_variance if self.block_variance is not None else 0.0,
+            "bp_ci_percent": (self.block_ci_percent if self.block_ci_percent is not None else 0.0),
+            "bit_rate_bp": (self.bit_rate_block_mean if self.bit_rate_block_mean is not None else 0.0),
             # Failure window metrics
             "bp_window_fail_mean": window_stats["mean"],
             "bp_window_fail_p95": window_stats["p95"],
@@ -1468,9 +1429,7 @@ class SimStats:
         if not result.success:
             self._record_blocked_request_new(request, result)
         else:
-            self._record_successful_allocation_new(
-                request, result, network_state, was_rollback
-            )
+            self._record_successful_allocation_new(request, result, network_state, was_rollback)
 
         # Take periodic snapshot
         self._maybe_take_snapshot_new(network_state)
@@ -1493,7 +1452,7 @@ class SimStats:
         self.blocked_requests += 1
 
         # Track bandwidth blocking
-        if hasattr(request, 'bandwidth_gbps'):
+        if hasattr(request, "bandwidth_gbps"):
             self.bit_rate_blocked += int(request.bandwidth_gbps)
             self.bit_rate_request += int(request.bandwidth_gbps)
 
@@ -1535,19 +1494,19 @@ class SimStats:
         # Track allocation type counters
         if result.is_groomed:
             self.groomed_requests += 1
-        if getattr(result, 'is_sliced', False):
+        if getattr(result, "is_sliced", False):
             self.sliced_requests += 1
-        if getattr(result, 'is_protected', False):
+        if getattr(result, "is_protected", False):
             self.protected_requests += 1
 
         # Skip further stats tracking for fully groomed requests (v5 behavior)
         if result.is_groomed and not result.is_partially_groomed:
-            if hasattr(request, 'bandwidth_gbps'):
+            if hasattr(request, "bandwidth_gbps"):
                 self.bit_rate_request += int(request.bandwidth_gbps)
             return
 
         # Track bit rate for requests
-        if hasattr(request, 'bandwidth_gbps'):
+        if hasattr(request, "bandwidth_gbps"):
             self.bit_rate_request += int(request.bandwidth_gbps)
 
         # Match legacy behavior: early return if remaining bandwidth but no new LPs created
@@ -1564,8 +1523,8 @@ class SimStats:
 
         # Track path metrics once (using first lightpath for path/hops)
         first_lp_details = self._get_lightpath_details_new(result, network_state)
-        if first_lp_details.get('path'):
-            path = first_lp_details['path']
+        if first_lp_details.get("path"):
+            path = first_lp_details["path"]
             num_hops = len(path) - 1
             self.stats_props.hops_list.append(float(num_hops))
 
@@ -1575,14 +1534,14 @@ class SimStats:
 
         # Track path index from allocation result
         # Count when ANY lightpath is used (created or groomed) - matches legacy modulation_list check
-        path_idx = getattr(result, 'path_index', 0)
-        has_lightpaths = result.lightpaths_created or getattr(result, 'lightpaths_groomed', ())
+        path_idx = getattr(result, "path_index", 0)
+        has_lightpaths = result.lightpaths_created or getattr(result, "lightpaths_groomed", ())
         if has_lightpaths and 0 <= path_idx < len(self.stats_props.path_index_list):
             self.stats_props.path_index_list[path_idx] += 1
 
         # Track demand realization ratio for partial grooming (matches legacy behavior)
         if self.engine_props.get("can_partially_serve"):
-            bandwidth_key = str(request.bandwidth_gbps) if hasattr(request, 'bandwidth_gbps') else None
+            bandwidth_key = str(request.bandwidth_gbps) if hasattr(request, "bandwidth_gbps") else None
             if bandwidth_key and bandwidth_key in self.stats_props.demand_realization_ratio:
                 original_bw = int(request.bandwidth_gbps)
                 # Calculate served bandwidth from allocation result
@@ -1605,7 +1564,7 @@ class SimStats:
             # Legacy's _update_request_statistics adds SNR to snr_list before SNR recheck,
             # and if recheck fails, the value stays. This causes snr_list[i] to return
             # "wrong" values from failed attempts.
-            failed_snr = list(getattr(result, 'failed_attempt_snr_values', ()) or ())
+            failed_snr = list(getattr(result, "failed_attempt_snr_values", ()) or ())
 
             for lp_idx, lp_id in enumerate(result.lightpaths_created):
                 lp = network_state.get_lightpath(lp_id)
@@ -1613,19 +1572,19 @@ class SimStats:
                     continue
 
                 # Track core usage (like legacy _handle_iter_lists)
-                core = getattr(lp, 'core', None)
+                core = getattr(lp, "core", None)
                 if core is not None:
                     if core not in self.stats_props.cores_dict:
                         self.stats_props.cores_dict[core] = 0
                     self.stats_props.cores_dict[core] += 1
 
                 # Get lightpath details for modulation tracking
-                modulation = getattr(lp, 'modulation', None)
-                band = getattr(lp, 'band', None)
-                snr_db = getattr(lp, 'snr_db', None)
-                lp_path = getattr(lp, 'path', None)
+                modulation = getattr(lp, "modulation", None)
+                band = getattr(lp, "band", None)
+                snr_db = getattr(lp, "snr_db", None)
+                lp_path = getattr(lp, "path", None)
                 # Use LIGHTPATH bandwidth, not request bandwidth (critical for slicing)
-                lp_bandwidth = getattr(lp, 'total_bandwidth_gbps', None)
+                lp_bandwidth = getattr(lp, "total_bandwidth_gbps", None)
 
                 # Legacy compatibility: Use failed attempt SNR if available
                 # Legacy's snr_list has failed attempt values at lower indices
@@ -1638,7 +1597,7 @@ class SimStats:
 
                 # Get path weight from lightpath (routing weight, not raw length)
                 # This preserves the routing algorithm's weight (e.g., XT-aware normalized cost)
-                path_weight = getattr(lp, 'path_weight_km', None)
+                path_weight = getattr(lp, "path_weight_km", None)
                 lp_num_hops = len(lp_path) - 1 if lp_path else None
 
                 # Track modulation with correct lightpath bandwidth
@@ -1661,22 +1620,22 @@ class SimStats:
                 self.stats_props.snr_list.append(mean(request_snr_values))
         else:
             # Fallback for non-lightpath allocations (shouldn't happen often)
-            if first_lp_details.get('modulation'):
-                bandwidth = request.bandwidth_gbps if hasattr(request, 'bandwidth_gbps') else None
+            if first_lp_details.get("modulation"):
+                bandwidth = request.bandwidth_gbps if hasattr(request, "bandwidth_gbps") else None
                 # Use stored routing weight, not recalculated path length
-                path_weight = first_lp_details.get('path_weight_km')
-                fallback_num_hops = len(first_lp_details['path']) - 1 if first_lp_details.get('path') else None
+                path_weight = first_lp_details.get("path_weight_km")
+                fallback_num_hops = len(first_lp_details["path"]) - 1 if first_lp_details.get("path") else None
                 self._increment_modulation_count(
-                    first_lp_details['modulation'],
+                    first_lp_details["modulation"],
                     bandwidth_gbps=bandwidth,
-                    band=first_lp_details.get('band'),
+                    band=first_lp_details.get("band"),
                     path_weight=path_weight,
                     num_hops=fallback_num_hops,
-                    snr_value=first_lp_details.get('snr_db'),
+                    snr_value=first_lp_details.get("snr_db"),
                 )
 
-            if first_lp_details.get('snr_db') is not None:
-                self.stats_props.snr_list.append(first_lp_details['snr_db'])
+            if first_lp_details.get("snr_db") is not None:
+                self.stats_props.snr_list.append(first_lp_details["snr_db"])
 
     def _get_lightpath_details_new(
         self,
@@ -1694,15 +1653,15 @@ class SimStats:
         :rtype: dict[str, Any]
         """
         details: dict[str, Any] = {
-            'path': None,
-            'modulation': None,
-            'snr_db': None,
-            'crosstalk_db': None,
-            'core': None,
-            'band': None,
-            'start_slot': None,
-            'end_slot': None,
-            'path_weight_km': None,
+            "path": None,
+            "modulation": None,
+            "snr_db": None,
+            "crosstalk_db": None,
+            "core": None,
+            "band": None,
+            "start_slot": None,
+            "end_slot": None,
+            "path_weight_km": None,
         }
 
         # Try to get from lightpaths_created
@@ -1711,22 +1670,22 @@ class SimStats:
             lp = network_state.get_lightpath(lp_id)
 
             if lp is not None:
-                details['path'] = getattr(lp, 'path', None)
-                details['modulation'] = getattr(lp, 'modulation', None)
-                details['snr_db'] = getattr(lp, 'snr_db', None)
-                details['crosstalk_db'] = getattr(lp, 'crosstalk_db', None)
-                details['core'] = getattr(lp, 'core', None)
-                details['band'] = getattr(lp, 'band', None)
-                details['start_slot'] = getattr(lp, 'start_slot', None)
-                details['end_slot'] = getattr(lp, 'end_slot', None)
-                details['path_weight_km'] = getattr(lp, 'path_weight_km', None)
+                details["path"] = getattr(lp, "path", None)
+                details["modulation"] = getattr(lp, "modulation", None)
+                details["snr_db"] = getattr(lp, "snr_db", None)
+                details["crosstalk_db"] = getattr(lp, "crosstalk_db", None)
+                details["core"] = getattr(lp, "core", None)
+                details["band"] = getattr(lp, "band", None)
+                details["start_slot"] = getattr(lp, "start_slot", None)
+                details["end_slot"] = getattr(lp, "end_slot", None)
+                details["path_weight_km"] = getattr(lp, "path_weight_km", None)
 
         # Fall back to result fields if lightpath lookup failed
-        if details['modulation'] is None and result.modulations:
-            details['modulation'] = result.modulations[0]
+        if details["modulation"] is None and result.modulations:
+            details["modulation"] = result.modulations[0]
 
-        if details['snr_db'] is None and result.snr_values:
-            details['snr_db'] = result.snr_values[0]
+        if details["snr_db"] is None and result.snr_values:
+            details["snr_db"] = result.snr_values[0]
 
         return details
 
@@ -1744,20 +1703,20 @@ class SimStats:
         from fusion.domain.request import BlockReason
 
         mapping = {
-            BlockReason.NO_PATH: 'distance',
-            BlockReason.DISTANCE: 'distance',
-            BlockReason.CONGESTION: 'congestion',
-            BlockReason.SNR_THRESHOLD: 'xt_threshold',
-            BlockReason.SNR_RECHECK_FAIL: 'xt_threshold',  # P3.6 Gap 5
-            BlockReason.XT_THRESHOLD: 'xt_threshold',
-            BlockReason.FAILURE: 'failure',
-            BlockReason.LINK_FAILURE: 'failure',
-            BlockReason.NODE_FAILURE: 'failure',
-            BlockReason.GROOMING_FAIL: 'congestion',
-            BlockReason.SLICING_FAIL: 'congestion',
-            BlockReason.PROTECTION_FAIL: 'congestion',
+            BlockReason.NO_PATH: "distance",
+            BlockReason.DISTANCE: "distance",
+            BlockReason.CONGESTION: "congestion",
+            BlockReason.SNR_THRESHOLD: "xt_threshold",
+            BlockReason.SNR_RECHECK_FAIL: "xt_threshold",  # P3.6 Gap 5
+            BlockReason.XT_THRESHOLD: "xt_threshold",
+            BlockReason.FAILURE: "failure",
+            BlockReason.LINK_FAILURE: "failure",
+            BlockReason.NODE_FAILURE: "failure",
+            BlockReason.GROOMING_FAIL: "congestion",
+            BlockReason.SLICING_FAIL: "congestion",
+            BlockReason.PROTECTION_FAIL: "congestion",
         }
-        return mapping.get(reason, 'congestion')
+        return mapping.get(reason, "congestion")
 
     def _calculate_path_length_new(
         self,
@@ -1780,7 +1739,7 @@ class SimStats:
         if network_state is None:
             return None
 
-        topology = getattr(network_state, 'topology', None)
+        topology = getattr(network_state, "topology", None)
         if topology is None:
             return None
 
@@ -1789,10 +1748,10 @@ class SimStats:
             u, v = path[i], path[i + 1]
             if topology.has_edge(u, v):
                 edge_data = topology.edges[u, v]
-                total_length += edge_data.get('length', edge_data.get('weight', 0.0))
+                total_length += edge_data.get("length", edge_data.get("weight", 0.0))
             elif topology.has_edge(v, u):
                 edge_data = topology.edges[v, u]
-                total_length += edge_data.get('length', edge_data.get('weight', 0.0))
+                total_length += edge_data.get("length", edge_data.get("weight", 0.0))
 
         return total_length
 
@@ -1817,7 +1776,7 @@ class SimStats:
         """
         logger.debug(
             "Grooming rollback recorded for request %s on lightpaths %s",
-            getattr(request, 'request_id', 'unknown'),
+            getattr(request, "request_id", "unknown"),
             rolled_back_lightpath_ids,
         )
 
@@ -1839,7 +1798,7 @@ class SimStats:
             return
 
         # Check if it's time for a snapshot
-        snapshot_interval = getattr(self, 'snapshot_interval', 100)
+        snapshot_interval = getattr(self, "snapshot_interval", 100)
         if self.total_requests % snapshot_interval != 0:
             return
 
@@ -1848,11 +1807,9 @@ class SimStats:
             return
 
         snapshot = {
-            'request_number': self.total_requests,
-            'blocked_count': self.blocked_requests,
-            'spectrum_utilization': self._calculate_spectrum_utilization_new(
-                network_state
-            ),
+            "request_number": self.total_requests,
+            "blocked_count": self.blocked_requests,
+            "spectrum_utilization": self._calculate_spectrum_utilization_new(network_state),
         }
 
         self.stats_props.snapshots_dict[self.total_requests] = snapshot
@@ -1876,15 +1833,15 @@ class SimStats:
         used_slots = 0
 
         # Get spectrum utilization from network state
-        network_spectrum_dict = getattr(network_state, 'network_spectrum_dict', None)
+        network_spectrum_dict = getattr(network_state, "network_spectrum_dict", None)
         if network_spectrum_dict is None:
             return 0.0
 
         for _link_key, link_data in network_spectrum_dict.items():
-            cores_matrix = link_data.get('cores_matrix', {})
+            cores_matrix = link_data.get("cores_matrix", {})
             for _band, cores in cores_matrix.items():
                 for core_spectrum in cores:
-                    if hasattr(core_spectrum, '__len__'):
+                    if hasattr(core_spectrum, "__len__"):
                         total_slots += len(core_spectrum)
                         used_slots += sum(1 for s in core_spectrum if s != 0)
 
@@ -1965,13 +1922,9 @@ class SimStats:
                 weights_dict = self.stats_props.weights_dict
                 if bandwidth_key in weights_dict:
                     if modulation in weights_dict[bandwidth_key]:
-                        weights_dict[bandwidth_key][modulation].append(
-                            round(float(path_weight), 2)
-                        )
+                        weights_dict[bandwidth_key][modulation].append(round(float(path_weight), 2))
                     else:
-                        weights_dict[bandwidth_key][modulation] = [
-                            round(float(path_weight), 2)
-                        ]
+                        weights_dict[bandwidth_key][modulation] = [round(float(path_weight), 2)]
 
         # Track by modulation name with band
         data_mod_dict = mod_dict.get(modulation)

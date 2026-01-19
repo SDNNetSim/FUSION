@@ -132,9 +132,7 @@ class Lightpath:
         if self.remaining_bandwidth_gbps < 0:
             raise ValueError("remaining_bandwidth_gbps must be >= 0")
         if self.remaining_bandwidth_gbps > self.total_bandwidth_gbps:
-            raise ValueError(
-                "remaining_bandwidth_gbps cannot exceed total_bandwidth_gbps"
-            )
+            raise ValueError("remaining_bandwidth_gbps cannot exceed total_bandwidth_gbps")
         if self.active_path not in ("primary", "backup"):
             raise ValueError("active_path must be 'primary' or 'backup'")
 
@@ -219,9 +217,7 @@ class Lightpath:
         """
         return self.remaining_bandwidth_gbps >= bandwidth_gbps
 
-    def allocate_bandwidth(
-        self, request_id: int, bandwidth_gbps: int, timestamp: float | None = None
-    ) -> bool:
+    def allocate_bandwidth(self, request_id: int, bandwidth_gbps: int, timestamp: float | None = None) -> bool:
         """
         Allocate bandwidth to a request.
 
@@ -236,9 +232,7 @@ class Lightpath:
         :raises ValueError: If request_id already has an allocation or bandwidth <= 0.
         """
         if request_id in self.request_allocations:
-            raise ValueError(
-                f"Request {request_id} already has allocation on this lightpath"
-            )
+            raise ValueError(f"Request {request_id} already has allocation on this lightpath")
 
         if bandwidth_gbps <= 0:
             raise ValueError("bandwidth_gbps must be > 0")
@@ -255,9 +249,7 @@ class Lightpath:
 
         return True
 
-    def release_bandwidth(
-        self, request_id: int, timestamp: float | None = None
-    ) -> int:
+    def release_bandwidth(self, request_id: int, timestamp: float | None = None) -> int:
         """
         Release bandwidth from a request.
 
@@ -394,9 +386,7 @@ class Lightpath:
         """
         # Parse request allocations (convert float -> int if needed)
         requests_dict = lp_info.get("requests_dict", {})
-        request_allocations = {
-            int(req_id): int(bw) for req_id, bw in requests_dict.items()
-        }
+        request_allocations = {int(req_id): int(bw) for req_id, bw in requests_dict.items()}
 
         # Handle protection fields
         backup_path = lp_info.get("backup_path")
@@ -414,19 +404,9 @@ class Lightpath:
             core=int(lp_info["core"]),
             band=lp_info["band"],
             modulation=lp_info.get("mod_format", lp_info.get("modulation", "")),
-            total_bandwidth_gbps=int(
-                lp_info.get(
-                    "lightpath_bandwidth", lp_info.get("total_bandwidth_gbps", 0)
-                )
-            ),
-            remaining_bandwidth_gbps=int(
-                lp_info.get(
-                    "remaining_bandwidth", lp_info.get("remaining_bandwidth_gbps", 0)
-                )
-            ),
-            path_weight_km=float(
-                lp_info.get("path_weight", lp_info.get("path_weight_km", 0.0))
-            ),
+            total_bandwidth_gbps=int(lp_info.get("lightpath_bandwidth", lp_info.get("total_bandwidth_gbps", 0))),
+            remaining_bandwidth_gbps=int(lp_info.get("remaining_bandwidth", lp_info.get("remaining_bandwidth_gbps", 0))),
+            path_weight_km=float(lp_info.get("path_weight", lp_info.get("path_weight_km", 0.0))),
             request_allocations=request_allocations,
             snr_db=lp_info.get("snr_cost", lp_info.get("snr_db")),
             xt_cost=lp_info.get("xt_cost"),
@@ -473,9 +453,7 @@ class Lightpath:
             # Capacity (legacy uses float)
             "lightpath_bandwidth": float(self.total_bandwidth_gbps),
             "remaining_bandwidth": float(self.remaining_bandwidth_gbps),
-            "requests_dict": {
-                req_id: float(bw) for req_id, bw in self.request_allocations.items()
-            },
+            "requests_dict": {req_id: float(bw) for req_id, bw in self.request_allocations.items()},
             # Quality
             "snr_cost": self.snr_db,
             "xt_cost": self.xt_cost,

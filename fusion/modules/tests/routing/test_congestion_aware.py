@@ -94,9 +94,7 @@ def congestion_aware(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
 class TestCongestionAwareRouting:
     """Tests for CongestionAwareRouting algorithm."""
 
-    def test_init_stores_properties(
-        self, congestion_aware: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_stores_properties(self, congestion_aware: Any, engine_props: dict[str, Any]) -> None:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert congestion_aware.engine_props == engine_props
@@ -117,9 +115,7 @@ class TestCongestionAwareRouting:
         assert isinstance(topologies, list)
         assert "Generic" in topologies
 
-    def test_validate_environment_with_valid_topology(
-        self, congestion_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_validate_environment_with_valid_topology(self, congestion_aware: Any, topology: nx.Graph) -> None:
         """Test environment validation succeeds with valid topology."""
         # Act
         is_valid = congestion_aware.validate_environment(topology)
@@ -171,9 +167,7 @@ class TestCongestionAwareRouting:
         # Assert
         assert congestion_aware._path_count == initial_count + 1
 
-    def test_get_paths_returns_paths_ordered_by_congestion(
-        self, congestion_aware: Any
-    ) -> None:
+    def test_get_paths_returns_paths_ordered_by_congestion(self, congestion_aware: Any) -> None:
         """Test that get_paths returns paths ordered by congestion score."""
         # Act
         with (
@@ -189,9 +183,7 @@ class TestCongestionAwareRouting:
         assert isinstance(paths, list)
         assert len(paths) <= 1
 
-    def test_update_weights_sets_congestion_costs(
-        self, congestion_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_weights_sets_congestion_costs(self, congestion_aware: Any, topology: nx.Graph) -> None:
         """Test that update_weights sets congestion costs on topology edges."""
         # Act
         congestion_aware.update_weights(topology)
@@ -203,9 +195,7 @@ class TestCongestionAwareRouting:
                 if "cong_cost" in edge_data:
                     assert isinstance(edge_data["cong_cost"], (int, float))
 
-    def test_get_metrics_returns_algorithm_statistics(
-        self, congestion_aware: Any
-    ) -> None:
+    def test_get_metrics_returns_algorithm_statistics(self, congestion_aware: Any) -> None:
         """Test that get_metrics returns performance statistics."""
         # Arrange
         with (
@@ -246,9 +236,7 @@ class TestCongestionAwareRouting:
         assert congestion_aware._path_count == 0
         assert congestion_aware._total_congestion == 0.0
 
-    def test_calculate_path_congestion_returns_valid_metric(
-        self, congestion_aware: Any
-    ) -> None:
+    def test_calculate_path_congestion_returns_valid_metric(self, congestion_aware: Any) -> None:
         """Test path congestion calculation returns valid metric."""
         # Arrange
         path = ["A", "B", "C"]
@@ -260,9 +248,7 @@ class TestCongestionAwareRouting:
         assert isinstance(congestion, float)
         assert 0.0 <= congestion <= 1.0
 
-    def test_calculate_path_congestion_with_empty_path(
-        self, congestion_aware: Any
-    ) -> None:
+    def test_calculate_path_congestion_with_empty_path(self, congestion_aware: Any) -> None:
         """Test path congestion calculation with empty path returns zero."""
         # Act
         congestion = congestion_aware._calculate_path_congestion([])
@@ -270,9 +256,7 @@ class TestCongestionAwareRouting:
         # Assert
         assert congestion == 0.0
 
-    def test_gather_candidate_paths_returns_k_paths(
-        self, congestion_aware: Any
-    ) -> None:
+    def test_gather_candidate_paths_returns_k_paths(self, congestion_aware: Any) -> None:
         """Test that candidate path gathering returns up to k paths."""
         # Act
         with (
@@ -291,9 +275,7 @@ class TestCongestionAwareRouting:
         k_paths = congestion_aware.engine_props.get("k_paths", 1)
         assert len(candidate_data["paths"]) <= k_paths
 
-    def test_calculate_path_scores_uses_alpha_weighting(
-        self, congestion_aware: Any
-    ) -> None:
+    def test_calculate_path_scores_uses_alpha_weighting(self, congestion_aware: Any) -> None:
         """Test that path scores use alpha weighting between congestion and length."""
         # Arrange
         candidate_data = {

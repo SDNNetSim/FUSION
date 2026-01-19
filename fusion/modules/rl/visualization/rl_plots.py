@@ -167,9 +167,7 @@ class QValueHeatmapRenderer(BaseRenderer):
                 ax.set_xlabel("Action")
                 ax.set_ylabel("State/Episode")
 
-        fig.suptitle(
-            specification.title or "Q-Value Analysis", fontsize=14, fontweight="bold"
-        )
+        fig.suptitle(specification.title or "Q-Value Analysis", fontsize=14, fontweight="bold")
         plt.tight_layout()
 
         # Save
@@ -245,9 +243,7 @@ class ConvergencePlotRenderer(BaseRenderer):
 
         # Bottom plot: convergence statistics
         algos = list(data.keys())
-        convergence_episodes = [
-            data[a].get("mean_convergence_episode", 0) for a in algos
-        ]
+        convergence_episodes = [data[a].get("mean_convergence_episode", 0) for a in algos]
         convergence_std = [data[a].get("std_convergence_episode", 0) for a in algos]
 
         x_pos = np.arange(len(algos))
@@ -316,33 +312,23 @@ class MultiMetricDashboardRenderer(BaseRenderer):
 
         # Plot 1: Rewards
         ax1 = fig.add_subplot(gs[0, :])
-        self._plot_metric(
-            ax1, metrics_data.get("rewards", {}), "Episode Reward", "Rewards"
-        )
+        self._plot_metric(ax1, metrics_data.get("rewards", {}), "Episode Reward", "Rewards")
 
         # Plot 2: Policy Loss
         ax2 = fig.add_subplot(gs[1, 0])
-        self._plot_metric(
-            ax2, metrics_data.get("policy_loss", {}), "Policy Loss", "Policy Loss"
-        )
+        self._plot_metric(ax2, metrics_data.get("policy_loss", {}), "Policy Loss", "Policy Loss")
 
         # Plot 3: Value Loss
         ax3 = fig.add_subplot(gs[1, 1])
-        self._plot_metric(
-            ax3, metrics_data.get("value_loss", {}), "Value Loss", "Value Loss"
-        )
+        self._plot_metric(ax3, metrics_data.get("value_loss", {}), "Value Loss", "Value Loss")
 
         # Plot 4: Entropy
         ax4 = fig.add_subplot(gs[2, 0])
-        self._plot_metric(
-            ax4, metrics_data.get("entropy", {}), "Entropy", "Policy Entropy"
-        )
+        self._plot_metric(ax4, metrics_data.get("entropy", {}), "Entropy", "Policy Entropy")
 
         # Plot 5: Q-Values
         ax5 = fig.add_subplot(gs[2, 1])
-        self._plot_metric(
-            ax5, metrics_data.get("q_values", {}), "Q-Value", "Mean Q-Value"
-        )
+        self._plot_metric(ax5, metrics_data.get("q_values", {}), "Q-Value", "Mean Q-Value")
 
         fig.suptitle(
             specification.title or "RL Training Dashboard",
@@ -360,9 +346,7 @@ class MultiMetricDashboardRenderer(BaseRenderer):
             metadata={"plot_type": "multi_metric_dashboard"},
         )
 
-    def _plot_metric(
-        self, ax: Any, data: dict[str, Any], ylabel: str, title: str
-    ) -> None:
+    def _plot_metric(self, ax: Any, data: dict[str, Any], ylabel: str, title: str) -> None:
         """
         Helper to plot a single metric.
 

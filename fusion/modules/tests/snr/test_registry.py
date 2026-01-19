@@ -43,21 +43,15 @@ class MockSNRAlgorithm(AbstractSNRMeasurer):
         """Mock SNR calculation."""
         return 20.0
 
-    def calculate_link_snr(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_link_snr(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> float:
         """Mock link SNR calculation."""
         return 15.0
 
-    def calculate_crosstalk(
-        self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_crosstalk(self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]) -> float:
         """Mock crosstalk calculation."""
         return 0.0
 
-    def calculate_nonlinear_noise(
-        self, path: list[Any], spectrum_info: dict[str, Any]
-    ) -> dict[str, float]:
+    def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
         """Mock nonlinear noise calculation."""
         return {"sci": 0.0, "xci": 0.0, "xpm": 0.0, "fwm": 0.0}
 
@@ -65,15 +59,11 @@ class MockSNRAlgorithm(AbstractSNRMeasurer):
         """Mock SNR threshold calculation."""
         return 12.0
 
-    def is_snr_acceptable(
-        self, calculated_snr: float, required_snr: float, margin: float = 0.0
-    ) -> bool:
+    def is_snr_acceptable(self, calculated_snr: float, required_snr: float, margin: float = 0.0) -> bool:
         """Mock SNR acceptability check."""
         return calculated_snr >= (required_snr + margin)
 
-    def update_link_state(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> None:
+    def update_link_state(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> None:
         """Mock link state update."""
         pass
 
@@ -99,21 +89,15 @@ class MockMulticoreSNRAlgorithm(AbstractSNRMeasurer):
         """Mock SNR calculation."""
         return 25.0
 
-    def calculate_link_snr(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_link_snr(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> float:
         """Mock link SNR calculation."""
         return 18.0
 
-    def calculate_crosstalk(
-        self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_crosstalk(self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]) -> float:
         """Mock crosstalk calculation."""
         return 0.5
 
-    def calculate_nonlinear_noise(
-        self, path: list[Any], spectrum_info: dict[str, Any]
-    ) -> dict[str, float]:
+    def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
         """Mock nonlinear noise calculation."""
         return {"sci": 0.1, "xci": 0.2, "xpm": 0.0, "fwm": 0.0}
 
@@ -121,15 +105,11 @@ class MockMulticoreSNRAlgorithm(AbstractSNRMeasurer):
         """Mock SNR threshold calculation."""
         return 15.0
 
-    def is_snr_acceptable(
-        self, calculated_snr: float, required_snr: float, margin: float = 0.0
-    ) -> bool:
+    def is_snr_acceptable(self, calculated_snr: float, required_snr: float, margin: float = 0.0) -> bool:
         """Mock SNR acceptability check."""
         return calculated_snr >= (required_snr + margin)
 
-    def update_link_state(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> None:
+    def update_link_state(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> None:
         """Mock link state update."""
         pass
 
@@ -226,9 +206,7 @@ class TestSNRRegistry:
         route_props = Mock()
 
         # Act
-        instance = registry.create(
-            "standard_snr", engine_props, sdn_props, spectrum_props, route_props
-        )
+        instance = registry.create("standard_snr", engine_props, sdn_props, spectrum_props, route_props)
 
         # Assert
         assert isinstance(instance, StandardSNRMeasurer)
@@ -335,9 +313,7 @@ class TestGlobalRegistryFunctions:
         route_props = Mock()
 
         # Act
-        instance = create_snr_algorithm(
-            "standard_snr", engine_props, sdn_props, spectrum_props, route_props
-        )
+        instance = create_snr_algorithm("standard_snr", engine_props, sdn_props, spectrum_props, route_props)
 
         # Assert
         assert isinstance(instance, StandardSNRMeasurer)
@@ -413,9 +389,7 @@ class TestSNRRegistryEdgeCases:
         route_props.path = [1, 2, 3]
 
         # Act
-        instance = registry.create(
-            "standard_snr", engine_props, sdn_props, spectrum_props, route_props
-        )
+        instance = registry.create("standard_snr", engine_props, sdn_props, spectrum_props, route_props)
 
         # Assert
         assert instance.engine_props == engine_props
@@ -441,39 +415,25 @@ class TestSNRRegistryEdgeCases:
             def supports_multicore(self) -> bool:
                 return False
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 0.0
 
-            def calculate_link_snr(
-                self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_link_snr(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> float:
                 return 0.0
 
-            def calculate_crosstalk(
-                self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_crosstalk(self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]) -> float:
                 return 0.0
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 return 0.0
 
-            def is_snr_acceptable(
-                self, calculated_snr: float, required_snr: float, margin: float = 0.0
-            ) -> bool:
+            def is_snr_acceptable(self, calculated_snr: float, required_snr: float, margin: float = 0.0) -> bool:
                 return True
 
-            def update_link_state(
-                self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-            ) -> None:
+            def update_link_state(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> None:
                 pass
 
             def get_metrics(self) -> dict[str, Any]:

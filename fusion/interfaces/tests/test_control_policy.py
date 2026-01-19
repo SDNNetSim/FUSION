@@ -14,9 +14,7 @@ class TestControlPolicyProtocol:
         class ValidPolicy:
             """A valid policy implementation."""
 
-            def select_action(
-                self, request: Any, options: Any, network_state: Any
-            ) -> int:
+            def select_action(self, request: Any, options: Any, network_state: Any) -> int:
                 return 0
 
             def update(self, request: Any, action: int, reward: float) -> None:
@@ -49,9 +47,7 @@ class TestControlPolicyProtocol:
         class InvalidPolicy:
             """Missing update method."""
 
-            def select_action(
-                self, request: Any, options: Any, network_state: Any
-            ) -> int:
+            def select_action(self, request: Any, options: Any, network_state: Any) -> int:
                 return 0
 
             def get_name(self) -> str:
@@ -66,9 +62,7 @@ class TestControlPolicyProtocol:
         class InvalidPolicy:
             """Missing get_name method."""
 
-            def select_action(
-                self, request: Any, options: Any, network_state: Any
-            ) -> int:
+            def select_action(self, request: Any, options: Any, network_state: Any) -> int:
                 return 0
 
             def update(self, request: Any, action: int, reward: float) -> None:
@@ -83,9 +77,7 @@ class TestControlPolicyProtocol:
         class MinimalPolicy:
             """Minimal implementation that satisfies ControlPolicy protocol."""
 
-            def select_action(
-                self, request: Any, options: Any, network_state: Any
-            ) -> int:
+            def select_action(self, request: Any, options: Any, network_state: Any) -> int:
                 # Select first feasible option
                 for opt in options:
                     if getattr(opt, "is_feasible", False):
@@ -112,9 +104,7 @@ class TestControlPolicyProtocol:
                 self.alpha = alpha
                 self.call_count = 0
 
-            def select_action(
-                self, request: Any, options: Any, network_state: Any
-            ) -> int:
+            def select_action(self, request: Any, options: Any, network_state: Any) -> int:
                 self.call_count += 1
                 return 0 if options else -1
 

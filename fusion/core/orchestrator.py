@@ -56,9 +56,18 @@ class SDNOrchestrator:
     """
 
     __slots__ = (
-        "config", "routing", "spectrum", "grooming", "snr", "slicing",
-        "_failed_attempt_snr_list", "_last_path_index", "current_iteration",
-        "_policy", "_rl_adapter", "_protection_pipeline",
+        "config",
+        "routing",
+        "spectrum",
+        "grooming",
+        "snr",
+        "slicing",
+        "_failed_attempt_snr_list",
+        "_last_path_index",
+        "current_iteration",
+        "_policy",
+        "_rl_adapter",
+        "_protection_pipeline",
     )
 
     def __init__(
@@ -124,15 +133,11 @@ class SDNOrchestrator:
         """
 
         # Branch for protection-enabled requests (P3.2.g)
-        if self.config.protection_enabled and getattr(
-            request, "protection_required", False
-        ):
+        if self.config.protection_enabled and getattr(request, "protection_required", False):
             return self._handle_protected_arrival(request, network_state)
 
         # Standard unprotected flow
-        return self._handle_unprotected_arrival(
-            request, network_state, forced_path, forced_modulation, forced_path_index
-        )
+        return self._handle_unprotected_arrival(request, network_state, forced_path, forced_modulation, forced_path_index)
 
     def _handle_unprotected_arrival(
         self,
@@ -194,19 +199,15 @@ class SDNOrchestrator:
         )
 
         if route_result.is_empty:
-            return self._handle_failure(
-                request, groomed_lightpaths, BlockReason.NO_PATH, network_state
-            )
+            return self._handle_failure(request, groomed_lightpaths, BlockReason.NO_PATH, network_state)
 
         # Override modulations with forced_modulation if provided (for RL)
         # This mimics legacy RL behavior where get_path_modulation selects ONE modulation
         if forced_modulation:
             # Create new RouteResult with just the forced modulation for each path
             from dataclasses import replace
-            route_result = replace(
-                route_result,
-                modulations=tuple((forced_modulation,) for _ in route_result.paths)
-            )
+
+            route_result = replace(route_result, modulations=tuple((forced_modulation,) for _ in route_result.paths))
 
         # For partial grooming, LEGACY uses original request bandwidth for spectrum allocation
         # (not remaining_bw). This affects slots_needed calculation and SNR checks.
@@ -231,7 +232,12 @@ class SDNOrchestrator:
             actual_bw_to_allocate = remaining_bw if was_partially_groomed else spectrum_bw
 
             result = self._try_allocate_on_path(
-                request, path, modulations, weight_km, spectrum_bw, network_state,
+                request,
+                path,
+                modulations,
+                weight_km,
+                spectrum_bw,
+                network_state,
                 allow_slicing=False,  # Don't try slicing yet
                 connection_index=route_result.connection_index,
                 path_index=path_idx,
@@ -242,8 +248,7 @@ class SDNOrchestrator:
             if result is not None:
                 groomed_bw = request.bandwidth_gbps - remaining_bw
                 return self._combine_results(
-                    request, groomed_lightpaths, result, route_result,
-                    path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
+                    request, groomed_lightpaths, result, route_result, path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                 )
 
         # Stage 4: Try dynamic_lps slicing on ALL paths (FIXED-GRID ONLY)
@@ -262,7 +267,7 @@ class SDNOrchestrator:
                 self._last_path_index = path_idx  # Track for groomed requests (Legacy behavior)
                 # Record SNR count BEFORE this path's slicing attempt
                 # If slicing fails, we'll revert to this count (Legacy behavior)
-                snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
+                snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, "_failed_attempt_snr_list") else 0
 
                 modulations = route_result.modulations[loop_idx]
                 weight_km = route_result.weights_km[loop_idx]
@@ -276,7 +281,12 @@ class SDNOrchestrator:
                 actual_bw_to_allocate = remaining_bw if was_partially_groomed else spectrum_bw
 
                 result = self._try_allocate_on_path(
-                    request, path, modulations, weight_km, spectrum_bw, network_state,
+                    request,
+                    path,
+                    modulations,
+                    weight_km,
+                    spectrum_bw,
+                    network_state,
                     allow_slicing=True,  # Now try dynamic slicing
                     slicing_only=False,  # Need to run through modulations to get spectrum
                     connection_index=route_result.connection_index,
@@ -290,8 +300,7 @@ class SDNOrchestrator:
                 if result is not None:
                     groomed_bw = request.bandwidth_gbps - remaining_bw
                     return self._combine_results(
-                        request, groomed_lightpaths, result, route_result,
-                        path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
+                        request, groomed_lightpaths, result, route_result, path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
                 else:
                     # Slicing failed on this path - simulate Legacy's pop(lp_idx) behavior
@@ -302,7 +311,7 @@ class SDNOrchestrator:
                     # entries. We replicate by removing N entries from the START of the list,
                     # where N = number of entries added during this path's attempt.
                     entries_added = len(self._failed_attempt_snr_list) - snr_count_before_path
-                    if entries_added > 0 and hasattr(self, '_failed_attempt_snr_list'):
+                    if entries_added > 0 and hasattr(self, "_failed_attempt_snr_list"):
                         self._failed_attempt_snr_list = self._failed_attempt_snr_list[entries_added:]
 
         # Stage 5: Try segment slicing pipeline on ALL paths (only if standard allocation failed)
@@ -315,9 +324,10 @@ class SDNOrchestrator:
         # Stage 4 handles fixed_grid + dynamic_lps, so Stage 5 should NOT also try slicing
         # in that case (it would cause double allocation on different code paths).
         stage_4_handled = self.config.dynamic_lps and self.config.fixed_grid
-        use_slicing = self.slicing and not stage_4_handled and (
-            self.config.slicing_enabled or
-            (self.config.dynamic_lps and not self.config.fixed_grid)
+        use_slicing = (
+            self.slicing
+            and not stage_4_handled
+            and (self.config.slicing_enabled or (self.config.dynamic_lps and not self.config.fixed_grid))
         )
         if use_slicing:
             for loop_idx, path in enumerate(route_result.paths):
@@ -326,7 +336,7 @@ class SDNOrchestrator:
                 last_path_idx = path_idx
                 self._last_path_index = path_idx  # Track for groomed requests (Legacy behavior)
                 # Record SNR count BEFORE this path's slicing attempt
-                snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else 0
+                snr_count_before_path = len(self._failed_attempt_snr_list) if hasattr(self, "_failed_attempt_snr_list") else 0
 
                 modulations = route_result.modulations[loop_idx]
                 weight_km = route_result.weights_km[loop_idx]
@@ -334,9 +344,14 @@ class SDNOrchestrator:
                 # For partial grooming, actual_bw_to_allocate = remaining_bw
                 actual_bw_to_allocate = remaining_bw if was_partially_groomed else spectrum_bw
                 result = self._try_allocate_on_path(
-                    request, path, modulations, weight_km, spectrum_bw, network_state,
+                    request,
+                    path,
+                    modulations,
+                    weight_km,
+                    spectrum_bw,
+                    network_state,
                     allow_slicing=True,  # Now try slicing
-                    slicing_only=True,   # Skip standard allocation (already tried)
+                    slicing_only=True,  # Skip standard allocation (already tried)
                     connection_index=route_result.connection_index,
                     path_index=path_idx,
                     lp_capacity_override=lp_capacity_override,
@@ -346,21 +361,17 @@ class SDNOrchestrator:
                 if result is not None:
                     groomed_bw = request.bandwidth_gbps - remaining_bw
                     return self._combine_results(
-                        request, groomed_lightpaths, result, route_result,
-                        path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
+                        request, groomed_lightpaths, result, route_result, path_index=path_idx, groomed_bandwidth_gbps=groomed_bw
                     )
                 else:
                     # Slicing failed on this path - simulate Legacy's pop(lp_idx) behavior
                     # Remove N entries from the START of the list (Stage 3 entries first)
                     entries_added = len(self._failed_attempt_snr_list) - snr_count_before_path
-                    if entries_added > 0 and hasattr(self, '_failed_attempt_snr_list'):
+                    if entries_added > 0 and hasattr(self, "_failed_attempt_snr_list"):
                         self._failed_attempt_snr_list = self._failed_attempt_snr_list[entries_added:]
 
         # Stage 6: All paths failed
-        return self._handle_failure(
-            request, groomed_lightpaths, BlockReason.CONGESTION, network_state,
-            path_index=last_path_idx
-        )
+        return self._handle_failure(request, groomed_lightpaths, BlockReason.CONGESTION, network_state, path_index=last_path_idx)
 
     def _handle_protected_arrival(
         self,
@@ -447,7 +458,10 @@ class SDNOrchestrator:
 
         # Find spectrum for working path
         working_spectrum = self.spectrum.find_spectrum(
-            list(working_path), working_mods[0], request.bandwidth_gbps, network_state,
+            list(working_path),
+            working_mods[0],
+            request.bandwidth_gbps,
+            network_state,
             connection_index=connection_index,
             path_index=path_index,
         )
@@ -471,7 +485,10 @@ class SDNOrchestrator:
 
         # Find spectrum for backup path
         backup_spectrum = self.spectrum.find_spectrum(
-            list(backup_path), backup_mods[0], request.bandwidth_gbps, network_state,
+            list(backup_path),
+            backup_mods[0],
+            request.bandwidth_gbps,
+            network_state,
             connection_index=connection_index,
             path_index=path_index,
         )
@@ -571,7 +588,10 @@ class SDNOrchestrator:
             valid_mods = [mod for mod in modulations if mod and mod is not False]
             if valid_mods:
                 spectrum_result = self.spectrum.find_spectrum(
-                    list(path), valid_mods, bandwidth_gbps, network_state,
+                    list(path),
+                    valid_mods,
+                    bandwidth_gbps,
+                    network_state,
                     connection_index=connection_index,
                     path_index=path_index,
                     use_dynamic_slicing=use_dynamic_slicing,
@@ -625,9 +645,7 @@ class SDNOrchestrator:
 
         # Fallback to slicing (if enabled and allowed)
         # Also allow slicing for flex-grid + dynamic_lps (handled by slicing pipeline)
-        slicing_allowed = self.config.slicing_enabled or (
-            self.config.dynamic_lps and not self.config.fixed_grid
-        )
+        slicing_allowed = self.config.slicing_enabled or (self.config.dynamic_lps and not self.config.fixed_grid)
         # Don't fall through to slicing pipeline if we already tried fixed-grid dynamic slicing
         # (use_dynamic_slicing=True means _allocate_dynamic_slices was already called)
         if use_dynamic_slicing and self.config.fixed_grid:
@@ -653,6 +671,7 @@ class SDNOrchestrator:
             # Convert SlicingResult to AllocationResult
             if slicing_result.success:
                 from fusion.domain.results import AllocationResult
+
                 # With accumulator, slicing appends directly to _failed_attempt_snr_list
                 # so we use the accumulator values (not slicing_result.failed_attempt_snr_values)
                 accumulated_snr = tuple(self._failed_attempt_snr_list)
@@ -724,15 +743,10 @@ class SDNOrchestrator:
         # 2. Legacy snr_recheck_after_allocation only checks EXISTING lightpaths
         # 3. Modulations are chosen for capacity, not SNR margin after allocation
         if self.snr and self.config.snr_recheck:
-            recheck_result = self.snr.recheck_affected(
-                lightpath.lightpath_id, network_state, slicing_flag=slicing_flag
-            )
+            recheck_result = self.snr.recheck_affected(lightpath.lightpath_id, network_state, slicing_flag=slicing_flag)
             if not recheck_result.all_pass:
                 # Rollback: existing LP would fail SNR
-                logger.debug(
-                    f"SNR recheck failed for request {request.request_id}: "
-                    f"affected LPs {recheck_result.degraded_lightpath_ids}"
-                )
+                logger.debug(f"SNR recheck failed for request {request.request_id}: affected LPs {recheck_result.degraded_lightpath_ids}")
                 # Fixed legacy behavior: SNR value is removed when recheck fails
                 # (Previously we kept stale SNR values to match legacy's bug)
                 network_state.release_lightpath(lightpath.lightpath_id)
@@ -740,17 +754,15 @@ class SDNOrchestrator:
 
         # Success: link request to lightpath and update remaining bandwidth
         # Use allocate_bandwidth to properly track time_bw_usage for utilization stats
-        lightpath.allocate_bandwidth(
-            request.request_id, bandwidth_gbps, timestamp=request.arrive_time
-        )
+        lightpath.allocate_bandwidth(request.request_id, bandwidth_gbps, timestamp=request.arrive_time)
         request.lightpath_ids.append(lightpath.lightpath_id)
 
         # Track the successful attempt's SNR for stats tracking
-        if spectrum_result.snr_db is not None and hasattr(self, '_failed_attempt_snr_list'):
+        if spectrum_result.snr_db is not None and hasattr(self, "_failed_attempt_snr_list"):
             self._failed_attempt_snr_list.append(spectrum_result.snr_db)
 
         # Include accumulated SNR values in result for stats tracking
-        failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
+        failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, "_failed_attempt_snr_list") else ()
 
         return AllocationResult(
             success=True,
@@ -834,16 +846,14 @@ class SDNOrchestrator:
             if spectrum_result.snr_db is not None:
                 lightpath.snr_db = spectrum_result.snr_db
                 # Track SNR for metrics (add before recheck, like legacy does)
-                if hasattr(self, '_failed_attempt_snr_list'):
+                if hasattr(self, "_failed_attempt_snr_list"):
                     self._failed_attempt_snr_list.append(spectrum_result.snr_db)
                     snr_was_added = True
 
             # SNR recheck for affected existing lightpaths (legacy behavior)
             # NOTE: Legacy does NOT re-validate the new LP's SNR here - only checks existing LPs
             if self.snr and self.config.snr_recheck:
-                recheck_result = self.snr.recheck_affected(
-                    lightpath.lightpath_id, network_state, slicing_flag=True
-                )
+                recheck_result = self.snr.recheck_affected(lightpath.lightpath_id, network_state, slicing_flag=True)
                 if not recheck_result.all_pass:
                     # Rollback: existing LP would fail SNR
                     logger.debug(
@@ -862,9 +872,7 @@ class SDNOrchestrator:
 
             # Success: link request to lightpath
             # Use allocate_bandwidth to properly track time_bw_usage
-            lightpath.allocate_bandwidth(
-                request.request_id, dedicated_bw, timestamp=request.arrive_time
-            )
+            lightpath.allocate_bandwidth(request.request_id, dedicated_bw, timestamp=request.arrive_time)
             request.lightpath_ids.append(lightpath.lightpath_id)
             allocated_lightpaths.append(lightpath.lightpath_id)
 
@@ -906,7 +914,7 @@ class SDNOrchestrator:
                 return None
 
             # Include accumulated SNR values for Legacy compatibility
-            failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
+            failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, "_failed_attempt_snr_list") else ()
             return AllocationResult(
                 success=True,
                 lightpaths_created=tuple(allocated_lightpaths),
@@ -937,9 +945,7 @@ class SDNOrchestrator:
 
         # Accept partial grooming if allowed
         if groomed_lightpaths and self.config.can_partially_serve:
-            groomed_bw = self._sum_groomed_bandwidth(
-                groomed_lightpaths, request, network_state
-            )
+            groomed_bw = self._sum_groomed_bandwidth(groomed_lightpaths, request, network_state)
             # Only return success if we actually allocated some bandwidth
             if groomed_bw > 0:
                 request.status = RequestStatus.PARTIALLY_GROOMED
@@ -956,10 +962,7 @@ class SDNOrchestrator:
 
         # Rollback grooming if any (P3.2.f)
         if groomed_lightpaths and self.grooming:
-            logger.debug(
-                f"Rolling back {len(groomed_lightpaths)} groomed LPs "
-                f"for request {request.request_id}"
-            )
+            logger.debug(f"Rolling back {len(groomed_lightpaths)} groomed LPs for request {request.request_id}")
             self.grooming.rollback_groom(request, groomed_lightpaths, network_state)
 
         request.status = RequestStatus.BLOCKED
@@ -1007,17 +1010,14 @@ class SDNOrchestrator:
         # Include failed attempt SNR values for Legacy compatibility
         # With snr_accumulator, slicing appends directly to _failed_attempt_snr_list
         # so we just use the orchestrator's list (which has all values)
-        failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, '_failed_attempt_snr_list') else ()
+        failed_snr = tuple(self._failed_attempt_snr_list) if hasattr(self, "_failed_attempt_snr_list") else ()
 
         return AllocationResult(
             success=True,
             lightpaths_created=alloc_result.lightpaths_created,
             lightpaths_groomed=tuple(groomed_lightpaths),
             is_groomed=len(groomed_lightpaths) > 0,
-            is_partially_groomed=(
-                len(groomed_lightpaths) > 0
-                and len(alloc_result.lightpaths_created) > 0
-            ),
+            is_partially_groomed=(len(groomed_lightpaths) > 0 and len(alloc_result.lightpaths_created) > 0),
             is_sliced=alloc_result.is_sliced,
             total_bandwidth_allocated_gbps=total_bw,
             path_index=path_index,
@@ -1131,6 +1131,7 @@ class SDNOrchestrator:
         # Create RL adapter lazily if not set
         if self._rl_adapter is None:
             from fusion.modules.rl.adapter import RLSimulationAdapter
+
             self._rl_adapter = RLSimulationAdapter(self)
 
         # Log policy being used
@@ -1142,11 +1143,7 @@ class SDNOrchestrator:
         )
 
         # Check for protected request with protection pipeline
-        if (
-            self.config.protection_enabled
-            and getattr(request, "protection_required", False)
-            and self._protection_pipeline is not None
-        ):
+        if self.config.protection_enabled and getattr(request, "protection_required", False) and self._protection_pipeline is not None:
             return self._handle_protected_with_policy(request, network_state)
 
         # Build path options via adapter
@@ -1214,9 +1211,7 @@ class SDNOrchestrator:
             reward = 1.0
         else:
             reward = -1.0
-        logger.warning(
-            "Using hardcoded reward values (success=1.0, failure=-1.0) for policy update"
-        )
+        logger.warning("Using hardcoded reward values (success=1.0, failure=-1.0) for policy update")
         self._policy.update(request, action, reward)
 
         return result
@@ -1256,9 +1251,7 @@ class SDNOrchestrator:
         topology = network_state.topology
 
         # Find disjoint path pair
-        paths = self._protection_pipeline.find_protected_paths(
-            topology, request.source, request.destination
-        )
+        paths = self._protection_pipeline.find_protected_paths(topology, request.source, request.destination)
 
         if paths is None:
             logger.debug(
@@ -1287,9 +1280,7 @@ class SDNOrchestrator:
         # slot width (e.g., 12.5 GHz), and spectral efficiency to compute actual slots needed.
         # This placeholder assumes 25 Gbps per slot which is not accurate.
         slots_needed = request.bandwidth_gbps // 25 + 1
-        logger.warning(
-            "Using hardcoded slots calculation (bandwidth // 25 + 1) for protected allocation"
-        )
+        logger.warning("Using hardcoded slots calculation (bandwidth // 25 + 1) for protected allocation")
 
         # Try to allocate protected spectrum
         alloc_result = self._protection_pipeline.allocate_protected(

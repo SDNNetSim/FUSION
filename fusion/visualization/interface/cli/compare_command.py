@@ -193,10 +193,7 @@ def compare_command(
         if verbose:
             _display_comparison_summary(request)
 
-        click.echo(
-            f"\n🔄 Comparing {len(request.algorithms)} algorithms "
-            f"on '{request.metric}'..."
-        )
+        click.echo(f"\n🔄 Comparing {len(request.algorithms)} algorithms on '{request.metric}'...")
 
         # Execute comparison
         use_case = _get_compare_use_case()
@@ -225,9 +222,7 @@ def compare_command(
         raise click.Abort() from e
 
 
-def _load_comparison_from_config(
-    config_path: Path, verbose: bool
-) -> ComparisonRequestDTO:
+def _load_comparison_from_config(config_path: Path, verbose: bool) -> ComparisonRequestDTO:
     """Load comparison request from YAML config file."""
     import yaml
 
@@ -292,17 +287,10 @@ def _display_comparison_summary(request: ComparisonRequestDTO) -> None:
     click.echo(f"  Metric:      {request.metric}")
 
     if request.traffic_volumes:
-        click.echo(
-            f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}"
-        )
+        click.echo(f"  Traffic:     {', '.join(str(tv) for tv in request.traffic_volumes)}")
 
-    click.echo(
-        f"  Tests:       "
-        f"{'Enabled' if request.include_statistical_tests else 'Disabled'}"
-    )
-    click.echo(
-        f"  Effect Size: {'Enabled' if request.include_effect_sizes else 'Disabled'}"
-    )
+    click.echo(f"  Tests:       {'Enabled' if request.include_statistical_tests else 'Disabled'}")
+    click.echo(f"  Effect Size: {'Enabled' if request.include_effect_sizes else 'Disabled'}")
     click.echo(f"  Confidence:  {request.confidence_level:.1%}")
 
 
@@ -313,9 +301,7 @@ def _display_comparison_result(result: ComparisonResultDTO, verbose: bool) -> No
         click.echo(f"\nError: {result.error}")
         return
 
-    click.echo(
-        click.style("\n✅ Comparison completed successfully!", fg="green", bold=True)
-    )
+    click.echo(click.style("\n✅ Comparison completed successfully!", fg="green", bold=True))
 
     click.echo(f"\n📊 Statistical Comparisons ({len(result.comparisons)} pairwise):")
     click.echo(f"{'=' * 80}\n")
@@ -326,34 +312,20 @@ def _display_comparison_result(result: ComparisonResultDTO, verbose: bool) -> No
         click.echo(f"   Metric: {comp.metric}")
 
         # Means and std devs
-        click.echo(
-            f"   {comp.algorithm_a}: mean={comp.mean_a:.6f}, std={comp.std_a:.6f}"
-        )
-        click.echo(
-            f"   {comp.algorithm_b}: mean={comp.mean_b:.6f}, std={comp.std_b:.6f}"
-        )
+        click.echo(f"   {comp.algorithm_a}: mean={comp.mean_a:.6f}, std={comp.std_a:.6f}")
+        click.echo(f"   {comp.algorithm_b}: mean={comp.mean_b:.6f}, std={comp.std_b:.6f}")
 
         # Confidence intervals
         if verbose:
-            click.echo(
-                f"   {comp.algorithm_a} CI: "
-                f"[{comp.ci_lower_a:.6f}, {comp.ci_upper_a:.6f}]"
-            )
-            click.echo(
-                f"   {comp.algorithm_b} CI: "
-                f"[{comp.ci_lower_b:.6f}, {comp.ci_upper_b:.6f}]"
-            )
+            click.echo(f"   {comp.algorithm_a} CI: [{comp.ci_lower_a:.6f}, {comp.ci_upper_a:.6f}]")
+            click.echo(f"   {comp.algorithm_b} CI: [{comp.ci_lower_b:.6f}, {comp.ci_upper_b:.6f}]")
 
         # Statistical test results
         if comp.test_name and comp.p_value is not None:
             significance = "significant" if comp.p_value < 0.05 else "not significant"
             significance_style = "green" if comp.p_value < 0.05 else "yellow"
 
-            click.echo(
-                f"   {comp.test_name}: "
-                f"p={comp.p_value:.4f} "
-                f"({click.style(significance, fg=significance_style)})"
-            )
+            click.echo(f"   {comp.test_name}: p={comp.p_value:.4f} ({click.style(significance, fg=significance_style)})")
 
         # Effect size
         if comp.cohens_d is not None:
@@ -401,20 +373,10 @@ def _save_comparison_report(result: ComparisonResultDTO, output_path: Path) -> N
         for i, comp in enumerate(result.comparisons, 1):
             f.write(f"{i}. {comp.algorithm_a} vs {comp.algorithm_b}\n")
             f.write(f"   Metric: {comp.metric}\n")
-            f.write(
-                f"   {comp.algorithm_a}: mean={comp.mean_a:.6f}, std={comp.std_a:.6f}\n"
-            )
-            f.write(
-                f"   {comp.algorithm_b}: mean={comp.mean_b:.6f}, std={comp.std_b:.6f}\n"
-            )
-            f.write(
-                f"   {comp.algorithm_a} CI: "
-                f"[{comp.ci_lower_a:.6f}, {comp.ci_upper_a:.6f}]\n"
-            )
-            f.write(
-                f"   {comp.algorithm_b} CI: "
-                f"[{comp.ci_lower_b:.6f}, {comp.ci_upper_b:.6f}]\n"
-            )
+            f.write(f"   {comp.algorithm_a}: mean={comp.mean_a:.6f}, std={comp.std_a:.6f}\n")
+            f.write(f"   {comp.algorithm_b}: mean={comp.mean_b:.6f}, std={comp.std_b:.6f}\n")
+            f.write(f"   {comp.algorithm_a} CI: [{comp.ci_lower_a:.6f}, {comp.ci_upper_a:.6f}]\n")
+            f.write(f"   {comp.algorithm_b} CI: [{comp.ci_lower_b:.6f}, {comp.ci_upper_b:.6f}]\n")
 
             if comp.test_name and comp.p_value is not None:
                 f.write(f"   {comp.test_name}: p={comp.p_value:.4f}\n")
@@ -426,12 +388,8 @@ def _save_comparison_report(result: ComparisonResultDTO, output_path: Path) -> N
                 f.write(f"   Cohen's d: {effect_str}\n")
 
             if comp.p_value is not None and comp.p_value < 0.05:
-                better = (
-                    comp.algorithm_a if comp.mean_a < comp.mean_b else comp.algorithm_b
-                )
-                worse = (
-                    comp.algorithm_b if comp.mean_a < comp.mean_b else comp.algorithm_a
-                )
+                better = comp.algorithm_a if comp.mean_a < comp.mean_b else comp.algorithm_b
+                worse = comp.algorithm_b if comp.mean_a < comp.mean_b else comp.algorithm_a
                 f.write(f"   → {better} performs significantly better than {worse}\n")
 
             f.write("\n")

@@ -45,9 +45,7 @@ class PointerHead(torch.nn.Module):
         if dimension <= 0:
             raise ValueError(f"Dimension must be positive, got {dimension}")
 
-        self.query_key_value = torch.nn.Linear(
-            dimension, dimension * QUERY_KEY_VALUE_MULTIPLIER
-        )
+        self.query_key_value = torch.nn.Linear(dimension, dimension * QUERY_KEY_VALUE_MULTIPLIER)
         self.dimension = dimension
 
     def forward(self, path_features: torch.Tensor) -> torch.Tensor:
@@ -75,13 +73,9 @@ class PointerHead(torch.nn.Module):
         if path_features.dim() != 3:
             raise ValueError(f"Expected 3D tensor, got {path_features.dim()}D tensor")
         if path_features.size(1) != DEFAULT_ATTENTION_HEADS:
-            raise ValueError(
-                f"Expected {DEFAULT_ATTENTION_HEADS} paths, got {path_features.size(1)}"
-            )
+            raise ValueError(f"Expected {DEFAULT_ATTENTION_HEADS} paths, got {path_features.size(1)}")
         if path_features.size(-1) != self.dimension:
-            raise ValueError(
-                f"Expected dimension {self.dimension}, got {path_features.size(-1)}"
-            )
+            raise ValueError(f"Expected dimension {self.dimension}, got {path_features.size(-1)}")
 
         # Compute query, key, value transformations
         query_key_value = self.query_key_value(path_features)  # (batch, 3, 3*dimension)
@@ -132,9 +126,7 @@ class PointerPolicy(ActorCriticPolicy):
         :raises AttributeError: If features_extractor is not properly initialized
         """
         if not hasattr(self, "features_extractor") or self.features_extractor is None:
-            raise AttributeError(
-                "Features extractor must be initialized before building MLP extractor"
-            )
+            raise AttributeError("Features extractor must be initialized before building MLP extractor")
 
         # Initialize MLP extractor with dummy networks
         self.mlp_extractor = MlpExtractor(

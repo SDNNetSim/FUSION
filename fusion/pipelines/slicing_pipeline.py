@@ -336,9 +336,7 @@ class StandardSlicingPipeline:
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
                     # Call recheck_affected to check existing LPs (matches legacy behavior)
-                    recheck_result = snr_pipeline.recheck_affected(
-                        lightpath_id, network_state, slicing_flag=True
-                    )
+                    recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                     if not recheck_result.all_pass:
                         logger.debug(f"Tier slice failed SNR recheck - existing LPs degraded (tier_bw={tier_bw})")
                         # Release the failed LP first
@@ -456,16 +454,32 @@ class StandardSlicingPipeline:
         if fixed_grid:
             # Fixed-grid dynamic slicing: 1 slot at a time
             return self._try_allocate_dynamic_fixed_grid(
-                request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator,
-                path_weight
+                request,
+                path,
+                bandwidth_gbps,
+                network_state,
+                spectrum_pipeline,
+                snr_pipeline,
+                connection_index,
+                path_index,
+                max_slices,
+                snr_accumulator,
+                path_weight,
             )
         else:
             # Flex-grid dynamic slicing: iterate through bandwidth tiers
             return self._try_allocate_dynamic_flex_grid(
-                request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator,
-                path_weight
+                request,
+                path,
+                bandwidth_gbps,
+                network_state,
+                spectrum_pipeline,
+                snr_pipeline,
+                connection_index,
+                path_index,
+                max_slices,
+                snr_accumulator,
+                path_weight,
             )
 
     def _try_allocate_dynamic_fixed_grid(
@@ -531,9 +545,7 @@ class StandardSlicingPipeline:
 
             snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
             if snr_pipeline is not None and snr_recheck_enabled:
-                recheck_result = snr_pipeline.recheck_affected(
-                    lightpath_id, network_state, slicing_flag=True
-                )
+                recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                 if not recheck_result.all_pass:
                     # Release the failed LP first
                     network_state.release_lightpath(lightpath_id)
@@ -558,8 +570,7 @@ class StandardSlicingPipeline:
             return None
 
         return self._finalize_dynamic_result(
-            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
-            failed_snr_values, path_index, network_state
+            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths, failed_snr_values, path_index, network_state
         )
 
     def _try_allocate_dynamic_flex_grid(
@@ -638,9 +649,7 @@ class StandardSlicingPipeline:
 
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
-                    recheck_result = snr_pipeline.recheck_affected(
-                        lightpath_id, network_state, slicing_flag=True
-                    )
+                    recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                     if not recheck_result.all_pass:
                         # Release the failed LP
                         failed_mod = spectrum_result.modulation
@@ -674,8 +683,7 @@ class StandardSlicingPipeline:
             return None
 
         return self._finalize_dynamic_result(
-            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
-            failed_snr_values, path_index, network_state
+            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths, failed_snr_values, path_index, network_state
         )
 
     def _finalize_dynamic_result(
@@ -837,7 +845,6 @@ class StandardSlicingPipeline:
                     path_index=path_index,
                 )
                 if not spectrum_result.is_free:
-
                     # Check for partial serving (Legacy behavior)
                     # If can_partially_serve is enabled, some slices allocated, and on last path, accept partial
                     can_partial = getattr(self._config, "can_partially_serve", False)
@@ -887,13 +894,9 @@ class StandardSlicingPipeline:
                 # This matches legacy behavior - check existing LPs, not the new LP
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
-                    recheck_result = snr_pipeline.recheck_affected(
-                        lightpath_id, network_state, slicing_flag=True
-                    )
+                    recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                     if not recheck_result.all_pass:
-                        logger.debug(
-                            f"Slice {i + 1}/{num_slices} failed SNR recheck - existing LPs degraded"
-                        )
+                        logger.debug(f"Slice {i + 1}/{num_slices} failed SNR recheck - existing LPs degraded")
                         # Check for partial serving before rollback
                         can_partial = getattr(self._config, "can_partially_serve", False)
                         k_paths = getattr(self._config, "k_paths", 3)
@@ -1004,10 +1007,7 @@ class StandardSlicingPipeline:
             link = (path[i], path[i + 1])
             link_spectrum = network_state.get_link_spectrum(link)
             # Sum free slots across all bands and core 0
-            available = sum(
-                link_spectrum.get_free_slot_count(band, 0)
-                for band in link_spectrum.get_bands()
-            )
+            available = sum(link_spectrum.get_free_slot_count(band, 0) for band in link_spectrum.get_bands())
             min_available = min(min_available, available)
 
         return int(min_available) if min_available != float("inf") else 0
@@ -1083,13 +1083,8 @@ class StandardSlicingPipeline:
                         valid_mods.append(mod_name)
 
         if valid_mods:
-            logger.debug(
-                f"Slice modulations for {slice_bandwidth} Gbps: {valid_mods} "
-                f"(path_length={path_length:.1f})"
-            )
+            logger.debug(f"Slice modulations for {slice_bandwidth} Gbps: {valid_mods} (path_length={path_length:.1f})")
         else:
-            logger.debug(
-                f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}"
-            )
+            logger.debug(f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}")
 
         return valid_mods

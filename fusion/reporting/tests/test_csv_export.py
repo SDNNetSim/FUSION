@@ -87,9 +87,7 @@ class TestExportResultsToCSV:
             # Check that priority columns are early in the list
             assert fieldnames is not None
             assert fieldnames.index("seed") < fieldnames.index("recovery_time_mean_ms")
-            assert fieldnames.index("bp_overall") < fieldnames.index(
-                "recovery_time_mean_ms"
-            )
+            assert fieldnames.index("bp_overall") < fieldnames.index("recovery_time_mean_ms")
 
     def test_export_empty_results(self, tmp_path: Path) -> None:
         """Test export with empty results list."""

@@ -69,16 +69,12 @@ class MultiMetricProcessor(DataProcessorPort):
         """
         if not self.can_process(metric_name):
             raise ProcessingError(
-                f"No processor registered for metric: {metric_name}. "
-                f"Supported metrics: {', '.join(self.get_supported_metrics())}"
+                f"No processor registered for metric: {metric_name}. Supported metrics: {', '.join(self.get_supported_metrics())}"
             )
 
         processor = self._processors[metric_name]
 
-        logger.info(
-            f"Delegating processing of '{metric_name}' "
-            f"to {processor.__class__.__name__}"
-        )
+        logger.info(f"Delegating processing of '{metric_name}' to {processor.__class__.__name__}")
 
         return processor.process(
             runs=runs,

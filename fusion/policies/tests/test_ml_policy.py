@@ -138,15 +138,9 @@ class TestFeatureBuilder:
         builder = FeatureBuilder(k_paths=3)
         request = mock_request(bandwidth_gbps=100.0)
         options = [
-            create_path_option(
-                path_index=0, is_feasible=True, weight_km=500.0, congestion=0.3, slots_needed=4
-            ),
-            create_path_option(
-                path_index=1, is_feasible=False, weight_km=800.0, congestion=0.7, slots_needed=8
-            ),
-            create_path_option(
-                path_index=2, is_feasible=True, weight_km=600.0, congestion=0.5, slots_needed=6
-            ),
+            create_path_option(path_index=0, is_feasible=True, weight_km=500.0, congestion=0.3, slots_needed=4),
+            create_path_option(path_index=1, is_feasible=False, weight_km=800.0, congestion=0.7, slots_needed=8),
+            create_path_option(path_index=2, is_feasible=True, weight_km=600.0, congestion=0.5, slots_needed=6),
         ]
 
         features = builder.build(request, options, mock_network_state())
@@ -358,10 +352,7 @@ class TestMLControlPolicySelectAction:
         network_state = mock_network_state()
 
         # Run multiple times - should always get same result
-        actions = [
-            policy.select_action(request, options, network_state)
-            for _ in range(10)
-        ]
+        actions = [policy.select_action(request, options, network_state) for _ in range(10)]
 
         assert all(a == actions[0] for a in actions)
 
@@ -461,7 +452,7 @@ class TestMLControlPolicyFallback:
 
         options = [
             create_path_option(path_index=0, is_feasible=False),  # Model picks this
-            create_path_option(path_index=1, is_feasible=True),   # Fallback picks this
+            create_path_option(path_index=1, is_feasible=True),  # Fallback picks this
             create_path_option(path_index=2, is_feasible=True),
         ]
 
@@ -559,9 +550,7 @@ class TestMLControlPolicyDifferentFromHeuristic:
         ]
 
         ml_action = ml_policy.select_action(mock_request(), options, mock_network_state())
-        heuristic_action = heuristic_policy.select_action(
-            mock_request(), options, mock_network_state()
-        )
+        heuristic_action = heuristic_policy.select_action(mock_request(), options, mock_network_state())
 
         # FirstFeasible selects 0, ML selects 2
         assert heuristic_action == 0
@@ -582,9 +571,7 @@ class TestMLControlPolicyDifferentFromHeuristic:
         ]
 
         ml_action = ml_policy.select_action(mock_request(), options, mock_network_state())
-        heuristic_action = heuristic_policy.select_action(
-            mock_request(), options, mock_network_state()
-        )
+        heuristic_action = heuristic_policy.select_action(mock_request(), options, mock_network_state())
 
         # ShortestFeasible selects 0, ML selects 2
         assert heuristic_action == 0

@@ -260,6 +260,7 @@ class RLSimulationAdapter:
             # This ensures we pick the appropriate modulation for the path distance.
             if valid_mods:
                 from fusion.utils.network import get_path_modulation
+
                 # Get mod_per_bw from orchestrator's config
                 mod_per_bw = self._orchestrator.config.mod_per_bw
                 bw_key = str(request.bandwidth_gbps)
@@ -634,9 +635,7 @@ class RLSimulationAdapter:
                 "min_residual_slots": self._compute_min_residual(opt.path, network_state),
                 "frag_indicator": self._compute_fragmentation(opt.path, network_state),
                 "failure_mask": self._compute_failure_mask(opt.path, disaster_state),
-                "dist_to_disaster_centroid": self._compute_disaster_distance(
-                    opt.path, network_state, disaster_state
-                ),
+                "dist_to_disaster_centroid": self._compute_disaster_distance(opt.path, network_state, disaster_state),
             }
             state["paths"].append(path_features)
 
@@ -994,8 +993,7 @@ class OfflinePolicyAdapter:
             return int(self._policy(offline_state, mask_list))
         else:
             raise TypeError(
-                f"Policy {type(self._policy)} does not have a recognized "
-                "action selection method (select_path, predict, or __call__)"
+                f"Policy {type(self._policy)} does not have a recognized action selection method (select_path, predict, or __call__)"
             )
 
 

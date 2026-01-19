@@ -34,9 +34,7 @@ from fusion.utils.os import create_directory
 logger = get_logger(__name__)
 
 
-def plot_data_distributions(
-    simulation_dict: dict[str, Any], input_dataframe: pd.DataFrame, erlang: float
-) -> None:
+def plot_data_distributions(simulation_dict: dict[str, Any], input_dataframe: pd.DataFrame, erlang: float) -> None:
     """
     Plot data distributions for machine learning simulation runs.
 
@@ -55,30 +53,20 @@ def plot_data_distributions(
         >>> data = pd.DataFrame({'bandwidth': [50, 100, 200]})
         >>> plot_data_distributions(sim_dict, data, 1000.0)
     """
-    save_filepath = os.path.join(
-        "data", "plots", simulation_dict["train_file_path"], "input_analysis"
-    )
+    save_filepath = os.path.join("data", "plots", simulation_dict["train_file_path"], "input_analysis")
     create_directory(directory_path=save_filepath)
 
-    _plot_pie_charts(
-        erlang=erlang, input_dataframe=input_dataframe, save_filepath=save_filepath
-    )
-    _plot_histograms(
-        erlang=erlang, input_dataframe=input_dataframe, save_filepath=save_filepath
-    )
+    _plot_pie_charts(erlang=erlang, input_dataframe=input_dataframe, save_filepath=save_filepath)
+    _plot_histograms(erlang=erlang, input_dataframe=input_dataframe, save_filepath=save_filepath)
 
 
-def _plot_pie_charts(
-    input_dataframe: pd.DataFrame, erlang: float, save_filepath: str
-) -> None:
+def _plot_pie_charts(input_dataframe: pd.DataFrame, erlang: float, save_filepath: str) -> None:
     """Plot pie charts for categorical features."""
     categorical_columns = ["old_bandwidth", "num_segments", "longest_reach"]
 
     for column in categorical_columns:
         if column not in input_dataframe.columns:
-            logger.warning(
-                "Column '%s' not found in dataframe, skipping pie chart", column
-            )
+            logger.warning("Column '%s' not found in dataframe, skipping pie chart", column)
             continue
 
         plt.figure(figsize=(6, 6), dpi=300)
@@ -102,17 +90,13 @@ def _plot_pie_charts(
         plt.close()
 
 
-def _plot_histograms(
-    erlang: float, save_filepath: str, input_dataframe: pd.DataFrame
-) -> None:
+def _plot_histograms(erlang: float, save_filepath: str, input_dataframe: pd.DataFrame) -> None:
     """Plot histograms and box plots for continuous features."""
     continuous_columns = ["path_length", "ave_cong"]
 
     for column in continuous_columns:
         if column not in input_dataframe.columns:
-            logger.warning(
-                "Column '%s' not found in dataframe, skipping histogram", column
-            )
+            logger.warning("Column '%s' not found in dataframe, skipping histogram", column)
             continue
 
         plt.figure(figsize=(12, 6), dpi=300)
@@ -181,9 +165,7 @@ def plot_feature_importance(
                 logger.warning("permutation_importance not available, using zeros")
                 importances = np.zeros(len(feature_names))
             else:
-                permutation_result = permutation_importance(
-                    model, test_features, test_labels, n_repeats=10, random_state=42
-                )
+                permutation_result = permutation_importance(model, test_features, test_labels, n_repeats=10, random_state=42)
                 importances = permutation_result.importances_mean
 
     # Sort features by importance
@@ -290,9 +272,7 @@ def plot_confusion_matrix(
         cbar_kws={"label": "Count"},
     )
 
-    plt.title(
-        f"Confusion Matrix - {algorithm} ({erlang} Erlang)", weight="bold", fontsize=14
-    )
+    plt.title(f"Confusion Matrix - {algorithm} ({erlang} Erlang)", weight="bold", fontsize=14)
     plt.xlabel("Predicted Class", weight="bold")
     plt.ylabel("Actual Class", weight="bold")
 
@@ -309,9 +289,7 @@ def plot_confusion_matrix(
     return metrics
 
 
-def _add_metrics_to_plot(
-    test_labels: np.ndarray, predictions: np.ndarray, metrics: dict[str, float]
-) -> None:
+def _add_metrics_to_plot(test_labels: np.ndarray, predictions: np.ndarray, metrics: dict[str, float]) -> None:
     """Add classification metrics as text to the current plot."""
     # Calculate per-class accuracy
     unique_labels = np.unique(test_labels)
@@ -369,9 +347,7 @@ def _add_metrics_to_plot(
     )
 
 
-def plot_2d_clusters(
-    pca_dataframe: pd.DataFrame, output_path: str | None = None
-) -> None:
+def plot_2d_clusters(pca_dataframe: pd.DataFrame, output_path: str | None = None) -> None:
     """
     Plot 2D visualization of clusters using PCA-reduced data.
 
@@ -411,9 +387,7 @@ def plot_2d_clusters(
     plt.close()
 
 
-def plot_3d_clusters(
-    pca_dataframe: pd.DataFrame, output_path: str | None = None
-) -> None:
+def plot_3d_clusters(pca_dataframe: pd.DataFrame, output_path: str | None = None) -> None:
     """
     Plot 3D visualization of clusters using PCA-reduced data.
 

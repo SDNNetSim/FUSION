@@ -50,14 +50,12 @@ class MockLinkSpectrum:
         self.length_km = 100.0
 
     def get_slot_count(self, band: str) -> int:
-        return self.cores_matrix[band].shape[1]
+        return self.cores_matrix[band].shape[1]  # type: ignore[no-any-return]
 
     def get_spectrum_array(self, band: str) -> np.ndarray:
         return self.cores_matrix[band]
 
-    def is_range_free(
-        self, start_slot: int, end_slot: int, core: int, band: str
-    ) -> bool:
+    def is_range_free(self, start_slot: int, end_slot: int, core: int, band: str) -> bool:
         return bool(np.all(self.cores_matrix[band][core, start_slot:end_slot] == 0))
 
     def allocate_range(

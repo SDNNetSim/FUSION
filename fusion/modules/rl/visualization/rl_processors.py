@@ -134,9 +134,7 @@ class RewardProcessingStrategy(DataProcessorPort):
         if len(data) < self.window_size:
             return data
 
-        result: np.ndarray = uniform_filter1d(
-            data, size=self.window_size, mode="nearest"
-        )
+        result: np.ndarray = uniform_filter1d(data, size=self.window_size, mode="nearest")
         return result
 
 
@@ -279,11 +277,7 @@ class ConvergenceDetectionStrategy(DataProcessorPort):
                     metric_values = self._extract_metric(run_data, metric_name)
                     if metric_values is not None:
                         convergence_episode = self._detect_convergence(metric_values)
-                        y_data[algo].append(
-                            float(convergence_episode)
-                            if convergence_episode is not None
-                            else 0.0
-                        )
+                        y_data[algo].append(float(convergence_episode) if convergence_episode is not None else 0.0)
                         if include_ci:
                             errors[algo].append(0.0)
 

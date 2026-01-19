@@ -76,11 +76,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         :rtype: bool
         """
         # Check if topology has the required attributes for congestion calculation
-        return (
-            hasattr(topology, "nodes")
-            and hasattr(topology, "edges")
-            and hasattr(self.sdn_props, "network_spectrum_dict")
-        )
+        return hasattr(topology, "nodes") and hasattr(topology, "edges") and hasattr(self.sdn_props, "network_spectrum_dict")
 
     def route(self, source: Any, destination: Any, request: Any) -> None:
         """
@@ -147,9 +143,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         """
         k_paths = int(self.engine_props.get("k_paths", 1))
 
-        topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, "topology", None)
-        )
+        topology = self.engine_props.get("topology", getattr(self.sdn_props, "topology", None))
         paths_iterator = nx.shortest_simple_paths(
             G=topology,
             source=self.sdn_props.source,
@@ -178,9 +172,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             "congestions": path_congestions,
         }
 
-    def _calculate_path_scores(
-        self, candidate_paths_data: dict[str, list[Any]]
-    ) -> list[tuple]:
+    def _calculate_path_scores(self, candidate_paths_data: dict[str, list[Any]]) -> list[tuple]:
         """
         Calculate congestion-aware scores for candidate paths.
 
@@ -192,9 +184,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         alpha = float(self.engine_props.get("ca_alpha", 0.3))
 
         path_lengths_array = np.asarray(candidate_paths_data["lengths"], dtype=float)
-        path_congestions_array = np.asarray(
-            candidate_paths_data["congestions"], dtype=float
-        )
+        path_congestions_array = np.asarray(candidate_paths_data["congestions"], dtype=float)
 
         max_length = path_lengths_array.max() if path_lengths_array.max() > 0 else 1.0
         normalized_hop_counts = path_lengths_array / max_length
@@ -223,17 +213,13 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
 
         for path, path_length, score in scored_paths:
-            modulation_list = self._get_modulation_formats(
-                path_length, chosen_bandwidth
-            )
+            modulation_list = self._get_modulation_formats(path_length, chosen_bandwidth)
 
             self.route_props.paths_matrix.append(path)
             self.route_props.modulation_formats_matrix.append(modulation_list)
             self.route_props.weights_list.append(score)
 
-    def _get_modulation_formats(
-        self, path_length: float, chosen_bandwidth: Any
-    ) -> list[str | bool]:
+    def _get_modulation_formats(self, path_length: float, chosen_bandwidth: Any) -> list[str | bool]:
         """
         Get appropriate modulation formats for the given path length.
 
@@ -267,13 +253,9 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             found.
         :rtype: list[Any] | None
         """
-        topology = self.engine_props.get(
-            "topology", getattr(self.sdn_props, "topology", None)
-        )
+        topology = self.engine_props.get("topology", getattr(self.sdn_props, "topology", None))
 
-        all_paths_obj = nx.shortest_simple_paths(
-            topology, self.sdn_props.source, self.sdn_props.destination
-        )
+        all_paths_obj = nx.shortest_simple_paths(topology, self.sdn_props.source, self.sdn_props.destination)
         min_hops = None
 
         for i, path_list in enumerate(all_paths_obj):
@@ -291,16 +273,8 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
                         first_path = self.route_props.paths_matrix[0]
                         if isinstance(first_path, dict) and "path_list" in first_path:
                             path_list = first_path["path_list"]
-                            return (
-                                list(path_list)
-                                if isinstance(path_list, (list, tuple))
-                                else None
-                            )
-                        return (
-                            list(first_path)
-                            if isinstance(first_path, (list, tuple))
-                            else None
-                        )
+                            return list(path_list) if isinstance(path_list, (list, tuple)) else None
+                        return list(first_path) if isinstance(first_path, (list, tuple)) else None
                     break
 
         return None
@@ -353,9 +327,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
         )
 
         self.route_props.paths_matrix = [sorted_paths_list[0]["path_list"]]
-        self.route_props.weights_list = [
-            int(sorted_paths_list[0]["link_dict"]["free_slots"])
-        ]
+        self.route_props.weights_list = [int(sorted_paths_list[0]["link_dict"]["free_slots"])]
 
     def _calculate_path_congestion(self, path: list[Any]) -> float:
         """
@@ -461,9 +433,7 @@ class CongestionAwareRouting(AbstractRoutingAlgorithm):
             congestion considered.
         :rtype: dict[str, Any]
         """
-        avg_congestion = (
-            self._total_congestion / self._path_count if self._path_count > 0 else 0
-        )
+        avg_congestion = self._total_congestion / self._path_count if self._path_count > 0 else 0
 
         return {
             "algorithm": self.algorithm_name,

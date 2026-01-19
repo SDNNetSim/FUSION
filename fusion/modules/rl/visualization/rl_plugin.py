@@ -78,9 +78,7 @@ class RLVisualizationPlugin(BasePlugin):
             import scipy  # noqa: F401
             import seaborn  # noqa: F401
         except ImportError as e:
-            raise ImportError(
-                f"RL visualization plugin requires scipy and seaborn: {e}"
-            ) from e
+            raise ImportError(f"RL visualization plugin requires scipy and seaborn: {e}") from e
 
     def register_metrics(self) -> list[MetricDefinition]:
         """
@@ -103,10 +101,7 @@ class RLVisualizationPlugin(BasePlugin):
             "reward_learning_curve": PlotTypeRegistration(
                 processor=RewardProcessingStrategy(window_size=100),
                 renderer=RewardLearningCurveRenderer(),
-                description=(
-                    "Learning curve showing episode rewards over training "
-                    "with smoothing and confidence intervals"
-                ),
+                description=("Learning curve showing episode rewards over training with smoothing and confidence intervals"),
                 required_metrics=["episode_reward"],
                 default_config={
                     "window_size": 100,
@@ -124,9 +119,7 @@ class RLVisualizationPlugin(BasePlugin):
             "convergence_plot": PlotTypeRegistration(
                 processor=ConvergenceDetectionStrategy(window_size=100, threshold=0.01),
                 renderer=ConvergencePlotRenderer(),
-                description=(
-                    "Training convergence analysis showing when metrics stabilize"
-                ),
+                description=("Training convergence analysis showing when metrics stabilize"),
                 required_metrics=["episode_reward"],
                 default_config={
                     "window_size": 100,
@@ -137,9 +130,7 @@ class RLVisualizationPlugin(BasePlugin):
             "rl_dashboard": PlotTypeRegistration(
                 processor=RewardProcessingStrategy(window_size=100),
                 renderer=MultiMetricDashboardRenderer(),
-                description=(
-                    "Comprehensive dashboard showing multiple RL training metrics"
-                ),
+                description=("Comprehensive dashboard showing multiple RL training metrics"),
                 required_metrics=[
                     "episode_reward",
                     "policy_loss",
@@ -197,9 +188,7 @@ class RLVisualizationPlugin(BasePlugin):
         # Validate confidence_level
         if "confidence_level" in config:
             confidence_level = config["confidence_level"]
-            if not isinstance(confidence_level, (int, float)) or not (
-                0 < confidence_level < 1
-            ):
+            if not isinstance(confidence_level, (int, float)) or not (0 < confidence_level < 1):
                 return False
 
         return True

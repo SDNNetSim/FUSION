@@ -102,23 +102,17 @@ class TestSpectrumAssignment(unittest.TestCase):
 
     def test_init_creates_snr_measurements_with_correct_parameters(self) -> None:
         """Test SpectrumAssignment creates SNR measurements with correct parameters."""
-        self.assertEqual(
-            self.spec_assign.snr_measurements.engine_props_dict, self.engine_props
-        )
+        self.assertEqual(self.spec_assign.snr_measurements.engine_props_dict, self.engine_props)
         self.assertEqual(self.spec_assign.snr_measurements.sdn_props, self.sdn_props)
         self.assertEqual(
             self.spec_assign.snr_measurements.spectrum_props,
             self.spec_assign.spectrum_props,
         )
-        self.assertEqual(
-            self.spec_assign.snr_measurements.route_props, self.route_props
-        )
+        self.assertEqual(self.spec_assign.snr_measurements.route_props, self.route_props)
 
     def test_init_creates_spectrum_helpers_with_correct_parameters(self) -> None:
         """Test SpectrumAssignment creates spectrum helpers with correct parameters."""
-        self.assertEqual(
-            self.spec_assign.spectrum_helpers.engine_props, self.engine_props
-        )
+        self.assertEqual(self.spec_assign.spectrum_helpers.engine_props, self.engine_props)
         self.assertEqual(self.spec_assign.spectrum_helpers.sdn_props, self.sdn_props)
         self.assertEqual(
             self.spec_assign.spectrum_helpers.spectrum_props,
@@ -143,9 +137,7 @@ class TestSpectrumAssignment(unittest.TestCase):
                 "band": "l",
             },
         ]
-        channels_list = sorted(
-            channels_list, key=lambda d: len(cast(list, d.get("channel", [])))
-        )
+        channels_list = sorted(channels_list, key=lambda d: len(cast(list, d.get("channel", []))))
         with patch.object(self.spec_assign.spectrum_helpers, "check_other_links"):
             self.spec_assign._allocate_best_fit_spectrum(channels_list)
 
@@ -201,9 +193,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         core_matrix, core_list, _ = self.spec_assign._setup_first_last_allocation()
 
         self.assertEqual(core_list, [2])
-        self.assertTrue(
-            np.array_equal(core_matrix[0], [[0, 4, 4, 4, -4, 0, 0, 1, 1, 0]])
-        )
+        self.assertTrue(np.array_equal(core_matrix[0], [[0, 4, 4, 4, -4, 0, 0, 1, 1, 0]]))
 
     def test_setup_first_last_allocation_with_priority_first_sets_order(self) -> None:
         """Test first/last allocation setup with priority first method."""
@@ -223,9 +213,7 @@ class TestSpectrumAssignment(unittest.TestCase):
 
         _, core_list, _ = self.spec_assign._setup_first_last_allocation()
 
-        expected_list = list(
-            range(0, self.spec_assign.engine_props_dict["cores_per_link"])
-        )
+        expected_list = list(range(0, self.spec_assign.engine_props_dict["cores_per_link"]))
         self.assertEqual(core_list, expected_list)
 
     def test_handle_first_last_allocation_with_first_fit_allocates(self) -> None:
@@ -280,9 +268,7 @@ class TestSpectrumAssignment(unittest.TestCase):
     def test_get_spectrum_with_failed_allocation_remains_not_free(self) -> None:
         """Test spectrum assignment with failed allocation."""
         with (
-            patch.object(
-                self.spec_assign, "_determine_spectrum_allocation"
-            ) as mock_get_spectrum,
+            patch.object(self.spec_assign, "_determine_spectrum_allocation") as mock_get_spectrum,
             patch.object(
                 self.spec_assign.snr_measurements,
                 "handle_snr",
@@ -441,9 +427,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.spec_assign.spectrum_props.path_list = [0, 1]
         self.spec_assign.spectrum_props.slots_needed = 2
 
-        with patch.object(
-            self.spec_assign, "_allocate_best_fit_spectrum"
-        ) as mock_allocate:
+        with patch.object(self.spec_assign, "_allocate_best_fit_spectrum") as mock_allocate:
             self.spec_assign.find_best_fit()
 
             # Check that _allocate_best_fit_spectrum was called
@@ -555,9 +539,7 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.sdn_props.arrive = 1000.0
         self.sdn_props.was_new_lp_established = [1]  # LP must be in this list
         # Reset modulation_formats_dict with bandwidth key (overwrite setUp's version)
-        self.sdn_props.modulation_formats_dict = {
-            "QPSK": {"bandwidth": 200, "slots_needed": 3}
-        }
+        self.sdn_props.modulation_formats_dict = {"QPSK": {"bandwidth": 200, "slots_needed": 3}}
         self.sdn_props.request_id = 1  # Required for requests_dict population
         self.sdn_props.bandwidth_list = [200]  # For dedicated_bw calculation
         self.spec_assign.spectrum_props.lightpath_id = 1

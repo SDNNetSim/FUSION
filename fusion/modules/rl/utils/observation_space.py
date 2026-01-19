@@ -39,30 +39,16 @@ def get_observation_space(rl_props: Any, engine_props: Any) -> dict[str, spaces.
         "destination": lambda: spaces.MultiBinary(rl_props.num_nodes),
         "request_bandwidth": lambda: spaces.MultiBinary(len(bw_set)),
         "holding_time": lambda: spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),
-        "slots_needed": lambda: spaces.Box(
-            low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32
-        ),
-        "path_lengths": lambda: spaces.Box(
-            low=0, high=10, shape=(max_paths,), dtype=np.float32
-        ),
-        "available_slots": lambda: spaces.Box(
-            low=0, high=1, shape=(max_paths,), dtype=np.float32
-        ),
+        "slots_needed": lambda: spaces.Box(low=-1, high=max_slots, shape=(max_paths,), dtype=np.int32),
+        "path_lengths": lambda: spaces.Box(low=0, high=10, shape=(max_paths,), dtype=np.float32),
+        "available_slots": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
         "is_feasible": lambda: spaces.MultiBinary(max_paths),
-        "paths_cong": lambda: spaces.Box(
-            low=0, high=1, shape=(max_paths,), dtype=np.float32
-        ),
+        "paths_cong": lambda: spaces.Box(low=0, high=1, shape=(max_paths,), dtype=np.float32),
     }
 
-    obs_space_dict = {
-        feature: space_fn()
-        for feature, space_fn in feature_space_map.items()
-        if feature in obs_features
-    }
+    obs_space_dict = {feature: space_fn() for feature, space_fn in feature_space_map.items() if feature in obs_features}
 
-    ei, ea, xf, _ = convert_networkx_topo(
-        engine_props.engine_props["topology"], as_directed=True
-    )
+    ei, ea, xf, _ = convert_networkx_topo(engine_props.engine_props["topology"], as_directed=True)
     num_nodes, num_edges = xf.shape[0], ei.shape[1]
     if include_graph:
         obs_space_dict.update(
@@ -70,9 +56,7 @@ def get_observation_space(rl_props: Any, engine_props: Any) -> dict[str, spaces.
                 "x": spaces.Box(-np.inf, np.inf, xf.shape, dtype=np.float32),
                 "edge_index": spaces.Box(0, num_nodes - 1, ei.shape, dtype=np.int64),
                 "edge_attr": spaces.Box(-np.inf, np.inf, ea.shape, dtype=np.float32),
-                "path_masks": spaces.Box(
-                    0, 1, (max_paths, num_edges), dtype=np.float32
-                ),
+                "path_masks": spaces.Box(0, 1, (max_paths, num_edges), dtype=np.float32),
             }
         )
         print(f"Updated the observation space with graph features: {obs_space_dict}")
@@ -101,9 +85,7 @@ class FragmentationTracker:
         self.spectral_slots = spectral_slots
 
         # Bitmask: [src, dst, core, slots]
-        self.core_masks = np.zeros(
-            (num_nodes, num_nodes, core_count, spectral_slots), dtype=np.uint8
-        )
+        self.core_masks = np.zeros((num_nodes, num_nodes, core_count, spectral_slots), dtype=np.uint8)
 
         # Dirty mask to avoid unnecessary recomputation
         self.dirty_cores = np.zeros((num_nodes, num_nodes, core_count), dtype=bool)
@@ -144,9 +126,7 @@ class FragmentationTracker:
 
         self.dirty_cores[src, dst, core_index] = True
 
-    def get_fragmentation(
-        self, chosen_path: list[int], core_index: int
-    ) -> dict[str, np.ndarray]:
+    def get_fragmentation(self, chosen_path: list[int], core_index: int) -> dict[str, np.ndarray]:
         """
         Computes fragmentation for the specified core and chosen path.
 
@@ -179,9 +159,7 @@ class FragmentationTracker:
                 path_transitions += np.sum(transitions)
 
         if total_links > 0:
-            path_frag = path_transitions / (
-                2 * self.norm_factor * total_links * self.core_count
-            )
+            path_frag = path_transitions / (2 * self.norm_factor * total_links * self.core_count)
         else:
             path_frag = 0.0
 

@@ -101,9 +101,7 @@ def mock_lightpath() -> MagicMock:
 class TestSDNPropsProxyForSNR:
     """Tests for SDNPropsProxyForSNR."""
 
-    def test_from_network_state(
-        self, network_state: NetworkState
-    ) -> None:
+    def test_from_network_state(self, network_state: NetworkState) -> None:
         """Test creating proxy from NetworkState."""
         proxy = SDNPropsProxyForSNR.from_network_state(
             network_state=network_state,
@@ -180,9 +178,7 @@ class TestSNRAdapter:
         """Test successful SNR validation."""
         adapter = SNRAdapter(config)
 
-        with patch(
-            "fusion.core.snr_measurements.SnrMeasurements"
-        ) as MockSNR:
+        with patch("fusion.core.snr_measurements.SnrMeasurements") as MockSNR:
             mock_snr = MagicMock()
             mock_snr.handle_snr.return_value = (True, 0.5, 100.0)  # acceptable
             MockSNR.return_value = mock_snr
@@ -203,9 +199,7 @@ class TestSNRAdapter:
         """Test SNR validation failure."""
         adapter = SNRAdapter(config)
 
-        with patch(
-            "fusion.core.snr_measurements.SnrMeasurements"
-        ) as MockSNR:
+        with patch("fusion.core.snr_measurements.SnrMeasurements") as MockSNR:
             mock_snr = MagicMock()
             mock_snr.handle_snr.return_value = (False, 0.8, 100.0)  # not acceptable
             MockSNR.return_value = mock_snr

@@ -36,18 +36,14 @@ class TestAlgorithmFactoryRouting:
         sdn_props = Mock()
 
         # Act
-        result = AlgorithmFactory.create_routing_algorithm(
-            "k_shortest_path", engine_props, sdn_props
-        )
+        result = AlgorithmFactory.create_routing_algorithm("k_shortest_path", engine_props, sdn_props)
 
         # Assert
         assert result == mock_algo
         mock_create.assert_called_once_with("k_shortest_path", engine_props, sdn_props)
 
     @patch("fusion.modules.routing.registry.create_algorithm")
-    def test_create_routing_algorithm_with_invalid_name_raises_error(
-        self, mock_create: Mock
-    ) -> None:
+    def test_create_routing_algorithm_with_invalid_name_raises_error(self, mock_create: Mock) -> None:
         """Test creating routing algorithm with invalid name raises ValueError."""
         # Arrange
         mock_create.side_effect = KeyError("Unknown algorithm")
@@ -56,9 +52,7 @@ class TestAlgorithmFactoryRouting:
 
         # Act & Assert
         with pytest.raises(ValueError, match="Unknown routing algorithm"):
-            AlgorithmFactory.create_routing_algorithm(
-                "invalid_algo", engine_props, sdn_props
-            )
+            AlgorithmFactory.create_routing_algorithm("invalid_algo", engine_props, sdn_props)
 
 
 # ============================================================================
@@ -82,15 +76,11 @@ class TestAlgorithmFactorySpectrum:
             return_value=mock_algo,
         ) as mock_create:
             # Act
-            result = AlgorithmFactory.create_spectrum_algorithm(
-                "first_fit", engine_props, sdn_props, route_props
-            )
+            result = AlgorithmFactory.create_spectrum_algorithm("first_fit", engine_props, sdn_props, route_props)
 
             # Assert
             assert result == mock_algo
-            mock_create.assert_called_once_with(
-                "first_fit", engine_props, sdn_props, route_props
-            )
+            mock_create.assert_called_once_with("first_fit", engine_props, sdn_props, route_props)
 
     def test_create_spectrum_algorithm_with_invalid_name_raises_error(self) -> None:
         """Test creating spectrum algorithm with invalid name raises ValueError."""
@@ -105,9 +95,7 @@ class TestAlgorithmFactorySpectrum:
         ):
             # Act & Assert
             with pytest.raises(ValueError, match="Unknown spectrum algorithm"):
-                AlgorithmFactory.create_spectrum_algorithm(
-                    "invalid_algo", engine_props, sdn_props, route_props
-                )
+                AlgorithmFactory.create_spectrum_algorithm("invalid_algo", engine_props, sdn_props, route_props)
 
 
 # ============================================================================
@@ -127,9 +115,7 @@ class TestAlgorithmFactorySNR:
         spectrum_props = Mock()
         route_props = Mock()
 
-        with patch(
-            "fusion.interfaces.factory.create_snr_algorithm", return_value=mock_algo
-        ) as mock_create:
+        with patch("fusion.interfaces.factory.create_snr_algorithm", return_value=mock_algo) as mock_create:
             # Act
             result = AlgorithmFactory.create_snr_algorithm(
                 "standard_snr",
@@ -183,9 +169,7 @@ class TestSimulationPipelineInitialization:
     @patch("fusion.modules.routing.registry.create_algorithm")
     @patch("fusion.modules.spectrum.registry.create_spectrum_algorithm")
     @patch("fusion.modules.snr.registry.create_snr_algorithm")
-    def test_pipeline_initialization_with_valid_config(
-        self, mock_snr: Mock, mock_spectrum: Mock, mock_routing: Mock
-    ) -> None:
+    def test_pipeline_initialization_with_valid_config(self, mock_snr: Mock, mock_spectrum: Mock, mock_routing: Mock) -> None:
         """Test pipeline initialization with valid configuration."""
         # Arrange
         mock_routing.return_value = Mock(spec=AbstractRoutingAlgorithm)
@@ -211,9 +195,7 @@ class TestSimulationPipelineInitialization:
         assert pipeline.snr_algorithm is not None
 
     @patch("fusion.modules.routing.registry.create_algorithm")
-    def test_pipeline_initialization_with_missing_algorithm_raises_error(
-        self, mock_routing: Mock
-    ) -> None:
+    def test_pipeline_initialization_with_missing_algorithm_raises_error(self, mock_routing: Mock) -> None:
         """Test pipeline initialization with missing algorithm raises error."""
         # Arrange
         mock_routing.side_effect = ValueError("Algorithm not found")
@@ -232,9 +214,7 @@ class TestSimulationPipelineInitialization:
     @patch("fusion.modules.routing.registry.create_algorithm")
     @patch("fusion.interfaces.factory.create_spectrum_algorithm")
     @patch("fusion.interfaces.factory.create_snr_algorithm")
-    def test_pipeline_uses_default_algorithm_names(
-        self, mock_snr: Mock, mock_spectrum: Mock, mock_routing: Mock
-    ) -> None:
+    def test_pipeline_uses_default_algorithm_names(self, mock_snr: Mock, mock_spectrum: Mock, mock_routing: Mock) -> None:
         """Test pipeline uses default algorithm names when not specified."""
         # Arrange
         mock_routing.return_value = Mock(spec=AbstractRoutingAlgorithm)
@@ -318,9 +298,7 @@ class TestSimulationPipelineProcessRequestSuccess:
 
         # Mock topology for path length calculation
         mock_topology = MagicMock()
-        mock_topology.__getitem__.return_value.__getitem__.return_value = {
-            "length": 100
-        }
+        mock_topology.__getitem__.return_value.__getitem__.return_value = {"length": 100}
         pipeline.engine_props["topology"] = mock_topology
 
         request = Mock()
@@ -417,9 +395,7 @@ class TestSimulationPipelineProcessRequestFailures:
 
         # Mock topology
         mock_topology = MagicMock()
-        mock_topology.__getitem__.return_value.__getitem__.return_value = {
-            "length": 100
-        }
+        mock_topology.__getitem__.return_value.__getitem__.return_value = {"length": 100}
         pipeline.engine_props["topology"] = mock_topology
 
         request = Mock()
@@ -451,9 +427,7 @@ class TestSimulationPipelineProcessRequestFailures:
 
         # Mock topology
         mock_topology = MagicMock()
-        mock_topology.__getitem__.return_value.__getitem__.return_value = {
-            "length": 100
-        }
+        mock_topology.__getitem__.return_value.__getitem__.return_value = {"length": 100}
         pipeline.engine_props["topology"] = mock_topology
 
         request = Mock()
@@ -589,9 +563,7 @@ class TestCreateSimulationPipelineFunction:
     @patch("fusion.modules.routing.registry.create_algorithm")
     @patch("fusion.modules.spectrum.registry.create_spectrum_algorithm")
     @patch("fusion.modules.snr.registry.create_snr_algorithm")
-    def test_create_simulation_pipeline_returns_pipeline_instance(
-        self, mock_snr: Mock, mock_spectrum: Mock, mock_routing: Mock
-    ) -> None:
+    def test_create_simulation_pipeline_returns_pipeline_instance(self, mock_snr: Mock, mock_spectrum: Mock, mock_routing: Mock) -> None:
         """Test create_simulation_pipeline returns SimulationPipeline instance."""
         # Arrange
         mock_routing.return_value = Mock(spec=AbstractRoutingAlgorithm)

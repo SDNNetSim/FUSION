@@ -140,9 +140,7 @@ class TestSimStats(unittest.TestCase):
 
         # update_snapshot is documented as "not currently functional"
         # and will be implemented in v6.1
-        self.sim_stats.update_snapshot(
-            network_spectrum_dict={}, request_number=2, path_list=[(0, 1)]
-        )
+        self.sim_stats.update_snapshot(network_spectrum_dict={}, request_number=2, path_list=[(0, 1)])
 
         # Verify lists remain empty (stub behavior)
         snapshot = self.sim_stats.stats_props.snapshots_dict[2]
@@ -159,9 +157,7 @@ class TestSimStats(unittest.TestCase):
             self.assertIn(req_num, self.sim_stats.stats_props.snapshots_dict)
             for key in SNAP_KEYS_LIST:
                 self.assertIn(key, self.sim_stats.stats_props.snapshots_dict[req_num])
-                self.assertEqual(
-                    self.sim_stats.stats_props.snapshots_dict[req_num][key], []
-                )
+                self.assertEqual(self.sim_stats.stats_props.snapshots_dict[req_num][key], [])
 
     def test_init_mods_weights_bws_creates_nested_structure(self) -> None:
         """Test modulation/weights/bandwidth initialization creates proper structure."""
@@ -171,19 +167,13 @@ class TestSimStats(unittest.TestCase):
         for bandwidth in self.engine_props["mod_per_bw"]:
             bandwidth_key = str(bandwidth)
             self.assertIn(bandwidth_key, self.sim_stats.stats_props.weights_dict)
-            self.assertIn(
-                bandwidth_key, self.sim_stats.stats_props.modulations_used_dict
-            )
-            self.assertIn(
-                bandwidth_key, self.sim_stats.stats_props.bandwidth_blocking_dict
-            )
+            self.assertIn(bandwidth_key, self.sim_stats.stats_props.modulations_used_dict)
+            self.assertIn(bandwidth_key, self.sim_stats.stats_props.bandwidth_blocking_dict)
 
             # Check modulation level structure
             for modulation in self.engine_props["mod_per_bw"][bandwidth]:
                 weights_dict = self.sim_stats.stats_props.weights_dict[bandwidth_key]
-                mod_used_dict = self.sim_stats.stats_props.modulations_used_dict[
-                    bandwidth_key
-                ]
+                mod_used_dict = self.sim_stats.stats_props.modulations_used_dict[bandwidth_key]
                 self.assertIn(modulation, weights_dict)
                 self.assertIn(modulation, mod_used_dict)
                 self.assertEqual(weights_dict[modulation], [])
@@ -201,9 +191,7 @@ class TestSimStats(unittest.TestCase):
 
         expected_blocking_prob = 20 / 100
         expected_bit_rate_blocking_prob = 100 / 500
-        self.assertIn(
-            expected_blocking_prob, self.sim_stats.stats_props.simulation_blocking_list
-        )
+        self.assertIn(expected_blocking_prob, self.sim_stats.stats_props.simulation_blocking_list)
         self.assertIn(
             expected_bit_rate_blocking_prob,
             self.sim_stats.stats_props.simulation_bitrate_blocking_list,
@@ -322,9 +310,7 @@ class TestSimStats(unittest.TestCase):
 
     def test_end_iter_update_calls_finalize_iteration_statistics(self) -> None:
         """Test backward compatibility method calls correct implementation."""
-        with patch.object(
-            self.sim_stats, "finalize_iteration_statistics"
-        ) as mock_finalize:
+        with patch.object(self.sim_stats, "finalize_iteration_statistics") as mock_finalize:
             self.sim_stats.end_iter_update()
 
             mock_finalize.assert_called_once()
@@ -337,9 +323,7 @@ class TestSimStats(unittest.TestCase):
 
             self.sim_stats.save_stats("test_path")
 
-            mock_persistence.assert_called_once_with(
-                engine_props=self.engine_props, sim_info=self.sim_info
-            )
+            mock_persistence.assert_called_once_with(engine_props=self.engine_props, sim_info=self.sim_info)
             mock_instance.save_stats.assert_called_once()
 
     def test_init_stat_dicts_initializes_all_required_dicts(self) -> None:
@@ -352,9 +336,7 @@ class TestSimStats(unittest.TestCase):
 
         # Check block_reasons_dict initialization
         expected_block_reasons = {"distance": 0, "congestion": 0, "xt_threshold": 0}
-        self.assertEqual(
-            self.sim_stats.stats_props.block_reasons_dict, expected_block_reasons
-        )
+        self.assertEqual(self.sim_stats.stats_props.block_reasons_dict, expected_block_reasons)
 
         # Check link_usage_dict initialization
         self.assertEqual(self.sim_stats.stats_props.link_usage_dict, {})

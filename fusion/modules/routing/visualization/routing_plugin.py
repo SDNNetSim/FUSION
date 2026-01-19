@@ -212,9 +212,7 @@ class HopCountPlotRenderer(BaseRenderer):
 
         # Create box plot
         positions = np.arange(len(algos))
-        bp = ax2.boxplot(
-            hop_distributions, positions=positions, patch_artist=True, widths=0.6
-        )
+        bp = ax2.boxplot(hop_distributions, positions=positions, patch_artist=True, widths=0.6)
 
         # Color the boxes
         cmap = plt.cm.get_cmap("Set3")
@@ -445,9 +443,7 @@ class ComputationTimePlotRenderer(BaseRenderer):
 
         ax1.set_xlabel("Traffic Volume (Erlang)", fontsize=12)
         ax1.set_ylabel("Mean Computation Time (ms)", fontsize=12)
-        ax1.set_title(
-            "Routing Computation Time vs Traffic", fontsize=12, fontweight="bold"
-        )
+        ax1.set_title("Routing Computation Time vs Traffic", fontsize=12, fontweight="bold")
         ax1.legend(loc="best")
         ax1.grid(True, alpha=0.3)
 

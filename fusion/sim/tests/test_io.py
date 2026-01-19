@@ -13,9 +13,7 @@ class TestParseYamlFile:
 
     @patch("builtins.open", new_callable=mock_open, read_data="key: value")
     @patch("fusion.sim.utils.io.yaml.safe_load")
-    def test_parse_yaml_file_with_valid_file_returns_data(
-        self, mock_yaml_load: MagicMock, mock_file: MagicMock
-    ) -> None:
+    def test_parse_yaml_file_with_valid_file_returns_data(self, mock_yaml_load: MagicMock, mock_file: MagicMock) -> None:
         """Test that valid YAML file is parsed successfully."""
         # Arrange
         mock_yaml_load.return_value = {"key": "value"}
@@ -31,9 +29,7 @@ class TestParseYamlFile:
 
     @patch("builtins.open", new_callable=mock_open, read_data="invalid: yaml: data:")
     @patch("fusion.sim.utils.io.yaml.safe_load")
-    def test_parse_yaml_file_with_invalid_yaml_returns_exception(
-        self, mock_yaml_load: MagicMock, mock_file: MagicMock
-    ) -> None:
+    def test_parse_yaml_file_with_invalid_yaml_returns_exception(self, mock_yaml_load: MagicMock, mock_file: MagicMock) -> None:
         """Test that invalid YAML file returns YAMLError."""
         # Arrange
         yaml_error = yaml.YAMLError("Invalid YAML")
@@ -73,15 +69,11 @@ class TestModifyMultipleJsonValues:
         # Verify write operation
         mock_file.assert_any_call("test_dir/sim_input_s2.json", "w", encoding="utf-8")
         # Verify data was dumped correctly
-        mock_json_dump.assert_called_once_with(
-            {"key1": "new_value1", "key2": "new_value2"}, mock_file_handle, indent=4
-        )
+        mock_json_dump.assert_called_once_with({"key1": "new_value1", "key2": "new_value2"}, mock_file_handle, indent=4)
 
     @patch("json.load", return_value={"key1": "value1"})
     @patch("builtins.open", new_callable=mock_open)
-    def test_modify_json_with_invalid_key_raises_key_error(
-        self, mock_file: MagicMock, mock_json_load: MagicMock
-    ) -> None:
+    def test_modify_json_with_invalid_key_raises_key_error(self, mock_file: MagicMock, mock_json_load: MagicMock) -> None:
         """Test that KeyError is raised when key not found in JSON."""
         # Arrange
         trial_num = 1
@@ -109,9 +101,7 @@ class TestModifyMultipleJsonValues:
         modify_multiple_json_values(trial_num, file_path, update_list)
 
         # Assert
-        mock_json_dump.assert_called_once_with(
-            {"key1": "value1", "key2": "value2"}, mock_file_handle, indent=4
-        )
+        mock_json_dump.assert_called_once_with({"key1": "value1", "key2": "value2"}, mock_file_handle, indent=4)
 
     @patch("json.load", return_value={"key1": "value1"})
     @patch("json.dump")

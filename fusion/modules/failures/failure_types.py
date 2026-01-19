@@ -9,9 +9,7 @@ import networkx as nx
 from .errors import FailureConfigError
 
 
-def fail_link(
-    topology: nx.Graph, link_id: tuple[Any, Any], t_fail: float, t_repair: float
-) -> dict[str, Any]:
+def fail_link(topology: nx.Graph, link_id: tuple[Any, Any], t_fail: float, t_repair: float) -> dict[str, Any]:
     """
     Fail a single link (F1).
 
@@ -49,9 +47,7 @@ def fail_link(
     }
 
 
-def fail_node(
-    topology: nx.Graph, node_id: Any, t_fail: float, t_repair: float
-) -> dict[str, Any]:
+def fail_node(topology: nx.Graph, node_id: Any, t_fail: float, t_repair: float) -> dict[str, Any]:
     """
     Fail a node and all adjacent links (F2).
 
@@ -128,9 +124,7 @@ def fail_srlg(
             # Try reverse direction
             reverse_link = (link_id[1], link_id[0])
             if not topology.has_edge(*reverse_link):
-                raise FailureConfigError(
-                    f"SRLG link {link_id} does not exist in topology"
-                )
+                raise FailureConfigError(f"SRLG link {link_id} does not exist in topology")
             validated_links.append(reverse_link)
         else:
             validated_links.append(link_id)
@@ -177,9 +171,7 @@ def fail_geo(
     """
     # Validate inputs
     if center_node not in topology.nodes:
-        raise FailureConfigError(
-            f"Center node {center_node} does not exist in topology"
-        )
+        raise FailureConfigError(f"Center node {center_node} does not exist in topology")
 
     if hop_radius <= 0:
         raise FailureConfigError(f"Hop radius must be positive, got {hop_radius}")
@@ -190,9 +182,7 @@ def fail_geo(
 
     # BFS from center node up to hop_radius
     try:
-        shortest_paths = nx.single_source_shortest_path_length(
-            topology, center_node, cutoff=hop_radius
-        )
+        shortest_paths = nx.single_source_shortest_path_length(topology, center_node, cutoff=hop_radius)
         affected_nodes.update(shortest_paths.keys())
     except nx.NetworkXError as e:
         raise FailureConfigError(f"Error computing geographic failure: {e}") from e
@@ -204,9 +194,7 @@ def fail_geo(
             failed_links.append((u, v))
 
     if not failed_links:
-        raise FailureConfigError(
-            f"No links found within radius {hop_radius} of node {center_node}"
-        )
+        raise FailureConfigError(f"No links found within radius {hop_radius} of node {center_node}")
 
     return {
         "failure_type": "geo",

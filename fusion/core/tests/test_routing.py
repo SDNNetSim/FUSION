@@ -38,9 +38,7 @@ class TestRouting(unittest.TestCase):
         }
         self.engine_props["topology"].add_edge("A", "B", weight=1, xt_cost=10, length=1)
         self.engine_props["topology"].add_edge("B", "C", weight=1, xt_cost=5, length=1)
-        self.engine_props["topology"].add_edge(
-            "A", "C", weight=3, xt_cost=100, length=2
-        )
+        self.engine_props["topology"].add_edge("A", "C", weight=3, xt_cost=100, length=2)
 
         self.sdn_props = MagicMock()
         self.sdn_props.network_spectrum_dict = {
@@ -71,9 +69,7 @@ class TestRouting(unittest.TestCase):
         self.assertIsNone(routing._current_algorithm)
 
     @patch("fusion.modules.routing.registry.RoutingRegistry.get")
-    def test_get_algorithm_for_method_with_valid_method_returns_algorithm(
-        self, mock_get: Any
-    ) -> None:
+    def test_get_algorithm_for_method_with_valid_method_returns_algorithm(self, mock_get: Any) -> None:
         """Test algorithm retrieval for valid routing method."""
         routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         mock_algorithm_class = MagicMock()
@@ -88,9 +84,7 @@ class TestRouting(unittest.TestCase):
         mock_algorithm_class.assert_called_once_with(self.engine_props, self.sdn_props)
 
     @patch("fusion.modules.routing.registry.RoutingRegistry.get")
-    def test_get_algorithm_for_method_with_legacy_method_maps_correctly(
-        self, mock_get: Any
-    ) -> None:
+    def test_get_algorithm_for_method_with_legacy_method_maps_correctly(self, mock_get: Any) -> None:
         """Test legacy method name mapping works correctly."""
         routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         mock_algorithm_class = MagicMock()
@@ -104,9 +98,7 @@ class TestRouting(unittest.TestCase):
         mock_get.assert_called_once_with("k_shortest_path")
 
     @patch("fusion.modules.routing.registry.RoutingRegistry.get")
-    def test_get_algorithm_for_method_with_unknown_method_uses_as_is(
-        self, mock_get: Any
-    ) -> None:
+    def test_get_algorithm_for_method_with_unknown_method_uses_as_is(self, mock_get: Any) -> None:
         """Test unknown method name is passed through as-is."""
         routing = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         mock_algorithm_class = MagicMock()

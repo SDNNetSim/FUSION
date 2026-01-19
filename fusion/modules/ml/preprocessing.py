@@ -17,9 +17,7 @@ from fusion.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def process_training_data(
-    simulation_dict: dict[str, Any], input_dataframe: pd.DataFrame, erlang: float
-) -> pd.DataFrame:
+def process_training_data(simulation_dict: dict[str, Any], input_dataframe: pd.DataFrame, erlang: float) -> pd.DataFrame:
     """
     Process raw data for machine learning model training.
 
@@ -40,9 +38,7 @@ def process_training_data(
         >>> processed = process_training_data(sim_dict, raw_data, 1000.0)
     """
     # Generate visualizations of the input data
-    plot_data_distributions(
-        simulation_dict=simulation_dict, input_dataframe=input_dataframe, erlang=erlang
-    )
+    plot_data_distributions(simulation_dict=simulation_dict, input_dataframe=input_dataframe, erlang=erlang)
 
     # One-hot encode categorical columns
     processed_dataframe = pd.get_dummies(input_dataframe, columns=["old_bandwidth"])
@@ -96,25 +92,19 @@ def balance_training_data(
     else:
         balanced_df = _balance_weighted(input_dataframe)
 
-    return process_training_data(
-        simulation_dict=simulation_dict, input_dataframe=balanced_df, erlang=erlang
-    )
+    return process_training_data(simulation_dict=simulation_dict, input_dataframe=balanced_df, erlang=erlang)
 
 
 def _balance_equally(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Balance data with equal samples per segment class."""
     unique_segments = dataframe["num_segments"].unique()
-    segment_dataframes = [
-        dataframe[dataframe["num_segments"] == segment] for segment in unique_segments
-    ]
+    segment_dataframes = [dataframe[dataframe["num_segments"] == segment] for segment in unique_segments]
 
     # Find minimum class size
     min_size = min(len(df) for df in segment_dataframes)
 
     # Sample equal amounts from each class
-    sampled_dataframes = [
-        df.sample(n=min_size, random_state=42) for df in segment_dataframes
-    ]
+    sampled_dataframes = [df.sample(n=min_size, random_state=42) for df in segment_dataframes]
 
     # Combine and shuffle
     balanced_dataframe = pd.concat(sampled_dataframes).sample(frac=1, random_state=42)
@@ -152,13 +142,9 @@ def _balance_weighted(dataframe: pd.DataFrame) -> pd.DataFrame:
         if segments in segment_dataframes:
             sample_size = int(min_size * weight)
             if 0 < sample_size <= len(segment_dataframes[segments]):
-                sampled_df = segment_dataframes[segments].sample(
-                    n=sample_size, random_state=42
-                )
+                sampled_df = segment_dataframes[segments].sample(n=sample_size, random_state=42)
                 sampled_dataframes.append(sampled_df)
-                logger.debug(
-                    "Sampled %d instances for %d segments", sample_size, segments
-                )
+                logger.debug("Sampled %d instances for %d segments", sample_size, segments)
 
     # Combine and shuffle
     balanced_dataframe = pd.concat(sampled_dataframes).sample(frac=1, random_state=42)
@@ -207,24 +193,17 @@ def prepare_prediction_features(
     for bandwidth, percentage in engine_properties["request_distribution"].items():
         if percentage > 0:
             column_name = f"old_bandwidth_{bandwidth}"
-            if (
-                bandwidth != getattr(sdn_properties, "bandwidth", None)
-                and column_name not in processed_dataframe.columns
-            ):
+            if bandwidth != getattr(sdn_properties, "bandwidth", None) and column_name not in processed_dataframe.columns:
                 processed_dataframe[column_name] = 0
 
     # Only include columns that exist
-    available_columns = [
-        col for col in EXPECTED_ML_COLUMNS if col in processed_dataframe.columns
-    ]
+    available_columns = [col for col in EXPECTED_ML_COLUMNS if col in processed_dataframe.columns]
     processed_dataframe = processed_dataframe.reindex(columns=available_columns)
 
     return processed_dataframe
 
 
-def split_features_labels(
-    dataframe: pd.DataFrame, target_column: str
-) -> tuple[pd.DataFrame, pd.Series]:
+def split_features_labels(dataframe: pd.DataFrame, target_column: str) -> tuple[pd.DataFrame, pd.Series]:
     """
     Split DataFrame into features and labels.
 
@@ -249,9 +228,7 @@ def split_features_labels(
     return features, labels
 
 
-def normalize_features(
-    features: pd.DataFrame, normalization_type: str = "standard"
-) -> tuple[pd.DataFrame, Any]:
+def normalize_features(features: pd.DataFrame, normalization_type: str = "standard") -> tuple[pd.DataFrame, Any]:
     """
     Normalize features using specified method.
 
@@ -272,17 +249,12 @@ def normalize_features(
     elif normalization_type == "minmax":
         scaler = MinMaxScaler()
     else:
-        raise ValueError(
-            f"Normalization type '{normalization_type}' not supported. "
-            "Use 'standard' or 'minmax'"
-        )
+        raise ValueError(f"Normalization type '{normalization_type}' not supported. Use 'standard' or 'minmax'")
 
     # Fit and transform
     normalized_array = scaler.fit_transform(features)
 
     # Convert back to DataFrame with same columns
-    normalized_features = pd.DataFrame(
-        normalized_array, columns=features.columns, index=features.index
-    )
+    normalized_features = pd.DataFrame(normalized_array, columns=features.columns, index=features.index)
 
     return normalized_features, scaler

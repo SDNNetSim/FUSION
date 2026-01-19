@@ -66,9 +66,7 @@ class FileMetadataRepository(MetadataRepository):
         """
         if base_path is None:
             if self.base_path is None:
-                raise ValueError(
-                    "base_path must be provided either in constructor or method call"
-                )
+                raise ValueError("base_path must be provided either in constructor or method call")
             base_path = self.base_path
 
         return self.discover_runs(base_path, network, dates)
@@ -111,15 +109,11 @@ class FileMetadataRepository(MetadataRepository):
                         discovered_runs.append(run_info)
 
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to load metadata for {run_dir}: {e}. Skipping."
-                        )
+                        logger.warning(f"Failed to load metadata for {run_dir}: {e}. Skipping.")
                         continue
 
             except PermissionError as e:
-                raise RepositoryError(
-                    f"Permission denied accessing {date_path}: {e}"
-                ) from e
+                raise RepositoryError(f"Permission denied accessing {date_path}: {e}") from e
 
         return discovered_runs
 
@@ -228,11 +222,7 @@ class FileMetadataRepository(MetadataRepository):
     def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         now = time.time()
-        valid_entries = sum(
-            1
-            for key, timestamp in self._cache_timestamps.items()
-            if (now - timestamp) <= self.cache_ttl_seconds
-        )
+        valid_entries = sum(1 for key, timestamp in self._cache_timestamps.items() if (now - timestamp) <= self.cache_ttl_seconds)
 
         return {
             "total_entries": len(self._cache),
@@ -250,11 +240,7 @@ class FileMetadataRepository(MetadataRepository):
             Number of entries removed
         """
         now = time.time()
-        expired_keys = [
-            key
-            for key, timestamp in self._cache_timestamps.items()
-            if (now - timestamp) > self.cache_ttl_seconds
-        ]
+        expired_keys = [key for key, timestamp in self._cache_timestamps.items() if (now - timestamp) > self.cache_ttl_seconds]
 
         for key in expired_keys:
             del self._cache[key]

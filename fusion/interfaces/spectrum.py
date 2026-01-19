@@ -69,9 +69,7 @@ class AbstractSpectrumAssigner(ABC):
         """
 
     @abstractmethod
-    def check_spectrum_availability(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def check_spectrum_availability(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """
         Check if spectrum slots are available along the entire path.
 
@@ -119,9 +117,7 @@ class AbstractSpectrumAssigner(ABC):
         """
 
     @abstractmethod
-    def deallocate_spectrum(
-        self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str
-    ) -> bool:
+    def deallocate_spectrum(self, path: list[Any], start_slot: int, end_slot: int, core_num: int, band: str) -> bool:
         """
         Deallocate spectrum resources along the path.
 
