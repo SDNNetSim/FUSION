@@ -54,8 +54,21 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
+
+          # Install torch first (required before PyG packages)
+          pip install torch==2.2.2
+
+          # Install PyG packages with pre-built wheels
+          pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+
+          # Install the rest of the requirements
+          pip install -r requirements.txt
+
+          # Install the package with dev dependencies
           pip install -e .[dev]
+
+          # Install additional Sphinx packages
           pip install sphinx sphinx-rtd-theme sphinx-copybutton sphinx-tabs myst-parser
 
       - name: Build documentation
