@@ -1,15 +1,14 @@
 """
-Unit tests for protection pipeline (P5.4).
+Unit tests for protection pipeline.
 
 Tests cover:
+
 - DisjointPathFinder link-disjoint mode
 - DisjointPathFinder node-disjoint mode
 - ProtectionPipeline allocate_protected() method
 - Disjointness correctness verification
 - Identical spectrum allocation on both paths
 - Protection consumes extra resources
-
-Phase: P5.4 - Protection Pipeline
 """
 
 from __future__ import annotations
@@ -19,14 +18,12 @@ from typing import Any
 
 import networkx as nx
 import numpy as np
-import pytest
 
-from fusion.pipelines.disjoint_path_finder import DisjointPathFinder, DisjointnessType
+from fusion.pipelines.disjoint_path_finder import DisjointnessType, DisjointPathFinder
 from fusion.pipelines.protection_pipeline import (
     ProtectedAllocationResult,
     ProtectionPipeline,
 )
-
 
 # =============================================================================
 # Test Fixtures
@@ -53,14 +50,12 @@ class MockLinkSpectrum:
         self.length_km = 100.0
 
     def get_slot_count(self, band: str) -> int:
-        return self.cores_matrix[band].shape[1]
+        return self.cores_matrix[band].shape[1]  # type: ignore[no-any-return]
 
     def get_spectrum_array(self, band: str) -> np.ndarray:
         return self.cores_matrix[band]
 
-    def is_range_free(
-        self, start_slot: int, end_slot: int, core: int, band: str
-    ) -> bool:
+    def is_range_free(self, start_slot: int, end_slot: int, core: int, band: str) -> bool:
         return bool(np.all(self.cores_matrix[band][core, start_slot:end_slot] == 0))
 
     def allocate_range(
@@ -144,7 +139,7 @@ def create_diamond_topology() -> nx.Graph:
           B
          / \
         A   D
-         \ /
+         \\ /
           C
 
     Link-disjoint paths: A-B-D and A-C-D
@@ -165,7 +160,7 @@ def create_extended_diamond_topology() -> nx.Graph:
           B
          /|\
         A-E-D
-         \|/
+         \\|/
           C
 
     Link-disjoint: A-B-D, A-C-D, A-E-D (3 paths sharing no edges)
@@ -366,15 +361,13 @@ class TestNodeVsLinkDisjoint:
         link_paths = finder_link.find_all_disjoint_paths(topology, "A", "D", max_paths=5)
 
         # Check if any pair is link-disjoint but not node-disjoint
-        found_example = False
+        # This topology may or may not have such a pair depending on which
+        # paths are returned first, so we just verify the search completes
         for i, p1 in enumerate(link_paths):
             for p2 in link_paths[i + 1 :]:
                 if finder_link.are_link_disjoint(p1, p2):
-                    if not finder_node.are_node_disjoint(p1, p2):
-                        found_example = True
-
-        # This topology may or may not have such a pair
-        # depending on which paths are returned first
+                    # If link-disjoint, check node-disjointness (may or may not hold)
+                    _ = finder_node.are_node_disjoint(p1, p2)
 
 
 # =============================================================================

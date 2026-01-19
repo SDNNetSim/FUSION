@@ -50,18 +50,15 @@ configs/
 │   ├── constants.py         # Module constants
 │   └── schema.py            # Configuration schemas
 ├── schemas/                 # JSON validation schemas
-└── templates/               # Pre-built configurations
-    ├── default.ini          # Full-featured baseline
-    ├── minimal.ini          # Quick testing
-    ├── rl_training.ini      # RL experiments
-    └── cross_platform.ini   # OS-agnostic
+├── templates/               # Pre-built configuration templates
+└── tests/                   # Unit tests for configuration module
 ```
 
 ## Key Components
 
 ### ConfigManager
 Central configuration management class that:
-- Loads configuration from INI, JSON, or YAML files
+- Loads configuration from INI or JSON files
 - Validates configuration against schemas
 - Provides structured access to configuration sections
 - Supports configuration merging and CLI argument integration
@@ -139,54 +136,26 @@ config_manager.merge_cli_args({'max_iters': 5})
 | `rl_training.ini` | RL experiments | Epsilon-greedy, medium loads |
 | `cross_platform.ini` | CI/CD | OS-agnostic paths, simple config |
 
-## Templates vs Examples
+## Legacy vs Orchestrator (v6.0+)
 
-The `configs/` directory contains both **templates** and **examples** - understanding the difference is important:
+FUSION has two simulation engines with different configuration requirements:
 
-### Templates (`templates/`)
-**Generic, reusable base configurations** designed as starting points:
-- Loaded programmatically via `ConfigRegistry.load_template('minimal')`
-- Used with profiles and overrides for customization
-- Broad, general-purpose settings applicable to many scenarios
-- Minimal comments, focused on being a foundation to build upon
+**Legacy Engine (pre-v6.0)**
+- Uses `rl_settings` and `ml_settings` for intelligent routing
+- Direct integration with RL/ML models
+- Being phased out in favor of orchestrator
 
-**When to use:** Starting a new simulation or creating custom configurations
+**Orchestrator Engine (v6.0+)**
+- Uses `policy_settings` for routing decisions
+- Supports survivability experiments with `failure_settings` and `protection_settings`
+- New sections: `policy_settings`, `heuristic_settings`, `protection_settings`,
+  `failure_settings`, `routing_settings`, `reporting_settings`
 
-```python
-# Programmatic usage
-registry = ConfigRegistry()
-config = registry.create_custom_config('minimal', overrides={'erlang_start': 500})
-```
-
-### Examples (`examples/`)
-**Specific, ready-to-run scenarios** demonstrating particular features:
-- Complete configurations for specific use cases (link failures, RL evaluation, etc.)
-- Heavily documented with context explaining the scenario
-- Ready to run without modification
-- Reference implementations showing how to configure advanced features
-
-**When to use:** Learning the system, reproducing specific experiments, or as reference
-
-```bash
-# Direct usage
-python -m fusion.cli.run_sim run_sim --config_path fusion/configs/examples/link_failure_ksp_ff.ini
-```
-
-### Quick Comparison
-
-| Aspect | Templates | Examples |
-|--------|-----------|----------|
-| **Purpose** | Generic starting points | Specific use cases |
-| **Scope** | Broad, reusable | Narrow, scenario-focused |
-| **Usage** | Customize via code or CLI overrides | Run directly or copy |
-| **Documentation** | Minimal comments | Heavily documented |
-| **Registry support** | Yes (`load_template()`) | No (just files) |
-
-**Analogy:** Templates are like "Basic Soup" recipes you customize; Examples are like "Minestrone Soup" recipes you follow exactly.
+See `cli_to_config.py` and `schema.py` for detailed parameter organization.
 
 ## Migration Notes
 - Legacy INI files work without modification
-- New features (validation, templates) are opt-in
+- New orchestrator features (policies, failures, protection) require v6.0+ sections
 - CLI integration unchanged
 
 ## CLI Integration
@@ -199,54 +168,7 @@ python -m fusion.cli.run_sim run_sim \
   --max_iters 5
 ```
 
-## Parameter Reference
-
-### Required Parameters
-
-**[general_settings]**
-- `erlang_start/stop/step`: Traffic load range (≥0)
-- `max_iters`: Iterations per load (≥1)
-- `num_requests`: Requests per iteration (≥1)
-- `holding_time`: Connection duration (≥0)
-- `route_method`: `k_shortest_path`, `xt_aware`
-- `allocation_method`: `first_fit`, `priority_first`
-
-**[topology_settings]**
-- `network`: `NSFNet`, `Pan-European`, `USbackbone60`
-- `bw_per_slot`: Bandwidth per slot in GHz
-- `cores_per_link`: Fiber cores per link (≥1)
-
-**[spectrum_settings]**
-- `c_band`: Number of C-band slots (≥1)
-
-### Key Optional Parameters
-
-**[snr_settings]**
-- `snr_type`: `None` or `xt_calculation`
-- `xt_type`: `with_length` or `without_length`
-
-**[rl_settings]**
-- `path_algorithm`: `dqn`, `epsilon_greedy_bandit`, `first_fit`
-- `device`: `cpu`, `cuda`, `mps`
-- `n_trials`: Training iterations
-
-**[ml_settings]**
-- `deploy_model`: Enable ML model
-- `ml_model`: `decision_tree`, `random_forest`
-
-*See `fusion/configs/schemas/main.json` for complete parameter list*
-
-## Troubleshooting
-
-| Error | Solution |
-|-------|----------|
-| `ValidationError: erlang_start is required` | Add missing field to config |
-| `'MyNetwork' is not one of ['NSFNet'...]` | Use supported network name |
-| `'abc' is not of type 'integer'` | Use correct data type |
-| `Configuration file not found` | Check file path and extension |
-
 ## Dependencies
 - **configparser**: INI file parsing
 - **json**: JSON file handling
-- **yaml** (optional): YAML file support
 - **dataclasses**: Configuration data structures

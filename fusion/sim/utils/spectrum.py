@@ -184,9 +184,7 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dic
 
                         # The final core overlaps with all other cores
                         if core_num == num_cores - 1:
-                            result_array = np.isin(
-                                current_channel, slots_dict[sub_core]
-                            )
+                            result_array = np.isin(current_channel, slots_dict[sub_core])
                         else:
                             # Only certain cores neighbor each other on a fiber
                             first_neighbor = 5 if core_num == 0 else core_num - 1
@@ -212,14 +210,10 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dic
                             )
 
                         if result_array is False:
-                            response[link]["overlapped_dict"][band][core_num].append(
-                                current_channel
-                            )
+                            response[link]["overlapped_dict"][band][core_num].append(current_channel)
                             break
 
-                    response[link]["non_over_dict"][band][core_num].append(
-                        current_channel
-                    )
+                    response[link]["non_over_dict"][band][core_num].append(current_channel)
 
     return response
 
@@ -277,9 +271,7 @@ def combine_and_one_hot(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
     return np.array(one_hot_array1 | one_hot_array2)
 
 
-def _get_hfrag_score(
-    super_channel_index_matrix: np.ndarray, spectral_slots: int
-) -> float:
+def _get_hfrag_score(super_channel_index_matrix: np.ndarray, spectral_slots: int) -> float:
     """
     Calculate Shannon entropy fragmentation score.
 
@@ -297,11 +289,7 @@ def _get_hfrag_score(
         return float(np.inf)
 
     channel_length = len(super_channel_index_matrix[0])
-    response_score = (
-        big_n
-        * (channel_length / spectral_slots)
-        * np.log(channel_length / spectral_slots)
-    )
+    response_score = big_n * (channel_length / spectral_slots) * np.log(channel_length / spectral_slots)
     return float(response_score)
 
 
@@ -343,9 +331,7 @@ def get_shannon_entropy_fragmentation(
         core_array = network_spectrum[link_key]["cores_matrix"][band][core_num]
         path_allocation_array = combine_and_one_hot(path_allocation_array, core_array)
 
-    super_channel_index_matrix = get_super_channels(
-        input_array=path_allocation_array, slots_needed=slots_needed
-    )
+    super_channel_index_matrix = get_super_channels(input_array=path_allocation_array, slots_needed=slots_needed)
     hfrag_before = _get_hfrag_score(
         super_channel_index_matrix=super_channel_index_matrix,
         spectral_slots=spectral_slots,
@@ -356,9 +342,7 @@ def get_shannon_entropy_fragmentation(
         for index in super_channel:
             mock_allocation_array[index] = 1
 
-        temp_super_channel_matrix = get_super_channels(
-            input_array=mock_allocation_array, slots_needed=slots_needed
-        )
+        temp_super_channel_matrix = get_super_channels(input_array=mock_allocation_array, slots_needed=slots_needed)
         hfrag_after = _get_hfrag_score(
             super_channel_index_matrix=temp_super_channel_matrix,
             spectral_slots=spectral_slots,
@@ -367,8 +351,6 @@ def get_shannon_entropy_fragmentation(
         start_index = super_channel[0]
         response_fragmentation_array[start_index] = np.round(delta_hfrag, 3)
 
-    response_fragmentation_array = np.where(
-        response_fragmentation_array == 1, np.inf, response_fragmentation_array
-    )
+    response_fragmentation_array = np.where(response_fragmentation_array == 1, np.inf, response_fragmentation_array)
 
     return super_channel_index_matrix, response_fragmentation_array

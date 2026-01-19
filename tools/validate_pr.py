@@ -94,9 +94,7 @@ class ValidationRunner:
             self.total_time += elapsed
 
             if result.returncode == 0:
-                self.print_success(
-                    f"{description} completed successfully ({elapsed:.1f}s)"
-                )
+                self.print_success(f"{description} completed successfully ({elapsed:.1f}s)")
                 if result.stdout.strip():
                     print(f"Output:\n{result.stdout}")
                 return True
@@ -113,9 +111,7 @@ class ValidationRunner:
                         print(f"Standard output:\n{result.stdout}")
                     return False
                 else:
-                    self.print_warning(
-                        f"{description} completed with warnings ({elapsed:.1f}s)"
-                    )
+                    self.print_warning(f"{description} completed with warnings ({elapsed:.1f}s)")
                     if result.stderr:
                         print(f"Warnings:\n{result.stderr}")
                     return True
@@ -140,9 +136,7 @@ class ValidationRunner:
 
         missing_tools = []
         for tool, description in required_tools:
-            if not self.run_command(
-                ["which", tool], f"Check {description}", check_return_code=False
-            ):
+            if not self.run_command(["which", tool], f"Check {description}", check_return_code=False):
                 missing_tools.append(tool)
 
         if missing_tools:
@@ -154,9 +148,7 @@ class ValidationRunner:
         # Check if we're in a virtual environment
         if not os.environ.get("VIRTUAL_ENV"):
             self.print_warning("Not running in a virtual environment")
-            self.print_warning(
-                "Consider activating your venv: source venv/bin/activate"
-            )
+            self.print_warning("Consider activating your venv: source venv/bin/activate")
 
         return True
 
@@ -264,27 +256,18 @@ class ValidationRunner:
 
         # This test is expected to fail with numpy architecture error locally
         # We just want to ensure it gets past the configuration parsing
-        result = self.run_command(
-            cmd, "Cross-platform test", check_return_code=False, env=env
-        )
+        result = self.run_command(cmd, "Cross-platform test", check_return_code=False, env=env)
 
         # Check if it failed due to numpy architecture (expected) vs config issues (bad)
         if not result:
             # Re-run to capture stderr for analysis
-            proc_result = subprocess.run(
-                cmd, capture_output=True, text=True, cwd=self.repo_root
-            )
+            proc_result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.repo_root)
             if "numpy" in proc_result.stderr and "architecture" in proc_result.stderr:
-                self.print_warning(
-                    "Cross-platform test failed due to numpy architecture "
-                    "(expected locally)"
-                )
+                self.print_warning("Cross-platform test failed due to numpy architecture (expected locally)")
                 self.print_success("Configuration parsing appears to work correctly")
                 return True
             else:
-                self.print_error(
-                    "Cross-platform test failed due to configuration issues"
-                )
+                self.print_error("Cross-platform test failed due to configuration issues")
                 return False
 
         return True
@@ -293,9 +276,7 @@ class ValidationRunner:
         """Validate configuration files."""
         self.print_header("Configuration File Validation")
 
-        config_files = list(
-            Path(self.repo_root / "fusion" / "configs" / "templates").glob("*.ini")
-        )
+        config_files = list(Path(self.repo_root / "fusion" / "configs" / "templates").glob("*.ini"))
 
         if not config_files:
             self.print_error("No configuration files found")
@@ -341,10 +322,7 @@ class ValidationRunner:
             cmd = [
                 "python",
                 "-c",
-                (
-                    f'import sys; sys.path.insert(0, "."); import {module}; '
-                    f'print("✓ {module} imported successfully")'
-                ),
+                (f'import sys; sys.path.insert(0, "."); import {module}; print("✓ {module} imported successfully")'),
             ]
             if not self.run_command(cmd, f"Import {module}"):
                 return False
@@ -358,26 +336,17 @@ class ValidationRunner:
         print(f"{Colors.BOLD}{Colors.PURPLE}{'=' * 60}{Colors.END}")
 
         if self.failed_checks:
-            print(
-                f"\n{Colors.RED}{Colors.BOLD}❌ FAILED CHECKS "
-                f"({len(self.failed_checks)}):{Colors.END}"
-            )
+            print(f"\n{Colors.RED}{Colors.BOLD}❌ FAILED CHECKS ({len(self.failed_checks)}):{Colors.END}")
             for check in self.failed_checks:
                 print(f"  {Colors.RED}• {check}{Colors.END}")
 
             print(f"\n{Colors.RED}{Colors.BOLD}PR VALIDATION FAILED{Colors.END}")
-            print(
-                f"{Colors.RED}Please fix the issues above before submitting "
-                f"your PR.{Colors.END}"
-            )
+            print(f"{Colors.RED}Please fix the issues above before submitting your PR.{Colors.END}")
         else:
             print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 ALL CHECKS PASSED!{Colors.END}")
             print(f"{Colors.GREEN}Your PR is ready for submission.{Colors.END}")
 
-        print(
-            f"\n{Colors.CYAN}Total validation time: {self.total_time:.1f} "
-            f"seconds{Colors.END}"
-        )
+        print(f"\n{Colors.CYAN}Total validation time: {self.total_time:.1f} seconds{Colors.END}")
 
         # Print next steps
         print(f"\n{Colors.BOLD}Next steps:{Colors.END}")
@@ -401,12 +370,8 @@ def main() -> None:
         epilog=__doc__,
     )
 
-    parser.add_argument(
-        "--quick", action="store_true", help="Skip slower tests for faster validation"
-    )
-    parser.add_argument(
-        "--lint-only", action="store_true", help="Only run linting checks"
-    )
+    parser.add_argument("--quick", action="store_true", help="Skip slower tests for faster validation")
+    parser.add_argument("--lint-only", action="store_true", help="Only run linting checks")
     parser.add_argument("--test-only", action="store_true", help="Only run unit tests")
     parser.add_argument(
         "--cross-platform-only",
@@ -418,10 +383,7 @@ def main() -> None:
 
     # Print welcome message
     print(f"{Colors.BOLD}{Colors.GREEN}🚀 FUSION PR Validation Tool{Colors.END}")
-    print(
-        f"{Colors.CYAN}This tool runs all CI/CD checks locally to validate "
-        f"your PR{Colors.END}"
-    )
+    print(f"{Colors.CYAN}This tool runs all CI/CD checks locally to validate your PR{Colors.END}")
 
     runner = ValidationRunner()
 

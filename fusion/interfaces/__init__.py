@@ -3,7 +3,7 @@ Interfaces module for FUSION simulator.
 
 This module contains:
 1. Abstract base classes that define contracts for legacy pluggable components
-2. Protocol classes for v5 type-safe pipeline interfaces
+2. Protocol classes for type-safe pipeline interfaces
 3. Control policy protocol for unified path selection
 
 Legacy Interfaces (Abstract Base Classes):
@@ -12,7 +12,7 @@ Legacy Interfaces (Abstract Base Classes):
     - AbstractSNRMeasurer
     - AgentInterface
 
-V5 Pipeline Protocols (typing.Protocol):
+Pipeline Protocols (typing.Protocol):
     - RoutingPipeline
     - SpectrumPipeline
     - GroomingPipeline
@@ -46,7 +46,7 @@ __all__ = [
     "AlgorithmFactory",
     "SimulationPipeline",
     "create_simulation_pipeline",
-    # V5 pipeline protocols
+    # Pipeline protocols
     "RoutingPipeline",
     "SpectrumPipeline",
     "GroomingPipeline",

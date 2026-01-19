@@ -39,13 +39,15 @@ class RoutingProps:
         """Initialize routing properties with default values."""
         # Path computation properties - can contain path lists or path data dicts
         self.paths_matrix: list[Any] = []
-        self.modulation_formats_matrix: list[list[str]] = []
+        # Note: modulation_formats_matrix uses False as sentinel for infeasible formats
+        self.modulation_formats_matrix: list[list[str | bool]] = []
         self.weights_list: list[float] = []
         self.path_index_list: list[int] = []
 
         # Backup paths for 1+1 protection (corresponds to paths_matrix)
         self.backup_paths_matrix: list[list[int] | None] = []
-        self.backup_modulation_formats_matrix: list[list[str]] = []
+        # Note: backup_modulation_formats_matrix uses False as sentinel for infeasible formats
+        self.backup_modulation_formats_matrix: list[list[str | bool]] = []
 
         # Physical layer parameters
         self.input_power: float = DEFAULT_INPUT_POWER
@@ -146,19 +148,19 @@ class SNRProps:
         self.nsp: dict[str, float] = {
             "c": 1.77,  # C-band EDFA noise figure
             "l": 1.99,  # L-band EDFA noise figure
-            "s": 2.0,   # S-band amplifier noise figure
-            "o": 2.0,   # O-band amplifier noise figure
-            "e": 2.0,   # E-band amplifier noise figure
+            "s": 2.0,  # S-band amplifier noise figure
+            "o": 2.0,  # O-band amplifier noise figure
+            "e": 2.0,  # E-band amplifier noise figure
         }
         # Required SNR thresholds per modulation format (in dB)
         # Values must match v5 (arg_scripts/snr_args.py)
         self.req_snr: dict[str, float] = {
-            "BPSK": 3.71,   # Binary Phase Shift Keying
-            "QPSK": 6.72,   # Quadrature Phase Shift Keying
-            "8-QAM": 10.84, # 8-Quadrature Amplitude Modulation
-            "16-QAM": 13.24, # 16-QAM
-            "32-QAM": 16.16, # 32-QAM
-            "64-QAM": 19.01, # 64-QAM
+            "BPSK": 3.71,  # Binary Phase Shift Keying
+            "QPSK": 6.72,  # Quadrature Phase Shift Keying
+            "8-QAM": 10.84,  # 8-Quadrature Amplitude Modulation
+            "16-QAM": 13.24,  # 16-QAM
+            "32-QAM": 16.16,  # 32-QAM
+            "64-QAM": 19.01,  # 64-QAM
         }
 
         # Current request parameters

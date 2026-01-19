@@ -50,9 +50,7 @@ def convert_string_to_dict(value: str) -> str | dict[str, Any]:
         return value  # Keep as string if parsing fails
 
 
-def apply_cli_override(
-    configuration_value: Any, cli_argument_value: Any | None, type_converter: Callable
-) -> Any:
+def apply_cli_override(configuration_value: Any, cli_argument_value: Any | None, type_converter: Callable) -> Any:
     """
     Apply CLI argument override with proper handling of boolean store_true arguments.
 
@@ -67,19 +65,11 @@ def apply_cli_override(
     :rtype: Any
     """
     if cli_argument_value is None:
-        return (
-            type_converter(configuration_value)
-            if isinstance(configuration_value, str)
-            else configuration_value
-        )
+        return type_converter(configuration_value) if isinstance(configuration_value, str) else configuration_value
 
     # For boolean store_true arguments, only override if explicitly set to True
     if type_converter is str_to_bool and cli_argument_value is False:
-        return (
-            type_converter(configuration_value)
-            if isinstance(configuration_value, str)
-            else configuration_value
-        )
+        return type_converter(configuration_value) if isinstance(configuration_value, str) else configuration_value
 
     return cli_argument_value
 
@@ -102,10 +92,7 @@ def safe_type_convert(value: str, type_converter: Callable, option_name: str) ->
     try:
         return type_converter(value)
     except (ValueError, TypeError) as e:
-        raise ConfigTypeConversionError(
-            f"Failed to convert {option_name}='{value}' "
-            f"using {type_converter.__name__}: {e}"
-        ) from e
+        raise ConfigTypeConversionError(f"Failed to convert {option_name}='{value}' using {type_converter.__name__}: {e}") from e
 
 
 def convert_dict_params_if_needed(value: Any, option: str) -> Any:

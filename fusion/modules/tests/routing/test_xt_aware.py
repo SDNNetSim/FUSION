@@ -95,9 +95,7 @@ def xt_aware(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
 class TestXTAwareRouting:
     """Tests for XTAwareRouting algorithm."""
 
-    def test_init_stores_properties(
-        self, xt_aware: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_stores_properties(self, xt_aware: Any, engine_props: dict[str, Any]) -> None:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert xt_aware.engine_props == engine_props
@@ -118,9 +116,7 @@ class TestXTAwareRouting:
         assert isinstance(topologies, list)
         assert "Generic" in topologies
 
-    def test_validate_environment_with_valid_topology(
-        self, xt_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_validate_environment_with_valid_topology(self, xt_aware: Any, topology: nx.Graph) -> None:
         """Test environment validation succeeds with valid topology."""
         # Act
         is_valid = xt_aware.validate_environment(topology)
@@ -134,9 +130,7 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2, 3]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.2
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.2),
         ):
             xt_aware.route("A", "C", request=None)
 
@@ -163,26 +157,20 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2, 3]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.3
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.3),
         ):
             xt_aware.route("A", "C", request=None)
 
         # Assert
         assert xt_aware._path_count == initial_count + 1
 
-    def test_update_xt_costs_sets_xt_costs(
-        self, xt_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_xt_costs_sets_xt_costs(self, xt_aware: Any, topology: nx.Graph) -> None:
         """Test that update XT costs sets xt_cost on topology edges."""
         # Act
         free_slots = {"c": {0: [1, 2]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.25
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.25),
             patch.object(xt_aware.route_help_obj, "get_max_link_length"),
         ):
             xt_aware._update_xt_costs()
@@ -192,9 +180,7 @@ class TestXTAwareRouting:
             assert "xt_cost" in topology[source][dest]
 
     @pytest.mark.parametrize("xt_type", ["with_length", "without_length", None])
-    def test_update_xt_costs_with_different_xt_types(
-        self, xt_aware: Any, topology: nx.Graph, xt_type: str | None
-    ) -> None:
+    def test_update_xt_costs_with_different_xt_types(self, xt_aware: Any, topology: nx.Graph, xt_type: str | None) -> None:
         """Test XT cost calculation with different xt_type configurations.
 
         :param xt_aware: Any fixture instance.
@@ -212,9 +198,7 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.25
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.25),
         ):
             xt_aware._update_xt_costs()
 
@@ -229,9 +213,7 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.2
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.2),
             patch.object(xt_aware.route_help_obj, "get_max_link_length"),
         ):
             paths = xt_aware.get_paths("A", "C", k=2)
@@ -240,9 +222,7 @@ class TestXTAwareRouting:
         assert isinstance(paths, list)
         assert len(paths) <= 2
 
-    def test_update_weights_sets_xt_costs(
-        self, xt_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_weights_sets_xt_costs(self, xt_aware: Any, topology: nx.Graph) -> None:
         """Test that update_weights sets XT costs on topology edges."""
         # Arrange
         xt_aware.route_props.max_link_length = 300.0
@@ -251,9 +231,7 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.15
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.15),
         ):
             xt_aware.update_weights(topology)
 
@@ -268,9 +246,7 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2, 3]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.4
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.4),
             patch.object(xt_aware.route_help_obj, "get_max_link_length"),
         ):
             xt_aware.route("A", "C", request=None)
@@ -291,9 +267,7 @@ class TestXTAwareRouting:
         free_slots = {"c": {0: [1, 2, 3]}}
         with (
             patch("fusion.utils.spectrum.find_free_slots", return_value=free_slots),
-            patch.object(
-                xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.3
-            ),
+            patch.object(xt_aware.route_help_obj, "find_xt_link_cost", return_value=0.3),
             patch.object(xt_aware.route_help_obj, "get_max_link_length"),
         ):
             xt_aware.route("A", "C", request=None)
@@ -345,9 +319,7 @@ class TestXTAwareRouting:
         assert len(xt_aware.route_props.weights_list) > 0
         assert len(xt_aware.route_props.modulation_formats_matrix) > 0
 
-    def test_calculate_path_xt_sums_link_costs(
-        self, xt_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_calculate_path_xt_sums_link_costs(self, xt_aware: Any, topology: nx.Graph) -> None:
         """Test that path XT calculation sums link costs correctly."""
         # Arrange
         path = ["A", "B", "C"]

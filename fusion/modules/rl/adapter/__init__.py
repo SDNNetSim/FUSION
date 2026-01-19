@@ -1,9 +1,9 @@
 """RL Simulation Adapter package.
 
 This package provides the adapter layer between RL environments and the
-V4 simulation stack (SDNOrchestrator, pipelines).
+v6.0 simulation stack (SDNOrchestrator, pipelines).
 
-Phase: P4.1 - RLSimulationAdapter Scaffolding
+RLSimulationAdapter Scaffolding
 
 Key Components:
 - PathOption: Dataclass for candidate path representation

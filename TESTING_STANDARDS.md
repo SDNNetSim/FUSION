@@ -234,12 +234,12 @@ pytest --cov=fusion --cov-fail-under=80
 
 ### 7.2 Clear Assertions
 ```python
-# ✅ Good - Specific assertions
+# Good - Specific assertions
 assert len(results) == 3
 assert "error" not in response
 assert response.status_code == 200
 
-# ❌ Avoid - Generic assertions
+# Bad - Generic assertions
 assert results
 assert response
 ```
@@ -270,14 +270,14 @@ def test_invalid_input_raises_validation_error():
 
 ## Quick Reference Checklist
 
-### Test Organization ✓
+### Test Organization
 - [ ] Testing module (`tests/`) within each package
 - [ ] README.md in every `tests/` directory
 - [ ] Naming: `test_<module_name>.py`
 - [ ] Unit tests for individual functions/methods
 - [ ] Fast, isolated, deterministic tests
 
-### Test Quality ✓
+### Test Quality
 - [ ] Clear test function names following pattern
 - [ ] All public functions tested
 - [ ] Error conditions tested
@@ -286,7 +286,7 @@ def test_invalid_input_raises_validation_error():
 - [ ] Independent tests
 - [ ] Clear, specific assertions
 
-### Coverage ✓
+### Coverage
 - [ ] Critical modules: 90%+
 - [ ] Utility modules: 80%+
 - [ ] Integration modules: 70%+

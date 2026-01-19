@@ -37,20 +37,15 @@ class RouteResult:
     For 1+1 protection, includes disjoint backup paths.
 
     Attributes:
-        paths: List of candidate paths (each path is tuple of node IDs)
-        weights_km: Path lengths/weights in kilometers
-        modulations: Valid modulation formats per path
-        backup_paths: Disjoint backup paths for 1+1 protection (optional)
-        backup_weights_km: Backup path lengths (optional)
-        backup_modulations: Modulations for backup paths (optional)
-        strategy_name: Name of routing algorithm used
-        metadata: Algorithm-specific metadata
-
-    Invariants:
-        - len(paths) == len(weights_km) == len(modulations)
-        - Each path has at least 2 nodes
-        - Weights are non-negative
-        - If backup_paths exists: len(backup_paths) == len(paths)
+        paths: List of candidate paths (each path is tuple of node IDs).
+        weights_km: Path lengths/weights in kilometers.
+        modulations: Valid modulation formats per path.
+        backup_paths: Disjoint backup paths for 1+1 protection (optional).
+        backup_weights_km: Backup path lengths (optional).
+        backup_modulations: Modulations for backup paths (optional).
+        strategy_name: Name of routing algorithm used.
+        metadata: Algorithm-specific metadata.
+        connection_index: External routing index for pre-calculated SNR lookup.
 
     Example:
         >>> result = RouteResult(
@@ -153,45 +148,31 @@ class RouteResult:
         """
         Create from legacy RoutingProps.
 
-        Args:
-            routing_props: Legacy RoutingProps object
-
-        Returns:
-            New RouteResult instance
+        :param routing_props: Legacy RoutingProps object.
+        :type routing_props: Any
+        :return: New RouteResult instance.
+        :rtype: RouteResult
         """
         # Handle empty case
-        if (
-            not hasattr(routing_props, "paths_matrix")
-            or not routing_props.paths_matrix
-        ):
+        if not hasattr(routing_props, "paths_matrix") or not routing_props.paths_matrix:
             return cls.empty()
 
         # Convert lists to tuples for immutability
         paths = tuple(tuple(str(n) for n in p) for p in routing_props.paths_matrix)
         weights = tuple(routing_props.weights_list)
-        modulations = tuple(
-            tuple(mods) for mods in routing_props.modulation_formats_matrix
-        )
+        modulations = tuple(tuple(mods) for mods in routing_props.modulation_formats_matrix)
 
         # Handle backup paths if present
         backup_paths = None
         backup_weights = None
         backup_mods = None
 
-        if (
-            hasattr(routing_props, "backup_paths_matrix")
-            and routing_props.backup_paths_matrix
-        ):
-            backup_paths = tuple(
-                tuple(str(n) for n in p) if p else ()
-                for p in routing_props.backup_paths_matrix
-            )
+        if hasattr(routing_props, "backup_paths_matrix") and routing_props.backup_paths_matrix:
+            backup_paths = tuple(tuple(str(n) for n in p) if p else () for p in routing_props.backup_paths_matrix)
             if hasattr(routing_props, "backup_weights_list"):
                 backup_weights = tuple(routing_props.backup_weights_list)
             if hasattr(routing_props, "backup_modulation_formats_matrix"):
-                backup_mods = tuple(
-                    tuple(mods) for mods in routing_props.backup_modulation_formats_matrix
-                )
+                backup_mods = tuple(tuple(mods) for mods in routing_props.backup_modulation_formats_matrix)
 
         return cls(
             paths=paths,
@@ -217,24 +198,19 @@ class SpectrumResult:
     the allocation details (slot range, core, band, modulation).
 
     Attributes:
-        is_free: Whether spectrum assignment was successful
-        start_slot: First slot index (valid only if is_free=True)
-        end_slot: Last slot index exclusive (valid only if is_free=True)
-        core: Core number for MCF (valid only if is_free=True)
-        band: Frequency band (valid only if is_free=True)
-        modulation: Selected modulation format
-        slots_needed: Number of slots required (including guard band)
-
-        Backup spectrum (for 1+1 protection):
-            backup_start_slot: Backup spectrum start
-            backup_end_slot: Backup spectrum end
-            backup_core: Backup core number
-            backup_band: Backup frequency band
-
-    Invariants:
-        - If is_free=False, slot fields are not meaningful
-        - If is_free=True, end_slot > start_slot
-        - If backup fields are set, all backup fields must be set
+        is_free: Whether spectrum assignment was successful.
+        start_slot: First slot index (valid only if is_free=True).
+        end_slot: Last slot index exclusive (valid only if is_free=True).
+        core: Core number for MCF (valid only if is_free=True).
+        band: Frequency band (valid only if is_free=True).
+        modulation: Selected modulation format.
+        slots_needed: Number of slots required (including guard band).
+        achieved_bandwidth_gbps: Achieved bandwidth in dynamic_lps mode.
+        snr_db: SNR value calculated during spectrum assignment.
+        backup_start_slot: Backup spectrum start for 1+1 protection.
+        backup_end_slot: Backup spectrum end for 1+1 protection.
+        backup_core: Backup core number for 1+1 protection.
+        backup_band: Backup frequency band for 1+1 protection.
 
     Example:
         >>> result = SpectrumResult(
@@ -304,18 +280,17 @@ class SpectrumResult:
         """
         Create from legacy SpectrumProps or dict.
 
-        Args:
-            spectrum_props: Legacy SpectrumProps object or dict
-
-        Returns:
-            New SpectrumResult instance
+        :param spectrum_props: Legacy SpectrumProps object or dict.
+        :type spectrum_props: Any
+        :return: New SpectrumResult instance.
+        :rtype: SpectrumResult
         """
         if isinstance(spectrum_props, dict):
             return cls(
                 is_free=spectrum_props.get("is_free", False),
                 start_slot=spectrum_props.get("start_slot", 0),
                 end_slot=spectrum_props.get("end_slot", 0),
-                core=spectrum_props.get("core_number", spectrum_props.get("core", 0)),
+                core=int(spectrum_props.get("core_number", spectrum_props.get("core", 0)) or 0),
                 band=spectrum_props.get("band", "c"),
                 modulation=spectrum_props.get("modulation", ""),
                 slots_needed=spectrum_props.get("slots_needed", 0),
@@ -336,8 +311,8 @@ class SpectrumResult:
         """
         Convert to allocation dictionary for legacy compatibility.
 
-        Returns:
-            Dictionary with allocation details
+        :return: Dictionary with allocation details.
+        :rtype: dict[str, Any]
         """
         return {
             "is_free": self.is_free,
@@ -364,20 +339,14 @@ class GroomingResult:
     by existing lightpaths without creating new ones.
 
     Attributes:
-        fully_groomed: Entire request fits in existing lightpaths
-        partially_groomed: Some bandwidth groomed, rest needs new LP
-        bandwidth_groomed_gbps: Amount successfully groomed
-        remaining_bandwidth_gbps: Amount still needing new lightpath
-        lightpaths_used: IDs of lightpaths used for grooming
-        forced_path: Required path for new lightpath (if partial)
-        snr_list: SNR values from grooming attempts (for Legacy compatibility)
-        modulation_list: Modulation formats from grooming attempts
-
-    Invariants:
-        - fully_groomed and partially_groomed are mutually exclusive
-        - If fully_groomed: remaining_bandwidth_gbps == 0
-        - If partially_groomed or fully_groomed: len(lightpaths_used) > 0
-        - bandwidth_groomed + remaining_bandwidth == original request
+        fully_groomed: Entire request fits in existing lightpaths.
+        partially_groomed: Some bandwidth groomed, rest needs new LP.
+        bandwidth_groomed_gbps: Amount successfully groomed.
+        remaining_bandwidth_gbps: Amount still needing new lightpath.
+        lightpaths_used: IDs of lightpaths used for grooming.
+        forced_path: Required path for new lightpath (if partial).
+        snr_list: SNR values from grooming attempts (for legacy compatibility).
+        modulation_list: Modulation formats from grooming attempts.
 
     Example:
         >>> result = GroomingResult.full(100, [1, 2])
@@ -485,15 +454,12 @@ class SlicingResult:
     limitations), it may be split into multiple smaller slices.
 
     Attributes:
-        success: Whether slicing succeeded
-        num_slices: Number of slices created
-        slice_bandwidth_gbps: Bandwidth per slice
-        lightpaths_created: IDs of created lightpaths
-        total_bandwidth_gbps: Total bandwidth across all slices
-
-    Invariants:
-        - If success=True: num_slices > 0 and len(lightpaths_created) == num_slices
-        - total_bandwidth_gbps == num_slices * slice_bandwidth_gbps
+        success: Whether slicing succeeded.
+        num_slices: Number of slices created.
+        slice_bandwidth_gbps: Bandwidth per slice.
+        lightpaths_created: IDs of created lightpaths.
+        total_bandwidth_gbps: Total bandwidth across all slices.
+        failed_attempt_snr_values: SNR values from failed attempts (legacy).
 
     Example:
         >>> result = SlicingResult.sliced(
@@ -574,16 +540,12 @@ class SNRResult:
     required for the selected modulation format.
 
     Attributes:
-        passed: Whether SNR meets threshold (primary success indicator)
-        snr_db: Calculated SNR value in dB
-        required_snr_db: Threshold required for modulation format
-        margin_db: SNR margin (snr_db - required_snr_db)
-        failure_reason: Explanation if validation failed
-        link_snr_values: Per-link SNR breakdown for debugging
-
-    Invariants:
-        - margin_db == snr_db - required_snr_db
-        - If passed=False and snr_db < required_snr_db, margin_db is negative
+        passed: Whether SNR meets threshold (primary success indicator).
+        snr_db: Calculated SNR value in dB.
+        required_snr_db: Threshold required for modulation format.
+        margin_db: SNR margin (snr_db - required_snr_db).
+        failure_reason: Explanation if validation failed.
+        link_snr_values: Per-link SNR breakdown for debugging.
 
     Example:
         >>> result = SNRResult.success(snr_db=18.5, required_snr_db=15.0)
@@ -662,8 +624,8 @@ class SNRResult:
         """
         Get the link with lowest SNR.
 
-        Returns:
-            Tuple of (link, snr_db) or None if no link breakdown
+        :return: Tuple of (link, snr_db) or None if no link breakdown.
+        :rtype: tuple[tuple[str, str], float] | None
         """
         if not self.link_snr_values:
             return None
@@ -685,17 +647,13 @@ class SNRRecheckResult:
     SNR for affected lightpaths.
 
     Attributes:
-        all_pass: True if all affected lightpaths still meet SNR threshold
-        degraded_lightpath_ids: IDs of lightpaths now below threshold
-        violations: Mapping of lightpath_id to SNR shortfall in dB
-        checked_count: Number of lightpaths that were checked
-
-    Invariants:
-        - If all_pass=True: degraded_lightpath_ids is empty
-        - If all_pass=False: len(degraded_lightpath_ids) > 0
+        all_pass: True if all affected lightpaths still meet SNR threshold.
+        degraded_lightpath_ids: IDs of lightpaths now below threshold.
+        violations: Mapping of lightpath_id to SNR shortfall in dB.
+        checked_count: Number of lightpaths that were checked.
 
     Example:
-        >>> result = SNRRecheckResult.all_pass()
+        >>> result = SNRRecheckResult.success()
         >>> result.all_pass
         True
         >>> result.num_degraded
@@ -728,15 +686,15 @@ class SNRRecheckResult:
         """
         Get lightpath with largest SNR shortfall.
 
-        Returns:
-            Tuple of (lightpath_id, shortfall_db) or None if no violations
+        :return: Tuple of (lightpath_id, shortfall_db) or None if no violations.
+        :rtype: tuple[int, float] | None
         """
         if not self.violations:
             return None
         return min(self.violations.items(), key=lambda x: x[1])
 
     @classmethod
-    def success(cls, checked_count: int = 0) -> "SNRRecheckResult":
+    def success(cls, checked_count: int = 0) -> SNRRecheckResult:
         """Create result when all affected lightpaths still pass."""
         return cls(
             all_pass=True,
@@ -751,7 +709,7 @@ class SNRRecheckResult:
         degraded_ids: list[int],
         violations: dict[int, float],
         checked_count: int = 0,
-    ) -> "SNRRecheckResult":
+    ) -> SNRRecheckResult:
         """Create result when some lightpaths are now degraded."""
         return cls(
             all_pass=False,
@@ -775,22 +733,17 @@ class ProtectionResult:
     of primary and backup paths, and any switchover events.
 
     Attributes:
-        primary_established: Whether primary path was established
-        backup_established: Whether backup path was established
-        primary_spectrum: Spectrum allocation for primary path
-        backup_spectrum: Spectrum allocation for backup path
-        switchover_triggered: Whether a switchover event occurred
-        switchover_success: Whether switchover completed successfully
-        switchover_time_ms: Time taken for switchover in milliseconds
-        failure_type: Type of failure that triggered switchover
-        recovery_start: Simulation time when recovery started
-        recovery_end: Simulation time when recovery completed
-        recovery_type: Type of recovery ("protection" or "restoration")
-
-    Invariants:
-        - If switchover_triggered=True and switchover_success=True,
-          switchover_time_ms should be set
-        - If backup_established=True, backup_spectrum should be set
+        primary_established: Whether primary path was established.
+        backup_established: Whether backup path was established.
+        primary_spectrum: Spectrum allocation for primary path.
+        backup_spectrum: Spectrum allocation for backup path.
+        switchover_triggered: Whether a switchover event occurred.
+        switchover_success: Whether switchover completed successfully.
+        switchover_time_ms: Time taken for switchover in milliseconds.
+        failure_type: Type of failure that triggered switchover.
+        recovery_start: Simulation time when recovery started.
+        recovery_end: Simulation time when recovery completed.
+        recovery_type: Type of recovery ("protection" or "restoration").
 
     Example:
         >>> result = ProtectionResult.established(
@@ -830,7 +783,7 @@ class ProtectionResult:
         cls,
         primary_spectrum: SpectrumResult,
         backup_spectrum: SpectrumResult | None = None,
-    ) -> "ProtectionResult":
+    ) -> ProtectionResult:
         """Create result for successfully established protection."""
         return cls(
             primary_established=True,
@@ -840,7 +793,7 @@ class ProtectionResult:
         )
 
     @classmethod
-    def primary_only(cls, primary_spectrum: SpectrumResult) -> "ProtectionResult":
+    def primary_only(cls, primary_spectrum: SpectrumResult) -> ProtectionResult:
         """Create result when only primary path established (backup failed)."""
         return cls(
             primary_established=True,
@@ -849,7 +802,7 @@ class ProtectionResult:
         )
 
     @classmethod
-    def failed(cls) -> "ProtectionResult":
+    def failed(cls) -> ProtectionResult:
         """Create result for failed protection establishment."""
         return cls(
             primary_established=False,
@@ -863,7 +816,7 @@ class ProtectionResult:
         switchover_time_ms: float,
         failure_type: str,
         recovery_type: str = "protection",
-    ) -> "ProtectionResult":
+    ) -> ProtectionResult:
         """Create result for a switchover event."""
         return cls(
             primary_established=True,
@@ -891,44 +844,33 @@ class AllocationResult:
     was served (fully or partially).
 
     Attributes:
-        success: FINAL AUTHORITY - True if request was served
-        lightpaths_created: IDs of newly created lightpaths
-        lightpaths_groomed: IDs of existing lightpaths used
-        total_bandwidth_allocated_gbps: Total bandwidth allocated
-
-        Feature flags:
-            is_groomed: Request used existing lightpath capacity
-            is_partially_groomed: Mix of existing and new lightpath
-            is_sliced: Request split across multiple lightpaths
-            is_protected: Request has 1+1 protection
-
-        Failure info:
-            block_reason: BlockReason enum if success=False
-
-        Per-segment tracking (for sliced/multi-lightpath allocations):
-            bandwidth_allocations: Bandwidth allocated per segment
-            modulations: Modulation format per segment
-            cores: Core number per segment
-            bands: Frequency band per segment
-            start_slots: Start slot per segment
-            end_slots: End slot per segment
-            xt_costs: Crosstalk cost per segment (from crosstalk_list)
-            xt_values: Crosstalk values per segment (from xt_list)
-            snr_values: SNR value per segment
-            lightpath_bandwidths: Total bandwidth per lightpath
-
-        Debug info (nested results):
-            route_result: Routing pipeline output
-            spectrum_result: Spectrum pipeline output
-            grooming_result: Grooming pipeline output
-            slicing_result: Slicing pipeline output
-            snr_result: SNR validation output
-            protection_result: Protection establishment output
-
-    Invariants:
-        - If success=True: len(lightpaths_created) + len(lightpaths_groomed) > 0
-        - If success=True: total_bandwidth_allocated_gbps > 0
-        - If success=False: block_reason is set
+        success: FINAL AUTHORITY - True if request was served.
+        lightpaths_created: IDs of newly created lightpaths.
+        lightpaths_groomed: IDs of existing lightpaths used.
+        total_bandwidth_allocated_gbps: Total bandwidth allocated.
+        is_groomed: Request used existing lightpath capacity.
+        is_partially_groomed: Mix of existing and new lightpath.
+        is_sliced: Request split across multiple lightpaths.
+        is_protected: Request has 1+1 protection.
+        block_reason: BlockReason enum if success=False.
+        bandwidth_allocations: Bandwidth allocated per segment.
+        modulations: Modulation format per segment.
+        cores: Core number per segment.
+        bands: Frequency band per segment.
+        start_slots: Start slot per segment.
+        end_slots: End slot per segment.
+        xt_costs: Crosstalk cost per segment (from crosstalk_list).
+        xt_values: Crosstalk values per segment (from xt_list).
+        snr_values: SNR value per segment.
+        lightpath_bandwidths: Total bandwidth per lightpath.
+        failed_attempt_snr_values: SNR values from failed allocation attempts.
+        path_index: Which k-path was selected (0, 1, 2...).
+        route_result: Routing pipeline output.
+        spectrum_result: Spectrum pipeline output.
+        grooming_result: Grooming pipeline output.
+        slicing_result: Slicing pipeline output.
+        snr_result: SNR validation output.
+        protection_result: Protection establishment output.
 
     Example:
         >>> result = AllocationResult.success_new_lightpath(
@@ -955,7 +897,7 @@ class AllocationResult:
     is_protected: bool = False
 
     # Failure info
-    block_reason: "BlockReason | None" = None
+    block_reason: BlockReason | None = None
 
     # Per-segment tracking (for sliced/multi-lightpath allocations)
     bandwidth_allocations: tuple[int, ...] = ()
@@ -1016,11 +958,11 @@ class AllocationResult:
     @classmethod
     def blocked(
         cls,
-        reason: "BlockReason",
+        reason: BlockReason,
         route_result: RouteResult | None = None,
         spectrum_result: SpectrumResult | None = None,
         snr_result: SNRResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for blocked request."""
         return cls(
             success=False,
@@ -1039,7 +981,7 @@ class AllocationResult:
         spectrum_result: SpectrumResult | None = None,
         snr_result: SNRResult | None = None,
         is_protected: bool = False,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for successful allocation with new lightpath."""
         return cls(
             success=True,
@@ -1057,7 +999,7 @@ class AllocationResult:
         lightpath_ids: list[int],
         bandwidth_gbps: int,
         grooming_result: GroomingResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for fully groomed request."""
         return cls(
             success=True,
@@ -1077,7 +1019,7 @@ class AllocationResult:
         route_result: RouteResult | None = None,
         spectrum_result: SpectrumResult | None = None,
         snr_result: SNRResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for partially groomed request."""
         return cls(
             success=True,
@@ -1098,7 +1040,7 @@ class AllocationResult:
         bandwidth_gbps: int,
         slicing_result: SlicingResult | None = None,
         route_result: RouteResult | None = None,
-    ) -> "AllocationResult":
+    ) -> AllocationResult:
         """Create result for sliced request."""
         return cls(
             success=True,

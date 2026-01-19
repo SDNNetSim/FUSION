@@ -113,9 +113,7 @@ class TestUpdateBandit:
     """_update_bandit value updates."""
 
     @mock.patch("fusion.modules.rl.algorithms.bandits.save_model")
-    def test_update_bandit_first_step_sets_value(
-        self, mock_save_model: mock.MagicMock
-    ) -> None:
+    def test_update_bandit_first_step_sets_value(self, mock_save_model: mock.MagicMock) -> None:
         """First update sets value to reward."""
         props = SimpleNamespace(rewards_matrix=[])
         self_obj = SimpleNamespace(
@@ -151,9 +149,7 @@ class TestEpsilonGreedy:
     @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand", return_value=0.9)
     def test_get_action_exploits_when_rand_gt_eps(self, _: mock.MagicMock) -> None:
         """With rand>eps the greedy arm is chosen."""
-        bandit = bandits.EpsilonGreedyBandit(
-            rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True
-        )
+        bandit = bandits.EpsilonGreedyBandit(rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True)
         bandit.epsilon = 0.1
         pair = (0, 1)
         # Ensure values dict has the required key
@@ -164,17 +160,11 @@ class TestEpsilonGreedy:
         arm = bandit.select_path_arm(*pair)
         assert arm == 0
 
-    @mock.patch(
-        "fusion.modules.rl.algorithms.bandits.np.random.randint", return_value=2
-    )
+    @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.randint", return_value=2)
     @mock.patch("fusion.modules.rl.algorithms.bandits.np.random.rand", return_value=0.0)
-    def test_get_action_explores_when_rand_lt_eps(
-        self, _: mock.MagicMock, __: mock.MagicMock
-    ) -> None:
+    def test_get_action_explores_when_rand_lt_eps(self, _: mock.MagicMock, __: mock.MagicMock) -> None:
         """With rand<eps a random arm is chosen."""
-        bandit = bandits.EpsilonGreedyBandit(
-            rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True
-        )
+        bandit = bandits.EpsilonGreedyBandit(rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True)
         bandit.epsilon = 1.0
         # Ensure values dict is initialized properly
         pair = (0, 1)
@@ -189,9 +179,7 @@ class TestUCB:
 
     def test_ucb_selects_uncounted_arm_first(self) -> None:
         """Zero-count arm is selected first."""
-        bandit = bandits.UCBBandit(
-            rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True
-        )
+        bandit = bandits.UCBBandit(rl_props=_mk_rl(), engine_props=_mk_engine(), is_path=True)
         # Ensure counts and values dicts are initialized properly
         pair = (0, 1)
         if pair not in bandit.counts:

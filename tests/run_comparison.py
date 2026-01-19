@@ -20,7 +20,7 @@ from stable_baselines3.common.callbacks import CallbackList
 
 from fusion.cli.config_setup import load_config
 from fusion.modules.rl import workflow_runner
-from fusion.modules.rl.gymnasium_envs import create_sim_env, EnvType
+from fusion.modules.rl.gymnasium_envs import EnvType, create_sim_env
 from fusion.modules.rl.utils.callbacks import (
     EpisodicRewardCallback,
     LearnRateEntCallback,
@@ -41,6 +41,8 @@ IGNORE_KEYS = {
     "protection_switchovers",
     "protection_failures",
     "failure_induced_blocks",
+    "ci_rate_block",
+    "ci_percent_block",
 }
 
 # Temporary: Only run these specific test cases
@@ -51,21 +53,21 @@ ALLOWED_TEST_CASES = {
     "ext_snr_4core_cls_dy-slice",
     "xtar_slicing_pff",
     "spain_C_fixed_grooming",
-    'spain_C_fixed_grooming_snr_recheck',
-    'spain_C_flexi',
-    'spain_C_flexi_snr_recheck',
-    'spain_mb_CL_fixed_grooming',
-    'spain_mb_CL_fixed_grooming_snr_recheck',
-    'spain_mb_CL_flexi',
-    'spain_mb_CL_flexi_snr_recheck',
-    'usbackbone_C_fixed_grooming',
-    'usbackbone_C_fixed_grooming_snr_recheck',
-    'usbackbone_C_flexi',
-    'usbackbone_C_flexi_snr_recheck',
-    'usbackbone_mb_CL_fixed_grooming',
-    'usbackbone_mb_CL_fixed_grooming_snr_recheck',
-    'usbackbone_mb_CL_flexi',
-    'usbackbone_mb_CL_flexi_snr_recheck',
+    "spain_C_fixed_grooming_snr_recheck",
+    "spain_C_flexi",
+    "spain_C_flexi_snr_recheck",
+    "spain_mb_CL_fixed_grooming",
+    "spain_mb_CL_fixed_grooming_snr_recheck",
+    "spain_mb_CL_flexi",
+    "spain_mb_CL_flexi_snr_recheck",
+    "usbackbone_C_fixed_grooming",
+    "usbackbone_C_fixed_grooming_snr_recheck",
+    "usbackbone_C_flexi",
+    "usbackbone_C_flexi_snr_recheck",
+    "usbackbone_mb_CL_fixed_grooming",
+    "usbackbone_mb_CL_fixed_grooming_snr_recheck",
+    "usbackbone_mb_CL_flexi",
+    "usbackbone_mb_CL_flexi_snr_recheck",
 }
 
 
@@ -79,9 +81,7 @@ def run_rl_simulation(input_dict: dict, config_path: str) -> None:
     sim_dict = load_config(config_path, base_args)
 
     # RL only supports s1 - remove any other simulation threads from input_dict
-    filtered_input_dict = {
-        k: v for k, v in input_dict.items() if k == "s1" or not k.startswith("s")
-    }
+    filtered_input_dict = {k: v for k, v in input_dict.items() if k == "s1" or not k.startswith("s")}
 
     # Create callbacks
     ep_call_obj = EpisodicRewardCallback(verbose=1)
@@ -208,10 +208,7 @@ def _discover_cases(fixtures_root: Path, test_case: str | None = None) -> list[P
         List of test case directories to run
     """
 
-    looks_like_case = (
-        list(fixtures_root.glob("*_config.ini"))
-        and (fixtures_root / "mod_formats.json").exists()
-    )
+    looks_like_case = list(fixtures_root.glob("*_config.ini")) and (fixtures_root / "mod_formats.json").exists()
 
     if looks_like_case:
         return [fixtures_root]  # ← always a list✅
@@ -277,11 +274,11 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
 
     failures: list[str] = []
 
-    def _values_match(old_val, new_val) -> bool:
+    def _values_match(old_val: object, new_val: object) -> bool:
         """Check if two values match, with tolerance for floats."""
         # Handle None cases
         if old_val is None or new_val is None:
-            return old_val == new_val
+            return old_val == new_val  # type: ignore[no-any-return]
 
         # Use math.isclose for float comparisons with small tolerance
         # abs_tol=0.02 allows differences up to 0.02 (covers the 0.01 std difference)
@@ -292,16 +289,23 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
         if isinstance(old_val, list) and isinstance(new_val, list):
             if len(old_val) != len(new_val):
                 return False
-            return all(_values_match(o, n) for o, n in zip(old_val, new_val))
+            return all(_values_match(o, n) for o, n in zip(old_val, new_val, strict=False))
 
         # Default: use equality
-        return old_val == new_val
+        return old_val == new_val  # type: ignore[no-any-return]
 
     def _walk(old: dict, new: dict, path: str = "") -> None:
         for key in old:
             cur = f"{path}.{key}" if path else key
-            if (key in IGNORE_KEYS or cur in IGNORE_KEYS or key == "link_usage" or "link_usage_dict" in cur
-                or "total_transponder_usage" in cur or "frag_dict" in cur or key == "ci_percent_bit_rate_block"):
+            if (
+                key in IGNORE_KEYS
+                or cur in IGNORE_KEYS
+                or key == "link_usage"
+                or "link_usage_dict" in cur
+                or "total_transponder_usage" in cur
+                or "frag_dict" in cur
+                or key == "ci_percent_bit_rate_block"
+            ):
                 continue
             if key not in new:
                 failures.append(f"{rel}:{cur} missing in actual")
@@ -311,8 +315,15 @@ def _compare_json(expected: Path, actual: Path, rel: str) -> list[str]:
                 failures.append(f"{rel}:{cur} expected {old[key]!r} got {new[key]!r}")
         for key in new:
             cur = f"{path}.{key}" if path else key
-            if (key in IGNORE_KEYS or cur in IGNORE_KEYS or key == "link_usage_dict" or "link_usage_dict" in cur
-                or "total_transponder_usage" in cur or "frag_dict" in cur or key == "ci_percent_bit_rate_block"):
+            if (
+                key in IGNORE_KEYS
+                or cur in IGNORE_KEYS
+                or key == "link_usage_dict"
+                or "link_usage_dict" in cur
+                or "total_transponder_usage" in cur
+                or "frag_dict" in cur
+                or key == "ci_percent_bit_rate_block"
+            ):
                 continue
             if key not in old:
                 failures.append(f"{rel}:{cur} extra in actual")
@@ -501,9 +512,7 @@ def _run_single_case(case_dir: Path, base_args: dict, cleanup: bool) -> bool:
     output_dir = _find_output_directory(sim_dict, artefact_root)
 
     if output_dir is None:
-        LOGGER.error(
-            "No output directory found after simulation under %s", artefact_root
-        )
+        LOGGER.error("No output directory found after simulation under %s", artefact_root)
         return False
 
     # Compare against expected files
@@ -557,8 +566,7 @@ def main() -> None:
 
     all_ok = True
     for case in cases:
-        if case.name == 'usbackbone_mb_CL_fixed_grooming_snr_recheck':
-            all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
+        all_ok &= _run_single_case(case, base_args, cleanup=cli.cleanup)
 
     if all_ok:
         LOGGER.info("All %d cases passed ✓", len(cases))

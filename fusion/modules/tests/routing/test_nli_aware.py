@@ -93,9 +93,7 @@ def nli_aware(engine_props: dict[str, Any], sdn_props: Mock) -> Any:
 class TestNLIAwareRouting:
     """Tests for NLIAwareRouting algorithm."""
 
-    def test_init_stores_properties(
-        self, nli_aware: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_init_stores_properties(self, nli_aware: Any, engine_props: dict[str, Any]) -> None:
         """Test that initialization stores all configuration properties."""
         # Assert
         assert nli_aware.engine_props == engine_props
@@ -116,9 +114,7 @@ class TestNLIAwareRouting:
         assert isinstance(topologies, list)
         assert "Generic" in topologies
 
-    def test_validate_environment_with_valid_topology(
-        self, nli_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_validate_environment_with_valid_topology(self, nli_aware: Any, topology: nx.Graph) -> None:
         """Test environment validation succeeds with valid topology."""
         # Act
         is_valid = nli_aware.validate_environment(topology)
@@ -158,9 +154,7 @@ class TestNLIAwareRouting:
         # Assert
         assert nli_aware._path_count == initial_count + 1
 
-    def test_update_nli_costs_sets_nli_costs(
-        self, nli_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_nli_costs_sets_nli_costs(self, nli_aware: Any, topology: nx.Graph) -> None:
         """Test that update NLI costs sets nli_cost on topology edges."""
         # Act
         with patch.object(nli_aware.route_help_obj, "get_nli_cost", return_value=0.25):
@@ -180,9 +174,7 @@ class TestNLIAwareRouting:
         assert isinstance(paths, list)
         assert len(paths) <= 2
 
-    def test_update_weights_sets_nli_costs(
-        self, nli_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_update_weights_sets_nli_costs(self, nli_aware: Any, topology: nx.Graph) -> None:
         """Test that update_weights sets NLI costs on topology edges."""
         # Act
         with patch.object(nli_aware.route_help_obj, "get_nli_cost", return_value=0.15):
@@ -260,9 +252,7 @@ class TestNLIAwareRouting:
         assert len(nli_aware.route_props.weights_list) > 0
         assert len(nli_aware.route_props.modulation_formats_matrix) > 0
 
-    def test_calculate_path_nli_sums_link_costs(
-        self, nli_aware: Any, topology: nx.Graph
-    ) -> None:
+    def test_calculate_path_nli_sums_link_costs(self, nli_aware: Any, topology: nx.Graph) -> None:
         """Test that path NLI calculation sums link costs correctly."""
         # Arrange
         path = ["A", "B", "C"]

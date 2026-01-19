@@ -175,13 +175,6 @@ Before committing, test your message format:
 4. **History**: Easy to understand project evolution
 5. **Reviews**: Faster PR reviews with structured information
 
-## Tools
-
-Consider using:
-- [Conventional Commits CLI](https://github.com/conventional-commits/cli)
-- [Commitizen](https://github.com/commitizen/cz-cli)
-- Git hooks to validate messages locally
-
 ---
 
 **Remember**: Great commit messages help future you and your teammates understand the codebase evolution!

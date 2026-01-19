@@ -30,9 +30,7 @@ def find_path_length(path_list: list[int], topology: nx.Graph) -> float:
     return path_length
 
 
-def find_core_congestion(
-    core_index: int, network_spectrum: dict, path_list: list[int]
-) -> float:
+def find_core_congestion(core_index: int, network_spectrum: dict, path_list: list[int]) -> float:
     """
     Find the current percentage of congestion on a core along a path.
 
@@ -56,9 +54,7 @@ def find_core_congestion(
         for band in cores_matrix:
             # Every core will have the same number of spectral slots
             total_slots += len(cores_matrix[band][0])
-            core_slots_taken = float(
-                len(np.where(cores_matrix[band][core_index] != 0.0)[0])
-            )
+            core_slots_taken = float(len(np.where(cores_matrix[band][core_index] != 0.0)[0]))
             slots_taken += core_slots_taken
 
         link_congestion_list.append(slots_taken / total_slots)
@@ -109,9 +105,7 @@ def get_path_modulation(
         return False
 
 
-def find_path_congestion(
-    path_list: list[int], network_spectrum: dict, band: str = "c"
-) -> tuple[float, float]:
+def find_path_congestion(path_list: list[int], network_spectrum: dict, band: str = "c") -> tuple[float, float]:
     """
     Compute average path congestion and scaled available capacity.
 
@@ -154,9 +148,7 @@ def find_path_congestion(
     return float(average_path_congestion), scaled_available_capacity
 
 
-def find_path_fragmentation(
-    path_list: list[int], network_spectrum: dict, band: str = "c"
-) -> float:
+def find_path_fragmentation(path_list: list[int], network_spectrum: dict, band: str = "c") -> float:
     """
     Compute the average fragmentation ratio along a path.
 
@@ -206,9 +198,7 @@ def find_path_fragmentation(
     return float(np.mean(fragmentation_ratios)) if fragmentation_ratios else 1.0
 
 
-def average_bandwidth_usage(
-    bw_dict: dict[float, float], departure_time: float
-) -> float:
+def average_bandwidth_usage(bw_dict: dict[float, float], departure_time: float) -> float:
     """
     Calculate time-weighted average bandwidth utilization.
 
@@ -250,10 +240,7 @@ def average_bandwidth_usage(
 
         if duration < 0:
             # Sanity check
-            raise ValueError(
-                f"Invalid time progression: "
-                f"start_time={start_time}, end_time={end_time}"
-            )
+            raise ValueError(f"Invalid time progression: start_time={start_time}, end_time={end_time}")
 
         total_bw_time += bw * duration
         total_time += duration

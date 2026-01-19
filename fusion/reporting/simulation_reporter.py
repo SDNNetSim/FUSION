@@ -68,10 +68,7 @@ class SimulationReporter:
 
         # Format iteration progress
         iteration_num = iteration + 1  # Convert to 1-based for display
-        progress_msg = (
-            f"Iteration {iteration_num} out of {max_iterations} completed "
-            f"for Erlang: {erlang}"
-        )
+        progress_msg = f"Iteration {iteration_num} out of {max_iterations} completed for Erlang: {erlang}"
 
         # Format blocking statistics
         stats_message = f"Mean of blocking: {blocking_probability_mean}"
@@ -83,9 +80,7 @@ class SimulationReporter:
         else:
             # For non-verbose, only log every 10th iteration
             if iteration_num % 10 == 0 or iteration_num == max_iterations:
-                self.logger.info(
-                    "Progress: %d/%d - %s", iteration_num, max_iterations, stats_message
-                )
+                self.logger.info("Progress: %d/%d - %s", iteration_num, max_iterations, stats_message)
 
     def report_simulation_start(self, simulation_info_dict: dict[str, Any]) -> None:
         """
@@ -125,10 +120,7 @@ class SimulationReporter:
                 f"{iterations_completed} iterations completed for Erlang: {erlang}"
             )
         else:
-            self.logger.info(
-                f"Maximum iterations ({iterations_completed}) completed for "
-                f"Erlang: {erlang}"
-            )
+            self.logger.info(f"Maximum iterations ({iterations_completed}) completed for Erlang: {erlang}")
 
     def report_blocking_statistics(
         self,
@@ -156,17 +148,13 @@ class SimulationReporter:
             return
 
         blocking_probability = blocked_requests / total_requests
-        bit_rate_blocking_probability = (
-            bit_rate_blocked / bit_rate_total if bit_rate_total > 0 else 0
-        )
+        bit_rate_blocking_probability = bit_rate_blocked / bit_rate_total if bit_rate_total > 0 else 0
 
         self.logger.info("-" * 40)
         self.logger.info("BLOCKING STATISTICS")
         self.logger.info("-" * 40)
         self.logger.info("Request blocking probability: %.4f", blocking_probability)
-        self.logger.info(
-            "Bit-rate blocking probability: %.4f", bit_rate_blocking_probability
-        )
+        self.logger.info("Bit-rate blocking probability: %.4f", bit_rate_blocking_probability)
 
         if blocking_reasons_dict and any(v > 0 for v in blocking_reasons_dict.values()):
             self.logger.info("")
@@ -186,9 +174,7 @@ class SimulationReporter:
         """
         self.logger.info(f"Saving results to: {save_path}")
 
-    def report_error(
-        self, error_message: str, exception: Exception | None = None
-    ) -> None:
+    def report_error(self, error_message: str, exception: Exception | None = None) -> None:
         """
         Report an error during simulation.
 
@@ -198,9 +184,7 @@ class SimulationReporter:
         :type exception: Exception | None
         """
         if exception:
-            self.logger.error(
-                f"{error_message}: {type(exception).__name__}: {str(exception)}"
-            )
+            self.logger.error(f"{error_message}: {type(exception).__name__}: {str(exception)}")
         else:
             self.logger.error(error_message)
 
@@ -231,12 +215,9 @@ class SimulationReporter:
             f"Blocking Variance: {statistics_dict.get('blocking_variance', 'N/A')}",
             f"Confidence Interval: {statistics_dict.get('ci_percent_block', 'N/A')}%",
             "",
-            f"Bit-rate Blocking Mean: "
-            f"{statistics_dict.get('bit_rate_blocking_mean', 'N/A')}",
-            f"Bit-rate Blocking Variance: "
-            f"{statistics_dict.get('bit_rate_blocking_variance', 'N/A')}",
-            f"Bit-rate Confidence Interval: "
-            f"{statistics_dict.get('ci_percent_bit_rate_block', 'N/A')}%",
+            f"Bit-rate Blocking Mean: {statistics_dict.get('bit_rate_blocking_mean', 'N/A')}",
+            f"Bit-rate Blocking Variance: {statistics_dict.get('bit_rate_blocking_variance', 'N/A')}",
+            f"Bit-rate Confidence Interval: {statistics_dict.get('ci_percent_bit_rate_block', 'N/A')}%",
             "",
             "=" * 60,
         ]

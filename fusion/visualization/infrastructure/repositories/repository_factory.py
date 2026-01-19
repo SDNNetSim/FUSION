@@ -45,9 +45,7 @@ class RepositoryFactory:
         """
         if base_path is None:
             # Default to standard FUSION data directory
-            base_path = (
-                Path(__file__).parent.parent.parent.parent.parent / "data" / "output"
-            )
+            base_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "output"
 
         self.base_path = Path(base_path)
         self.cache_ttl_seconds = cache_ttl_seconds
@@ -57,10 +55,7 @@ class RepositoryFactory:
         self._metadata_repository: MetadataRepository | None = None
         self._simulation_repository: SimulationRepository | None = None
 
-        logger.info(
-            f"RepositoryFactory initialized with base_path={self.base_path}, "
-            f"cache_enabled={self.enable_cache}"
-        )
+        logger.info(f"RepositoryFactory initialized with base_path={self.base_path}, cache_enabled={self.enable_cache}")
 
     def create_metadata_repository(self) -> MetadataRepository:
         """
@@ -93,9 +88,7 @@ class RepositoryFactory:
                 base_path=self.base_path,
                 metadata_repository=metadata_repo,
             )
-            logger.debug(
-                f"Created JsonSimulationRepository with base_path={self.base_path}"
-            )
+            logger.debug(f"Created JsonSimulationRepository with base_path={self.base_path}")
 
         return self._simulation_repository
 
@@ -136,9 +129,7 @@ class RepositoryFactory:
         if self._metadata_repository is not None:
             self._metadata_repository.clear_cache()
 
-        if self._simulation_repository is not None and hasattr(
-            self._simulation_repository, "clear_cache"
-        ):
+        if self._simulation_repository is not None and hasattr(self._simulation_repository, "clear_cache"):
             self._simulation_repository.clear_cache()
 
         logger.info("All repository caches cleared")
@@ -147,14 +138,10 @@ class RepositoryFactory:
         """Get statistics from all repository caches."""
         stats = {}
 
-        if self._metadata_repository is not None and hasattr(
-            self._metadata_repository, "get_cache_stats"
-        ):
+        if self._metadata_repository is not None and hasattr(self._metadata_repository, "get_cache_stats"):
             stats["metadata"] = self._metadata_repository.get_cache_stats()
 
-        if self._simulation_repository is not None and hasattr(
-            self._simulation_repository, "get_cache_stats"
-        ):
+        if self._simulation_repository is not None and hasattr(self._simulation_repository, "get_cache_stats"):
             stats["simulation"] = self._simulation_repository.get_cache_stats()
 
         return stats

@@ -5,9 +5,6 @@ This module provides:
 - LinkSpectrum: Per-link spectrum state management
 - NetworkState: Single source of truth for network state during simulation
 
-Phase: P2.1 - NetworkState Core (read methods)
-Phase: P2.2 - Write Methods & Legacy Compatibility (write methods, legacy properties)
-
 Design Principles:
     - NetworkState is a state container, NOT a routing algorithm
     - One NetworkState instance per simulation
@@ -23,8 +20,9 @@ Spectrum Array Values:
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, Iterator
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import networkx as nx
 import numpy as np
@@ -34,7 +32,6 @@ if TYPE_CHECKING:
     from fusion.domain.config import SimulationConfig
 
 from fusion.domain.lightpath import Lightpath
-
 
 # =============================================================================
 # LinkSpectrum Dataclass
@@ -49,18 +46,16 @@ class LinkSpectrum:
     Encapsulates the spectrum allocation state for a single network link,
     supporting multi-band and multi-core configurations.
 
-    Attributes:
-        link: The link identifier as (source, destination) tuple
-        cores_matrix: Spectrum arrays per band, shape (cores, slots) each
-        usage_count: Number of active spectrum allocations on this link
-        throughput: Cumulative bandwidth served through this link (Gbps)
-        link_num: Link index for reference
-        length_km: Physical link length in kilometers
+    Spectrum array values: 0 = free, positive int = lightpath ID,
+    negative int = guard band for lightpath with abs(value) ID.
 
-    Spectrum Array Values:
-        - 0: Slot is free
-        - Positive int: Slot occupied by lightpath with that ID
-        - Negative int: Guard band slot for lightpath with abs(value) ID
+    Attributes:
+        link: The link identifier as (source, destination) tuple.
+        cores_matrix: Spectrum arrays per band, shape (cores, slots) each.
+        usage_count: Number of active spectrum allocations on this link.
+        throughput: Cumulative bandwidth served through this link (Gbps).
+        link_num: Link index for reference.
+        length_km: Physical link length in kilometers.
 
     Example:
         >>> spectrum = LinkSpectrum.from_config(("A", "B"), config, link_num=0)
@@ -91,18 +86,18 @@ class LinkSpectrum:
         """
         Check if a spectrum range is completely free.
 
-        Args:
-            start_slot: First slot index (inclusive)
-            end_slot: Last slot index (exclusive)
-            core: Core index (0 to cores_per_link - 1)
-            band: Band identifier ("c", "l", "s")
-
-        Returns:
-            True if all slots in range are 0 (free), False otherwise
-
-        Raises:
-            KeyError: If band is not in cores_matrix
-            IndexError: If core or slot indices are out of bounds
+        :param start_slot: First slot index (inclusive).
+        :type start_slot: int
+        :param end_slot: Last slot index (exclusive).
+        :type end_slot: int
+        :param core: Core index (0 to cores_per_link - 1).
+        :type core: int
+        :param band: Band identifier ("c", "l", "s").
+        :type band: str
+        :return: True if all slots in range are 0 (free), False otherwise.
+        :rtype: bool
+        :raises KeyError: If band is not in cores_matrix.
+        :raises IndexError: If core or slot indices are out of bounds.
         """
         spectrum = self.cores_matrix[band]
         return bool(np.all(spectrum[core, start_slot:end_slot] == self.FREE_SLOT))
@@ -121,35 +116,30 @@ class LinkSpectrum:
 
         Marks data slots with positive lightpath_id and guard slots with negative.
         This follows the legacy convention where guard bands use negative IDs.
+        Increments usage_count on successful allocation.
 
-        Args:
-            start_slot: First slot index (inclusive)
-            end_slot: Last slot index (exclusive), includes guard slots
-            core: Core index
-            band: Band identifier
-            lightpath_id: Positive integer ID for the lightpath
-            guard_slots: Number of guard band slots at end of allocation
-
-        Raises:
-            ValueError: If lightpath_id <= 0
-            ValueError: If range is not free (would overwrite existing allocation)
-            KeyError: If band is not in cores_matrix
-            IndexError: If indices are out of bounds
-
-        Side Effects:
-            - Sets spectrum[core][start:end-guard_slots] = lightpath_id
-            - Sets spectrum[core][end-guard_slots:end] = -lightpath_id (guard)
-            - Increments usage_count
+        :param start_slot: First slot index (inclusive).
+        :type start_slot: int
+        :param end_slot: Last slot index (exclusive), includes guard slots.
+        :type end_slot: int
+        :param core: Core index.
+        :type core: int
+        :param band: Band identifier.
+        :type band: str
+        :param lightpath_id: Positive integer ID for the lightpath.
+        :type lightpath_id: int
+        :param guard_slots: Number of guard band slots at end of allocation.
+        :type guard_slots: int
+        :raises ValueError: If lightpath_id <= 0 or range is not free.
+        :raises KeyError: If band is not in cores_matrix.
+        :raises IndexError: If indices are out of bounds.
         """
         if lightpath_id <= 0:
             msg = f"lightpath_id must be positive, got {lightpath_id}"
             raise ValueError(msg)
 
         if not self.is_range_free(start_slot, end_slot, core, band):
-            msg = (
-                f"Spectrum range [{start_slot}:{end_slot}] on "
-                f"core {core} band {band} is not free"
-            )
+            msg = f"Spectrum range [{start_slot}:{end_slot}] on core {core} band {band} is not free"
             raise ValueError(msg)
 
         spectrum = self.cores_matrix[band]
@@ -174,19 +164,18 @@ class LinkSpectrum:
         """
         Release a spectrum range (set to free).
 
-        Args:
-            start_slot: First slot index (inclusive)
-            end_slot: Last slot index (exclusive)
-            core: Core index
-            band: Band identifier
+        Sets spectrum slots to 0 and decrements usage_count (clamped to >= 0).
 
-        Raises:
-            KeyError: If band is not in cores_matrix
-            IndexError: If indices are out of bounds
-
-        Side Effects:
-            - Sets spectrum[core][start:end] = 0
-            - Decrements usage_count (clamped to >= 0)
+        :param start_slot: First slot index (inclusive).
+        :type start_slot: int
+        :param end_slot: Last slot index (exclusive).
+        :type end_slot: int
+        :param core: Core index.
+        :type core: int
+        :param band: Band identifier.
+        :type band: str
+        :raises KeyError: If band is not in cores_matrix.
+        :raises IndexError: If indices are out of bounds.
         """
         spectrum = self.cores_matrix[band]
         spectrum[core, start_slot:end_slot] = self.FREE_SLOT
@@ -202,18 +191,16 @@ class LinkSpectrum:
         Release all slots allocated to a specific lightpath.
 
         Finds and clears both data slots (positive ID) and guard slots (negative ID).
+        Decrements usage_count on successful release.
 
-        Args:
-            lightpath_id: The lightpath ID to release
-            band: Band identifier
-            core: Core index
-
-        Returns:
-            Tuple of (start_slot, end_slot) if found, None if not found
-
-        Side Effects:
-            - Clears all slots with +/- lightpath_id to 0
-            - Decrements usage_count
+        :param lightpath_id: The lightpath ID to release.
+        :type lightpath_id: int
+        :param band: Band identifier.
+        :type band: str
+        :param core: Core index.
+        :type core: int
+        :return: Tuple of (start_slot, end_slot) if found, None if not found.
+        :rtype: tuple[int, int] | None
         """
         spectrum = self.cores_matrix[band]
 
@@ -240,15 +227,13 @@ class LinkSpectrum:
         """
         Get spectrum array for a band.
 
-        Args:
-            band: Band identifier
+        Returns actual array reference. Callers should NOT modify directly.
+        Use allocate_range() and release_range() instead.
 
-        Returns:
-            numpy array of shape (cores, slots), values are lightpath IDs or 0
-
-        Warning:
-            Returns actual array reference. Callers should NOT modify directly.
-            Use allocate_range() and release_range() instead.
+        :param band: Band identifier.
+        :type band: str
+        :return: numpy array of shape (cores, slots), values are lightpath IDs or 0.
+        :rtype: npt.NDArray[np.int64]
         """
         return self.cores_matrix[band]
 
@@ -271,12 +256,12 @@ class LinkSpectrum:
         """
         Count free slots on a specific core and band.
 
-        Args:
-            band: Band identifier
-            core: Core index
-
-        Returns:
-            Number of free (value == 0) slots
+        :param band: Band identifier.
+        :type band: str
+        :param core: Core index.
+        :type core: int
+        :return: Number of free (value == 0) slots.
+        :rtype: int
         """
         spectrum = self.cores_matrix[band]
         return int(np.sum(spectrum[core] == self.FREE_SLOT))
@@ -285,15 +270,15 @@ class LinkSpectrum:
         """
         Calculate fragmentation ratio for a core/band.
 
-        Fragmentation = 1 - (largest_contiguous_free / total_free)
+        Fragmentation = 1 - (largest_contiguous_free / total_free).
         Value of 0 means no fragmentation, 1 means maximum fragmentation.
 
-        Args:
-            band: Band identifier
-            core: Core index
-
-        Returns:
-            Fragmentation ratio between 0.0 and 1.0
+        :param band: Band identifier.
+        :type band: str
+        :param core: Core index.
+        :type core: int
+        :return: Fragmentation ratio between 0.0 and 1.0.
+        :rtype: float
         """
         spectrum = self.cores_matrix[band]
         free_mask = spectrum[core] == self.FREE_SLOT
@@ -327,20 +312,24 @@ class LinkSpectrum:
         """
         Create LinkSpectrum initialized from SimulationConfig.
 
-        Args:
-            link: Link identifier tuple
-            config: Simulation configuration with band/core specs
-            link_num: Link index
-            length_km: Physical link length
-
-        Returns:
-            New LinkSpectrum with zero-initialized spectrum arrays
-            matching config.band_list and config.cores_per_link
+        :param link: Link identifier tuple.
+        :type link: tuple[str, str]
+        :param config: Simulation configuration with band/core specs.
+        :type config: SimulationConfig
+        :param link_num: Link index.
+        :type link_num: int
+        :param length_km: Physical link length.
+        :type length_km: float
+        :return: New LinkSpectrum with zero-initialized spectrum arrays
+            matching config.band_list and config.cores_per_link.
+        :rtype: LinkSpectrum
         """
         cores_matrix: dict[str, npt.NDArray[np.int64]] = {}
 
         for band in config.band_list:
-            num_slots = config.band_slots.get(band, 320)  # Default 320 if not specified
+            # TODO(v6.1): Hardcoded default of 320 slots - should require explicit config.
+            # WARNING: This silently uses 320 slots if band not in config.band_slots.
+            num_slots = config.band_slots.get(band, 320)
             cores_matrix[band] = np.zeros(
                 (config.cores_per_link, num_slots),
                 dtype=np.int64,
@@ -353,12 +342,13 @@ class LinkSpectrum:
             length_km=length_km,
         )
 
+    # TODO(v6.1): Remove legacy adapter method once migration is complete.
     def to_legacy_dict(self) -> dict[str, Any]:
         """
         Convert to legacy network_spectrum_dict entry format.
 
-        Returns:
-            Dictionary compatible with legacy sdn_props.network_spectrum_dict[link]
+        :return: Dictionary compatible with legacy sdn_props.network_spectrum_dict[link].
+        :rtype: dict[str, Any]
         """
         return {
             "cores_matrix": self.cores_matrix,
@@ -378,35 +368,22 @@ class NetworkState:
     """
     Single source of truth for network state during simulation.
 
-    Owns:
-        - Network topology (read-only after init)
-        - Per-link spectrum state (LinkSpectrum objects)
-        - Active lightpaths (by ID)
-        - Lightpath ID counter
+    Owns network topology (read-only after init), per-link spectrum state
+    (LinkSpectrum objects), active lightpaths (by ID), and lightpath ID counter.
 
-    Design Principles:
-        - One instance per simulation
-        - Passed by reference to pipelines (not stored)
-        - All state mutations through explicit methods
-        - Read methods are query-only (no side effects)
-        - NetworkState is a state container, NOT a routing algorithm
+    One instance per simulation, passed by reference to pipelines. All state
+    mutations through explicit methods. Read methods are query-only (no side
+    effects). This is a state container, NOT a routing algorithm.
 
-    State Authority (from Gap Analysis P2.0):
-        - Spectrum arrays: NetworkState._spectrum[link].cores_matrix
-        - Active lightpaths: NetworkState._lightpaths[id]
-        - Lightpath ID counter: NetworkState._next_lightpath_id
-        - Topology: NetworkState._topology (read-only reference)
-
-    NOT in NetworkState (by design):
-        - Request queue (SimulationEngine)
-        - Request status tracking (SimulationEngine)
-        - Statistics (SimStats)
-        - Per-request temporary lists (SDNController)
+    .. note::
+        Request queue, request status tracking, statistics, and per-request
+        temporary lists are managed elsewhere (SimulationEngine, SimStats,
+        SDNController).
 
     Example:
         >>> state = NetworkState(topology, config)
         >>> if state.is_spectrum_available(path, 0, 10, core=0, band="c"):
-        ...     # Spectrum is free, can allocate (using P2.2 write methods)
+        ...     # Spectrum is free, can allocate
         ...     pass
     """
 
@@ -426,18 +403,15 @@ class NetworkState:
         """
         Initialize NetworkState from topology and configuration.
 
-        Args:
-            topology: NetworkX graph representing network structure.
-                      Edge attributes are preserved (length, etc.)
-            config: Immutable simulation configuration
+        Topology is stored as reference (not copied). Callers must
+        not modify topology after passing to NetworkState.
 
-        Raises:
-            ValueError: If topology is empty (no edges)
-            ValueError: If config band_list is empty
-
-        Note:
-            Topology is stored as reference (not copied). Callers must
-            not modify topology after passing to NetworkState.
+        :param topology: NetworkX graph representing network structure.
+            Edge attributes are preserved (length, etc.).
+        :type topology: nx.Graph
+        :param config: Immutable simulation configuration.
+        :type config: SimulationConfig
+        :raises ValueError: If topology is empty (no edges) or config band_list is empty.
         """
         if topology.number_of_edges() == 0:
             msg = "Topology must have at least one edge"
@@ -489,9 +463,7 @@ class NetworkState:
             link_num = 0
             for u, v, edge_data in self._topology.edges(data=True):
                 # Get link length from edge data (try multiple common attribute names)
-                length_km = float(
-                    edge_data.get("length", edge_data.get("weight", edge_data.get("distance", 0.0)))
-                )
+                length_km = float(edge_data.get("length", edge_data.get("weight", edge_data.get("distance", 0.0))))
 
                 # Create single LinkSpectrum for both directions
                 link_spectrum = LinkSpectrum.from_config(
@@ -529,7 +501,7 @@ class NetworkState:
     @property
     def link_count(self) -> int:
         """Number of links in topology (edges, not bidirectional pairs)."""
-        return self._topology.number_of_edges()
+        return int(self._topology.number_of_edges())
 
     @property
     def next_lightpath_id(self) -> int:
@@ -539,7 +511,7 @@ class NetworkState:
     @property
     def node_count(self) -> int:
         """Number of nodes in topology."""
-        return self._topology.number_of_nodes()
+        return int(self._topology.number_of_nodes())
 
     # =========================================================================
     # Lightpath Read Methods
@@ -549,15 +521,13 @@ class NetworkState:
         """
         Retrieve a lightpath by ID.
 
-        Args:
-            lightpath_id: Unique lightpath identifier
+        Returns direct reference. Callers may read Lightpath state
+        but should use NetworkState methods to modify it.
 
-        Returns:
-            Lightpath object if found, None otherwise
-
-        Note:
-            Returns direct reference. Callers may read Lightpath state
-            but should use NetworkState methods to modify it.
+        :param lightpath_id: Unique lightpath identifier.
+        :type lightpath_id: int
+        :return: Lightpath object if found, None otherwise.
+        :rtype: Lightpath | None
         """
         return self._lightpaths.get(lightpath_id)
 
@@ -569,23 +539,20 @@ class NetworkState:
         """
         Get all lightpaths between two endpoints.
 
-        Args:
-            source: Source node ID
-            destination: Destination node ID
+        Handles both (src, dst) and (dst, src) automatically.
 
-        Returns:
-            List of lightpaths connecting these endpoints (either direction).
+        :param source: Source node ID.
+        :type source: str
+        :param destination: Destination node ID.
+        :type destination: str
+        :return: List of lightpaths connecting these endpoints (either direction).
             Empty list if none found.
-
-        Note:
-            Handles both (src, dst) and (dst, src) automatically.
+        :rtype: list[Lightpath]
         """
         result: list[Lightpath] = []
         for lp in self._lightpaths.values():
             # Check both directions
-            if (lp.source == source and lp.destination == destination) or (
-                lp.source == destination and lp.destination == source
-            ):
+            if (lp.source == source and lp.destination == destination) or (lp.source == destination and lp.destination == source):
                 result.append(lp)
         return result
 
@@ -600,19 +567,18 @@ class NetworkState:
 
         Useful for grooming: find lightpaths that can accept more traffic.
 
-        Args:
-            source: Source node ID
-            destination: Destination node ID
-            min_bandwidth_gbps: Minimum remaining bandwidth required
-
-        Returns:
-            List of lightpaths with at least min_bandwidth_gbps available.
+        :param source: Source node ID.
+        :type source: str
+        :param destination: Destination node ID.
+        :type destination: str
+        :param min_bandwidth_gbps: Minimum remaining bandwidth required.
+        :type min_bandwidth_gbps: int
+        :return: List of lightpaths with at least min_bandwidth_gbps available.
             Sorted by remaining bandwidth descending (best candidates first).
+        :rtype: list[Lightpath]
         """
         candidates = self.get_lightpaths_between(source, destination)
-        with_capacity = [
-            lp for lp in candidates if lp.remaining_bandwidth_gbps >= min_bandwidth_gbps
-        ]
+        with_capacity = [lp for lp in candidates if lp.remaining_bandwidth_gbps >= min_bandwidth_gbps]
         # Sort by remaining bandwidth, highest first
         return sorted(
             with_capacity,
@@ -626,20 +592,17 @@ class NetworkState:
 
         Useful for failure impact analysis.
 
-        Args:
-            link: (source, destination) tuple
-
-        Returns:
-            List of lightpaths that include this link in their path.
+        :param link: (source, destination) tuple.
+        :type link: tuple[str, str]
+        :return: List of lightpaths that include this link in their path.
+        :rtype: list[Lightpath]
         """
         result: list[Lightpath] = []
         u, v = link
         for lp in self._lightpaths.values():
             path = lp.path
             for i in range(len(path) - 1):
-                if (path[i] == u and path[i + 1] == v) or (
-                    path[i] == v and path[i + 1] == u
-                ):
+                if (path[i] == u and path[i + 1] == v) or (path[i] == v and path[i + 1] == u):
                     result.append(lp)
                     break
         return result
@@ -648,12 +611,11 @@ class NetworkState:
         """
         Iterate over all active lightpaths.
 
-        Yields:
-            Each active Lightpath in arbitrary order
+        Safe to iterate during simulation. Do not add/remove
+        lightpaths during iteration.
 
-        Note:
-            Safe to iterate during simulation. Do not add/remove
-            lightpaths during iteration.
+        :yields: Each active Lightpath in arbitrary order.
+        :rtype: Iterator[Lightpath]
         """
         yield from self._lightpaths.values()
 
@@ -669,17 +631,13 @@ class NetworkState:
         """
         Get LinkSpectrum for a specific link.
 
-        Args:
-            link: (source, destination) tuple
+        Both (u, v) and (v, u) return the same LinkSpectrum object.
 
-        Returns:
-            LinkSpectrum object for that link
-
-        Raises:
-            KeyError: If link does not exist in topology
-
-        Note:
-            Both (u, v) and (v, u) return the same LinkSpectrum object.
+        :param link: (source, destination) tuple.
+        :type link: tuple[str, str]
+        :return: LinkSpectrum object for that link.
+        :rtype: LinkSpectrum
+        :raises KeyError: If link does not exist in topology.
         """
         str_link = (str(link[0]), str(link[1]))
         if str_link not in self._spectrum:
@@ -698,19 +656,20 @@ class NetworkState:
         """
         Check if spectrum range is free along entire path.
 
-        Args:
-            path: Ordered list of node IDs forming the path
-            start_slot: First slot index (inclusive)
-            end_slot: Last slot index (exclusive)
-            core: Core index
-            band: Band identifier
-
-        Returns:
-            True if all slots in range are free on all links in path
-
-        Raises:
-            ValueError: If path has fewer than 2 nodes
-            KeyError: If any link in path doesn't exist
+        :param path: Ordered list of node IDs forming the path.
+        :type path: list[str]
+        :param start_slot: First slot index (inclusive).
+        :type start_slot: int
+        :param end_slot: Last slot index (exclusive).
+        :type end_slot: int
+        :param core: Core index.
+        :type core: int
+        :param band: Band identifier.
+        :type band: str
+        :return: True if all slots in range are free on all links in path.
+        :rtype: bool
+        :raises ValueError: If path has fewer than 2 nodes.
+        :raises KeyError: If any link in path doesn't exist.
         """
         if len(path) < 2:
             msg = "Path must have at least 2 nodes"
@@ -722,6 +681,9 @@ class NetworkState:
                 return False
         return True
 
+    # TODO(v6.1): Move find_first_fit/find_last_fit to spectrum assignment module.
+    # These algorithms don't belong in a state container - NetworkState should
+    # only manage state, not implement allocation strategies.
     def find_first_fit(
         self,
         path: list[str],
@@ -732,19 +694,19 @@ class NetworkState:
         """
         Find first available slot range along path (first-fit algorithm).
 
-        Args:
-            path: Ordered list of node IDs
-            slots_needed: Number of contiguous slots required
-            core: Core index to search
-            band: Band identifier
+        This is a read-only query method. It does NOT allocate.
+        More sophisticated algorithms should be in pipelines.
 
-        Returns:
-            Start slot index if found, None if no fit available
-
-        Note:
-            This is a read-only query method. It does NOT allocate.
-            This helper exists because first-fit is commonly needed.
-            More sophisticated algorithms should be in pipelines.
+        :param path: Ordered list of node IDs.
+        :type path: list[str]
+        :param slots_needed: Number of contiguous slots required.
+        :type slots_needed: int
+        :param core: Core index to search.
+        :type core: int
+        :param band: Band identifier.
+        :type band: str
+        :return: Start slot index if found, None if no fit available.
+        :rtype: int | None
         """
         if len(path) < 2:
             return None
@@ -772,17 +734,18 @@ class NetworkState:
         """
         Find last available slot range along path (last-fit algorithm).
 
-        Args:
-            path: Ordered list of node IDs
-            slots_needed: Number of contiguous slots required
-            core: Core index to search
-            band: Band identifier
+        This is a read-only query method. It does NOT allocate.
 
-        Returns:
-            Start slot index if found, None if no fit available
-
-        Note:
-            This is a read-only query method. It does NOT allocate.
+        :param path: Ordered list of node IDs.
+        :type path: list[str]
+        :param slots_needed: Number of contiguous slots required.
+        :type slots_needed: int
+        :param core: Core index to search.
+        :type core: int
+        :param band: Band identifier.
+        :type band: str
+        :return: Start slot index if found, None if no fit available.
+        :rtype: int | None
         """
         if len(path) < 2:
             return None
@@ -804,11 +767,10 @@ class NetworkState:
         """
         Calculate overall spectrum utilization.
 
-        Args:
-            band: Specific band to check, or None for all bands
-
-        Returns:
-            Utilization ratio between 0.0 and 1.0
+        :param band: Specific band to check, or None for all bands.
+        :type band: str | None
+        :return: Utilization ratio between 0.0 and 1.0.
+        :rtype: float
         """
         total_slots = 0
         used_slots = 0
@@ -818,7 +780,8 @@ class NetworkState:
 
         for link, spectrum in self._spectrum.items():
             # Normalize link to avoid double-counting
-            normalized = tuple(sorted(link))
+            sorted_link = sorted(link)
+            normalized: tuple[str, str] = (sorted_link[0], sorted_link[1])
             if normalized in seen_links:
                 continue
             seen_links.add(normalized)
@@ -844,22 +807,47 @@ class NetworkState:
 
     def has_link(self, link: tuple[str, str]) -> bool:
         """Check if a link exists in the topology."""
-        return self._topology.has_edge(link[0], link[1])
+        return bool(self._topology.has_edge(link[0], link[1]))
 
     def get_link_length(self, link: tuple[str, str]) -> float:
         """
         Get physical length of a link in km.
 
-        Args:
-            link: (source, destination) tuple
-
-        Returns:
-            Link length in kilometers
-
-        Raises:
-            KeyError: If link does not exist
+        :param link: (source, destination) tuple.
+        :type link: tuple[str, str]
+        :return: Link length in kilometers.
+        :rtype: float
+        :raises KeyError: If link does not exist.
         """
         return self.get_link_spectrum(link).length_km
+
+    def get_link_utilization(self, link: tuple[str, str]) -> float:
+        """
+        Get spectrum utilization for a link as a fraction (0.0 to 1.0).
+
+        Calculates the ratio of occupied slots to total slots across all
+        bands and cores. A slot is considered occupied if its value is non-zero
+        (positive for lightpath data, negative for guard bands).
+
+        :param link: (source, destination) tuple.
+        :type link: tuple[str, str]
+        :return: Utilization fraction between 0.0 (empty) and 1.0 (full).
+        :rtype: float
+        :raises KeyError: If link does not exist.
+        """
+        link_spectrum = self.get_link_spectrum(link)
+
+        total_slots = 0
+        occupied_slots = 0
+
+        for band_spectrum in link_spectrum.cores_matrix.values():
+            total_slots += band_spectrum.size
+            occupied_slots += int(np.count_nonzero(band_spectrum))
+
+        if total_slots == 0:
+            return 0.0
+
+        return occupied_slots / total_slots
 
     # =========================================================================
     # Private Helpers
@@ -906,7 +894,7 @@ class NetworkState:
         """
         # Clear all spectrum allocations
         for link_spectrum in self._spectrum.values():
-            for band, arr in link_spectrum.cores_matrix.items():
+            for _band, arr in link_spectrum.cores_matrix.items():
                 arr.fill(0)
             link_spectrum.usage_count = 0
             link_spectrum.throughput = 0.0
@@ -918,7 +906,7 @@ class NetworkState:
         self._next_lightpath_id = 1
 
     # =========================================================================
-    # Write Methods (P2.2)
+    # Write Methods
     # =========================================================================
 
     def create_lightpath(
@@ -946,32 +934,46 @@ class NetworkState:
         """
         Create and register a new lightpath, allocating spectrum.
 
-        Args:
-            path: Ordered list of node IDs (minimum 2 nodes)
-            start_slot: First spectrum slot (inclusive)
-            end_slot: Last spectrum slot (exclusive, includes guard slots)
-            core: Core index for allocation
-            band: Band identifier ("c", "l", "s")
-            modulation: Modulation format name
-            bandwidth_gbps: Total lightpath capacity
-            path_weight_km: Path length/weight in kilometers
-            guard_slots: Number of guard band slots at end (default 0)
-            backup_path: Optional backup path for 1+1 protection
-            backup_start_slot: Backup path start slot
-            backup_end_slot: Backup path end slot
-            backup_core: Backup path core index
-            backup_band: Backup path band
-            snr_db: Measured SNR value (optional)
-            xt_cost: Crosstalk cost (optional)
-            connection_index: External routing index for SNR lookup (optional)
-            arrive_time: Request arrival time for utilization tracking (optional)
-
-        Returns:
-            Newly created Lightpath with assigned lightpath_id
-
-        Raises:
-            ValueError: If parameters are invalid or spectrum unavailable
-            KeyError: If any link in path doesn't exist in topology
+        :param path: Ordered list of node IDs (minimum 2 nodes).
+        :type path: list[str]
+        :param start_slot: First spectrum slot (inclusive).
+        :type start_slot: int
+        :param end_slot: Last spectrum slot (exclusive, includes guard slots).
+        :type end_slot: int
+        :param core: Core index for allocation.
+        :type core: int
+        :param band: Band identifier ("c", "l", "s").
+        :type band: str
+        :param modulation: Modulation format name.
+        :type modulation: str
+        :param bandwidth_gbps: Total lightpath capacity.
+        :type bandwidth_gbps: int
+        :param path_weight_km: Path length/weight in kilometers.
+        :type path_weight_km: float
+        :param guard_slots: Number of guard band slots at end (default 0).
+        :type guard_slots: int
+        :param backup_path: Optional backup path for 1+1 protection.
+        :type backup_path: list[str] | None
+        :param backup_start_slot: Backup path start slot.
+        :type backup_start_slot: int | None
+        :param backup_end_slot: Backup path end slot.
+        :type backup_end_slot: int | None
+        :param backup_core: Backup path core index.
+        :type backup_core: int | None
+        :param backup_band: Backup path band.
+        :type backup_band: str | None
+        :param snr_db: Measured SNR value (optional).
+        :type snr_db: float | None
+        :param xt_cost: Crosstalk cost (optional).
+        :type xt_cost: float | None
+        :param connection_index: External routing index for SNR lookup (optional).
+        :type connection_index: int | None
+        :param arrive_time: Request arrival time for utilization tracking (optional).
+        :type arrive_time: float | None
+        :return: Newly created Lightpath with assigned lightpath_id.
+        :rtype: Lightpath
+        :raises ValueError: If parameters are invalid or spectrum unavailable.
+        :raises KeyError: If any link in path doesn't exist in topology.
         """
         # Validate parameters
         self._validate_create_lightpath_params(
@@ -993,15 +995,13 @@ class NetworkState:
 
         # Check backup path spectrum availability (if protected)
         is_protected = backup_path is not None
-        if is_protected:
+        if is_protected and backup_path is not None:
             assert backup_start_slot is not None
             assert backup_end_slot is not None
             assert backup_core is not None
             assert backup_band is not None
 
-            if not self.is_spectrum_available(
-                backup_path, backup_start_slot, backup_end_slot, backup_core, backup_band
-            ):
+            if not self.is_spectrum_available(backup_path, backup_start_slot, backup_end_slot, backup_core, backup_band):
                 msg = f"Spectrum [{backup_start_slot}:{backup_end_slot}] not available on backup path"
                 raise ValueError(msg)
 
@@ -1032,9 +1032,7 @@ class NetworkState:
         # Create Lightpath object
         # Note: Lightpath stores data slot range (excludes guard slots)
         data_end_slot = end_slot - guard_slots
-        backup_data_end_slot = (
-            backup_end_slot - guard_slots if backup_end_slot is not None else None
-        )
+        backup_data_end_slot = backup_end_slot - guard_slots if backup_end_slot is not None else None
 
         # Set initial time_bw_usage for utilization tracking
         # New lightpaths start with 0% utilization (no requests allocated yet)
@@ -1078,11 +1076,10 @@ class NetworkState:
         """
         Release a lightpath and free its spectrum.
 
-        Args:
-            lightpath_id: ID of lightpath to release
-
-        Returns:
-            True if lightpath was found and released, False if not found
+        :param lightpath_id: ID of lightpath to release.
+        :type lightpath_id: int
+        :return: True if lightpath was found and released, False if not found.
+        :rtype: bool
         """
         lightpath = self._lightpaths.get(lightpath_id)
         if lightpath is None:
@@ -1124,7 +1121,7 @@ class NetworkState:
         return True
 
     # =========================================================================
-    # Bandwidth Management Methods (P2.2)
+    # Bandwidth Management Methods
     # =========================================================================
 
     def allocate_request_bandwidth(
@@ -1139,15 +1136,16 @@ class NetworkState:
 
         Used by grooming to share lightpath capacity among requests.
 
-        Args:
-            lightpath_id: ID of the lightpath
-            request_id: ID of the request
-            bandwidth_gbps: Bandwidth to allocate
-            timestamp: Optional arrival time for utilization tracking
-
-        Raises:
-            KeyError: If lightpath not found
-            ValueError: If insufficient remaining bandwidth or request already allocated
+        :param lightpath_id: ID of the lightpath.
+        :type lightpath_id: int
+        :param request_id: ID of the request.
+        :type request_id: int
+        :param bandwidth_gbps: Bandwidth to allocate.
+        :type bandwidth_gbps: int
+        :param timestamp: Optional arrival time for utilization tracking.
+        :type timestamp: float | None
+        :raises KeyError: If lightpath not found.
+        :raises ValueError: If insufficient remaining bandwidth or request already allocated.
         """
         lightpath = self._lightpaths.get(lightpath_id)
         if lightpath is None:
@@ -1157,10 +1155,7 @@ class NetworkState:
         # Delegate to Lightpath's allocate_bandwidth method
         success = lightpath.allocate_bandwidth(request_id, bandwidth_gbps, timestamp)
         if not success:
-            msg = (
-                f"Insufficient bandwidth: need {bandwidth_gbps}, "
-                f"have {lightpath.remaining_bandwidth_gbps}"
-            )
+            msg = f"Insufficient bandwidth: need {bandwidth_gbps}, have {lightpath.remaining_bandwidth_gbps}"
             raise ValueError(msg)
 
     def release_request_bandwidth(
@@ -1172,16 +1167,15 @@ class NetworkState:
         """
         Release bandwidth allocated to a request.
 
-        Args:
-            lightpath_id: ID of the lightpath
-            request_id: ID of the request to release
-            timestamp: Optional departure time for utilization tracking
-
-        Returns:
-            Amount of bandwidth released
-
-        Raises:
-            KeyError: If lightpath or request not found
+        :param lightpath_id: ID of the lightpath.
+        :type lightpath_id: int
+        :param request_id: ID of the request to release.
+        :type request_id: int
+        :param timestamp: Optional departure time for utilization tracking.
+        :type timestamp: float | None
+        :return: Amount of bandwidth released.
+        :rtype: int
+        :raises KeyError: If lightpath or request not found.
         """
         lightpath = self._lightpaths.get(lightpath_id)
         if lightpath is None:
@@ -1192,7 +1186,7 @@ class NetworkState:
         return lightpath.release_bandwidth(request_id, timestamp)
 
     # =========================================================================
-    # Private Helpers for Write Methods (P2.2)
+    # Private Helpers for Write Methods
     # =========================================================================
 
     def _validate_create_lightpath_params(
@@ -1285,9 +1279,9 @@ class NetworkState:
             )
 
     # =========================================================================
-    # Legacy Compatibility Properties (P2.2)
+    # Legacy Compatibility Properties
+    # TODO(v6.1): Remove legacy compatibility properties once migration is complete.
     # WARNING: These properties are TEMPORARY MIGRATION SHIMS.
-    # They will be removed in Phase 5.
     # =========================================================================
 
     @property
@@ -1295,25 +1289,16 @@ class NetworkState:
         """
         Legacy compatibility: Returns spectrum state in sdn_props format.
 
-        WARNING: This property is a TEMPORARY MIGRATION SHIM.
-        It will be removed in Phase 5.
+        .. warning::
+            This property is a TEMPORARY MIGRATION SHIM.
 
-        Returns:
-            Dictionary mapping link tuples to link state dicts.
+        Both (u,v) and (v,u) return the SAME dict object. cores_matrix arrays
+        are direct references (not copies). Edge attributes from topology are
+        included.
+
+        :return: Dictionary mapping link tuples to link state dicts.
             Format matches sdn_props.network_spectrum_dict exactly.
-
-        Notes:
-            - Both (u,v) and (v,u) return the SAME dict object
-            - cores_matrix arrays are direct references (not copies)
-            - Edge attributes from topology are included
-
-        LEGACY_COMPAT: Phase 5 Removal Checklist
-        Before removing this property, verify:
-        [ ] All spectrum reads use NetworkState.is_spectrum_available()
-        [ ] All spectrum writes use NetworkState.create_lightpath()
-        [ ] No direct numpy array access outside NetworkState
-        [ ] run_comparison.py passes without this property
-        [ ] grep 'network_spectrum_dict' returns only this definition
+        :rtype: dict[tuple[str, str], dict[str, Any]]
         """
         result: dict[tuple[str, str], dict[str, Any]] = {}
         seen: set[frozenset[str]] = set()
@@ -1356,26 +1341,16 @@ class NetworkState:
         """
         Legacy compatibility: Returns lightpath state in sdn_props format.
 
-        WARNING: This property is a TEMPORARY MIGRATION SHIM.
-        It will be removed in Phase 5.
+        .. warning::
+            This property is a TEMPORARY MIGRATION SHIM.
 
-        Returns:
-            Dictionary mapping sorted endpoint tuples to lightpath dicts.
+        Keys are SORTED tuples ("A", "C") not ("C", "A"). Bandwidth values are
+        float (legacy format). time_bw_usage is empty dict by default. Rebuilds
+        dict on each access (not cached).
+
+        :return: Dictionary mapping sorted endpoint tuples to lightpath dicts.
             Format matches sdn_props.lightpath_status_dict exactly.
-
-        Notes:
-            - Keys are SORTED tuples: ("A", "C") not ("C", "A")
-            - Bandwidth values are float (legacy format)
-            - time_bw_usage is empty dict by default
-            - Rebuilds dict on each access (not cached)
-
-        LEGACY_COMPAT: Phase 5 Removal Checklist
-        Before removing this property, verify:
-        [ ] Grooming uses NetworkState.get_lightpaths_with_capacity()
-        [ ] Statistics use NetworkState.iter_lightpaths()
-        [ ] No manual sorted tuple key construction
-        [ ] run_comparison.py passes without this property
-        [ ] grep 'lightpath_status_dict' returns only this definition
+        :rtype: dict[tuple[str, str], dict[int, dict[str, Any]]]
         """
         result: dict[tuple[str, str], dict[int, dict[str, Any]]] = {}
 
@@ -1398,14 +1373,11 @@ class NetworkState:
                 "start_slot": lp.start_slot,
                 # Convert exclusive end_slot to inclusive (legacy format)
                 # Legacy uses inclusive when guard_slots=0, exclusive-like when guard_slots>0
-                # v5 Lightpath always uses exclusive. For legacy compat, subtract 1.
+                # For legacy compat, subtract 1.
                 "end_slot": lp.end_slot - 1,
                 "modulation": lp.modulation,
                 "mod_format": lp.modulation,  # Alternate key for modulation
-                "requests_dict": {
-                    req_id: float(bw)
-                    for req_id, bw in lp.request_allocations.items()
-                },
+                "requests_dict": {req_id: float(bw) for req_id, bw in lp.request_allocations.items()},
                 "time_bw_usage": {},  # Empty by default, populated during simulation
                 "is_degraded": lp.is_degraded,
                 # Additional fields from gap analysis

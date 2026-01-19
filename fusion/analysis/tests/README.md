@@ -24,6 +24,8 @@ pytest -v fusion/analysis/tests/
 ## Test Data
 Test data is generated programmatically using NumPy arrays to simulate network spectrum data structures.
 
+Note: Tests use the legacy dict format for `network_spectrum` (matching `NetworkState.network_spectrum_dict`). Tests will need updating when the module migrates to use `NetworkState` directly.
+
 ## Test Categories
 - **Unit tests**: Test individual methods of NetworkAnalyzer in isolation
   - `get_link_usage_summary`: Tests for link usage aggregation

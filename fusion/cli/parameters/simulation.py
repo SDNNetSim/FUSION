@@ -1,14 +1,12 @@
 """
 CLI arguments for simulation configuration - compatibility module.
 Imports and combines arguments from routing, network, and traffic modules.
-
-Phase: P5.6 - Updated with policy/protection arguments
 """
 
 import argparse
 
 from .network import add_network_args
-from .policy import add_all_phase5_args
+from .policy import add_all_policy_args
 from .routing import add_all_routing_args
 from .shared import add_config_args, add_debug_args, add_output_args
 from .survivability import add_survivability_args
@@ -48,4 +46,4 @@ def register_run_sim_args(subparsers: argparse._SubParsersAction) -> None:
     add_run_sim_args(parser)
     add_machine_learning_args(parser)
     add_survivability_args(parser)
-    add_all_phase5_args(parser)  # P5.6: Add policy/protection args
+    add_all_policy_args(parser)

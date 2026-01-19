@@ -75,9 +75,7 @@ class GroomingStatistics:
 
         self.lightpaths_created += new_lightpaths
 
-    def update_lightpath_release(
-        self, _lightpath_id: int, utilization: float, _lifetime: float
-    ) -> None:
+    def update_lightpath_release(self, _lightpath_id: int, utilization: float, _lifetime: float) -> None:
         """
         Update statistics when a lightpath is released.
 
@@ -128,9 +126,7 @@ class GroomingStatistics:
         if not self.lightpath_utilization_list:
             return 0.0
 
-        return sum(self.lightpath_utilization_list) / len(
-            self.lightpath_utilization_list
-        )
+        return sum(self.lightpath_utilization_list) / len(self.lightpath_utilization_list)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -206,18 +202,11 @@ def generate_grooming_report(stats: GroomingStatistics) -> str:
     report.append("Grooming Outcomes:")
     report.append(f"  Total Requests: {stats.total_requests}")
     if stats.total_requests > 0:
+        report.append(f"  Fully Groomed: {stats.fully_groomed_count} ({stats.fully_groomed_count / stats.total_requests * 100:.1f}%)")
         report.append(
-            f"  Fully Groomed: {stats.fully_groomed_count} "
-            f"({stats.fully_groomed_count / stats.total_requests * 100:.1f}%)"
+            f"  Partially Groomed: {stats.partially_groomed_count} ({stats.partially_groomed_count / stats.total_requests * 100:.1f}%)"
         )
-        report.append(
-            f"  Partially Groomed: {stats.partially_groomed_count} "
-            f"({stats.partially_groomed_count / stats.total_requests * 100:.1f}%)"
-        )
-        report.append(
-            f"  Not Groomed: {stats.not_groomed_count} "
-            f"({stats.not_groomed_count / stats.total_requests * 100:.1f}%)"
-        )
+        report.append(f"  Not Groomed: {stats.not_groomed_count} ({stats.not_groomed_count / stats.total_requests * 100:.1f}%)")
     report.append(f"  Grooming Success Rate: {stats.calculate_grooming_rate():.2f}%")
     report.append("")
 
@@ -226,9 +215,7 @@ def generate_grooming_report(stats: GroomingStatistics) -> str:
     report.append(f"  Lightpaths Created: {stats.lightpaths_created}")
     report.append(f"  Lightpaths Released: {stats.lightpaths_released}")
     report.append(f"  Active Lightpaths: {stats.active_lightpaths}")
-    report.append(
-        f"  Avg Utilization: {stats.get_average_lightpath_utilization():.2f}%"
-    )
+    report.append(f"  Avg Utilization: {stats.get_average_lightpath_utilization():.2f}%")
     report.append("")
 
     # Bandwidth savings

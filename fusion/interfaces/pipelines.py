@@ -1,7 +1,8 @@
 """
-Pipeline protocol definitions for FUSION v5 architecture.
+Pipeline protocol definitions for FUSION architecture.
 
 This module defines typing.Protocol classes for all pipeline components:
+
 - RoutingPipeline: Find candidate routes between nodes
 - SpectrumPipeline: Find available spectrum along paths
 - GroomingPipeline: Pack requests onto existing lightpaths
@@ -9,12 +10,14 @@ This module defines typing.Protocol classes for all pipeline components:
 - SlicingPipeline: Divide requests into smaller allocations
 
 Design Principles:
+
 - Protocols are type-only definitions (no runtime behavior)
 - All pipelines receive NetworkState as method parameter
 - Pipelines do NOT store NetworkState as instance attribute
 - Return structured result objects from fusion.domain.results
 
-Usage:
+Example usage::
+
     # Type hint a parameter as accepting any routing implementation
     def process_request(
         router: RoutingPipeline,
@@ -25,8 +28,6 @@ Usage:
     # Check if object implements protocol (runtime_checkable)
     if isinstance(my_router, RoutingPipeline):
         result = my_router.find_routes(...)
-
-Phase: P2.3 - Pipeline Protocols
 """
 
 from __future__ import annotations
@@ -72,7 +73,8 @@ class RoutingPipeline(Protocol):
         - Fragmentation-aware routing
         - NLI-aware routing (non-linear interference)
 
-    Example:
+    Example::
+
         class KShortestPathRouter:
             def find_routes(
                 self,
@@ -102,29 +104,25 @@ class RoutingPipeline(Protocol):
         """
         Find candidate routes between source and destination.
 
-        Args:
-            source: Source node identifier
-            destination: Destination node identifier
-            bandwidth_gbps: Required bandwidth (used for modulation selection)
-            network_state: Current network state (topology, config)
-            forced_path: If provided, use this path instead of searching
-                        (typically from partial grooming)
+        :param source: Source node identifier
+        :type source: str
+        :param destination: Destination node identifier
+        :type destination: str
+        :param bandwidth_gbps: Required bandwidth (used for modulation selection)
+        :type bandwidth_gbps: int
+        :param network_state: Current network state (topology, config)
+        :type network_state: NetworkState
+        :param forced_path: If provided, use this path instead of searching
+            (typically from partial grooming)
+        :type forced_path: list[str] | None
+        :return: RouteResult containing paths, weights_km, modulations, and
+            strategy_name. Returns empty RouteResult if no routes found.
+        :rtype: RouteResult
 
-        Returns:
-            RouteResult containing:
-            - paths: Candidate paths as tuples of node IDs
-            - weights_km: Path distances/weights in kilometers
-            - modulations: Valid modulation formats per path
-            - strategy_name: Name of routing algorithm used
-            Returns empty RouteResult if no routes found.
-
-        Side Effects:
-            None - this is a pure query method
-
-        Notes:
+        .. note::
             - Number of paths limited by network_state.config.k_paths
             - Modulation formats filtered by reach based on path weight
-            - Empty RouteResult.paths indicates no valid routes
+            - This is a pure query method with no side effects
         """
         ...
 
@@ -152,7 +150,8 @@ class SpectrumPipeline(Protocol):
         - Best-fit: Allocate smallest sufficient gap
         - Last-fit: Allocate highest available slot range
 
-    Example:
+    Example::
+
         class FirstFitSpectrum:
             def find_spectrum(
                 self,
@@ -173,41 +172,51 @@ class SpectrumPipeline(Protocol):
     def find_spectrum(
         self,
         path: list[str],
-        modulation: str,
+        modulation: str | list[str],
         bandwidth_gbps: int,
         network_state: NetworkState,
         *,
         connection_index: int | None = None,
         path_index: int = 0,
+        use_dynamic_slicing: bool = False,
+        snr_bandwidth: int | None = None,
+        request_id: int | None = None,
+        slice_bandwidth: int | None = None,
+        excluded_modulations: set[str] | None = None,
     ) -> SpectrumResult:
         """
         Find available spectrum along a path.
 
-        Args:
-            path: Ordered list of node IDs forming the route
-            modulation: Modulation format name (e.g., "QPSK", "16-QAM")
-            bandwidth_gbps: Required bandwidth in Gbps
-            network_state: Current network state
-            connection_index: External routing index for pre-calculated SNR lookup
-            path_index: Index of which k-path is being tried (0, 1, 2...)
+        :param path: Ordered list of node IDs forming the route
+        :type path: list[str]
+        :param modulation: Modulation format name (e.g., "QPSK") or list of
+            valid modulations to try
+        :type modulation: str | list[str]
+        :param bandwidth_gbps: Required bandwidth in Gbps
+        :type bandwidth_gbps: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param connection_index: External routing index for pre-calculated SNR lookup
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried (0, 1, 2...)
+        :type path_index: int
+        :param use_dynamic_slicing: If True, use dynamic slicing to find spectrum
+        :type use_dynamic_slicing: bool
+        :param snr_bandwidth: Override bandwidth for SNR calculation
+        :type snr_bandwidth: int | None
+        :param request_id: Request ID for tracking/logging
+        :type request_id: int | None
+        :param slice_bandwidth: Bandwidth per slice when slicing is active
+        :type slice_bandwidth: int | None
+        :param excluded_modulations: Modulations to exclude from dynamic slicing
+        :type excluded_modulations: set[str] | None
+        :return: SpectrumResult with is_free, start_slot, end_slot, core, band,
+            modulation, and slots_needed fields
+        :rtype: SpectrumResult
 
-        Returns:
-            SpectrumResult containing:
-            - is_free: True if spectrum was found
-            - start_slot, end_slot: Slot range (if found)
-            - core: Core index (if found)
-            - band: Band identifier (if found)
-            - modulation: Confirmed modulation format
-            - slots_needed: Number of slots required (including guard band)
-
-        Side Effects:
-            None - does NOT allocate spectrum.
-            Caller must use NetworkState.create_lightpath() to actually allocate.
-
-        Notes:
-            - Searches across all bands and cores based on allocation policy
-            - Returns SpectrumResult.is_free=False if no spectrum available
-            - slots_needed includes guard band slots
+        .. note::
+            This is a pure query method - does NOT allocate spectrum.
+            Caller must use NetworkState.create_lightpath() to allocate.
         """
         ...
 
@@ -222,25 +231,24 @@ class SpectrumPipeline(Protocol):
         """
         Find spectrum for both primary and backup paths (1+1 protection).
 
-        Args:
-            primary_path: Primary route node sequence
-            backup_path: Backup route node sequence (should be disjoint)
-            modulation: Modulation format name
-            bandwidth_gbps: Required bandwidth
-            network_state: Current network state
+        :param primary_path: Primary route node sequence
+        :type primary_path: list[str]
+        :param backup_path: Backup route node sequence (should be disjoint)
+        :type backup_path: list[str]
+        :param modulation: Modulation format name
+        :type modulation: str
+        :param bandwidth_gbps: Required bandwidth
+        :type bandwidth_gbps: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: SpectrumResult with primary allocation in main fields and
+            backup allocation in backup_* fields. Returns is_free=False if
+            either path lacks spectrum.
+        :rtype: SpectrumResult
 
-        Returns:
-            SpectrumResult containing:
-            - Primary allocation in main fields (is_free, start_slot, etc.)
-            - Backup allocation in backup_* fields
-            Returns is_free=False if either path lacks spectrum.
-
-        Side Effects:
-            None - does NOT allocate spectrum
-
-        Notes:
-            - Both paths must have free spectrum for success
-            - Primary and backup may use different cores/bands
+        .. note::
+            This is a pure query method - does NOT allocate spectrum.
+            Both paths must have free spectrum for success.
         """
         ...
 
@@ -268,7 +276,8 @@ class GroomingPipeline(Protocol):
         - Partial grooming: Some bandwidth groomed, rest needs new lightpath
         - No grooming: No suitable lightpaths found
 
-    Example:
+    Example::
+
         class SimpleGrooming:
             def try_groom(
                 self,
@@ -293,27 +302,18 @@ class GroomingPipeline(Protocol):
         """
         Attempt to groom request onto existing lightpaths.
 
-        Args:
-            request: The request to groom (source, destination, bandwidth)
-            network_state: Current network state with active lightpaths
+        :param request: The request to groom (source, destination, bandwidth)
+        :type request: Request
+        :param network_state: Current network state with active lightpaths
+        :type network_state: NetworkState
+        :return: GroomingResult with fully_groomed, partially_groomed,
+            bandwidth_groomed_gbps, remaining_bandwidth_gbps, lightpaths_used,
+            and forced_path fields
+        :rtype: GroomingResult
 
-        Returns:
-            GroomingResult containing:
-            - fully_groomed: True if entire request was groomed
-            - partially_groomed: True if some bandwidth was groomed
-            - bandwidth_groomed_gbps: Amount successfully groomed
-            - remaining_bandwidth_gbps: Amount still needing allocation
-            - lightpaths_used: IDs of lightpaths used for grooming
-            - forced_path: If partially groomed, suggested path for remainder
-
-        Side Effects:
+        .. note::
             If grooming succeeds (full or partial), modifies lightpath
-            bandwidth allocations via Lightpath.allocate_bandwidth()
-
-        Notes:
-            - Searches lightpaths between request endpoints
-            - May use multiple lightpaths for partial grooming
-            - Does NOT modify NetworkState spectrum (lightpaths already exist)
+            bandwidth allocations via Lightpath.allocate_bandwidth().
         """
         ...
 
@@ -326,19 +326,17 @@ class GroomingPipeline(Protocol):
         """
         Rollback grooming allocations (e.g., after downstream failure).
 
-        Args:
-            request: The request that was groomed
-            lightpath_ids: Lightpath IDs to rollback
-            network_state: Current network state
+        :param request: The request that was groomed
+        :type request: Request
+        :param lightpath_ids: Lightpath IDs to rollback
+        :type lightpath_ids: list[int]
+        :param network_state: Current network state
+        :type network_state: NetworkState
 
-        Side Effects:
+        .. note::
             Releases bandwidth from specified lightpaths via
-            Lightpath.release_bandwidth()
-
-        Notes:
-            - Called when subsequent pipeline stages fail
-            - Restores lightpath capacity
-            - Safe to call even if request wasn't groomed on all lightpaths
+            Lightpath.release_bandwidth(). Safe to call even if request
+            wasn't groomed on all lightpaths.
         """
         ...
 
@@ -367,7 +365,8 @@ class SNRPipeline(Protocol):
         - Crosstalk in multi-core fibers (MCF)
         - Modulation-dependent thresholds
 
-    Example:
+    Example::
+
         class GNModelSNR:
             def validate(
                 self,
@@ -389,27 +388,18 @@ class SNRPipeline(Protocol):
         """
         Validate SNR for a lightpath.
 
-        Args:
-            lightpath: The lightpath to validate (may be newly created
-                      or existing lightpath being rechecked)
-            network_state: Current network state with spectrum allocations
+        :param lightpath: The lightpath to validate (may be newly created
+            or existing lightpath being rechecked)
+        :type lightpath: Lightpath
+        :param network_state: Current network state with spectrum allocations
+        :type network_state: NetworkState
+        :return: SNRResult with passed, snr_db, required_snr_db, margin_db,
+            failure_reason, and link_snr_values fields
+        :rtype: SNRResult
 
-        Returns:
-            SNRResult containing:
-            - passed: True if SNR meets threshold
-            - snr_db: Measured/calculated SNR value
-            - required_snr_db: Threshold for this modulation
-            - margin_db: SNR margin above threshold
-            - failure_reason: If failed, why
-            - link_snr_values: Per-link SNR breakdown (optional)
-
-        Side Effects:
-            None - this is a pure query method
-
-        Notes:
-            - Uses lightpath.modulation to determine threshold
-            - Considers interference from all other active lightpaths
-            - May return different results before/after allocation
+        .. note::
+            This is a pure query method. Uses lightpath.modulation to determine
+            threshold and considers interference from all other active lightpaths.
         """
         ...
 
@@ -418,7 +408,8 @@ class SNRPipeline(Protocol):
         new_lightpath_id: int,
         network_state: NetworkState,
         *,
-        affected_range_slots: int = 5,
+        _affected_range_slots: int = 5,
+        slicing_flag: bool = False,
     ) -> SNRRecheckResult:
         """
         Recheck SNR of existing lightpaths after new allocation.
@@ -426,26 +417,23 @@ class SNRPipeline(Protocol):
         Some existing lightpaths may be degraded by the new
         allocation's interference. This method identifies them.
 
-        Args:
-            new_lightpath_id: ID of newly created lightpath
-            network_state: Current network state
-            affected_range_slots: Consider lightpaths within this many
-                                 slots of the new allocation (default: 5)
+        :param new_lightpath_id: ID of newly created lightpath
+        :type new_lightpath_id: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param affected_range_slots: Consider lightpaths within this many
+            slots of the new allocation (default: 5)
+        :type affected_range_slots: int
+        :param slicing_flag: If True, indicates this is a slicing context
+        :type slicing_flag: bool
+        :return: SNRRecheckResult with all_pass, degraded_lightpath_ids,
+            violations, and checked_count fields
+        :rtype: SNRRecheckResult
 
-        Returns:
-            SNRRecheckResult containing:
-            - all_pass: True if all affected lightpaths still pass
-            - degraded_lightpath_ids: List of lightpath IDs now failing
-            - violations: Dict mapping lightpath_id -> SNR shortfall (dB)
-            - checked_count: Number of lightpaths that were checked
-
-        Side Effects:
-            None - pure query method
-
-        Notes:
-            - Only checks lightpaths on same links as new allocation
-            - Only checks lightpaths in nearby spectrum (within range)
-            - Used to trigger rollback if existing lightpaths degraded
+        .. note::
+            This is a pure query method. Only checks lightpaths on same links
+            and in nearby spectrum. Used to trigger rollback if existing
+            lightpaths are degraded.
         """
         ...
 
@@ -473,7 +461,8 @@ class SlicingPipeline(Protocol):
         - Static slicing: Fixed slice size (e.g., 50 Gbps per slice)
         - Dynamic slicing: Adaptive based on availability
 
-    Example:
+    Example::
+
         class DynamicSlicing:
             def try_slice(
                 self,
@@ -506,43 +495,43 @@ class SlicingPipeline(Protocol):
         snr_pipeline: SNRPipeline | None = None,
         connection_index: int | None = None,
         path_index: int = 0,
+        snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult:
         """
         Attempt to slice request into multiple smaller allocations.
 
-        Args:
-            request: The request being processed
-            path: Route to use for slicing
-            modulation: Modulation format for slices
-            bandwidth_gbps: Total bandwidth to slice
-            network_state: Current network state
-            max_slices: Override config.max_slices (optional)
-            spectrum_pipeline: Pipeline for finding spectrum per slice (optional).
-                When provided, allows full allocation rather than feasibility check.
-            snr_pipeline: Pipeline for validating each slice (optional).
-                When provided with spectrum_pipeline, enables SNR validation.
-            connection_index: External routing index for pre-calculated SNR lookup.
-            path_index: Index of which k-path is being tried (0, 1, 2...).
+        :param request: The request being processed
+        :type request: Request
+        :param path: Route to use for slicing
+        :type path: list[str]
+        :param modulation: Modulation format for slices
+        :type modulation: str
+        :param bandwidth_gbps: Total bandwidth to slice
+        :type bandwidth_gbps: int
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param max_slices: Override config.max_slices
+        :type max_slices: int | None
+        :param spectrum_pipeline: Pipeline for finding spectrum per slice
+        :type spectrum_pipeline: SpectrumPipeline | None
+        :param snr_pipeline: Pipeline for validating each slice
+        :type snr_pipeline: SNRPipeline | None
+        :param connection_index: External routing index for pre-calculated SNR lookup
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried (0, 1, 2...)
+        :type path_index: int
+        :param snr_accumulator: List to accumulate SNR values from failed attempts
+        :type snr_accumulator: list[float] | None
+        :param path_weight: Path weight in km (from routing, for metrics tracking)
+        :type path_weight: float | None
+        :return: SlicingResult with success, num_slices, slice_bandwidth_gbps,
+            lightpaths_created, and total_bandwidth_gbps fields
+        :rtype: SlicingResult
 
-        Returns:
-            SlicingResult containing:
-            - success: True if slicing is possible
-            - num_slices: Number of slices needed
-            - slice_bandwidth_gbps: Bandwidth per slice
-            - lightpaths_created: Empty for feasibility check, or IDs if allocated
-            - total_bandwidth_gbps: Total bandwidth allocated
-
-        Side Effects:
-            None - this is a pure query method by default.
-            When spectrum_pipeline/snr_pipeline provided, may allocate slices.
-            Caller creates lightpaths based on result if not allocated.
-
-        Notes:
-            - Only called when single lightpath allocation fails
-            - Does NOT create lightpaths by default (just checks feasibility)
-            - Limited by max_slices or config.max_slices
-            - Each slice needs its own spectrum range
-            - When pipelines are provided, can perform full allocation
+        .. note::
+            Pure query method by default. When spectrum_pipeline/snr_pipeline
+            provided, may allocate slices.
         """
         ...
 
@@ -557,17 +546,14 @@ class SlicingPipeline(Protocol):
         Called when partial slice allocation fails and all
         created slices must be released.
 
-        Args:
-            lightpath_ids: IDs of lightpaths to release
-            network_state: Network state to modify
+        :param lightpath_ids: IDs of lightpaths to release
+        :type lightpath_ids: list[int]
+        :param network_state: Network state to modify
+        :type network_state: NetworkState
 
-        Side Effects:
-            Releases/deletes specified lightpaths from network_state
-
-        Notes:
-            - Used when SNR validation fails on one of the slices
-            - All created slices should be rolled back together
-            - Safe to call with empty list
+        .. note::
+            Releases/deletes specified lightpaths from network_state.
+            Safe to call with empty list.
         """
         ...
 

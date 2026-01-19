@@ -55,8 +55,6 @@ def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> list[dict]:  # 
     num_processes = args.num_processes if hasattr(args, "num_processes") else None
 
     # Run using the new batch runner
-    results = run_batch_simulation(
-        config_dict, parallel=parallel, num_processes=num_processes
-    )
+    results = run_batch_simulation(config_dict, parallel=parallel, num_processes=num_processes)
 
     return results

@@ -1,6 +1,17 @@
 """
-CLI arguments for training configuration (RL and ML).
-Consolidates machine learning and reinforcement learning arguments.
+CLI arguments for training configuration (RL and SL).
+
+This module provides arguments for reinforcement learning (RL) and supervised
+learning (SL) training pipelines. It consolidates algorithm selection, model
+configuration, training parameters, and optimization settings.
+
+TODO (v6.1.0): Rename ml_* arguments to sl_* for consistency:
+  --ml_training -> --sl_training
+  --ml_model -> --sl_model
+  Also rename add_machine_learning_args to add_supervised_learning_args.
+
+TODO (v6.1.0): Add support for unsupervised learning (UL) methods such as
+clustering and dimensionality reduction for network state analysis.
 """
 
 import argparse
@@ -57,12 +68,8 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     )
 
     # Model configuration
-    rl_group.add_argument(
-        "--path_model", type=str, help="Path to pre-trained path selection model"
-    )
-    rl_group.add_argument(
-        "--core_model", type=str, help="Path to pre-trained core selection model"
-    )
+    rl_group.add_argument("--path_model", type=str, help="Path to pre-trained path selection model")
+    rl_group.add_argument("--core_model", type=str, help="Path to pre-trained core selection model")
     rl_group.add_argument(
         "--spectrum_model",
         type=str,
@@ -81,9 +88,7 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Learning rate for RL algorithms",
     )
-    rl_group.add_argument(
-        "--gamma", type=float, default=None, help="Discount factor for future rewards"
-    )
+    rl_group.add_argument("--gamma", type=float, default=None, help="Discount factor for future rewards")
     rl_group.add_argument(
         "--epsilon_start",
         type=float,
@@ -105,9 +110,7 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
     )
 
     # Reward configuration
-    rl_group.add_argument(
-        "--reward", type=float, default=None, help="Reward value for successful actions"
-    )
+    rl_group.add_argument("--reward", type=float, default=None, help="Reward value for successful actions")
     rl_group.add_argument(
         "--penalty",
         type=float,
@@ -123,10 +126,10 @@ def add_reinforcement_learning_args(parser: argparse.ArgumentParser) -> None:
 
 def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add feature extraction and neural network arguments.
+    Add feature extraction and neural network arguments to the parser.
 
     Configures feature extraction methods, neural network architectures,
-    and observation space representations for ML model training.
+    and observation space representations for RL and SL model training.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
@@ -146,9 +149,7 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
         choices=["gcn", "gat", "sage", "graphconv"],
         help="Graph Neural Network architecture type",
     )
-    feature_group.add_argument(
-        "--layers", type=int, default=None, help="Number of layers in neural network"
-    )
+    feature_group.add_argument("--layers", type=int, default=None, help="Number of layers in neural network")
     feature_group.add_argument(
         "--emb_dim",
         type=int,
@@ -169,22 +170,24 @@ def add_feature_extraction_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+# TODO (v6.1.0): Rename to add_supervised_learning_args
 def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add traditional machine learning arguments.
+    Add supervised learning (SL) arguments to the parser.
 
-    Configures classical ML algorithms, training data paths,
+    Configures classical supervised learning algorithms, training data paths,
     test/train splits, and model deployment options.
+
+    NOTE: This function and its arguments use "ml" naming for backward
+    compatibility. Will be renamed to sl_* in v6.1.0.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
     :return: None
     :rtype: None
     """
-    ml_group = parser.add_argument_group("Machine Learning Configuration")
-    ml_group.add_argument(
-        "--ml_training", action="store_true", help="Enable ML training mode"
-    )
+    ml_group = parser.add_argument_group("Supervised Learning Configuration")
+    ml_group.add_argument("--ml_training", action="store_true", help="Enable SL training mode")
     ml_group.add_argument(
         "--ml_model",
         type=str,
@@ -195,23 +198,17 @@ def add_machine_learning_args(parser: argparse.ArgumentParser) -> None:
             "neural_network",
             "decision_tree",
         ],
-        help="Machine learning model type",
+        help="Supervised learning model type",
     )
-    ml_group.add_argument(
-        "--train_file_path", type=str, help="Path to training data file"
-    )
+    ml_group.add_argument("--train_file_path", type=str, help="Path to training data file")
     ml_group.add_argument(
         "--test_size",
         type=float,
         default=None,
         help="Fraction of data to use for testing (0.0-1.0)",
     )
-    ml_group.add_argument(
-        "--output_train_data", action="store_true", help="Save training data to file"
-    )
-    ml_group.add_argument(
-        "--deploy_model", action="store_true", help="Deploy trained model for inference"
-    )
+    ml_group.add_argument("--output_train_data", action="store_true", help="Save training data to file")
+    ml_group.add_argument("--deploy_model", action="store_true", help="Deploy trained model for inference")
 
 
 def add_optimization_args(parser: argparse.ArgumentParser) -> None:
@@ -227,9 +224,7 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     opt_group = parser.add_argument_group("Optimization Configuration")
-    opt_group.add_argument(
-        "--optimize", action="store_true", help="Enable hyperparameter optimization"
-    )
+    opt_group.add_argument("--optimize", action="store_true", help="Enable hyperparameter optimization")
     opt_group.add_argument(
         "--optimize_hyperparameters",
         action="store_true",
@@ -258,10 +253,11 @@ def add_optimization_args(parser: argparse.ArgumentParser) -> None:
 
 def add_all_training_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add all training-related argument groups.
+    Add all training-related argument groups to the parser.
 
-    Convenience function that combines reinforcement learning,
-    feature extraction, machine learning, and optimization arguments.
+    Convenience function that combines reinforcement learning (RL),
+    feature extraction, supervised learning (SL), and optimization
+    arguments in a single call.
 
     :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser

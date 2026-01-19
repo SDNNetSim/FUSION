@@ -594,9 +594,7 @@ class TestLightpathProtection:
         result = lp.switch_to_backup()
         assert result is False
 
-    def test_switch_to_backup_already_on_backup_raises(
-        self, protected_lightpath: Lightpath
-    ) -> None:
+    def test_switch_to_backup_already_on_backup_raises(self, protected_lightpath: Lightpath) -> None:
         """Test switching when already on backup raises."""
         protected_lightpath.switch_to_backup()
 
@@ -627,9 +625,7 @@ class TestLightpathProtection:
         result = lp.switch_to_primary()
         assert result is False
 
-    def test_switch_to_primary_already_on_primary_raises(
-        self, protected_lightpath: Lightpath
-    ) -> None:
+    def test_switch_to_primary_already_on_primary_raises(self, protected_lightpath: Lightpath) -> None:
         """Test switching when already on primary raises."""
         with pytest.raises(ValueError, match="Already on primary path"):
             protected_lightpath.switch_to_primary()

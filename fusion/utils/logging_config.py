@@ -15,9 +15,7 @@ from fusion.utils.os import find_project_root
 
 # Default log format
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-DETAILED_FORMAT = (
-    "%(asctime)s - %(name)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s"
-)
+DETAILED_FORMAT = "%(asctime)s - %(name)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s"
 
 # Log levels mapping
 LOG_LEVELS = {
@@ -32,9 +30,7 @@ LOG_LEVELS = {
 _loggers: dict[str, logging.Logger] = {}
 
 
-def _create_console_handler(
-    log_level: int, formatter: logging.Formatter
-) -> logging.StreamHandler:
+def _create_console_handler(log_level: int, formatter: logging.Formatter) -> logging.StreamHandler:
     """
     Create and configure console handler.
 
@@ -95,9 +91,7 @@ def _create_file_handler(
     log_path = log_dir_path / log_file
 
     # Use rotating file handler
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_path, mode=file_mode, maxBytes=max_bytes, backupCount=backup_count
-    )
+    file_handler = logging.handlers.RotatingFileHandler(log_path, mode=file_mode, maxBytes=max_bytes, backupCount=backup_count)
     file_handler.setLevel(log_level)
     file_handler.setFormatter(formatter)
     return file_handler
@@ -155,9 +149,7 @@ def setup_logger(
 
     # File handler with rotation
     if log_file:
-        file_handler = _create_file_handler(
-            log_file, log_dir, log_level, formatter, file_mode, max_bytes, backup_count
-        )
+        file_handler = _create_file_handler(log_file, log_dir, log_level, formatter, file_mode, max_bytes, backup_count)
         logger.addHandler(file_handler)
 
     # Cache the logger
@@ -183,9 +175,7 @@ def get_logger(name: str, level: str = "INFO") -> logging.Logger:
     return setup_logger(name, level=level)
 
 
-def configure_simulation_logging(
-    sim_name: str, erlang: float, thread_num: int | None = None, log_level: str = "INFO"
-) -> logging.Logger:
+def configure_simulation_logging(sim_name: str, erlang: float, thread_num: int | None = None, log_level: str = "INFO") -> logging.Logger:
     """
     Configure logging specifically for simulation runs.
 

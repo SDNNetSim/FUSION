@@ -1,6 +1,11 @@
 """
 FUSION Failures Module
 
+.. warning::
+    This module is currently in **beta** status. It has not been fully tested
+    or used in production simulations yet. Use with caution and expect potential
+    API changes.
+
 Provides failure injection and tracking for network survivability testing.
 
 Supports:
@@ -50,4 +55,4 @@ __all__ = [
     "InvalidFailureTypeError",
 ]
 
-__version__ = "1.0.0"
+__version__ = "1.0.0-beta"

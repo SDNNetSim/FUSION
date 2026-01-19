@@ -36,16 +36,10 @@ class FailureManager:
         self.topology = topology
         self.active_failures: set[tuple[Any, Any]] = set()  # Currently failed links
         self.failure_history: list[dict[str, Any]] = []  # Historical failure events
-        self.scheduled_failures: dict[
-            float, list[tuple[Any, Any]]
-        ] = {}  # Failure activation schedule
-        self.scheduled_repairs: dict[
-            float, list[tuple[Any, Any]]
-        ] = {}  # Repair schedule
+        self.scheduled_failures: dict[float, list[tuple[Any, Any]]] = {}  # Failure activation schedule
+        self.scheduled_repairs: dict[float, list[tuple[Any, Any]]] = {}  # Repair schedule
 
-    def inject_failure(
-        self, failure_type: str, t_fail: float, t_repair: float, **kwargs: Any
-    ) -> dict[str, Any]:
+    def inject_failure(self, failure_type: str, t_fail: float, t_repair: float, **kwargs: Any) -> dict[str, Any]:
         """
         Inject a failure event into the network.
 
@@ -75,17 +69,13 @@ class FailureManager:
         """
         # Validate timing
         if t_repair <= t_fail:
-            raise FailureConfigError(
-                f"Repair time ({t_repair}) must be after failure time ({t_fail})"
-            )
+            raise FailureConfigError(f"Repair time ({t_repair}) must be after failure time ({t_fail})")
 
         # Get failure handler from registry
         handler = get_failure_handler(failure_type)
 
         # Execute failure handler to get failure details
-        event: dict[str, Any] = handler(
-            topology=self.topology, t_fail=t_fail, t_repair=t_repair, **kwargs
-        )
+        event: dict[str, Any] = handler(topology=self.topology, t_fail=t_fail, t_repair=t_repair, **kwargs)
 
         # Schedule failure activation (not immediate)
         if t_fail not in self.scheduled_failures:

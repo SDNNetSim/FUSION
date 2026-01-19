@@ -44,9 +44,7 @@ class TestTrainRLAgent:
 
     @patch("fusion.sim.train_pipeline.workflow_runner.run")
     @patch("fusion.sim.train_pipeline.create_environment")
-    def test_train_rl_agent_flattens_sim_dict_correctly(
-        self, mock_create_env: MagicMock, mock_workflow: MagicMock
-    ) -> None:
+    def test_train_rl_agent_flattens_sim_dict_correctly(self, mock_create_env: MagicMock, mock_workflow: MagicMock) -> None:
         """Test that sim_dict is correctly flattened from s1 key."""
         # Arrange
         mock_config = MagicMock()
@@ -71,9 +69,7 @@ class TestTrainRLAgent:
 
     @patch("fusion.sim.train_pipeline.workflow_runner.run")
     @patch("fusion.sim.train_pipeline.create_environment")
-    def test_train_rl_agent_uses_sim_dict_directly_when_no_s1_key(
-        self, mock_create_env: MagicMock, mock_workflow: MagicMock
-    ) -> None:
+    def test_train_rl_agent_uses_sim_dict_directly_when_no_s1_key(self, mock_create_env: MagicMock, mock_workflow: MagicMock) -> None:
         """Test that sim_dict is used directly when no s1 key exists."""
         # Arrange
         mock_config = MagicMock()
@@ -98,9 +94,7 @@ class TestRunTrainingPipeline:
     """Tests for run_training_pipeline function."""
 
     @patch("fusion.sim.train_pipeline.train_rl_agent")
-    def test_run_training_pipeline_wraps_args_and_calls_train(
-        self, mock_train: MagicMock
-    ) -> None:
+    def test_run_training_pipeline_wraps_args_and_calls_train(self, mock_train: MagicMock) -> None:
         """Test that run_training_pipeline wraps args and calls train_rl_agent."""
         # Arrange
         mock_args = MagicMock()
@@ -117,9 +111,7 @@ class TestRunTrainingPipeline:
         assert config_wrapper.get_args() == mock_args
 
     @patch("fusion.sim.train_pipeline.train_rl_agent")
-    def test_run_training_pipeline_config_wrapper_has_get_args_method(
-        self, mock_train: MagicMock
-    ) -> None:
+    def test_run_training_pipeline_config_wrapper_has_get_args_method(self, mock_train: MagicMock) -> None:
         """Test that ConfigWrapper has get_args method."""
         # Arrange
         mock_args = MagicMock()

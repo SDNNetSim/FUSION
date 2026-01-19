@@ -268,9 +268,7 @@ none_value = null
     def test_get_config_when_loaded(self) -> None:
         """Test getting configuration when one is loaded."""
         manager = ConfigManager()
-        test_config = SimulationConfig(
-            general={}, topology={}, spectrum={}, snr={}, rl={}, ml={}, file={}
-        )
+        test_config = SimulationConfig(general={}, topology={}, spectrum={}, snr={}, rl={}, ml={}, file={})
         manager._config = test_config
 
         result = manager.get_config()
@@ -323,9 +321,7 @@ none_value = null
     def test_get_module_config_unknown_module(self) -> None:
         """Test getting configuration for unknown module."""
         manager = ConfigManager()
-        manager._config = SimulationConfig(
-            general={}, topology={}, spectrum={}, snr={}, rl={}, ml={}, file={}
-        )
+        manager._config = SimulationConfig(general={}, topology={}, spectrum={}, snr={}, rl={}, ml={}, file={})
 
         result = manager.get_module_config("unknown")
 
@@ -472,9 +468,7 @@ none_value = null
     def test_merge_cli_args_success(self, mock_mapper_class: Mock) -> None:
         """Test successful merging of CLI arguments."""
         mock_mapper = Mock()
-        mock_mapper.map_args_to_config.return_value = {
-            "general_settings": {"holding_time": 15}
-        }
+        mock_mapper.map_args_to_config.return_value = {"general_settings": {"holding_time": 15}}
         mock_mapper_class.return_value = mock_mapper
 
         manager = ConfigManager()

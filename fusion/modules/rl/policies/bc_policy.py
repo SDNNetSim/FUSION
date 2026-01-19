@@ -7,7 +7,7 @@ heuristic behavior using supervised learning on offline datasets.
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import torch
 import torch.nn as nn
@@ -76,7 +76,8 @@ class BCPolicy(PathPolicy):
                 # Need to reconstruct model architecture
                 model = self._build_model_architecture(model)
 
-            return model
+            # Cast to nn.Module (torch.load returns Any)
+            return cast(nn.Module, model)
 
         except Exception as e:
             logger.error(f"Failed to load BC model: {e}")

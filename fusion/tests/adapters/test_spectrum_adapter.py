@@ -6,14 +6,12 @@ Phase: P2.4 - Legacy Adapters
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import networkx as nx
 import pytest
 
 from fusion.core.adapters.spectrum_adapter import (
-    RoutePropsProxy,
     SDNPropsProxyForSpectrum,
     SpectrumAdapter,
 )
@@ -61,9 +59,7 @@ def network_state(simple_topology: nx.Graph, config: SimulationConfig) -> Networ
 class TestSDNPropsProxyForSpectrum:
     """Tests for SDNPropsProxyForSpectrum."""
 
-    def test_from_network_state(
-        self, network_state: NetworkState
-    ) -> None:
+    def test_from_network_state(self, network_state: NetworkState) -> None:
         """Test creating proxy from NetworkState."""
         proxy = SDNPropsProxyForSpectrum.from_network_state(
             network_state=network_state,
@@ -130,9 +126,7 @@ class TestSpectrumAdapter:
         adapter = SpectrumAdapter(config)
 
         # Mock legacy SpectrumAssignment
-        with patch(
-            "fusion.core.spectrum_assignment.SpectrumAssignment"
-        ) as MockSpectrum:
+        with patch("fusion.core.spectrum_assignment.SpectrumAssignment") as MockSpectrum:
             mock_spectrum = MagicMock()
             mock_spectrum.spectrum_props.is_free = True
             mock_spectrum.spectrum_props.start_slot = 0
@@ -165,9 +159,7 @@ class TestSpectrumAdapter:
         """Test spectrum finding when no spectrum available."""
         adapter = SpectrumAdapter(config)
 
-        with patch(
-            "fusion.core.spectrum_assignment.SpectrumAssignment"
-        ) as MockSpectrum:
+        with patch("fusion.core.spectrum_assignment.SpectrumAssignment") as MockSpectrum:
             mock_spectrum = MagicMock()
             mock_spectrum.spectrum_props.is_free = False
             mock_spectrum.spectrum_props.slots_needed = 8

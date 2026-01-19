@@ -7,7 +7,7 @@ path with fixed protection switchover latency.
 """
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 import networkx as nx
 
@@ -61,12 +61,8 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         """
         super().__init__(engine_props, sdn_props)
         self.topology = engine_props.get("topology", sdn_props.topology)
-        self.protection_switchover_ms = engine_props.get("protection_settings", {}).get(
-            "protection_switchover_ms", 50.0
-        )
-        self.revert_to_primary = engine_props.get("protection_settings", {}).get(
-            "revert_to_primary", False
-        )
+        self.protection_switchover_ms = engine_props.get("protection_settings", {}).get("protection_switchover_ms", 50.0)
+        self.revert_to_primary = engine_props.get("protection_settings", {}).get("revert_to_primary", False)
         self._disjoint_paths_found = 0
         self._disjoint_paths_failed = 0
 
@@ -112,10 +108,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             # At least 2-edge-connected for disjoint paths
             edge_connectivity = nx.edge_connectivity(topology)
             if edge_connectivity < 2:
-                logger.warning(
-                    f"Topology edge connectivity ({edge_connectivity}) "
-                    "is too low for 1+1 protection (need >= 2)"
-                )
+                logger.warning(f"Topology edge connectivity ({edge_connectivity}) is too low for 1+1 protection (need >= 2)")
                 return False
 
             return True
@@ -158,10 +151,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         all_disjoint_paths = self.find_all_disjoint_paths(source, destination)
 
         if len(all_disjoint_paths) < 2:
-            logger.warning(
-                f"1+1 protection: Could not find at least 2 disjoint paths for "
-                f"{source} -> {destination}"
-            )
+            logger.warning(f"1+1 protection: Could not find at least 2 disjoint paths for {source} -> {destination}")
             self._disjoint_paths_failed += 1
             return
 
@@ -179,20 +169,12 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                 candidate_backup = all_disjoint_paths[j]
 
                 # Calculate modulation formats for BOTH paths in this pair
-                temp_primary_mods = self._get_modulation_formats_for_path(
-                    candidate_primary
-                )
-                temp_backup_mods = self._get_modulation_formats_for_path(
-                    candidate_backup
-                )
+                temp_primary_mods = self._get_modulation_formats_for_path(candidate_primary)
+                temp_backup_mods = self._get_modulation_formats_for_path(candidate_backup)
 
                 # Check if BOTH paths have feasible modulation formats
-                primary_feasible = any(
-                    mod and mod is not False for mod in temp_primary_mods
-                )
-                backup_feasible = any(
-                    mod and mod is not False for mod in temp_backup_mods
-                )
+                primary_feasible = any(mod and mod is not False for mod in temp_primary_mods)
+                backup_feasible = any(mod and mod is not False for mod in temp_backup_mods)
 
                 if primary_feasible and backup_feasible:
                     # Found a feasible pair!
@@ -201,8 +183,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                     primary_mods = temp_primary_mods
                     backup_mods = temp_backup_mods
                     logger.debug(
-                        f"1+1 protection: Found feasible pair (paths {i + 1}, {j + 1}) "
-                        f"from {len(all_disjoint_paths)} disjoint paths"
+                        f"1+1 protection: Found feasible pair (paths {i + 1}, {j + 1}) from {len(all_disjoint_paths)} disjoint paths"
                     )
                     break
 
@@ -210,7 +191,8 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                 break  # Found feasible pair, exit outer loop
 
         # Check if we found a feasible pair
-        if primary_path is None or backup_path is None:
+        # Note: primary_mods and backup_mods are always set together with paths
+        if primary_path is None or backup_path is None or primary_mods is None or backup_mods is None:
             logger.warning(
                 f"1+1 protection: Found {len(all_disjoint_paths)} disjoint paths but "
                 f"no pair where BOTH paths are feasible for {source} -> {destination}"
@@ -271,9 +253,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         except (AttributeError, nx.NetworkXNoPath, nx.NetworkXError):
             return []
 
-    def find_disjoint_paths(
-        self, source: Any, destination: Any
-    ) -> tuple[list[int] | None, list[int] | None]:
+    def find_disjoint_paths(self, source: Any, destination: Any) -> tuple[list[int] | None, list[int] | None]:
         """
         Find link-disjoint primary and backup paths.
 
@@ -301,9 +281,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
 
         return None, None
 
-    def find_disjoint_paths_k_shortest(
-        self, source: Any, destination: Any, k: int = 10
-    ) -> tuple[list[int] | None, list[int] | None]:
+    def find_disjoint_paths_k_shortest(self, source: Any, destination: Any, k: int = 10) -> tuple[list[int] | None, list[int] | None]:
         """
         Find disjoint paths using K-shortest paths (alternative method).
 
@@ -352,9 +330,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
 
         return None, None
 
-    def select_best_path_pair(
-        self, path_pairs: list[tuple[list[int], list[int]]]
-    ) -> tuple[list[int], list[int]]:
+    def select_best_path_pair(self, path_pairs: list[tuple[list[int], list[int]]]) -> tuple[list[int], list[int]]:
         """
         Select the best path pair from multiple options.
 
@@ -380,9 +356,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
 
         return best_pair
 
-    def handle_failure(
-        self, current_time: float, affected_requests: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def handle_failure(self, current_time: float, affected_requests: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Handle failure by switching protected requests to backup.
 
@@ -416,9 +390,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                     }
                 )
 
-                logger.info(
-                    f"Request {request['id']}: 1+1 switchover ({recovery_time_ms}ms)"
-                )
+                logger.info(f"Request {request['id']}: 1+1 switchover ({recovery_time_ms}ms)")
 
         return recovery_actions
 
@@ -467,9 +439,7 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
         :rtype: dict[str, Any]
         """
         total_attempts = self._disjoint_paths_found + self._disjoint_paths_failed
-        success_rate = (
-            self._disjoint_paths_found / total_attempts if total_attempts > 0 else 0.0
-        )
+        success_rate = self._disjoint_paths_found / total_attempts if total_attempts > 0 else 0.0
 
         return {
             "algorithm": self.algorithm_name,
@@ -480,29 +450,25 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
             "revert_to_primary": self.revert_to_primary,
         }
 
-    def _get_modulation_formats_for_path(self, path: list[Any]) -> list[str]:
+    def _get_modulation_formats_for_path(self, path: list[Any]) -> list[str | bool]:
         """
         Get modulation formats for a given path.
 
         Determines appropriate modulation formats based on path length,
         bandwidth requirements, and available modulation format configurations.
+        Returns False for infeasible modulation formats.
 
         :param path: List of nodes representing the path
         :type path: list[Any]
-        :return: List of modulation format strings
-        :rtype: list[str]
+        :return: List of modulation format strings or False for infeasible
+        :rtype: list[str | bool]
         """
         path_length = find_path_length(path_list=path, topology=self.topology)
 
         chosen_bandwidth = getattr(self.sdn_props, "bandwidth", None)
-        if chosen_bandwidth and not self.engine_props.get(
-            "pre_calc_mod_selection", False
-        ):
+        if chosen_bandwidth and not self.engine_props.get("pre_calc_mod_selection", False):
             # Use mod_per_bw if available
-            if (
-                "mod_per_bw" in self.engine_props
-                and chosen_bandwidth in self.engine_props["mod_per_bw"]
-            ):
+            if "mod_per_bw" in self.engine_props and chosen_bandwidth in self.engine_props["mod_per_bw"]:
                 modulation_format = get_path_modulation(
                     mods_dict=self.engine_props["mod_per_bw"][chosen_bandwidth],
                     path_len=path_length,
@@ -522,7 +488,8 @@ class OnePlusOneProtection(AbstractRoutingAlgorithm):
                     nested_key="max_length",
                 )
                 # Ensure all keys are strings
-                return [str(key) for key in modulation_formats_dict.keys()][::-1]
+                result = [str(key) for key in modulation_formats_dict.keys()][::-1]
+                return cast(list[str | bool], result)
             else:
                 # Fallback to simple list
                 return ["QPSK"]

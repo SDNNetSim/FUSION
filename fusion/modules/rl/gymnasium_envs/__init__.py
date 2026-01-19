@@ -4,25 +4,30 @@ Gymnasium environments for FUSION simulation.
 This package provides Gymnasium-compatible environment implementations
 for reinforcement learning with FUSION network simulations.
 
-Migration Support (P4.3):
-    This module provides a factory function for gradual migration from
-    the legacy GeneralSimEnv to the new UnifiedSimEnv. Use create_sim_env()
-    to create environments with automatic or explicit environment selection.
+**Migration Support:**
 
-    Environment Variables:
-        USE_UNIFIED_ENV: Set to "1", "true", or "yes" to use UnifiedSimEnv
-        RL_ENV_TYPE: Set to "legacy" or "unified" for explicit selection
+This module provides a factory function for gradual migration from
+the legacy GeneralSimEnv to the new UnifiedSimEnv. Use :func:`create_sim_env`
+to create environments with automatic or explicit environment selection.
 
-    Example:
-        # Default (legacy)
-        env = create_sim_env(config)
+**Environment Variables:**
 
-        # Explicit unified
-        env = create_sim_env(config, env_type="unified")
+- ``USE_UNIFIED_ENV``: Set to "1", "true", or "yes" to use UnifiedSimEnv
+- ``RL_ENV_TYPE``: Set to "legacy" or "unified" for explicit selection
 
-        # Via environment variable
-        os.environ["USE_UNIFIED_ENV"] = "1"
-        env = create_sim_env(config)
+**Example:**
+
+.. code-block:: python
+
+    # Default (legacy)
+    env = create_sim_env(config)
+
+    # Explicit unified
+    env = create_sim_env(config, env_type="unified")
+
+    # Via environment variable
+    os.environ["USE_UNIFIED_ENV"] = "1"
+    env = create_sim_env(config)
 """
 
 from __future__ import annotations
@@ -60,37 +65,44 @@ def create_sim_env(
     wrap_action_mask: bool = True,
     **kwargs: Any,
 ) -> gym.Env:
-    """Create RL simulation environment.
+    """
+    Create RL simulation environment.
 
     This factory function creates either the legacy GeneralSimEnv or
     the new UnifiedSimEnv based on the env_type parameter or environment
     variables.
 
-    Args:
-        config: Simulation configuration (dict for legacy, SimulationConfig
-            or dict for unified)
-        env_type: Environment type to create:
-            - "legacy": Use GeneralSimEnv (default)
-            - "unified": Use UnifiedSimEnv
-            - None: Check env vars, default to legacy
-        wrap_action_mask: If True and using unified env, wrap with
-            ActionMaskWrapper for SB3 MaskablePPO compatibility
-        **kwargs: Additional arguments passed to environment constructor
+    :param config: Simulation configuration (dict for legacy, SimulationConfig
+        or dict for unified)
+    :type config: dict[str, Any] | SimulationConfig
+    :param env_type: Environment type to create:
+        - ``"legacy"``: Use GeneralSimEnv (default)
+        - ``"unified"``: Use UnifiedSimEnv
+        - ``None``: Check env vars, default to legacy
+    :type env_type: str | None
+    :param wrap_action_mask: If True and using unified env, wrap with
+        ActionMaskWrapper for SB3 MaskablePPO compatibility
+    :type wrap_action_mask: bool
+    :param kwargs: Additional arguments passed to environment constructor
+    :return: Gymnasium environment instance
+    :rtype: gym.Env
 
-    Returns:
-        Gymnasium environment instance
+    **Environment Variables:**
 
-    Environment Variables:
-        USE_UNIFIED_ENV: Set to "1", "true", or "yes" to use UnifiedSimEnv
-        RL_ENV_TYPE: Explicit environment type ("legacy" or "unified")
+    - ``USE_UNIFIED_ENV``: Set to "1", "true", or "yes" to use UnifiedSimEnv
+    - ``RL_ENV_TYPE``: Explicit environment type ("legacy" or "unified")
 
-    Priority (highest to lowest):
-        1. Explicit env_type parameter
-        2. RL_ENV_TYPE environment variable
-        3. USE_UNIFIED_ENV environment variable
-        4. Default to legacy
+    **Priority (highest to lowest):**
 
-    Examples:
+    1. Explicit env_type parameter
+    2. RL_ENV_TYPE environment variable
+    3. USE_UNIFIED_ENV environment variable
+    4. Default to legacy
+
+    **Example:**
+
+    .. code-block:: python
+
         # Legacy (default)
         env = create_sim_env(sim_dict)
 
@@ -113,19 +125,20 @@ def create_sim_env(
 
 
 def _resolve_env_type(env_type: str | None) -> str:
-    """Resolve environment type from parameter or environment variables.
+    """
+    Resolve environment type from parameter or environment variables.
 
-    Priority:
-        1. Explicit env_type parameter
-        2. RL_ENV_TYPE environment variable
-        3. USE_UNIFIED_ENV environment variable
-        4. Default to legacy
+    **Priority:**
 
-    Args:
-        env_type: Explicit environment type or None
+    1. Explicit env_type parameter
+    2. RL_ENV_TYPE environment variable
+    3. USE_UNIFIED_ENV environment variable
+    4. Default to legacy
 
-    Returns:
-        Resolved environment type (EnvType.LEGACY or EnvType.UNIFIED)
+    :param env_type: Explicit environment type or None
+    :type env_type: str | None
+    :return: Resolved environment type (EnvType.LEGACY or EnvType.UNIFIED)
+    :rtype: str
     """
     if env_type is not None:
         return env_type.lower()
@@ -149,16 +162,17 @@ def _create_unified_env(
     wrap_action_mask: bool = True,
     **kwargs: Any,
 ) -> gym.Env:
-    """Create UnifiedSimEnv instance wired to real simulation.
+    """
+    Create UnifiedSimEnv instance wired to real simulation.
 
-    Args:
-        config: Simulation configuration (dict or SimulationConfig)
-        wrap_action_mask: Whether to wrap with ActionMaskWrapper
-        **kwargs: Additional arguments for UnifiedSimEnv
-
-    Returns:
-        UnifiedSimEnv instance wired to real orchestrator and adapter,
+    :param config: Simulation configuration (dict or SimulationConfig)
+    :type config: dict[str, Any] | SimulationConfig
+    :param wrap_action_mask: Whether to wrap with ActionMaskWrapper
+    :type wrap_action_mask: bool
+    :param kwargs: Additional arguments for UnifiedSimEnv
+    :return: UnifiedSimEnv instance wired to real orchestrator and adapter,
         optionally wrapped with ActionMaskWrapper
+    :rtype: gym.Env
     """
     from fusion.core.pipeline_factory import PipelineFactory
     from fusion.core.simulation import SimulationEngine
@@ -190,9 +204,11 @@ def _create_unified_env(
         # Calculate arrival_rate if not present
         if "arrival_rate" not in inner_config:
             cores_per_link = inner_config.get("cores_per_link", 1)
-            erlang = inner_config.get("erlang", inner_config.get("erlang_start", 300))
+            erlang_val = inner_config.get("erlang", inner_config.get("erlang_start", 300))
             holding_time = inner_config.get("holding_time", 1)
-            inner_config["arrival_rate"] = (cores_per_link * float(erlang)) / float(holding_time)
+            inner_config["arrival_rate"] = (cores_per_link * float(erlang_val if erlang_val is not None else 300)) / float(
+                holding_time if holding_time is not None else 1
+            )
 
         # Enable orchestrator mode for V4 stack integration
         inner_config["use_orchestrator"] = True
@@ -204,23 +220,25 @@ def _create_unified_env(
         except (KeyError, ValueError, TypeError) as e:
             # If we can't create a full SimulationConfig, fall back to standalone mode
             warnings.warn(
-                f"Could not create SimulationConfig from dict ({e}), "
-                "using standalone mode. For full simulation, provide complete config.",
+                f"Could not create SimulationConfig from dict ({e}), using standalone mode. For full simulation, provide complete config.",
                 RuntimeWarning,
                 stacklevel=3,
             )
             # Fall back to standalone mode
+            reward_val = inner_config.get("reward", inner_config.get("rl_success_reward", 1.0))
+            penalty_val = inner_config.get("penalty", inner_config.get("rl_block_penalty", -1.0))
+            slots_val = inner_config.get("spectral_slots", inner_config.get("total_slots", 320))
             rl_config = RLConfig(
                 k_paths=inner_config.get("k_paths", 3),
-                rl_success_reward=inner_config.get("reward", inner_config.get("rl_success_reward", 1.0)),
-                rl_block_penalty=inner_config.get("penalty", inner_config.get("rl_block_penalty", -1.0)),
+                rl_success_reward=float(reward_val) if reward_val is not None else 1.0,
+                rl_block_penalty=float(penalty_val) if penalty_val is not None else -1.0,
                 num_nodes=inner_config.get("num_nodes", 14),
-                total_slots=inner_config.get("spectral_slots", inner_config.get("total_slots", 320)),
+                total_slots=int(slots_val) if slots_val is not None else 320,
             )
-            env = UnifiedSimEnv(config=rl_config, **filtered_kwargs)
+            standalone_env: gym.Env = UnifiedSimEnv(config=rl_config, **filtered_kwargs)
             if wrap_action_mask:
-                env = ActionMaskWrapper(env)
-            return env
+                standalone_env = ActionMaskWrapper(standalone_env)
+            return standalone_env
     else:
         sim_config = inner_config
 
@@ -236,8 +254,7 @@ def _create_unified_env(
             engine.create_topology()
         except (KeyError, ValueError, TypeError) as e:
             warnings.warn(
-                f"Could not create SimulationEngine ({e}), "
-                "stats tracking will be disabled.",
+                f"Could not create SimulationEngine ({e}), stats tracking will be disabled.",
                 RuntimeWarning,
                 stacklevel=3,
             )
@@ -270,8 +287,8 @@ def _create_unified_env(
 
     if path_algorithm and "bandit" in path_algorithm or path_algorithm == "q_learning":
         # Create RLProps and PathAgent like legacy SimEnv does
-        from fusion.modules.rl.algorithms.algorithm_props import RLProps
         from fusion.modules.rl.agents.path_agent import PathAgent
+        from fusion.modules.rl.algorithms.algorithm_props import RLProps
 
         rl_props = RLProps()
         rl_props.k_paths = inner_config.get("k_paths", 3) if isinstance(inner_config, dict) else 3
@@ -292,7 +309,7 @@ def _create_unified_env(
                 path_agent.setup_env(is_path=True)
 
     # Create UnifiedSimEnv with engine for stats tracking
-    env = UnifiedSimEnv(
+    unified_env: gym.Env = UnifiedSimEnv(
         config=rl_config,
         engine=engine,
         orchestrator=orchestrator,
@@ -305,23 +322,23 @@ def _create_unified_env(
     )
 
     if wrap_action_mask:
-        env = ActionMaskWrapper(env)
+        unified_env = ActionMaskWrapper(unified_env)
 
-    return env
+    return unified_env
 
 
 def _create_legacy_env(
     config: dict[str, Any] | SimulationConfig,
     **kwargs: Any,
 ) -> gym.Env:
-    """Create legacy GeneralSimEnv instance.
+    """
+    Create legacy GeneralSimEnv instance.
 
-    Args:
-        config: Simulation configuration
-        **kwargs: Additional arguments for SimEnv
-
-    Returns:
-        SimEnv (GeneralSimEnv) instance
+    :param config: Simulation configuration
+    :type config: dict[str, Any] | SimulationConfig
+    :param kwargs: Additional arguments for SimEnv
+    :return: SimEnv (GeneralSimEnv) instance
+    :rtype: gym.Env
     """
     # Convert SimulationConfig to dict if needed
     if hasattr(config, "to_dict"):

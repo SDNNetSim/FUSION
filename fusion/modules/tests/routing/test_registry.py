@@ -83,9 +83,7 @@ class TestRoutingRegistry:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:
@@ -104,9 +102,7 @@ class TestRoutingRegistry:
         assert "custom" in registry._algorithms
         assert registry._algorithms["custom"] == CustomAlgorithm
 
-    def test_register_non_abstract_algorithm_raises_type_error(
-        self, registry: Any
-    ) -> None:
+    def test_register_non_abstract_algorithm_raises_type_error(self, registry: Any) -> None:
         """Test that registering non-AbstractRoutingAlgorithm class raises TypeError."""
 
         # Arrange
@@ -145,9 +141,7 @@ class TestRoutingRegistry:
         with pytest.raises(KeyError, match="not found"):
             registry.get("nonexistent")
 
-    def test_create_algorithm_returns_configured_instance(
-        self, registry: Any, engine_props: dict[str, Any], sdn_props: Mock
-    ) -> None:
+    def test_create_algorithm_returns_configured_instance(self, registry: Any, engine_props: dict[str, Any], sdn_props: Mock) -> None:
         """Test creating an algorithm instance with configuration."""
         # Arrange
         from fusion.modules.routing.k_shortest_path import KShortestPath
@@ -183,14 +177,10 @@ class TestRoutingRegistry:
         assert "supported_topologies" in info
         assert "description" in info
 
-    def test_validate_algorithm_with_compatible_topology(
-        self, registry: Any, engine_props: dict[str, Any]
-    ) -> None:
+    def test_validate_algorithm_with_compatible_topology(self, registry: Any, engine_props: dict[str, Any]) -> None:
         """Test algorithm validation with compatible topology."""
         # Act
-        is_valid = registry.validate_algorithm(
-            "k_shortest_path", engine_props["topology"]
-        )
+        is_valid = registry.validate_algorithm("k_shortest_path", engine_props["topology"])
 
         # Assert
         assert is_valid is True
@@ -206,9 +196,7 @@ class TestRoutingRegistry:
             ("xt_aware", "XTAwareRouting"),
         ],
     )
-    def test_all_default_algorithms_are_registered(
-        self, registry: Any, algorithm_name: str, expected_class_name: str
-    ) -> None:
+    def test_all_default_algorithms_are_registered(self, registry: Any, algorithm_name: str, expected_class_name: str) -> None:
         """Test that all default algorithms are properly registered."""
         # Act
         algorithm_class = registry.get(algorithm_name)
@@ -232,9 +220,7 @@ class TestGlobalRegistryFunctions:
         # Assert
         assert algorithm_class == KShortestPath
 
-    def test_create_algorithm_from_global_registry(
-        self, engine_props: dict[str, Any], sdn_props: Mock
-    ) -> None:
+    def test_create_algorithm_from_global_registry(self, engine_props: dict[str, Any], sdn_props: Mock) -> None:
         """Test creating algorithm instance from global registry."""
         # Arrange
         from fusion.modules.routing.congestion_aware import CongestionAwareRouting
@@ -295,9 +281,7 @@ class TestGlobalRegistryFunctions:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:
@@ -344,9 +328,7 @@ class TestRoutingAlgorithmsDict:
             ("xt_aware", "XTAwareRouting"),
         ],
     )
-    def test_routing_algorithms_dict_maps_correctly(
-        self, key: str, expected_class_name: str
-    ) -> None:
+    def test_routing_algorithms_dict_maps_correctly(self, key: str, expected_class_name: str) -> None:
         """Test that ROUTING_ALGORITHMS dict maps names to correct classes."""
         # Arrange
         from fusion.modules.routing.registry import ROUTING_ALGORITHMS

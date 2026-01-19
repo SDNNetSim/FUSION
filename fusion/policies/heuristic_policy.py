@@ -23,8 +23,6 @@ Note:
     - Default selection strategies
     - Baselines for RL/ML comparison
     - Fallback when ML models fail
-
-Phase: P5.2 - Heuristic Policies
 """
 
 from __future__ import annotations
@@ -67,38 +65,56 @@ class HeuristicPolicy(ABC):
         """
         Select an action (path index) based on heuristic rule.
 
-        Args:
-            request: The incoming request (may be used for context)
-            options: List of available PathOptions
-            network_state: Current network state (read-only)
-
-        Returns:
-            Selected path index (0 to len(options)-1), or -1 if none valid
+        :param request: The incoming request (may be used for context).
+        :type request: Request
+        :param options: List of available PathOptions.
+        :type options: list[PathOption]
+        :param network_state: Current network state (read-only).
+        :type network_state: NetworkState
+        :return: Selected path index (0 to len(options)-1), or -1 if none valid.
+        :rtype: int
         """
         ...
 
-    def update(self, request: Request, action: int, reward: float) -> None:
+    def update(  # noqa: B027
+        self, request: Request, action: int, reward: float
+    ) -> None:
         """
         Update policy based on experience.
 
         Heuristic policies do not learn, so this is a no-op.
+        This is intentionally not abstract - subclasses inherit this no-op.
 
-        Args:
-            request: The request that was served (ignored)
-            action: The action taken (ignored)
-            reward: The reward received (ignored)
+        :param request: The request that was served (ignored).
+        :type request: Request
+        :param action: The action taken (ignored).
+        :type action: int
+        :param reward: The reward received (ignored).
+        :type reward: float
         """
         pass
 
     def get_name(self) -> str:
-        """Return the policy name for logging."""
+        """
+        Return the policy name for logging.
+
+        :return: Policy class name.
+        :rtype: str
+        """
         return self.__class__.__name__
 
     def _get_feasible_options(
         self,
         options: list[PathOption],
     ) -> list[PathOption]:
-        """Filter options to only feasible ones."""
+        """
+        Filter options to only feasible ones.
+
+        :param options: List of path options.
+        :type options: list[PathOption]
+        :return: Filtered list containing only feasible options.
+        :rtype: list[PathOption]
+        """
         return [opt for opt in options if opt.is_feasible]
 
 
@@ -205,6 +221,7 @@ class RandomFeasiblePolicy(HeuristicPolicy):
     Randomly select among feasible paths.
 
     Uniformly samples from all feasible paths. Useful for:
+
     - Exploration during training
     - Baseline comparison (random performance)
     - Load distribution across multiple paths
@@ -212,25 +229,27 @@ class RandomFeasiblePolicy(HeuristicPolicy):
     Uses numpy's random number generator with optional seed.
 
     Selection Logic:
-        1. Filter to feasible options
-        2. Uniformly sample one option
-        3. Return its path_index, or -1 if none feasible
+
+    1. Filter to feasible options
+    2. Uniformly sample one option
+    3. Return its path_index, or -1 if none feasible
 
     Time Complexity: O(n)
     Space Complexity: O(n) for feasible list
 
-    Attributes:
-        _rng: Numpy random generator
-        _seed: Original seed for reset
+    :ivar _rng: Numpy random generator.
+    :vartype _rng: numpy.random.Generator
+    :ivar _seed: Original seed for reset.
+    :vartype _seed: int | None
     """
 
     def __init__(self, seed: int | None = None) -> None:
         """
         Initialize with optional random seed.
 
-        Args:
-            seed: Random seed for reproducibility. If None, uses
-                  system entropy (non-reproducible).
+        :param seed: Random seed for reproducibility. If None, uses
+            system entropy (non-reproducible).
+        :type seed: int | None
         """
         self._seed = seed
         self._rng = np.random.default_rng(seed)
@@ -247,22 +266,28 @@ class RandomFeasiblePolicy(HeuristicPolicy):
         if not feasible:
             return -1
 
-        selected = self._rng.choice(feasible)
-        return selected.path_index
+        # Use integer index to avoid numpy type issues
+        idx = int(self._rng.integers(0, len(feasible)))
+        return feasible[idx].path_index
 
     def reset_rng(self, seed: int | None = None) -> None:
         """
         Reset the random number generator.
 
-        Args:
-            seed: New seed. If None, uses the original seed.
+        :param seed: New seed. If None, uses the original seed.
+        :type seed: int | None
         """
         if seed is None:
             seed = self._seed
         self._rng = np.random.default_rng(seed)
 
     def get_name(self) -> str:
-        """Return policy name including seed."""
+        """
+        Return policy name including seed.
+
+        :return: Policy name with seed if set.
+        :rtype: str
+        """
         if self._seed is not None:
             return f"RandomFeasiblePolicy(seed={self._seed})"
         return "RandomFeasiblePolicy"
@@ -272,44 +297,44 @@ class LoadBalancedPolicy(HeuristicPolicy):
     """
     Select path balancing length and congestion.
 
-    Combines path length (weight_km) and congestion into a weighted score:
+    Combines path length (weight_km) and congestion into a weighted score::
 
         score = alpha * normalized_length + (1 - alpha) * congestion
 
     Where normalized_length = weight_km / max_weight_km among feasible paths.
 
     Alpha Parameter:
-        - 0.0: Pure congestion-based (same as LeastCongestedPolicy)
-        - 0.5: Equal weight to length and congestion (default)
-        - 1.0: Pure length-based (same as ShortestFeasiblePolicy)
+
+    - 0.0: Pure congestion-based (same as LeastCongestedPolicy)
+    - 0.5: Equal weight to length and congestion (default)
+    - 1.0: Pure length-based (same as ShortestFeasiblePolicy)
 
     Selection Logic:
-        1. Filter to feasible options
-        2. Normalize weight_km to [0, 1] range
-        3. Compute weighted score for each option
-        4. Return option with minimum score
+
+    1. Filter to feasible options
+    2. Normalize weight_km to [0, 1] range
+    3. Compute weighted score for each option
+    4. Return option with minimum score
 
     Tie Breaking: First occurrence when tied on score.
 
     Time Complexity: O(n)
     Space Complexity: O(n) for feasible list
 
-    Attributes:
-        _alpha: Weight for path length (0.0 to 1.0)
+    :ivar _alpha: Weight for path length (0.0 to 1.0).
+    :vartype _alpha: float
     """
 
     def __init__(self, alpha: float = 0.5) -> None:
         """
         Initialize with load balancing weight.
 
-        Args:
-            alpha: Weight for path length (0.0 to 1.0).
-                   - 0.0 = prioritize low congestion
-                   - 1.0 = prioritize short length
-                   - 0.5 = equal balance (default)
-
-        Raises:
-            ValueError: If alpha is not in [0, 1] range
+        :param alpha: Weight for path length (0.0 to 1.0).
+            0.0 = prioritize low congestion,
+            1.0 = prioritize short length,
+            0.5 = equal balance (default).
+        :type alpha: float
+        :raises ValueError: If alpha is not in [0, 1] range.
         """
         if not 0.0 <= alpha <= 1.0:
             raise ValueError(f"alpha must be in [0, 1], got {alpha}")
@@ -317,7 +342,12 @@ class LoadBalancedPolicy(HeuristicPolicy):
 
     @property
     def alpha(self) -> float:
-        """Current alpha value."""
+        """
+        Current alpha value.
+
+        :return: The alpha weight parameter.
+        :rtype: float
+        """
         return self._alpha
 
     def select_action(
@@ -344,5 +374,10 @@ class LoadBalancedPolicy(HeuristicPolicy):
         return best.path_index
 
     def get_name(self) -> str:
-        """Return policy name including alpha."""
+        """
+        Return policy name including alpha.
+
+        :return: Policy name with alpha parameter.
+        :rtype: str
+        """
         return f"LoadBalancedPolicy(alpha={self._alpha})"

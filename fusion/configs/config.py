@@ -87,10 +87,7 @@ class ConfigManager:
             10
         """
         if not os.path.exists(path):
-            raise ConfigFileNotFoundError(
-                f"Configuration file not found: '{path}'. "
-                f"Please ensure the file exists or provide a valid path."
-            )
+            raise ConfigFileNotFoundError(f"Configuration file not found: '{path}'. Please ensure the file exists or provide a valid path.")
 
         # Load configuration based on file extension
         try:
@@ -101,16 +98,11 @@ class ConfigManager:
             elif path.endswith((".yaml", ".yml")):
                 self._raw_config = self._load_yaml(path)
             else:
-                raise ConfigParseError(
-                    f"Unsupported configuration file format: '{path}'. "
-                    f"Supported formats: .ini, .json, .yaml, .yml"
-                )
+                raise ConfigParseError(f"Unsupported configuration file format: '{path}'. Supported formats: .ini, .json, .yaml, .yml")
         except Exception as e:
             if isinstance(e, (ConfigError, ConfigFileNotFoundError, ConfigParseError)):
                 raise
-            raise ConfigParseError(
-                f"Failed to parse configuration file: {str(e)}"
-            ) from e
+            raise ConfigParseError(f"Failed to parse configuration file: {str(e)}") from e
 
         # Validate against schema if validator is available
         if self.schema_validator:
@@ -163,10 +155,7 @@ class ConfigManager:
 
     def _load_yaml(self, path: str) -> dict[str, Any]:
         if yaml is None:
-            raise ImportError(
-                "PyYAML is required for YAML configuration files. "
-                "Install it with: pip install pyyaml"
-            )
+            raise ImportError("PyYAML is required for YAML configuration files. Install it with: pip install pyyaml")
         try:
             with open(path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
@@ -241,10 +230,7 @@ class ConfigManager:
         :raises ConfigError: If format is unsupported or save fails
         """
         if not self._raw_config:
-            raise ValueError(
-                "No configuration loaded to save. "
-                "Please load a configuration first using load_config()."
-            )
+            raise ValueError("No configuration loaded to save. Please load a configuration first using load_config().")
 
         try:
             if format_type == "ini":
@@ -254,10 +240,7 @@ class ConfigManager:
             elif format_type == "yaml":
                 self._save_yaml(path)
             else:
-                raise ConfigError(
-                    f"Unsupported format: '{format_type}'. "
-                    f"Supported formats: 'ini', 'json', 'yaml'"
-                )
+                raise ConfigError(f"Unsupported format: '{format_type}'. Supported formats: 'ini', 'json', 'yaml'")
         except Exception as e:
             if isinstance(e, ConfigError):
                 raise
@@ -284,10 +267,7 @@ class ConfigManager:
 
     def _save_yaml(self, path: str) -> None:
         if yaml is None:
-            raise ImportError(
-                "PyYAML is required for YAML configuration files. "
-                "Install it with: pip install pyyaml"
-            )
+            raise ImportError("PyYAML is required for YAML configuration files. Install it with: pip install pyyaml")
         with open(path, "w", encoding="utf-8") as f:
             yaml.dump(self._raw_config, f, default_flow_style=False)
 
@@ -344,6 +324,4 @@ class ConfigManager:
             # Recreate config object with merged values
             self._config = self._create_config_object(self._raw_config)
         except Exception as e:
-            raise ConfigTypeConversionError(
-                f"Failed to merge CLI arguments: {str(e)}"
-            ) from e
+            raise ConfigTypeConversionError(f"Failed to merge CLI arguments: {str(e)}") from e

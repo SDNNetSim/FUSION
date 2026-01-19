@@ -31,10 +31,7 @@ def get_failure_handler(failure_type: str) -> Callable:
         >>> event = handler(topology, link_id=(0, 1), t_fail=10.0, t_repair=20.0)
     """
     if failure_type not in FAILURE_TYPES:
-        raise InvalidFailureTypeError(
-            f"Unknown failure type: {failure_type}. "
-            f"Valid types: {list(FAILURE_TYPES.keys())}"
-        )
+        raise InvalidFailureTypeError(f"Unknown failure type: {failure_type}. Valid types: {list(FAILURE_TYPES.keys())}")
     return FAILURE_TYPES[failure_type]
 
 

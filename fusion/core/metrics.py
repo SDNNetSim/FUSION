@@ -49,28 +49,24 @@ class SimStats:
         self.topology: Any = None
         self.iteration: int | None = None
 
-        # Recovery time tracking (Phase 3 - Survivability)
+        # Recovery time tracking
         self.recovery_times_ms: list[float] = []
         self.failure_window_bp: list[float] = []
         self.recovery_events: list[dict[str, Any]] = []
 
         # Failure window parameters
-        self.failure_window_size = engine_props.get("recovery_timing_settings", {}).get(
-            "failure_window_size", 1000
-        )
+        self.failure_window_size = engine_props.get("recovery_timing_settings", {}).get("failure_window_size", 1000)
 
         # Fragmentation and decision time metrics
         self.fragmentation_scores: list[float] = []
         self.decision_times_ms: list[float] = []
 
-        # P3.4: New path tracking for orchestrator mode
         self.total_requests: int = 0
         self.groomed_requests: int = 0
         self.sliced_requests: int = 0
         self.protected_requests: int = 0
-        self.snapshot_interval: int = engine_props.get('snapshot_interval', 100)
+        self.snapshot_interval: int = engine_props.get("snapshot_interval", 100)
 
-        # Debug: Track mods_dict updates for v5/v6 comparison
         self.mods_dict_updates_log: list[dict[str, Any]] = []
 
     @staticmethod
@@ -105,6 +101,7 @@ class SimStats:
 
         return occupied_slots, guard_slots, len(active_reqs_set)
 
+    # TODO(v6.1): Reimplement update_snapshot with orchestrator-compatible metrics collection
     def update_snapshot(
         self,
         network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]],
@@ -112,49 +109,20 @@ class SimStats:
         path_list: list[tuple[int, int]] | None = None,
     ) -> None:
         """
-        Finds the total number of occupied slots and guard bands currently allocated
-        in the network or a specific path.
+        Stub for snapshot collection - not currently functional.
+
+        This method is a placeholder that maintains API compatibility but does not
+        collect snapshot data. Full implementation planned for v6.1.
 
         :param network_spectrum_dict: The current network spectrum database.
         :param request_number: The current request number.
         :param path_list: The desired path to find the occupied slots on.
         :return: None
         """
-        # occupied_slots, guard_slots, active_reqs = self._get_snapshot_info(
-        #     network_spectrum_dict=network_spectrum_dict, path_list=path_list
-        # )
-        link_usage = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
-        # blocking_prob = self.blocked_requests / request_number
-        # bit_rate_block_prob = (
-        #     self.bit_rate_blocked / self.bit_rate_request
-        #     if self.bit_rate_request > 0
-        #     else 0
-        # )
-        #
-        # self.stats_props.snapshots_dict[request_number]["occupied_slots"].append(
-        #     occupied_slots
-        # )
-        # self.stats_props.snapshots_dict[request_number]["guard_slots"].append(
-        #     guard_slots
-        # )
-        # self.stats_props.snapshots_dict[request_number]["active_requests"].append(
-        #     active_reqs
-        # )
-        # self.stats_props.snapshots_dict[request_number]["blocking_prob"].append(
-        #     blocking_prob
-        # )
-        # self.stats_props.snapshots_dict[request_number]["num_segments"].append(
-        #     self.current_transponders
-        # )
-        # self.stats_props.snapshots_dict[request_number][
-        #     "bit_rate_blocking_prob"
-        # ].append(bit_rate_block_prob)
-        # self.stats_props.snapshots_dict[request_number]["link_usage"] = link_usage
+        logger.debug("update_snapshot called but not functional - will be implemented in v6.1")
 
     def _init_snapshots(self) -> None:
-        for req_num in range(
-            0, self.engine_props["num_requests"] + 1, self.engine_props["snapshot_step"]
-        ):
+        for req_num in range(0, self.engine_props["num_requests"] + 1, self.engine_props["snapshot_step"]):
             self.stats_props.snapshots_dict[req_num] = {}
             for key in SNAP_KEYS_LIST:
                 self.stats_props.snapshots_dict[req_num][key] = []
@@ -208,9 +176,7 @@ class SimStats:
                 ):
                     self.stats_props.modulations_used_dict[modulation] = {}
                     self.stats_props.modulations_used_dict[modulation]["length"] = {}
-                    self.stats_props.modulations_used_dict[modulation]["length"][
-                        "overall"
-                    ] = []
+                    self.stats_props.modulations_used_dict[modulation]["length"]["overall"] = []
                     self.stats_props.modulations_used_dict[modulation]["hop"] = {}
                     self.stats_props.modulations_used_dict[modulation]["hop"]["overall"] = []
                     self.stats_props.modulations_used_dict[modulation]["snr"] = {}
@@ -219,9 +185,7 @@ class SimStats:
                     self.stats_props.modulations_used_dict[modulation]["xt_cost"]["overall"] = []
                     for band in self.engine_props["band_list"]:
                         self.stats_props.modulations_used_dict[modulation][band] = 0
-                        self.stats_props.modulations_used_dict[modulation]["length"][
-                            band
-                        ] = []
+                        self.stats_props.modulations_used_dict[modulation]["length"][band] = []
                         self.stats_props.modulations_used_dict[modulation]["hop"][band] = []
                         self.stats_props.modulations_used_dict[modulation]["snr"][band] = []
                         self.stats_props.modulations_used_dict[modulation]["xt_cost"][band] = []
@@ -254,7 +218,7 @@ class SimStats:
         if not isinstance(self.stats_props.lp_bw_utilization_dict, dict):
             self.stats_props.lp_bw_utilization_dict = {}
 
-        for bandwidth, obj in self.engine_props["mod_per_bw"].items():
+        for bandwidth, _obj in self.engine_props["mod_per_bw"].items():
             bandwidth_key = str(bandwidth)
             self.stats_props.lp_bw_utilization_dict[bandwidth_key] = {}
             for band in self.engine_props["band_list"]:
@@ -342,15 +306,16 @@ class SimStats:
             num_requests = self.engine_props["num_requests"]
             blocking_prob = float(self.blocked_requests) / float(num_requests)
             if self.bit_rate_request > 0:
-                bit_rate_blocking_prob = float(self.bit_rate_blocked) / float(
-                    self.bit_rate_request
-                )
+                bit_rate_blocking_prob = float(self.bit_rate_blocked) / float(self.bit_rate_request)
             else:
                 bit_rate_blocking_prob = 0.0
 
         self.stats_props.simulation_blocking_list.append(blocking_prob)
         self.stats_props.simulation_bitrate_blocking_list.append(bit_rate_blocking_prob)
 
+    # TODO: Refactor this ~200-line function into smaller single-responsibility methods.
+    # Each stat_key (snr_list, crosstalk_list, core_list, modulation_list, etc.) should
+    # have its own handler method. Current implementation violates 50-line guideline.
     def _handle_iter_lists(self, sdn_data: SDNProps) -> None:
         for stat_key in sdn_data.stat_key_list:
             curr_sdn_data = sdn_data.get_data(key=stat_key)
@@ -359,7 +324,7 @@ class SimStats:
             if stat_key == "snr_list":
                 if set(curr_sdn_data) <= {None}:
                     continue  # Skip if all values are None
-                # Filter to only newly established lightpaths (always filter like v5)
+                # Filter to only newly established lightpaths
                 new_lp_values = []
                 for i, value in enumerate(curr_sdn_data):
                     if i < len(sdn_data.lightpath_id_list):
@@ -370,7 +335,9 @@ class SimStats:
                 if len(new_lp_values) > 0:
                     self.stats_props.snr_list.append(mean(new_lp_values))
             if stat_key == "crosstalk_list":
-                # (drl_path_agents) fixme
+                # FIXME(drl_path_agents): DRL agents may return [None] for crosstalk when
+                # XT calculation is disabled or unavailable. This should be handled upstream
+                # in the RL adapter by providing a default value or omitting the field entirely.
                 if curr_sdn_data == [None]:
                     continue  # Skip this stat_key, don't break entire loop
             for i, data in enumerate(curr_sdn_data):
@@ -396,99 +363,115 @@ class SimStats:
                         if data in bw_dict:
                             old_bw_count = bw_dict[data]
                             bw_dict[data] += 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': bandwidth_key,
-                                'band': None,
-                                'action': 'bw_count_increment',
-                                'old': old_bw_count,
-                                'new': bw_dict[data]
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": bandwidth_key,
+                                    "band": None,
+                                    "action": "bw_count_increment",
+                                    "old": old_bw_count,
+                                    "new": bw_dict[data],
+                                }
+                            )
                         else:
                             # Initialize if not present
                             bw_dict[data] = 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': bandwidth_key,
-                                'band': None,
-                                'action': 'bw_count_init',
-                                'value': 1
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": bandwidth_key,
+                                    "band": None,
+                                    "action": "bw_count_init",
+                                    "value": 1,
+                                }
+                            )
                     data_mod_dict = mod_dict.get(data)
                     if isinstance(data_mod_dict, dict):
                         if band in data_mod_dict:
                             old_band_count = data_mod_dict[band]
                             data_mod_dict[band] += 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': None,
-                                'band': band,
-                                'action': 'band_count_increment',
-                                'old': old_band_count,
-                                'new': data_mod_dict[band]
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": None,
+                                    "band": band,
+                                    "action": "band_count_increment",
+                                    "old": old_band_count,
+                                    "new": data_mod_dict[band],
+                                }
+                            )
                         else:
                             # Initialize if not present
                             data_mod_dict[band] = 1
-                            self.mods_dict_updates_log.append({
-                                'req_id': sdn_data.request_id,
-                                'mod': data,
-                                'bw': None,
-                                'band': band,
-                                'action': 'band_count_init',
-                                'value': 1
-                            })
+                            self.mods_dict_updates_log.append(
+                                {
+                                    "req_id": sdn_data.request_id,
+                                    "mod": data,
+                                    "bw": None,
+                                    "band": band,
+                                    "action": "band_count_init",
+                                    "value": 1,
+                                }
+                            )
                         length_dict = data_mod_dict.get("length")
                         has_length = "length" in data_mod_dict
                         if has_length and isinstance(length_dict, dict):
                             if band in length_dict:
                                 length_dict[band].append(sdn_data.path_weight)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': band,
-                                    'action': 'length_append',
-                                    'value': sdn_data.path_weight
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": band,
+                                        "action": "length_append",
+                                        "value": sdn_data.path_weight,
+                                    }
+                                )
                             if "overall" in length_dict:
                                 length_dict["overall"].append(sdn_data.path_weight)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': 'overall',
-                                    'action': 'length_append',
-                                    'value': sdn_data.path_weight
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": "overall",
+                                        "action": "length_append",
+                                        "value": sdn_data.path_weight,
+                                    }
+                                )
 
                         # Track hop count
                         hop_dict = data_mod_dict.get("hop")
-                        if hop_dict and isinstance(hop_dict, dict):
+                        if hop_dict and isinstance(hop_dict, dict) and sdn_data.path_list:
                             num_hops = len(sdn_data.path_list) - 1
                             if band in hop_dict:
                                 hop_dict[band].append(num_hops)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': band,
-                                    'action': 'hop_append',
-                                    'value': num_hops
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": band,
+                                        "action": "hop_append",
+                                        "value": num_hops,
+                                    }
+                                )
                             if "overall" in hop_dict:
                                 hop_dict["overall"].append(num_hops)
-                                self.mods_dict_updates_log.append({
-                                    'req_id': sdn_data.request_id,
-                                    'mod': data,
-                                    'bw': None,
-                                    'band': 'overall',
-                                    'action': 'hop_append',
-                                    'value': num_hops
-                                })
+                                self.mods_dict_updates_log.append(
+                                    {
+                                        "req_id": sdn_data.request_id,
+                                        "mod": data,
+                                        "bw": None,
+                                        "band": "overall",
+                                        "action": "hop_append",
+                                        "value": num_hops,
+                                    }
+                                )
 
                         # Track SNR or XT cost
                         if self.engine_props.get("snr_type") != "None":
@@ -499,24 +482,28 @@ class SimStats:
                                     if xt_cost_dict and isinstance(xt_cost_dict, dict):
                                         if band in xt_cost_dict:
                                             xt_cost_dict[band].append(sdn_data.snr_list[i])
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': band,
-                                                'action': 'xt_cost_append',
-                                                'value': sdn_data.snr_list[i]
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": band,
+                                                    "action": "xt_cost_append",
+                                                    "value": sdn_data.snr_list[i],
+                                                }
+                                            )
                                         if "overall" in xt_cost_dict:
                                             xt_cost_dict["overall"].append(sdn_data.snr_list[i])
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': 'overall',
-                                                'action': 'xt_cost_append',
-                                                'value': sdn_data.snr_list[i]
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": "overall",
+                                                    "action": "xt_cost_append",
+                                                    "value": sdn_data.snr_list[i],
+                                                }
+                                            )
                                 else:
                                     # Track snr
                                     snr_val = sdn_data.snr_list[i]
@@ -524,24 +511,28 @@ class SimStats:
                                     if snr_dict and isinstance(snr_dict, dict):
                                         if band in snr_dict:
                                             snr_dict[band].append(snr_val)
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': band,
-                                                'action': 'snr_append',
-                                                'value': snr_val
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": band,
+                                                    "action": "snr_append",
+                                                    "value": snr_val,
+                                                }
+                                            )
                                         if "overall" in snr_dict:
                                             snr_dict["overall"].append(snr_val)
-                                            self.mods_dict_updates_log.append({
-                                                'req_id': sdn_data.request_id,
-                                                'mod': data,
-                                                'bw': None,
-                                                'band': 'overall',
-                                                'action': 'snr_append',
-                                                'value': snr_val
-                                            })
+                                            self.mods_dict_updates_log.append(
+                                                {
+                                                    "req_id": sdn_data.request_id,
+                                                    "mod": data,
+                                                    "bw": None,
+                                                    "band": "overall",
+                                                    "action": "snr_append",
+                                                    "value": snr_val,
+                                                }
+                                            )
                 elif stat_key == "start_slot_list":
                     self.stats_props.start_slot_list.append(int(data))
                 elif stat_key == "end_slot_list":
@@ -571,10 +562,7 @@ class SimStats:
             if sdn_data.bandwidth is not None:
                 self.bit_rate_blocked += int(sdn_data.bandwidth)
                 self.bit_rate_request += int(sdn_data.bandwidth)
-            if (
-                sdn_data.block_reason is not None
-                and sdn_data.block_reason in self.stats_props.block_reasons_dict
-            ):
+            if sdn_data.block_reason is not None and sdn_data.block_reason in self.stats_props.block_reasons_dict:
                 block_reason = sdn_data.block_reason
                 current_val = self.stats_props.block_reasons_dict[block_reason]
                 if current_val is not None:
@@ -597,7 +585,7 @@ class SimStats:
                 self.bit_rate_request += int(sdn_data.bandwidth)
 
             # Track blocked bandwidth for partial allocations (slicing or grooming)
-            # This applies regardless of grooming setting (matches v5 behavior)
+            # This applies regardless of grooming setting
             remaining_bw = getattr(sdn_data, "remaining_bw", None)
             if remaining_bw is not None and remaining_bw != "0":
                 self.bit_rate_blocked += int(remaining_bw)
@@ -609,19 +597,9 @@ class SimStats:
                 num_hops = len(sdn_data.path_list) - 1
                 self.stats_props.hops_list.append(float(num_hops))
 
-                path_len = find_path_length(
-                    path_list=sdn_data.path_list, topology=self.topology
-                )
+                path_len = find_path_length(path_list=sdn_data.path_list, topology=self.topology)
                 if path_len is not None:
                     self.stats_props.lengths_list.append(round(float(path_len), 2))
-
-            # Capture before state for request 40
-            if sdn_data.request_id == 40:
-                import copy
-                before_mods_dict = {}
-                for bw, bw_data in self.stats_props.modulations_used_dict.items():
-                    if isinstance(bw_data, dict):
-                        before_mods_dict[bw] = {mod: count for mod, count in bw_data.items() if isinstance(count, int)}
 
             self._handle_iter_lists(sdn_data=sdn_data)
 
@@ -636,14 +614,9 @@ class SimStats:
             if sdn_data.number_of_transponders is not None:
                 self.total_transponders += sdn_data.number_of_transponders
 
-            # Track path index from first modulation
-            path_idx_updated = False
             if sdn_data.modulation_list and len(sdn_data.modulation_list) > 0:
-                if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(
-                    self.stats_props.path_index_list
-                ):
+                if sdn_data.path_index is not None and 0 <= sdn_data.path_index < len(self.stats_props.path_index_list):
                     self.stats_props.path_index_list[sdn_data.path_index] += 1
-                    path_idx_updated = True
 
             # Track weights for NEW lightpaths only when grooming is enabled
             if (
@@ -675,30 +648,26 @@ class SimStats:
 
                         if mod_format and bandwidth_key in self.stats_props.weights_dict:
                             if mod_format in self.stats_props.weights_dict[bandwidth_key]:
-                                self.stats_props.weights_dict[bandwidth_key][mod_format].append(
-                                    round(float(sdn_data.path_weight), 2)
-                                )
+                                self.stats_props.weights_dict[bandwidth_key][mod_format].append(round(float(sdn_data.path_weight), 2))
                             else:
                                 # Initialize if not present
-                                self.stats_props.weights_dict[bandwidth_key][mod_format] = [
-                                    round(float(sdn_data.path_weight), 2)
-                                ]
+                                self.stats_props.weights_dict[bandwidth_key][mod_format] = [round(float(sdn_data.path_weight), 2)]
 
             # Track demand realization ratio for partial grooming
             if self.engine_props.get("can_partially_serve"):
-                bandwidth_key = str(sdn_data.bandwidth) if sdn_data.bandwidth is not None else None
-                if bandwidth_key and bandwidth_key in self.stats_props.demand_realization_ratio:
+                demand_bw_key = str(sdn_data.bandwidth) if sdn_data.bandwidth is not None else None
+                if demand_bw_key and demand_bw_key in self.stats_props.demand_realization_ratio:
                     remaining_bw = getattr(sdn_data, "remaining_bw", 0)
                     if remaining_bw is None:
                         remaining_bw = 0
+                    if sdn_data.bandwidth is None:
+                        raise ValueError("bandwidth must be set for demand realization tracking")
                     original_bw = int(sdn_data.bandwidth)
                     served_bw = original_bw - int(remaining_bw)
                     realization_ratio = served_bw / original_bw
-                    self.stats_props.demand_realization_ratio[bandwidth_key].append(realization_ratio)
+                    self.stats_props.demand_realization_ratio[demand_bw_key].append(realization_ratio)
                     self.stats_props.demand_realization_ratio["overall"].append(realization_ratio)
-            self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(
-                network_spectrum_dict
-            )
+            self.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(network_spectrum_dict)
 
     def update_utilization_dict(self, utilization_dict: dict[int, dict[str, Any]]) -> None:
         """
@@ -710,8 +679,6 @@ class SimStats:
         :param utilization_dict: Dictionary mapping lightpath_id to utilization info
             with keys: 'bit_rate', 'band', 'core', 'utilization'
         """
-        erlang = self.engine_props.get('erlang', 0)
-        iteration = self.iteration
         for lp_id in utilization_dict:
             lp_info = utilization_dict[lp_id]
             # Convert to int first to match initialization keys (e.g., '600' not '600.0')
@@ -720,11 +687,9 @@ class SimStats:
             core = lp_info["core"]
             utilization = lp_info["utilization"]
 
-            # Track per-bandwidth/band/core (match grooming-new: direct append)
+            # Track per-bandwidth/band/core
             # If keys don't exist, KeyError will surface the configuration issue
-            self.stats_props.lp_bw_utilization_dict[bit_rate_key][band][core].append(
-                utilization
-            )
+            self.stats_props.lp_bw_utilization_dict[bit_rate_key][band][core].append(utilization)
 
             # Track overall
             self.stats_props.lp_bw_utilization_dict["overall"].append(utilization)
@@ -732,7 +697,7 @@ class SimStats:
     def _get_iter_means(self) -> None:
         for _, curr_snapshot in self.stats_props.snapshots_dict.items():
             for snap_key, data_list in curr_snapshot.items():
-                # Skip if already a scalar (P3.4 new path stores scalars directly)
+                # Skip if already a scalar
                 if isinstance(data_list, (int, float)):
                     continue
                 # Handle list case (legacy path)
@@ -802,9 +767,7 @@ class SimStats:
                                     deviation = 0.0
                                 else:
                                     deviation = stdev(filtered_value)
-                                self.stats_props.modulations_used_dict[modulation][
-                                    "length"
-                                ][key] = {
+                                self.stats_props.modulations_used_dict[modulation]["length"][key] = {
                                     "mean": round(float(mean(filtered_value)), 2),
                                     "std": round(float(deviation), 2),
                                     "min": round(float(min(filtered_value)), 2),
@@ -831,9 +794,7 @@ class SimStats:
                                         }
                                     else:
                                         deviation = 0.0 if len(value) == 1 else stdev(value)
-                                        self.stats_props.modulations_used_dict[modulation][
-                                            route_spec
-                                        ][key] = {
+                                        self.stats_props.modulations_used_dict[modulation][route_spec][key] = {
                                             "mean": round(float(mean(value)), 2),
                                             "std": round(float(deviation), 2),
                                             "min": round(float(min(value)), 2),
@@ -868,7 +829,10 @@ class SimStats:
                     request_dist = self.engine_props.get("request_distribution", {})
                     if bw in request_dist:
                         total_bw_requests = request_dist[bw] * self.engine_props["num_requests"]
-                        ratio_dict["ratio_full_served"] = num_full_served / total_bw_requests if total_bw_requests > 0 else 0
+                        if total_bw_requests > 0:
+                            ratio_dict["ratio_full_served"] = num_full_served / total_bw_requests
+                        else:
+                            ratio_dict["ratio_full_served"] = 0
                 self.stats_props.demand_realization_ratio[bw] = ratio_dict
 
         # Process lp_bw_utilization_dict
@@ -894,7 +858,7 @@ class SimStats:
                         }
             else:
                 if isinstance(bw_obj, dict):
-                    for band, band_obj in bw_obj.items():
+                    for _band, band_obj in bw_obj.items():
                         if isinstance(band_obj, dict):
                             for core, data_list in band_obj.items():
                                 if isinstance(data_list, list):
@@ -931,19 +895,13 @@ class SimStats:
         if self.engine_props["num_requests"] == self.blocked_requests:
             self.stats_props.transponders_list.append(0)
         else:
-            trans_mean = self.total_transponders / float(
-                self.engine_props["num_requests"] - self.blocked_requests
-            )
+            trans_mean = self.total_transponders / float(self.engine_props["num_requests"] - self.blocked_requests)
             self.stats_props.transponders_list.append(trans_mean)
 
         if self.blocked_requests > 0:
             # Check if already normalized (values are between 0 and 1)
             current_values = list(self.stats_props.block_reasons_dict.values())
-            is_already_normalized = all(
-                isinstance(v, float) and 0 <= v <= 1
-                for v in current_values
-                if v is not None and v > 0
-            )
+            is_already_normalized = all(isinstance(v, float) and 0 <= v <= 1 for v in current_values if v is not None and v > 0)
 
             if not is_already_normalized:
                 for (
@@ -951,9 +909,7 @@ class SimStats:
                     num_times,
                 ) in self.stats_props.block_reasons_dict.items():
                     if num_times is not None:
-                        self.stats_props.block_reasons_dict[block_type] = (
-                            num_times / float(self.blocked_requests)
-                        )
+                        self.stats_props.block_reasons_dict[block_type] = num_times / float(self.blocked_requests)
 
         self._get_iter_means()
 
@@ -965,9 +921,7 @@ class SimStats:
         :rtype: bool
         """
         self.block_mean = mean(self.stats_props.simulation_blocking_list)
-        self.bit_rate_block_mean = mean(
-            self.stats_props.simulation_bitrate_blocking_list
-        )
+        self.bit_rate_block_mean = mean(self.stats_props.simulation_bitrate_blocking_list)
         if len(self.stats_props.simulation_blocking_list) <= 1:
             # With only 1 data point, variance is 0.0 (no variation)
             self.block_variance = 0.0
@@ -979,22 +933,17 @@ class SimStats:
             return False
 
         self.block_variance = variance(self.stats_props.simulation_blocking_list)
-        self.bit_rate_block_variance = variance(
-            self.stats_props.simulation_bitrate_blocking_list
-        )
+        self.bit_rate_block_variance = variance(self.stats_props.simulation_bitrate_blocking_list)
 
         # Calculate bit rate blocking CI separately (always calculate, even when blocking is 0)
-        # When variance is 0, this evaluates to 0.0 (matching v5 behavior)
+        # When variance is 0, this evaluates to 0.0
         try:
             bit_rate_block_ci = 1.645 * (
-                math.sqrt(self.bit_rate_block_variance)
-                / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
+                math.sqrt(self.bit_rate_block_variance) / math.sqrt(len(self.stats_props.simulation_bitrate_blocking_list))
             )
             self.bit_rate_block_ci = bit_rate_block_ci
             if self.bit_rate_block_mean > 0:
-                bit_rate_block_ci_percent = (
-                    (2 * bit_rate_block_ci) / self.bit_rate_block_mean
-                ) * 100
+                bit_rate_block_ci_percent = ((2 * bit_rate_block_ci) / self.bit_rate_block_mean) * 100
                 self.bit_rate_block_ci_percent = bit_rate_block_ci_percent
         except (ZeroDivisionError, ValueError):
             # If calculation fails, leave as None
@@ -1006,18 +955,16 @@ class SimStats:
             return False
 
         try:
-            # Using 1.645 for 90% confidence level (matching v5 behavior)
-            block_ci_rate = 1.645 * (
-                math.sqrt(self.block_variance)
-                / math.sqrt(len(self.stats_props.simulation_blocking_list))
-            )
+            # Using 1.645 for 90% confidence level
+            block_ci_rate = 1.645 * (math.sqrt(self.block_variance) / math.sqrt(len(self.stats_props.simulation_blocking_list)))
             self.block_ci = block_ci_rate
             block_ci_percent = ((2 * block_ci_rate) / self.block_mean) * 100
             self.block_ci_percent = block_ci_percent
         except ZeroDivisionError:
             return False
 
-        # CI percent threshold should be configurable (tracked in core/TODO.md)
+        # TODO: CI percent threshold (currently hardcoded to 5%) should be configurable
+        # via engine_props. See core/TODO.md "Configuration System Integration".
         if block_ci_percent <= 5:
             iter_val = self.iteration
             iteration_display = (iter_val + 1) if iter_val is not None else 1
@@ -1063,14 +1010,6 @@ class SimStats:
 
         :param base_fp: Base file path for saving
         """
-        # Save mods_dict updates log for debugging
-        import json
-        from pathlib import Path
-        if base_fp:
-            log_fp = str(Path(base_fp).with_name(Path(base_fp).stem + '_mods_dict_log.json'))
-            with open(log_fp, 'w') as f:
-                json.dump(self.mods_dict_updates_log, f, indent=2)
-
         # Import here to avoid circular imports
         from fusion.core.persistence import (
             StatsPersistence,  # pylint: disable=import-outside-toplevel
@@ -1080,9 +1019,7 @@ class SimStats:
         if self.iteration is None:
             self.iteration = 0
 
-        persistence = StatsPersistence(
-            engine_props=self.engine_props, sim_info=self.sim_info
-        )
+        persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
 
         # Prepare save dict with iter_stats structure
         save_dict: dict[str, Any] = {"iter_stats": {}}
@@ -1097,8 +1034,6 @@ class SimStats:
             blocking_stats=blocking_stats,
             base_file_path=base_fp,
         )
-
-    # Phase 3 - Survivability: Recovery Time Tracking Methods
 
     def record_recovery_event(
         self,
@@ -1218,9 +1153,7 @@ class SimStats:
 
         # Count arrivals and blocks in window
         window_arrivals = window_end - failure_index
-        window_blocks = sum(
-            1 for req_id in blocked_requests if failure_index <= req_id < window_end
-        )
+        window_blocks = sum(1 for req_id in blocked_requests if failure_index <= req_id < window_end)
 
         if window_arrivals == 0:
             return 0.0
@@ -1308,9 +1241,7 @@ class SimStats:
             link = (path[i], path[i + 1])
             reverse_link = (path[i + 1], path[i])
 
-            link_spectrum = network_spectrum_dict.get(
-                link, network_spectrum_dict.get(reverse_link, {})
-            )
+            link_spectrum = network_spectrum_dict.get(link, network_spectrum_dict.get(reverse_link, {}))
 
             if not link_spectrum:
                 continue
@@ -1324,7 +1255,7 @@ class SimStats:
             slots = cores_matrix[0] if len(cores_matrix) > 0 else []
 
             # Find free blocks
-            free_blocks = self._find_free_blocks(slots)
+            free_blocks = self._find_free_blocks(np.asarray(slots))
 
             if free_blocks:
                 link_total = sum(block[1] - block[0] for block in free_blocks)
@@ -1452,17 +1383,9 @@ class SimStats:
             "seed": self.engine_props.get("seed", 0),
             # Standard metrics
             "bp_overall": self.block_mean if self.block_mean is not None else 0.0,
-            "bp_variance": self.block_variance
-            if self.block_variance is not None
-            else 0.0,
-            "bp_ci_percent": (
-                self.block_ci_percent if self.block_ci_percent is not None else 0.0
-            ),
-            "bit_rate_bp": (
-                self.bit_rate_block_mean
-                if self.bit_rate_block_mean is not None
-                else 0.0
-            ),
+            "bp_variance": self.block_variance if self.block_variance is not None else 0.0,
+            "bp_ci_percent": (self.block_ci_percent if self.block_ci_percent is not None else 0.0),
+            "bit_rate_bp": (self.bit_rate_block_mean if self.bit_rate_block_mean is not None else 0.0),
             # Failure window metrics
             "bp_window_fail_mean": window_stats["mean"],
             "bp_window_fail_p95": window_stats["p95"],
@@ -1478,10 +1401,6 @@ class SimStats:
             "decision_time_p95_ms": decision_stats["p95"],
         }
 
-    # =========================================================================
-    # P3.4 Stats Integration: New orchestrator path methods
-    # =========================================================================
-
     def record_arrival(
         self,
         request: Any,  # fusion.domain.request.Request
@@ -1493,26 +1412,16 @@ class SimStats:
         Record statistics from orchestrator allocation result.
 
         This method provides the same functionality as iter_update but
-        works with Phase 1 domain objects instead of legacy sdn_props.
+        works with domain objects instead of legacy sdn_props.
 
-        Args:
-            request: The Request that was processed
-            result: The AllocationResult from orchestrator
-            network_state: Current NetworkState for spectrum data
-            was_rollback: True if this was a rollback (skip utilization tracking)
-
-        Side Effects:
-            - Updates blocked_requests count
-            - Updates bandwidth statistics
-            - Updates resource usage metrics
-            - Updates quality metrics (if available)
-            - Updates block reasons (if blocked)
-            - Takes periodic snapshots
-
-        P3.6 Gap Coverage:
-            - Gap 5: SNR_RECHECK_FAIL block reason support
-            - Gap 5: Skip utilization for rolled-back lightpaths
-            - Gap 1: Grooming rollback utilization adjustment
+        :param request: The Request that was processed
+        :type request: Any
+        :param result: The AllocationResult from orchestrator
+        :type result: Any
+        :param network_state: Current NetworkState for spectrum data
+        :type network_state: Any
+        :param was_rollback: True if this was a rollback (skip utilization tracking)
+        :type was_rollback: bool
         """
         # Increment total requests for tracking
         self.total_requests += 1
@@ -1520,9 +1429,7 @@ class SimStats:
         if not result.success:
             self._record_blocked_request_new(request, result)
         else:
-            self._record_successful_allocation_new(
-                request, result, network_state, was_rollback
-            )
+            self._record_successful_allocation_new(request, result, network_state, was_rollback)
 
         # Take periodic snapshot
         self._maybe_take_snapshot_new(network_state)
@@ -1533,19 +1440,19 @@ class SimStats:
         result: Any,  # fusion.domain.results.AllocationResult
     ) -> None:
         """
-        Record stats for a blocked request (new orchestrator path).
+        Record stats for a blocked request (orchestrator path).
 
-        Args:
-            request: The Request that was blocked
-            result: The AllocationResult with block_reason
+        Maps SNR_RECHECK_FAIL to 'xt_threshold' for backwards compatibility.
 
-        P3.6 Gap 5 Coverage:
-            - Maps SNR_RECHECK_FAIL to 'xt_threshold' for backwards compat
+        :param request: The Request that was blocked
+        :type request: Any
+        :param result: The AllocationResult with block_reason
+        :type result: Any
         """
         self.blocked_requests += 1
 
         # Track bandwidth blocking
-        if hasattr(request, 'bandwidth_gbps'):
+        if hasattr(request, "bandwidth_gbps"):
             self.bit_rate_blocked += int(request.bandwidth_gbps)
             self.bit_rate_request += int(request.bandwidth_gbps)
 
@@ -1563,7 +1470,8 @@ class SimStats:
             else:
                 self.stats_props.block_reasons_dict[reason_key] = current + 1
 
-    # TODO: Was rollback is not used
+    # TODO: was_rollback parameter is accepted but not yet used. Should skip
+    # utilization tracking for rolled-back lightpaths per P3.6 Gap 5 coverage.
     def _record_successful_allocation_new(
         self,
         request: Any,  # fusion.domain.request.Request
@@ -1572,34 +1480,33 @@ class SimStats:
         was_rollback: bool = False,
     ) -> None:
         """
-        Record stats for a successful allocation (new orchestrator path).
+        Record stats for a successful allocation (orchestrator path).
 
-        Args:
-            request: The Request that was allocated
-            result: The AllocationResult with allocation details
-            network_state: Current NetworkState
-            was_rollback: True if rollback occurred (skip utilization tracking)
-
-        P3.6 Gap Coverage:
-            - Gap 5: Skip utilization tracking if was_rollback=True
-            - Gap 1: Adjusts grooming utilization appropriately
+        :param request: The Request that was allocated
+        :type request: Any
+        :param result: The AllocationResult with allocation details
+        :type result: Any
+        :param network_state: Current NetworkState
+        :type network_state: Any
+        :param was_rollback: True if rollback occurred (skip utilization tracking)
+        :type was_rollback: bool
         """
         # Track allocation type counters
         if result.is_groomed:
             self.groomed_requests += 1
-        if getattr(result, 'is_sliced', False):
+        if getattr(result, "is_sliced", False):
             self.sliced_requests += 1
-        if getattr(result, 'is_protected', False):
+        if getattr(result, "is_protected", False):
             self.protected_requests += 1
 
         # Skip further stats tracking for fully groomed requests (v5 behavior)
         if result.is_groomed and not result.is_partially_groomed:
-            if hasattr(request, 'bandwidth_gbps'):
+            if hasattr(request, "bandwidth_gbps"):
                 self.bit_rate_request += int(request.bandwidth_gbps)
             return
 
         # Track bit rate for requests
-        if hasattr(request, 'bandwidth_gbps'):
+        if hasattr(request, "bandwidth_gbps"):
             self.bit_rate_request += int(request.bandwidth_gbps)
 
         # Match legacy behavior: early return if remaining bandwidth but no new LPs created
@@ -1616,8 +1523,8 @@ class SimStats:
 
         # Track path metrics once (using first lightpath for path/hops)
         first_lp_details = self._get_lightpath_details_new(result, network_state)
-        if first_lp_details.get('path'):
-            path = first_lp_details['path']
+        if first_lp_details.get("path"):
+            path = first_lp_details["path"]
             num_hops = len(path) - 1
             self.stats_props.hops_list.append(float(num_hops))
 
@@ -1627,20 +1534,21 @@ class SimStats:
 
         # Track path index from allocation result
         # Count when ANY lightpath is used (created or groomed) - matches legacy modulation_list check
-        path_idx = getattr(result, 'path_index', 0)
-        has_lightpaths = result.lightpaths_created or getattr(result, 'lightpaths_groomed', ())
-        path_idx_updated = False
+        path_idx = getattr(result, "path_index", 0)
+        has_lightpaths = result.lightpaths_created or getattr(result, "lightpaths_groomed", ())
         if has_lightpaths and 0 <= path_idx < len(self.stats_props.path_index_list):
             self.stats_props.path_index_list[path_idx] += 1
-            path_idx_updated = True
 
         # Track demand realization ratio for partial grooming (matches legacy behavior)
         if self.engine_props.get("can_partially_serve"):
-            bandwidth_key = str(request.bandwidth_gbps) if hasattr(request, 'bandwidth_gbps') else None
+            bandwidth_key = str(request.bandwidth_gbps) if hasattr(request, "bandwidth_gbps") else None
             if bandwidth_key and bandwidth_key in self.stats_props.demand_realization_ratio:
                 original_bw = int(request.bandwidth_gbps)
                 # Calculate served bandwidth from allocation result
-                served_bw = int(result.total_bandwidth_allocated_gbps) if result.total_bandwidth_allocated_gbps else original_bw
+                if result.total_bandwidth_allocated_gbps:
+                    served_bw = int(result.total_bandwidth_allocated_gbps)
+                else:
+                    served_bw = original_bw
                 realization_ratio = served_bw / original_bw if original_bw > 0 else 0
                 self.stats_props.demand_realization_ratio[bandwidth_key].append(realization_ratio)
                 self.stats_props.demand_realization_ratio["overall"].append(realization_ratio)
@@ -1656,7 +1564,7 @@ class SimStats:
             # Legacy's _update_request_statistics adds SNR to snr_list before SNR recheck,
             # and if recheck fails, the value stays. This causes snr_list[i] to return
             # "wrong" values from failed attempts.
-            failed_snr = list(getattr(result, 'failed_attempt_snr_values', ()) or ())
+            failed_snr = list(getattr(result, "failed_attempt_snr_values", ()) or ())
 
             for lp_idx, lp_id in enumerate(result.lightpaths_created):
                 lp = network_state.get_lightpath(lp_id)
@@ -1664,19 +1572,19 @@ class SimStats:
                     continue
 
                 # Track core usage (like legacy _handle_iter_lists)
-                core = getattr(lp, 'core', None)
+                core = getattr(lp, "core", None)
                 if core is not None:
                     if core not in self.stats_props.cores_dict:
                         self.stats_props.cores_dict[core] = 0
                     self.stats_props.cores_dict[core] += 1
 
                 # Get lightpath details for modulation tracking
-                modulation = getattr(lp, 'modulation', None)
-                band = getattr(lp, 'band', None)
-                snr_db = getattr(lp, 'snr_db', None)
-                lp_path = getattr(lp, 'path', None)
+                modulation = getattr(lp, "modulation", None)
+                band = getattr(lp, "band", None)
+                snr_db = getattr(lp, "snr_db", None)
+                lp_path = getattr(lp, "path", None)
                 # Use LIGHTPATH bandwidth, not request bandwidth (critical for slicing)
-                lp_bandwidth = getattr(lp, 'total_bandwidth_gbps', None)
+                lp_bandwidth = getattr(lp, "total_bandwidth_gbps", None)
 
                 # Legacy compatibility: Use failed attempt SNR if available
                 # Legacy's snr_list has failed attempt values at lower indices
@@ -1689,8 +1597,8 @@ class SimStats:
 
                 # Get path weight from lightpath (routing weight, not raw length)
                 # This preserves the routing algorithm's weight (e.g., XT-aware normalized cost)
-                path_weight = getattr(lp, 'path_weight_km', None)
-                num_hops = len(lp_path) - 1 if lp_path else None
+                path_weight = getattr(lp, "path_weight_km", None)
+                lp_num_hops = len(lp_path) - 1 if lp_path else None
 
                 # Track modulation with correct lightpath bandwidth
                 if modulation:
@@ -1699,7 +1607,7 @@ class SimStats:
                         bandwidth_gbps=lp_bandwidth,
                         band=band,
                         path_weight=path_weight,
-                        num_hops=num_hops,
+                        num_hops=lp_num_hops,
                         snr_value=snr_for_tracking,
                     )
 
@@ -1712,22 +1620,22 @@ class SimStats:
                 self.stats_props.snr_list.append(mean(request_snr_values))
         else:
             # Fallback for non-lightpath allocations (shouldn't happen often)
-            if first_lp_details.get('modulation'):
-                bandwidth = request.bandwidth_gbps if hasattr(request, 'bandwidth_gbps') else None
+            if first_lp_details.get("modulation"):
+                bandwidth = request.bandwidth_gbps if hasattr(request, "bandwidth_gbps") else None
                 # Use stored routing weight, not recalculated path length
-                path_weight = first_lp_details.get('path_weight_km')
-                num_hops = len(first_lp_details['path']) - 1 if first_lp_details.get('path') else None
+                path_weight = first_lp_details.get("path_weight_km")
+                fallback_num_hops = len(first_lp_details["path"]) - 1 if first_lp_details.get("path") else None
                 self._increment_modulation_count(
-                    first_lp_details['modulation'],
+                    first_lp_details["modulation"],
                     bandwidth_gbps=bandwidth,
-                    band=first_lp_details.get('band'),
+                    band=first_lp_details.get("band"),
                     path_weight=path_weight,
-                    num_hops=num_hops,
-                    snr_value=first_lp_details.get('snr_db'),
+                    num_hops=fallback_num_hops,
+                    snr_value=first_lp_details.get("snr_db"),
                 )
 
-            if first_lp_details.get('snr_db') is not None:
-                self.stats_props.snr_list.append(first_lp_details['snr_db'])
+            if first_lp_details.get("snr_db") is not None:
+                self.stats_props.snr_list.append(first_lp_details["snr_db"])
 
     def _get_lightpath_details_new(
         self,
@@ -1737,23 +1645,23 @@ class SimStats:
         """
         Extract lightpath details from result and network state.
 
-        Args:
-            result: AllocationResult
-            network_state: NetworkState
-
-        Returns:
-            Dict with path, modulation, snr_db, etc.
+        :param result: AllocationResult from orchestrator
+        :type result: Any
+        :param network_state: NetworkState for lightpath lookup
+        :type network_state: Any
+        :return: Dict with path, modulation, snr_db, etc.
+        :rtype: dict[str, Any]
         """
         details: dict[str, Any] = {
-            'path': None,
-            'modulation': None,
-            'snr_db': None,
-            'crosstalk_db': None,
-            'core': None,
-            'band': None,
-            'start_slot': None,
-            'end_slot': None,
-            'path_weight_km': None,
+            "path": None,
+            "modulation": None,
+            "snr_db": None,
+            "crosstalk_db": None,
+            "core": None,
+            "band": None,
+            "start_slot": None,
+            "end_slot": None,
+            "path_weight_km": None,
         }
 
         # Try to get from lightpaths_created
@@ -1762,22 +1670,22 @@ class SimStats:
             lp = network_state.get_lightpath(lp_id)
 
             if lp is not None:
-                details['path'] = getattr(lp, 'path', None)
-                details['modulation'] = getattr(lp, 'modulation', None)
-                details['snr_db'] = getattr(lp, 'snr_db', None)
-                details['crosstalk_db'] = getattr(lp, 'crosstalk_db', None)
-                details['core'] = getattr(lp, 'core', None)
-                details['band'] = getattr(lp, 'band', None)
-                details['start_slot'] = getattr(lp, 'start_slot', None)
-                details['end_slot'] = getattr(lp, 'end_slot', None)
-                details['path_weight_km'] = getattr(lp, 'path_weight_km', None)
+                details["path"] = getattr(lp, "path", None)
+                details["modulation"] = getattr(lp, "modulation", None)
+                details["snr_db"] = getattr(lp, "snr_db", None)
+                details["crosstalk_db"] = getattr(lp, "crosstalk_db", None)
+                details["core"] = getattr(lp, "core", None)
+                details["band"] = getattr(lp, "band", None)
+                details["start_slot"] = getattr(lp, "start_slot", None)
+                details["end_slot"] = getattr(lp, "end_slot", None)
+                details["path_weight_km"] = getattr(lp, "path_weight_km", None)
 
         # Fall back to result fields if lightpath lookup failed
-        if details['modulation'] is None and result.modulations:
-            details['modulation'] = result.modulations[0]
+        if details["modulation"] is None and result.modulations:
+            details["modulation"] = result.modulations[0]
 
-        if details['snr_db'] is None and result.snr_values:
-            details['snr_db'] = result.snr_values[0]
+        if details["snr_db"] is None and result.snr_values:
+            details["snr_db"] = result.snr_values[0]
 
         return details
 
@@ -1785,32 +1693,30 @@ class SimStats:
         """
         Map BlockReason enum to stats dict key.
 
-        Args:
-            reason: BlockReason enum value
+        SNR_RECHECK_FAIL maps to 'xt_threshold' for backwards compatibility.
 
-        Returns:
-            Legacy stats dict key (distance, congestion, xt_threshold, failure)
-
-        P3.6 Gap 5 Coverage:
-            - SNR_RECHECK_FAIL maps to 'xt_threshold' for backwards compat
+        :param reason: BlockReason enum value
+        :type reason: Any
+        :return: Legacy stats dict key (distance, congestion, xt_threshold, failure)
+        :rtype: str
         """
         from fusion.domain.request import BlockReason
 
         mapping = {
-            BlockReason.NO_PATH: 'distance',
-            BlockReason.DISTANCE: 'distance',
-            BlockReason.CONGESTION: 'congestion',
-            BlockReason.SNR_THRESHOLD: 'xt_threshold',
-            BlockReason.SNR_RECHECK_FAIL: 'xt_threshold',  # P3.6 Gap 5
-            BlockReason.XT_THRESHOLD: 'xt_threshold',
-            BlockReason.FAILURE: 'failure',
-            BlockReason.LINK_FAILURE: 'failure',
-            BlockReason.NODE_FAILURE: 'failure',
-            BlockReason.GROOMING_FAIL: 'congestion',
-            BlockReason.SLICING_FAIL: 'congestion',
-            BlockReason.PROTECTION_FAIL: 'congestion',
+            BlockReason.NO_PATH: "distance",
+            BlockReason.DISTANCE: "distance",
+            BlockReason.CONGESTION: "congestion",
+            BlockReason.SNR_THRESHOLD: "xt_threshold",
+            BlockReason.SNR_RECHECK_FAIL: "xt_threshold",  # P3.6 Gap 5
+            BlockReason.XT_THRESHOLD: "xt_threshold",
+            BlockReason.FAILURE: "failure",
+            BlockReason.LINK_FAILURE: "failure",
+            BlockReason.NODE_FAILURE: "failure",
+            BlockReason.GROOMING_FAIL: "congestion",
+            BlockReason.SLICING_FAIL: "congestion",
+            BlockReason.PROTECTION_FAIL: "congestion",
         }
-        return mapping.get(reason, 'congestion')
+        return mapping.get(reason, "congestion")
 
     def _calculate_path_length_new(
         self,
@@ -1820,12 +1726,12 @@ class SimStats:
         """
         Calculate total path length in km.
 
-        Args:
-            path: Tuple or list of node IDs
-            network_state: NetworkState with topology
-
-        Returns:
-            Total path length in km or None if cannot calculate
+        :param path: Tuple or list of node IDs
+        :type path: tuple[str, ...] | list[str]
+        :param network_state: NetworkState with topology
+        :type network_state: Any
+        :return: Total path length in km or None if cannot calculate
+        :rtype: float | None
         """
         if len(path) < 2:
             return 0.0
@@ -1833,7 +1739,7 @@ class SimStats:
         if network_state is None:
             return None
 
-        topology = getattr(network_state, 'topology', None)
+        topology = getattr(network_state, "topology", None)
         if topology is None:
             return None
 
@@ -1842,10 +1748,10 @@ class SimStats:
             u, v = path[i], path[i + 1]
             if topology.has_edge(u, v):
                 edge_data = topology.edges[u, v]
-                total_length += edge_data.get('length', edge_data.get('weight', 0.0))
+                total_length += edge_data.get("length", edge_data.get("weight", 0.0))
             elif topology.has_edge(v, u):
                 edge_data = topology.edges[v, u]
-                total_length += edge_data.get('length', edge_data.get('weight', 0.0))
+                total_length += edge_data.get("length", edge_data.get("weight", 0.0))
 
         return total_length
 
@@ -1861,23 +1767,16 @@ class SimStats:
         Called when partial grooming succeeds but new lightpath allocation
         fails, requiring rollback of the groomed bandwidth.
 
-        Args:
-            request: The Request being processed
-            rolled_back_lightpath_ids: IDs of lightpaths that had grooming rolled back
-            network_state: Current NetworkState
-
-        P3.6 Gap 1 Coverage:
-            - Adjusts utilization tracking when grooming is rolled back
-            - Does NOT add utilization entries for rolled-back allocations
+        :param request: The Request being processed
+        :type request: Any
+        :param rolled_back_lightpath_ids: IDs of lightpaths that had grooming rolled back
+        :type rolled_back_lightpath_ids: list[int]
+        :param network_state: Current NetworkState
+        :type network_state: Any
         """
-        # For P3.6 Gap 1: We don't need to undo utilization here because
-        # utilization is only tracked at release time. The grooming rollback
-        # in the orchestrator restores the bandwidth to the lightpath,
-        # so when the lightpath eventually releases, it will have the
-        # correct utilization.
         logger.debug(
             "Grooming rollback recorded for request %s on lightpaths %s",
-            getattr(request, 'request_id', 'unknown'),
+            getattr(request, "request_id", "unknown"),
             rolled_back_lightpath_ids,
         )
 
@@ -1886,20 +1785,20 @@ class SimStats:
         network_state: Any,  # fusion.domain.network_state.NetworkState
     ) -> None:
         """
-        Take periodic network snapshot (new orchestrator path).
+        Take periodic network snapshot (orchestrator path).
 
         Snapshots are taken at configurable intervals to track simulation
         progress over time.
 
-        Args:
-            network_state: Current NetworkState for spectrum data
+        :param network_state: Current NetworkState for spectrum data
+        :type network_state: Any
         """
         # Check if snapshots are enabled
         if not self.engine_props.get("save_snapshots", False):
             return
 
         # Check if it's time for a snapshot
-        snapshot_interval = getattr(self, 'snapshot_interval', 100)
+        snapshot_interval = getattr(self, "snapshot_interval", 100)
         if self.total_requests % snapshot_interval != 0:
             return
 
@@ -1908,11 +1807,9 @@ class SimStats:
             return
 
         snapshot = {
-            'request_number': self.total_requests,
-            'blocked_count': self.blocked_requests,
-            'spectrum_utilization': self._calculate_spectrum_utilization_new(
-                network_state
-            ),
+            "request_number": self.total_requests,
+            "blocked_count": self.blocked_requests,
+            "spectrum_utilization": self._calculate_spectrum_utilization_new(network_state),
         }
 
         self.stats_props.snapshots_dict[self.total_requests] = snapshot
@@ -1924,11 +1821,10 @@ class SimStats:
         """
         Calculate overall spectrum utilization from network state.
 
-        Args:
-            network_state: Current NetworkState
-
-        Returns:
-            Utilization as fraction (0.0 to 1.0)
+        :param network_state: Current NetworkState
+        :type network_state: Any
+        :return: Utilization as fraction (0.0 to 1.0)
+        :rtype: float
         """
         if network_state is None:
             return 0.0
@@ -1937,15 +1833,15 @@ class SimStats:
         used_slots = 0
 
         # Get spectrum utilization from network state
-        network_spectrum_dict = getattr(network_state, 'network_spectrum_dict', None)
+        network_spectrum_dict = getattr(network_state, "network_spectrum_dict", None)
         if network_spectrum_dict is None:
             return 0.0
 
-        for link_key, link_data in network_spectrum_dict.items():
-            cores_matrix = link_data.get('cores_matrix', {})
-            for band, cores in cores_matrix.items():
+        for _link_key, link_data in network_spectrum_dict.items():
+            cores_matrix = link_data.get("cores_matrix", {})
+            for _band, cores in cores_matrix.items():
                 for core_spectrum in cores:
-                    if hasattr(core_spectrum, '__len__'):
+                    if hasattr(core_spectrum, "__len__"):
                         total_slots += len(core_spectrum)
                         used_slots += sum(1 for s in core_spectrum if s != 0)
 
@@ -1959,11 +1855,12 @@ class SimStats:
         blocked: bool,
     ) -> None:
         """
-        Record bandwidth for blocking statistics (new path).
+        Record bandwidth for blocking statistics (orchestrator path).
 
-        Args:
-            bandwidth_gbps: Bandwidth of the request
-            blocked: True if request was blocked
+        :param bandwidth_gbps: Bandwidth of the request
+        :type bandwidth_gbps: int
+        :param blocked: True if request was blocked
+        :type blocked: bool
         """
         # Track total requested (using existing bit_rate_request)
         self.bit_rate_request += bandwidth_gbps
@@ -1987,18 +1884,23 @@ class SimStats:
         snr_value: float | None = None,
     ) -> None:
         """
-        Increment modulation usage count and track detailed metrics (new orchestrator path).
+        Increment modulation usage count and track detailed metrics (orchestrator path).
 
         Updates modulations_used_dict and weights_dict to track modulation usage including
         length, hop, SNR, and XT cost statistics per band.
 
-        Args:
-            modulation: Modulation format name (e.g., 'QPSK', '16-QAM')
-            bandwidth_gbps: Optional bandwidth for bandwidth-keyed tracking
-            band: Optional band for band-specific tracking
-            path_weight: Path length/weight in km for length tracking
-            num_hops: Number of hops for hop tracking
-            snr_value: SNR or XT cost value for quality tracking
+        :param modulation: Modulation format name (e.g., 'QPSK', '16-QAM')
+        :type modulation: str
+        :param bandwidth_gbps: Optional bandwidth for bandwidth-keyed tracking
+        :type bandwidth_gbps: int | None
+        :param band: Optional band for band-specific tracking
+        :type band: str | None
+        :param path_weight: Path length/weight in km for length tracking
+        :type path_weight: float | None
+        :param num_hops: Number of hops for hop tracking
+        :type num_hops: int | None
+        :param snr_value: SNR or XT cost value for quality tracking
+        :type snr_value: float | None
         """
         if modulation is None:
             return
@@ -2020,13 +1922,9 @@ class SimStats:
                 weights_dict = self.stats_props.weights_dict
                 if bandwidth_key in weights_dict:
                     if modulation in weights_dict[bandwidth_key]:
-                        weights_dict[bandwidth_key][modulation].append(
-                            round(float(path_weight), 2)
-                        )
+                        weights_dict[bandwidth_key][modulation].append(round(float(path_weight), 2))
                     else:
-                        weights_dict[bandwidth_key][modulation] = [
-                            round(float(path_weight), 2)
-                        ]
+                        weights_dict[bandwidth_key][modulation] = [round(float(path_weight), 2)]
 
         # Track by modulation name with band
         data_mod_dict = mod_dict.get(modulation)

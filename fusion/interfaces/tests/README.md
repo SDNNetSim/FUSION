@@ -2,7 +2,7 @@
 
 ## Test Coverage
 
-This test suite provides comprehensive unit testing for the FUSION interfaces module, which defines abstract base classes for all pluggable components in the FUSION architecture.
+This test suite provides comprehensive unit testing for the FUSION interfaces module, which defines abstract base classes and Protocol classes for all pluggable components in the FUSION architecture.
 
 ### Modules Tested
 
@@ -11,6 +11,8 @@ This test suite provides comprehensive unit testing for the FUSION interfaces mo
 - **spectrum.py**: `AbstractSpectrumAssigner` - Abstract base class for spectrum assignment algorithms
 - **snr.py**: `AbstractSNRMeasurer` - Abstract base class for SNR measurement algorithms
 - **factory.py**: `AlgorithmFactory` and `SimulationPipeline` - Factory classes for creating algorithm instances
+- **control_policy.py**: `ControlPolicy` protocol and `PolicyAction` type alias - Unified path selection interface
+- **pipelines.py**: Pipeline Protocols - `RoutingPipeline`, `SpectrumPipeline`, `GroomingPipeline`, `SNRPipeline`, `SlicingPipeline`
 
 ### Test Files
 
@@ -19,6 +21,8 @@ This test suite provides comprehensive unit testing for the FUSION interfaces mo
 - `test_spectrum.py` - Tests for AbstractSpectrumAssigner
 - `test_snr.py` - Tests for AbstractSNRMeasurer
 - `test_factory.py` - Tests for AlgorithmFactory and SimulationPipeline
+- `test_control_policy.py` - Tests for ControlPolicy protocol and PolicyAction
+- `test_pipelines.py` - Tests for pipeline protocols
 
 ## Running Tests
 
@@ -53,6 +57,7 @@ All tests are **unit tests** that test individual components in isolation:
 - **Signature Tests**: Validate method signatures and return types
 - **Concrete Implementation Tests**: Test that properly implemented concrete classes can be instantiated
 - **Factory Tests**: Test algorithm creation and pipeline initialization
+- **Protocol Tests**: Test runtime_checkable protocols and isinstance() checks
 - **Edge Case Tests**: Test boundary conditions and error handling
 
 ## Test Organization
@@ -113,6 +118,22 @@ Each test file follows the AAA (Arrange-Act-Assert) pattern and is organized int
 - `TestCreateSimulationPipelineFunction` - Tests factory function
 - `TestSimulationPipelineEdgeCases` - Tests edge cases
 
+### test_control_policy.py
+- `TestControlPolicyProtocol` - Tests ControlPolicy protocol isinstance() checks
+  - Valid implementations pass isinstance() check
+  - Missing methods fail isinstance() check
+  - Minimal and stateful implementations work correctly
+- `TestPolicyActionTypeAlias` - Tests PolicyAction type alias is int
+
+### test_pipelines.py
+- `TestProtocolImports` - Tests protocols are importable from correct locations
+- `TestRuntimeCheckableComplete` - Tests runtime_checkable for complete implementations
+- `TestRuntimeCheckableIncomplete` - Tests runtime_checkable fails for incomplete implementations
+- `TestProtocolMethodExistence` - Tests protocols have expected methods defined
+- `TestTypeAnnotations` - Tests protocols can be used as type hints
+- `TestProtocolDocstrings` - Tests protocols have proper documentation
+- `TestWrongClassNotProtocol` - Tests unrelated classes don't match protocols
+
 ## Key Features Tested
 
 ### Abstract Interface Contracts
@@ -120,6 +141,12 @@ Each test file follows the AAA (Arrange-Act-Assert) pattern and is organized int
 - Abstract classes cannot be instantiated directly
 - All required methods are present and correctly marked
 - Method signatures match specifications
+
+### Protocol Compliance
+- runtime_checkable protocols support isinstance() checks
+- Complete implementations pass protocol checks
+- Incomplete implementations fail protocol checks
+- Protocols can be used as type hints
 
 ### Concrete Implementations
 - Properly implemented concrete classes can be instantiated

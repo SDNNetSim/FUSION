@@ -24,9 +24,7 @@ class SchemaValidator:
         :param schema_dir: Directory containing schema files
         :type schema_dir: str | None
         """
-        self.schema_dir = schema_dir or os.path.join(
-            os.path.dirname(__file__), "schemas"
-        )
+        self.schema_dir = schema_dir or os.path.join(os.path.dirname(__file__), "schemas")
         self.schemas: dict[str, dict[str, Any]] = {}
         self._load_schemas()
 
@@ -61,9 +59,7 @@ class SchemaValidator:
         errors = self._validate_recursive(config, schema, "")
 
         if errors:
-            raise ValidationError(
-                "Configuration validation failed:\n" + "\n".join(errors)
-            )
+            raise ValidationError("Configuration validation failed:\n" + "\n".join(errors))
 
     def _validate_recursive(self, config: Any, schema: Any, path: str) -> list[str]:
         errors_list: list[str] = []
@@ -73,32 +69,22 @@ class SchemaValidator:
                 errors_list.extend(self._validate_type(config, schema, path))
 
             if "required" in schema and isinstance(config, dict):
-                errors_list.extend(
-                    self._validate_required_fields(config, schema["required"], path)
-                )
+                errors_list.extend(self._validate_required_fields(config, schema["required"], path))
 
             if "properties" in schema and isinstance(config, dict):
                 for prop, prop_schema in schema["properties"].items():
                     if prop in config:
                         prop_path = f"{path}.{prop}" if path else prop
-                        errors_list.extend(
-                            self._validate_recursive(
-                                config[prop], prop_schema, prop_path
-                            )
-                        )
+                        errors_list.extend(self._validate_recursive(config[prop], prop_schema, prop_path))
 
             if "items" in schema and isinstance(config, list):
                 for i, item in enumerate(config):
                     item_path = f"{path}[{i}]" if path else f"[{i}]"
-                    errors_list.extend(
-                        self._validate_recursive(item, schema["items"], item_path)
-                    )
+                    errors_list.extend(self._validate_recursive(item, schema["items"], item_path))
 
         return errors_list
 
-    def _validate_type(
-        self, value: Any, schema: dict[str, Any], path: str
-    ) -> list[str]:
+    def _validate_type(self, value: Any, schema: dict[str, Any], path: str) -> list[str]:
         errors_list: list[str] = []
         expected_type = schema["type"]
 
@@ -116,35 +102,25 @@ class SchemaValidator:
             expected_python_type = type_map[expected_type]
             if not isinstance(value, expected_python_type):
                 actual_type = type(value).__name__
-                errors_list.append(
-                    f"{path}: Expected {expected_type}, got {actual_type}"
-                )
+                errors_list.append(f"{path}: Expected {expected_type}, got {actual_type}")
 
         # Validate numeric constraints
         if expected_type == "number" and "minimum" in schema:
             if value < schema["minimum"]:
-                errors_list.append(
-                    f"{path}: Value {value} is below minimum {schema['minimum']}"
-                )
+                errors_list.append(f"{path}: Value {value} is below minimum {schema['minimum']}")
 
         if expected_type == "number" and "maximum" in schema:
             if value > schema["maximum"]:
-                errors_list.append(
-                    f"{path}: Value {value} is above maximum {schema['maximum']}"
-                )
+                errors_list.append(f"{path}: Value {value} is above maximum {schema['maximum']}")
 
         # Validate string enumeration
         if expected_type == "string" and "enum" in schema:
             if value not in schema["enum"]:
-                errors_list.append(
-                    f"{path}: Value '{value}' not in allowed values: {schema['enum']}"
-                )
+                errors_list.append(f"{path}: Value '{value}' not in allowed values: {schema['enum']}")
 
         return errors_list
 
-    def _validate_required_fields(
-        self, config: dict[str, Any], required: list[str], path: str
-    ) -> list[str]:
+    def _validate_required_fields(self, config: dict[str, Any], required: list[str], path: str) -> list[str]:
         errors_list: list[str] = []
         for field in required:
             if field not in config:
@@ -273,7 +249,6 @@ def _validate_rl_policy_config(config: dict[str, Any]) -> None:
     policy_type = rl_settings.get("policy_type", "ksp_ff")
 
     # Validate model paths for RL policies
-    # TODO: Variable naming...
     if policy_type == "bc":
         if "bc_model_path" not in rl_settings:
             raise ValidationError("BC policy requires 'bc_model_path'")

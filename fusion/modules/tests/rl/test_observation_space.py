@@ -30,9 +30,7 @@ def _engine_obj(key: str = "obs_1") -> SimpleNamespace:
     )
 
 
-def _fake_topo(
-    *_: object, **__: object
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, None]:
+def _fake_topo(*_: object, **__: object) -> tuple[np.ndarray, np.ndarray, np.ndarray, None]:
     """ei(2,5) edge_idx, ea(5,1) edge_attr, xf(4,3) node_feat, _."""
     ei = np.zeros((2, 5), dtype=int)
     ea = np.zeros((5, 1), dtype=float)
@@ -66,9 +64,7 @@ class TestGetObservationSpace:
         with mock.patch.object(obs_mod, "spaces") as mock_spaces:
             mock_spaces.MultiBinary.return_value = "mb"
             mock_spaces.Box.return_value = "bx"
-            space = obs_mod.get_observation_space(
-                _rl_props(), _engine_obj("obs_1_graph")
-            )
+            space = obs_mod.get_observation_space(_rl_props(), _engine_obj("obs_1_graph"))
 
         graph_keys = {"x", "edge_index", "edge_attr", "path_masks"}
         assert graph_keys.issubset(space)
@@ -93,9 +89,7 @@ class TestFragmentationTracker:
         assert frag["fragmentation"][0] == pytest.approx(64.0)
         assert frag["path_frag"][0] == pytest.approx(32.0)
 
-    def test_path_len_one_returns_zero(
-        self, tracker: obs_mod.FragmentationTracker
-    ) -> None:
+    def test_path_len_one_returns_zero(self, tracker: obs_mod.FragmentationTracker) -> None:
         """Single-node path yields zero fragmentation."""
         frag = tracker.get_fragmentation([0], core_index=0)
         assert frag["fragmentation"][0] == 0.0

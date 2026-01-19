@@ -100,10 +100,7 @@ class MatplotlibRenderer(PlotRendererPort):
         try:
             # Validate format
             if not self.supports_format(format):
-                raise RenderError(
-                    f"Unsupported format: {format}. "
-                    f"Supported: {', '.join(self.SUPPORTED_FORMATS)}"
-                )
+                raise RenderError(f"Unsupported format: {format}. Supported: {', '.join(self.SUPPORTED_FORMATS)}")
 
             # Create figure
             figsize = specification.metadata.get("figsize", (10, 6))

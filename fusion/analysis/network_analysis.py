@@ -3,6 +3,15 @@ Network analysis utilities for FUSION.
 
 Provides functions for analyzing network topology, link usage,
 and other network-related metrics.
+
+TODO (legacy migration): This module currently expects the legacy dict format
+for network_spectrum (dict mapping (src, dst) tuples to dicts with 'cores_matrix',
+'usage_count', 'throughput', etc.). This format is provided by
+NetworkState.network_spectrum_dict for backwards compatibility with v5.5.0.
+
+This module should be updated to work directly with NetworkState and LinkSpectrum
+objects (v6.1.0) instead of raw dicts. See fusion/domain/network_state.py for
+the new data structures.
 """
 
 from typing import Any
@@ -25,7 +34,6 @@ class NetworkAnalyzer:
     def __init__(self) -> None:
         """Initialize the network analyzer."""
 
-    # TODO (centralized state): network_spectrum
     @staticmethod
     def get_link_usage_summary(network_spectrum: dict) -> dict[str, dict[str, Any]]:
         """
@@ -37,13 +45,11 @@ class NetworkAnalyzer:
         :param network_spectrum: Network spectrum database
         :return: Dictionary mapping link identifiers to usage statistics
         """
-        # TODO (return consistency)
         usage_summary = {}
 
         for (src, dst), link_data in network_spectrum.items():
             # Create link key for this direction (src-dst format)
             link_key = f"{src}-{dst}"
-            # print('Throughput src dest -->', link_data['throughput'], src, dst)
             usage_summary[link_key] = {
                 "usage_count": link_data.get("usage_count", 0),
                 "throughput": link_data.get("throughput", 0),
@@ -54,9 +60,7 @@ class NetworkAnalyzer:
         return usage_summary
 
     @staticmethod
-    def analyze_network_congestion(
-        network_spectrum: dict, specific_paths: list | None = None
-    ) -> dict[str, Any]:
+    def analyze_network_congestion(network_spectrum: dict, specific_paths: list | None = None) -> dict[str, Any]:
         """
         Analyze network congestion levels.
 
@@ -84,21 +88,15 @@ class NetworkAnalyzer:
                 total_occupied_slots += len(np.where(core != 0)[0])
                 total_guard_slots += len(np.where(core < 0)[0])
 
-        # TODO (return consistency)
         return {
             "total_occupied_slots": total_occupied_slots,
             "total_guard_slots": total_guard_slots,
             "active_requests": len(active_requests),
             "links_analyzed": links_analyzed,
-            "avg_occupied_per_link": (
-                total_occupied_slots / links_analyzed if links_analyzed > 0 else 0
-            ),
-            "avg_guard_per_link": (
-                total_guard_slots / links_analyzed if links_analyzed > 0 else 0
-            ),
+            "avg_occupied_per_link": (total_occupied_slots / links_analyzed if links_analyzed > 0 else 0),
+            "avg_guard_per_link": (total_guard_slots / links_analyzed if links_analyzed > 0 else 0),
         }
 
-    # TODO (centralized state): network_spectrum
     @staticmethod
     def get_network_utilization_stats(network_spectrum: dict) -> dict[str, float]:
         """
@@ -133,30 +131,20 @@ class NetworkAnalyzer:
                 if core_total > 0:
                     link_utilization_list.append(core_occupied / core_total)
 
-        # TODO (return consistency): It's not obvious what overall utilization is, contains, how it's used, etc.
         overall_utilization = occupied_slots / total_slots if total_slots > 0 else 0.0
 
         return {
             "overall_utilization": overall_utilization,
-            "average_link_utilization": (
-                float(np.mean(link_utilization_list)) if link_utilization_list else 0.0
-            ),
-            "max_link_utilization": (
-                float(np.max(link_utilization_list)) if link_utilization_list else 0.0
-            ),
-            "min_link_utilization": (
-                float(np.min(link_utilization_list)) if link_utilization_list else 0.0
-            ),
+            "average_link_utilization": (float(np.mean(link_utilization_list)) if link_utilization_list else 0.0),
+            "max_link_utilization": (float(np.max(link_utilization_list)) if link_utilization_list else 0.0),
+            "min_link_utilization": (float(np.min(link_utilization_list)) if link_utilization_list else 0.0),
             "total_slots": total_slots,
             "occupied_slots": occupied_slots,
             "links_processed": len(processed_links),
         }
 
-    # TODO (centralized state): network_spectrum
     @staticmethod
-    def identify_bottleneck_links(
-        network_spectrum: dict, threshold: float = 0.8
-    ) -> list:
+    def identify_bottleneck_links(network_spectrum: dict, threshold: float = 0.8) -> list:
         """
         Identify links that are above a utilization threshold.
 
@@ -200,5 +188,4 @@ class NetworkAnalyzer:
             len(bottleneck_links),
             threshold * 100,
         )
-        # TODO (return consistency)
         return bottleneck_links

@@ -47,9 +47,7 @@ class TestAssignLinkLengths:
             node_pairs_dict: dict[str, str] = {}
 
             # Act
-            result = assign_link_lengths(
-                network_fp, node_pairs_dict, constant_weight=True
-            )
+            result = assign_link_lengths(network_fp, node_pairs_dict, constant_weight=True)
 
             # Assert
             assert result[("A", "B")] == 1.0
@@ -290,9 +288,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_usnet_loads_network_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_usnet_loads_network_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading USNet network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -309,9 +305,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_nsfnet_loads_network_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_nsfnet_loads_network_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading NSFNet network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -327,9 +321,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_const_weight_passes_constant_weight_flag(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_const_weight_passes_constant_weight_flag(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test const_weight parameter is passed to assign_link_lengths."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -383,9 +375,7 @@ class TestCreateNetwork:
         assert core_nodes == []
 
     @patch("fusion.io.structure.find_project_root")
-    def test_with_unknown_network_raises_not_implemented_error(
-        self, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_unknown_network_raises_not_implemented_error(self, mock_find_project_root: Mock) -> None:
         """Test unknown network name raises NotImplementedError."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -396,9 +386,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_base_fp_uses_custom_path(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_base_fp_uses_custom_path(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test custom base_fp is used for network files."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -414,9 +402,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_none_base_fp_uses_default_path(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_none_base_fp_uses_default_path(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test None base_fp uses default data/raw path."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -432,9 +418,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_returns_tuple_with_dict_and_list(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_returns_tuple_with_dict_and_list(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test function returns tuple of (dict, list)."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -451,9 +435,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_pan_european_network_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_pan_european_network_loads_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading Pan-European network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -468,13 +450,18 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
+    @patch("fusion.io.structure.assign_core_nodes")
     def test_with_spainbackbone30_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
+        self,
+        mock_assign_core_nodes: Mock,
+        mock_assign_link_lengths: Mock,
+        mock_find_project_root: Mock,
     ) -> None:
         """Test loading Spainbackbone30 network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
         mock_assign_link_lengths.return_value = {("S1", "S2"): 150.0}
+        mock_assign_core_nodes.return_value = ["CoreNode1", "CoreNode2"]
 
         # Act
         result = create_network("Spainbackbone30")
@@ -482,12 +469,11 @@ class TestCreateNetwork:
         # Assert
         network_dict, core_nodes = result
         assert network_dict == {("S1", "S2"): 150.0}
+        assert core_nodes == ["CoreNode1", "CoreNode2"]
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_geant_network_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_geant_network_loads_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading geant network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -502,9 +488,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_toy_network_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_toy_network_loads_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading toy_network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -519,9 +503,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_metro_net_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_metro_net_loads_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading metro_net successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -536,9 +518,7 @@ class TestCreateNetwork:
 
     @patch("fusion.io.structure.find_project_root")
     @patch("fusion.io.structure.assign_link_lengths")
-    def test_with_dt_network_loads_successfully(
-        self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_dt_network_loads_successfully(self, mock_assign_link_lengths: Mock, mock_find_project_root: Mock) -> None:
         """Test loading dt_network successfully."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"

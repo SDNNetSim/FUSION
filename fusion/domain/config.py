@@ -24,9 +24,9 @@ DEFAULT_MCI_WORST = 6.3349755556585961e-27  # Worst-case mutual coupling interfe
 DEFAULT_NSP_PER_BAND: dict[str, float] = {
     "c": 1.77,  # C-band EDFA noise figure
     "l": 1.99,  # L-band EDFA noise figure
-    "s": 2.0,   # S-band amplifier noise figure
-    "o": 2.0,   # O-band amplifier noise figure
-    "e": 2.0,   # E-band amplifier noise figure
+    "s": 2.0,  # S-band amplifier noise figure
+    "o": 2.0,  # O-band amplifier noise figure
+    "e": 2.0,  # E-band amplifier noise figure
 }
 
 # Default modulation format mappings
@@ -51,72 +51,69 @@ DEFAULT_BANDWIDTH_MAP: dict[str, int] = {
 
 @dataclass(frozen=True)
 class SimulationConfig:
-    """
-    Immutable simulation configuration.
+    """Immutable simulation configuration.
 
     This dataclass captures all simulation parameters in a typed,
     frozen structure. Once created, the configuration cannot be modified.
 
     Attributes:
-        Network Configuration:
-            network_name: Network topology identifier (e.g., "USbackbone60")
-            cores_per_link: Number of cores per fiber link (MCF support)
-            band_list: Available frequency bands as immutable tuple
-            band_slots: Slot count per band (e.g., {"c": 320, "l": 320})
-            guard_slots: Guard band slots between allocations
-
-        Topology Constraints:
-            span_length: Default span length in km
-            max_link_length: Maximum link length constraint (None = no limit)
-            max_span: Maximum spans per link (None = no limit)
-            max_transponders: Maximum transponders per node (None = no limit)
-            single_core: Force single core allocation
-
-        Traffic Configuration:
-            num_requests: Total requests to simulate
-            erlang: Traffic intensity (arrival_rate * holding_time)
-            holding_time: Mean request duration
-
-        Routing Configuration:
-            route_method: Routing algorithm name
-            k_paths: Number of candidate paths to compute
-            allocation_method: Spectrum allocation strategy
-
-        Feature Flags:
-            grooming_enabled: Enable traffic grooming
-            grooming_type: Grooming algorithm type (None if disabled)
-            slicing_enabled: Enable lightpath slicing
-            max_slices: Maximum slices per request
-            snr_enabled: Enable SNR validation
-            snr_type: SNR calculation method or None
-            snr_recheck: Re-validate SNR after allocation
-            recheck_adjacent_cores: Include adjacent cores in SNR recheck
-            recheck_crossband: Include crossband in SNR recheck
-            can_partially_serve: Allow partial bandwidth fulfillment
-
-        Protection Configuration:
-            protection_switchover_ms: Time to switch to backup path (ms)
-            restoration_latency_ms: Time to restore after failure (ms)
-
-        Physical Layer Parameters:
-            input_power: Optical input power in Watts
-            frequency_spacing: Channel spacing in Hz
-            light_frequency: Center light frequency in Hz
-            planck_constant: Planck's constant in J*s
-            noise_spectral_density: Noise spectral density
-            mci_worst: Worst-case mutual coupling interference
-            nsp_per_band: Noise spontaneous parameter per band
-
-        SNR Configuration:
-            request_bit_rate: Default request bit rate in Gb/s
-            request_snr: Default requested SNR in dB
-            snr_thresholds: SNR thresholds per modulation format
-
-        Modulation Configuration:
-            modulation_formats: Available modulation format definitions
-            mod_per_bw: Modulation formats available per bandwidth
-            mod_format_map: Mapping of format ID to format name
-            bandwidth_map: Mapping of format name to bandwidth capacity
+        network_name: Network topology identifier (e.g., "USbackbone60").
+        cores_per_link: Number of cores per fiber link (MCF support).
+        band_list: Available frequency bands as immutable tuple.
+        band_slots: Slot count per band (e.g., {"c": 320, "l": 320}).
+        guard_slots: Guard band slots between allocations.
+        span_length: Default span length in km.
+        max_link_length: Maximum link length constraint (None = no limit).
+        max_span: Maximum spans per link (None = no limit).
+        max_transponders: Maximum transponders per node (None = no limit).
+        single_core: Force single core allocation.
+        topology_info: Physical topology info for SNR calculations.
+        num_requests: Total requests to simulate.
+        erlang: Traffic intensity (arrival_rate * holding_time).
+        holding_time: Mean request duration.
+        route_method: Routing algorithm name.
+        k_paths: Number of candidate paths to compute.
+        allocation_method: Spectrum allocation strategy.
+        grooming_enabled: Enable traffic grooming.
+        grooming_type: Grooming algorithm type (None if disabled).
+        slicing_enabled: Enable lightpath slicing.
+        max_slices: Maximum slices per request.
+        snr_enabled: Enable SNR validation.
+        snr_type: SNR calculation method or None.
+        snr_recheck: Re-validate SNR after allocation.
+        recheck_adjacent_cores: Include adjacent cores in SNR recheck.
+        recheck_crossband: Include crossband in SNR recheck.
+        can_partially_serve: Allow partial bandwidth fulfillment.
+        fixed_grid: True for fixed grid, False for flexi-grid.
+        spectrum_priority: Band selection priority ("BSC", "CSB", or None).
+        multi_fiber: True for multi-fiber, False for multi-core fiber.
+        dynamic_lps: True for dynamic lightpath slicing mode.
+        protection_switchover_ms: Time to switch to backup path (ms).
+        restoration_latency_ms: Time to restore after failure (ms).
+        bw_per_slot: Bandwidth per slot in GHz.
+        input_power: Optical input power in Watts.
+        frequency_spacing: Channel spacing in Hz.
+        light_frequency: Center light frequency in Hz.
+        planck_constant: Planck's constant in J*s.
+        noise_spectral_density: Noise spectral density.
+        mci_worst: Worst-case mutual coupling interference.
+        nsp_per_band: Noise spontaneous parameter per band.
+        request_bit_rate: Default request bit rate in Gb/s.
+        request_snr: Default requested SNR in dB.
+        snr_thresholds: SNR thresholds per modulation format.
+        phi: SNR phi parameter per modulation format.
+        egn_model: Use EGN model for SNR calculation.
+        xt_type: Crosstalk type.
+        beta: SNR beta parameter.
+        theta: SNR theta parameter.
+        bi_directional: Bi-directional SNR calculation.
+        xt_noise: Include crosstalk noise.
+        requested_xt: Requested crosstalk per format.
+        modulation_formats: Available modulation format definitions.
+        mod_per_bw: Modulation formats available per bandwidth.
+        mod_format_map: Mapping of format ID to format name.
+        bandwidth_map: Mapping of format name to bandwidth capacity.
+        pre_calc_mod_selection: Use pre-calculated modulation selection.
 
     Example:
         >>> config = SimulationConfig.from_engine_props(engine_props)
@@ -199,9 +196,7 @@ class SimulationConfig:
     planck_constant: float = DEFAULT_PLANCK_CONSTANT
     noise_spectral_density: float = 1.8
     mci_worst: float = DEFAULT_MCI_WORST
-    nsp_per_band: dict[str, float] = field(
-        default_factory=lambda: dict(DEFAULT_NSP_PER_BAND)
-    )
+    nsp_per_band: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_NSP_PER_BAND))
 
     # =========================================================================
     # SNR Configuration (from SNRProps)
@@ -223,12 +218,8 @@ class SimulationConfig:
     # =========================================================================
     modulation_formats: dict[str, Any] = field(default_factory=dict)
     mod_per_bw: dict[str, Any] = field(default_factory=dict)
-    mod_format_map: dict[int, str] = field(
-        default_factory=lambda: dict(DEFAULT_MOD_FORMAT_MAP)
-    )
-    bandwidth_map: dict[str, int] = field(
-        default_factory=lambda: dict(DEFAULT_BANDWIDTH_MAP)
-    )
+    mod_format_map: dict[int, str] = field(default_factory=lambda: dict(DEFAULT_MOD_FORMAT_MAP))
+    bandwidth_map: dict[str, int] = field(default_factory=lambda: dict(DEFAULT_BANDWIDTH_MAP))
     pre_calc_mod_selection: bool = False  # Use pre-calculated modulation selection
 
     # =========================================================================
@@ -301,21 +292,19 @@ class SimulationConfig:
 
     # =========================================================================
     # Legacy Adapters
+    # TODO(v6.1): Remove legacy adapter methods once migration is complete.
     # =========================================================================
     @classmethod
     def from_engine_props(cls, engine_props: dict[str, Any]) -> SimulationConfig:
         """
         Create SimulationConfig from legacy engine_props dictionary.
 
-        Args:
-            engine_props: Legacy configuration dictionary
-
-        Returns:
-            New SimulationConfig instance
-
-        Raises:
-            KeyError: If required fields are missing
-            ValueError: If field values are invalid
+        :param engine_props: Legacy configuration dictionary.
+        :type engine_props: dict[str, Any]
+        :return: New SimulationConfig instance.
+        :rtype: SimulationConfig
+        :raises KeyError: If required fields are missing.
+        :raises ValueError: If field values are invalid.
         """
         # Extract band list (convert list to tuple for immutability)
         band_list_raw = engine_props.get("band_list", ["c"])
@@ -350,12 +339,8 @@ class SimulationConfig:
         mod_per_bw = engine_props.get("mod_per_bw", {})
         modulation_formats = engine_props.get("modulation_formats", {})
         snr_thresholds = engine_props.get("snr_thresholds", {})
-        mod_format_map = engine_props.get(
-            "modulation_format_mapping_dict", dict(DEFAULT_MOD_FORMAT_MAP)
-        )
-        bandwidth_map = engine_props.get(
-            "bandwidth_mapping_dict", dict(DEFAULT_BANDWIDTH_MAP)
-        )
+        mod_format_map = engine_props.get("modulation_format_mapping_dict", dict(DEFAULT_MOD_FORMAT_MAP))
+        bandwidth_map = engine_props.get("bandwidth_mapping_dict", dict(DEFAULT_BANDWIDTH_MAP))
 
         # Extract physical layer parameters
         nsp_per_band = engine_props.get("nsp", dict(DEFAULT_NSP_PER_BAND))
@@ -399,22 +384,14 @@ class SimulationConfig:
             multi_fiber=engine_props.get("multi_fiber", False),
             dynamic_lps=engine_props.get("dynamic_lps", False),
             # Protection
-            protection_switchover_ms=engine_props.get(
-                "protection_switchover_ms", 50.0
-            ),
+            protection_switchover_ms=engine_props.get("protection_switchover_ms", 50.0),
             restoration_latency_ms=engine_props.get("restoration_latency_ms", 100.0),
             # Physical layer
             bw_per_slot=engine_props.get("bw_per_slot", 12.5),
             input_power=engine_props.get("input_power", DEFAULT_INPUT_POWER),
-            frequency_spacing=engine_props.get(
-                "frequency_spacing", DEFAULT_FREQUENCY_SPACING
-            ),
-            light_frequency=engine_props.get(
-                "light_frequency", DEFAULT_LIGHT_FREQUENCY
-            ),
-            planck_constant=engine_props.get(
-                "planck_constant", DEFAULT_PLANCK_CONSTANT
-            ),
+            frequency_spacing=engine_props.get("frequency_spacing", DEFAULT_FREQUENCY_SPACING),
+            light_frequency=engine_props.get("light_frequency", DEFAULT_LIGHT_FREQUENCY),
+            planck_constant=engine_props.get("planck_constant", DEFAULT_PLANCK_CONSTANT),
             noise_spectral_density=engine_props.get("noise_spectral_density", 1.8),
             mci_worst=engine_props.get("mci_worst", DEFAULT_MCI_WORST),
             nsp_per_band=nsp_per_band,
@@ -442,8 +419,8 @@ class SimulationConfig:
         """
         Convert to legacy engine_props dictionary format.
 
-        Returns:
-            Dictionary compatible with legacy engine_props consumers
+        :return: Dictionary compatible with legacy engine_props consumers.
+        :rtype: dict[str, Any]
         """
         props: dict[str, Any] = {
             # Network

@@ -1,15 +1,43 @@
 """
 Machine Learning module for FUSION.
 
-This module provides machine learning capabilities for network optimization,
-organized by functional areas according to ML_STANDARDS.md.
+This module provides machine learning utilities for supervised/unsupervised
+learning in network optimization.
 
-⚠️ **IMPORTANT**: This module is currently experimental and not actively maintained.
-See README.md for current status and limitations.
+.. note::
+    **Status: Beta** - This module is actively used by the legacy simulation path.
+    Orchestrator integration is planned for a future version.
+
+The module provides utilities for:
+
+- Feature engineering from network states
+- Data preprocessing and transformation
+- Model persistence (save/load)
+- Model evaluation metrics
+- Visualization
+
+**Current Integration:**
+
+- Legacy path (use_orchestrator=False): Uses get_ml_obs() and load_model()
+- Orchestrator path: Not yet integrated (planned for v6.x)
+
+Enable with deploy_model=True in engine_props.
+
+**Relationship with MLControlPolicy:**
+
+This module (``fusion/modules/ml/``) and ``fusion/policies/ml_policy.py`` are
+currently **separate implementations**:
+
+- This module: utilities for legacy path (works with ``engine_props``, ``sdn_props``)
+- MLControlPolicy: path selection for orchestrator (works with ``Request``, ``NetworkState``)
+
+Both have their own feature extraction and model loading. The plan for v6.x is to
+unify these so ``MLControlPolicy`` uses this module's utilities, eliminating duplication.
+
+Note: This module provides ML utilities, not ML algorithms. You bring your own
+models (sklearn, tensorflow, pytorch, etc.) and use these utilities around them.
 """
 
-# Visualization exports
-# Evaluation exports
 from fusion.modules.ml.evaluation import (
     analyze_prediction_errors,
     compare_models,
@@ -18,16 +46,12 @@ from fusion.modules.ml.evaluation import (
     evaluate_model_stability,
     evaluate_regressor,
 )
-
-# Feature engineering exports
 from fusion.modules.ml.feature_engineering import (
     create_interaction_features,
     create_polynomial_features,
     engineer_network_features,
-    extract_ml_features,  # Previously get_ml_obs
+    extract_ml_features,
 )
-
-# Model I/O exports
 from fusion.modules.ml.model_io import (
     check_model_compatibility,
     export_model_for_deployment,
@@ -36,22 +60,18 @@ from fusion.modules.ml.model_io import (
     save_model,
     save_model_ensemble,
 )
-
-# Preprocessing exports
 from fusion.modules.ml.preprocessing import (
-    balance_training_data,  # Previously even_process_data
+    balance_training_data,
     normalize_features,
     prepare_prediction_features,
-    process_training_data,  # Previously process_data
+    process_training_data,
     split_features_labels,
 )
-
-# Registry (currently empty - see registry.py)
 from fusion.modules.ml.visualization import (
     plot_2d_clusters,
     plot_3d_clusters,
-    plot_confusion_matrix,  # Previously plot_confusion
-    plot_data_distributions,  # Previously plot_data
+    plot_confusion_matrix,
+    plot_data_distributions,
     plot_feature_importance,
 )
 
@@ -64,7 +84,7 @@ process_data = process_training_data
 even_process_data = balance_training_data
 
 # Version info
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 __all__ = [
     # Visualization

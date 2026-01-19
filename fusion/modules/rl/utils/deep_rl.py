@@ -8,9 +8,7 @@ from fusion.modules.rl.utils.general_utils import determine_model_type
 
 # NOTE: Current implementation is limited to 's1' simulation thread
 # Future versions should support multi-threaded simulation environments
-def get_algorithm_instance(
-    sim_dict: dict[str, Any], rl_props: Any, engine_props: Any
-) -> Any | None:
+def get_algorithm_instance(sim_dict: dict[str, Any], rl_props: Any, engine_props: Any) -> Any | None:
     """
     Retrieve an instance of the algorithm class associated with the model type.
 
@@ -61,9 +59,7 @@ def get_algorithm_instance(
     return None
 
 
-def get_obs_space(
-    sim_dict: dict[str, Any], rl_props: Any, engine_props: Any
-) -> Any | None:
+def get_obs_space(sim_dict: dict[str, Any], rl_props: Any, engine_props: Any) -> Any | None:
     """
     Get the observation space for the provided algorithm type.
 
@@ -77,18 +73,14 @@ def get_obs_space(
     :return: Observation space as defined by the algorithm
     :rtype: Any | None
     """
-    algorithm_instance = get_algorithm_instance(
-        sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props
-    )
+    algorithm_instance = get_algorithm_instance(sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props)
     if algorithm_instance is None:
         return None
 
     return algorithm_instance.get_obs_space()
 
 
-def get_action_space(
-    sim_dict: dict[str, Any], rl_props: Any, engine_props: Any
-) -> Any | None:
+def get_action_space(sim_dict: dict[str, Any], rl_props: Any, engine_props: Any) -> Any | None:
     """
     Get the action space for the provided algorithm type.
 
@@ -102,9 +94,7 @@ def get_action_space(
     :return: Action space as defined by the algorithm
     :rtype: Any | None
     """
-    algorithm_instance = get_algorithm_instance(
-        sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props
-    )
+    algorithm_instance = get_algorithm_instance(sim_dict=sim_dict, rl_props=rl_props, engine_props=engine_props)
     if algorithm_instance is None:
         return None
 

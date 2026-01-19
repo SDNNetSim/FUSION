@@ -211,10 +211,7 @@ class ConfigMigrator:
         for field in self.DEPRECATED_FIELDS:
             if field in old_config:
                 self.deprecated_fields.append(field)
-                self.warnings.append(
-                    f"Deprecated field '{field}' found. "
-                    f"It has been migrated to the appropriate location."
-                )
+                self.warnings.append(f"Deprecated field '{field}' found. It has been migrated to the appropriate location.")
 
         # Add migration metadata
         new_config["_migration"] = {
@@ -225,9 +222,7 @@ class ConfigMigrator:
 
         return new_config
 
-    def _migrate_plots(
-        self, plots: Any, full_config: dict[str, Any]
-    ) -> list[dict[str, Any]]:
+    def _migrate_plots(self, plots: Any, full_config: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Migrate plot configurations.
 
@@ -281,9 +276,7 @@ class ConfigMigrator:
 
         return migrated_plots
 
-    def _migrate_single_plot(
-        self, plot: dict[str, Any], full_config: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _migrate_single_plot(self, plot: dict[str, Any], full_config: dict[str, Any]) -> dict[str, Any]:
         """Migrate a single plot configuration."""
         migrated = {}
 
@@ -297,9 +290,7 @@ class ConfigMigrator:
         if "algorithms" in plot:
             migrated["algorithms"] = self._migrate_algorithms(
                 plot["algorithms"],
-                plot.get(
-                    "observation_spaces", full_config.get("observation_spaces", [])
-                ),
+                plot.get("observation_spaces", full_config.get("observation_spaces", [])),
             )
         elif "observation_spaces" in plot:
             migrated["algorithms"] = self._migrate_algorithms(
@@ -308,9 +299,7 @@ class ConfigMigrator:
             )
             self.deprecated_fields.append("observation_spaces")
         elif "algorithms" in full_config:
-            migrated["algorithms"] = self._migrate_algorithms(
-                full_config["algorithms"], full_config.get("observation_spaces", [])
-            )
+            migrated["algorithms"] = self._migrate_algorithms(full_config["algorithms"], full_config.get("observation_spaces", []))
 
         # Copy other fields
         for field in ["traffic_volumes", "title", "x_label", "y_label", "save_path"]:
@@ -331,9 +320,7 @@ class ConfigMigrator:
 
         return migrated
 
-    def _migrate_algorithms(
-        self, algorithms: list[str], observation_spaces: list[str]
-    ) -> list[str]:
+    def _migrate_algorithms(self, algorithms: list[str], observation_spaces: list[str]) -> list[str]:
         """
         Migrate algorithm specifications.
 

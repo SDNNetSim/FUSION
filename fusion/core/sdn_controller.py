@@ -6,7 +6,6 @@ allocation in software-defined optical networks.
 """
 
 import copy
-import json
 import time
 from typing import Any
 
@@ -25,7 +24,6 @@ logger = get_logger(__name__)
 
 
 class SDNController:
-
     """
     Software-defined network controller for managing network requests.
 
@@ -42,9 +40,7 @@ class SDNController:
         self.sdn_props = SDNProps()
 
         self.ai_obj = None
-        self.route_obj = Routing(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        self.route_obj = Routing(engine_props=self.engine_props, sdn_props=self.sdn_props)
         self.spectrum_obj = SpectrumAssignment(
             engine_props=self.engine_props,
             sdn_props=self.sdn_props,
@@ -55,9 +51,7 @@ class SDNController:
             sdn_props=self.sdn_props,
             spectrum_obj=self.spectrum_obj,
         )
-        self.grooming_obj = Grooming(
-            engine_props=self.engine_props, sdn_props=self.sdn_props
-        )
+        self.grooming_obj = Grooming(engine_props=self.engine_props, sdn_props=self.sdn_props)
         self.stats = None
 
         # FailureManager reference for path feasibility checking
@@ -87,21 +81,13 @@ class SDNController:
             bandwidth = int(self.sdn_props.bandwidth)  # Gbps
             data_transferred = bandwidth * duration  # Gbps·s
 
-            for source, dest in zip(
-                self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
-            ):
-                self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += (
-                    data_transferred
-                )
-                self.sdn_props.network_spectrum_dict[(dest, source)]["throughput"] += (
-                    data_transferred
-                )
+            for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False):
+                self.sdn_props.network_spectrum_dict[(source, dest)]["throughput"] += data_transferred
+                self.sdn_props.network_spectrum_dict[(dest, source)]["throughput"] += data_transferred
         except (TypeError, ValueError) as e:
             logger.warning("Throughput update skipped: %s", e)
 
-    def release(
-        self, lightpath_id: int | None = None, slicing_flag: bool = False, skip_validation: bool = False
-    ) -> None:
+    def release(self, lightpath_id: int | None = None, slicing_flag: bool = False, skip_validation: bool = False) -> None:
         """
         Remove a previously allocated request from the network.
 
@@ -111,37 +97,27 @@ class SDNController:
         :type slicing_flag: bool
         """
         if lightpath_id is None:
-            raise ValueError('Lightpath ID is none')
+            raise ValueError("Lightpath ID is none")
+        if self.sdn_props.path_list is None:
+            raise ValueError("Path list is not initialized")
 
-        for source, dest in zip(
-            self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False
-        ):
+        for source, dest in zip(self.sdn_props.path_list, self.sdn_props.path_list[1:], strict=False):
             for band in self.engine_props["band_list"]:
                 for core_num in range(self.engine_props["cores_per_link"]):
                     if self.sdn_props.network_spectrum_dict is None:
                         continue
-                    core_array = self.sdn_props.network_spectrum_dict[(source, dest)][
-                        "cores_matrix"
-                    ][band][core_num]
+                    core_array = self.sdn_props.network_spectrum_dict[(source, dest)]["cores_matrix"][band][core_num]
 
                     request_id_indices = np.where(core_array == lightpath_id)
                     guard_band_indices = np.where(core_array == (lightpath_id * -1))
 
                     for request_index in request_id_indices[0]:
-                        self.sdn_props.network_spectrum_dict[(source, dest)][
-                            "cores_matrix"
-                        ][band][core_num][request_index] = 0
-                        self.sdn_props.network_spectrum_dict[(dest, source)][
-                            "cores_matrix"
-                        ][band][core_num][request_index] = 0
+                        self.sdn_props.network_spectrum_dict[(source, dest)]["cores_matrix"][band][core_num][request_index] = 0
+                        self.sdn_props.network_spectrum_dict[(dest, source)]["cores_matrix"][band][core_num][request_index] = 0
 
                     for guard_band_index in guard_band_indices[0]:
-                        self.sdn_props.network_spectrum_dict[(source, dest)][
-                            "cores_matrix"
-                        ][band][core_num][guard_band_index] = 0
-                        self.sdn_props.network_spectrum_dict[(dest, source)][
-                            "cores_matrix"
-                        ][band][core_num][guard_band_index] = 0
+                        self.sdn_props.network_spectrum_dict[(source, dest)]["cores_matrix"][band][core_num][guard_band_index] = 0
+                        self.sdn_props.network_spectrum_dict[(dest, source)]["cores_matrix"][band][core_num][guard_band_index] = 0
 
         # Handle grooming-specific cleanup and dynamic slicing bandwidth tracking
         if lightpath_id is not None:
@@ -168,37 +144,26 @@ class SDNController:
         #         continue
         #     self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
         # Update transponders if tracking is enabled and dict is available
-        if (self.engine_props.get("transponder_usage_per_node", None) and
-            self.sdn_props.transponder_usage_dict is not None):
+        if self.engine_props.get("transponder_usage_per_node", None) and self.sdn_props.transponder_usage_dict is not None:
             for node in [self.sdn_props.source, self.sdn_props.destination]:
                 if node not in self.sdn_props.transponder_usage_dict:
                     raise KeyError(f"Node '{node}' not found in transponder usage dictionary.")
                 self.sdn_props.transponder_usage_dict[node]["available_transponder"] += 1
 
-        light_id = tuple(
-            sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]])
-        )
-
+        light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
 
         # Check if light_id exists
         if light_id not in self.sdn_props.lightpath_status_dict:
             return
 
         # Handle lightpath status dict
-        if (
-            light_id in self.sdn_props.lightpath_status_dict
-            and lightpath_id in self.sdn_props.lightpath_status_dict[light_id]
-        ):
+        if light_id in self.sdn_props.lightpath_status_dict and lightpath_id in self.sdn_props.lightpath_status_dict[light_id]:
             # Calculate bandwidth utilization stats
             try:
                 if self.sdn_props.lp_bw_utilization_dict is None:
                     return
 
                 lp_status = self.sdn_props.lightpath_status_dict[light_id][lightpath_id]
-
-                lp_bw = lp_status.get("lightpath_bandwidth", "N/A")
-                remaining_bw = lp_status.get("remaining_bandwidth", "N/A")
-                time_bw_usage = lp_status.get("time_bw_usage", {})
 
                 average_bw_usage = 0.0
                 # Note: average_bandwidth_usage may not exist yet
@@ -207,6 +172,7 @@ class SDNController:
                     from fusion.utils.network import (  # type: ignore[attr-defined]
                         average_bandwidth_usage,
                     )
+
                     if self.sdn_props.depart is not None:
                         average_bw_usage = average_bandwidth_usage(
                             bw_dict=lp_status["time_bw_usage"],
@@ -234,9 +200,7 @@ class SDNController:
             # Grooming validation - ensure no active requests (skip during rollback)
             if (
                 not skip_validation
-                and self.sdn_props.lightpath_status_dict[light_id][lightpath_id][
-                    "requests_dict"
-                ]
+                and self.sdn_props.lightpath_status_dict[light_id][lightpath_id]["requests_dict"]
                 and self.engine_props["is_grooming_enabled"]
             ):
                 raise ValueError(f"Lightpath {lightpath_id} still has active requests")
@@ -270,10 +234,7 @@ class SDNController:
         :type lightpath_id: int
         :raises BufferError: If attempting to allocate already taken spectrum
         """
-        if (
-            core_matrix[band][core_num][end_slot] != 0.0
-            or reverse_core_matrix[band][core_num][end_slot] != 0.0
-        ):
+        if core_matrix[band][core_num][end_slot] != 0.0 or reverse_core_matrix[band][core_num][end_slot] != 0.0:
             raise BufferError("Attempted to allocate a taken spectrum.")
 
         # Use lightpath_id with negative sign for guard bands
@@ -314,10 +275,7 @@ class SDNController:
         if self.sdn_props.network_spectrum_dict is None:
             raise ValueError("Network spectrum dictionary is None")
 
-        logger.debug(
-            f"Attempting allocation on path {path}: "
-            f"slots [{start_slot}:{end_slot}], band={band}, core={core_num}"
-        )
+        logger.debug(f"Attempting allocation on path {path}: slots [{start_slot}:{end_slot}], band={band}, core={core_num}")
 
         # Guard slot adjustment
         if self.engine_props["guard_slots"] != 0:
@@ -327,20 +285,12 @@ class SDNController:
 
         # Allocate on each link in the path
         for link_tuple in zip(path, path[1:], strict=False):
-            link_dict = self.sdn_props.network_spectrum_dict[
-                (link_tuple[0], link_tuple[1])
-            ]
-            reverse_link_dict = self.sdn_props.network_spectrum_dict[
-                (link_tuple[1], link_tuple[0])
-            ]
+            link_dict = self.sdn_props.network_spectrum_dict[(link_tuple[0], link_tuple[1])]
+            reverse_link_dict = self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])]
 
             # Validate spectrum is free on both directions
-            spectrum_slots_set = set(
-                link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
-            )
-            reverse_spectrum_slots_set = set(
-                reverse_link_dict["cores_matrix"][band][core_num][start_slot:end_slot]
-            )
+            spectrum_slots_set = set(link_dict["cores_matrix"][band][core_num][start_slot:end_slot])
+            reverse_spectrum_slots_set = set(reverse_link_dict["cores_matrix"][band][core_num][start_slot:end_slot])
 
             if spectrum_slots_set == {} or reverse_spectrum_slots_set == {}:
                 raise ValueError("Nothing detected on the spectrum when allocating.")
@@ -356,9 +306,7 @@ class SDNController:
             # Update usage counts
             if link_tuple in self.sdn_props.network_spectrum_dict:
                 self.sdn_props.network_spectrum_dict[link_tuple]["usage_count"] += 1
-            self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])][
-                "usage_count"
-            ] += 1
+            self.sdn_props.network_spectrum_dict[(link_tuple[1], link_tuple[0])]["usage_count"] += 1
 
             # Allocate spectrum on both directions
             core_matrix = link_dict["cores_matrix"]
@@ -406,9 +354,7 @@ class SDNController:
         # If protected, also allocate on backup path
         backup_path = self.spectrum_obj.spectrum_props.backup_path
         if backup_path is not None:
-            logger.debug(
-                f"1+1 protection: Allocating spectrum on backup path {backup_path}"
-            )
+            logger.debug(f"1+1 protection: Allocating spectrum on backup path {backup_path}")
             self._allocate_on_path(backup_path)
 
         # Track allocated request for failure handling
@@ -430,9 +376,7 @@ class SDNController:
         # Store request information
         self.sdn_props.allocated_requests[self.sdn_props.request_id] = {
             "request_id": self.sdn_props.request_id,
-            "primary_path": self.sdn_props.path_list.copy()
-            if self.sdn_props.path_list
-            else None,
+            "primary_path": self.sdn_props.path_list.copy() if self.sdn_props.path_list else None,
             "backup_path": backup_path.copy() if backup_path else None,
             "is_protected": self.sdn_props.is_protected,
             "active_path": self.sdn_props.active_path,
@@ -507,10 +451,7 @@ class SDNController:
         if not hasattr(self, "stats") or self.stats is None:
             return
 
-        if (
-            not hasattr(self.stats, "grooming_stats")
-            or self.stats.grooming_stats is None
-        ):
+        if not hasattr(self.stats, "grooming_stats") or self.stats.grooming_stats is None:
             return
 
         # Determine grooming outcome
@@ -559,9 +500,7 @@ class SDNController:
                 forced_segments=forced_segments,
                 sdn_controller=self,
             )
-        return self.slicing_manager.handle_static_slicing_direct(
-            path_list=path_list, forced_segments=forced_segments, sdn_controller=self
-        )
+        return self.slicing_manager.handle_static_slicing_direct(path_list=path_list, forced_segments=forced_segments, sdn_controller=self)
 
     def _check_snr_after_allocation(self, lightpath_id: int) -> bool:
         """
@@ -603,10 +542,7 @@ class SDNController:
             return True
 
         # SNR recheck failed - rollback the allocation
-        logger.warning(
-            f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. "
-            f"Violations: {violations}"
-        )
+        logger.warning(f"SNR recheck failed for lightpath {lightpath_id} - rolling back allocation. Violations: {violations}")
 
         # Release the lightpath from the network (skip validation for rollback)
         self.release(lightpath_id=lightpath_id, slicing_flag=True, skip_validation=True)
@@ -618,13 +554,16 @@ class SDNController:
             # Only restore remaining bandwidth for sliced/partial requests (v5 behavior)
             # For non-sliced requests, remaining_bw should stay None/0 since no bandwidth was served
             if self.sdn_props.is_sliced or self.sdn_props.was_partially_groomed:
+                bw_to_restore = int(float(self.sdn_props.bandwidth_list[idx]))
                 if self.sdn_props.remaining_bw is None or self.sdn_props.remaining_bw == 0:
-                    self.sdn_props.remaining_bw = int(float(self.sdn_props.bandwidth_list[idx]))
+                    self.sdn_props.remaining_bw = bw_to_restore
                 else:
-                    self.sdn_props.remaining_bw += int(float(self.sdn_props.bandwidth_list[idx]))
+                    # Handle remaining_bw being str/float type
+                    current_remaining = int(float(self.sdn_props.remaining_bw))
+                    self.sdn_props.remaining_bw = current_remaining + bw_to_restore
 
             # Remove from all tracking lists (with safety check for list length)
-            for tracking_list in [
+            tracking_lists: list[list] = [
                 self.sdn_props.lightpath_id_list,
                 self.sdn_props.lightpath_bandwidth_list,
                 self.sdn_props.start_slot_list,
@@ -636,130 +575,14 @@ class SDNController:
                 self.sdn_props.snr_list,
                 self.sdn_props.bandwidth_list,
                 self.sdn_props.modulation_list,
-            ]:
+            ]
+            for tracking_list in tracking_lists:
                 if idx < len(tracking_list):
                     tracking_list.pop(idx)
 
         # Remove from new lightpath list
         if lightpath_id in self.sdn_props.was_new_lp_established:
             self.sdn_props.was_new_lp_established.remove(lightpath_id)
-
-
-        """
-        Grooming
-        
-        (Before)
-        --> Request ID comes in to SDN controller
-        --> Multiple Lightpath ID is mapped to a request ID
-            --> When we slice multiple lightpath IDs
-            --> When we groom/partially groom in each lighpath, more than one request ID
-        --> SDN controller calling on grooming/slicing which interacts with routing and spectrum assignment
-            --> Much of the logic is in SDN controller or needs to change SDN controller
-            
-        (After)
-        --> Request Object
-            --> Information, could be slicing, nothing, grooming, etc. it could have a lightpath objects tied to it
-        --> SDN controller (wrapper/helper function)
-            --> Send to grooming?
-                --> Routing and Spectrum Assignment
-                    --> Grooming interacts with routing and spectrum assignment uniquely
-                    --> Grooming module that correctly interacts with the base Routing and Spectrum Assignment
-                        --> Finds a path, finds a spectrum (Network Spectrum Dict/Database)
-                        --> Conclusion: SDN, Routing, Spectrum Assignment, literally do not know what happened detail by detail for grooming
-                            --> What does each section know happened?
-                                --> SDN section says, go to grooming logic
-                                --> Grooming called on routes from Routing when it needed it, handled updating request ID and lighpath objects
-                                --> Grooming called on spectrum from Spectrum when it needed it
-                                --> Grooming updated the Request Object and returned to SDN
-                                --> SDN understood that grooming is done, pass to statistics logic, then call on next request
-                                    --> Stats does the SAME!
-                            --> We wouldn't have to change every centralized core script, rather, create a new module with standardized input and output
-                            
-        A PROBLEM: If the modules need to interact?
-        --> Grooming + Slicing + SNR interacting with routing? (Question for GPT/ChatGPT)
-            --> Existing problem: Change whole simulator so they can interact (impossible)
-            --> Potential solution with an example of grooming
-                1.) Request shows up
-                2.) Request is groomed (k = 1 (forced path), 50% of req is groomed (200 Gbps) of 400 Gbps)
-                    --> Why? A lightpath exists with 400 Gbps and 200 Gbps is free (previous request)
-                3.) Allocate 200 Gbps with RSA on that previous lightpath
-                
-                1.) Second option for a request (k = 2 (option of paths), 400 Gbps) - Another possible algorithm for example
-                2.) Decide on which one is better to select, should I partially groom or should I fully allocate? k = 1, partially groom, k = 2 fully allocate
-                3.) In this algorithm, we want to know which is better
-                
-                What I (Ryan) would like to do based on the above example, know that interacting between modules can be tough
-                --> Grooming Algorithm 1 & Grooming Algorithm 2
-                --> Pass Current Request Object, Class of Request Objects (Central Request Class) to SDN
-                    --> SDN Wrapper passes to where? Grooming Module
-                        --> Within grooming module (SDN doesn't know this) we call on Algorithm 1 or 2
-                        --> Grooming (A new SDN module but this is a different script) Handles
-                            --> Algorithm 1 & 2
-                            
-                            
-                        --> Engine --> SDN (grooming) --> Route --> Spectrum
-                        --> Engine --> SDN Wrapper
-                                                    --> Grooming SDN logic
-                                                    --> Slicing SDN logic
-                                                    --> ...
-                                                    --> Slicing + Grooming SDN logic
-                                                        --> Slicing + Grooming Wrapper
-                                                    
-                                                    
-                                                    
-                                                    Dynamic Slicing + Grooming
-                                                    1.) Check grooming
-                                                    2.) Then RSA
-                                                    3.) Then if need slicing
-                                                    
-                                                    
-                                                    Hierarchy (Combination)
-                                                    --> Connection between slicing and grooming
-                                                    --> Slicing logic is the same
-                                                    --> Slicing called alone (slicing logic)
-                                                    --> Grooming called...Tells slicing to behave a certain way
-                                                        --> PROBLEM ? Will we duplicate logic interlinking these?
-                                                        
-                                                    E.g., Solution
-                                                    --> Routing, Spectrum Allocation (RSA) - single function
-                                                    --> 
-                                                    
-                                                    
-                
-            --> Request object comes back
-                --> SDN sends to stats logic
-                --> SDN triggers it's ready for next request object
-        
-        RL Integration?
-        --> Specifically developed to interact with Engine to pick paths with essentially static actions, rewards, etc.
-            --> RL knows everything, too separate
-        --> RL doesn't have general connections (wrapper) to SDN
-            --> In the future, ideally RL core logic doesn't know what's happening
-            --> There's some RL wrapper (similar to that SDN wrapper):
-                --> Information comes in
-                --> Standardized/Normalized/Etc. (Similar Object to Request Object Maybe?)
-                --> Passed to RL
-                --> What does RL know?
-                    --> I need to create a state action space mxnxp
-                    --> I need to try and select the best action, I don't care what it is
-                    --> If I do well, reward myself, if not, penalize myself
-                    --> Next
-                    
-                    
-        WHAT DOES RL DO NOW??
-        --> Literally clones a simulation
-        --> Acts entirely independently
-        --> Therefor, all the state issues, etc. happen in RL
-        
-        --> SB3 calls X, Y, and Z...I need to run via command line, no control over what SB3 calls
-            ---> Wrote the functions as I saw them in the tutorial
-            --> Call on SB3 and it calls specific functions based on ONE SCRIPT
-        
-        --> What will have to happen now?
-            --> run via command line normally
-                --> Call SB3 as like an OS command in some script and interlink them
-                    
-        """
 
         # Mark request as blocked
         self.sdn_props.was_routed = False
@@ -777,9 +600,7 @@ class SDNController:
         :param remaining_bw: Remaining bandwidth that could not be allocated
         :type remaining_bw: int
         """
-        if self.sdn_props.bandwidth is not None and remaining_bw != int(
-            self.sdn_props.bandwidth
-        ):
+        if self.sdn_props.bandwidth is not None and remaining_bw != int(self.sdn_props.bandwidth):
             # Rollback newly established lightpaths (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
             if isinstance(was_new_lps, list):
@@ -806,18 +627,15 @@ class SDNController:
         self.sdn_props.was_partially_routed = False
 
         if getattr(self.sdn_props, "was_partially_groomed", False):
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
-                map(int, self.sdn_props.bandwidth_list)
-            )
+            if self.sdn_props.bandwidth is not None:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
         else:
             if self.sdn_props.bandwidth is not None:
                 self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
 
         self.sdn_props.was_new_lp_established = []
 
-    def _handle_congestion(
-        self, remaining_bandwidth: int | None = None, remaining_bw: int | None = None
-    ) -> None:
+    def _handle_congestion(self, remaining_bandwidth: int | None = None, remaining_bw: int | None = None) -> None:
         """
         Handle allocation failure due to network congestion.
 
@@ -838,17 +656,18 @@ class SDNController:
         # Previously = 1 caused over-counting when slicing recovered from SNR recheck failures
         self.sdn_props.number_of_transponders = 0
 
-        if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(
-            self.sdn_props.bandwidth
-        ):
+        if self.sdn_props.bandwidth is not None and remaining_bandwidth != int(self.sdn_props.bandwidth):
             # Release all newly established lightpaths for this request (skip_validation since never served traffic)
             was_new_lps = getattr(self.sdn_props, "was_new_lp_established", [])
-            if isinstance(was_new_lps, list):
+            if isinstance(was_new_lps, list) and self.sdn_props.path_list:
                 for lpid in list(was_new_lps):
                     # Remove current request from lightpath's requests_dict before releasing
                     light_id = tuple(sorted([self.sdn_props.path_list[0], self.sdn_props.path_list[-1]]))
-                    if (light_id in self.sdn_props.lightpath_status_dict and
-                            lpid in self.sdn_props.lightpath_status_dict[light_id]):
+                    if (
+                        self.sdn_props.lightpath_status_dict is not None
+                        and light_id in self.sdn_props.lightpath_status_dict
+                        and lpid in self.sdn_props.lightpath_status_dict[light_id]
+                    ):
                         lp_info = self.sdn_props.lightpath_status_dict[light_id][lpid]
                         if self.sdn_props.request_id in lp_info["requests_dict"]:
                             # Restore remaining bandwidth before removing request
@@ -878,12 +697,11 @@ class SDNController:
         self.sdn_props.was_partially_routed = False
 
         # Reset remaining_bw to match v5 behavior
-        if self.sdn_props.was_partially_groomed:
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(
-                map(int, self.sdn_props.bandwidth_list)
-            )
-        else:
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+        if self.sdn_props.bandwidth is not None:
+            if self.sdn_props.was_partially_groomed:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth) - sum(map(int, self.sdn_props.bandwidth_list))
+            else:
+                self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
 
         self.sdn_props.was_new_lp_established = []
 
@@ -892,16 +710,14 @@ class SDNController:
         self.sdn_props.bandwidth_list = []
         self.sdn_props.reset_params()
 
-    def _setup_routing(
-        self, force_route_matrix: list[Any] | None, force_mod_format: str | None
-    ) -> tuple[list[Any], float]:
+    def _setup_routing(self, force_route_matrix: list[Any] | None, force_mod_format: str | list[str] | None) -> tuple[list[Any], float]:
         """
         Setup routing for the request.
 
         :param force_route_matrix: Optional forced routing matrix
         :type force_route_matrix: list[Any] | None
-        :param force_mod_format: Optional forced modulation format
-        :type force_mod_format: str | None
+        :param force_mod_format: Optional forced modulation format (single or list)
+        :type force_mod_format: str | list[str] | None
         :return: Tuple of (route_matrix, route_time)
         :rtype: tuple[list[Any], float]
         """
@@ -913,8 +729,9 @@ class SDNController:
             route_matrix = force_route_matrix
             if force_mod_format:
                 # Handle both string and list formats for force_mod_format
+                formats_matrix: list[list[str | bool]]
                 if isinstance(force_mod_format, list):
-                    formats_matrix = [force_mod_format]
+                    formats_matrix = [force_mod_format]  # type: ignore[list-item]
                 else:
                     formats_matrix = [[force_mod_format]]
             else:
@@ -923,16 +740,14 @@ class SDNController:
 
             # For partially groomed requests, use path_weight from groomed lightpath
             # This ensures new lightpaths on the same path get the correct weight
-            if getattr(self.sdn_props, "was_partially_groomed", False):
+            if getattr(self.sdn_props, "was_partially_groomed", False) and self.sdn_props.path_weight is not None:
                 self.route_obj.route_props.weights_list = [self.sdn_props.path_weight]
             else:
-                self.route_obj.route_props.weights_list = [0]
+                self.route_obj.route_props.weights_list = [0.0]
         route_time = time.time() - start_time
         return route_matrix, route_time
 
-    def _get_ml_prediction(
-        self, ml_model: Any | None, request_dict: dict[str, Any]
-    ) -> float:
+    def _get_ml_prediction(self, ml_model: Any | None, request_dict: dict[str, Any]) -> float:
         """
         Get ML model prediction for forced segments.
 
@@ -999,9 +814,7 @@ class SDNController:
         # Match v5 behavior: set force_slicing=True when segment_slicing is enabled
         if segment_slicing or force_slicing or forced_segments > 1:
             force_slicing = True
-            success = self._handle_slicing_request(
-                path_list, path_index, int(forced_segments), force_slicing
-            )
+            success = self._handle_slicing_request(path_list, path_index, int(forced_segments), force_slicing)
             if not success:
                 self.sdn_props.number_of_transponders = 1
                 return False
@@ -1026,11 +839,11 @@ class SDNController:
             self.spectrum_obj.spectrum_props.lightpath_id = lp_id
             self.sdn_props.was_new_lp_established.append(lp_id)
 
-
             # Determine bandwidth for statistics and lightpath (handle partial grooming)
+            allocate_bandwidth: float | None
             if self.sdn_props.was_partially_groomed:
                 # For partial grooming, allocate_bandwidth is the actual bandwidth used for statistics
-                allocate_bandwidth = str(self.sdn_props.remaining_bw)
+                allocate_bandwidth = float(self.sdn_props.remaining_bw) if self.sdn_props.remaining_bw else None
             else:
                 allocate_bandwidth = self.sdn_props.bandwidth
 
@@ -1039,8 +852,10 @@ class SDNController:
             lightpath_bandwidth = self.sdn_props.bandwidth
 
             # Set lightpath bandwidth only if not already set by slicing code
-            if not hasattr(self.spectrum_obj.spectrum_props, 'lightpath_bandwidth') or \
-               self.spectrum_obj.spectrum_props.lightpath_bandwidth is None:
+            if (
+                not hasattr(self.spectrum_obj.spectrum_props, "lightpath_bandwidth")
+                or self.spectrum_obj.spectrum_props.lightpath_bandwidth is None
+            ):
                 self.spectrum_obj.spectrum_props.lightpath_bandwidth = lightpath_bandwidth
 
             self._update_request_statistics(bandwidth=allocate_bandwidth)
@@ -1110,7 +925,7 @@ class SDNController:
         forced_index: int | None = None,
         force_core: int | None = None,
         ml_model: Any | None = None,
-        force_mod_format: str | None = None,
+        force_mod_format: str | list[str] | None = None,
         forced_band: str | None = None,
     ) -> None:
         """
@@ -1163,9 +978,7 @@ class SDNController:
         if self.engine_props.get("is_grooming_enabled", False):
             # Set lightpath status dict for grooming object
             if hasattr(self.grooming_obj, "lightpath_status_dict"):
-                self.grooming_obj.lightpath_status_dict = (
-                    self.sdn_props.lightpath_status_dict
-                )
+                self.grooming_obj.lightpath_status_dict = self.sdn_props.lightpath_status_dict
 
             groom_result = self.grooming_obj.handle_grooming(request_type)
 
@@ -1193,9 +1006,7 @@ class SDNController:
                     force_mod_format = list(mod_formats_dict.keys())
 
         # Setup routing
-        route_matrix, route_time = self._setup_routing(
-            force_route_matrix, force_mod_format
-        )
+        route_matrix, route_time = self._setup_routing(force_route_matrix, force_mod_format)
 
         # Get ML prediction if available
         forced_segments = self._get_ml_prediction(ml_model, request_dict)
@@ -1206,14 +1017,8 @@ class SDNController:
             for path_index, path_list in enumerate(route_matrix):
                 if path_list is not False:
                     # Check path feasibility if failures are active
-                    if (
-                        self.failure_manager
-                        and not self.failure_manager.is_path_feasible(path_list)
-                    ):
-                        logger.debug(
-                            f"Path {path_list} (index {path_index}) is "
-                            f"infeasible due to active failures"
-                        )
+                    if self.failure_manager and not self.failure_manager.is_path_feasible(path_list):
+                        logger.debug(f"Path {path_list} (index {path_index}) is infeasible due to active failures")
                         continue  # Skip this path and try next one
 
                     # Check backup path feasibility for protected requests
@@ -1221,25 +1026,15 @@ class SDNController:
                     backup_path = None
                     if (
                         hasattr(self.route_obj.route_props, "backup_paths_matrix")
-                        and len(self.route_obj.route_props.backup_paths_matrix)
-                        > path_index
+                        and len(self.route_obj.route_props.backup_paths_matrix) > path_index
                     ):
-                        backup_path = self.route_obj.route_props.backup_paths_matrix[
-                            path_index
-                        ]
+                        backup_path = self.route_obj.route_props.backup_paths_matrix[path_index]
                     elif self.sdn_props.backup_path is not None:
                         # Fallback to sdn_props.backup_path for backward compatibility
                         backup_path = self.sdn_props.backup_path
 
-                    if (
-                        self.failure_manager
-                        and backup_path is not None
-                        and not self.failure_manager.is_path_feasible(backup_path)
-                    ):
-                        logger.debug(
-                            f"Backup path {backup_path} "
-                            f"(for primary {path_list}) is infeasible due to active failures"
-                        )
+                    if self.failure_manager and backup_path is not None and not self.failure_manager.is_path_feasible(backup_path):
+                        logger.debug(f"Backup path {backup_path} (for primary {path_list}) is infeasible due to active failures")
                         continue  # Skip this path pair and try next one
 
                     # Set backup path in sdn_props for spectrum assignment
@@ -1254,18 +1049,11 @@ class SDNController:
                                 self.route_obj.route_props,
                                 "backup_modulation_formats_matrix",
                             )
-                            and len(
-                                self.route_obj.route_props.backup_modulation_formats_matrix
-                            )
-                            > path_index
+                            and len(self.route_obj.route_props.backup_modulation_formats_matrix) > path_index
                         ):
-                            backup_mod_format_list = self.route_obj.route_props.backup_modulation_formats_matrix[
-                                path_index
-                            ]
+                            backup_mod_format_list = self.route_obj.route_props.backup_modulation_formats_matrix[path_index]
 
-                    mod_format_list = (
-                        self.route_obj.route_props.modulation_formats_matrix[path_index]
-                    )
+                    mod_format_list = self.route_obj.route_props.modulation_formats_matrix[path_index]
 
                     # Match v5: set force_slicing=True when segment_slicing or forced_segments > 1
                     if segment_slicing or force_slicing or forced_segments > 1:
@@ -1280,31 +1068,25 @@ class SDNController:
                     success = self._process_single_path(
                         path_list,
                         path_index,
-                        mod_format_list,
+                        mod_format_list,  # type: ignore[arg-type]
                         forced_segments,
                         force_slicing,
                         segment_slicing,
                         forced_index,
                         force_core,
                         forced_band,
-                        backup_mod_format_list,
+                        backup_mod_format_list,  # type: ignore[arg-type]
                     )
 
                     if success:
                         # Try to finalize - includes SNR recheck
-                        finalize_success = self._finalize_successful_allocation(
-                            path_index, route_time, force_slicing, segment_slicing
-                        )
+                        finalize_success = self._finalize_successful_allocation(path_index, route_time, force_slicing, segment_slicing)
                         if finalize_success:
                             return
                         # If finalize failed (SNR recheck), continue to next path
 
             # Try segment slicing if not already tried
-            if (
-                self.engine_props["max_segments"] > 1
-                and self.sdn_props.bandwidth != "25"
-                and not segment_slicing
-            ):
+            if self.engine_props["max_segments"] > 1 and self.sdn_props.bandwidth != "25" and not segment_slicing:
                 segment_slicing = True
                 continue
 
@@ -1312,21 +1094,19 @@ class SDNController:
             self.sdn_props.block_reason = "distance"
             self.sdn_props.was_routed = False
 
-
             # FEATURE: Support partial serving (v5 behavior)
             # If can_partially_serve is enabled and SOME bandwidth was allocated, accept partial service
             if self.engine_props.get("can_partially_serve", False):
                 # Check if any bandwidth was allocated (either through grooming or new lightpaths)
                 has_allocated_bandwidth = (
-                    len(self.sdn_props.lightpath_id_list) > 0 or
-                    len(getattr(self.sdn_props, "was_new_lp_established", [])) > 0
+                    len(self.sdn_props.lightpath_id_list) > 0 or len(getattr(self.sdn_props, "was_new_lp_established", [])) > 0
                 )
 
                 if has_allocated_bandwidth:
                     # Check if this is a partially groomed request OR the last path attempt
                     if (
-                        getattr(self.sdn_props, "was_partially_groomed", False) or
-                        self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
+                        getattr(self.sdn_props, "was_partially_groomed", False)
+                        or self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1
                     ):
                         # Accept partial service - mark as successfully routed
                         self.sdn_props.was_routed = True
@@ -1337,13 +1117,14 @@ class SDNController:
 
             # CRITICAL FIX: Release groomed bandwidth if request was partially groomed but blocked
             if getattr(self.sdn_props, "was_partially_groomed", False):
-                if self.sdn_props.lightpath_id_list:
+                if self.sdn_props.lightpath_id_list and self.sdn_props.source is not None and self.sdn_props.destination is not None:
                     # Release groomed bandwidth from all lightpaths
                     light_id = tuple(sorted([self.sdn_props.source, self.sdn_props.destination]))
+                    lp_status = self.sdn_props.lightpath_status_dict
                     for lp_id in self.sdn_props.lightpath_id_list[:]:
-                        if light_id in self.sdn_props.lightpath_status_dict:
-                            if lp_id in self.sdn_props.lightpath_status_dict[light_id]:
-                                lp_info = self.sdn_props.lightpath_status_dict[light_id][lp_id]
+                        if lp_status is not None and light_id in lp_status:
+                            if lp_id in lp_status[light_id]:
+                                lp_info = lp_status[light_id][lp_id]
                                 if self.sdn_props.request_id in lp_info["requests_dict"]:
                                     # Get allocated bandwidth and release it
                                     req_bw = lp_info["requests_dict"][self.sdn_props.request_id]
@@ -1357,9 +1138,7 @@ class SDNController:
             return
 
     # Backward compatibility methods for tests
-    def _allocate_slicing(
-        self, num_segments: int, mod_format: str, path_list: list[Any], bandwidth: str
-    ) -> None:
+    def _allocate_slicing(self, num_segments: int, mod_format: str, path_list: list[Any], bandwidth: str) -> None:
         """
         Backward compatibility wrapper for allocate_slicing method.
 
@@ -1380,9 +1159,7 @@ class SDNController:
             sdn_controller=self,
         )
 
-    def _handle_dynamic_slicing(
-        self, path_list: list[Any], path_index: int, forced_segments: int
-    ) -> None:
+    def _handle_dynamic_slicing(self, path_list: list[Any], path_index: int, forced_segments: int) -> None:
         """
         Backward compatibility wrapper for handle_dynamic_slicing method.
 

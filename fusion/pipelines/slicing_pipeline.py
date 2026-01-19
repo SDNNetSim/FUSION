@@ -4,8 +4,6 @@ Standard slicing pipeline implementation.
 This module provides StandardSlicingPipeline for dividing large requests
 across multiple lightpaths when a single allocation cannot accommodate
 the full bandwidth.
-
-Phase: P3.1 - Pipeline Factory Scaffolding
 """
 
 from __future__ import annotations
@@ -32,32 +30,32 @@ class StandardSlicingPipeline:
     limitations.
 
     Slicing Strategy:
-        1. Start with minimum slices (2)
-        2. Divide bandwidth evenly across slices
-        3. Check if each slice can be allocated
-        4. Increment slice count until success or max_slices reached
 
-    Attributes:
-        _config: Simulation configuration
-        _max_slices: Maximum number of slices allowed
+    1. Start with minimum slices (2)
+    2. Divide bandwidth evenly across slices
+    3. Check if each slice can be allocated
+    4. Increment slice count until success or max_slices reached
 
-    Usage:
+    :ivar _config: Simulation configuration.
+    :vartype _config: SimulationConfig
+    :ivar _max_slices: Maximum number of slices allowed.
+    :vartype _max_slices: int
+
+    Example:
         >>> pipeline = StandardSlicingPipeline(config)
         >>> result = pipeline.try_slice(
         ...     request, path, "QPSK", 400, network_state
         ... )
         >>> if result.success:
         ...     print(f"Sliced into {result.num_slices} lightpaths")
-
-    Phase: P3.1 - Pipeline Factory Scaffolding
     """
 
     def __init__(self, config: SimulationConfig) -> None:
         """
         Initialize slicing pipeline.
 
-        Args:
-            config: Simulation configuration
+        :param config: Simulation configuration.
+        :type config: SimulationConfig
         """
         self._config = config
         self._max_slices = getattr(config, "max_slices", 4)
@@ -84,29 +82,42 @@ class StandardSlicingPipeline:
         Attempt to slice request into multiple smaller allocations.
 
         Uses tier-based slicing (matching Legacy behavior):
+
         - Iterates through bandwidth tiers from largest to smallest
         - Allocates as many slices of each tier as possible
         - Allows mixing different tier sizes (e.g., 500 + 100 = 600 Gbps)
 
-        Args:
-            request: The request being processed
-            path: Route to use for slicing
-            modulation: Modulation format for slices
-            bandwidth_gbps: Total bandwidth to slice
-            network_state: Current network state
-            max_slices: Override config max_slices (optional)
-            spectrum_pipeline: Pipeline for finding spectrum (optional)
-            snr_pipeline: Pipeline for SNR validation (optional)
-            connection_index: External routing index for pre-calculated SNR lookup
-            path_index: Index of which k-path is being tried (0, 1, 2...)
+        :param request: The request being processed.
+        :type request: Request
+        :param path: Route to use for slicing.
+        :type path: list[str]
+        :param modulation: Modulation format for slices.
+        :type modulation: str
+        :param bandwidth_gbps: Total bandwidth to slice.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param max_slices: Override config max_slices (optional).
+        :type max_slices: int | None
+        :param spectrum_pipeline: Pipeline for finding spectrum (optional).
+        :type spectrum_pipeline: SpectrumPipeline | None
+        :param snr_pipeline: Pipeline for SNR validation (optional).
+        :type snr_pipeline: SNRPipeline | None
+        :param connection_index: External routing index for pre-calculated SNR lookup.
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried (0, 1, 2...).
+        :type path_index: int
+        :param snr_accumulator: Accumulator for SNR values from failed attempts.
+        :type snr_accumulator: list[float] | None
+        :param path_weight: Pre-calculated path weight in km.
+        :type path_weight: float | None
+        :return: SlicingResult indicating success/failure and slice details.
+        :rtype: SlicingResult
 
-        Returns:
-            SlicingResult indicating success/failure and slice details
-
-        Notes:
-            - When spectrum_pipeline is None, only checks feasibility
-            - When spectrum_pipeline is provided, attempts actual allocation
-            - Uses tier-based slicing with mixed sizes (matches Legacy)
+        .. note::
+            When spectrum_pipeline is None, only checks feasibility.
+            When spectrum_pipeline is provided, attempts actual allocation.
+            Uses tier-based slicing with mixed sizes (matches Legacy).
         """
         from fusion.domain.results import SlicingResult
 
@@ -161,10 +172,39 @@ class StandardSlicingPipeline:
                 network_state=network_state,
             ):
                 logger.debug(f"Tier-based slicing appears feasible for {bandwidth_gbps} Gbps")
+                # TODO: HARDCODED SLICING ESTIMATES - CRITICAL ISSUE
+                # ==========================================================
+                # The values below (num_slices=2, slice_bandwidth_gbps=bandwidth_gbps // 2)
+                # are hardcoded estimates used only during feasibility checks (when
+                # spectrum_pipeline is None). This is problematic because:
+                #
+                # 1. INACCURATE ESTIMATES: The actual number of slices and their bandwidths
+                #    depend on available spectrum, modulation formats, and path length.
+                #    Hardcoding num_slices=2 assumes equal division which may not reflect
+                #    the tier-based allocation that actually occurs.
+                #
+                # 2. INCONSISTENT WITH ACTUAL ALLOCATION: When spectrum_pipeline is provided,
+                #    _try_allocate_tier_based() uses mod_per_bw config to determine actual
+                #    slice sizes (e.g., could be 3 slices of different sizes: 500+300+200).
+                #    The feasibility estimate doesn't account for this.
+                #
+                # 3. MISLEADING METRICS: Callers relying on these estimates for capacity
+                #    planning or blocking probability predictions will get inaccurate results.
+                #
+                # PROPOSED SOLUTION:
+                # - Add a _estimate_slicing_result() method that performs a "dry run" of
+                #   tier-based allocation without actually allocating spectrum
+                # - Use mod_per_bw config to estimate actual slice count and sizes
+                # - Consider path length and available modulations in the estimate
+                # - Return realistic estimates that match what _try_allocate_tier_based()
+                #   would actually produce
+                #
+                # See also: TODO.md in this module for tracking
+                # ==========================================================
                 return SlicingResult(
                     success=True,
-                    num_slices=2,  # Estimate
-                    slice_bandwidth_gbps=bandwidth_gbps // 2,
+                    num_slices=2,  # HARDCODED - see TODO above
+                    slice_bandwidth_gbps=bandwidth_gbps // 2,  # HARDCODED - see TODO above
                     lightpaths_created=(),
                     total_bandwidth_gbps=bandwidth_gbps,
                 )
@@ -193,19 +233,30 @@ class StandardSlicingPipeline:
         allocating as many slices of each tier as possible before
         moving to smaller tiers. Allows mixing different tier sizes.
 
-        Args:
-            request: The request being processed
-            path: Route to use
-            bandwidth_gbps: Total bandwidth to allocate
-            network_state: Current network state
-            spectrum_pipeline: Pipeline for spectrum assignment
-            snr_pipeline: Pipeline for SNR validation (optional)
-            connection_index: External routing index
-            path_index: Index of which k-path is being tried
-            max_slices: Maximum number of slices allowed
-
-        Returns:
-            SlicingResult if successful, None if slicing fails
+        :param request: The request being processed.
+        :type request: Request
+        :param path: Route to use.
+        :type path: list[str]
+        :param bandwidth_gbps: Total bandwidth to allocate.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param spectrum_pipeline: Pipeline for spectrum assignment.
+        :type spectrum_pipeline: SpectrumPipeline
+        :param snr_pipeline: Pipeline for SNR validation (optional).
+        :type snr_pipeline: SNRPipeline | None
+        :param connection_index: External routing index.
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried.
+        :type path_index: int
+        :param max_slices: Maximum number of slices allowed.
+        :type max_slices: int
+        :param snr_accumulator: Accumulator for SNR values from failed attempts.
+        :type snr_accumulator: list[float] | None
+        :param path_weight: Pre-calculated path weight in km.
+        :type path_weight: float | None
+        :return: SlicingResult if successful, None if slicing fails.
+        :rtype: SlicingResult | None
         """
         from fusion.domain.results import SlicingResult
 
@@ -285,9 +336,7 @@ class StandardSlicingPipeline:
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
                     # Call recheck_affected to check existing LPs (matches legacy behavior)
-                    recheck_result = snr_pipeline.recheck_affected(
-                        lightpath_id, network_state, slicing_flag=True
-                    )
+                    recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                     if not recheck_result.all_pass:
                         logger.debug(f"Tier slice failed SNR recheck - existing LPs degraded (tier_bw={tier_bw})")
                         # Release the failed LP first
@@ -370,40 +419,67 @@ class StandardSlicingPipeline:
         """
         Dynamic slicing allocation (matches Legacy dynamic_lps behavior).
 
-        For fixed-grid: Allocates 1 slot at a time, using GSNR to determine modulation/bandwidth.
-        For flex-grid: Iterates through bandwidth tiers, using GSNR-based modulation selection.
+        For fixed-grid: Allocates 1 slot at a time, using GSNR to determine
+        modulation/bandwidth. For flex-grid: Iterates through bandwidth tiers,
+        using GSNR-based modulation selection.
 
-        Args:
-            request: The request being processed
-            path: Route to use
-            bandwidth_gbps: Total bandwidth to allocate
-            network_state: Current network state
-            spectrum_pipeline: Pipeline for spectrum assignment
-            snr_pipeline: Pipeline for SNR validation (optional)
-            connection_index: External routing index
-            path_index: Index of which k-path is being tried
-            max_slices: Maximum number of slices allowed
-
-        Returns:
-            SlicingResult if successful, None if slicing fails
+        :param request: The request being processed.
+        :type request: Request
+        :param path: Route to use.
+        :type path: list[str]
+        :param bandwidth_gbps: Total bandwidth to allocate.
+        :type bandwidth_gbps: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param spectrum_pipeline: Pipeline for spectrum assignment.
+        :type spectrum_pipeline: SpectrumPipeline
+        :param snr_pipeline: Pipeline for SNR validation (optional).
+        :type snr_pipeline: SNRPipeline | None
+        :param connection_index: External routing index.
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried.
+        :type path_index: int
+        :param max_slices: Maximum number of slices allowed.
+        :type max_slices: int
+        :param snr_accumulator: Accumulator for SNR values from failed attempts.
+        :type snr_accumulator: list[float] | None
+        :param path_weight: Pre-calculated path weight in km.
+        :type path_weight: float | None
+        :return: SlicingResult if successful, None if slicing fails.
+        :rtype: SlicingResult | None
         """
-        from fusion.domain.results import SlicingResult
 
         fixed_grid = getattr(self._config, "fixed_grid", False)
 
         if fixed_grid:
             # Fixed-grid dynamic slicing: 1 slot at a time
             return self._try_allocate_dynamic_fixed_grid(
-                request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator,
-                path_weight
+                request,
+                path,
+                bandwidth_gbps,
+                network_state,
+                spectrum_pipeline,
+                snr_pipeline,
+                connection_index,
+                path_index,
+                max_slices,
+                snr_accumulator,
+                path_weight,
             )
         else:
             # Flex-grid dynamic slicing: iterate through bandwidth tiers
             return self._try_allocate_dynamic_flex_grid(
-                request, path, bandwidth_gbps, network_state, spectrum_pipeline,
-                snr_pipeline, connection_index, path_index, max_slices, snr_accumulator,
-                path_weight
+                request,
+                path,
+                bandwidth_gbps,
+                network_state,
+                spectrum_pipeline,
+                snr_pipeline,
+                connection_index,
+                path_index,
+                max_slices,
+                snr_accumulator,
+                path_weight,
             )
 
     def _try_allocate_dynamic_fixed_grid(
@@ -421,7 +497,6 @@ class StandardSlicingPipeline:
         path_weight: float | None = None,
     ) -> SlicingResult | None:
         """Fixed-grid dynamic slicing: 1 slot at a time."""
-        from fusion.domain.results import SlicingResult
 
         remaining_bw = bandwidth_gbps
         allocated_lightpaths: list[int] = []
@@ -470,9 +545,7 @@ class StandardSlicingPipeline:
 
             snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
             if snr_pipeline is not None and snr_recheck_enabled:
-                recheck_result = snr_pipeline.recheck_affected(
-                    lightpath_id, network_state, slicing_flag=True
-                )
+                recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                 if not recheck_result.all_pass:
                     # Release the failed LP first
                     network_state.release_lightpath(lightpath_id)
@@ -497,8 +570,7 @@ class StandardSlicingPipeline:
             return None
 
         return self._finalize_dynamic_result(
-            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
-            failed_snr_values, path_index, network_state
+            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths, failed_snr_values, path_index, network_state
         )
 
     def _try_allocate_dynamic_flex_grid(
@@ -516,7 +588,6 @@ class StandardSlicingPipeline:
         path_weight: float | None = None,
     ) -> SlicingResult | None:
         """Flex-grid dynamic slicing: iterate through bandwidth tiers."""
-        from fusion.domain.results import SlicingResult
 
         # Get sorted bandwidth tiers (DESCENDING - matches Legacy's sort_dict_keys with reverse=True)
         mod_per_bw = getattr(self._config, "mod_per_bw", {})
@@ -578,9 +649,7 @@ class StandardSlicingPipeline:
 
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
-                    recheck_result = snr_pipeline.recheck_affected(
-                        lightpath_id, network_state, slicing_flag=True
-                    )
+                    recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                     if not recheck_result.all_pass:
                         # Release the failed LP
                         failed_mod = spectrum_result.modulation
@@ -610,18 +679,11 @@ class StandardSlicingPipeline:
             if remaining_bw <= 0:
                 break
 
-        # LEGACY COMPAT: Check remaining_bw, not allocated_lightpaths
-        # Legacy accepts partial success if remaining != original, even if LPs were released
-        can_partial = getattr(self._config, "can_partially_serve", False)
-        k_paths = getattr(self._config, "k_paths", 3)
-        on_last_path = path_index >= k_paths - 1
-
         if not allocated_lightpaths:
             return None
 
         return self._finalize_dynamic_result(
-            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths,
-            failed_snr_values, path_index, network_state
+            remaining_bw, bandwidth_gbps, allocated_lightpaths, slice_bandwidths, failed_snr_values, path_index, network_state
         )
 
     def _finalize_dynamic_result(
@@ -693,15 +755,18 @@ class StandardSlicingPipeline:
         This is a simplified check that estimates whether the path
         has enough free spectrum for all slices.
 
-        Args:
-            path: Route to use
-            modulation: Modulation format
-            slice_bandwidth: Bandwidth per slice
-            num_slices: Number of slices
-            network_state: Current network state
-
-        Returns:
-            True if slicing appears feasible
+        :param path: Route to use.
+        :type path: list[str]
+        :param modulation: Modulation format.
+        :type modulation: str
+        :param slice_bandwidth: Bandwidth per slice.
+        :type slice_bandwidth: int
+        :param num_slices: Number of slices.
+        :type num_slices: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :return: True if slicing appears feasible.
+        :rtype: bool
         """
         # Calculate slots needed per slice
         slots_per_slice = self._calculate_slots_needed(slice_bandwidth, modulation)
@@ -730,20 +795,28 @@ class StandardSlicingPipeline:
         """
         Attempt to actually allocate all slices.
 
-        Args:
-            request: The request being processed
-            path: Route to use
-            modulation: Modulation format (may be empty, will determine from config)
-            slice_bandwidth: Bandwidth per slice
-            num_slices: Number of slices
-            network_state: Current network state
-            spectrum_pipeline: Pipeline for spectrum assignment
-            snr_pipeline: Pipeline for SNR validation (optional)
-            connection_index: External routing index for pre-calculated SNR lookup
-            path_index: Index of which k-path is being tried (0, 1, 2...)
-
-        Returns:
-            SlicingResult if successful, None if any slice fails
+        :param request: The request being processed.
+        :type request: Request
+        :param path: Route to use.
+        :type path: list[str]
+        :param modulation: Modulation format (may be empty, will determine from config).
+        :type modulation: str
+        :param slice_bandwidth: Bandwidth per slice.
+        :type slice_bandwidth: int
+        :param num_slices: Number of slices.
+        :type num_slices: int
+        :param network_state: Current network state.
+        :type network_state: NetworkState
+        :param spectrum_pipeline: Pipeline for spectrum assignment.
+        :type spectrum_pipeline: SpectrumPipeline
+        :param snr_pipeline: Pipeline for SNR validation (optional).
+        :type snr_pipeline: SNRPipeline | None
+        :param connection_index: External routing index for pre-calculated SNR lookup.
+        :type connection_index: int | None
+        :param path_index: Index of which k-path is being tried (0, 1, 2...).
+        :type path_index: int
+        :return: SlicingResult if successful, None if any slice fails.
+        :rtype: SlicingResult | None
         """
         from fusion.domain.results import SlicingResult
 
@@ -772,7 +845,6 @@ class StandardSlicingPipeline:
                     path_index=path_index,
                 )
                 if not spectrum_result.is_free:
-
                     # Check for partial serving (Legacy behavior)
                     # If can_partially_serve is enabled, some slices allocated, and on last path, accept partial
                     can_partial = getattr(self._config, "can_partially_serve", False)
@@ -781,7 +853,6 @@ class StandardSlicingPipeline:
 
                     if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
                         # Accept partial service - don't rollback, return what we allocated
-                        allocated_bw = len(allocated_lightpaths) * slice_bandwidth
                         return SlicingResult.sliced(
                             num_slices=len(allocated_lightpaths),
                             slice_bandwidth=slice_bandwidth,
@@ -823,13 +894,9 @@ class StandardSlicingPipeline:
                 # This matches legacy behavior - check existing LPs, not the new LP
                 snr_recheck_enabled = getattr(self._config, "snr_recheck", False)
                 if snr_pipeline is not None and snr_recheck_enabled:
-                    recheck_result = snr_pipeline.recheck_affected(
-                        lightpath_id, network_state, slicing_flag=True
-                    )
+                    recheck_result = snr_pipeline.recheck_affected(lightpath_id, network_state, slicing_flag=True)
                     if not recheck_result.all_pass:
-                        logger.debug(
-                            f"Slice {i + 1}/{num_slices} failed SNR recheck - existing LPs degraded"
-                        )
+                        logger.debug(f"Slice {i + 1}/{num_slices} failed SNR recheck - existing LPs degraded")
                         # Check for partial serving before rollback
                         can_partial = getattr(self._config, "can_partially_serve", False)
                         k_paths = getattr(self._config, "k_paths", 3)
@@ -842,7 +909,6 @@ class StandardSlicingPipeline:
 
                         if can_partial and len(allocated_lightpaths) > 0 and on_last_path:
                             # Accept partial service with what we have
-                            allocated_bw = len(allocated_lightpaths) * slice_bandwidth
                             return SlicingResult.sliced(
                                 num_slices=len(allocated_lightpaths),
                                 slice_bandwidth=slice_bandwidth,
@@ -882,9 +948,10 @@ class StandardSlicingPipeline:
         Called when partial slice allocation fails and all created
         slices must be released.
 
-        Args:
-            lightpath_ids: IDs of lightpaths to release
-            network_state: Network state to modify
+        :param lightpath_ids: IDs of lightpaths to release.
+        :type lightpath_ids: list[int]
+        :param network_state: Network state to modify.
+        :type network_state: NetworkState
         """
         if not lightpath_ids:
             return
@@ -938,7 +1005,9 @@ class StandardSlicingPipeline:
 
         for i in range(len(path) - 1):
             link = (path[i], path[i + 1])
-            available = network_state.get_link_available_slots(link)
+            link_spectrum = network_state.get_link_spectrum(link)
+            # Sum free slots across all bands and core 0
+            available = sum(link_spectrum.get_free_slot_count(band, 0) for band in link_spectrum.get_bands())
             min_available = min(min_available, available)
 
         return int(min_available) if min_available != float("inf") else 0
@@ -972,13 +1041,14 @@ class StandardSlicingPipeline:
         Looks up mod_per_bw for the slice bandwidth and finds ALL modulations
         that can reach the path length, sorted by spectral efficiency.
 
-        Args:
-            slice_bandwidth: Bandwidth of the slice in Gbps
-            path: Route to use
-            network_state: Network state for path length calculation
-
-        Returns:
-            List of valid modulation format names, empty list if none found
+        :param slice_bandwidth: Bandwidth of the slice in Gbps.
+        :type slice_bandwidth: int
+        :param path: Route to use.
+        :type path: list[str]
+        :param network_state: Network state for path length calculation.
+        :type network_state: NetworkState
+        :return: List of valid modulation format names, empty list if none found.
+        :rtype: list[str]
         """
         # Calculate path length
         path_length = 0.0
@@ -1013,13 +1083,8 @@ class StandardSlicingPipeline:
                         valid_mods.append(mod_name)
 
         if valid_mods:
-            logger.debug(
-                f"Slice modulations for {slice_bandwidth} Gbps: {valid_mods} "
-                f"(path_length={path_length:.1f})"
-            )
+            logger.debug(f"Slice modulations for {slice_bandwidth} Gbps: {valid_mods} (path_length={path_length:.1f})")
         else:
-            logger.debug(
-                f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}"
-            )
+            logger.debug(f"No valid modulation for {slice_bandwidth} Gbps on path length {path_length:.1f}")
 
         return valid_mods

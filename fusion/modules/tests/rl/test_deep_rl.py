@@ -34,13 +34,9 @@ def _engine() -> SimpleNamespace:
     return SimpleNamespace(engine_props={})
 
 
-def _patch_globals(
-    valid_list: list[str] | None = None, registry: dict[str, Any] | None = None
-) -> tuple[Any, Any]:
+def _patch_globals(valid_list: list[str] | None = None, registry: dict[str, Any] | None = None) -> tuple[Any, Any]:
     """Patch VALID_PATH_ALGORITHMS and get_algorithm_registry."""
-    vp = mock.patch.object(
-        drl, "VALID_PATH_ALGORITHMS", valid_list if valid_list is not None else []
-    )
+    vp = mock.patch.object(drl, "VALID_PATH_ALGORITHMS", valid_list if valid_list is not None else [])
     rg = mock.patch.object(
         drl,
         "get_algorithm_registry",

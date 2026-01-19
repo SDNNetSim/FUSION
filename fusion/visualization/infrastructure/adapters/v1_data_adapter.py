@@ -77,9 +77,7 @@ class V1DataAdapter(DataAdapter):
 
         if isinstance(iter_stats, dict):
             # V1 format: iter_stats is a dict with string keys
-            for iter_key, iter_data in sorted(
-                iter_stats.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 0
-            ):
+            for iter_key, iter_data in sorted(iter_stats.items(), key=lambda x: int(x[0]) if x[0].isdigit() else 0):
                 iteration = IterationData(
                     iteration=int(iter_key) if iter_key.isdigit() else 0,
                     sim_block_list=iter_data.get("sim_block_list"),

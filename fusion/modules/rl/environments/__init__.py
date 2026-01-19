@@ -7,8 +7,6 @@ Key Components:
 - UnifiedSimEnv: Main environment using unified simulation stack
 - ActionMaskWrapper: Wrapper for SB3 MaskablePPO compatibility
 - PathEncoder: Encodes paths as binary edge masks for GNN observations
-
-Phase: P4.2 - UnifiedSimEnv Wiring
 """
 
 from fusion.modules.rl.environments.unified_env import PathEncoder, UnifiedSimEnv

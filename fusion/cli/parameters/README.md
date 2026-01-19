@@ -4,6 +4,8 @@
 
 The CLI Parameters module provides a centralized, modular system for managing command-line arguments across all FUSION commands. It implements a registry-based architecture that organizes arguments into logical groups, reduces duplication, and ensures consistent argument handling throughout the application.
 
+**IMPORTANT: CLI arguments override INI configuration values for ALL processes in a simulation.** When you specify a CLI argument, it will be applied to every process (s1, s2, etc.) regardless of what is defined in the INI file.
+
 ## Key Components
 
 ### Core Files
@@ -14,14 +16,14 @@ The CLI Parameters module provides a centralized, modular system for managing co
 ### Specialized Argument Groups
 - `analysis.py`: Statistics collection, plotting, export, comparison, and filtering arguments
 - `network.py`: Network topology, link configuration, node settings, and spectrum band arguments
-- `routing.py`: Routing algorithms, spectrum allocation, and SDN configuration arguments
+- `policy.py`: SDN Orchestrator policy selection, heuristic parameters, and protection settings (v6.0.0)
+- `routing.py`: Legacy routing algorithms, spectrum allocation, and SDN configuration arguments
 - `snr.py`: Signal-to-noise ratio calculations and modulation format selection arguments
 - `traffic.py`: Traffic generation, Erlang load configuration, and simulation control arguments
-- `training.py`: Reinforcement learning, machine learning, feature extraction, and optimization arguments
+- `training.py`: Reinforcement learning (RL), supervised learning (SL), feature extraction, and optimization arguments
 
 ### Legacy Compatibility
 - `simulation.py`: Compatibility module that imports and combines arguments from other modules
-- `gui.py`: GUI launcher arguments (imports shared configuration)
 
 ## Architecture
 
@@ -38,16 +40,82 @@ CLI Parameters Module Architecture
 │   ├── Output control (save_results, output_dir)
 │   └── Plot formatting (plot_format)
 ├── Specialized Groups
-│   ├── Analysis (analysis.py) - 16 arguments
-│   ├── Network (network.py) - 11 arguments
-│   ├── Routing (routing.py) - 7 arguments
-│   ├── SNR (snr.py) - 5 arguments
-│   ├── Traffic (traffic.py) - 7 arguments
-│   └── Training (training.py) - 34 arguments
+│   ├── Analysis (analysis.py)
+│   ├── Network (network.py)
+│   ├── Policy (policy.py) - v6.0.0 Orchestrator
+│   ├── Routing (routing.py) - Legacy
+│   ├── SNR (snr.py)
+│   ├── Traffic (traffic.py)
+│   └── Training (training.py)
 └── Legacy Compatibility
-    ├── Simulation (simulation.py) - imports others
-    └── GUI (gui.py) - imports shared
+    └── Simulation (simulation.py) - imports others
 ```
+
+## Routing Systems: Legacy vs Orchestrator (v6.0.0)
+
+FUSION has two distinct path selection systems that coexist. Understanding the difference is important for choosing the right CLI arguments.
+
+### Legacy Routing System (`fusion/modules/routing/`)
+
+The legacy system tightly couples path computation and spectrum allocation in a single step.
+
+**CLI Arguments**: `--route_method`, `--k_paths`, `--allocation_method`
+
+```
+Request → KShortestPath.route() → [computes paths + assigns spectrum] → Result
+```
+
+- **Classes**: `KShortestPath`, `LeastCongestedRouting`, `CongestionAwareRouting`, `XTAwareRouting`
+- **Interface**: `AbstractRoutingAlgorithm`
+- **Used by**: Legacy simulation pipeline (`run_simulation_pipeline`)
+
+Example:
+```bash
+fusion-sim --config_path config.ini --route_method k_shortest_path --k_paths 3
+```
+
+### SDN Orchestrator Policy System (`fusion/policies/`) - v6.0.0
+
+The new orchestrator decouples the process into three stages:
+
+```
+Request → Orchestrator computes K paths → Policy selects one → Orchestrator allocates spectrum → Result
+```
+
+**CLI Arguments**: `--policy-type`, `--policy-name`, `--policy-k-paths`, `--protection-enabled`
+
+1. **Path computation**: Orchestrator computes K candidate paths
+2. **Path selection**: ControlPolicy (heuristic/SL/RL) decides which path to use
+3. **Spectrum allocation**: Orchestrator handles assignment
+
+- **Classes**: `FirstFeasiblePolicy`, `ShortestFeasiblePolicy`, `LeastCongestedPolicy`, `LoadBalancedPolicy`
+- **Interface**: `ControlPolicy` protocol
+- **Used by**: SDN Orchestrator pipeline (`SDNOrchestrator`)
+
+Example:
+```bash
+fusion-sim --config_path config.ini --policy-type heuristic --policy-name least_congested
+```
+
+### Key Differences
+
+| Aspect | Legacy (`--route_method`) | Orchestrator (`--policy-*`) |
+|--------|---------------------------|----------------------------|
+| Architecture | Tightly coupled | Decoupled (3 stages) |
+| Path selection | Baked into routing algorithm | Separate ControlPolicy |
+| SL/RL support | Limited | Native support |
+| Protection | Separate module | Integrated (`--protection-enabled`) |
+
+**Important**: `LeastCongestedRouting` (legacy) and `LeastCongestedPolicy` (orchestrator) are **different**:
+- Legacy: Computes paths with congestion awareness baked in
+- Orchestrator: Selects from pre-computed paths based on congestion metric
+
+### Which System to Use?
+
+- **Legacy system**: For backward compatibility with existing configurations and scripts
+- **Orchestrator system**: For new experiments, especially those involving SL/RL policies or 1+1 protection
+
+The two systems do not interfere with each other. The pipeline you run determines which arguments are used.
 
 ## Usage
 
@@ -92,7 +160,7 @@ register_run_sim_args(subparsers)
 
 ## Complete Parameter Reference
 
-### Required Arguments (2 total)
+### Required Arguments
 | Parameter | Type | Description | Source |
 |-----------|------|-------------|--------|
 | `--config_path` | str | Path to INI configuration file | shared.py |
@@ -163,7 +231,7 @@ register_run_sim_args(subparsers)
 
 ### Training Arguments (training.py)
 
-#### Reinforcement Learning Configuration
+#### Reinforcement Learning (RL) Configuration
 | Parameter | Type | Default | Description | Choices |
 |-----------|------|---------|-------------|---------|
 | `--path_algorithm` | str | None | Path selection RL algorithm | dqn, ppo, a2c, q_learning, bandits, epsilon_greedy_bandit |
@@ -192,11 +260,12 @@ register_run_sim_args(subparsers)
 | `--heads` | int | 8 | Number of attention heads (for attention-based models) | - |
 | `--obs_space` | str | None | Observation space representation | graph, vector, matrix, hybrid |
 
-#### Machine Learning Configuration
+#### Supervised Learning (SL) Configuration
+<!-- TODO (v6.1.0): Rename ml_* arguments to sl_* for consistency (e.g., ml_training -> sl_training, ml_model -> sl_model) -->
 | Parameter | Type | Default | Description | Choices |
 |-----------|------|---------|-------------|---------|
-| `--ml_training` | bool | False | Enable ML training mode | - |
-| `--ml_model` | str | None | Machine learning model type | random_forest, svm, linear_regression, neural_network, decision_tree |
+| `--ml_training` | bool | False | Enable SL training mode | - |
+| `--ml_model` | str | None | Supervised learning model type | random_forest, svm, linear_regression, neural_network, decision_tree |
 | `--train_file_path` | str | None | Path to training data file | - |
 | `--test_size` | float | 0.2 | Fraction of data to use for testing (0.0-1.0) | - |
 | `--output_train_data` | bool | False | Save training data to file | - |
@@ -249,17 +318,35 @@ register_run_sim_args(subparsers)
 | `--metrics` | str (nargs="+") | None | Metrics to include in comparison | blocking_probability, path_length, execution_time, resource_utilization |
 | `--significance_test` | str | None | Statistical test for comparing results | t_test, wilcoxon, mann_whitney |
 
-## Parameter Statistics Summary
+### Orchestrator Policy Arguments (policy.py) - v6.0.0
 
-- **Total CLI Arguments**: 76 unique arguments
-- **Required Arguments**: 2 (`--config_path`, `--run_id`)
-- **Optional Arguments**: 74
-- **Boolean Arguments**: 30
-- **String Arguments**: 23
-- **Integer Arguments**: 16
-- **Float Arguments**: 7
-- **Arguments with Choices**: 19
-- **Arguments with Default Values**: 30
+These arguments configure the SDN Orchestrator's path selection system. See "Routing Systems" section above for when to use these vs legacy routing arguments.
+
+#### Policy Configuration
+| Parameter | Type | Default | Description | Choices |
+|-----------|------|---------|-------------|---------|
+| `--policy-type` | str | heuristic | Type of policy for path selection | heuristic, sl, rl |
+| `--policy-name` | str | first_feasible | Heuristic policy name | first_feasible, shortest, shortest_feasible, least_congested, random, random_feasible, load_balanced |
+| `--policy-model-path` | str | None | Path to SL/RL model file for sl/rl policy types | - |
+| `--policy-fallback` | str | first_feasible | Fallback policy name when SL/RL fails | - |
+| `--policy-k-paths` | int | 3 | Number of candidate paths for policy | - |
+| `--policy-seed` | int | None | Random seed for policy (affects random policies) | - |
+| `--policy-algorithm` | str | None | RL algorithm name for rl policy type | PPO, MaskablePPO, DQN, A2C |
+| `--policy-device` | str | cpu | Device for SL/RL inference | cpu, cuda, auto |
+
+#### Heuristic Policy Configuration
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `--heuristic-alpha` | float | 0.5 | Alpha parameter for LoadBalancedPolicy (0.0=congestion, 1.0=length) |
+| `--heuristic-seed` | int | None | Random seed for RandomFeasiblePolicy |
+
+#### Protection Configuration (Orchestrator)
+| Parameter | Type | Default | Description | Choices |
+|-----------|------|---------|-------------|---------|
+| `--protection-enabled` | bool | False | Enable 1+1 protection | - |
+| `--disjointness-type` | str | link | Type of path disjointness | link, node |
+| `--protection-switchover-ms` | float | 50.0 | Protection switchover latency in milliseconds | - |
+| `--restoration-latency-ms` | float | 100.0 | Restoration latency in milliseconds | - |
 
 ## Dependencies
 
@@ -315,13 +402,14 @@ args = parser.parse_args()
 #### Specialized Argument Groups
 - `add_network_args(parser)`: Add network topology and physical layer arguments
 - `add_all_network_args(parser)`: Add all network-related argument groups
-- `add_routing_args(parser)`: Add routing algorithm arguments
-- `add_all_routing_args(parser)`: Add all routing-related argument groups
+- `add_routing_args(parser)`: Add legacy routing algorithm arguments
+- `add_all_routing_args(parser)`: Add all legacy routing-related argument groups
+- `add_policy_args(parser)`: Add orchestrator policy selection arguments (v6.0.0)
+- `add_all_policy_args(parser)`: Add all orchestrator policy argument groups (v6.0.0)
 - `add_traffic_args(parser)`: Add traffic generation and simulation control arguments
 - `add_snr_args(parser)`: Add SNR calculation and modulation arguments
 - `add_all_training_args(parser)`: Add all training-related argument groups
 - `add_all_analysis_args(parser)`: Add all analysis-related argument groups
-- `add_gui_args(parser)`: Add GUI launcher arguments
 
 #### Registry System
 - `ArgumentRegistry`: Central coordinator class for argument management
@@ -357,7 +445,7 @@ args = parser.parse_args()
 #               --erlang_start 50 --erlang_stop 200
 ```
 
-### Example 2: ML Training Configuration
+### Example 2: SL Training Configuration
 ```python
 import argparse
 from fusion.cli.parameters import (
@@ -366,7 +454,7 @@ from fusion.cli.parameters import (
     add_all_training_args
 )
 
-parser = argparse.ArgumentParser(description='ML Training')
+parser = argparse.ArgumentParser(description='SL Training')
 add_config_args(parser)
 add_network_args(parser)
 add_all_training_args(parser)
@@ -379,7 +467,35 @@ args = parser.parse_args()
 #                 --ml_model random_forest --test_size 0.3
 ```
 
-### Example 3: Analysis and Plotting
+### Example 3: SDN Orchestrator with Policy (v6.0.0)
+```python
+import argparse
+from fusion.cli.parameters import (
+    add_config_args,
+    add_network_args,
+    add_all_policy_args
+)
+
+parser = argparse.ArgumentParser(description='Orchestrator Simulation')
+add_config_args(parser)
+add_network_args(parser)
+add_all_policy_args(parser)
+
+args = parser.parse_args()
+
+# Example usage with heuristic policy:
+# python sim.py --config_path config.ini --run_id orch001
+#               --network NSFNet --policy-type heuristic
+#               --policy-name load_balanced --heuristic-alpha 0.7
+
+# Example usage with RL policy and protection:
+# python sim.py --config_path config.ini --run_id orch002
+#               --network USbackbone60 --policy-type rl
+#               --policy-model-path models/ppo_policy.zip
+#               --protection-enabled --disjointness-type node
+```
+
+### Example 4: Analysis and Plotting
 ```python
 import argparse
 from fusion.cli.parameters import (
@@ -404,7 +520,7 @@ args = parser.parse_args()
 ### Design Decisions
 - **Registry Pattern**: Enables modular argument organization and reduces code duplication
 - **Argument Groups**: Logical separation improves CLI usability and code maintainability
-- **Backward Compatibility**: Legacy modules (simulation.py, gui.py) maintained for existing code
+- **Backward Compatibility**: Legacy modules (simulation.py) maintained for existing code
 - **Type Annotations**: Full type hints throughout for better IDE support and code clarity
 - **Comprehensive Documentation**: Every parameter documented with type, default, and description
 
@@ -414,17 +530,8 @@ args = parser.parse_args()
 - **Extensibility**: Easy to add new argument groups without modifying existing code
 - **Import Flexibility**: Support both individual function imports and registry-based usage
 
-### Performance Considerations
-- **Lazy Loading**: Arguments only registered when needed
-- **Memory Efficient**: Minimal object creation during argument parsing
-- **Fast Imports**: No heavy dependencies or complex initialization
-
 ### Integration Notes
-- **CLI Commands**: Used by all FUSION CLI commands (run_sim, run_train, run_gui, etc.)
+- **CLI Commands**: Used by all FUSION CLI commands (run_sim, run_train, etc.)
 - **Configuration System**: Integrates with INI-based configuration management
 - **Logging System**: Debug arguments integrate with FUSION logging infrastructure
 - **Output Management**: File and directory arguments coordinate with result saving systems
-
----
-
-This comprehensive documentation covers all 76 CLI parameters available in the FUSION parameters module, organized by functional groups with complete type information, descriptions, and usage examples.

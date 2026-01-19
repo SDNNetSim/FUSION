@@ -6,8 +6,6 @@ It will be replaced with a clean implementation in Phase 4.
 
 IMPORTANT: This adapter has SIDE EFFECTS. Unlike other adapters,
 grooming modifies lightpath bandwidth in the underlying NetworkState.
-
-Phase: P2.4 - Legacy Adapters
 """
 
 from __future__ import annotations
@@ -44,12 +42,8 @@ class SDNPropsProxyForGrooming:
     bandwidth: float = 0.0
     request_id: int = 0
     arrive: float = 0.0
-    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(
-        default_factory=dict
-    )
-    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(
-        default_factory=dict
-    )
+    network_spectrum_dict: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
+    lightpath_status_dict: dict[tuple[str, str], dict[int, dict[str, Any]]] = field(default_factory=dict)
 
     # Lists populated by Grooming during allocation
     bandwidth_list: list[str] = field(default_factory=list)
@@ -84,7 +78,24 @@ class SDNPropsProxyForGrooming:
         request_id: int,
         arrive_time: float,
     ) -> SDNPropsProxyForGrooming:
-        """Create proxy from NetworkState with request context."""
+        """
+        Create proxy from NetworkState with request context.
+
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param source: Source node identifier
+        :type source: str
+        :param destination: Destination node identifier
+        :type destination: str
+        :param bandwidth: Requested bandwidth in Gbps
+        :type bandwidth: float
+        :param request_id: Unique request identifier
+        :type request_id: int
+        :param arrive_time: Request arrival time
+        :type arrive_time: float
+        :return: Proxy instance populated from network state
+        :rtype: SDNPropsProxyForGrooming
+        """
         return cls(
             topology=network_state.topology,
             source=source,
@@ -102,7 +113,7 @@ class GroomingAdapter(GroomingPipeline):
     Adapts legacy Grooming to GroomingPipeline protocol.
 
     ADAPTER: This class is a TEMPORARY MIGRATION LAYER.
-    It will be replaced with a clean implementation in Phase 4.
+    It will be replaced with a clean implementation in v6.1.0.
 
     WARNING: SIDE EFFECTS
     Unlike other adapters, GroomingAdapter has side effects:
@@ -115,12 +126,6 @@ class GroomingAdapter(GroomingPipeline):
     3. Converts results to GroomingResult
     4. Side effects are applied through lightpath_status_dict reference
 
-    Removal Checklist:
-    [ ] Clean GroomingPipeline implementation exists
-    [ ] All callers migrated to clean implementation
-    [ ] run_comparison.py passes without this adapter
-    [ ] grep 'GroomingAdapter' returns only this definition
-
     Example:
         >>> adapter = GroomingAdapter(config)
         >>> result = adapter.try_groom(request, network_state)
@@ -132,8 +137,8 @@ class GroomingAdapter(GroomingPipeline):
         """
         Initialize adapter with configuration.
 
-        Args:
-            config: SimulationConfig for creating legacy engine_props
+        :param config: SimulationConfig for creating legacy engine_props
+        :type config: SimulationConfig
         """
         self._config = config
         self._engine_props = config.to_engine_props()
@@ -149,12 +154,12 @@ class GroomingAdapter(GroomingPipeline):
         WARNING: This method has SIDE EFFECTS. If grooming succeeds,
         the lightpath bandwidth is modified in NetworkState.
 
-        Args:
-            request: Request object with source, destination, bandwidth
-            network_state: Current network state (may be modified!)
-
-        Returns:
-            GroomingResult indicating success/partial/failure
+        :param request: Request object with source, destination, bandwidth
+        :type request: Request
+        :param network_state: Current network state (may be modified!)
+        :type network_state: NetworkState
+        :return: GroomingResult indicating success/partial/failure
+        :rtype: GroomingResult
         """
         from fusion.domain.results import GroomingResult
 
@@ -186,22 +191,19 @@ class GroomingAdapter(GroomingPipeline):
             )
 
             # Call legacy handle_grooming for arrival
-            was_fully_groomed = legacy_grooming.handle_grooming("arrival")
-
+            # handle_grooming returns bool for arrivals, list[int] for releases
+            grooming_result = legacy_grooming.handle_grooming("arrival")
+            was_fully_groomed = bool(grooming_result)  # Always bool for arrivals
 
             # CRITICAL: Sync grooming changes back to actual Lightpath objects
             # The legacy grooming code modifies lightpath_status_dict in place,
             # but in new architecture this is a rebuilt property. We must sync
             # remaining_bandwidth and requests_dict back to the domain model.
             if was_fully_groomed or sdn_props.was_partially_groomed:
-                self._sync_grooming_changes(
-                    network_state, sdn_props, request.request_id
-                )
+                self._sync_grooming_changes(network_state, sdn_props, request.request_id)
 
             # Convert results
-            return self._convert_grooming_result(
-                sdn_props, was_fully_groomed, request.bandwidth_gbps
-            )
+            return self._convert_grooming_result(sdn_props, was_fully_groomed, request.bandwidth_gbps)
 
         except Exception as e:
             logger.warning("GroomingAdapter.try_groom failed: %s", e)
@@ -216,10 +218,12 @@ class GroomingAdapter(GroomingPipeline):
         """
         Rollback grooming allocations (e.g., after downstream failure).
 
-        Args:
-            request: The request that was groomed
-            lightpath_ids: Lightpath IDs to rollback
-            network_state: Current network state
+        :param request: The request that was groomed
+        :type request: Request
+        :param lightpath_ids: Lightpath IDs to rollback
+        :type lightpath_ids: list[int]
+        :param network_state: Current network state
+        :type network_state: NetworkState
         """
         try:
             # Create proxy
@@ -256,7 +260,18 @@ class GroomingAdapter(GroomingPipeline):
         was_fully_groomed: bool,
         original_bandwidth: int,
     ) -> GroomingResult:
-        """Convert SDN props state to GroomingResult."""
+        """
+        Convert SDN props state to GroomingResult.
+
+        :param sdn_props: SDN properties proxy with grooming state
+        :type sdn_props: SDNPropsProxyForGrooming
+        :param was_fully_groomed: Whether request was fully groomed
+        :type was_fully_groomed: bool
+        :param original_bandwidth: Original requested bandwidth in Gbps
+        :type original_bandwidth: int
+        :return: Converted grooming result
+        :rtype: GroomingResult
+        """
         from fusion.domain.results import GroomingResult
 
         # Extract SNR and modulation lists for Legacy compatibility
@@ -267,9 +282,7 @@ class GroomingAdapter(GroomingPipeline):
         # Determine grooming outcome
         if was_fully_groomed:
             # Fully groomed - no new lightpath needed
-            bandwidth_groomed = sum(
-                int(float(bw)) for bw in sdn_props.bandwidth_list
-            ) if sdn_props.bandwidth_list else original_bandwidth
+            bandwidth_groomed = sum(int(float(bw)) for bw in sdn_props.bandwidth_list) if sdn_props.bandwidth_list else original_bandwidth
 
             return GroomingResult.full(
                 bandwidth_gbps=bandwidth_groomed,
@@ -318,6 +331,13 @@ class GroomingAdapter(GroomingPipeline):
         Since NetworkState.lightpath_status_dict is a property that rebuilds
         from _lightpaths, those changes are lost. This method syncs the
         changes back to the actual Lightpath domain objects.
+
+        :param network_state: Network state containing lightpath objects
+        :type network_state: NetworkState
+        :param sdn_props: SDN properties proxy with modified state
+        :type sdn_props: SDNPropsProxyForGrooming
+        :param request_id: Request ID being groomed
+        :type request_id: int
         """
         # Iterate through lightpaths that were used for grooming
         for lp_id in sdn_props.lightpath_id_list:
@@ -328,7 +348,7 @@ class GroomingAdapter(GroomingPipeline):
 
             # Find the modified entry in lightpath_status_dict
             # The dict was modified in place by legacy grooming code
-            for light_id, lp_dict in sdn_props.lightpath_status_dict.items():
+            for _light_id, lp_dict in sdn_props.lightpath_status_dict.items():
                 if lp_id in lp_dict:
                     lp_info = lp_dict[lp_id]
 

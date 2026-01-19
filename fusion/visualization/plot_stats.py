@@ -17,9 +17,7 @@ class PlotStats:
     def __init__(self, sims_info_dict: dict):
         self.props = PlotProps()
         self.sims_info_dict = sims_info_dict
-        self.plot_help_obj = PlotHelpers(
-            plot_props=self.props, net_names_list=sims_info_dict["networks_matrix"]
-        )
+        self.plot_help_obj = PlotHelpers(plot_props=self.props, net_names_list=sims_info_dict["networks_matrix"])
 
         self.plot_help_obj.get_file_info(sims_info_dict=sims_info_dict)
 
@@ -64,9 +62,7 @@ class PlotStats:
         if grid:
             plt.grid()
 
-    def _plot_helper_two(
-        self, y_vals_list: list, erlang: float, file_name: str
-    ) -> None:
+    def _plot_helper_two(self, y_vals_list: list, erlang: float, file_name: str) -> None:
         """
         Meant to plot iter stats with erlang each on its own plot.
         """
@@ -80,9 +76,7 @@ class PlotStats:
                     for y_val in y_vals_list:
                         color = self.props.color_list[color_count]
                         erlang_list = info_dict.erlang_list
-                        index: int = [
-                            i for i, value in enumerate(erlang_list) if value == erlang
-                        ][0]
+                        index: int = [i for i, value in enumerate(erlang_list) if value == erlang][0]
                         y_val_data = getattr(info_dict, y_val)
                         x_vals = list(range(len(y_val_data[index])))
                         plt.plot(
@@ -264,9 +258,7 @@ class PlotStats:
         )
 
         if art_int:
-            self._plot_helper_two(
-                y_vals_list=["block_per_iter"], erlang=250, file_name="bp_e250"
-            )
+            self._plot_helper_two(y_vals_list=["block_per_iter"], erlang=250, file_name="bp_e250")
         else:
             self._plot_helper_one(
                 x_vals="erlang_list",

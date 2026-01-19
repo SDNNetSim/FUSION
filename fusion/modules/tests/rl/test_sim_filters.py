@@ -292,9 +292,7 @@ class TestFindTimes:
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.listdir")
     @patch("os.path.isdir")
-    def test_find_times_with_valid_directories(
-        self, mock_isdir: Any, mock_listdir: Any, mock_file: Any, mock_update: Any
-    ) -> None:
+    def test_find_times_with_valid_directories(self, mock_isdir: Any, mock_listdir: Any, mock_file: Any, mock_update: Any) -> None:
         """Test find_times with valid directory structure."""
         # Arrange
         dates_dict = {"0101": "nsfnet"}
@@ -326,9 +324,7 @@ class TestFindTimes:
 
     @patch("fusion.modules.rl.utils.sim_filters.update_matrices")
     @patch("os.path.isdir")
-    def test_find_times_skips_nonexistent_directories(
-        self, mock_isdir: Any, mock_update: Any
-    ) -> None:
+    def test_find_times_skips_nonexistent_directories(self, mock_isdir: Any, mock_update: Any) -> None:
         """Test that find_times skips non-existent directories."""
         # Arrange
         dates_dict = {"0101": "nonexistent_network"}
@@ -378,9 +374,7 @@ class TestFindTimes:
     @patch("builtins.open")
     @patch("os.listdir")
     @patch("os.path.isdir")
-    def test_find_times_applies_filters(
-        self, mock_isdir: Any, mock_listdir: Any, mock_file: Any, mock_update: Any
-    ) -> None:
+    def test_find_times_applies_filters(self, mock_isdir: Any, mock_listdir: Any, mock_file: Any, mock_update: Any) -> None:
         """Test that find_times correctly applies filter conditions."""
         # Arrange
         dates_dict = {"0101": "nsfnet"}
@@ -390,9 +384,7 @@ class TestFindTimes:
         mock_listdir.side_effect = [["20240101_120000"], ["sim_input_0.json"]]
 
         file_content = json.dumps({"algo": "dqn"})  # Won't match filter
-        mock_file.return_value.__enter__.return_value = mock_open(
-            read_data=file_content
-        )()
+        mock_file.return_value.__enter__.return_value = mock_open(read_data=file_content)()
         mock_update.return_value = {}
 
         # Act

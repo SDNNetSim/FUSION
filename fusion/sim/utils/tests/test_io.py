@@ -15,9 +15,7 @@ class TestYAMLParsing:
 
     @patch("builtins.open", new_callable=mock_open, read_data="key: value")
     @patch("yaml.safe_load")
-    def test_parse_yaml_file_with_valid_file_returns_dict(
-        self, mock_yaml_load: MagicMock, mock_file: Any
-    ) -> None:
+    def test_parse_yaml_file_with_valid_file_returns_dict(self, mock_yaml_load: MagicMock, mock_file: Any) -> None:
         """Test successful parsing of valid YAML file.
 
         :param mock_yaml_load: Mock for yaml.safe_load
@@ -39,9 +37,7 @@ class TestYAMLParsing:
 
     @patch("builtins.open", new_callable=mock_open, read_data="invalid: yaml: content")
     @patch("yaml.safe_load")
-    def test_parse_yaml_file_with_invalid_yaml_returns_exception(
-        self, mock_yaml_load: MagicMock, mock_file: Any
-    ) -> None:
+    def test_parse_yaml_file_with_invalid_yaml_returns_exception(self, mock_yaml_load: MagicMock, mock_file: Any) -> None:
         """Test parsing of invalid YAML returns exception.
 
         :param mock_yaml_load: Mock for yaml.safe_load
@@ -63,9 +59,7 @@ class TestYAMLParsing:
 
     @patch("builtins.open", new_callable=mock_open, read_data="")
     @patch("yaml.safe_load")
-    def test_parse_yaml_file_with_empty_file_returns_none(
-        self, mock_yaml_load: MagicMock, mock_file: Any
-    ) -> None:
+    def test_parse_yaml_file_with_empty_file_returns_none(self, mock_yaml_load: MagicMock, mock_file: Any) -> None:
         """Test parsing of empty YAML file.
 
         :param mock_yaml_load: Mock for yaml.safe_load
@@ -84,13 +78,9 @@ class TestYAMLParsing:
         assert result is None
         mock_file.assert_called_once_with(yaml_file, encoding="utf-8")
 
-    @patch(
-        "builtins.open", new_callable=mock_open, read_data="items:\n  - one\n  - two"
-    )
+    @patch("builtins.open", new_callable=mock_open, read_data="items:\n  - one\n  - two")
     @patch("yaml.safe_load")
-    def test_parse_yaml_file_with_list_structure_returns_list(
-        self, mock_yaml_load: MagicMock, mock_file: Any
-    ) -> None:
+    def test_parse_yaml_file_with_list_structure_returns_list(self, mock_yaml_load: MagicMock, mock_file: Any) -> None:
         """Test parsing YAML file with list structure.
 
         :param mock_yaml_load: Mock for yaml.safe_load
@@ -139,21 +129,15 @@ class TestJSONModification:
         modify_multiple_json_values(trial_num, file_path, update_list)
 
         # Assert
-        mock_file.assert_any_call(
-            os.path.join(file_path, "sim_input_s1.json"), encoding="utf-8"
-        )
-        mock_file.assert_any_call(
-            os.path.join(file_path, "sim_input_s2.json"), "w", encoding="utf-8"
-        )
+        mock_file.assert_any_call(os.path.join(file_path, "sim_input_s1.json"), encoding="utf-8")
+        mock_file.assert_any_call(os.path.join(file_path, "sim_input_s2.json"), "w", encoding="utf-8")
         mock_json_dump.assert_called_once()
         args = mock_json_dump.call_args[0]
         assert args[0] == expected_data
 
     @patch("json.load")
     @patch("builtins.open", new_callable=mock_open)
-    def test_modify_multiple_json_values_with_invalid_key_raises_error(
-        self, mock_file: Any, mock_json_load: MagicMock
-    ) -> None:
+    def test_modify_multiple_json_values_with_invalid_key_raises_error(self, mock_file: Any, mock_json_load: MagicMock) -> None:
         """Test that invalid key raises KeyError.
 
         :param mock_file: Mock for file operations

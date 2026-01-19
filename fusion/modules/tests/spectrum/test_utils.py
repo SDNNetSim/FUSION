@@ -68,9 +68,7 @@ def spectrum_props() -> SpectrumProps:
 
 
 @pytest.fixture
-def spectrum_helpers(
-    engine_props: dict[str, Any], sdn_props: MagicMock, spectrum_props: SpectrumProps
-) -> SpectrumHelpers:
+def spectrum_helpers(engine_props: dict[str, Any], sdn_props: MagicMock, spectrum_props: SpectrumProps) -> SpectrumHelpers:
     """Provide SpectrumHelpers instance for tests."""
     return SpectrumHelpers(engine_props, sdn_props, spectrum_props)
 
@@ -78,9 +76,7 @@ def spectrum_helpers(
 class TestCheckFreeSpectrum:
     """Tests for _check_free_spectrum method."""
 
-    def test_check_free_spectrum_with_free_slots_returns_true(
-        self, spectrum_helpers: SpectrumHelpers
-    ) -> None:
+    def test_check_free_spectrum_with_free_slots_returns_true(self, spectrum_helpers: SpectrumHelpers) -> None:
         """Test that free spectrum slots are correctly identified."""
         # Arrange
         spectrum_helpers.current_band = "c"
@@ -112,9 +108,7 @@ class TestCheckFreeSpectrum:
         # Assert
         assert result is True
 
-    def test_check_free_spectrum_with_occupied_slots_returns_false(
-        self, spectrum_helpers: SpectrumHelpers, sdn_props: MagicMock
-    ) -> None:
+    def test_check_free_spectrum_with_occupied_slots_returns_false(self, spectrum_helpers: SpectrumHelpers, sdn_props: MagicMock) -> None:
         """Test that occupied spectrum slots return false."""
         # Arrange
         spectrum_helpers.current_band = "c"
@@ -308,9 +302,7 @@ class TestUpdateSpecProps:
 class TestCheckSuperChannels:
     """Tests for check_super_channels method."""
 
-    def test_check_super_channels_with_valid_allocation_returns_true(
-        self, spectrum_helpers: SpectrumHelpers
-    ) -> None:
+    def test_check_super_channels_with_valid_allocation_returns_true(self, spectrum_helpers: SpectrumHelpers) -> None:
         """Test that valid super-channel allocation succeeds."""
         # Arrange
         open_slots_matrix = [[0, 1, 2, 3, 4], [5, 6, 7, 8]]
@@ -324,9 +316,7 @@ class TestCheckSuperChannels:
         # Assert
         assert result is True
 
-    def test_check_super_channels_with_insufficient_slots_returns_false(
-        self, spectrum_helpers: SpectrumHelpers
-    ) -> None:
+    def test_check_super_channels_with_insufficient_slots_returns_false(self, spectrum_helpers: SpectrumHelpers) -> None:
         """Test that insufficient slots return False."""
         # Arrange
         open_slots_matrix = [[0, 1, 2, 3, 4], [5, 6, 7, 8]]
@@ -352,17 +342,13 @@ class TestCheckSuperChannels:
         spectrum_props.slots_needed = 2
 
         # Act
-        result = spectrum_helpers.check_super_channels(
-            open_slots_matrix, flag="forced_index"
-        )
+        result = spectrum_helpers.check_super_channels(open_slots_matrix, flag="forced_index")
 
         # Assert
         assert result is True
         assert spectrum_helpers.start_index == 5
 
-    def test_check_super_channels_with_last_fit_allocation(
-        self, spectrum_helpers: SpectrumHelpers
-    ) -> None:
+    def test_check_super_channels_with_last_fit_allocation(self, spectrum_helpers: SpectrumHelpers) -> None:
         """Test super-channel allocation with last fit strategy."""
         # Arrange
         open_slots_matrix = [[0, 1, 2, 3, 4], [5, 6, 7, 8]]
@@ -377,9 +363,7 @@ class TestCheckSuperChannels:
         # Assert
         assert result is False  # Last fit has different logic
 
-    def test_check_super_channels_with_no_guard_band(
-        self, spectrum_helpers: SpectrumHelpers
-    ) -> None:
+    def test_check_super_channels_with_no_guard_band(self, spectrum_helpers: SpectrumHelpers) -> None:
         """Test super-channel allocation with zero guard band."""
         # Arrange
         open_slots_matrix = [[0, 1, 2, 3, 4], [5, 6, 7, 8]]

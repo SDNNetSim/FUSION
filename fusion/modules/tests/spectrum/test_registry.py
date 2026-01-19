@@ -48,9 +48,7 @@ def route_props() -> MagicMock:
 class TestSpectrumRegistryInit:
     """Tests for SpectrumRegistry initialization."""
 
-    def test_init_registers_default_algorithms(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_init_registers_default_algorithms(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test that default algorithms are registered on init."""
         # Act
         algorithms = spectrum_registry.list_algorithms()
@@ -64,9 +62,7 @@ class TestSpectrumRegistryInit:
 class TestRegisterMethod:
     """Tests for register method."""
 
-    def test_register_with_valid_algorithm_succeeds(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_register_with_valid_algorithm_succeeds(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test successful algorithm registration."""
 
         # Arrange
@@ -128,17 +124,13 @@ class TestRegisterMethod:
         # Assert
         assert "custom" in spectrum_registry.list_algorithms()
 
-    def test_register_with_duplicate_name_raises_error(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_register_with_duplicate_name_raises_error(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test that duplicate registration raises ValueError."""
         # Act & Assert
         with pytest.raises(ValueError, match="already registered"):
             spectrum_registry.register("first_fit", FirstFitSpectrum)
 
-    def test_register_with_non_abstract_class_raises_error(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_register_with_non_abstract_class_raises_error(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test that non-AbstractSpectrumAssigner class raises TypeError."""
 
         # Arrange
@@ -153,9 +145,7 @@ class TestRegisterMethod:
 class TestGetMethod:
     """Tests for get method."""
 
-    def test_get_with_valid_name_returns_class(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_get_with_valid_name_returns_class(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test retrieving valid algorithm class."""
         # Act
         algorithm_class = spectrum_registry.get("first_fit")
@@ -163,9 +153,7 @@ class TestGetMethod:
         # Assert
         assert algorithm_class == FirstFitSpectrum
 
-    def test_get_with_invalid_name_raises_error(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_get_with_invalid_name_raises_error(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test that invalid algorithm name raises KeyError."""
         # Act & Assert
         with pytest.raises(KeyError, match="not found"):
@@ -184,9 +172,7 @@ class TestCreateMethod:
     ) -> None:
         """Test creating algorithm instance."""
         # Act
-        instance = spectrum_registry.create(
-            "first_fit", engine_props, sdn_props, route_props
-        )
+        instance = spectrum_registry.create("first_fit", engine_props, sdn_props, route_props)
 
         # Assert
         assert isinstance(instance, FirstFitSpectrum)
@@ -202,17 +188,13 @@ class TestCreateMethod:
         """Test creating instance with invalid name raises KeyError."""
         # Act & Assert
         with pytest.raises(KeyError, match="not found"):
-            spectrum_registry.create(
-                "nonexistent", engine_props, sdn_props, route_props
-            )
+            spectrum_registry.create("nonexistent", engine_props, sdn_props, route_props)
 
 
 class TestListAlgorithms:
     """Tests for list_algorithms method."""
 
-    def test_list_algorithms_returns_all_registered(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_list_algorithms_returns_all_registered(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test listing all registered algorithms."""
         # Act
         algorithms = spectrum_registry.list_algorithms()
@@ -228,9 +210,7 @@ class TestListAlgorithms:
 class TestGetAlgorithmInfo:
     """Tests for get_algorithm_info method."""
 
-    def test_get_algorithm_info_returns_correct_details(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_get_algorithm_info_returns_correct_details(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test retrieving algorithm information."""
         # Act
         info = spectrum_registry.get_algorithm_info("first_fit")
@@ -242,9 +222,7 @@ class TestGetAlgorithmInfo:
         assert "supports_multiband" in info
         assert "description" in info
 
-    def test_get_algorithm_info_with_invalid_name_raises_error(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_get_algorithm_info_with_invalid_name_raises_error(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test that invalid algorithm name raises KeyError."""
         # Act & Assert
         with pytest.raises(KeyError, match="not found"):
@@ -254,9 +232,7 @@ class TestGetAlgorithmInfo:
 class TestGetMultibandAlgorithms:
     """Tests for get_multiband_algorithms method."""
 
-    def test_get_multiband_algorithms_returns_supporting_algorithms(
-        self, spectrum_registry: SpectrumRegistry
-    ) -> None:
+    def test_get_multiband_algorithms_returns_supporting_algorithms(self, spectrum_registry: SpectrumRegistry) -> None:
         """Test retrieving multiband-supporting algorithms."""
         # Act
         multiband_algos = spectrum_registry.get_multiband_algorithms()
@@ -315,9 +291,7 @@ class TestGlobalRegistryFunctions:
     ) -> None:
         """Test global create function."""
         # Act
-        instance = create_spectrum_algorithm(
-            "first_fit", engine_props, sdn_props, route_props
-        )
+        instance = create_spectrum_algorithm("first_fit", engine_props, sdn_props, route_props)
 
         # Assert
         assert isinstance(instance, FirstFitSpectrum)

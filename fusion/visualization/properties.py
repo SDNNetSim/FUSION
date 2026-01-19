@@ -45,9 +45,7 @@ class PlotProps:  # pylint: disable=too-few-public-methods
         ]  # Styles used for lines
         self.marker_list = ["o", "^", "s", "x"]  # Marker styles used for lines
         self.x_tick_list = [50, 100, 200, 300, 400, 500, 600, 700]  # X-tick labels
-        self.title_names: str | None = (
-            None  # Important names used for titles in plots (one string)
-        )
+        self.title_names: str | None = None  # Important names used for titles in plots (one string)
 
     def __repr__(self) -> str:
         return f"PlotProps({self.__dict__})"
@@ -63,47 +61,25 @@ class PlotArgs:
         self.blocking_list: list[float] = []  # Blocking values to be plotted
         self.lengths_list: list[float] = []  # Average path length values
         self.hops_list: list[float] = []  # Average path hop
-        self.occ_slot_matrix: list[
-            float
-        ] = []  # Occupied slots in the entire network at different snapshots
-        self.active_req_matrix: list[
-            float
-        ] = []  # Number of requests allocated in the network (snapshots)
-        self.block_req_matrix: list[
-            float
-        ] = []  # Running average blocking probabilities (snapshots)
-        self.req_num_list: list[
-            int
-        ] = []  # Active request identification numbers (snapshots)
+        self.occ_slot_matrix: list[float] = []  # Occupied slots in the entire network at different snapshots
+        self.active_req_matrix: list[float] = []  # Number of requests allocated in the network (snapshots)
+        self.block_req_matrix: list[float] = []  # Running average blocking probabilities (snapshots)
+        self.req_num_list: list[int] = []  # Active request identification numbers (snapshots)
         self.times_list: list[float] = []  # Simulation start times
-        self.modulations_dict: dict[
-            str, dict[str, list[float]]
-        ] = {}  # Modulation formats used
-        self.dist_block_list: list[
-            float
-        ] = []  # Percentage of blocking due to a reach constraint
-        self.cong_block_list: list[
-            float
-        ] = []  # Percentage of blocking due to a congestion constraint
+        self.modulations_dict: dict[str, dict[str, list[float]]] = {}  # Modulation formats used
+        self.dist_block_list: list[float] = []  # Percentage of blocking due to a reach constraint
+        self.cong_block_list: list[float] = []  # Percentage of blocking due to a congestion constraint
         self.holding_time = None  # Holding time for the simulation run
         self.cores_per_link = None  # Number of cores per link
         # TODO: (drl_path_agents) Does not support all bands, check on this
         self.c_band = None  # Spectral slots per core for the c-band
-        self.learn_rate = (
-            None  # For artificial intelligence (AI), learning rate used if any
-        )
+        self.learn_rate = None  # For artificial intelligence (AI), learning rate used if any
         self.discount_factor = None  # For AI, discount factor used if any
 
-        self.block_per_iter: list[
-            float
-        ] = []  # Blocking probability per iteration of one simulation configuration
-        self.sum_rewards_list: list[
-            float
-        ] = []  # For reinforcement learning (RL), sum of rewards per episode
+        self.block_per_iter: list[float] = []  # Blocking probability per iteration of one simulation configuration
+        self.sum_rewards_list: list[float] = []  # For reinforcement learning (RL), sum of rewards per episode
         self.sum_errors_list: list[float] = []  # For RL, sum of errors per episode
-        self.epsilon_list: list[
-            float
-        ] = []  # For RL, decay of epsilon w.r.t. each episode
+        self.epsilon_list: list[float] = []  # For RL, decay of epsilon w.r.t. each episode
 
     def __setitem__(self, key: str, value: object) -> None:
         setattr(self, key, value)
@@ -146,9 +122,7 @@ class PlotArgs:
         resp_plot_props = copy.deepcopy(plot_props)
         if resp_plot_props.plot_dict is not None:
             for info_item in info_item_list:
-                resp_plot_props.plot_dict[time][sim_num][info_item] = input_dict[
-                    info_item
-                ]
+                resp_plot_props.plot_dict[time][sim_num][info_item] = input_dict[info_item]
 
         return resp_plot_props
 

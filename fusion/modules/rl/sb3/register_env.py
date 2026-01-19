@@ -41,22 +41,17 @@ def copy_yml_file(algorithm: str) -> None:
     """
     # Note: Preserving exact hard-coded paths as required for SB3 integration
     source_file = Path(f"sb3_scripts/yml/{algorithm}.yml")
-    destination_file = Path(
-        f"venvs/unity_venv/venv/lib/python3.11/site-packages/"
-        f"rl_zoo3/hyperparams/{algorithm}.yml"
-    )
+    destination_file = Path(f"venvs/unity_venv/venv/lib/python3.11/site-packages/rl_zoo3/hyperparams/{algorithm}.yml")
 
     try:
         shutil.copy(str(source_file), str(destination_file))
     except FileNotFoundError as exc:
         raise FileNotFoundError(
-            f"Configuration file not found: {source_file}. "
-            f"Ensure the algorithm configuration exists in sb3_scripts/yml/"
+            f"Configuration file not found: {source_file}. Ensure the algorithm configuration exists in sb3_scripts/yml/"
         ) from exc
     except PermissionError as exc:
         raise PermissionError(
-            f"Cannot write to RLZoo3 directory: {destination_file}. "
-            f"Check file permissions and virtual environment access."
+            f"Cannot write to RLZoo3 directory: {destination_file}. Check file permissions and virtual environment access."
         ) from exc
     except OSError as exc:
         raise OSError(f"Failed to copy configuration file: {exc}") from exc
@@ -103,9 +98,7 @@ def main() -> None:
         # CRITICAL: Preserving exact entry point string for SB3 compatibility
         register(
             id=args.env_name,
-            entry_point=(
-                f"reinforcement_learning.gymnasium_envs.general_sim_env:{args.env_name}"
-            ),
+            entry_point=(f"reinforcement_learning.gymnasium_envs.general_sim_env:{args.env_name}"),
         )
 
         print("\n=== Registered Environments with Gymnasium ===\n")
@@ -116,10 +109,7 @@ def main() -> None:
         # Copy algorithm configuration to RLZoo3
         copy_yml_file(algorithm=args.algo)
 
-        print(
-            f"Successfully registered environment '{args.env_name}' "
-            f"with algorithm '{args.algo}'"
-        )
+        print(f"Successfully registered environment '{args.env_name}' with algorithm '{args.algo}'")
 
     except Exception as exc:
         raise RuntimeError(f"Failed to register environment: {exc}") from exc

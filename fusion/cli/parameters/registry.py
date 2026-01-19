@@ -152,9 +152,7 @@ class ArgumentRegistry:
         """Register subcommand parsers."""
         self.register_subcommand("run_sim", register_run_sim_args)
 
-    def register_group(
-        self, name: str, add_args_func: Callable[[argparse.ArgumentParser], None]
-    ) -> None:
+    def register_group(self, name: str, add_args_func: Callable[[argparse.ArgumentParser], None]) -> None:
         """
         Register an argument group with the registry.
 
@@ -186,9 +184,7 @@ class ArgumentRegistry:
             raise ValueError(f"Subcommand '{name}' is already registered")
         self._subcommand_parsers[name] = register_func
 
-    def add_groups_to_parser(
-        self, parser: argparse.ArgumentParser, group_names: list[str]
-    ) -> None:
+    def add_groups_to_parser(self, parser: argparse.ArgumentParser, group_names: list[str]) -> None:
         """
         Add specified argument groups to an ArgumentParser.
 
@@ -203,15 +199,10 @@ class ArgumentRegistry:
         for group_name in group_names:
             if group_name not in self._argument_groups:
                 available_groups = list(self._argument_groups.keys())
-                raise ValueError(
-                    f"Unknown argument group: '{group_name}'. "
-                    f"Available groups: {available_groups}"
-                )
+                raise ValueError(f"Unknown argument group: '{group_name}'. Available groups: {available_groups}")
             self._argument_groups[group_name](parser)
 
-    def create_parser_with_groups(
-        self, description: str, group_names: list[str]
-    ) -> argparse.ArgumentParser:
+    def create_parser_with_groups(self, description: str, group_names: list[str]) -> argparse.ArgumentParser:
         """
         Create an ArgumentParser with specified argument groups.
 
@@ -238,9 +229,7 @@ class ArgumentRegistry:
             description="FUSION Simulator CLI",
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
-        subparsers = parser.add_subparsers(
-            dest="mode", required=True, help="Available simulation modes"
-        )
+        subparsers = parser.add_subparsers(dest="mode", required=True, help="Available simulation modes")
 
         for _, register_func in self._subcommand_parsers.items():
             register_func(subparsers)

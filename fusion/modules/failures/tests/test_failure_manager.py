@@ -63,9 +63,7 @@ def test_failure_repair_restores_path(failure_manager: FailureManager) -> None:
 def test_srlg_failure_multiple_links(failure_manager: FailureManager) -> None:
     """Test that all SRLG links are failed simultaneously."""
     srlg_links = [(0, 1), (2, 3), (5, 6)]
-    failure_manager.inject_failure(
-        "srlg", t_fail=10.0, t_repair=20.0, srlg_links=srlg_links
-    )
+    failure_manager.inject_failure("srlg", t_fail=10.0, t_repair=20.0, srlg_links=srlg_links)
 
     # Activate the failures
     failure_manager.activate_failures(10.0)
@@ -77,13 +75,9 @@ def test_srlg_failure_multiple_links(failure_manager: FailureManager) -> None:
     assert not failure_manager.is_path_feasible([0, 5, 6, 3])
 
 
-def test_geo_failure_radius(
-    failure_manager: FailureManager, sample_topology: nx.Graph
-) -> None:
+def test_geo_failure_radius(failure_manager: FailureManager, sample_topology: nx.Graph) -> None:
     """Test that links within hop radius are failed, others unaffected."""
-    event = failure_manager.inject_failure(
-        "geo", t_fail=10.0, t_repair=20.0, center_node=1, hop_radius=1
-    )
+    event = failure_manager.inject_failure("geo", t_fail=10.0, t_repair=20.0, center_node=1, hop_radius=1)
 
     # Activate the failures
     failure_manager.activate_failures(10.0)
@@ -112,22 +106,16 @@ def test_invalid_failure_config(failure_manager: FailureManager) -> None:
     """Test that invalid configurations raise errors."""
     # Repair before failure
     with pytest.raises(FailureConfigError, match="Repair time.*must be after"):
-        failure_manager.inject_failure(
-            "link", t_fail=20.0, t_repair=10.0, link_id=(0, 1)
-        )
+        failure_manager.inject_failure("link", t_fail=20.0, t_repair=10.0, link_id=(0, 1))
 
     # Invalid link
     with pytest.raises(FailureConfigError, match="does not exist"):
-        failure_manager.inject_failure(
-            "link", t_fail=10.0, t_repair=20.0, link_id=(99, 100)
-        )
+        failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(99, 100))
 
 
 def test_node_failure_blocks_adjacent_links(failure_manager: FailureManager) -> None:
     """Test that all links adjacent to a failed node are blocked."""
-    event = failure_manager.inject_failure(
-        "node", t_fail=10.0, t_repair=20.0, node_id=1
-    )
+    event = failure_manager.inject_failure("node", t_fail=10.0, t_repair=20.0, node_id=1)
 
     # Activate the failures
     failure_manager.activate_failures(10.0)

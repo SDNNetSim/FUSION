@@ -92,9 +92,7 @@ class TestSetupConfigFromCli:
         mock_load_config.assert_called_once()
 
     @patch("fusion.cli.config_setup.load_config")
-    def test_setup_config_from_cli_handles_config_errors(
-        self, mock_load_config: Any, sample_args: Any, mock_logger: Any
-    ) -> None:
+    def test_setup_config_from_cli_handles_config_errors(self, mock_load_config: Any, sample_args: Any, mock_logger: Any) -> None:
         """Test setup_config_from_cli handles configuration errors gracefully."""
         mock_load_config.side_effect = ConfigFileNotFoundError("File not found")
 
@@ -103,9 +101,7 @@ class TestSetupConfigFromCli:
         assert result == {}
 
     @patch("fusion.cli.config_setup.load_config")
-    def test_setup_config_from_cli_handles_unexpected_errors(
-        self, mock_load_config: Any, sample_args: Any, mock_logger: Any
-    ) -> None:
+    def test_setup_config_from_cli_handles_unexpected_errors(self, mock_load_config: Any, sample_args: Any, mock_logger: Any) -> None:
         """Test setup_config_from_cli handles unexpected errors."""
         mock_load_config.side_effect = ValueError("Unexpected error")
 
@@ -147,41 +143,31 @@ class TestProcessRequiredOptions:
         required_dict = {"sim": {"missing_option": str}}
 
         with pytest.raises(MissingRequiredOptionError) as exc_info:
-            _process_required_options(
-                mock_config_parser, config_dict, required_dict, {}, sample_args_dict
-            )
+            _process_required_options(mock_config_parser, config_dict, required_dict, {}, sample_args_dict)
         assert "Missing required option" in str(exc_info.value)
 
 
 class TestProcessOptionalOptions:
     """Tests for _process_optional_options function."""
 
-    def test_process_optional_options_with_valid_config(
-        self, mock_config_parser: Any, sample_args_dict: dict[str, Any]
-    ) -> None:
+    def test_process_optional_options_with_valid_config(self, mock_config_parser: Any, sample_args_dict: dict[str, Any]) -> None:
         """Test _process_optional_options processes optional options correctly."""
         config_dict: dict[str, dict[str, Any]] = {DEFAULT_THREAD_NAME: {}}
         # Use general_settings section which gets flattened for backward compatibility
         optional_dict = {"general_settings": {"optional_test": str}}
         mock_config_parser.__getitem__.return_value = {"optional_test": "test_value"}
 
-        _process_optional_options(
-            mock_config_parser, config_dict, optional_dict, sample_args_dict
-        )
+        _process_optional_options(mock_config_parser, config_dict, optional_dict, sample_args_dict)
 
         assert config_dict[DEFAULT_THREAD_NAME]["optional_test"] == "test_value"
 
-    def test_process_optional_options_with_missing_option_skips_it(
-        self, mock_config_parser: Any, sample_args_dict: dict[str, Any]
-    ) -> None:
+    def test_process_optional_options_with_missing_option_skips_it(self, mock_config_parser: Any, sample_args_dict: dict[str, Any]) -> None:
         """Test _process_optional_options skips missing optional options."""
         config_dict: dict[str, dict[str, Any]] = {DEFAULT_THREAD_NAME: {}}
         optional_dict = {"sim": {"missing_optional": str}}
         mock_config_parser.__getitem__.return_value = {}
 
-        _process_optional_options(
-            mock_config_parser, config_dict, optional_dict, sample_args_dict
-        )
+        _process_optional_options(mock_config_parser, config_dict, optional_dict, sample_args_dict)
 
         # Missing optional options should not be set at all
         # This allows .get() with defaults to work correctly
@@ -191,17 +177,13 @@ class TestProcessOptionalOptions:
 class TestValidateConfigStructure:
     """Tests for _validate_config_structure function."""
 
-    def test_validate_config_structure_with_valid_config(
-        self, mock_config_parser: Any
-    ) -> None:
+    def test_validate_config_structure_with_valid_config(self, mock_config_parser: Any) -> None:
         """Test _validate_config_structure passes with valid structure."""
         mock_config_parser.has_section.return_value = True
 
         _validate_config_structure(mock_config_parser)
 
-    def test_validate_config_structure_with_missing_section_raises_error(
-        self, mock_config_parser: Any
-    ) -> None:
+    def test_validate_config_structure_with_missing_section_raises_error(self, mock_config_parser: Any) -> None:
         """Test _validate_config_structure raises error for missing required section."""
         mock_config_parser.has_section.return_value = False
 
@@ -289,9 +271,7 @@ class TestLoadConfig:
         assert isinstance(result, dict)
         assert DEFAULT_THREAD_NAME in result
 
-    def test_load_config_with_invalid_file_returns_empty_dict(
-        self, invalid_config_file: Any, sample_args_dict: dict[str, Any]
-    ) -> None:
+    def test_load_config_with_invalid_file_returns_empty_dict(self, invalid_config_file: Any, sample_args_dict: dict[str, Any]) -> None:
         """Test load_config returns empty dict for invalid config."""
         result = load_config(str(invalid_config_file), sample_args_dict)
 
@@ -343,9 +323,7 @@ class TestSetupThreads:
         """Test _setup_threads copies default thread values to new threads."""
         config = Mock()
         config.items.return_value = [("simulation_time", "2000")]
-        config_dict = {
-            DEFAULT_THREAD_NAME: {"run_id": "default", "simulation_time": 1000}
-        }
+        config_dict = {DEFAULT_THREAD_NAME: {"run_id": "default", "simulation_time": 1000}}
         section_list = ["s2"]
         types_dict = {"sim": {"simulation_time": int}}
 
@@ -389,9 +367,7 @@ class TestLoadAndValidateConfig:
     """Tests for load_and_validate_config function."""
 
     @patch("fusion.cli.config_setup.load_config")
-    def test_load_and_validate_config_returns_config_dict(
-        self, mock_load_config: Any, temp_config_file: Any
-    ) -> None:
+    def test_load_and_validate_config_returns_config_dict(self, mock_load_config: Any, temp_config_file: Any) -> None:
         """Test load_and_validate_config returns validated config dictionary."""
         mock_load_config.return_value = {DEFAULT_THREAD_NAME: {"run_id": "test"}}
         args = Mock(config_path=str(temp_config_file))
@@ -405,9 +381,7 @@ class TestLoadAndValidateConfig:
 class TestConfigManager:
     """Tests for ConfigManager class."""
 
-    def test_config_manager_initialization(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_initialization(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager initializes correctly with config and args."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
@@ -415,9 +389,7 @@ class TestConfigManager:
         assert manager._args == sample_args
 
     @patch("fusion.cli.config_setup.load_config")
-    def test_config_manager_from_args_creates_instance(
-        self, mock_load_config: Any, temp_config_file: Any
-    ) -> None:
+    def test_config_manager_from_args_creates_instance(self, mock_load_config: Any, temp_config_file: Any) -> None:
         """Test ConfigManager.from_args creates instance from arguments."""
         mock_load_config.return_value = {DEFAULT_THREAD_NAME: {"run_id": "test"}}
         args = Mock(config_path=str(temp_config_file))
@@ -437,18 +409,14 @@ class TestConfigManager:
             with pytest.raises(ConfigError):
                 ConfigManager.from_args(args)
 
-    def test_config_manager_from_file_creates_instance(
-        self, temp_config_file: Any, sample_args_dict: dict[str, Any]
-    ) -> None:
+    def test_config_manager_from_file_creates_instance(self, temp_config_file: Any, sample_args_dict: dict[str, Any]) -> None:
         """Test ConfigManager.from_file creates instance from file path."""
         manager = ConfigManager.from_file(str(temp_config_file), sample_args_dict)
 
         assert isinstance(manager, ConfigManager)
         assert hasattr(manager._args, "config_path")
 
-    def test_config_manager_as_dict_returns_config(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_as_dict_returns_config(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.as_dict returns configuration dictionary."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
@@ -456,9 +424,7 @@ class TestConfigManager:
 
         assert result == valid_config_dict
 
-    def test_config_manager_get_returns_thread_config(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_get_returns_thread_config(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.get returns configuration for specified thread."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
@@ -466,9 +432,7 @@ class TestConfigManager:
 
         assert result == valid_config_dict[DEFAULT_THREAD_NAME]
 
-    def test_config_manager_get_with_nonexistent_thread_returns_empty(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_get_with_nonexistent_thread_returns_empty(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.get returns empty dict for nonexistent thread."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
@@ -476,9 +440,7 @@ class TestConfigManager:
 
         assert result == {}
 
-    def test_config_manager_get_value_returns_correct_value(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_get_value_returns_correct_value(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.get_value returns specific configuration value."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
@@ -486,21 +448,15 @@ class TestConfigManager:
 
         assert result == "test_run_001"
 
-    def test_config_manager_get_value_with_default(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_get_value_with_default(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.get_value returns default for missing key."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
-        result = manager.get_value(
-            "nonexistent_key", DEFAULT_THREAD_NAME, "default_value"
-        )
+        result = manager.get_value("nonexistent_key", DEFAULT_THREAD_NAME, "default_value")
 
         assert result == "default_value"
 
-    def test_config_manager_has_thread_returns_correct_boolean(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_has_thread_returns_correct_boolean(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.has_thread returns correct boolean values."""
         manager = ConfigManager(valid_config_dict, sample_args)
 
@@ -523,9 +479,7 @@ class TestConfigManager:
         assert "thread_1" in threads
         assert "thread_2" in threads
 
-    def test_config_manager_get_args_returns_args(
-        self, valid_config_dict: dict[str, Any], sample_args: Any
-    ) -> None:
+    def test_config_manager_get_args_returns_args(self, valid_config_dict: dict[str, Any], sample_args: Any) -> None:
         """Test ConfigManager.get_args returns stored arguments."""
         manager = ConfigManager(valid_config_dict, sample_args)
 

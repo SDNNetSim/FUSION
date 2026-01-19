@@ -57,8 +57,7 @@ class TestAgentInterfaceAbstractMethods:
         abstract_methods = {
             method
             for method in dir(AgentInterface)
-            if hasattr(getattr(AgentInterface, method), "__isabstractmethod__")
-            and getattr(AgentInterface, method).__isabstractmethod__
+            if hasattr(getattr(AgentInterface, method), "__isabstractmethod__") and getattr(AgentInterface, method).__isabstractmethod__
         }
 
         # Assert
@@ -196,9 +195,7 @@ class TestConcreteAgentImplementation:
             def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
-            def train(
-                self, env: Any, _total_timesteps: int, **kwargs: Any
-            ) -> dict[str, Any]:
+            def train(self, env: Any, _total_timesteps: int, **kwargs: Any) -> dict[str, Any]:
                 return {"loss": 0.5}
 
             def learn_from_experience(
@@ -226,9 +223,7 @@ class TestConcreteAgentImplementation:
             ) -> float:
                 return 1.0
 
-            def update_exploration_params(
-                self, _timestep: int, _total_timesteps: int
-            ) -> None:
+            def update_exploration_params(self, _timestep: int, _total_timesteps: int) -> None:
                 pass
 
             def get_config(self) -> dict[str, Any]:
@@ -294,9 +289,7 @@ class TestAgentInterfaceOptionalMethods:
             def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
-            def train(
-                self, env: Any, _total_timesteps: int, **kwargs: Any
-            ) -> dict[str, Any]:
+            def train(self, env: Any, _total_timesteps: int, **kwargs: Any) -> dict[str, Any]:
                 return {}
 
             def learn_from_experience(
@@ -324,9 +317,7 @@ class TestAgentInterfaceOptionalMethods:
             ) -> float:
                 return 0.0
 
-            def update_exploration_params(
-                self, _timestep: int, _total_timesteps: int
-            ) -> None:
+            def update_exploration_params(self, _timestep: int, _total_timesteps: int) -> None:
                 pass
 
             def get_config(self) -> dict[str, Any]:
@@ -365,9 +356,7 @@ class TestAgentInterfaceOptionalMethods:
             def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
-            def train(
-                self, env: Any, _total_timesteps: int, **kwargs: Any
-            ) -> dict[str, Any]:
+            def train(self, env: Any, _total_timesteps: int, **kwargs: Any) -> dict[str, Any]:
                 return {}
 
             def learn_from_experience(
@@ -395,9 +384,7 @@ class TestAgentInterfaceOptionalMethods:
             ) -> float:
                 return 0.0
 
-            def update_exploration_params(
-                self, _timestep: int, _total_timesteps: int
-            ) -> None:
+            def update_exploration_params(self, _timestep: int, _total_timesteps: int) -> None:
                 pass
 
             def get_config(self) -> dict[str, Any]:
@@ -436,9 +423,7 @@ class TestAgentInterfaceOptionalMethods:
             def act(self, observation: Any, _deterministic: bool = False) -> int | Any:
                 return 0
 
-            def train(
-                self, env: Any, _total_timesteps: int, **kwargs: Any
-            ) -> dict[str, Any]:
+            def train(self, env: Any, _total_timesteps: int, **kwargs: Any) -> dict[str, Any]:
                 return {}
 
             def learn_from_experience(
@@ -466,9 +451,7 @@ class TestAgentInterfaceOptionalMethods:
             ) -> float:
                 return 0.0
 
-            def update_exploration_params(
-                self, _timestep: int, _total_timesteps: int
-            ) -> None:
+            def update_exploration_params(self, _timestep: int, _total_timesteps: int) -> None:
                 pass
 
             def get_config(self) -> dict[str, Any]:

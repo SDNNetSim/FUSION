@@ -1,7 +1,8 @@
 """
 Unit tests for fusion.interfaces.pipelines module.
 
-Tests the pipeline Protocol classes for FUSION v5 architecture:
+Tests the pipeline Protocol classes for FUSION architecture:
+
 - RoutingPipeline
 - SpectrumPipeline
 - GroomingPipeline
@@ -9,6 +10,7 @@ Tests the pipeline Protocol classes for FUSION v5 architecture:
 - SlicingPipeline
 
 These tests verify:
+
 1. Protocols are importable and usable
 2. Mock implementations satisfy protocols
 3. runtime_checkable works correctly
@@ -19,8 +21,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from fusion.interfaces import (
     GroomingPipeline,
     RoutingPipeline,
@@ -30,9 +30,17 @@ from fusion.interfaces import (
 )
 from fusion.interfaces.pipelines import (
     GroomingPipeline as GroomingPipelineFromModule,
+)
+from fusion.interfaces.pipelines import (
     RoutingPipeline as RoutingPipelineFromModule,
+)
+from fusion.interfaces.pipelines import (
     SlicingPipeline as SlicingPipelineFromModule,
+)
+from fusion.interfaces.pipelines import (
     SNRPipeline as SNRPipelineFromModule,
+)
+from fusion.interfaces.pipelines import (
     SpectrumPipeline as SpectrumPipelineFromModule,
 )
 
@@ -79,9 +87,17 @@ class MockSpectrumPipeline:
     def find_spectrum(
         self,
         path: list[str],
-        modulation: str,
+        modulation: str | list[str],
         bandwidth_gbps: int,
         network_state: NetworkState,
+        *,
+        connection_index: int | None = None,
+        path_index: int = 0,
+        use_dynamic_slicing: bool = False,
+        snr_bandwidth: int | None = None,
+        request_id: int | None = None,
+        slice_bandwidth: int | None = None,
+        excluded_modulations: set[str] | None = None,
     ) -> SpectrumResult:
         """Return not found result."""
         from fusion.domain.results import SpectrumResult
@@ -143,7 +159,8 @@ class MockSNRPipeline:
         new_lightpath_id: int,
         network_state: NetworkState,
         *,
-        affected_range_slots: int = 5,
+        _affected_range_slots: int = 5,
+        slicing_flag: bool = False,
     ) -> SNRRecheckResult:
         """Return success result."""
         from fusion.domain.results import SNRRecheckResult
@@ -165,6 +182,10 @@ class MockSlicingPipeline:
         max_slices: int | None = None,
         spectrum_pipeline: SpectrumPipeline | None = None,
         snr_pipeline: SNRPipeline | None = None,
+        connection_index: int | None = None,
+        path_index: int = 0,
+        snr_accumulator: list[float] | None = None,
+        path_weight: float | None = None,
     ) -> SlicingResult:
         """Return failed result."""
         from fusion.domain.results import SlicingResult

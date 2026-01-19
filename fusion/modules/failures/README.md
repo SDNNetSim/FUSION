@@ -1,5 +1,7 @@
 # FUSION Failures Module
 
+> **Beta Status**: This module is currently in beta. It has not been fully tested or used in production simulations yet. Use with caution and expect potential API changes.
+
 Network failure injection and tracking for survivability testing.
 
 ## Overview
@@ -121,6 +123,7 @@ print(f"Repaired links: {repaired_links}")
 fusion/modules/failures/
 ├── __init__.py              # Public API exports
 ├── README.md                # This file
+├── TODO.md                  # Development roadmap and beta status
 ├── errors.py                # Custom exceptions
 ├── failure_manager.py       # Main FailureManager class
 ├── failure_types.py         # Failure type implementations
@@ -194,7 +197,7 @@ Run the test suite:
 pytest fusion/modules/failures/tests/ -v --cov=fusion.modules.failures
 ```
 
-Expected coverage: ≥ 85%
+Target coverage: 85% (currently in beta - see TODO.md for testing roadmap)
 
 ## Error Handling
 
@@ -227,10 +230,10 @@ except FailureConfigError as e:
 
 ## Version History
 
-- **v1.0.0** (2025-10-15): Initial implementation
+- **v1.0.0-beta** (2025-10-15): Initial beta implementation
   - F1, F2, F3, F4 failure types
   - FailureManager with full API
-  - Comprehensive test coverage
+  - Requires additional testing and validation before production use
 
 ## Related Documentation
 

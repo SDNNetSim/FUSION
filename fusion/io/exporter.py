@@ -96,17 +96,13 @@ class SimulationDataExporter:
     def __init__(self) -> None:
         self.registry = ExporterRegistry()
 
-    def export_topology(
-        self, topology_data: dict, output_path: str | Path, output_format: str = "json"
-    ) -> None:
+    def export_topology(self, topology_data: dict, output_path: str | Path, output_format: str = "json") -> None:
         """Export network topology data."""
         output_path = Path(output_path)
         exporter = self.registry.get_exporter(output_format)
         exporter.export(topology_data, output_path)
 
-    def export_results(
-        self, results_data: dict, output_path: str | Path, output_format: str = "json"
-    ) -> None:
+    def export_results(self, results_data: dict, output_path: str | Path, output_format: str = "json") -> None:
         """Export simulation results data."""
         output_path = Path(output_path)
         exporter = self.registry.get_exporter(output_format)

@@ -3,12 +3,6 @@ Simulation engine module for running optical network simulations.
 
 This module provides the main simulation engine functionality for running
 optical network simulations with support for ML/RL models and various metrics.
-
-v5 Architecture Support (P3.3):
-    - Feature flag `use_orchestrator` enables dual-path operation
-    - Legacy path: SDNController (default, use_orchestrator=False)
-    - New path: SDNOrchestrator with pipelines (use_orchestrator=True)
-    - Flag priority: FUSION_USE_ORCHESTRATOR env var > engine_props > default(False)
 """
 
 from __future__ import annotations
@@ -43,13 +37,9 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# =============================================================================
-# Feature Flag Constants (P3.3.b)
-# =============================================================================
 ENV_VAR_USE_ORCHESTRATOR = "FUSION_USE_ORCHESTRATOR"
 DEFAULT_USE_ORCHESTRATOR = False
 
-# Invalid feature flag combinations (P3.3.e)
 # These combinations are invalid when use_orchestrator=True
 INVALID_ORCHESTRATOR_COMBINATIONS = [
     ("protection_enabled", "slicing_enabled"),  # Protection + Slicing not supported yet
@@ -60,26 +50,12 @@ def _resolve_use_orchestrator(engine_props: dict[str, Any]) -> bool:
     """
     Resolve the use_orchestrator feature flag.
 
-    Priority (P3.3.b):
-        1. Environment variable FUSION_USE_ORCHESTRATOR (if set)
-        2. engine_props["use_orchestrator"] (if present)
-        3. Default: False
+    Priority: (1) env var FUSION_USE_ORCHESTRATOR, (2) engine_props, (3) default False.
 
-    Args:
-        engine_props: Engine configuration dictionary
-
-    Returns:
-        True if orchestrator path should be used, False for legacy path
-
-    Example:
-        >>> os.environ["FUSION_USE_ORCHESTRATOR"] = "true"
-        >>> _resolve_use_orchestrator({})
-        True
-        >>> del os.environ["FUSION_USE_ORCHESTRATOR"]
-        >>> _resolve_use_orchestrator({"use_orchestrator": True})
-        True
-        >>> _resolve_use_orchestrator({})
-        False
+    :param engine_props: Engine configuration dictionary
+    :type engine_props: dict[str, Any]
+    :return: True if orchestrator path should be used, False for legacy path
+    :rtype: bool
     """
     # Priority 1: Environment variable
     env_value = os.environ.get(ENV_VAR_USE_ORCHESTRATOR)
@@ -112,18 +88,14 @@ def _resolve_use_orchestrator(engine_props: dict[str, Any]) -> bool:
 
 def _validate_orchestrator_config(engine_props: dict[str, Any]) -> None:
     """
-    Validate configuration for orchestrator mode (P3.3.e).
+    Validate configuration for orchestrator mode.
 
     Checks for invalid feature flag combinations when use_orchestrator=True.
     Logs warnings for suboptimal but allowed configurations.
 
-    Args:
-        engine_props: Engine configuration dictionary
-
-    Raises:
-        ValueError: If invalid combination detected
-
-    Valid combinations and their behavior are documented in P3.3.e_feature_flag_interactions.md
+    :param engine_props: Engine configuration dictionary
+    :type engine_props: dict[str, Any]
+    :raises ValueError: If invalid combination detected
     """
     # Extract feature flags
     protection_enabled = engine_props.get("route_method") == "1plus1_protection"
@@ -136,32 +108,20 @@ def _validate_orchestrator_config(engine_props: dict[str, Any]) -> None:
     errors: list[str] = []
     warnings: list[str] = []
 
-    # ERROR: protection + slicing (P3.3.e - Combination 2)
     if protection_enabled and slicing_enabled:
-        errors.append(
-            "protection_enabled and slicing_enabled cannot both be True. "
-            "Protection requires single lightpath per request."
-        )
+        errors.append("protection_enabled and slicing_enabled cannot both be True. Protection requires single lightpath per request.")
 
     # ERROR: node_disjoint without protection
     if node_disjoint and not protection_enabled:
-        errors.append(
-            "node_disjoint_protection requires protection_enabled=True "
-            "(route_method='1plus1_protection')"
-        )
+        errors.append("node_disjoint_protection requires protection_enabled=True (route_method='1plus1_protection')")
 
     # WARNING: slicing without grooming (P3.3.e - Combination 1)
     if slicing_enabled and not grooming_enabled:
-        warnings.append(
-            "slicing_enabled without grooming_enabled may cause inefficient "
-            "allocations (slices may use different paths)"
-        )
+        warnings.append("slicing_enabled without grooming_enabled may cause inefficient allocations (slices may use different paths)")
 
     # WARNING: congestion check (snr_recheck) without SNR (P3.3.e - Combination 3)
     if snr_recheck and not snr_enabled:
-        warnings.append(
-            "snr_recheck has no effect without snr_enabled (snr_type must be set)"
-        )
+        warnings.append("snr_recheck has no effect without snr_enabled (snr_type must be set)")
 
     # Log warnings
     for warning in warnings:
@@ -169,9 +129,7 @@ def _validate_orchestrator_config(engine_props: dict[str, Any]) -> None:
 
     # Raise on errors
     if errors:
-        error_msg = "Invalid orchestrator configuration:\n" + "\n".join(
-            f"  - {e}" for e in errors
-        )
+        error_msg = "Invalid orchestrator configuration:\n" + "\n".join(f"  - {e}" for e in errors)
         raise ValueError(error_msg)
 
     logger.debug("Orchestrator configuration validation passed")
@@ -188,12 +146,6 @@ def seed_request_generation(seed: int) -> None:
 
     :param seed: Random seed (integer)
     :type seed: int
-
-    Example:
-        >>> seed_request_generation(42)
-        >>> # NumPy random operations are now deterministic
-        >>> np.random.rand()
-        0.3745401188473625
     """
     logger.debug("Seeding request generation (NumPy) with seed=%d", seed)
     np.random.seed(seed)
@@ -212,13 +164,6 @@ def seed_rl_components(seed: int) -> None:
 
     :param seed: Random seed (integer)
     :type seed: int
-
-    Example:
-        >>> seed_rl_components(42)
-        >>> # RL/ML operations are now deterministic
-        >>> import random
-        >>> random.random()
-        0.6394267984578837
     """
     logger.debug("Seeding RL components (random, PyTorch) with seed=%d", seed)
 
@@ -275,15 +220,6 @@ def seed_all_rngs(seed: int) -> None:
 
     :param seed: Random seed (integer)
     :type seed: int
-
-    Example:
-        >>> seed_all_rngs(42)
-        >>> # All subsequent random operations are reproducible
-        >>> import random
-        >>> random.random()
-        0.6394267984578837
-        >>> np.random.rand()
-        0.3745401188473625
     """
     logger.debug("Seeding all RNGs with seed=%d", seed)
     seed_request_generation(seed)
@@ -298,11 +234,6 @@ def generate_seed_from_time() -> int:
 
     :return: Seed value
     :rtype: int
-
-    Example:
-        >>> seed = generate_seed_from_time()
-        >>> print(seed)
-        1678901234
     """
     return int(time.time() * 1000) % (2**31 - 1)
 
@@ -318,12 +249,6 @@ def validate_seed(seed: int) -> int:
     :return: Validated seed
     :rtype: int
     :raises ValueError: If seed is out of valid range
-
-    Example:
-        >>> validate_seed(42)
-        42
-        >>> validate_seed(-1)
-        ValueError: Seed must be non-negative
     """
     if seed < 0:
         raise ValueError(f"Seed must be non-negative, got {seed}")
@@ -341,13 +266,6 @@ class SimulationEngine:
     This class manages the execution of a single optical network simulation,
     including topology creation, request processing, and statistics collection.
 
-    v5 Architecture Support (P3.3):
-        The engine supports dual-path operation controlled by `use_orchestrator`:
-        - False (default): Legacy path using SDNController
-        - True: New path using SDNOrchestrator with pipelines
-
-        Feature flag priority: env var > engine_props > default(False)
-
     :param engine_props: Engine configuration properties
     :type engine_props: dict[str, Any]
     """
@@ -355,7 +273,7 @@ class SimulationEngine:
     def __init__(self, engine_props: dict[str, Any]) -> None:
         self.engine_props = engine_props
         self.network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]] = {}
-        self.reqs_dict: dict[float, dict[str, Any]] | None = None
+        self.reqs_dict: dict[tuple[int, float], dict[str, Any]] | None = None
         self.reqs_status_dict: dict[int, dict[str, Any]] = {}
 
         self.iteration = 0
@@ -366,18 +284,10 @@ class SimulationEngine:
             self.engine_props["sim_start"],
         )
 
-        # =====================================================================
-        # v5 Feature Flag Resolution (P3.3.b)
-        # =====================================================================
         self.use_orchestrator = _resolve_use_orchestrator(engine_props)
-
-        # Validate config if orchestrator mode enabled (P3.3.e)
         if self.use_orchestrator:
             _validate_orchestrator_config(engine_props)
 
-        # =====================================================================
-        # v5 Domain Objects (initialized in create_topology if orchestrator mode)
-        # =====================================================================
         self._sim_config: SimulationConfig | None = None
         self._network_state: NetworkState | None = None
         self._orchestrator: SDNOrchestrator | None = None
@@ -389,13 +299,9 @@ class SimulationEngine:
         self.sdn_obj = SDNController(engine_props=self.engine_props)
         # FailureManager reference will be set after topology creation
         self.sdn_obj.failure_manager = None
-        self.stats_obj = SimStats(
-            engine_props=self.engine_props, sim_info=self.sim_info
-        )
+        self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
         self.reporter = SimulationReporter(logger=logger)
-        self.persistence = StatsPersistence(
-            engine_props=self.engine_props, sim_info=self.sim_info
-        )
+        self.persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
 
         # Initialize ML metrics collector if needed
         self.ml_metrics: MLMetricsCollector | None = (
@@ -442,12 +348,12 @@ class SimulationEngine:
         else:
             logger.debug("SimulationEngine initialized in LEGACY mode")
 
-    def update_arrival_params(self, current_time: float) -> None:
+    def update_arrival_params(self, current_time: tuple[int, float]) -> None:
         """
         Update parameters for a request after attempted allocation.
 
-        :param current_time: The current simulated time
-        :type current_time: float
+        :param current_time: The current simulated time as (iteration, time) tuple
+        :type current_time: tuple[int, float]
         """
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
@@ -472,10 +378,7 @@ class SimulationEngine:
                 }
 
             was_groomed = hasattr(sdn_props, "was_groomed") and sdn_props.was_groomed
-            was_partially = (
-                hasattr(sdn_props, "was_partially_groomed")
-                and sdn_props.was_partially_groomed
-            )
+            was_partially = hasattr(sdn_props, "was_partially_groomed") and sdn_props.was_partially_groomed
             if was_groomed:
                 self.grooming_stats["fully_groomed"] += 1
             elif was_partially:
@@ -486,9 +389,7 @@ class SimulationEngine:
             # Track new lightpaths
             has_new_lp = hasattr(sdn_props, "was_new_lp_established")
             if has_new_lp and sdn_props.was_new_lp_established:
-                self.grooming_stats["lightpaths_created"] += len(
-                    sdn_props.was_new_lp_established
-                )
+                self.grooming_stats["lightpaths_created"] += len(sdn_props.was_new_lp_established)
 
         if sdn_props.was_routed:
             if sdn_props.number_of_transponders is not None:
@@ -527,7 +428,7 @@ class SimulationEngine:
         """
         Update the SDN controller to handle an arrival request.
 
-        In orchestrator mode (v5), delegates to _handle_arrival_orchestrator.
+        In orchestrator mode, delegates to _handle_arrival_orchestrator.
         In legacy mode, uses SDNController.
 
         :param current_time: The arrival time of the request
@@ -546,9 +447,6 @@ class SimulationEngine:
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
 
-        # =====================================================================
-        # v5 Orchestrator Path (P3.3.c)
-        # =====================================================================
         if self.use_orchestrator:
             self._handle_arrival_orchestrator(current_time, force_route_matrix)
             return
@@ -582,7 +480,6 @@ class SimulationEngine:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
 
-
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
 
@@ -597,12 +494,11 @@ class SimulationEngine:
         Converts legacy request dict to v5 Request domain object,
         calls orchestrator.handle_arrival(), and updates stats from result.
 
-        Args:
-            current_time: Tuple of (request_id, time)
-            forced_path: Optional forced path for allocation
+        :param current_time: Tuple of (request_id, time)
+        :type current_time: tuple[int, float]
+        :param forced_path: Optional forced path for allocation
+        :type forced_path: list[str] | None
         """
-        from fusion.domain.request import Request
-
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
 
@@ -610,7 +506,7 @@ class SimulationEngine:
             logger.error("Orchestrator not initialized, falling back to legacy")
             return
 
-        # Get or create v5 Request from legacy dict
+        # Get or create Request from legacy dict
         request = self._get_or_create_v5_request(current_time)
         if request is None:
             return
@@ -629,24 +525,24 @@ class SimulationEngine:
         if self._network_state is not None:
             self.network_spectrum_dict = self._network_state.network_spectrum_dict
 
-    def _get_or_create_v5_request(
-        self, current_time: tuple[int, float]
-    ) -> Request | None:
+    # TODO: Rename "v5" references to something clearer. The "v5" naming is a legacy
+    # artifact from internal versioning and is confusing. Consider renaming to
+    # "_get_or_create_request" and "_requests_cache" (drop the "v5" prefix entirely).
+    def _get_or_create_v5_request(self, current_time: tuple[int, float]) -> Request | None:
         """
-        Get or create a v5 Request domain object from legacy request dict.
+        Get or create a Request domain object from legacy request dict.
 
-        Args:
-            current_time: Tuple of (request_id, time)
-
-        Returns:
-            Request object or None if request not found
+        :param current_time: Tuple of (request_id, time)
+        :type current_time: tuple[int, float]
+        :return: Request object or None if request not found
+        :rtype: Request | None
         """
         from fusion.domain.request import Request
 
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return None
 
-        # Initialize request cache if needed
+        # TODO: Rename _v5_requests to _requests_cache (see TODO above)
         if self._v5_requests is None:
             self._v5_requests = {}
 
@@ -672,25 +568,19 @@ class SimulationEngine:
         """
         Update statistics from orchestrator AllocationResult.
 
-        Uses the new P3.4 record_arrival method for stats tracking,
-        which addresses P3.6 gaps including SNR_RECHECK_FAIL support
-        and rollback-aware utilization tracking.
+        Uses the record_arrival method for stats tracking, which handles
+        SNR_RECHECK_FAIL support and rollback-aware utilization tracking.
 
-        Args:
-            current_time: Request time key
-            request: The v5 Request that was processed
-            result: AllocationResult from orchestrator
+        :param current_time: Request time key
+        :type current_time: tuple[int, float]
+        :param request: The v5 Request that was processed
+        :type request: Request
+        :param result: AllocationResult from orchestrator
+        :type result: AllocationResult
         """
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
 
-        # =====================================================================
-        # P3.4: Use new record_arrival method for stats tracking
-        # This method handles:
-        # - SNR_RECHECK_FAIL block reason (P3.6 Gap 5)
-        # - Rollback-aware utilization tracking (P3.6 Gap 5)
-        # - Grooming rollback handling (P3.6 Gap 1)
-        # =====================================================================
         self.stats_obj.record_arrival(
             request=request,
             result=result,
@@ -731,11 +621,10 @@ class SimulationEngine:
         """
         Extract paths from AllocationResult lightpath IDs.
 
-        Args:
-            result: The allocation result
-
-        Returns:
-            List of paths (each path is a list of node IDs)
+        :param result: The allocation result
+        :type result: AllocationResult
+        :return: List of paths (each path is a list of node IDs)
+        :rtype: list[list[str]]
         """
         paths: list[list[str]] = []
         if not result.all_lightpath_ids or self._network_state is None:
@@ -761,9 +650,6 @@ class SimulationEngine:
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
 
-        # =====================================================================
-        # v5 Orchestrator Path (P3.3.c)
-        # =====================================================================
         if self.use_orchestrator:
             self._handle_release_orchestrator(current_time)
             return
@@ -800,18 +686,13 @@ class SimulationEngine:
             if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
-            self.sdn_obj.handle_event(
-                self.reqs_dict[current_time], request_type="release"
-            )
+            self.sdn_obj.handle_event(self.reqs_dict[current_time], request_type="release")
 
             # Update lightpath bandwidth utilization statistics
             # For non-grooming cases, populate utilization from reqs_status_dict if not already done
             if not self.engine_props.get("is_grooming_enabled", False):
                 # Check if sdn_controller already populated utilization (e.g., via dynamic slicing)
-                if (
-                    self.sdn_obj.sdn_props.lp_bw_utilization_dict is None
-                    or len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) == 0
-                ):
+                if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None or len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) == 0:
                     # Only use 100% fallback if dict is empty (not already calculated)
                     lightpath_ids = req_status.get("lightpath_id_list", [])
                     bandwidth_list = req_status.get("bandwidth_list", [])
@@ -835,13 +716,8 @@ class SimulationEngine:
                                 "utilization": 100.0,  # 100% for non-grooming non-slicing
                             }
 
-            if (
-                self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None
-                and len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) > 0
-            ):
-                self.stats_obj.update_utilization_dict(
-                    self.sdn_obj.sdn_props.lp_bw_utilization_dict
-                )
+            if self.sdn_obj.sdn_props.lp_bw_utilization_dict is not None and len(self.sdn_obj.sdn_props.lp_bw_utilization_dict) > 0:
+                self.stats_obj.update_utilization_dict(self.sdn_obj.sdn_props.lp_bw_utilization_dict)
                 # Clear the dict after aggregation to prevent duplicate counting
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
@@ -855,12 +731,12 @@ class SimulationEngine:
         current_time: tuple[int, float],
     ) -> None:
         """
-        Handle release using v5 orchestrator path.
+        Handle release using orchestrator path.
 
-        Retrieves the v5 Request from cache and calls orchestrator.handle_release().
+        Retrieves the Request from cache and calls orchestrator.handle_release().
 
-        Args:
-            current_time: Tuple of (request_id, time)
+        :param current_time: Tuple of (request_id, time)
+        :type current_time: tuple[int, float]
         """
         if self.reqs_dict is None or current_time not in self.reqs_dict:
             return
@@ -880,15 +756,13 @@ class SimulationEngine:
         # Find the corresponding Request object in cache
         request = None
         if self._v5_requests:
-            for time_key, cached_req in self._v5_requests.items():
+            for _time_key, cached_req in self._v5_requests.items():
                 if cached_req.request_id == req_id:
                     request = cached_req
                     break
 
         if request is None:
-            logger.warning(
-                "Request %d not found in v5 cache for release", req_id
-            )
+            logger.warning("Request %d not found in v5 cache for release", req_id)
             return
 
         # Collect utilization stats before release (need LP objects to exist)
@@ -909,9 +783,7 @@ class SimulationEngine:
                 # Calculate time-weighted average utilization using history
                 # Don't add entry at departure_time here - release_bandwidth() handles that
                 if lp.time_bw_usage:
-                    utilization = average_bandwidth_usage(
-                        lp.time_bw_usage, departure_time
-                    )
+                    utilization = average_bandwidth_usage(lp.time_bw_usage, departure_time)
                 else:
                     # Fallback to point-in-time if no history
                     utilization = lp.utilization * 100.0
@@ -945,12 +817,12 @@ class SimulationEngine:
         # Clean up from reqs_status_dict
         del self.reqs_status_dict[req_id]
 
-    def _log_dataset_transition(self, current_time: float) -> None:
+    def _log_dataset_transition(self, current_time: tuple[int, float]) -> None:
         """
         Log a dataset transition for offline RL training.
 
-        :param current_time: The arrival time of the request
-        :type current_time: float
+        :param current_time: The arrival time as (iteration, time) tuple
+        :type current_time: tuple[int, float]
         """
         if not self.dataset_logger or self.reqs_dict is None:
             return
@@ -993,7 +865,8 @@ class SimulationEngine:
             # Mark all paths as infeasible since routing failed
             action_mask = [False] * len(action_mask)
 
-        # Compute reward
+        # TODO: Reward values are hardcoded. Should be configurable via config or
+        # computed based on metrics (e.g., bandwidth efficiency, path length, SNR margin).
         reward = 1.0 if sdn_props.was_routed else -1.0
 
         # Build metadata
@@ -1002,9 +875,7 @@ class SimulationEngine:
             "arrival_time": current_time,
             "erlang": self.engine_props["erlang"],
             "iteration": self.iteration,
-            "decision_time_ms": (sdn_props.route_time * 1000)
-            if hasattr(sdn_props, "route_time") and sdn_props.route_time
-            else 0.0,
+            "decision_time_ms": (sdn_props.route_time * 1000) if hasattr(sdn_props, "route_time") and sdn_props.route_time else 0.0,
         }
 
         # Log the transition
@@ -1021,7 +892,7 @@ class SimulationEngine:
         """
         Create the physical topology of the simulation.
 
-        In orchestrator mode (v5), also initializes:
+        In orchestrator mode, also initializes:
             - SimulationConfig from engine_props
             - NetworkState with topology
             - SDNOrchestrator with pipelines
@@ -1044,9 +915,7 @@ class SimulationEngine:
             cores_matrix: dict[str, np.ndarray] = {}
             for band in self.engine_props["band_list"]:
                 band_slots = self.engine_props[f"{band}_band"]
-                cores_matrix[band] = np.zeros(
-                    (link_data["fiber"]["num_cores"], band_slots)
-                )
+                cores_matrix[band] = np.zeros((link_data["fiber"]["num_cores"], band_slots))
 
             self.network_spectrum_dict[(source, dest)] = {
                 "cores_matrix": cores_matrix,
@@ -1060,24 +929,19 @@ class SimulationEngine:
                 "usage_count": 0,
                 "throughput": 0,
             }
-            self.topology.add_edge(
-                source, dest, length=link_data["length"], nli_cost=None
-            )
+            self.topology.add_edge(source, dest, length=link_data["length"], nli_cost=None)
 
         self.engine_props["topology"] = self.topology
         self.stats_obj.topology = self.topology
         self.sdn_obj.sdn_props.network_spectrum_dict = self.network_spectrum_dict
         self.sdn_obj.sdn_props.topology = self.topology
 
-        # =====================================================================
-        # v5 Orchestrator Path Initialization (P3.3.c)
-        # =====================================================================
         if self.use_orchestrator:
             self._init_orchestrator_path()
 
     def _init_orchestrator_path(self) -> None:
         """
-        Initialize v5 orchestrator path components.
+        Initialize orchestrator path components.
 
         Creates:
             - SimulationConfig from engine_props
@@ -1087,7 +951,6 @@ class SimulationEngine:
 
         Called from create_topology() when use_orchestrator=True.
         """
-        from fusion.core.orchestrator import SDNOrchestrator
         from fusion.core.pipeline_factory import PipelineFactory
         from fusion.domain.config import SimulationConfig
         from fusion.domain.network_state import NetworkState
@@ -1145,10 +1008,7 @@ class SimulationEngine:
             old_request_info_dict = copy.deepcopy(self.reqs_dict[current_time])
             self.handle_arrival(current_time=current_time)
 
-            if (
-                self.engine_props["save_snapshots"]
-                and request_number % self.engine_props["snapshot_step"] == 0
-            ):
+            if self.engine_props["save_snapshots"] and request_number % self.engine_props["snapshot_step"] == 0:
                 self.stats_obj.update_snapshot(
                     network_spectrum_dict=self.network_spectrum_dict,
                     request_number=request_number,
@@ -1158,9 +1018,7 @@ class SimulationEngine:
                 was_routed = self.sdn_obj.sdn_props.was_routed
                 if was_routed:
                     if self.reqs_dict is not None and current_time in self.reqs_dict:
-                        request_info_dict = self.reqs_status_dict[
-                            self.reqs_dict[current_time]["req_id"]
-                        ]
+                        request_info_dict = self.reqs_status_dict[self.reqs_dict[current_time]["req_id"]]
                         if self.ml_metrics:
                             self.ml_metrics.update_train_data(
                                 old_request_info_dict=old_request_info_dict,
@@ -1172,10 +1030,7 @@ class SimulationEngine:
         elif request_type == "release":
             self.handle_release(current_time=current_time)
         else:
-            raise NotImplementedError(
-                f"Request type unrecognized. Expected arrival or release, "
-                f"got: {request_type}"
-            )
+            raise NotImplementedError(f"Request type unrecognized. Expected arrival or release, got: {request_type}")
 
     def reset(self) -> None:
         """
@@ -1194,9 +1049,6 @@ class SimulationEngine:
         # Reset request tracking
         self.reqs_status_dict = {}
 
-        # =====================================================================
-        # v5 Orchestrator Path Reset (P3.3.c)
-        # =====================================================================
         if self.use_orchestrator:
             # Clear v5 request cache
             self._v5_requests = {}
@@ -1229,9 +1081,7 @@ class SimulationEngine:
                 self.sdn_obj.grooming_obj.grooming_props.lightpath_status_dict = {}
             logger.debug("Reset grooming structures for new iteration")
 
-    def end_iter(
-        self, iteration: int, print_flag: bool = True, base_file_path: str | None = None
-    ) -> bool:
+    def end_iter(self, iteration: int, print_flag: bool = True, base_file_path: str | None = None) -> bool:
         """
         Update iteration statistics.
 
@@ -1256,11 +1106,7 @@ class SimulationEngine:
             resp = bool(self.stats_obj.calculate_confidence_interval())
         else:
             resp = False
-        if (
-            (iteration + 1) % self.engine_props["print_step"] == 0
-            or iteration == 0
-            or (iteration + 1) == self.engine_props["max_iters"]
-        ):
+        if (iteration + 1) % self.engine_props["print_step"] == 0 or iteration == 0 or (iteration + 1) == self.engine_props["max_iters"]:
             # Use the reporter for output instead of metrics class
             if hasattr(self, "reporter"):
                 self.reporter.report_iteration_stats(
@@ -1378,15 +1224,12 @@ class SimulationEngine:
         elif self.engine_props.get("seed") is not None:
             # Use general seed as constant RL seed
             rl_seed = self.engine_props["seed"]
-            logger.info(
-                "Using constant rl_seed=%d from general seed for RL components", rl_seed
-            )
+            logger.info("Using constant rl_seed=%d from general seed for RL components", rl_seed)
             seed_rl_components(rl_seed)
         else:
             # No RL seed specified - use same as request seed (varies per iteration)
             logger.debug(
-                "No rl_seed specified, using request_seed=%d for RL "
-                "(varies per iteration)",
+                "No rl_seed specified, using request_seed=%d for RL (varies per iteration)",
                 request_seed,
             )
             seed_rl_components(request_seed)
@@ -1409,7 +1252,7 @@ class SimulationEngine:
         This method is called after topology creation to set up failure
         injection based on the failure_settings configuration.
 
-        Note: The actual failure is scheduled after request generation in init_iter()
+        The actual failure is scheduled after request generation in init_iter()
         to use real Poisson arrival times rather than indices.
         """
         failure_type = self.engine_props.get("failure_type", "none")
@@ -1419,10 +1262,7 @@ class SimulationEngine:
             return
 
         # Debug: Log topology info
-        logger.info(
-            f"Topology has {self.topology.number_of_nodes()} nodes and "
-            f"{self.topology.number_of_edges()} edges"
-        )
+        logger.info(f"Topology has {self.topology.number_of_nodes()} nodes and {self.topology.number_of_edges()} edges")
         logger.debug(f"Topology nodes: {sorted(self.topology.nodes())}")
         logger.debug(f"Topology edges (first 10): {list(self.topology.edges())[:10]}")
 
@@ -1449,13 +1289,7 @@ class SimulationEngine:
         failure_type = self.engine_props.get("failure_type", "none")
 
         # Get actual arrival times from generated requests
-        arrival_times = sorted(
-            [
-                t
-                for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "arrival"
-            ]
-        )
+        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"])
 
         if not arrival_times:
             logger.warning("No arrival times available to schedule failure")
@@ -1521,20 +1355,12 @@ class SimulationEngine:
                     t_repair=t_repair,
                     link_id=(failed_src, failed_dst),
                 )
-                logger.info(
-                    f"Link failure scheduled: {event['failed_links']} "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                logger.info(f"Link failure scheduled: {event['failed_links']} from t={t_fail:.2f} to t={t_repair:.2f}")
 
             elif failure_type == "srlg":
                 srlg_links = self.engine_props.get("srlg_links", [])
-                event = self.failure_manager.inject_failure(
-                    "srlg", t_fail=t_fail, t_repair=t_repair, srlg_links=srlg_links
-                )
-                logger.info(
-                    f"SRLG failure scheduled: {len(event['failed_links'])} links "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                event = self.failure_manager.inject_failure("srlg", t_fail=t_fail, t_repair=t_repair, srlg_links=srlg_links)
+                logger.info(f"SRLG failure scheduled: {len(event['failed_links'])} links from t={t_fail:.2f} to t={t_repair:.2f}")
 
             elif failure_type == "geo":
                 # Convert center node ID to match topology node type
@@ -1551,10 +1377,7 @@ class SimulationEngine:
                     center_node=center_node,
                     hop_radius=self.engine_props["geo_hop_radius"],
                 )
-                logger.info(
-                    f"Geographic failure scheduled: {len(event['failed_links'])} links "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                logger.info(f"Geographic failure scheduled: {len(event['failed_links'])} links from t={t_fail:.2f} to t={t_repair:.2f}")
 
             elif failure_type == "node":
                 # Convert node ID to match topology node type
@@ -1570,10 +1393,7 @@ class SimulationEngine:
                     t_repair=t_repair,
                     node_id=node_id,
                 )
-                logger.info(
-                    f"Node failure scheduled: {len(event['failed_links'])} links "
-                    f"from t={t_fail:.2f} to t={t_repair:.2f}"
-                )
+                logger.info(f"Node failure scheduled: {len(event['failed_links'])} links from t={t_fail:.2f} to t={t_repair:.2f}")
 
         except Exception as e:
             logger.error(f"Failed to schedule {failure_type} failure: {e}")
@@ -1601,9 +1421,7 @@ class SimulationEngine:
             if self._should_stop_simulation(simulation_context):
                 break
 
-            simulation_context["done_units"] = self._run_single_iteration(
-                iteration, seed, simulation_context
-            )
+            simulation_context["done_units"] = self._run_single_iteration(iteration, seed, simulation_context)
 
             if simulation_context["end_iter"]:
                 break
@@ -1628,9 +1446,7 @@ class SimulationEngine:
             "max_iters": self.engine_props["max_iters"],
             "progress_queue": self.engine_props.get("progress_queue"),
             "thread_num": self.engine_props.get("thread_num", "unknown"),
-            "my_iteration_units": self.engine_props.get(
-                "my_iteration_units", self.engine_props["max_iters"]
-            ),
+            "my_iteration_units": self.engine_props.get("my_iteration_units", self.engine_props["max_iters"]),
             "done_offset": self.engine_props.get("done_offset", 0),
             "done_units": self.engine_props.get("done_offset", 0),
             "end_iter": False,
@@ -1664,18 +1480,13 @@ class SimulationEngine:
         """
         if self.stop_flag is not None and self.stop_flag.is_set():
             log_message(
-                message=(
-                    f"Simulation stopped for Erlang: {self.engine_props['erlang']} "
-                    f"simulation number: {context['thread_num']}.\n"
-                ),
+                message=(f"Simulation stopped for Erlang: {self.engine_props['erlang']} simulation number: {context['thread_num']}.\n"),
                 log_queue=context["log_queue"],
             )
             return True
         return False
 
-    def _run_single_iteration(
-        self, iteration: int, seed: int | None, context: dict[str, Any]
-    ) -> int:
+    def _run_single_iteration(self, iteration: int, seed: int | None, context: dict[str, Any]) -> int:
         """
         Execute a single simulation iteration.
 
@@ -1699,9 +1510,7 @@ class SimulationEngine:
 
         return int(context["done_units"])
 
-    def _find_affected_requests(
-        self, failed_links: list[tuple[Any, Any]]
-    ) -> list[dict[str, Any]]:
+    def _find_affected_requests(self, failed_links: list[tuple[Any, Any]]) -> list[dict[str, Any]]:
         """
         Find all allocated requests affected by failed links.
 
@@ -1720,13 +1529,9 @@ class SimulationEngine:
         for link in failed_links:
             failed_links_set.add((link[1], link[0]))
 
-        for request_id, request_info in self.sdn.sdn_props.allocated_requests.items():
+        for _request_id, request_info in self.sdn_obj.sdn_props.allocated_requests.items():
             # Determine which path to check based on active_path
-            active_path_key = (
-                "primary_path"
-                if request_info.get("active_path") == "primary"
-                else "backup_path"
-            )
+            active_path_key = "primary_path" if request_info.get("active_path") == "primary" else "backup_path"
             active_path = request_info.get(active_path_key)
 
             if active_path is None:
@@ -1758,9 +1563,7 @@ class SimulationEngine:
 
         return self.failure_manager.is_path_feasible(path)
 
-    def _handle_failure_impact(
-        self, current_time: float, failed_links: list[tuple[Any, Any]]
-    ) -> None:
+    def _handle_failure_impact(self, current_time: tuple[int, float], failed_links: list[tuple[Any, Any]]) -> None:
         """
         Handle impact of failures on already-allocated requests.
 
@@ -1768,7 +1571,7 @@ class SimulationEngine:
         - If protected and backup path is viable: switch to backup
         - Otherwise: release spectrum and count as blocked
 
-        :param current_time: Current simulation time
+        :param current_time: Current simulation time as (iteration, time) tuple
         :type current_time: float
         :param failed_links: List of newly failed links
         :type failed_links: list[tuple[Any, Any]]
@@ -1779,10 +1582,7 @@ class SimulationEngine:
             logger.debug("No allocated requests affected by failures")
             return
 
-        logger.info(
-            f"Found {len(affected_requests)} allocated request(s) "
-            f"affected by failures at t={current_time:.2f}"
-        )
+        logger.info(f"Found {len(affected_requests)} allocated request(s) affected by failures at t={current_time:.2f}")
 
         switchover_count = 0
         dropped_count = 0
@@ -1791,45 +1591,28 @@ class SimulationEngine:
             request_id = request_info["request_id"]
 
             # Check if this is a protected request with viable backup
-            if (
-                request_info.get("is_protected")
-                and request_info.get("active_path") == "primary"
-            ):
+            if request_info.get("is_protected") and request_info.get("active_path") == "primary":
                 backup_path = request_info.get("backup_path")
 
                 if self._is_path_feasible(backup_path):
                     # Backup path is viable - switch to it
                     self._switch_to_backup(request_info, current_time)
                     switchover_count += 1
-                    logger.info(
-                        f"Request {request_id}: Switched to backup path "
-                        f"{backup_path} at t={current_time:.2f}"
-                    )
+                    logger.info(f"Request {request_id}: Switched to backup path {backup_path} at t={current_time:.2f}")
                 else:
                     # Backup path also failed - release and count as blocked
                     self._release_failed_request(request_info, current_time)
                     dropped_count += 1
-                    logger.warning(
-                        f"Request {request_id}: Both primary and backup paths "
-                        f"failed, releasing at t={current_time:.2f}"
-                    )
+                    logger.warning(f"Request {request_id}: Both primary and backup paths failed, releasing at t={current_time:.2f}")
             else:
                 # Unprotected request or already on backup - release
                 self._release_failed_request(request_info, current_time)
                 dropped_count += 1
-                logger.warning(
-                    f"Request {request_id}: Unprotected request failed, "
-                    f"releasing at t={current_time:.2f}"
-                )
+                logger.warning(f"Request {request_id}: Unprotected request failed, releasing at t={current_time:.2f}")
 
-        logger.info(
-            f"Failure impact: {switchover_count} switchovers, "
-            f"{dropped_count} dropped requests"
-        )
+        logger.info(f"Failure impact: {switchover_count} switchovers, {dropped_count} dropped requests")
 
-    def _switch_to_backup(
-        self, request_info: dict[str, Any], current_time: float
-    ) -> None:
+    def _switch_to_backup(self, request_info: dict[str, Any], current_time: tuple[int, float]) -> None:
         """
         Switch a protected request to its backup path.
 
@@ -1841,21 +1624,21 @@ class SimulationEngine:
         request_id = request_info["request_id"]
 
         # Update active path in tracking
-        self.sdn.sdn_props.allocated_requests[request_id]["active_path"] = "backup"
+        self.sdn_obj.sdn_props.allocated_requests[request_id]["active_path"] = "backup"
 
         # Update switchover metrics in SDN props
-        self.sdn.sdn_props.switchover_count += 1
-        self.sdn.sdn_props.last_switchover_time = current_time
+        # Extract time value from tuple for metrics storage
+        _, time_val = current_time
+        self.sdn_obj.sdn_props.switchover_count += 1
+        self.sdn_obj.sdn_props.last_switchover_time = time_val
 
         # Update stats metrics
         self.stats_obj.stats_props.protection_switchovers += 1
-        self.stats_obj.stats_props.switchover_times.append(current_time)
+        self.stats_obj.stats_props.switchover_times.append(time_val)
 
         # Note: Spectrum is already allocated on backup path, no need to reallocate
 
-    def _release_failed_request(
-        self, request_info: dict[str, Any], current_time: float
-    ) -> None:
+    def _release_failed_request(self, request_info: dict[str, Any], current_time: tuple[int, float]) -> None:
         """
         Release a request that failed due to link failures.
 
@@ -1863,29 +1646,31 @@ class SimulationEngine:
 
         :param request_info: Request information dictionary
         :type request_info: dict[str, Any]
-        :param current_time: Current simulation time
-        :type current_time: float
+        :param current_time: Current simulation time as (iteration, time) tuple
+        :type current_time: tuple[int, float]
         """
         request_id = request_info["request_id"]
 
         # Set up SDN props for release
-        self.sdn.sdn_props.request_id = request_id
-        self.sdn.sdn_props.path_list = request_info.get("primary_path")
-        self.sdn.sdn_props.arrive = request_info.get("arrive_time")
-        self.sdn.sdn_props.depart = current_time  # Use failure time as depart time
+        # Extract time value from tuple for SDN props
+        _, time_val = current_time
+        self.sdn_obj.sdn_props.request_id = request_id
+        self.sdn_obj.sdn_props.path_list = request_info.get("primary_path")
+        self.sdn_obj.sdn_props.arrive = request_info.get("arrive_time")
+        self.sdn_obj.sdn_props.depart = time_val  # Use failure time as depart time
         # NOTE: Do NOT set bandwidth from request_info during release - it may contain
         # allocated bandwidth (e.g., 100) instead of original request bandwidth (e.g., 800),
         # which corrupts sdn_props.bandwidth for subsequent operations.
-        # self.sdn.sdn_props.bandwidth = request_info.get("bandwidth")
+        # self.sdn_obj.sdn_props.bandwidth = request_info.get("bandwidth")
 
         # Release spectrum on primary path
-        self.sdn.release()
+        self.sdn_obj.release()
 
         # If protected, also release backup path
         if request_info.get("is_protected"):
             if request_info.get("backup_path"):
-                self.sdn.sdn_props.path_list = request_info.get("backup_path")
-                self.sdn.release()
+                self.sdn_obj.sdn_props.path_list = request_info.get("backup_path")
+                self.sdn_obj.release()
             # Count as protection failure (both paths failed)
             self.stats_obj.stats_props.protection_failures += 1
 
@@ -1894,9 +1679,8 @@ class SimulationEngine:
         self.stats_obj.blocked_requests += 1
 
         # Also update failure-specific counters
-        self.stats_obj.stats_props.block_reasons_dict["failure"] = (
-            self.stats_obj.stats_props.block_reasons_dict.get("failure", 0) + 1
-        )
+        current_failure_count = self.stats_obj.stats_props.block_reasons_dict.get("failure", 0)
+        self.stats_obj.stats_props.block_reasons_dict["failure"] = (current_failure_count if current_failure_count is not None else 0) + 1
         self.stats_obj.stats_props.failure_induced_blocks += 1
 
         # Update bit rate blocking if bandwidth info available
@@ -1911,35 +1695,26 @@ class SimulationEngine:
         if self.reqs_dict is None:
             return
         for current_time in self.reqs_dict:
+            # current_time is tuple (iteration, time) - extract time for logging/failure checks
+            _, time_val = current_time
+
             # Check for scheduled failure activations at this time
             if self.failure_manager:
-                activated_links = self.failure_manager.activate_failures(current_time)
+                activated_links = self.failure_manager.activate_failures(time_val)
                 if activated_links:
-                    logger.info(
-                        f"Activated {len(activated_links)} failed link(s) at time "
-                        f"{current_time:.2f}: {activated_links}"
-                    )
+                    logger.info(f"Activated {len(activated_links)} failed link(s) at time {time_val:.2f}: {activated_links}")
                     # Handle already-allocated requests affected by failures
                     self._handle_failure_impact(current_time, activated_links)
 
             # Check for scheduled repairs at this time
             if self.failure_manager:
-                repaired_links = self.failure_manager.repair_failures(current_time)
+                repaired_links = self.failure_manager.repair_failures(time_val)
                 if repaired_links:
-                    logger.info(
-                        f"Repaired {len(repaired_links)} link(s) at time "
-                        f"{current_time:.2f}: {repaired_links}"
-                    )
+                    logger.info(f"Repaired {len(repaired_links)} link(s) at time {time_val:.2f}: {repaired_links}")
 
-            self.handle_request(
-                current_time=current_time, request_number=request_number
-            )
+            self.handle_request(current_time=current_time, request_number=request_number)
 
-            if (
-                self.reqs_dict is not None
-                and current_time in self.reqs_dict
-                and self.reqs_dict[current_time]["request_type"] == "arrival"
-            ):
+            if self.reqs_dict is not None and current_time in self.reqs_dict and self.reqs_dict[current_time]["request_type"] == "arrival":
                 request_number += 1
 
     def _update_progress(self, iteration: int, context: dict[str, Any]) -> None:
@@ -1952,15 +1727,10 @@ class SimulationEngine:
         :type context: Dict[str, Any]
         """
         if context["progress_queue"]:
-            context["progress_queue"].put(
-                (context["thread_num"], context["done_units"])
-            )
+            context["progress_queue"].put((context["thread_num"], context["done_units"]))
 
         log_message(
-            message=(
-                f"CHILD={context['thread_num']} iteration={iteration}, "
-                f"done_units={context['done_units']}\n"
-            ),
+            message=(f"CHILD={context['thread_num']} iteration={iteration}, done_units={context['done_units']}\n"),
             log_queue=context["log_queue"],
         )
 
@@ -1973,8 +1743,7 @@ class SimulationEngine:
         """
         log_message(
             message=(
-                f"Simulation finished for Erlang: {self.engine_props['erlang']} "
-                f"finished for simulation number: {context['thread_num']}.\n"
+                f"Simulation finished for Erlang: {self.engine_props['erlang']} finished for simulation number: {context['thread_num']}.\n"
             ),
             log_queue=context["log_queue"],
         )
@@ -2002,10 +1771,7 @@ class SimulationEngine:
         # Validate SNR rechecking settings
         if self.engine_props.get("snr_recheck", False):
             if self.engine_props.get("snr_type") in ["None", None]:
-                logger.warning(
-                    "snr_recheck enabled but snr_type is None - "
-                    "rechecking will be skipped"
-                )
+                logger.warning("snr_recheck enabled but snr_type is None - rechecking will be skipped")
 
         # Validate partial service setting
         if self.engine_props.get("can_partially_serve", False):
@@ -2060,10 +1826,7 @@ class SimulationEngine:
 
         # Calculate average lightpath utilization
         if self.sdn_obj.sdn_props.lp_bw_utilization_dict:
-            utilizations = [
-                lp_info["utilization"]
-                for lp_info in self.sdn_obj.sdn_props.lp_bw_utilization_dict.values()
-            ]
+            utilizations = [lp_info["utilization"] for lp_info in self.sdn_obj.sdn_props.lp_bw_utilization_dict.values()]
             avg_util = sum(utilizations) / len(utilizations) if utilizations else 0.0
             self.grooming_stats["avg_lightpath_utilization"].append(avg_util)
 
@@ -2113,58 +1876,43 @@ class SimulationEngine:
         self._save_all_stats()
         logger.info("Statistics saved due to signal")
 
-    # =========================================================================
-    # RL Integration Methods (P4.2)
-    # These methods support UnifiedSimEnv for RL training
-    # =========================================================================
-
     @property
     def num_requests(self) -> int:
-        """Total number of arrival requests in current episode.
+        """
+        Total number of arrival requests in current episode.
 
-        Returns:
-            Number of arrival requests (excludes release events)
+        :return: Number of arrival requests (excludes release events)
+        :rtype: int
         """
         if self.reqs_dict is None:
             return 0
-        return sum(
-            1 for req in self.reqs_dict.values()
-            if req.get("request_type") == "arrival"
-        )
+        return sum(1 for req in self.reqs_dict.values() if req.get("request_type") == "arrival")
 
     @property
     def network_state(self) -> NetworkState | None:
-        """Access to the v5 NetworkState object.
+        """
+        Access to the v5 NetworkState object.
 
-        Returns:
-            NetworkState if orchestrator mode enabled, None otherwise.
+        :return: NetworkState if orchestrator mode enabled, None otherwise
+        :rtype: NetworkState | None
         """
         return self._network_state
 
     def get_next_request(self) -> Request | None:
-        """Get the next unprocessed arrival request for RL.
+        """
+        Get the next unprocessed arrival request for RL.
 
         This method is used by UnifiedSimEnv to get requests one at a time
-        for step-by-step RL decision making.
+        for step-by-step RL decision making. Requires orchestrator mode.
 
-        Returns:
-            Next Request object, or None if all arrivals processed.
-
-        Note:
-            This method requires orchestrator mode (use_orchestrator=True).
-            The returned Request is the v5 domain object, not the legacy dict.
+        :return: Next Request object, or None if all arrivals processed
+        :rtype: Request | None
         """
         if not self.use_orchestrator or self.reqs_dict is None:
             return None
 
         # Get sorted arrival times
-        arrival_times = sorted(
-            [
-                t
-                for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "arrival"
-            ]
-        )
+        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"])
 
         # Find next unprocessed request using _rl_request_index
         if not hasattr(self, "_rl_request_index"):
@@ -2177,16 +1925,14 @@ class SimulationEngine:
         return self._get_or_create_v5_request(current_time)
 
     def process_releases_until(self, time: float) -> None:
-        """Process all release events due before given time.
+        """
+        Process all release events due before given time.
 
         This method is used by UnifiedSimEnv to process lightpath releases
-        between RL decision points.
+        between RL decision points. Requires orchestrator mode.
 
-        Args:
-            time: Process all releases with depart_time < time
-
-        Note:
-            This method requires orchestrator mode (use_orchestrator=True).
+        :param time: Process all releases with depart_time <= time
+        :type time: float
         """
         if not self.use_orchestrator or self.reqs_dict is None:
             return
@@ -2197,13 +1943,7 @@ class SimulationEngine:
         # Find and process all release events at or before given time
         # NOTE: Use <= to match legacy behavior where releases at exactly
         # the same time as the next arrival are processed before that arrival
-        release_times = sorted(
-            [
-                t
-                for t, req in self.reqs_dict.items()
-                if req.get("request_type") == "release" and t[1] <= time
-            ]
-        )
+        release_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "release" and t[1] <= time])
 
         for release_time in release_times:
             # Check if we've already processed this release
@@ -2222,19 +1962,17 @@ class SimulationEngine:
         request: Request,
         result: AllocationResult,
     ) -> None:
-        """Record allocation result for RL statistics.
+        """
+        Record allocation result for RL statistics.
 
         This method is used by UnifiedSimEnv to record the result of each
-        RL decision and advance to the next request.
+        RL decision and advance to the next request. Updates statistics
+        counters, schedules release event if successful, and advances index.
 
-        Args:
-            request: The Request that was processed
-            result: AllocationResult from orchestrator
-
-        Side Effects:
-            - Updates statistics counters
-            - If success, schedules release event (tracked internally)
-            - Advances _rl_request_index
+        :param request: The Request that was processed
+        :type request: Request
+        :param result: AllocationResult from orchestrator
+        :type result: AllocationResult
         """
         if not self.use_orchestrator:
             return
@@ -2267,22 +2005,10 @@ class SimulationEngine:
                 "band": list(result.bands) if result.bands else [],
                 "start_slot_list": list(result.start_slots) if result.start_slots else [],
                 "end_slot_list": list(result.end_slots) if result.end_slots else [],
-                "bandwidth_list": (
-                    list(result.bandwidth_allocations)
-                    if result.bandwidth_allocations
-                    else [request.bandwidth_gbps]
-                ),
-                "lightpath_id_list": (
-                    list(result.all_lightpath_ids) if result.all_lightpath_ids else []
-                ),
-                "lightpath_bandwidth_list": (
-                    list(result.lightpath_bandwidths)
-                    if result.lightpath_bandwidths
-                    else []
-                ),
-                "was_new_lp_established": (
-                    list(result.lightpaths_created) if result.lightpaths_created else []
-                ),
+                "bandwidth_list": (list(result.bandwidth_allocations) if result.bandwidth_allocations else [request.bandwidth_gbps]),
+                "lightpath_id_list": (list(result.all_lightpath_ids) if result.all_lightpath_ids else []),
+                "lightpath_bandwidth_list": (list(result.lightpath_bandwidths) if result.lightpath_bandwidths else []),
+                "was_new_lp_established": (list(result.lightpaths_created) if result.lightpaths_created else []),
             }
 
         # Advance to next request

@@ -49,9 +49,7 @@ def sample_network_spectrum() -> dict:
 class TestFindPathLength:
     """Tests for find_path_length function."""
 
-    def test_find_path_length_with_single_hop_returns_correct_length(
-        self, sample_topology: nx.Graph
-    ) -> None:
+    def test_find_path_length_with_single_hop_returns_correct_length(self, sample_topology: nx.Graph) -> None:
         """Test that path length is calculated correctly for single hop."""
         # Arrange
         path_list = [1, 2]
@@ -62,9 +60,7 @@ class TestFindPathLength:
         # Assert
         assert result == 10
 
-    def test_find_path_length_with_multiple_hops_sums_lengths(
-        self, sample_topology: nx.Graph
-    ) -> None:
+    def test_find_path_length_with_multiple_hops_sums_lengths(self, sample_topology: nx.Graph) -> None:
         """Test that path length is sum of all hop lengths."""
         # Arrange
         path_list = [1, 2, 3, 4]
@@ -79,9 +75,7 @@ class TestFindPathLength:
 class TestFindMaxPathLength:
     """Tests for find_max_path_length function."""
 
-    def test_find_max_path_length_returns_longest_path(
-        self, sample_topology: nx.Graph
-    ) -> None:
+    def test_find_max_path_length_returns_longest_path(self, sample_topology: nx.Graph) -> None:
         """Test that maximum path length between nodes is found."""
         # Arrange
         source, destination = 1, 3
@@ -96,9 +90,7 @@ class TestFindMaxPathLength:
 class TestGetPathModulation:
     """Tests for get_path_modulation function."""
 
-    def test_get_path_modulation_with_short_path_returns_64qam(
-        self, sample_modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_short_path_returns_64qam(self, sample_modulation_formats: dict) -> None:
         """Test that short path selects 64-QAM modulation."""
         # Arrange
         path_length = 400.0
@@ -109,9 +101,7 @@ class TestGetPathModulation:
         # Assert
         assert result == "64-QAM"
 
-    def test_get_path_modulation_with_medium_path_returns_16qam(
-        self, sample_modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_medium_path_returns_16qam(self, sample_modulation_formats: dict) -> None:
         """Test that medium path selects 16-QAM modulation."""
         # Arrange
         path_length = 800.0
@@ -122,9 +112,7 @@ class TestGetPathModulation:
         # Assert
         assert result == "16-QAM"
 
-    def test_get_path_modulation_with_long_path_returns_qpsk(
-        self, sample_modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_long_path_returns_qpsk(self, sample_modulation_formats: dict) -> None:
         """Test that long path selects QPSK modulation."""
         # Arrange
         path_length = 1500.0
@@ -135,9 +123,7 @@ class TestGetPathModulation:
         # Assert
         assert result == "QPSK"
 
-    def test_get_path_modulation_with_excessive_path_returns_false(
-        self, sample_modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_excessive_path_returns_false(self, sample_modulation_formats: dict) -> None:
         """Test that excessively long path returns False."""
         # Arrange
         path_length = 2500.0
@@ -148,17 +134,13 @@ class TestGetPathModulation:
         # Assert
         assert result is False
 
-    def test_get_path_modulation_with_legacy_params_works(
-        self, sample_modulation_formats: dict
-    ) -> None:
+    def test_get_path_modulation_with_legacy_params_works(self, sample_modulation_formats: dict) -> None:
         """Test backward compatibility with legacy parameter names."""
         # Arrange
         path_len = 800.0
 
         # Act
-        result = get_path_modulation(
-            mods_dict=sample_modulation_formats, path_len=path_len
-        )
+        result = get_path_modulation(mods_dict=sample_modulation_formats, path_len=path_len)
 
         # Assert
         assert result == "16-QAM"
@@ -166,18 +148,14 @@ class TestGetPathModulation:
     def test_get_path_modulation_without_params_raises_error(self) -> None:
         """Test that missing required parameters raises ValueError."""
         # Act & Assert
-        with pytest.raises(
-            ValueError, match="Must provide modulation_formats and path_length"
-        ):
+        with pytest.raises(ValueError, match="Must provide modulation_formats and path_length"):
             get_path_modulation()
 
 
 class TestFindPathCongestion:
     """Tests for find_path_congestion function."""
 
-    def test_find_path_congestion_calculates_average_correctly(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_path_congestion_calculates_average_correctly(self, sample_network_spectrum: dict) -> None:
         """Test that average congestion is calculated correctly."""
         # Arrange
         path_list = [1, 2, 3]
@@ -235,9 +213,7 @@ class TestFindPathFragmentation:
 class TestFindCoreCongestion:
     """Tests for find_core_congestion function."""
 
-    def test_find_core_congestion_calculates_core_percentage(
-        self, sample_network_spectrum: dict
-    ) -> None:
+    def test_find_core_congestion_calculates_core_percentage(self, sample_network_spectrum: dict) -> None:
         """Test that core congestion percentage is calculated correctly."""
         # Arrange
         path_list = [1, 2, 3]
@@ -268,9 +244,7 @@ class TestFindCoreFragmentationCongestion:
         band = "c"
 
         # Act
-        frag, cong = find_core_fragmentation_congestion(
-            network_spectrum, path_list, core, band
-        )
+        frag, cong = find_core_fragmentation_congestion(network_spectrum, path_list, core, band)
 
         # Assert
         assert frag == 0.0
@@ -287,9 +261,7 @@ class TestFindCoreFragmentationCongestion:
         band = "c"
 
         # Act & Assert
-        with pytest.raises(
-            NotImplementedError, match="Only works for 256 spectral slots"
-        ):
+        with pytest.raises(NotImplementedError, match="Only works for 256 spectral slots"):
             find_core_fragmentation_congestion(network_spectrum, path_list, core, band)
 
 

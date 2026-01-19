@@ -135,10 +135,7 @@ def _validate_resource_keys(resources: dict[str, Any]) -> None:
     """
     for key in resources:
         if key not in RESOURCE_KEYS:
-            sys.exit(
-                f"Unknown resource key '{key}'. Allowed keys: "
-                f"{', '.join(sorted(RESOURCE_KEYS))}"
-            )
+            sys.exit(f"Unknown resource key '{key}'. Allowed keys: {', '.join(sorted(RESOURCE_KEYS))}")
 
 
 def _validate_keys(mapping: dict[str, Any], ctx: str) -> None:
@@ -219,9 +216,7 @@ def _fetch(grid: dict[str, Any], common: dict[str, Any], key: str) -> list[Any]:
     sys.exit(f"Grid spec missing required key '{key}' (searched grid and grid.common)")
 
 
-def _expand_grid(
-    grid: dict[str, Any], starting_rid: int
-) -> tuple[list[dict[str, Any]], int]:
+def _expand_grid(grid: dict[str, Any], starting_rid: int) -> tuple[list[dict[str, Any]], int]:
     """
     Expand a grid specification into individual job configurations.
 
@@ -257,11 +252,7 @@ def _expand_grid(
                 "k_paths": kp,
                 "obs_space": curr_obs,
                 "is_rl": _is_rl(alg),
-                **{
-                    k: _cast(k, v)
-                    for k, v in common.items()
-                    if k not in {"path_algorithm", "erlang_start", "k_paths"}
-                },
+                **{k: _cast(k, v) for k, v in common.items() if k not in {"path_algorithm", "erlang_start", "k_paths"}},
             }
         )
         rid += 1
@@ -362,9 +353,7 @@ def main() -> None:  # noqa: C901  (cyclomatic – fine here)
     _validate_resource_keys(resources)
 
     if sum(k in spec for k in ("grid", "grids", "jobs")) > 1:
-        sys.exit(
-            "Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple."
-        )
+        sys.exit("Spec must contain only one of 'grid', 'grids', or 'jobs', not multiple.")
 
     global_rid = 0
     rows = []

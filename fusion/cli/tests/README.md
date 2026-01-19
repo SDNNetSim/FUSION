@@ -5,7 +5,7 @@
 - **constants.py**: CLI constants and exit codes
 - **main_parser.py**: Argument parser construction and configuration
 - **registry.py**: Argument registry management
-- **run_gui.py**: GUI entry point and error handling
+- **run_gui.py**: GUI entry point (verifies GUINotSupportedError is raised)
 - **run_sim.py**: Simulation entry point and error handling
 - **run_train.py**: Training entry point and error handling
 - **utils.py**: Shared utilities for CLI entry points

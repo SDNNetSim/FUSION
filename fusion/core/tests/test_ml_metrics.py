@@ -86,9 +86,7 @@ class TestMLMetricsCollectorTrainDataUpdate:
         current_transponders = 3
 
         # Act
-        sample_collector.update_train_data(
-            old_request, request_info, network_spectrum, current_transponders
-        )
+        sample_collector.update_train_data(old_request, request_info, network_spectrum, current_transponders)
 
         # Assert
         assert len(sample_collector.train_data_list) == 1
@@ -101,9 +99,7 @@ class TestMLMetricsCollectorTrainDataUpdate:
 
     @patch("fusion.core.ml_metrics.find_core_congestion")
     @patch("fusion.core.ml_metrics.find_path_length")
-    def test_update_train_data_handles_single_core(
-        self, mock_path_length: Any, mock_congestion: Any, sample_collector: Any
-    ) -> None:
+    def test_update_train_data_handles_single_core(self, mock_path_length: Any, mock_congestion: Any, sample_collector: Any) -> None:
         """Test update_train_data with single core configuration."""
         # Arrange
         sample_collector.engine_props["cores_per_link"] = 1
@@ -117,9 +113,7 @@ class TestMLMetricsCollectorTrainDataUpdate:
         mock_path_length.return_value = 150.0
 
         # Act
-        sample_collector.update_train_data(
-            old_request, request_info, network_spectrum, 1
-        )
+        sample_collector.update_train_data(old_request, request_info, network_spectrum, 1)
 
         # Assert
         assert len(sample_collector.train_data_list) == 1
@@ -143,12 +137,8 @@ class TestMLMetricsCollectorTrainDataUpdate:
         mock_path_length.return_value = 200.0
 
         # Act
-        sample_collector.update_train_data(
-            old_request, request_info, network_spectrum, 2
-        )
-        sample_collector.update_train_data(
-            old_request, request_info, network_spectrum, 3
-        )
+        sample_collector.update_train_data(old_request, request_info, network_spectrum, 2)
+        sample_collector.update_train_data(old_request, request_info, network_spectrum, 3)
 
         # Assert
         assert len(sample_collector.train_data_list) == 2
@@ -181,9 +171,7 @@ class TestMLMetricsCollectorDataManagement:
         ]
         return collector
 
-    def test_get_train_data_returns_copy_of_data(
-        self, collector_with_data: Any
-    ) -> None:
+    def test_get_train_data_returns_copy_of_data(self, collector_with_data: Any) -> None:
         """Test that get_train_data returns copy of training data."""
         # Act
         data = collector_with_data.get_train_data()
@@ -200,9 +188,7 @@ class TestMLMetricsCollectorDataManagement:
         # Assert
         assert collector_with_data.train_data_list == []
 
-    def test_get_train_data_summary_with_data_returns_stats(
-        self, collector_with_data: Any
-    ) -> None:
+    def test_get_train_data_summary_with_data_returns_stats(self, collector_with_data: Any) -> None:
         """Test summary generation with training data."""
         # Act & Assert - The method will fail on string bandwidth data
         # This is a known limitation of the actual implementation
@@ -246,9 +232,7 @@ class TestMLMetricsCollectorDataPersistence:
 
     @patch("fusion.core.ml_metrics.PROJECT_ROOT", "/tmp")
     @patch("pandas.DataFrame.to_csv")
-    def test_save_train_data_on_last_iteration_saves_file(
-        self, mock_to_csv: Any, temp_collector: Any
-    ) -> None:
+    def test_save_train_data_on_last_iteration_saves_file(self, mock_to_csv: Any, temp_collector: Any) -> None:
         """Test save_train_data saves file on last iteration."""
         # Arrange
         iteration = 9
@@ -265,9 +249,7 @@ class TestMLMetricsCollectorDataPersistence:
         assert call_args[1]["index"] is False
 
     @patch("pandas.DataFrame.to_csv")
-    def test_save_train_data_on_non_last_iteration_does_not_save(
-        self, mock_to_csv: Any, temp_collector: Any
-    ) -> None:
+    def test_save_train_data_on_non_last_iteration_does_not_save(self, mock_to_csv: Any, temp_collector: Any) -> None:
         """Test save_train_data does not save on non-last iteration."""
         # Arrange
         iteration = 5
@@ -280,9 +262,7 @@ class TestMLMetricsCollectorDataPersistence:
         mock_to_csv.assert_not_called()
 
     @patch("fusion.core.ml_metrics.logger")
-    def test_save_train_data_with_empty_data_logs_warning(
-        self, mock_logger: Any
-    ) -> None:
+    def test_save_train_data_with_empty_data_logs_warning(self, mock_logger: Any) -> None:
         """Test save_train_data logs warning with empty data."""
         # Arrange
         collector = MLMetricsCollector({"erlang": 50.0}, "empty_sim")
@@ -338,14 +318,10 @@ class TestMLMetricsCollectorEdgeCases:
 
     @patch("fusion.core.ml_metrics.find_core_congestion")
     @patch("fusion.core.ml_metrics.find_path_length")
-    def test_update_train_data_with_zero_cores_creates_empty_array(
-        self, mock_path_length: Any, mock_congestion: Any
-    ) -> None:
+    def test_update_train_data_with_zero_cores_creates_empty_array(self, mock_path_length: Any, mock_congestion: Any) -> None:
         """Test update_train_data with zero cores configuration."""
         # Arrange
-        collector = MLMetricsCollector(
-            {"cores_per_link": 0, "topology": Mock()}, "test"
-        )
+        collector = MLMetricsCollector({"cores_per_link": 0, "topology": Mock()}, "test")
         old_request = {
             "bandwidth": "100GHz",
             "mod_formats": {"QPSK": {"max_length": [100]}},
@@ -362,6 +338,4 @@ class TestMLMetricsCollectorEdgeCases:
         # np.mean([]) returns nan, which becomes nan in the result
         import numpy as np
 
-        assert (
-            np.isnan(entry["average_congestion"]) or entry["average_congestion"] == 0.0
-        )
+        assert np.isnan(entry["average_congestion"]) or entry["average_congestion"] == 0.0

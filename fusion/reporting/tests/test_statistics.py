@@ -32,9 +32,7 @@ def test_update_grooming_outcome_fully_groomed() -> None:
     """Test grooming outcome update for fully groomed request."""
     stats = GroomingStatistics()
 
-    stats.update_grooming_outcome(
-        was_groomed=True, was_partially_groomed=False, bandwidth=100.0, new_lightpaths=0
-    )
+    stats.update_grooming_outcome(was_groomed=True, was_partially_groomed=False, bandwidth=100.0, new_lightpaths=0)
 
     assert stats.fully_groomed_count == 1
     assert stats.total_requests == 1

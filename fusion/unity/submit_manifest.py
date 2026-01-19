@@ -30,9 +30,7 @@ def parse_cli() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("exp", help="experiment directory under ./experiments")
     p.add_argument("script", help="bash script to run (e.g., run_rl_sim.sh)")
-    p.add_argument(
-        "--rows", type=int, help="number of jobs (defaults to line-count of manifest)"
-    )
+    p.add_argument("--rows", type=int, help="number of jobs (defaults to line-count of manifest)")
     return p.parse_args()
 
 
@@ -85,10 +83,7 @@ def build_environment_variables(
         "JOB_DIR": str(job_directory),
         "NETWORK": first_row.get("network", ""),
         "DATE": experiment_name.split("_")[0],
-        "JOB_NAME": (
-            f"{first_row['path_algorithm']}_{first_row['erlang_start']}_"
-            f"{experiment_name.replace('/', '_')}"
-        ),
+        "JOB_NAME": (f"{first_row['path_algorithm']}_{first_row['erlang_start']}_{experiment_name.replace('/', '_')}"),
     }
 
     # propagate resources ⇢ upper-case so bash can ${PARTITION}
@@ -121,9 +116,7 @@ def main() -> None:
     first_row, total_rows = read_first_row(manifest_path)
     job_count = args.rows if args.rows is not None else total_rows
 
-    environment_variables = build_environment_variables(
-        first_row, job_count, job_directory, args.exp
-    )
+    environment_variables = build_environment_variables(first_row, job_count, job_directory, args.exp)
 
     jobs_directory = job_directory / "jobs"
     jobs_directory.mkdir(parents=True, exist_ok=True)

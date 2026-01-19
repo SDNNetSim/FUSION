@@ -67,18 +67,8 @@ class Run:
         """Compare runs for equality."""
         if not isinstance(other, Run):
             return NotImplemented
-        return (
-            self.network == other.network
-            and self.date == other.date
-            and self.id == other.id
-            and self.algorithm == other.algorithm
-        )
+        return self.network == other.network and self.date == other.date and self.id == other.id and self.algorithm == other.algorithm
 
     def __repr__(self) -> str:
         """Return detailed representation."""
-        return (
-            f"Run(id='{self.id}', "
-            f"network='{self.network}', "
-            f"date='{self.date}', "
-            f"algorithm='{self.algorithm}')"
-        )
+        return f"Run(id='{self.id}', network='{self.network}', date='{self.date}', algorithm='{self.algorithm}')"

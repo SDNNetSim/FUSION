@@ -29,9 +29,7 @@ def parse_yaml_file(yaml_file: str) -> Any:
             return exc
 
 
-def modify_multiple_json_values(
-    trial_num: int, file_path: str, update_list: list[tuple[str, Any]]
-) -> None:
+def modify_multiple_json_values(trial_num: int, file_path: str, update_list: list[tuple[str, Any]]) -> None:
     """
     Open a JSON file, modify multiple key-value pairs, and save it back.
 
