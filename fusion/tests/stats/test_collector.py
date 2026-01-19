@@ -5,18 +5,16 @@ from __future__ import annotations
 import pytest
 
 from fusion.domain.config import SimulationConfig
-from fusion.domain.request import BlockReason, Request, RequestStatus
+from fusion.domain.request import BlockReason, Request
 from fusion.domain.results import (
     AllocationResult,
     GroomingResult,
     ProtectionResult,
     RouteResult,
-    SlicingResult,
     SNRResult,
     SpectrumResult,
 )
 from fusion.stats.collector import StatsCollector
-
 
 # =============================================================================
 # Fixtures
@@ -1034,7 +1032,7 @@ class TestIntegration:
             remaining=50,
             lightpath_ids=[1],
         )
-        protection = ProtectionResult.established(
+        _protection = ProtectionResult.established(
             primary_spectrum=sample_spectrum_result,
             backup_spectrum=sample_spectrum_result,
         )

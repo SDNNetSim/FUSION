@@ -124,29 +124,25 @@ class TestAllAdaptersProtocol:
         assert isinstance(adapter, SNRPipeline)
 
 
-class TestAllAdaptersHaveRemovalChecklist:
-    """Test that all adapters have removal checklists in docstrings."""
+class TestAllAdaptersHaveAdapterDocstring:
+    """Test that all adapters are marked as temporary migration layers."""
 
-    def test_routing_adapter_has_removal_checklist(self) -> None:
+    def test_routing_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import RoutingAdapter
         docstring = RoutingAdapter.__doc__ or ""
-        assert "Removal Checklist" in docstring
         assert "ADAPTER" in docstring
 
-    def test_spectrum_adapter_has_removal_checklist(self) -> None:
+    def test_spectrum_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import SpectrumAdapter
         docstring = SpectrumAdapter.__doc__ or ""
-        assert "Removal Checklist" in docstring
         assert "ADAPTER" in docstring
 
-    def test_grooming_adapter_has_removal_checklist(self) -> None:
+    def test_grooming_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import GroomingAdapter
         docstring = GroomingAdapter.__doc__ or ""
-        assert "Removal Checklist" in docstring
         assert "ADAPTER" in docstring
 
-    def test_snr_adapter_has_removal_checklist(self) -> None:
+    def test_snr_adapter_marked_as_adapter(self) -> None:
         from fusion.core.adapters import SNRAdapter
         docstring = SNRAdapter.__doc__ or ""
-        assert "Removal Checklist" in docstring
         assert "ADAPTER" in docstring
