@@ -1,3 +1,5 @@
+# TODO: Ensure that we update this file (delete legacy, add new)
+
 # Pycharm
 .idea/
 
@@ -10,6 +12,7 @@ misc/
 # Data files
 data/output/*
 data/input/*
+data/training_data/*
 
 ai_scripts/models/*
 
@@ -18,6 +21,7 @@ data/input
 data/output
 data/plots
 data/excel
+data/training_data
 
 logs/*
 
@@ -25,14 +29,17 @@ ini/run_ini/*
 bash_scripts/slurm/*
 
 .vscode/
-.venv/
-venv/
 
 # Virtual environments
+.venv/
+venv/
+venvs/
+ENV/
+env/
+*.pyc
+__pycache__/
 venvs/unity_venv/venv
 
-# vscode-generated cache files
-__pycache__/
 
 data/json_input/run_mods/*
 
@@ -45,3 +52,18 @@ unity/.tmp_config
 reinforcement_learning/plotting/figures
 reinforcement_learning/experiments/
 sb3_scripts/yml
+
+fusion/configs/hyperparams/
+
+# Coverage files
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Python package metadata
+*.egg-info/

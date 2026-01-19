@@ -1,0 +1,268 @@
+"""
+Network utility functions for FUSION.
+
+This module provides core network-related utility functions that are used
+across different packages in FUSION. These functions are placed here to
+avoid circular dependencies between fusion.core and fusion.sim packages.
+"""
+
+from typing import Any
+
+import networkx as nx
+import numpy as np
+
+
+def find_path_length(path_list: list[int], topology: nx.Graph) -> float:
+    """
+    Find the length of a path in a physical topology.
+
+    :param path_list: List of integers representing nodes in the path
+    :type path_list: list[int]
+    :param topology: Network topology
+    :type topology: nx.Graph
+    :return: Length of the path
+    :rtype: float
+    """
+    path_length = 0
+    for i in range(len(path_list) - 1):
+        path_length += topology[path_list[i]][path_list[i + 1]]["length"]
+
+    return path_length
+
+
+def find_core_congestion(
+    core_index: int, network_spectrum: dict, path_list: list[int]
+) -> float:
+    """
+    Find the current percentage of congestion on a core along a path.
+
+    :param core_index: Index of the core
+    :type core_index: int
+    :param network_spectrum: Network spectrum database
+    :type network_spectrum: dict
+    :param path_list: Current path
+    :type path_list: list[int]
+    :return: Average congestion percentage on the core
+    :rtype: float
+    """
+    link_congestion_list = []
+
+    for source, destination in zip(path_list, path_list[1:], strict=False):
+        link_key = (source, destination)
+        cores_matrix = network_spectrum[link_key]["cores_matrix"]
+        total_slots = 0
+        slots_taken = 0.0
+
+        for band in cores_matrix:
+            # Every core will have the same number of spectral slots
+            total_slots += len(cores_matrix[band][0])
+            core_slots_taken = float(
+                len(np.where(cores_matrix[band][core_index] != 0.0)[0])
+            )
+            slots_taken += core_slots_taken
+
+        link_congestion_list.append(slots_taken / total_slots)
+
+    return float(np.mean(link_congestion_list))
+
+
+def get_path_modulation(
+    modulation_formats: dict[str, dict[Any, Any]] | None = None,
+    path_length: float | None = None,
+    mods_dict: dict[str, dict[Any, Any]] | None = None,
+    path_len: float | None = None,
+) -> str | bool:
+    """
+    Choose a modulation format that will allocate a network request.
+
+    :param modulation_formats: Information for maximum reach for each modulation format
+    :type modulation_formats: dict[str, dict]
+    :param path_length: Length of the path to be taken
+    :type path_length: float
+    :param mods_dict: Legacy parameter name for modulation_formats
+    :type mods_dict: dict[str, dict]
+    :param path_len: Legacy parameter name for path_length
+    :type path_len: float
+    :return: Chosen modulation format or False if path too long
+    :rtype: str | bool
+    """
+    # Handle backward compatibility
+    if mods_dict is not None:
+        modulation_formats = mods_dict
+    if path_len is not None:
+        path_length = path_len
+
+    if modulation_formats is None or path_length is None:
+        raise ValueError("Must provide modulation_formats and path_length")
+
+    qpsk_max = modulation_formats["QPSK"]["max_length"]
+    qam16_max = modulation_formats["16-QAM"]["max_length"]
+    qam64_max = modulation_formats["64-QAM"]["max_length"]
+
+    if qpsk_max >= path_length > qam16_max:
+        return "QPSK"
+    elif qam16_max >= path_length > qam64_max:
+        return "16-QAM"
+    elif qam64_max >= path_length:
+        return "64-QAM"
+    else:
+        return False
+
+
+def find_path_congestion(
+    path_list: list[int], network_spectrum: dict, band: str = "c"
+) -> tuple[float, float]:
+    """
+    Compute average path congestion and scaled available capacity.
+
+    Accounts for multiple cores per link.
+
+    :param path_list: Sequence of nodes in the path
+    :type path_list: list[int]
+    :param network_spectrum: Current spectrum allocation info
+    :type network_spectrum: dict
+    :param band: Spectral band to evaluate
+    :type band: str
+    :return: (average congestion [0,1], scaled available capacity [0,1])
+    :rtype: tuple[float, float]
+    """
+    link_congestion_list = []
+    total_slots_available = 0.0
+
+    for source, destination in zip(path_list, path_list[1:], strict=False):
+        link_key = (source, destination)
+        cores_matrix = network_spectrum[link_key]["cores_matrix"]
+        band_cores_matrix = cores_matrix[band]
+
+        num_cores = len(band_cores_matrix)
+        num_slots_per_core = len(band_cores_matrix[0])
+
+        slots_taken = 0.0
+        for core_array in band_cores_matrix:
+            core_slots_taken = float(np.count_nonzero(core_array))
+            slots_taken += core_slots_taken
+
+        total_slots = num_cores * num_slots_per_core
+        slots_available = total_slots - slots_taken
+
+        link_congestion_list.append(slots_taken / total_slots)
+        total_slots_available += slots_available
+
+    average_path_congestion = np.mean(link_congestion_list)
+    scaled_available_capacity = total_slots_available
+
+    return float(average_path_congestion), scaled_available_capacity
+
+
+def find_path_fragmentation(
+    path_list: list[int], network_spectrum: dict, band: str = "c"
+) -> float:
+    """
+    Compute the average fragmentation ratio along a path.
+
+    :param path_list: Sequence of nodes in the path
+    :type path_list: list[int]
+    :param network_spectrum: Spectrum allocation per link
+    :type network_spectrum: dict
+    :param band: Spectral band to use (e.g., 'c')
+    :type band: str
+    :return: Average fragmentation score [0,1] (higher = worse fragmentation)
+    :rtype: float
+    """
+    fragmentation_ratios = []
+
+    for source, destination in zip(path_list, path_list[1:], strict=False):
+        link_key = (source, destination)
+        cores_matrix = network_spectrum[link_key]["cores_matrix"]
+        cores = cores_matrix[band]
+
+        for core in cores:
+            free_blocks = 0
+            max_block = 0
+            current_block = 0
+            total_free = 0
+
+            for slot in core:
+                if slot == 0:
+                    current_block += 1
+                    total_free += 1
+                else:
+                    if current_block > 0:
+                        free_blocks += 1
+                        max_block = max(max_block, current_block)
+                        current_block = 0
+
+            if current_block > 0:  # Catch trailing free block
+                free_blocks += 1
+                max_block = max(max_block, current_block)
+
+            if total_free == 0:
+                fragmentation_ratio = 1.0  # fully occupied, max fragmentation
+            else:
+                fragmentation_ratio = 1 - (max_block / total_free)
+
+            fragmentation_ratios.append(fragmentation_ratio)
+
+    return float(np.mean(fragmentation_ratios)) if fragmentation_ratios else 1.0
+
+
+def average_bandwidth_usage(
+    bw_dict: dict[float, float], departure_time: float
+) -> float:
+    """
+    Calculate time-weighted average bandwidth utilization.
+
+    Given a dictionary mapping timestamps to bandwidth utilization percentages,
+    calculates the weighted average utilization over the lifetime of a lightpath.
+
+    :param bw_dict: Dictionary mapping arrival times to bandwidth usage percentages
+    :type bw_dict: dict[float, float]
+    :param departure_time: Time when the lightpath is released
+    :type departure_time: float
+    :return: Average bandwidth utilization percentage (0-100)
+    :rtype: float
+
+    Example:
+        >>> bw_dict = {0.0: 50.0, 100.0: 75.0, 200.0: 100.0}
+        >>> average_bandwidth_usage(bw_dict, 300.0)
+        75.0
+    """
+    if not bw_dict:
+        return 0.0
+
+    sorted_times = sorted(bw_dict.keys())
+
+    total_bw_time = 0.0  # Accumulated bandwidth * time
+    total_time = 0.0  # Total time duration
+
+    for i in range(len(sorted_times)):
+        start_time = sorted_times[i]
+        bw = bw_dict[start_time]
+
+        # Determine end time for this period
+        if i < len(sorted_times) - 1:
+            end_time = sorted_times[i + 1]
+        else:
+            end_time = departure_time
+
+        # Calculate duration and weighted bandwidth
+        duration = end_time - start_time
+
+        if duration < 0:
+            # Sanity check
+            raise ValueError(
+                f"Invalid time progression: "
+                f"start_time={start_time}, end_time={end_time}"
+            )
+
+        total_bw_time += bw * duration
+        total_time += duration
+
+    # Calculate weighted average
+    if total_time == 0:
+        return 0.0
+
+    # Round to 2 decimal places to match v5 behavior
+    average_utilization = round(total_bw_time / total_time, 2)
+
+    return average_utilization

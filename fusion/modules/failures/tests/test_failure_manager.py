@@ -1,0 +1,263 @@
+"""
+Unit tests for FailureManager class.
+"""
+
+import networkx as nx
+import pytest
+
+from fusion.modules.failures import FailureConfigError, FailureManager
+
+
+@pytest.fixture
+def sample_topology() -> nx.Graph:
+    """Create a sample topology for testing."""
+    G = nx.Graph()
+    G.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 3)])
+    return G
+
+
+@pytest.fixture
+def failure_manager(sample_topology: nx.Graph) -> FailureManager:
+    """Create a FailureManager instance."""
+    # Note: seed can be configured in multiple ways:
+    # - Single integer: {"seed": 42}  (used here for simple testing)
+    # - Request seeds list: {"request_seeds": [10, 20, 30]}  (per-iteration)
+    # - Seed list for batch: run_multi_seed_experiment(config,
+    #   seed_list=[42, 43, 44])
+    # See fusion/core/simulation.py:568-590 for seed resolution logic
+    engine_props = {"seed": 42}
+    return FailureManager(engine_props, sample_topology)
+
+
+def test_link_failure_blocks_path(failure_manager: FailureManager) -> None:
+    """Test that a path using a failed link is marked infeasible."""
+    # Inject link failure
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Activate the failure
+    failure_manager.activate_failures(10.0)
+
+    # Path using failed link should be infeasible
+    assert not failure_manager.is_path_feasible([0, 1, 2, 3])
+
+    # Path avoiding failed link should be feasible
+    assert failure_manager.is_path_feasible([0, 5, 6, 3])
+
+
+def test_failure_repair_restores_path(failure_manager: FailureManager) -> None:
+    """Test that path becomes feasible after repair time."""
+    # Inject and activate failure
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+    failure_manager.activate_failures(10.0)
+    assert not failure_manager.is_path_feasible([0, 1, 2, 3])
+
+    # Repair failure
+    repaired = failure_manager.repair_failures(20.0)
+    assert len(repaired) == 1
+    assert (1, 2) in repaired or (2, 1) in repaired
+
+    # Path should now be feasible
+    assert failure_manager.is_path_feasible([0, 1, 2, 3])
+
+
+def test_srlg_failure_multiple_links(failure_manager: FailureManager) -> None:
+    """Test that all SRLG links are failed simultaneously."""
+    srlg_links = [(0, 1), (2, 3), (5, 6)]
+    failure_manager.inject_failure(
+        "srlg", t_fail=10.0, t_repair=20.0, srlg_links=srlg_links
+    )
+
+    # Activate the failures
+    failure_manager.activate_failures(10.0)
+
+    assert failure_manager.get_failure_count() == 3
+
+    # All paths using SRLG links should be infeasible
+    assert not failure_manager.is_path_feasible([0, 1, 2])
+    assert not failure_manager.is_path_feasible([0, 5, 6, 3])
+
+
+def test_geo_failure_radius(
+    failure_manager: FailureManager, sample_topology: nx.Graph
+) -> None:
+    """Test that links within hop radius are failed, others unaffected."""
+    event = failure_manager.inject_failure(
+        "geo", t_fail=10.0, t_repair=20.0, center_node=1, hop_radius=1
+    )
+
+    # Activate the failures
+    failure_manager.activate_failures(10.0)
+
+    # Check affected nodes
+    affected_nodes = event["meta"]["affected_nodes"]
+    assert 1 in affected_nodes
+    assert 0 in affected_nodes  # Neighbor
+    assert 2 in affected_nodes  # Neighbor
+
+    # Links within radius should be failed
+    assert not failure_manager.is_path_feasible([0, 1, 2])
+
+
+def test_failure_history_tracking(failure_manager: FailureManager) -> None:
+    """Test that failure events are logged with timestamps."""
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(0, 1))
+    failure_manager.inject_failure("link", t_fail=15.0, t_repair=25.0, link_id=(2, 3))
+
+    assert len(failure_manager.failure_history) == 2
+    assert failure_manager.failure_history[0]["t_fail"] == 10.0
+    assert failure_manager.failure_history[1]["t_fail"] == 15.0
+
+
+def test_invalid_failure_config(failure_manager: FailureManager) -> None:
+    """Test that invalid configurations raise errors."""
+    # Repair before failure
+    with pytest.raises(FailureConfigError, match="Repair time.*must be after"):
+        failure_manager.inject_failure(
+            "link", t_fail=20.0, t_repair=10.0, link_id=(0, 1)
+        )
+
+    # Invalid link
+    with pytest.raises(FailureConfigError, match="does not exist"):
+        failure_manager.inject_failure(
+            "link", t_fail=10.0, t_repair=20.0, link_id=(99, 100)
+        )
+
+
+def test_node_failure_blocks_adjacent_links(failure_manager: FailureManager) -> None:
+    """Test that all links adjacent to a failed node are blocked."""
+    event = failure_manager.inject_failure(
+        "node", t_fail=10.0, t_repair=20.0, node_id=1
+    )
+
+    # Activate the failures
+    failure_manager.activate_failures(10.0)
+
+    # Check that multiple links are failed
+    assert len(event["failed_links"]) > 0
+
+    # All paths through node 1 should be infeasible
+    assert not failure_manager.is_path_feasible([0, 1, 2])
+
+
+def test_get_affected_links(failure_manager: FailureManager) -> None:
+    """Test that get_affected_links returns currently failed links."""
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Activate the failure
+    failure_manager.activate_failures(10.0)
+
+    affected = failure_manager.get_affected_links()
+    assert len(affected) == 1
+    assert (1, 2) in affected or (2, 1) in affected
+
+
+def test_clear_all_failures(failure_manager: FailureManager) -> None:
+    """Test that clear_all_failures removes all active failures."""
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(3, 4))
+
+    # Activate the failures
+    failure_manager.activate_failures(10.0)
+
+    assert failure_manager.get_failure_count() == 2
+
+    failure_manager.clear_all_failures()
+
+    assert failure_manager.get_failure_count() == 0
+    assert len(failure_manager.scheduled_failures) == 0
+    assert len(failure_manager.scheduled_repairs) == 0
+
+
+def test_path_feasible_with_no_failures(failure_manager: FailureManager) -> None:
+    """Test that all paths are feasible when no failures exist."""
+    path = [0, 1, 2, 3, 4]
+    assert failure_manager.is_path_feasible(path)
+
+
+def test_repair_only_scheduled_failures(failure_manager: FailureManager) -> None:
+    """Test that repair only removes failures at exact time."""
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Activate the failure
+    failure_manager.activate_failures(10.0)
+
+    # Try repairing at wrong time
+    repaired = failure_manager.repair_failures(15.0)
+    assert len(repaired) == 0
+    assert failure_manager.get_failure_count() == 1
+
+    # Repair at correct time
+    repaired = failure_manager.repair_failures(20.0)
+    assert len(repaired) == 1
+    assert failure_manager.get_failure_count() == 0
+
+
+def test_multiple_failures_at_same_repair_time(failure_manager: FailureManager) -> None:
+    """Test that multiple failures can be scheduled for same repair time."""
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(3, 4))
+
+    # Activate the failures
+    failure_manager.activate_failures(10.0)
+
+    assert failure_manager.get_failure_count() == 2
+
+    # Repair both at same time
+    repaired = failure_manager.repair_failures(20.0)
+    assert len(repaired) == 2
+    assert failure_manager.get_failure_count() == 0
+
+
+def test_bidirectional_link_checking(failure_manager: FailureManager) -> None:
+    """Test that path feasibility checks both link directions."""
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Activate the failure
+    failure_manager.activate_failures(10.0)
+
+    # Both directions should be blocked
+    assert not failure_manager.is_path_feasible([0, 1, 2, 3])
+    assert not failure_manager.is_path_feasible([3, 2, 1, 0])
+
+
+def test_failure_activation_timing(failure_manager: FailureManager) -> None:
+    """Test that failures are scheduled and only activate at the correct time."""
+    # Inject failure scheduled for t=10.0
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Before activation, path should be feasible
+    assert failure_manager.get_failure_count() == 0
+    assert failure_manager.is_path_feasible([0, 1, 2, 3])
+
+    # After activation at t=10.0, path should be blocked
+    activated = failure_manager.activate_failures(10.0)
+    assert len(activated) == 1
+    assert failure_manager.get_failure_count() == 1
+    assert not failure_manager.is_path_feasible([0, 1, 2, 3])
+
+    # After repair at t=20.0, path should be feasible again
+    repaired = failure_manager.repair_failures(20.0)
+    assert len(repaired) == 1
+    assert failure_manager.get_failure_count() == 0
+    assert failure_manager.is_path_feasible([0, 1, 2, 3])
+
+
+def test_activate_failures_only_once(failure_manager: FailureManager) -> None:
+    """Test that activate_failures only activates at the exact scheduled time."""
+    # Schedule failure at t=10.0
+    failure_manager.inject_failure("link", t_fail=10.0, t_repair=20.0, link_id=(1, 2))
+
+    # Try activating at wrong time - should return empty list
+    activated = failure_manager.activate_failures(5.0)
+    assert len(activated) == 0
+    assert failure_manager.get_failure_count() == 0
+
+    # Activate at correct time
+    activated = failure_manager.activate_failures(10.0)
+    assert len(activated) == 1
+    assert failure_manager.get_failure_count() == 1
+
+    # Try activating again at same time - should return empty list
+    activated = failure_manager.activate_failures(10.0)
+    assert len(activated) == 0
+    assert failure_manager.get_failure_count() == 1  # Still 1, not duplicated

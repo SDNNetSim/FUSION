@@ -1,0 +1,4174 @@
+{
+    "iter_stats": {
+        "0": {
+            "snapshots_dict": {},
+            "cores_dict": {
+                "0": 168
+            },
+            "weights_dict": {
+                "100": {
+                    "BPSK": {
+                        "mean": 4398.366666666667,
+                        "std": 490.67312405171214,
+                        "min": 4047.2,
+                        "max": 5383.1
+                    },
+                    "QPSK": {
+                        "mean": 1883.48,
+                        "std": 185.83626395297554,
+                        "min": 1620.2,
+                        "max": 2122.4
+                    },
+                    "8-QAM": {
+                        "mean": 1045.48,
+                        "std": 220.6484352992334,
+                        "min": 680.7,
+                        "max": 1276.5
+                    },
+                    "16-QAM": {
+                        "mean": 635.2,
+                        "std": 0.0,
+                        "min": 635.2,
+                        "max": 635.2
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "200": {
+                    "BPSK": {
+                        "mean": 4712.328571428571,
+                        "std": 691.4948702848432,
+                        "min": 3714.5,
+                        "max": 5771.0
+                    },
+                    "QPSK": {
+                        "mean": 2427.3125,
+                        "std": 496.544270612975,
+                        "min": 1739.4,
+                        "max": 3394.1
+                    },
+                    "8-QAM": {
+                        "mean": 1176.8,
+                        "std": 143.34741016146754,
+                        "min": 1056.0,
+                        "max": 1335.2
+                    },
+                    "16-QAM": {
+                        "mean": 667.6,
+                        "std": 45.820519420888246,
+                        "min": 635.2,
+                        "max": 700.0
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "300": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": 1199.6,
+                        "std": 0.0,
+                        "min": 1199.6,
+                        "max": 1199.6
+                    },
+                    "16-QAM": {
+                        "mean": 697.8333333333334,
+                        "std": 148.15047530579625,
+                        "min": 549.9,
+                        "max": 846.2
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "400": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": 2364.087755102041,
+                        "std": 659.4603862984787,
+                        "min": 1620.2,
+                        "max": 3771.7
+                    },
+                    "8-QAM": {
+                        "mean": 1199.6,
+                        "std": 0.0,
+                        "min": 1199.6,
+                        "max": 1199.6
+                    },
+                    "16-QAM": {
+                        "mean": 846.2,
+                        "std": 0.0,
+                        "min": 846.2,
+                        "max": 846.2
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "500": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": 1142.5111111111112,
+                        "std": 165.9134907421829,
+                        "min": 680.7,
+                        "max": 1335.2
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "600": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 602.1421052631579,
+                        "std": 134.7012386142404,
+                        "min": 365.4,
+                        "max": 784.9
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "700": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": 315.3,
+                        "std": 0.0,
+                        "min": 315.3,
+                        "max": 315.3
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "800": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                }
+            },
+            "mods_used_dict": {
+                "100": {
+                    "BPSK": 6,
+                    "QPSK": 5,
+                    "8-QAM": 5,
+                    "16-QAM": 1,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "BPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 4666.38,
+                            "std": 670.19,
+                            "min": 3714.5,
+                            "max": 5771.0
+                        },
+                        "c": {
+                            "mean": 4666.38,
+                            "std": 670.19,
+                            "min": 3714.5,
+                            "max": 5771.0
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 9.71,
+                            "std": 1.58,
+                            "min": 6.0,
+                            "max": 13.0
+                        },
+                        "c": {
+                            "mean": 9.71,
+                            "std": 1.58,
+                            "min": 6.0,
+                            "max": 13.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 5.91,
+                            "std": 0.54,
+                            "min": 5.03,
+                            "max": 6.65
+                        },
+                        "c": {
+                            "mean": 5.91,
+                            "std": 0.54,
+                            "min": 5.03,
+                            "max": 6.65
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 41
+                },
+                "QPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 2333.49,
+                            "std": 625.52,
+                            "min": 1620.2,
+                            "max": 3771.7
+                        },
+                        "c": {
+                            "mean": 2333.49,
+                            "std": 625.52,
+                            "min": 1620.2,
+                            "max": 3771.7
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 5.53,
+                            "std": 2.09,
+                            "min": 2.0,
+                            "max": 9.0
+                        },
+                        "c": {
+                            "mean": 5.53,
+                            "std": 2.09,
+                            "min": 2.0,
+                            "max": 9.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 8.97,
+                            "std": 1.05,
+                            "min": 6.83,
+                            "max": 10.43
+                        },
+                        "c": {
+                            "mean": 8.97,
+                            "std": 1.05,
+                            "min": 6.83,
+                            "max": 10.43
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 62
+                },
+                "8-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 1135.26,
+                            "std": 167.23,
+                            "min": 680.7,
+                            "max": 1335.2
+                        },
+                        "c": {
+                            "mean": 1135.26,
+                            "std": 167.23,
+                            "min": 680.7,
+                            "max": 1335.2
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 3.84,
+                            "std": 1.26,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 3.84,
+                            "std": 1.26,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 11.85,
+                            "std": 0.48,
+                            "min": 11.2,
+                            "max": 12.98
+                        },
+                        "c": {
+                            "mean": 11.85,
+                            "std": 0.48,
+                            "min": 11.2,
+                            "max": 12.98
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 37
+                },
+                "16-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 628.88,
+                            "std": 134.27,
+                            "min": 365.4,
+                            "max": 846.2
+                        },
+                        "c": {
+                            "mean": 628.88,
+                            "std": 134.27,
+                            "min": 365.4,
+                            "max": 846.2
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.23,
+                            "std": 0.65,
+                            "min": 1.0,
+                            "max": 3.0
+                        },
+                        "c": {
+                            "mean": 2.23,
+                            "std": 0.65,
+                            "min": 1.0,
+                            "max": 3.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 14.42,
+                            "std": 0.63,
+                            "min": 13.41,
+                            "max": 15.19
+                        },
+                        "c": {
+                            "mean": 14.42,
+                            "std": 0.63,
+                            "min": 13.41,
+                            "max": 15.19
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 26
+                },
+                "32-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 315.3,
+                            "std": 0.0,
+                            "min": 315.3,
+                            "max": 315.3
+                        },
+                        "c": {
+                            "mean": 315.3,
+                            "std": 0.0,
+                            "min": 315.3,
+                            "max": 315.3
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.0,
+                            "std": 0.0,
+                            "min": 2.0,
+                            "max": 2.0
+                        },
+                        "c": {
+                            "mean": 2.0,
+                            "std": 0.0,
+                            "min": 2.0,
+                            "max": 2.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 16.95,
+                            "std": 0.01,
+                            "min": 16.94,
+                            "max": 16.95
+                        },
+                        "c": {
+                            "mean": 16.95,
+                            "std": 0.01,
+                            "min": 16.94,
+                            "max": 16.95
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 2
+                },
+                "64-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 0
+                },
+                "200": {
+                    "BPSK": 35,
+                    "QPSK": 8,
+                    "8-QAM": 3,
+                    "16-QAM": 2,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "300": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 1,
+                    "16-QAM": 3,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "400": {
+                    "BPSK": 0,
+                    "QPSK": 49,
+                    "8-QAM": 1,
+                    "16-QAM": 1,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "500": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 27,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "600": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 0,
+                    "16-QAM": 19,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "700": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 0,
+                    "16-QAM": 0,
+                    "32-QAM": 2,
+                    "64-QAM": 0
+                },
+                "800": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 0,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                }
+            },
+            "block_bw_dict": {
+                "100": 6,
+                "200": 6,
+                "300": 11,
+                "400": 9,
+                "500": 9,
+                "600": 9,
+                "700": 12,
+                "800": 10
+            },
+            "link_usage_dict": {
+                "1-2": {
+                    "usage_count": 11,
+                    "throughput": 708455.2772222506,
+                    "link_num": 2
+                },
+                "2-1": {
+                    "usage_count": 11,
+                    "throughput": 708455.2772222506,
+                    "link_num": 2
+                },
+                "1-3": {
+                    "usage_count": 11,
+                    "throughput": 708455.2772222506,
+                    "link_num": 4
+                },
+                "3-1": {
+                    "usage_count": 11,
+                    "throughput": 708455.2772222506,
+                    "link_num": 4
+                },
+                "2-21": {
+                    "usage_count": 11,
+                    "throughput": 708455.2772222506,
+                    "link_num": 6
+                },
+                "21-2": {
+                    "usage_count": 11,
+                    "throughput": 708455.2772222506,
+                    "link_num": 6
+                },
+                "3-22": {
+                    "usage_count": 30,
+                    "throughput": 4583852.337868477,
+                    "link_num": 8
+                },
+                "22-3": {
+                    "usage_count": 30,
+                    "throughput": 4583852.337868477,
+                    "link_num": 8
+                },
+                "3-56": {
+                    "usage_count": 19,
+                    "throughput": 3875397.0606462257,
+                    "link_num": 10
+                },
+                "56-3": {
+                    "usage_count": 19,
+                    "throughput": 3875397.0606462257,
+                    "link_num": 10
+                },
+                "4-5": {
+                    "usage_count": 2,
+                    "throughput": 0,
+                    "link_num": 12
+                },
+                "5-4": {
+                    "usage_count": 2,
+                    "throughput": 0,
+                    "link_num": 12
+                },
+                "4-6": {
+                    "usage_count": 2,
+                    "throughput": 0,
+                    "link_num": 14
+                },
+                "6-4": {
+                    "usage_count": 2,
+                    "throughput": 0,
+                    "link_num": 14
+                },
+                "5-37": {
+                    "usage_count": 47,
+                    "throughput": 7949837.330426923,
+                    "link_num": 16
+                },
+                "37-5": {
+                    "usage_count": 47,
+                    "throughput": 7949837.330426923,
+                    "link_num": 16
+                },
+                "5-38": {
+                    "usage_count": 47,
+                    "throughput": 7949837.330426923,
+                    "link_num": 18
+                },
+                "38-5": {
+                    "usage_count": 47,
+                    "throughput": 7949837.330426923,
+                    "link_num": 18
+                },
+                "6-34": {
+                    "usage_count": 17,
+                    "throughput": 3889681.0915494664,
+                    "link_num": 20
+                },
+                "34-6": {
+                    "usage_count": 17,
+                    "throughput": 3889681.0915494664,
+                    "link_num": 20
+                },
+                "6-39": {
+                    "usage_count": 26,
+                    "throughput": 2141251.5598509344,
+                    "link_num": 22
+                },
+                "39-6": {
+                    "usage_count": 26,
+                    "throughput": 2141251.5598509344,
+                    "link_num": 22
+                },
+                "6-40": {
+                    "usage_count": 43,
+                    "throughput": 6030932.6514004,
+                    "link_num": 24
+                },
+                "40-6": {
+                    "usage_count": 43,
+                    "throughput": 6030932.6514004,
+                    "link_num": 24
+                },
+                "7-8": {
+                    "usage_count": 10,
+                    "throughput": 6962446.092406856,
+                    "link_num": 26
+                },
+                "8-7": {
+                    "usage_count": 10,
+                    "throughput": 6962446.092406856,
+                    "link_num": 26
+                },
+                "7-9": {
+                    "usage_count": 10,
+                    "throughput": 6962446.092406856,
+                    "link_num": 28
+                },
+                "9-7": {
+                    "usage_count": 10,
+                    "throughput": 6962446.092406856,
+                    "link_num": 28
+                },
+                "7-10": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 30
+                },
+                "10-7": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 30
+                },
+                "8-16": {
+                    "usage_count": 20,
+                    "throughput": 11009837.176776113,
+                    "link_num": 32
+                },
+                "16-8": {
+                    "usage_count": 20,
+                    "throughput": 11009837.176776113,
+                    "link_num": 32
+                },
+                "8-20": {
+                    "usage_count": 10,
+                    "throughput": 4047391.0843692576,
+                    "link_num": 34
+                },
+                "20-8": {
+                    "usage_count": 10,
+                    "throughput": 4047391.0843692576,
+                    "link_num": 34
+                },
+                "9-24": {
+                    "usage_count": 10,
+                    "throughput": 6962446.092406856,
+                    "link_num": 36
+                },
+                "24-9": {
+                    "usage_count": 10,
+                    "throughput": 6962446.092406856,
+                    "link_num": 36
+                },
+                "10-41": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 38
+                },
+                "41-10": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 38
+                },
+                "10-44": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 40
+                },
+                "44-10": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 40
+                },
+                "11-12": {
+                    "usage_count": 24,
+                    "throughput": 4100405.8022733396,
+                    "link_num": 42
+                },
+                "12-11": {
+                    "usage_count": 24,
+                    "throughput": 4100405.8022733396,
+                    "link_num": 42
+                },
+                "11-13": {
+                    "usage_count": 30,
+                    "throughput": 9976400.366973493,
+                    "link_num": 44
+                },
+                "13-11": {
+                    "usage_count": 30,
+                    "throughput": 9976400.366973493,
+                    "link_num": 44
+                },
+                "12-55": {
+                    "usage_count": 15,
+                    "throughput": 3108937.242955791,
+                    "link_num": 46
+                },
+                "55-12": {
+                    "usage_count": 15,
+                    "throughput": 3108937.242955791,
+                    "link_num": 46
+                },
+                "12-56": {
+                    "usage_count": 17,
+                    "throughput": 4024035.646190987,
+                    "link_num": 48
+                },
+                "56-12": {
+                    "usage_count": 17,
+                    "throughput": 4024035.646190987,
+                    "link_num": 48
+                },
+                "13-24": {
+                    "usage_count": 16,
+                    "throughput": 6981352.934195689,
+                    "link_num": 50
+                },
+                "24-13": {
+                    "usage_count": 16,
+                    "throughput": 6981352.934195689,
+                    "link_num": 50
+                },
+                "13-29": {
+                    "usage_count": 14,
+                    "throughput": 2995047.4327778076,
+                    "link_num": 52
+                },
+                "29-13": {
+                    "usage_count": 14,
+                    "throughput": 2995047.4327778076,
+                    "link_num": 52
+                },
+                "14-15": {
+                    "usage_count": 33,
+                    "throughput": 2748218.18219852,
+                    "link_num": 54
+                },
+                "15-14": {
+                    "usage_count": 33,
+                    "throughput": 2748218.18219852,
+                    "link_num": 54
+                },
+                "14-16": {
+                    "usage_count": 33,
+                    "throughput": 2748218.18219852,
+                    "link_num": 56
+                },
+                "16-14": {
+                    "usage_count": 33,
+                    "throughput": 2748218.18219852,
+                    "link_num": 56
+                },
+                "15-34": {
+                    "usage_count": 7,
+                    "throughput": 606966.6223475855,
+                    "link_num": 58
+                },
+                "34-15": {
+                    "usage_count": 7,
+                    "throughput": 606966.6223475855,
+                    "link_num": 58
+                },
+                "15-39": {
+                    "usage_count": 26,
+                    "throughput": 2141251.5598509344,
+                    "link_num": 60
+                },
+                "39-15": {
+                    "usage_count": 26,
+                    "throughput": 2141251.5598509344,
+                    "link_num": 60
+                },
+                "16-54": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 62
+                },
+                "54-16": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 62
+                },
+                "17-18": {
+                    "usage_count": 18,
+                    "throughput": 3206976.4403560096,
+                    "link_num": 64
+                },
+                "18-17": {
+                    "usage_count": 18,
+                    "throughput": 3206976.4403560096,
+                    "link_num": 64
+                },
+                "17-19": {
+                    "usage_count": 18,
+                    "throughput": 3206976.4403560096,
+                    "link_num": 66
+                },
+                "19-17": {
+                    "usage_count": 18,
+                    "throughput": 3206976.4403560096,
+                    "link_num": 66
+                },
+                "18-38": {
+                    "usage_count": 6,
+                    "throughput": 2406704.8258294226,
+                    "link_num": 68
+                },
+                "38-18": {
+                    "usage_count": 6,
+                    "throughput": 2406704.8258294226,
+                    "link_num": 68
+                },
+                "18-59": {
+                    "usage_count": 24,
+                    "throughput": 5613681.266185433,
+                    "link_num": 70
+                },
+                "59-18": {
+                    "usage_count": 24,
+                    "throughput": 5613681.266185433,
+                    "link_num": 70
+                },
+                "19-28": {
+                    "usage_count": 28,
+                    "throughput": 6241261.822790009,
+                    "link_num": 72
+                },
+                "28-19": {
+                    "usage_count": 28,
+                    "throughput": 6241261.822790009,
+                    "link_num": 72
+                },
+                "19-37": {
+                    "usage_count": 16,
+                    "throughput": 3370565.907969799,
+                    "link_num": 74
+                },
+                "37-19": {
+                    "usage_count": 16,
+                    "throughput": 3370565.907969799,
+                    "link_num": 74
+                },
+                "20-31": {
+                    "usage_count": 21,
+                    "throughput": 7751916.138348376,
+                    "link_num": 76
+                },
+                "31-20": {
+                    "usage_count": 21,
+                    "throughput": 7751916.138348376,
+                    "link_num": 76
+                },
+                "20-36": {
+                    "usage_count": 11,
+                    "throughput": 3704525.0539791193,
+                    "link_num": 78
+                },
+                "36-20": {
+                    "usage_count": 11,
+                    "throughput": 3704525.0539791193,
+                    "link_num": 78
+                },
+                "21-42": {
+                    "usage_count": 10,
+                    "throughput": 1080521.2192712892,
+                    "link_num": 80
+                },
+                "42-21": {
+                    "usage_count": 10,
+                    "throughput": 1080521.2192712892,
+                    "link_num": 80
+                },
+                "22-23": {
+                    "usage_count": 30,
+                    "throughput": 4583852.337868477,
+                    "link_num": 82
+                },
+                "23-22": {
+                    "usage_count": 30,
+                    "throughput": 4583852.337868477,
+                    "link_num": 82
+                },
+                "23-30": {
+                    "usage_count": 29,
+                    "throughput": 7812507.944406066,
+                    "link_num": 84
+                },
+                "30-23": {
+                    "usage_count": 29,
+                    "throughput": 7812507.944406066,
+                    "link_num": 84
+                },
+                "23-32": {
+                    "usage_count": 37,
+                    "throughput": 9739152.644574834,
+                    "link_num": 86
+                },
+                "32-23": {
+                    "usage_count": 37,
+                    "throughput": 9739152.644574834,
+                    "link_num": 86
+                },
+                "24-31": {
+                    "usage_count": 6,
+                    "throughput": 18906.841788832844,
+                    "link_num": 88
+                },
+                "31-24": {
+                    "usage_count": 6,
+                    "throughput": 18906.841788832844,
+                    "link_num": 88
+                },
+                "24-41": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 90
+                },
+                "41-24": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 90
+                },
+                "25-26": {
+                    "usage_count": 23,
+                    "throughput": 7334915.0628796015,
+                    "link_num": 92
+                },
+                "26-25": {
+                    "usage_count": 23,
+                    "throughput": 7334915.0628796015,
+                    "link_num": 92
+                },
+                "25-27": {
+                    "usage_count": 37,
+                    "throughput": 9739152.644574834,
+                    "link_num": 94
+                },
+                "27-25": {
+                    "usage_count": 37,
+                    "throughput": 9739152.644574834,
+                    "link_num": 94
+                },
+                "25-28": {
+                    "usage_count": 34,
+                    "throughput": 7972013.550115105,
+                    "link_num": 96
+                },
+                "28-25": {
+                    "usage_count": 34,
+                    "throughput": 7972013.550115105,
+                    "link_num": 96
+                },
+                "26-31": {
+                    "usage_count": 37,
+                    "throughput": 8188938.818882322,
+                    "link_num": 98
+                },
+                "31-26": {
+                    "usage_count": 37,
+                    "throughput": 8188938.818882322,
+                    "link_num": 98
+                },
+                "26-45": {
+                    "usage_count": 47,
+                    "throughput": 6899735.851961904,
+                    "link_num": 100
+                },
+                "45-26": {
+                    "usage_count": 47,
+                    "throughput": 6899735.851961904,
+                    "link_num": 100
+                },
+                "27-32": {
+                    "usage_count": 37,
+                    "throughput": 9739152.644574834,
+                    "link_num": 102
+                },
+                "32-27": {
+                    "usage_count": 37,
+                    "throughput": 9739152.644574834,
+                    "link_num": 102
+                },
+                "29-30": {
+                    "usage_count": 36,
+                    "throughput": 11922211.95202919,
+                    "link_num": 104
+                },
+                "30-29": {
+                    "usage_count": 36,
+                    "throughput": 11922211.95202919,
+                    "link_num": 104
+                },
+                "29-31": {
+                    "usage_count": 46,
+                    "throughput": 14346885.028868934,
+                    "link_num": 106
+                },
+                "31-29": {
+                    "usage_count": 46,
+                    "throughput": 14346885.028868934,
+                    "link_num": 106
+                },
+                "30-33": {
+                    "usage_count": 37,
+                    "throughput": 15420296.505848804,
+                    "link_num": 108
+                },
+                "33-30": {
+                    "usage_count": 37,
+                    "throughput": 15420296.505848804,
+                    "link_num": 108
+                },
+                "33-56": {
+                    "usage_count": 17,
+                    "throughput": 3922701.14876973,
+                    "link_num": 110
+                },
+                "56-33": {
+                    "usage_count": 17,
+                    "throughput": 3922701.14876973,
+                    "link_num": 110
+                },
+                "34-35": {
+                    "usage_count": 3,
+                    "throughput": 421810.58477723907,
+                    "link_num": 112
+                },
+                "35-34": {
+                    "usage_count": 3,
+                    "throughput": 421810.58477723907,
+                    "link_num": 112
+                },
+                "34-36": {
+                    "usage_count": 11,
+                    "throughput": 3704525.0539791193,
+                    "link_num": 114
+                },
+                "36-34": {
+                    "usage_count": 11,
+                    "throughput": 3704525.0539791193,
+                    "link_num": 114
+                },
+                "35-45": {
+                    "usage_count": 3,
+                    "throughput": 421810.58477723907,
+                    "link_num": 116
+                },
+                "45-35": {
+                    "usage_count": 3,
+                    "throughput": 421810.58477723907,
+                    "link_num": 116
+                },
+                "37-45": {
+                    "usage_count": 46,
+                    "throughput": 7199493.105420811,
+                    "link_num": 118
+                },
+                "45-37": {
+                    "usage_count": 46,
+                    "throughput": 7199493.105420811,
+                    "link_num": 118
+                },
+                "38-46": {
+                    "usage_count": 24,
+                    "throughput": 3156313.790853877,
+                    "link_num": 120
+                },
+                "46-38": {
+                    "usage_count": 24,
+                    "throughput": 3156313.790853877,
+                    "link_num": 120
+                },
+                "38-47": {
+                    "usage_count": 22,
+                    "throughput": 6510130.730759725,
+                    "link_num": 122
+                },
+                "47-38": {
+                    "usage_count": 22,
+                    "throughput": 6510130.730759725,
+                    "link_num": 122
+                },
+                "40-49": {
+                    "usage_count": 43,
+                    "throughput": 6030932.6514004,
+                    "link_num": 124
+                },
+                "49-40": {
+                    "usage_count": 43,
+                    "throughput": 6030932.6514004,
+                    "link_num": 124
+                },
+                "42-43": {
+                    "usage_count": 10,
+                    "throughput": 1080521.2192712892,
+                    "link_num": 126
+                },
+                "43-42": {
+                    "usage_count": 10,
+                    "throughput": 1080521.2192712892,
+                    "link_num": 126
+                },
+                "43-55": {
+                    "usage_count": 21,
+                    "throughput": 4353673.665974784,
+                    "link_num": 128
+                },
+                "55-43": {
+                    "usage_count": 21,
+                    "throughput": 4353673.665974784,
+                    "link_num": 128
+                },
+                "43-56": {
+                    "usage_count": 15,
+                    "throughput": 3273152.4467034955,
+                    "link_num": 130
+                },
+                "56-43": {
+                    "usage_count": 15,
+                    "throughput": 3273152.4467034955,
+                    "link_num": 130
+                },
+                "44-52": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 132
+                },
+                "52-44": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 132
+                },
+                "46-47": {
+                    "usage_count": 16,
+                    "throughput": 2945020.334550406,
+                    "link_num": 134
+                },
+                "47-46": {
+                    "usage_count": 16,
+                    "throughput": 2945020.334550406,
+                    "link_num": 134
+                },
+                "46-48": {
+                    "usage_count": 21,
+                    "throughput": 4125563.1323492946,
+                    "link_num": 136
+                },
+                "48-46": {
+                    "usage_count": 21,
+                    "throughput": 4125563.1323492946,
+                    "link_num": 136
+                },
+                "46-49": {
+                    "usage_count": 25,
+                    "throughput": 4126726.385969013,
+                    "link_num": 138
+                },
+                "49-46": {
+                    "usage_count": 25,
+                    "throughput": 4126726.385969013,
+                    "link_num": 138
+                },
+                "47-57": {
+                    "usage_count": 20,
+                    "throughput": 5047892.649917779,
+                    "link_num": 140
+                },
+                "57-47": {
+                    "usage_count": 20,
+                    "throughput": 5047892.649917779,
+                    "link_num": 140
+                },
+                "47-58": {
+                    "usage_count": 14,
+                    "throughput": 2392309.8942860477,
+                    "link_num": 142
+                },
+                "58-47": {
+                    "usage_count": 14,
+                    "throughput": 2392309.8942860477,
+                    "link_num": 142
+                },
+                "48-50": {
+                    "usage_count": 20,
+                    "throughput": 1904206.2654313876,
+                    "link_num": 144
+                },
+                "50-48": {
+                    "usage_count": 20,
+                    "throughput": 1904206.2654313876,
+                    "link_num": 144
+                },
+                "48-51": {
+                    "usage_count": 41,
+                    "throughput": 6029769.397780682,
+                    "link_num": 146
+                },
+                "51-48": {
+                    "usage_count": 41,
+                    "throughput": 6029769.397780682,
+                    "link_num": 146
+                },
+                "49-50": {
+                    "usage_count": 20,
+                    "throughput": 1904206.2654313876,
+                    "link_num": 148
+                },
+                "50-49": {
+                    "usage_count": 20,
+                    "throughput": 1904206.2654313876,
+                    "link_num": 148
+                },
+                "51-60": {
+                    "usage_count": 14,
+                    "throughput": 2392309.8942860477,
+                    "link_num": 150
+                },
+                "60-51": {
+                    "usage_count": 14,
+                    "throughput": 2392309.8942860477,
+                    "link_num": 150
+                },
+                "52-53": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 152
+                },
+                "53-52": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 152
+                },
+                "53-54": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 154
+                },
+                "54-53": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 154
+                },
+                "57-59": {
+                    "usage_count": 20,
+                    "throughput": 5047892.649917779,
+                    "link_num": 156
+                },
+                "59-57": {
+                    "usage_count": 20,
+                    "throughput": 5047892.649917779,
+                    "link_num": 156
+                },
+                "58-60": {
+                    "usage_count": 14,
+                    "throughput": 2392309.8942860477,
+                    "link_num": 158
+                },
+                "60-58": {
+                    "usage_count": 14,
+                    "throughput": 2392309.8942860477,
+                    "link_num": 158
+                }
+            },
+            "demand_realization_ratio": {
+                "overall": {
+                    "mean": 0.94,
+                    "std": 0.16,
+                    "min": 0.2857142857142857,
+                    "max": 1.0,
+                    "num_full_served": 107,
+                    "ratio_full_served": 0.535
+                },
+                "100": {
+                    "mean": 1.0,
+                    "std": 0.0,
+                    "min": 1.0,
+                    "max": 1.0,
+                    "num_full_served": 17,
+                    "ratio_full_served": 0.68
+                },
+                "200": {
+                    "mean": 1.0,
+                    "std": 0.0,
+                    "min": 1.0,
+                    "max": 1.0,
+                    "num_full_served": 19,
+                    "ratio_full_served": 0.76
+                },
+                "300": {
+                    "mean": 0.95,
+                    "std": 0.12,
+                    "min": 0.6666666666666666,
+                    "max": 1.0,
+                    "num_full_served": 12,
+                    "ratio_full_served": 0.48
+                },
+                "400": {
+                    "mean": 0.91,
+                    "std": 0.2,
+                    "min": 0.5,
+                    "max": 1.0,
+                    "num_full_served": 13,
+                    "ratio_full_served": 0.52
+                },
+                "500": {
+                    "mean": 0.86,
+                    "std": 0.24,
+                    "min": 0.4,
+                    "max": 1.0,
+                    "num_full_served": 11,
+                    "ratio_full_served": 0.44
+                },
+                "600": {
+                    "mean": 0.91,
+                    "std": 0.2,
+                    "min": 0.3333333333333333,
+                    "max": 1.0,
+                    "num_full_served": 12,
+                    "ratio_full_served": 0.48
+                },
+                "700": {
+                    "mean": 0.88,
+                    "std": 0.24,
+                    "min": 0.2857142857142857,
+                    "max": 1.0,
+                    "num_full_served": 10,
+                    "ratio_full_served": 0.4
+                },
+                "800": {
+                    "mean": 0.98,
+                    "std": 0.07,
+                    "min": 0.75,
+                    "max": 1.0,
+                    "num_full_served": 13,
+                    "ratio_full_served": 0.52
+                }
+            },
+            "frag_dict": {},
+            "lp_bw_utilization_dict": {
+                "100": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "200": {
+                    "c": {
+                        "0": {
+                            "mean": 98.96,
+                            "std": 7.22,
+                            "min": 50.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "300": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "400": {
+                    "c": {
+                        "0": {
+                            "mean": 86.09,
+                            "std": 22.7,
+                            "min": 25.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "500": {
+                    "c": {
+                        "0": {
+                            "mean": 75.62,
+                            "std": 30.73,
+                            "min": 20.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "600": {
+                    "c": {
+                        "0": {
+                            "mean": 68.15,
+                            "std": 31.18,
+                            "min": 16.67,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "700": {
+                    "c": {
+                        "0": {
+                            "mean": 60.14,
+                            "std": 56.36,
+                            "min": 20.29,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "800": {
+                    "c": {
+                        "0": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "overall": {
+                    "mean": 87.49,
+                    "std": 23.92,
+                    "min": 16.67,
+                    "max": 100.0
+                }
+            },
+            "sim_lp_utilization_list": [
+                87.49
+            ],
+            "block_reasons_dict": {
+                "distance": 1.0,
+                "congestion": 0.0,
+                "xt_threshold": 0.0
+            },
+            "sim_block_list": [
+                0.36
+            ],
+            "sim_br_block_list": [
+                0.4444444444444444
+            ],
+            "trans_mean": 1.31,
+            "trans_min": 1.31,
+            "trans_max": 1.31,
+            "hops_mean": 5.62,
+            "hops_min": 1.0,
+            "hops_max": 13.0,
+            "lengths_mean": 2365.63,
+            "lengths_min": 315.3,
+            "lengths_max": 5771.0,
+            "route_times_mean": 0.0,
+            "route_times_min": 0.0,
+            "route_times_max": 0.05,
+            "xt_mean": null,
+            "xt_min": null,
+            "xt_max": null,
+            "snr_mean": 9.79,
+            "snr_min": 5.03,
+            "snr_max": 16.95,
+            "bands_list": [],
+            "start_slot_list": [],
+            "end_slot_list": [],
+            "modulation_list": [],
+            "bandwidth_list": [],
+            "path_index_list": [
+                92,
+                12,
+                20
+            ],
+            "protection_switchovers": 0,
+            "protection_failures": 0,
+            "failure_induced_blocks": 0,
+            "switchover_times": []
+        },
+        "1": {
+            "snapshots_dict": {},
+            "cores_dict": {
+                "0": 138
+            },
+            "weights_dict": {
+                "100": {
+                    "BPSK": {
+                        "mean": 4533.166666666667,
+                        "std": 819.6015942720787,
+                        "min": 3714.5,
+                        "max": 5353.7
+                    },
+                    "QPSK": {
+                        "mean": 2540.157142857143,
+                        "std": 754.252576743235,
+                        "min": 1620.2,
+                        "max": 3608.5
+                    },
+                    "8-QAM": {
+                        "mean": 1035.2,
+                        "std": 29.415642097360394,
+                        "min": 1014.4,
+                        "max": 1056.0
+                    },
+                    "16-QAM": {
+                        "mean": 575.7,
+                        "std": 297.4091121670619,
+                        "min": 365.4,
+                        "max": 786.0
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "200": {
+                    "BPSK": {
+                        "mean": 4502.225714285714,
+                        "std": 654.4572337364116,
+                        "min": 3714.5,
+                        "max": 5674.6
+                    },
+                    "QPSK": {
+                        "mean": 2524.4,
+                        "std": 637.8328262842186,
+                        "min": 1620.2,
+                        "max": 3261.2
+                    },
+                    "8-QAM": {
+                        "mean": 1332.925,
+                        "std": 189.94738525883068,
+                        "min": 1135.7,
+                        "max": 1495.6
+                    },
+                    "16-QAM": {
+                        "mean": 549.9,
+                        "std": 0.0,
+                        "min": 549.9,
+                        "max": 549.9
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "300": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": 1130.4,
+                        "std": 105.21748904055823,
+                        "min": 1056.0,
+                        "max": 1204.8
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "400": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": 2418.1642857142856,
+                        "std": 776.1781587105072,
+                        "min": 1456.5,
+                        "max": 3608.5
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "500": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": 1145.229411764706,
+                        "std": 119.63949371291386,
+                        "min": 922.8,
+                        "max": 1335.2
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "600": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": 640.1733333333334,
+                        "std": 152.78917999586727,
+                        "min": 365.4,
+                        "max": 846.2
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "700": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                },
+                "800": {
+                    "BPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "QPSK": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "8-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "16-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "32-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    },
+                    "64-QAM": {
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "max": null
+                    }
+                }
+            },
+            "mods_used_dict": {
+                "100": {
+                    "BPSK": 3,
+                    "QPSK": 7,
+                    "8-QAM": 2,
+                    "16-QAM": 2,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "BPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 4504.67,
+                            "std": 655.72,
+                            "min": 3714.5,
+                            "max": 5674.6
+                        },
+                        "c": {
+                            "mean": 4504.67,
+                            "std": 655.72,
+                            "min": 3714.5,
+                            "max": 5674.6
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 8.82,
+                            "std": 1.43,
+                            "min": 6.0,
+                            "max": 11.0
+                        },
+                        "c": {
+                            "mean": 8.82,
+                            "std": 1.43,
+                            "min": 6.0,
+                            "max": 11.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 6.05,
+                            "std": 0.55,
+                            "min": 5.1,
+                            "max": 6.65
+                        },
+                        "c": {
+                            "mean": 6.05,
+                            "std": 0.55,
+                            "min": 5.1,
+                            "max": 6.65
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 38
+                },
+                "QPSK": {
+                    "length": {
+                        "overall": {
+                            "mean": 2448.06,
+                            "std": 745.29,
+                            "min": 1456.5,
+                            "max": 3608.5
+                        },
+                        "c": {
+                            "mean": 2448.06,
+                            "std": 745.29,
+                            "min": 1456.5,
+                            "max": 3608.5
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 5.74,
+                            "std": 2.26,
+                            "min": 2.0,
+                            "max": 11.0
+                        },
+                        "c": {
+                            "mean": 5.74,
+                            "std": 2.26,
+                            "min": 2.0,
+                            "max": 11.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 8.83,
+                            "std": 1.25,
+                            "min": 7.05,
+                            "max": 10.68
+                        },
+                        "c": {
+                            "mean": 8.83,
+                            "std": 1.25,
+                            "min": 7.05,
+                            "max": 10.68
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 57
+                },
+                "8-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 1165.27,
+                            "std": 145.02,
+                            "min": 922.8,
+                            "max": 1495.6
+                        },
+                        "c": {
+                            "mean": 1165.27,
+                            "std": 145.02,
+                            "min": 922.8,
+                            "max": 1495.6
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 3.68,
+                            "std": 1.28,
+                            "min": 1.0,
+                            "max": 5.0
+                        },
+                        "c": {
+                            "mean": 3.68,
+                            "std": 1.28,
+                            "min": 1.0,
+                            "max": 5.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 11.84,
+                            "std": 0.45,
+                            "min": 10.93,
+                            "max": 12.54
+                        },
+                        "c": {
+                            "mean": 11.84,
+                            "std": 0.45,
+                            "min": 10.93,
+                            "max": 12.54
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 25
+                },
+                "16-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": 627.99,
+                            "std": 158.87,
+                            "min": 365.4,
+                            "max": 846.2
+                        },
+                        "c": {
+                            "mean": 627.99,
+                            "std": 158.87,
+                            "min": 365.4,
+                            "max": 846.2
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": 2.33,
+                            "std": 0.77,
+                            "min": 1.0,
+                            "max": 3.0
+                        },
+                        "c": {
+                            "mean": 2.33,
+                            "std": 0.77,
+                            "min": 1.0,
+                            "max": 3.0
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": 14.43,
+                            "std": 0.66,
+                            "min": 13.41,
+                            "max": 15.2
+                        },
+                        "c": {
+                            "mean": 14.43,
+                            "std": 0.66,
+                            "min": 13.41,
+                            "max": 15.2
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 18
+                },
+                "32-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 0
+                },
+                "64-QAM": {
+                    "length": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "hop": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "snr": {
+                        "overall": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        },
+                        "c": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    },
+                    "xt_cost": {
+                        "overall": [],
+                        "c": []
+                    },
+                    "c": 0
+                },
+                "200": {
+                    "BPSK": 35,
+                    "QPSK": 8,
+                    "8-QAM": 4,
+                    "16-QAM": 1,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "300": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 2,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "400": {
+                    "BPSK": 0,
+                    "QPSK": 42,
+                    "8-QAM": 0,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "500": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 17,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "600": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 0,
+                    "16-QAM": 15,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "700": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 0,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                },
+                "800": {
+                    "BPSK": 0,
+                    "QPSK": 0,
+                    "8-QAM": 0,
+                    "16-QAM": 0,
+                    "32-QAM": 0,
+                    "64-QAM": 0
+                }
+            },
+            "block_bw_dict": {
+                "100": 8,
+                "200": 8,
+                "300": 10,
+                "400": 13,
+                "500": 11,
+                "600": 12,
+                "700": 10,
+                "800": 16
+            },
+            "link_usage_dict": {
+                "1-2": {
+                    "usage_count": 10,
+                    "throughput": 1726635.5145075107,
+                    "link_num": 2
+                },
+                "2-1": {
+                    "usage_count": 10,
+                    "throughput": 1726635.5145075107,
+                    "link_num": 2
+                },
+                "1-3": {
+                    "usage_count": 10,
+                    "throughput": 1726635.5145075107,
+                    "link_num": 4
+                },
+                "3-1": {
+                    "usage_count": 10,
+                    "throughput": 1726635.5145075107,
+                    "link_num": 4
+                },
+                "2-21": {
+                    "usage_count": 10,
+                    "throughput": 1726635.5145075107,
+                    "link_num": 6
+                },
+                "21-2": {
+                    "usage_count": 10,
+                    "throughput": 1726635.5145075107,
+                    "link_num": 6
+                },
+                "3-22": {
+                    "usage_count": 27,
+                    "throughput": 10349121.156492174,
+                    "link_num": 8
+                },
+                "22-3": {
+                    "usage_count": 27,
+                    "throughput": 10349121.156492174,
+                    "link_num": 8
+                },
+                "3-56": {
+                    "usage_count": 19,
+                    "throughput": 8622485.641984664,
+                    "link_num": 10
+                },
+                "56-3": {
+                    "usage_count": 19,
+                    "throughput": 8622485.641984664,
+                    "link_num": 10
+                },
+                "4-5": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 12
+                },
+                "5-4": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 12
+                },
+                "4-6": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 14
+                },
+                "6-4": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 14
+                },
+                "5-37": {
+                    "usage_count": 36,
+                    "throughput": 10494647.704762092,
+                    "link_num": 16
+                },
+                "37-5": {
+                    "usage_count": 36,
+                    "throughput": 10494647.704762092,
+                    "link_num": 16
+                },
+                "5-38": {
+                    "usage_count": 36,
+                    "throughput": 10494647.704762092,
+                    "link_num": 18
+                },
+                "38-5": {
+                    "usage_count": 36,
+                    "throughput": 10494647.704762092,
+                    "link_num": 18
+                },
+                "6-34": {
+                    "usage_count": 11,
+                    "throughput": 1449544.3159478114,
+                    "link_num": 20
+                },
+                "34-6": {
+                    "usage_count": 11,
+                    "throughput": 1449544.3159478114,
+                    "link_num": 20
+                },
+                "6-39": {
+                    "usage_count": 24,
+                    "throughput": 5879514.657916752,
+                    "link_num": 22
+                },
+                "39-6": {
+                    "usage_count": 24,
+                    "throughput": 5879514.657916752,
+                    "link_num": 22
+                },
+                "6-40": {
+                    "usage_count": 35,
+                    "throughput": 7329058.973864564,
+                    "link_num": 24
+                },
+                "40-6": {
+                    "usage_count": 35,
+                    "throughput": 7329058.973864564,
+                    "link_num": 24
+                },
+                "7-8": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 26
+                },
+                "8-7": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 26
+                },
+                "7-9": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 28
+                },
+                "9-7": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 28
+                },
+                "7-10": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 30
+                },
+                "10-7": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 30
+                },
+                "8-16": {
+                    "usage_count": 17,
+                    "throughput": 5299842.607498355,
+                    "link_num": 32
+                },
+                "16-8": {
+                    "usage_count": 17,
+                    "throughput": 5299842.607498355,
+                    "link_num": 32
+                },
+                "8-20": {
+                    "usage_count": 9,
+                    "throughput": 3445477.5560214836,
+                    "link_num": 34
+                },
+                "20-8": {
+                    "usage_count": 9,
+                    "throughput": 3445477.5560214836,
+                    "link_num": 34
+                },
+                "9-24": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 36
+                },
+                "24-9": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 36
+                },
+                "10-41": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 38
+                },
+                "41-10": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 38
+                },
+                "10-44": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 40
+                },
+                "44-10": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 40
+                },
+                "11-12": {
+                    "usage_count": 21,
+                    "throughput": 8940296.794243138,
+                    "link_num": 42
+                },
+                "12-11": {
+                    "usage_count": 21,
+                    "throughput": 8940296.794243138,
+                    "link_num": 42
+                },
+                "11-13": {
+                    "usage_count": 27,
+                    "throughput": 6299877.298429077,
+                    "link_num": 44
+                },
+                "13-11": {
+                    "usage_count": 27,
+                    "throughput": 6299877.298429077,
+                    "link_num": 44
+                },
+                "12-55": {
+                    "usage_count": 14,
+                    "throughput": 2678710.2259248225,
+                    "link_num": 46
+                },
+                "55-12": {
+                    "usage_count": 14,
+                    "throughput": 2678710.2259248225,
+                    "link_num": 46
+                },
+                "12-56": {
+                    "usage_count": 15,
+                    "throughput": 6261586.568318317,
+                    "link_num": 48
+                },
+                "56-12": {
+                    "usage_count": 15,
+                    "throughput": 6261586.568318317,
+                    "link_num": 48
+                },
+                "13-24": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 50
+                },
+                "24-13": {
+                    "usage_count": 8,
+                    "throughput": 1854365.0514768718,
+                    "link_num": 50
+                },
+                "13-29": {
+                    "usage_count": 19,
+                    "throughput": 4445512.246952204,
+                    "link_num": 52
+                },
+                "29-13": {
+                    "usage_count": 19,
+                    "throughput": 4445512.246952204,
+                    "link_num": 52
+                },
+                "14-15": {
+                    "usage_count": 31,
+                    "throughput": 6331391.215586683,
+                    "link_num": 54
+                },
+                "15-14": {
+                    "usage_count": 31,
+                    "throughput": 6331391.215586683,
+                    "link_num": 54
+                },
+                "14-16": {
+                    "usage_count": 31,
+                    "throughput": 6331391.215586683,
+                    "link_num": 56
+                },
+                "16-14": {
+                    "usage_count": 31,
+                    "throughput": 6331391.215586683,
+                    "link_num": 56
+                },
+                "15-34": {
+                    "usage_count": 7,
+                    "throughput": 451876.5576699313,
+                    "link_num": 58
+                },
+                "34-15": {
+                    "usage_count": 7,
+                    "throughput": 451876.5576699313,
+                    "link_num": 58
+                },
+                "15-39": {
+                    "usage_count": 24,
+                    "throughput": 5879514.657916752,
+                    "link_num": 60
+                },
+                "39-15": {
+                    "usage_count": 24,
+                    "throughput": 5879514.657916752,
+                    "link_num": 60
+                },
+                "16-54": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 62
+                },
+                "54-16": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 62
+                },
+                "17-18": {
+                    "usage_count": 26,
+                    "throughput": 4896089.368809909,
+                    "link_num": 64
+                },
+                "18-17": {
+                    "usage_count": 26,
+                    "throughput": 4896089.368809909,
+                    "link_num": 64
+                },
+                "17-19": {
+                    "usage_count": 26,
+                    "throughput": 4896089.368809909,
+                    "link_num": 66
+                },
+                "19-17": {
+                    "usage_count": 26,
+                    "throughput": 4896089.368809909,
+                    "link_num": 66
+                },
+                "18-38": {
+                    "usage_count": 12,
+                    "throughput": 1793894.8191497913,
+                    "link_num": 68
+                },
+                "38-18": {
+                    "usage_count": 12,
+                    "throughput": 1793894.8191497913,
+                    "link_num": 68
+                },
+                "18-59": {
+                    "usage_count": 38,
+                    "throughput": 6689984.187959701,
+                    "link_num": 70
+                },
+                "59-18": {
+                    "usage_count": 38,
+                    "throughput": 6689984.187959701,
+                    "link_num": 70
+                },
+                "19-28": {
+                    "usage_count": 32,
+                    "throughput": 2092057.4354887796,
+                    "link_num": 72
+                },
+                "28-19": {
+                    "usage_count": 32,
+                    "throughput": 2092057.4354887796,
+                    "link_num": 72
+                },
+                "19-37": {
+                    "usage_count": 18,
+                    "throughput": 5558452.039963644,
+                    "link_num": 74
+                },
+                "37-19": {
+                    "usage_count": 18,
+                    "throughput": 5558452.039963644,
+                    "link_num": 74
+                },
+                "20-31": {
+                    "usage_count": 11,
+                    "throughput": 3662275.919222056,
+                    "link_num": 76
+                },
+                "31-20": {
+                    "usage_count": 11,
+                    "throughput": 3662275.919222056,
+                    "link_num": 76
+                },
+                "20-36": {
+                    "usage_count": 2,
+                    "throughput": 216798.36320057212,
+                    "link_num": 78
+                },
+                "36-20": {
+                    "usage_count": 2,
+                    "throughput": 216798.36320057212,
+                    "link_num": 78
+                },
+                "21-42": {
+                    "usage_count": 20,
+                    "throughput": 1229096.0042619733,
+                    "link_num": 80
+                },
+                "42-21": {
+                    "usage_count": 20,
+                    "throughput": 1229096.0042619733,
+                    "link_num": 80
+                },
+                "22-23": {
+                    "usage_count": 27,
+                    "throughput": 10349121.156492174,
+                    "link_num": 82
+                },
+                "23-22": {
+                    "usage_count": 27,
+                    "throughput": 10349121.156492174,
+                    "link_num": 82
+                },
+                "23-30": {
+                    "usage_count": 26,
+                    "throughput": 5490670.679796909,
+                    "link_num": 84
+                },
+                "30-23": {
+                    "usage_count": 26,
+                    "throughput": 5490670.679796909,
+                    "link_num": 84
+                },
+                "23-32": {
+                    "usage_count": 31,
+                    "throughput": 8910981.62072327,
+                    "link_num": 86
+                },
+                "32-23": {
+                    "usage_count": 31,
+                    "throughput": 8910981.62072327,
+                    "link_num": 86
+                },
+                "24-31": {
+                    "usage_count": 2,
+                    "throughput": 0,
+                    "link_num": 88
+                },
+                "31-24": {
+                    "usage_count": 2,
+                    "throughput": 0,
+                    "link_num": 88
+                },
+                "24-41": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 90
+                },
+                "41-24": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 90
+                },
+                "25-26": {
+                    "usage_count": 15,
+                    "throughput": 204729.525338081,
+                    "link_num": 92
+                },
+                "26-25": {
+                    "usage_count": 15,
+                    "throughput": 204729.525338081,
+                    "link_num": 92
+                },
+                "25-27": {
+                    "usage_count": 31,
+                    "throughput": 8910981.62072327,
+                    "link_num": 94
+                },
+                "27-25": {
+                    "usage_count": 31,
+                    "throughput": 8910981.62072327,
+                    "link_num": 94
+                },
+                "25-28": {
+                    "usage_count": 34,
+                    "throughput": 8791649.27086896,
+                    "link_num": 96
+                },
+                "28-25": {
+                    "usage_count": 34,
+                    "throughput": 8791649.27086896,
+                    "link_num": 96
+                },
+                "26-31": {
+                    "usage_count": 38,
+                    "throughput": 7047156.183985816,
+                    "link_num": 98
+                },
+                "31-26": {
+                    "usage_count": 38,
+                    "throughput": 7047156.183985816,
+                    "link_num": 98
+                },
+                "26-45": {
+                    "usage_count": 38,
+                    "throughput": 10778090.940652357,
+                    "link_num": 100
+                },
+                "45-26": {
+                    "usage_count": 38,
+                    "throughput": 10778090.940652357,
+                    "link_num": 100
+                },
+                "27-32": {
+                    "usage_count": 31,
+                    "throughput": 8910981.62072327,
+                    "link_num": 102
+                },
+                "32-27": {
+                    "usage_count": 31,
+                    "throughput": 8910981.62072327,
+                    "link_num": 102
+                },
+                "29-30": {
+                    "usage_count": 32,
+                    "throughput": 7390360.494357873,
+                    "link_num": 104
+                },
+                "30-29": {
+                    "usage_count": 32,
+                    "throughput": 7390360.494357873,
+                    "link_num": 104
+                },
+                "29-31": {
+                    "usage_count": 41,
+                    "throughput": 8290000.995448586,
+                    "link_num": 106
+                },
+                "31-29": {
+                    "usage_count": 41,
+                    "throughput": 8290000.995448586,
+                    "link_num": 106
+                },
+                "30-33": {
+                    "usage_count": 28,
+                    "throughput": 5114250.174325741,
+                    "link_num": 108
+                },
+                "33-30": {
+                    "usage_count": 28,
+                    "throughput": 5114250.174325741,
+                    "link_num": 108
+                },
+                "33-56": {
+                    "usage_count": 26,
+                    "throughput": 2469029.696494865,
+                    "link_num": 110
+                },
+                "56-33": {
+                    "usage_count": 26,
+                    "throughput": 2469029.696494865,
+                    "link_num": 110
+                },
+                "34-35": {
+                    "usage_count": 2,
+                    "throughput": 780869.395077308,
+                    "link_num": 112
+                },
+                "35-34": {
+                    "usage_count": 2,
+                    "throughput": 780869.395077308,
+                    "link_num": 112
+                },
+                "34-36": {
+                    "usage_count": 2,
+                    "throughput": 216798.36320057212,
+                    "link_num": 114
+                },
+                "36-34": {
+                    "usage_count": 2,
+                    "throughput": 216798.36320057212,
+                    "link_num": 114
+                },
+                "35-45": {
+                    "usage_count": 2,
+                    "throughput": 780869.395077308,
+                    "link_num": 116
+                },
+                "45-35": {
+                    "usage_count": 2,
+                    "throughput": 780869.395077308,
+                    "link_num": 116
+                },
+                "37-45": {
+                    "usage_count": 36,
+                    "throughput": 9997221.545575049,
+                    "link_num": 118
+                },
+                "45-37": {
+                    "usage_count": 36,
+                    "throughput": 9997221.545575049,
+                    "link_num": 118
+                },
+                "38-46": {
+                    "usage_count": 24,
+                    "throughput": 5343010.038547916,
+                    "link_num": 120
+                },
+                "46-38": {
+                    "usage_count": 24,
+                    "throughput": 5343010.038547916,
+                    "link_num": 120
+                },
+                "38-47": {
+                    "usage_count": 21,
+                    "throughput": 6674056.981461766,
+                    "link_num": 122
+                },
+                "47-38": {
+                    "usage_count": 21,
+                    "throughput": 6674056.981461766,
+                    "link_num": 122
+                },
+                "40-49": {
+                    "usage_count": 35,
+                    "throughput": 7329058.973864564,
+                    "link_num": 124
+                },
+                "49-40": {
+                    "usage_count": 35,
+                    "throughput": 7329058.973864564,
+                    "link_num": 124
+                },
+                "42-43": {
+                    "usage_count": 20,
+                    "throughput": 1229096.0042619733,
+                    "link_num": 126
+                },
+                "43-42": {
+                    "usage_count": 20,
+                    "throughput": 1229096.0042619733,
+                    "link_num": 126
+                },
+                "43-55": {
+                    "usage_count": 22,
+                    "throughput": 5745972.106571018,
+                    "link_num": 128
+                },
+                "55-43": {
+                    "usage_count": 22,
+                    "throughput": 5745972.106571018,
+                    "link_num": 128
+                },
+                "43-56": {
+                    "usage_count": 24,
+                    "throughput": 4829928.770161213,
+                    "link_num": 130
+                },
+                "56-43": {
+                    "usage_count": 24,
+                    "throughput": 4829928.770161213,
+                    "link_num": 130
+                },
+                "44-52": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 132
+                },
+                "52-44": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 132
+                },
+                "46-47": {
+                    "usage_count": 23,
+                    "throughput": 926188.1475981413,
+                    "link_num": 134
+                },
+                "47-46": {
+                    "usage_count": 23,
+                    "throughput": 926188.1475981413,
+                    "link_num": 134
+                },
+                "46-48": {
+                    "usage_count": 10,
+                    "throughput": 1359875.4147254657,
+                    "link_num": 136
+                },
+                "48-46": {
+                    "usage_count": 10,
+                    "throughput": 1359875.4147254657,
+                    "link_num": 136
+                },
+                "46-49": {
+                    "usage_count": 19,
+                    "throughput": 668674.9208705034,
+                    "link_num": 138
+                },
+                "49-46": {
+                    "usage_count": 19,
+                    "throughput": 668674.9208705034,
+                    "link_num": 138
+                },
+                "47-57": {
+                    "usage_count": 17,
+                    "throughput": 4576220.012905599,
+                    "link_num": 140
+                },
+                "57-47": {
+                    "usage_count": 17,
+                    "throughput": 4576220.012905599,
+                    "link_num": 140
+                },
+                "47-58": {
+                    "usage_count": 19,
+                    "throughput": 6274443.400064744,
+                    "link_num": 142
+                },
+                "58-47": {
+                    "usage_count": 19,
+                    "throughput": 6274443.400064744,
+                    "link_num": 142
+                },
+                "48-50": {
+                    "usage_count": 16,
+                    "throughput": 6660384.052994059,
+                    "link_num": 144
+                },
+                "50-48": {
+                    "usage_count": 16,
+                    "throughput": 6660384.052994059,
+                    "link_num": 144
+                },
+                "48-51": {
+                    "usage_count": 26,
+                    "throughput": 8020259.467719525,
+                    "link_num": 146
+                },
+                "51-48": {
+                    "usage_count": 26,
+                    "throughput": 8020259.467719525,
+                    "link_num": 146
+                },
+                "49-50": {
+                    "usage_count": 16,
+                    "throughput": 6660384.052994059,
+                    "link_num": 148
+                },
+                "50-49": {
+                    "usage_count": 16,
+                    "throughput": 6660384.052994059,
+                    "link_num": 148
+                },
+                "51-60": {
+                    "usage_count": 19,
+                    "throughput": 6274443.400064744,
+                    "link_num": 150
+                },
+                "60-51": {
+                    "usage_count": 19,
+                    "throughput": 6274443.400064744,
+                    "link_num": 150
+                },
+                "52-53": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 152
+                },
+                "53-52": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 152
+                },
+                "53-54": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 154
+                },
+                "54-53": {
+                    "usage_count": 0,
+                    "throughput": 0,
+                    "link_num": 154
+                },
+                "57-59": {
+                    "usage_count": 17,
+                    "throughput": 4576220.012905599,
+                    "link_num": 156
+                },
+                "59-57": {
+                    "usage_count": 17,
+                    "throughput": 4576220.012905599,
+                    "link_num": 156
+                },
+                "58-60": {
+                    "usage_count": 19,
+                    "throughput": 6274443.400064744,
+                    "link_num": 158
+                },
+                "60-58": {
+                    "usage_count": 19,
+                    "throughput": 6274443.400064744,
+                    "link_num": 158
+                }
+            },
+            "demand_realization_ratio": {
+                "overall": {
+                    "mean": 0.95,
+                    "std": 0.16,
+                    "min": 0.2857142857142857,
+                    "max": 1.0,
+                    "num_full_served": 87,
+                    "ratio_full_served": 0.435
+                },
+                "100": {
+                    "mean": 1.0,
+                    "std": 0.0,
+                    "min": 1.0,
+                    "max": 1.0,
+                    "num_full_served": 14,
+                    "ratio_full_served": 0.56
+                },
+                "200": {
+                    "mean": 1.0,
+                    "std": 0.0,
+                    "min": 1.0,
+                    "max": 1.0,
+                    "num_full_served": 14,
+                    "ratio_full_served": 0.56
+                },
+                "300": {
+                    "mean": 1.0,
+                    "std": 0.0,
+                    "min": 1.0,
+                    "max": 1.0,
+                    "num_full_served": 11,
+                    "ratio_full_served": 0.44
+                },
+                "400": {
+                    "mean": 0.95,
+                    "std": 0.15,
+                    "min": 0.5,
+                    "max": 1.0,
+                    "num_full_served": 10,
+                    "ratio_full_served": 0.4
+                },
+                "500": {
+                    "mean": 0.89,
+                    "std": 0.22,
+                    "min": 0.4,
+                    "max": 1.0,
+                    "num_full_served": 10,
+                    "ratio_full_served": 0.4
+                },
+                "600": {
+                    "mean": 0.94,
+                    "std": 0.19,
+                    "min": 0.3333333333333333,
+                    "max": 1.0,
+                    "num_full_served": 11,
+                    "ratio_full_served": 0.44
+                },
+                "700": {
+                    "mean": 0.9,
+                    "std": 0.22,
+                    "min": 0.2857142857142857,
+                    "max": 1.0,
+                    "num_full_served": 10,
+                    "ratio_full_served": 0.4
+                },
+                "800": {
+                    "mean": 0.9,
+                    "std": 0.2,
+                    "min": 0.5,
+                    "max": 1.0,
+                    "num_full_served": 7,
+                    "ratio_full_served": 0.28
+                }
+            },
+            "frag_dict": {},
+            "lp_bw_utilization_dict": {
+                "100": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "200": {
+                    "c": {
+                        "0": {
+                            "mean": 97.92,
+                            "std": 10.08,
+                            "min": 50.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "300": {
+                    "c": {
+                        "0": {
+                            "mean": 100.0,
+                            "std": 0.0,
+                            "min": 100.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "400": {
+                    "c": {
+                        "0": {
+                            "mean": 80.53,
+                            "std": 22.98,
+                            "min": 25.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "500": {
+                    "c": {
+                        "0": {
+                            "mean": 79.26,
+                            "std": 23.93,
+                            "min": 20.0,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "600": {
+                    "c": {
+                        "0": {
+                            "mean": 71.55,
+                            "std": 29.69,
+                            "min": 16.67,
+                            "max": 100.0
+                        }
+                    }
+                },
+                "700": {
+                    "c": {
+                        "0": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "800": {
+                    "c": {
+                        "0": {
+                            "mean": null,
+                            "std": null,
+                            "min": null,
+                            "max": null
+                        }
+                    }
+                },
+                "overall": {
+                    "mean": 87.7,
+                    "std": 21.38,
+                    "min": 16.67,
+                    "max": 100.0
+                }
+            },
+            "sim_lp_utilization_list": [
+                87.7
+            ],
+            "block_reasons_dict": {
+                "distance": 1.0,
+                "congestion": 0.0,
+                "xt_threshold": 0.0
+            },
+            "sim_block_list": [
+                0.36,
+                0.44
+            ],
+            "sim_br_block_list": [
+                0.4444444444444444,
+                0.5366666666666666
+            ],
+            "trans_mean": 1.23,
+            "trans_min": 1.23,
+            "trans_max": 1.23,
+            "hops_mean": 5.57,
+            "hops_min": 1.0,
+            "hops_max": 11.0,
+            "lengths_mean": 2365.42,
+            "lengths_min": 365.4,
+            "lengths_max": 5674.6,
+            "route_times_mean": 0.0,
+            "route_times_min": 0.0,
+            "route_times_max": 0.0,
+            "xt_mean": null,
+            "xt_min": null,
+            "xt_max": null,
+            "snr_mean": 9.66,
+            "snr_min": 5.11,
+            "snr_max": 15.2,
+            "bands_list": [],
+            "start_slot_list": [],
+            "end_slot_list": [],
+            "modulation_list": [],
+            "bandwidth_list": [],
+            "path_index_list": [
+                77,
+                5,
+                16
+            ],
+            "protection_switchovers": 0,
+            "protection_failures": 0,
+            "failure_induced_blocks": 0,
+            "switchover_times": []
+        }
+    },
+    "link_usage": {
+        "1-2": {
+            "usage_count": 10,
+            "throughput": 1726635.5145075107,
+            "link_num": 2
+        },
+        "2-1": {
+            "usage_count": 10,
+            "throughput": 1726635.5145075107,
+            "link_num": 2
+        },
+        "1-3": {
+            "usage_count": 10,
+            "throughput": 1726635.5145075107,
+            "link_num": 4
+        },
+        "3-1": {
+            "usage_count": 10,
+            "throughput": 1726635.5145075107,
+            "link_num": 4
+        },
+        "2-21": {
+            "usage_count": 10,
+            "throughput": 1726635.5145075107,
+            "link_num": 6
+        },
+        "21-2": {
+            "usage_count": 10,
+            "throughput": 1726635.5145075107,
+            "link_num": 6
+        },
+        "3-22": {
+            "usage_count": 27,
+            "throughput": 10349121.156492174,
+            "link_num": 8
+        },
+        "22-3": {
+            "usage_count": 27,
+            "throughput": 10349121.156492174,
+            "link_num": 8
+        },
+        "3-56": {
+            "usage_count": 19,
+            "throughput": 8622485.641984664,
+            "link_num": 10
+        },
+        "56-3": {
+            "usage_count": 19,
+            "throughput": 8622485.641984664,
+            "link_num": 10
+        },
+        "4-5": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 12
+        },
+        "5-4": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 12
+        },
+        "4-6": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 14
+        },
+        "6-4": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 14
+        },
+        "5-37": {
+            "usage_count": 36,
+            "throughput": 10494647.704762092,
+            "link_num": 16
+        },
+        "37-5": {
+            "usage_count": 36,
+            "throughput": 10494647.704762092,
+            "link_num": 16
+        },
+        "5-38": {
+            "usage_count": 36,
+            "throughput": 10494647.704762092,
+            "link_num": 18
+        },
+        "38-5": {
+            "usage_count": 36,
+            "throughput": 10494647.704762092,
+            "link_num": 18
+        },
+        "6-34": {
+            "usage_count": 11,
+            "throughput": 1449544.3159478114,
+            "link_num": 20
+        },
+        "34-6": {
+            "usage_count": 11,
+            "throughput": 1449544.3159478114,
+            "link_num": 20
+        },
+        "6-39": {
+            "usage_count": 24,
+            "throughput": 5879514.657916752,
+            "link_num": 22
+        },
+        "39-6": {
+            "usage_count": 24,
+            "throughput": 5879514.657916752,
+            "link_num": 22
+        },
+        "6-40": {
+            "usage_count": 35,
+            "throughput": 7329058.973864564,
+            "link_num": 24
+        },
+        "40-6": {
+            "usage_count": 35,
+            "throughput": 7329058.973864564,
+            "link_num": 24
+        },
+        "7-8": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 26
+        },
+        "8-7": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 26
+        },
+        "7-9": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 28
+        },
+        "9-7": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 28
+        },
+        "7-10": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 30
+        },
+        "10-7": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 30
+        },
+        "8-16": {
+            "usage_count": 17,
+            "throughput": 5299842.607498355,
+            "link_num": 32
+        },
+        "16-8": {
+            "usage_count": 17,
+            "throughput": 5299842.607498355,
+            "link_num": 32
+        },
+        "8-20": {
+            "usage_count": 9,
+            "throughput": 3445477.5560214836,
+            "link_num": 34
+        },
+        "20-8": {
+            "usage_count": 9,
+            "throughput": 3445477.5560214836,
+            "link_num": 34
+        },
+        "9-24": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 36
+        },
+        "24-9": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 36
+        },
+        "10-41": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 38
+        },
+        "41-10": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 38
+        },
+        "10-44": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 40
+        },
+        "44-10": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 40
+        },
+        "11-12": {
+            "usage_count": 21,
+            "throughput": 8940296.794243138,
+            "link_num": 42
+        },
+        "12-11": {
+            "usage_count": 21,
+            "throughput": 8940296.794243138,
+            "link_num": 42
+        },
+        "11-13": {
+            "usage_count": 27,
+            "throughput": 6299877.298429077,
+            "link_num": 44
+        },
+        "13-11": {
+            "usage_count": 27,
+            "throughput": 6299877.298429077,
+            "link_num": 44
+        },
+        "12-55": {
+            "usage_count": 14,
+            "throughput": 2678710.2259248225,
+            "link_num": 46
+        },
+        "55-12": {
+            "usage_count": 14,
+            "throughput": 2678710.2259248225,
+            "link_num": 46
+        },
+        "12-56": {
+            "usage_count": 15,
+            "throughput": 6261586.568318317,
+            "link_num": 48
+        },
+        "56-12": {
+            "usage_count": 15,
+            "throughput": 6261586.568318317,
+            "link_num": 48
+        },
+        "13-24": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 50
+        },
+        "24-13": {
+            "usage_count": 8,
+            "throughput": 1854365.0514768718,
+            "link_num": 50
+        },
+        "13-29": {
+            "usage_count": 19,
+            "throughput": 4445512.246952204,
+            "link_num": 52
+        },
+        "29-13": {
+            "usage_count": 19,
+            "throughput": 4445512.246952204,
+            "link_num": 52
+        },
+        "14-15": {
+            "usage_count": 31,
+            "throughput": 6331391.215586683,
+            "link_num": 54
+        },
+        "15-14": {
+            "usage_count": 31,
+            "throughput": 6331391.215586683,
+            "link_num": 54
+        },
+        "14-16": {
+            "usage_count": 31,
+            "throughput": 6331391.215586683,
+            "link_num": 56
+        },
+        "16-14": {
+            "usage_count": 31,
+            "throughput": 6331391.215586683,
+            "link_num": 56
+        },
+        "15-34": {
+            "usage_count": 7,
+            "throughput": 451876.5576699313,
+            "link_num": 58
+        },
+        "34-15": {
+            "usage_count": 7,
+            "throughput": 451876.5576699313,
+            "link_num": 58
+        },
+        "15-39": {
+            "usage_count": 24,
+            "throughput": 5879514.657916752,
+            "link_num": 60
+        },
+        "39-15": {
+            "usage_count": 24,
+            "throughput": 5879514.657916752,
+            "link_num": 60
+        },
+        "16-54": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 62
+        },
+        "54-16": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 62
+        },
+        "17-18": {
+            "usage_count": 26,
+            "throughput": 4896089.368809909,
+            "link_num": 64
+        },
+        "18-17": {
+            "usage_count": 26,
+            "throughput": 4896089.368809909,
+            "link_num": 64
+        },
+        "17-19": {
+            "usage_count": 26,
+            "throughput": 4896089.368809909,
+            "link_num": 66
+        },
+        "19-17": {
+            "usage_count": 26,
+            "throughput": 4896089.368809909,
+            "link_num": 66
+        },
+        "18-38": {
+            "usage_count": 12,
+            "throughput": 1793894.8191497913,
+            "link_num": 68
+        },
+        "38-18": {
+            "usage_count": 12,
+            "throughput": 1793894.8191497913,
+            "link_num": 68
+        },
+        "18-59": {
+            "usage_count": 38,
+            "throughput": 6689984.187959701,
+            "link_num": 70
+        },
+        "59-18": {
+            "usage_count": 38,
+            "throughput": 6689984.187959701,
+            "link_num": 70
+        },
+        "19-28": {
+            "usage_count": 32,
+            "throughput": 2092057.4354887796,
+            "link_num": 72
+        },
+        "28-19": {
+            "usage_count": 32,
+            "throughput": 2092057.4354887796,
+            "link_num": 72
+        },
+        "19-37": {
+            "usage_count": 18,
+            "throughput": 5558452.039963644,
+            "link_num": 74
+        },
+        "37-19": {
+            "usage_count": 18,
+            "throughput": 5558452.039963644,
+            "link_num": 74
+        },
+        "20-31": {
+            "usage_count": 11,
+            "throughput": 3662275.919222056,
+            "link_num": 76
+        },
+        "31-20": {
+            "usage_count": 11,
+            "throughput": 3662275.919222056,
+            "link_num": 76
+        },
+        "20-36": {
+            "usage_count": 2,
+            "throughput": 216798.36320057212,
+            "link_num": 78
+        },
+        "36-20": {
+            "usage_count": 2,
+            "throughput": 216798.36320057212,
+            "link_num": 78
+        },
+        "21-42": {
+            "usage_count": 20,
+            "throughput": 1229096.0042619733,
+            "link_num": 80
+        },
+        "42-21": {
+            "usage_count": 20,
+            "throughput": 1229096.0042619733,
+            "link_num": 80
+        },
+        "22-23": {
+            "usage_count": 27,
+            "throughput": 10349121.156492174,
+            "link_num": 82
+        },
+        "23-22": {
+            "usage_count": 27,
+            "throughput": 10349121.156492174,
+            "link_num": 82
+        },
+        "23-30": {
+            "usage_count": 26,
+            "throughput": 5490670.679796909,
+            "link_num": 84
+        },
+        "30-23": {
+            "usage_count": 26,
+            "throughput": 5490670.679796909,
+            "link_num": 84
+        },
+        "23-32": {
+            "usage_count": 31,
+            "throughput": 8910981.62072327,
+            "link_num": 86
+        },
+        "32-23": {
+            "usage_count": 31,
+            "throughput": 8910981.62072327,
+            "link_num": 86
+        },
+        "24-31": {
+            "usage_count": 2,
+            "throughput": 0,
+            "link_num": 88
+        },
+        "31-24": {
+            "usage_count": 2,
+            "throughput": 0,
+            "link_num": 88
+        },
+        "24-41": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 90
+        },
+        "41-24": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 90
+        },
+        "25-26": {
+            "usage_count": 15,
+            "throughput": 204729.525338081,
+            "link_num": 92
+        },
+        "26-25": {
+            "usage_count": 15,
+            "throughput": 204729.525338081,
+            "link_num": 92
+        },
+        "25-27": {
+            "usage_count": 31,
+            "throughput": 8910981.62072327,
+            "link_num": 94
+        },
+        "27-25": {
+            "usage_count": 31,
+            "throughput": 8910981.62072327,
+            "link_num": 94
+        },
+        "25-28": {
+            "usage_count": 34,
+            "throughput": 8791649.27086896,
+            "link_num": 96
+        },
+        "28-25": {
+            "usage_count": 34,
+            "throughput": 8791649.27086896,
+            "link_num": 96
+        },
+        "26-31": {
+            "usage_count": 38,
+            "throughput": 7047156.183985816,
+            "link_num": 98
+        },
+        "31-26": {
+            "usage_count": 38,
+            "throughput": 7047156.183985816,
+            "link_num": 98
+        },
+        "26-45": {
+            "usage_count": 38,
+            "throughput": 10778090.940652357,
+            "link_num": 100
+        },
+        "45-26": {
+            "usage_count": 38,
+            "throughput": 10778090.940652357,
+            "link_num": 100
+        },
+        "27-32": {
+            "usage_count": 31,
+            "throughput": 8910981.62072327,
+            "link_num": 102
+        },
+        "32-27": {
+            "usage_count": 31,
+            "throughput": 8910981.62072327,
+            "link_num": 102
+        },
+        "29-30": {
+            "usage_count": 32,
+            "throughput": 7390360.494357873,
+            "link_num": 104
+        },
+        "30-29": {
+            "usage_count": 32,
+            "throughput": 7390360.494357873,
+            "link_num": 104
+        },
+        "29-31": {
+            "usage_count": 41,
+            "throughput": 8290000.995448586,
+            "link_num": 106
+        },
+        "31-29": {
+            "usage_count": 41,
+            "throughput": 8290000.995448586,
+            "link_num": 106
+        },
+        "30-33": {
+            "usage_count": 28,
+            "throughput": 5114250.174325741,
+            "link_num": 108
+        },
+        "33-30": {
+            "usage_count": 28,
+            "throughput": 5114250.174325741,
+            "link_num": 108
+        },
+        "33-56": {
+            "usage_count": 26,
+            "throughput": 2469029.696494865,
+            "link_num": 110
+        },
+        "56-33": {
+            "usage_count": 26,
+            "throughput": 2469029.696494865,
+            "link_num": 110
+        },
+        "34-35": {
+            "usage_count": 2,
+            "throughput": 780869.395077308,
+            "link_num": 112
+        },
+        "35-34": {
+            "usage_count": 2,
+            "throughput": 780869.395077308,
+            "link_num": 112
+        },
+        "34-36": {
+            "usage_count": 2,
+            "throughput": 216798.36320057212,
+            "link_num": 114
+        },
+        "36-34": {
+            "usage_count": 2,
+            "throughput": 216798.36320057212,
+            "link_num": 114
+        },
+        "35-45": {
+            "usage_count": 2,
+            "throughput": 780869.395077308,
+            "link_num": 116
+        },
+        "45-35": {
+            "usage_count": 2,
+            "throughput": 780869.395077308,
+            "link_num": 116
+        },
+        "37-45": {
+            "usage_count": 36,
+            "throughput": 9997221.545575049,
+            "link_num": 118
+        },
+        "45-37": {
+            "usage_count": 36,
+            "throughput": 9997221.545575049,
+            "link_num": 118
+        },
+        "38-46": {
+            "usage_count": 24,
+            "throughput": 5343010.038547916,
+            "link_num": 120
+        },
+        "46-38": {
+            "usage_count": 24,
+            "throughput": 5343010.038547916,
+            "link_num": 120
+        },
+        "38-47": {
+            "usage_count": 21,
+            "throughput": 6674056.981461766,
+            "link_num": 122
+        },
+        "47-38": {
+            "usage_count": 21,
+            "throughput": 6674056.981461766,
+            "link_num": 122
+        },
+        "40-49": {
+            "usage_count": 35,
+            "throughput": 7329058.973864564,
+            "link_num": 124
+        },
+        "49-40": {
+            "usage_count": 35,
+            "throughput": 7329058.973864564,
+            "link_num": 124
+        },
+        "42-43": {
+            "usage_count": 20,
+            "throughput": 1229096.0042619733,
+            "link_num": 126
+        },
+        "43-42": {
+            "usage_count": 20,
+            "throughput": 1229096.0042619733,
+            "link_num": 126
+        },
+        "43-55": {
+            "usage_count": 22,
+            "throughput": 5745972.106571018,
+            "link_num": 128
+        },
+        "55-43": {
+            "usage_count": 22,
+            "throughput": 5745972.106571018,
+            "link_num": 128
+        },
+        "43-56": {
+            "usage_count": 24,
+            "throughput": 4829928.770161213,
+            "link_num": 130
+        },
+        "56-43": {
+            "usage_count": 24,
+            "throughput": 4829928.770161213,
+            "link_num": 130
+        },
+        "44-52": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 132
+        },
+        "52-44": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 132
+        },
+        "46-47": {
+            "usage_count": 23,
+            "throughput": 926188.1475981413,
+            "link_num": 134
+        },
+        "47-46": {
+            "usage_count": 23,
+            "throughput": 926188.1475981413,
+            "link_num": 134
+        },
+        "46-48": {
+            "usage_count": 10,
+            "throughput": 1359875.4147254657,
+            "link_num": 136
+        },
+        "48-46": {
+            "usage_count": 10,
+            "throughput": 1359875.4147254657,
+            "link_num": 136
+        },
+        "46-49": {
+            "usage_count": 19,
+            "throughput": 668674.9208705034,
+            "link_num": 138
+        },
+        "49-46": {
+            "usage_count": 19,
+            "throughput": 668674.9208705034,
+            "link_num": 138
+        },
+        "47-57": {
+            "usage_count": 17,
+            "throughput": 4576220.012905599,
+            "link_num": 140
+        },
+        "57-47": {
+            "usage_count": 17,
+            "throughput": 4576220.012905599,
+            "link_num": 140
+        },
+        "47-58": {
+            "usage_count": 19,
+            "throughput": 6274443.400064744,
+            "link_num": 142
+        },
+        "58-47": {
+            "usage_count": 19,
+            "throughput": 6274443.400064744,
+            "link_num": 142
+        },
+        "48-50": {
+            "usage_count": 16,
+            "throughput": 6660384.052994059,
+            "link_num": 144
+        },
+        "50-48": {
+            "usage_count": 16,
+            "throughput": 6660384.052994059,
+            "link_num": 144
+        },
+        "48-51": {
+            "usage_count": 26,
+            "throughput": 8020259.467719525,
+            "link_num": 146
+        },
+        "51-48": {
+            "usage_count": 26,
+            "throughput": 8020259.467719525,
+            "link_num": 146
+        },
+        "49-50": {
+            "usage_count": 16,
+            "throughput": 6660384.052994059,
+            "link_num": 148
+        },
+        "50-49": {
+            "usage_count": 16,
+            "throughput": 6660384.052994059,
+            "link_num": 148
+        },
+        "51-60": {
+            "usage_count": 19,
+            "throughput": 6274443.400064744,
+            "link_num": 150
+        },
+        "60-51": {
+            "usage_count": 19,
+            "throughput": 6274443.400064744,
+            "link_num": 150
+        },
+        "52-53": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 152
+        },
+        "53-52": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 152
+        },
+        "53-54": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 154
+        },
+        "54-53": {
+            "usage_count": 0,
+            "throughput": 0,
+            "link_num": 154
+        },
+        "57-59": {
+            "usage_count": 17,
+            "throughput": 4576220.012905599,
+            "link_num": 156
+        },
+        "59-57": {
+            "usage_count": 17,
+            "throughput": 4576220.012905599,
+            "link_num": 156
+        },
+        "58-60": {
+            "usage_count": 19,
+            "throughput": 6274443.400064744,
+            "link_num": 158
+        },
+        "60-58": {
+            "usage_count": 19,
+            "throughput": 6274443.400064744,
+            "link_num": 158
+        }
+    },
+    "blocking_mean": 0.4,
+    "blocking_variance": 0.0032000000000000015,
+    "ci_rate_block": 0.06580000000000001,
+    "ci_percent_block": 32.9,
+    "bit_rate_blocking_mean": 0.4905555555555555,
+    "bit_rate_blocking_variance": 0.004252469135802467,
+    "ci_rate_bit_rate_block": 0.07585277777777776,
+    "ci_percent_bit_rate_block": 30.925254813137027,
+    "lightpath_utilization": 87.7,
+    "sim_end_time": "0105_10_09_43_598284"
+}

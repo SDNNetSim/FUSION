@@ -1,0 +1,12 @@
+# Minimal configuration example
+# Uses defaults for all unspecified options
+
+network: NSFNet
+dates:
+  - "0606"
+
+plots:
+  - type: blocking
+    algorithms:
+      - ppo_obs_7
+      - k_shortest_path_4

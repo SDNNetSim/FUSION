@@ -1,0 +1,39 @@
+# Read the Docs configuration file for FUSION
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+version: 2
+
+# Build documentation in the "docs/" directory with Sphinx
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+  jobs:
+    pre_build:
+      # Run autogen script before building
+      - cd docs && python autogen.py --verbose
+
+# Sphinx configuration
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: false
+
+# Python configuration
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - dev
+    - requirements: docs/requirements.txt
+
+# Formats to build
+formats:
+  - pdf
+  - epub
+  - htmlzip
+
+# Submodules configuration
+submodules:
+  include: []
+  recursive: false

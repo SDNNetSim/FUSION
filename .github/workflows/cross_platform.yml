@@ -3,10 +3,14 @@ name: Cross-platform Compatibility Test
 on:
   push:
     branches:
+      - develop
       - main
+      - 'release/**'
   pull_request:
     branches:
+      - develop
       - main
+      - 'release/**'
 
 jobs:
   test:
@@ -30,10 +34,10 @@ jobs:
         run: |
           # Step 1: Upgrade pip and install core build tools
           python -m pip install --upgrade pip setuptools wheel
-          
+
           # Step 2: Install torch first
           pip install torch==2.2.2
-          
+
           # Step 3: Install PyG packages with platform-specific logic
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             # For macOS, compile from source with specific flags
@@ -43,11 +47,11 @@ jobs:
             # For Linux/Windows, install from pre-built wheels
             pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
           fi
-          
+
           # Step 4: Install the rest of the requirements
           # Filter out all packages installed in previous steps, INCLUDING pip
           grep -vE "torch-scatter|torch-sparse|torch-cluster|torch-spline-conv|torch|triton|pip" requirements.txt > other_requirements.txt
           pip install -r other_requirements.txt
 
       - name: Run Python script
-        run: python ./run_sim.py --config_path=ini/example_ini/cross_platform.ini
+        run: python -m fusion.cli.run_sim run_sim --config_path=fusion/configs/templates/cross_platform.ini --run_id=ci_test

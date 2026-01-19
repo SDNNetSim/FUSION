@@ -1,0 +1,100 @@
+name: Code Quality (Modern)
+
+# This is the primary code quality workflow using modern development tools.
+# It complements the legacy workflows (unittests.yml) and
+# provides comprehensive quality checks including formatting, linting,
+# type checking, testing with coverage, security scanning, and analysis.
+
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install torch==2.2.2
+        pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+        pip install -r requirements.txt
+        pip install mypy pytest-cov pre-commit ruff vulture pydeps graphviz snakeviz py-spy memory-profiler bandit
+
+    - name: Cache pre-commit hooks
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+    - name: Set up pre-commit
+      run: |
+        pre-commit install
+        pre-commit run --all-files --show-diff-on-failure || true
+
+    - name: Format check
+      run: |
+        ruff format --check fusion/ tests/
+
+    - name: Lint with ruff
+      run: |
+        ruff check fusion/
+
+    - name: Type check with mypy
+      run: |
+        mypy fusion/ || true  # Allow mypy to fail initially
+
+    - name: Test with pytest and coverage
+      run: |
+        pytest --cov=fusion --cov-report=xml --cov-report=term-missing
+
+    - name: Security check with bandit
+      run: |
+        bandit -r fusion/ -ll || true  # Allow bandit to fail initially
+
+    - name: Dead code detection
+      run: |
+        vulture fusion/ .vulture_whitelist.py --min-confidence=80 || true  # Allow vulture to fail initially
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./reports/coverage/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Generate dependency analysis
+      run: |
+        mkdir -p reports/analysis
+        pydeps fusion --show-cycles > reports/analysis/circular_dependencies.txt || true
+
+    - name: Upload analysis artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: code-analysis-${{ matrix.python-version }}
+        path: |
+          reports/
+          reports/coverage/coverage.xml
