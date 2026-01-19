@@ -1,10 +1,18 @@
-# Flexible Unified System for Intelligent Optical Networking (FUSION)
+# FUSION
+
+**Flexible, Unified Simulator for Intelligent Optical Networking**
+
+---
+
+**Documentation: [https://sdnnetsim.github.io/FUSION/](https://sdnnetsim.github.io/FUSION/)**
+
+---
 
 ## About This Project
 
-Welcome to **FUSION**, an open-source venture into the future of networking! Our core focus is on simulating **Software Defined Elastic Optical Networks (SD-EONs)**, a cutting-edge approach that promises to revolutionize how data is transmitted over optical fibers. But that's just the beginning. We envision FUSION as a versatile simulation framework that can evolve to simulate a wide array of networking paradigms, now including the integration of **artificial intelligence** to enhance network optimization, performance, and decision-making processes.
+FUSION is an open-source discrete-event simulation framework for **Software-Defined Elastic Optical Networks (SD-EONs)**. It provides researchers and engineers with tools to model, analyze, and optimize optical network behavior under realistic conditions, with built-in support for reinforcement learning integration and network survivability experiments.
 
-We need your insight and creativity! The true strength of open-source lies in community collaboration. Join us in pioneering the networks of tomorrow by contributing your unique simulations and features. Your expertise in AI and networking can help shape the future of this field.
+We welcome contributions from the community. See our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 ## Documentation
 
