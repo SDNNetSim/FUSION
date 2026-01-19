@@ -44,6 +44,7 @@ Modules
    fusion/pipelines/index
    fusion/policies/index
    fusion/reporting/index
+   fusion/sim/index
 
 Data Directory
 ==============
