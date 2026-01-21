@@ -49,8 +49,41 @@ class SNRProps:
                             (3, 19): {'mf': 'MF-SPNB3014-MCF19-C3.npy', 'gsnr': 'GSNR-SPNB3014-MCF19-C3.npy'},
                             (4, 19): {'mf': 'MF-SPNB3014-MCF19-C4.npy', 'gsnr': 'GSNR-SPNB3014-MCF19-C4.npy'},
                         }
-                            }
+                            },
         self.mf_spectral_efficiency_dict = {"64-QAM":6, "32-QAM":5, "16-QAM":4, "8-QAM":3, "QPSK":2, "BPSK":1 }
+        self.icxt_mb_params_dict= {
+                                        # common parameters
+                                        "c_mps": 3.0e8,
+                                        "n_core": 1.44,
+                                        "delta1": 0.0035,
+                                        "n_param": 1.0035, #1.44
+
+                                        # core-dependent parameters (dicts)
+                                        "rb_m": {
+                                            4: 144e-3,
+                                            7: 144e-3,
+                                            13: 140e-3,
+                                            19: 140e-3,
+                                        },
+                                        "lambda_m": {
+                                            4: 43e-6,
+                                            7: 51e-6,
+                                            13: 40e-6,
+                                            19: 35e-6,
+                                        },
+                                        "r1_m": {
+                                            4: 4.5e-6,
+                                            7: 4.5e-6,
+                                            13: 4.1e-6,
+                                            19: 3.6e-6,
+                                        },
+                                        "w_tr_m": {
+                                            4: 1.5 * 4.5e-6,
+                                            7: 1.5 * 4.5e-6,
+                                            13: 1.5 * 4.1e-6,
+                                            19: 1.5 * 3.6e-6,
+                                        },
+                                    }
         
 
     def __repr__(self):
