@@ -11,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from ..db.database import get_db
 from ..db.models import Run
 from ..schemas.run import RunCreate, RunListResponse, RunProgress, RunResponse
+from ..services.progress_watcher import stream_progress
 from ..services.run_manager import RunManager, stream_run_logs
 
 router = APIRouter()
@@ -154,3 +155,22 @@ async def stream_logs(
         raise HTTPException(status_code=404, detail=f"Run not found: {run_id}")
 
     return EventSourceResponse(stream_run_logs(run_id, from_start))
+
+
+@router.get("/{run_id}/progress")
+async def stream_run_progress(
+    run_id: str,
+    db: Session = Depends(get_db),
+) -> EventSourceResponse:
+    """
+    Stream progress events via Server-Sent Events.
+
+    :param run_id: The run identifier.
+    :param db: Database session.
+    :returns: SSE stream of progress events.
+    """
+    run = db.query(Run).filter(Run.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail=f"Run not found: {run_id}")
+
+    return EventSourceResponse(stream_progress(run_id))

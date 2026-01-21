@@ -7,6 +7,12 @@
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
   }
+
+  .dark body,
+  body.dark,
+  html.dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
 }
 
 /* Custom component styles */

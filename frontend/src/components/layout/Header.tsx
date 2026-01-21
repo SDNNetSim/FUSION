@@ -12,7 +12,7 @@ export function Header() {
   const isHealthy = health?.status === 'healthy'
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
+    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700 dark:bg-gray-800">
       <div>
         {/* Breadcrumb or page title could go here */}
       </div>
@@ -26,7 +26,7 @@ export function Header() {
               isHealthy ? 'text-green-500' : 'text-red-500'
             )}
           />
-          <span className={isHealthy ? 'text-green-600' : 'text-red-600'}>
+          <span className={isHealthy ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
             {isHealthy ? 'API Connected' : 'API Disconnected'}
           </span>
         </div>

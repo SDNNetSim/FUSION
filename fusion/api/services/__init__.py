@@ -7,12 +7,15 @@ Services handle complex operations and keep routes thin:
 """
 
 from .artifact_service import get_safe_path, list_directory
+from .progress_watcher import parse_progress_file, stream_progress
 from .run_manager import RunManager, recover_orphaned_runs, stream_run_logs
 
 __all__ = [
     "RunManager",
     "recover_orphaned_runs",
     "stream_run_logs",
+    "stream_progress",
+    "parse_progress_file",
     "get_safe_path",
     "list_directory",
 ]

@@ -131,6 +131,7 @@ class RunManager:
         """
         run_dir = settings.runs_dir / run.id
         log_path = run_dir / "logs" / "sim.log"
+        progress_path = run_dir / "progress.jsonl"
 
         with open(log_path, "w") as log_file:
             # Build command
@@ -143,6 +144,8 @@ class RunManager:
                 str(config_path),
                 "--run_id",
                 run.id,
+                "--progress_file",
+                str(progress_path),
             ]
 
             # Platform-specific process creation
