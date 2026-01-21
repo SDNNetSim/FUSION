@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .db.database import init_db
-from .routes import artifacts, configs, runs, system, topology
+from .routes import artifacts, codebase, configs, runs, system, topology
 from .services.run_manager import recover_orphaned_runs
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,7 @@ app.include_router(configs.router, prefix="/api/configs", tags=["configs"])
 app.include_router(artifacts.router, prefix="/api", tags=["artifacts"])
 app.include_router(system.router, prefix="/api", tags=["system"])
 app.include_router(topology.router, prefix="/api", tags=["topology"])
+app.include_router(codebase.router, prefix="/api", tags=["codebase"])
 
 
 # Static file serving with SPA fallback

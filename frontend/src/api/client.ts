@@ -10,6 +10,9 @@ import type {
   VersionResponse,
   TopologyListResponse,
   TopologyResponse,
+  ModuleTreeResponse,
+  FileContent,
+  SearchResult,
 } from './types'
 
 const api = axios.create({
@@ -95,6 +98,26 @@ export const topologyApi = {
 
   get: async (name: string) => {
     const { data } = await api.get<TopologyResponse>(`/topology/${name}`)
+    return data
+  },
+}
+
+// Codebase API
+export const codebaseApi = {
+  getTree: async () => {
+    const { data } = await api.get<ModuleTreeResponse>('/codebase/tree')
+    return data
+  },
+
+  getFile: async (path: string) => {
+    const { data } = await api.get<FileContent>(`/codebase/file/${path}`)
+    return data
+  },
+
+  search: async (query: string, limit = 20) => {
+    const { data } = await api.get<SearchResult[]>('/codebase/search', {
+      params: { q: query, limit },
+    })
     return data
   },
 }

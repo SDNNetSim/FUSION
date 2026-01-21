@@ -55,9 +55,7 @@ class RunManager:
         # Check concurrency limit
         active = self.db.query(Run).filter(Run.status == "RUNNING").count()
         if active >= settings.max_concurrent_runs:
-            raise ValueError(
-                f"Maximum concurrent runs ({settings.max_concurrent_runs}) reached"
-            )
+            raise ValueError(f"Maximum concurrent runs ({settings.max_concurrent_runs}) reached")
 
         # Generate ID and paths
         run_id = uuid.uuid4().hex[:12]
@@ -297,7 +295,7 @@ async def stream_run_logs(run_id: str, from_start: bool) -> AsyncGenerator[dict,
         yield {"event": "error", "data": "Log file not found"}
         return
 
-    async with aiofiles.open(log_path, mode="r") as f:
+    async with aiofiles.open(log_path) as f:
         if from_start:
             content = await f.read()
             if content:

@@ -103,3 +103,54 @@ export interface TopologyListItem {
 export interface TopologyListResponse {
   topologies: TopologyListItem[]
 }
+
+// Codebase explorer types
+export interface ModuleNode {
+  name: string
+  path: string
+  type: 'package' | 'module' | 'directory'
+  description: string | null
+  children: ModuleNode[]
+}
+
+export interface FunctionInfo {
+  name: string
+  line_number: number
+  signature: string
+  docstring: string | null
+  is_method: boolean
+}
+
+export interface ClassInfo {
+  name: string
+  line_number: number
+  docstring: string | null
+  methods: FunctionInfo[]
+  bases: string[]
+}
+
+export interface FileContent {
+  path: string
+  name: string
+  content: string
+  language: string
+  line_count: number
+  classes: ClassInfo[]
+  functions: FunctionInfo[]
+  imports: string[]
+  docstring: string | null
+}
+
+export interface ModuleTreeResponse {
+  root: ModuleNode
+  total_modules: number
+  total_files: number
+}
+
+export interface SearchResult {
+  type: 'file' | 'class' | 'function'
+  name: string
+  path: string
+  line?: number
+  match: string
+}

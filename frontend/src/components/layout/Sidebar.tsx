@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Play, Settings, FileCode, Network } from 'lucide-react'
+import { LayoutDashboard, Play, Settings, FileCode, Network, Code2, BookOpen, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/runs/new', icon: Play, label: 'New Run' },
   { to: '/config', icon: FileCode, label: 'Config Editor' },
   { to: '/topology', icon: Network, label: 'Topology' },
+  { to: '/codebase', icon: Code2, label: 'Codebase' },
 ]
 
 export function Sidebar() {
@@ -41,6 +42,16 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+        <a
+          href="https://sdnnetsim.github.io/FUSION/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+        >
+          <BookOpen className="h-5 w-5" />
+          Documentation
+          <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-50" />
+        </a>
         <NavLink
           to="/settings"
           className={({ isActive }) =>

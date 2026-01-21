@@ -32,9 +32,7 @@ def _run_to_response(run: Run) -> RunResponse:
             current_iteration=run.current_iteration,
             total_iterations=run.total_iterations,
             percent_complete=(
-                (run.current_iteration / run.total_iterations * 100)
-                if run.total_iterations and run.current_iteration
-                else None
+                (run.current_iteration / run.total_iterations * 100) if run.total_iterations and run.current_iteration else None
             ),
         )
 

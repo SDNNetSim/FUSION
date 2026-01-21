@@ -52,7 +52,7 @@ async def stream_progress(run_id: str) -> AsyncGenerator[dict, None]:
     # Stream progress events
     while True:
         try:
-            async with aiofiles.open(progress_path, mode="r") as f:
+            async with aiofiles.open(progress_path) as f:
                 await f.seek(last_position)
                 content = await f.read()
 
