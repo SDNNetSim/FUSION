@@ -141,6 +141,8 @@ class RunManager:
                 "run_sim",
                 "--config_path",
                 str(config_path),
+                "--run_id",
+                run.id,
             ]
 
             # Platform-specific process creation

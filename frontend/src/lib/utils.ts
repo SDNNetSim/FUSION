@@ -1,0 +1,30 @@
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+/**
+ * Merge Tailwind CSS classes with proper precedence.
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+/**
+ * Format a date for display.
+ */
+export function formatDate(date: string | Date): string {
+  return new Date(date).toLocaleString()
+}
+
+/**
+ * Format bytes to human-readable size.
+ */
+export function formatBytes(bytes: number | null): string {
+  if (bytes === null) return '-'
+  if (bytes === 0) return '0 B'
+
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+}
