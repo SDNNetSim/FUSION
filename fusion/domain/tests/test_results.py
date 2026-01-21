@@ -16,7 +16,6 @@ from fusion.domain.results import (
     SpectrumResult,
 )
 
-
 # =============================================================================
 # RouteResult Tests
 # =============================================================================
@@ -1169,6 +1168,7 @@ class TestResultIntegration:
         )
         assert result.success
         assert result.is_protected
+        assert result.protection_result is not None
         assert result.protection_result.is_fully_protected
 
     def test_sliced_allocation_with_per_segment_data(self) -> None:
@@ -1208,4 +1208,5 @@ class TestResultIntegration:
         assert len(result.bandwidth_allocations) == 4
         assert sum(result.bandwidth_allocations) == 100
         assert all(b == "c" for b in result.bands)
+        assert result.slicing_result is not None
         assert result.slicing_result.num_slices == 4

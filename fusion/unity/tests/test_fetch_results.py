@@ -204,9 +204,7 @@ class TestExecuteCommandWithDelay:
 
     @patch("fusion.unity.fetch_results.sleep")
     @patch("fusion.unity.fetch_results.subprocess.run")
-    def test_execute_command_with_delay_in_normal_mode_executes_command(
-        self, mock_run: Mock, mock_sleep: Mock
-    ) -> None:
+    def test_execute_command_with_delay_in_normal_mode_executes_command(self, mock_run: Mock, mock_sleep: Mock) -> None:
         """Test command execution in normal mode calls subprocess."""
         # Arrange
         command = ["rsync", "-avP", "source", "dest"]
@@ -221,9 +219,7 @@ class TestExecuteCommandWithDelay:
 
     @patch("fusion.unity.fetch_results.sleep")
     @patch("fusion.unity.fetch_results.subprocess.run")
-    def test_execute_command_with_delay_in_dry_run_mode_skips_execution(
-        self, mock_run: Mock, mock_sleep: Mock
-    ) -> None:
+    def test_execute_command_with_delay_in_dry_run_mode_skips_execution(self, mock_run: Mock, mock_sleep: Mock) -> None:
         """Test command execution in dry run mode skips subprocess call."""
         # Arrange
         command = ["rsync", "-avP", "source", "dest"]
@@ -238,9 +234,7 @@ class TestExecuteCommandWithDelay:
 
     @patch("fusion.unity.fetch_results.sleep")
     @patch("fusion.unity.fetch_results.subprocess.run")
-    def test_execute_command_with_delay_with_failing_command_raises_error(
-        self, mock_run: Mock, mock_sleep: Mock
-    ) -> None:
+    def test_execute_command_with_delay_with_failing_command_raises_error(self, mock_run: Mock, mock_sleep: Mock) -> None:
         """Test command execution raises error when subprocess fails."""
         # Arrange
         command = ["rsync", "-avP", "source", "dest"]
@@ -256,9 +250,7 @@ class TestSynchronizeRemoteDirectory:
 
     @patch("fusion.unity.fetch_results._execute_command_with_delay")
     @patch("fusion.unity.fetch_results.Path.mkdir")
-    def test_synchronize_remote_directory_with_valid_paths_creates_local_directory(
-        self, mock_mkdir: Mock, mock_execute: Mock
-    ) -> None:
+    def test_synchronize_remote_directory_with_valid_paths_creates_local_directory(self, mock_mkdir: Mock, mock_execute: Mock) -> None:
         """Test directory synchronization creates local target directory."""
         # Arrange
         remote_root = "user@cluster:/work/"
@@ -275,9 +267,7 @@ class TestSynchronizeRemoteDirectory:
 
     @patch("fusion.unity.fetch_results._execute_command_with_delay")
     @patch("fusion.unity.fetch_results.Path.mkdir")
-    def test_synchronize_remote_directory_with_dry_run_calls_execute_correctly(
-        self, mock_mkdir: Mock, mock_execute: Mock
-    ) -> None:
+    def test_synchronize_remote_directory_with_dry_run_calls_execute_correctly(self, mock_mkdir: Mock, mock_execute: Mock) -> None:
         """Test directory synchronization in dry run mode."""
         # Arrange
         remote_root = "user@cluster:/work/"
@@ -298,9 +288,7 @@ class TestSynchronizeRemoteFile:
 
     @patch("fusion.unity.fetch_results._execute_command_with_delay")
     @patch("fusion.unity.fetch_results.Path.mkdir")
-    def test_synchronize_remote_file_with_valid_paths_creates_parent_directory(
-        self, mock_mkdir: Mock, mock_execute: Mock
-    ) -> None:
+    def test_synchronize_remote_file_with_valid_paths_creates_parent_directory(self, mock_mkdir: Mock, mock_execute: Mock) -> None:
         """Test file synchronization creates parent directory."""
         # Arrange
         remote_root = "user@cluster:/work/"
@@ -321,9 +309,7 @@ class TestSynchronizeSimulationLogs:
 
     @patch("fusion.unity.fetch_results._execute_command_with_delay")
     @patch("fusion.unity.fetch_results.Path.mkdir")
-    def test_synchronize_simulation_logs_with_valid_params_creates_directory(
-        self, mock_mkdir: Mock, mock_execute: Mock
-    ) -> None:
+    def test_synchronize_simulation_logs_with_valid_params_creates_directory(self, mock_mkdir: Mock, mock_execute: Mock) -> None:
         """Test log synchronization creates local directory structure."""
         # Arrange
         remote_logs_root = "user@cluster:/logs/"
@@ -351,9 +337,7 @@ class TestSynchronizeSimulationLogs:
 class TestExtractPathAlgorithmFromInput:
     """Tests for extract_path_algorithm_from_input function."""
 
-    def test_extract_path_algorithm_from_input_with_valid_file_returns_algorithm(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extract_path_algorithm_from_input_with_valid_file_returns_algorithm(self, tmp_path: Path) -> None:
         """Test successful extraction of path algorithm from JSON file."""
         # Arrange
         test_data = {"path_algorithm": "shortest_path", "other_param": "value"}
@@ -367,9 +351,7 @@ class TestExtractPathAlgorithmFromInput:
         # Assert
         assert result == "shortest_path"
 
-    def test_extract_path_algorithm_from_input_with_no_files_returns_none(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extract_path_algorithm_from_input_with_no_files_returns_none(self, tmp_path: Path) -> None:
         """Test extraction returns None when no matching files found."""
         # Arrange
         input_dir = tmp_path
@@ -380,9 +362,7 @@ class TestExtractPathAlgorithmFromInput:
         # Assert
         assert result is None
 
-    def test_extract_path_algorithm_from_input_with_missing_key_returns_none(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extract_path_algorithm_from_input_with_missing_key_returns_none(self, tmp_path: Path) -> None:
         """Test extraction returns None when path_algorithm key missing."""
         # Arrange
         test_data = {"other_param": "value"}
@@ -396,9 +376,7 @@ class TestExtractPathAlgorithmFromInput:
         # Assert
         assert result is None
 
-    def test_extract_path_algorithm_from_input_with_invalid_json_returns_none(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extract_path_algorithm_from_input_with_invalid_json_returns_none(self, tmp_path: Path) -> None:
         """Test extraction handles invalid JSON gracefully."""
         # Arrange
         input_dir = tmp_path
@@ -411,9 +389,7 @@ class TestExtractPathAlgorithmFromInput:
         # Assert
         assert result is None
 
-    def test_extract_path_algorithm_from_input_with_multiple_files_returns_first_valid(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extract_path_algorithm_from_input_with_multiple_files_returns_first_valid(self, tmp_path: Path) -> None:
         """Test extraction returns first valid algorithm when multiple files exist."""
         # Arrange
         input_dir = tmp_path
@@ -432,9 +408,7 @@ class TestExtractPathAlgorithmFromInput:
 class TestIterateRunsIndexFile:
     """Tests for iterate_runs_index_file function."""
 
-    def test_iterate_runs_index_file_with_valid_entries_yields_paths(
-        self, tmp_path: Path
-    ) -> None:
+    def test_iterate_runs_index_file_with_valid_entries_yields_paths(self, tmp_path: Path) -> None:
         """Test iteration over index file with valid entries."""
         # Arrange
         test_data = [
@@ -456,9 +430,7 @@ class TestIterateRunsIndexFile:
         # Assert
         assert result == expected_paths
 
-    def test_iterate_runs_index_file_with_empty_lines_skips_them(
-        self, tmp_path: Path
-    ) -> None:
+    def test_iterate_runs_index_file_with_empty_lines_skips_them(self, tmp_path: Path) -> None:
         """Test iteration skips empty lines in index file."""
         # Arrange
         test_data = [
@@ -482,9 +454,7 @@ class TestIterateRunsIndexFile:
         # Assert
         assert result == expected_paths
 
-    def test_iterate_runs_index_file_with_invalid_json_continues_iteration(
-        self, tmp_path: Path
-    ) -> None:
+    def test_iterate_runs_index_file_with_invalid_json_continues_iteration(self, tmp_path: Path) -> None:
         """Test iteration continues when encountering invalid JSON."""
         # Arrange
         test_data = [
@@ -505,9 +475,7 @@ class TestIterateRunsIndexFile:
         # Assert
         assert result == expected_paths
 
-    def test_iterate_runs_index_file_with_missing_path_key_continues_iteration(
-        self, tmp_path: Path
-    ) -> None:
+    def test_iterate_runs_index_file_with_missing_path_key_continues_iteration(self, tmp_path: Path) -> None:
         """Test iteration continues when path key is missing."""
         # Arrange
         test_data = [

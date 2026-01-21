@@ -112,16 +112,12 @@ class TestGetMaxCurrQ:
 class TestGetMaxFutureQ:
     """Future-Q computation with congestion helpers."""
 
-    @mock.patch(
-        "fusion.modules.rl.algorithms.q_learning.classify_congestion", return_value=0
-    )
+    @mock.patch("fusion.modules.rl.algorithms.q_learning.classify_congestion", return_value=0)
     @mock.patch(
         "fusion.modules.rl.algorithms.q_learning.find_path_congestion",
         return_value=(0.4, None),
     )
-    def test_max_future_q_path(
-        self, _cong: mock.MagicMock, _classify: mock.MagicMock
-    ) -> None:
+    def test_max_future_q_path(self, _cong: mock.MagicMock, _classify: mock.MagicMock) -> None:
         """Path mode returns correct Q from matrix."""
         agent = _new_agent()
         mat = np.array([(None, 0.33)], dtype=[("path", "O"), ("q_value", "f8")])
@@ -169,9 +165,7 @@ class TestSaveModel:
         agent = _new_agent()
         agent.iteration = 0
         agent.rewards_stats_dict = {"average": np.array([1.0]).tolist()}
-        with mock.patch.object(
-            agent, "_convert_q_tables_to_dict", return_value={"k": [1]}
-        ):
+        with mock.patch.object(agent, "_convert_q_tables_to_dict", return_value={"k": [1]}):
             agent.save_model(trial=0)
 
         mock_dir.assert_called_once()

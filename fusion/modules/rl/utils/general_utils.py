@@ -41,18 +41,13 @@ class CoreUtilHelpers:
         arrival_count = self.rl_props.arrival_count
         snapshot_step = self.engine_props.engine_props["snapshot_step"]
 
-        if (
-            self.engine_props.engine_props["save_snapshots"]
-            and (arrival_count + 1) % snapshot_step == 0
-        ):
+        if self.engine_props.engine_props["save_snapshots"] and (arrival_count + 1) % snapshot_step == 0:
             self.engine_props.stats_obj.update_snapshot(
                 network_spectrum_dict=self.engine_props.network_spectrum_dict,
                 request_number=arrival_count + 1,
             )
 
-    def get_super_channels(
-        self, slots_needed: int, num_channels: int
-    ) -> tuple[np.ndarray, bool]:
+    def get_super_channels(self, slots_needed: int, num_channels: int) -> tuple[np.ndarray, bool]:
         """
         Gets the available 'J' super-channels for the agent to choose from
         along with a fragmentation score.
@@ -65,15 +60,13 @@ class CoreUtilHelpers:
         # NOTE: Currently hardcoded to use 'c' band - should be configurable
         # for different spectral bands
         path_list = self.rl_props.chosen_path_list[0]
-        super_channel_index_matrix, horizontal_fragmentation_array = (
-            get_shannon_entropy_fragmentation(
-                path_list=path_list,
-                network_spectrum=self.engine_props.network_spectrum_dict,
-                spectral_slots=self.rl_props.spectral_slots,
-                core_num=self.core_number if self.core_number is not None else 0,
-                slots_needed=slots_needed,
-                band="c",
-            )
+        super_channel_index_matrix, horizontal_fragmentation_array = get_shannon_entropy_fragmentation(
+            path_list=path_list,
+            network_spectrum=self.engine_props.network_spectrum_dict,
+            spectral_slots=self.rl_props.spectral_slots,
+            core_num=self.core_number if self.core_number is not None else 0,
+            slots_needed=slots_needed,
+            band="c",
         )
 
         self.super_channel_indexes = super_channel_index_matrix[:num_channels].tolist()
@@ -83,9 +76,7 @@ class CoreUtilHelpers:
         response_fragmentation_matrix: list[float] = []
         for channel in self.super_channel_indexes:
             start_index = channel[0]
-            response_fragmentation_matrix.append(
-                horizontal_fragmentation_array[start_index]
-            )
+            response_fragmentation_matrix.append(horizontal_fragmentation_array[start_index])
 
         response_fragmentation_matrix_np = np.array(response_fragmentation_matrix)
         response_fragmentation_matrix_np = np.where(
@@ -93,25 +84,15 @@ class CoreUtilHelpers:
             100.0,
             response_fragmentation_matrix_np,
         )
-        difference = self.rl_props.super_channel_space - len(
-            response_fragmentation_matrix_np
-        )
+        difference = self.rl_props.super_channel_space - len(response_fragmentation_matrix_np)
 
-        if len(
-            response_fragmentation_matrix_np
-        ) < self.rl_props.super_channel_space or np.any(
-            np.isinf(response_fragmentation_matrix_np)
-        ):
+        if len(response_fragmentation_matrix_np) < self.rl_props.super_channel_space or np.any(np.isinf(response_fragmentation_matrix_np)):
             for _ in range(difference):
-                response_fragmentation_matrix_np = np.append(
-                    response_fragmentation_matrix_np, 100.0
-                )
+                response_fragmentation_matrix_np = np.append(response_fragmentation_matrix_np, 100.0)
 
         return response_fragmentation_matrix_np, no_penalty
 
-    def classify_paths(
-        self, paths_list: np.ndarray
-    ) -> list[tuple[int, list[Any], int]]:
+    def classify_paths(self, paths_list: np.ndarray) -> list[tuple[int, list[Any], int]]:
         """
         Classify paths by their current congestion level.
 
@@ -121,9 +102,7 @@ class CoreUtilHelpers:
         :rtype: list
         """
         information_list = []
-        paths_list = (
-            paths_list[:, 0] if isinstance(paths_list, np.ndarray) else paths_list
-        )
+        paths_list = paths_list[:, 0] if isinstance(paths_list, np.ndarray) else paths_list
         for path_index, current_path in enumerate(paths_list):
             current_congestion, _ = find_path_congestion(
                 path_list=current_path,
@@ -177,9 +156,7 @@ class CoreUtilHelpers:
         """
         Checks if a request or multiple requests need to be released.
         """
-        current_time = self.rl_props.arrival_list[
-            min(self.rl_props.arrival_count, len(self.rl_props.arrival_list) - 1)
-        ]["arrive"]
+        current_time = self.rl_props.arrival_list[min(self.rl_props.arrival_count, len(self.rl_props.arrival_list) - 1)]["arrive"]
 
         departure_list = self.rl_props.depart_list
         while self._last_processed_index < len(departure_list):
@@ -206,18 +183,14 @@ class CoreUtilHelpers:
             # DRL agent picked a super-channel that is not available, block
             except IndexError:
                 self.engine_props.stats_obj.blocked_reqs += 1
-                self.engine_props.stats_obj.stats_props["block_reasons_dict"][
-                    "congestion"
-                ] += 1
+                self.engine_props.stats_obj.stats_props["block_reasons_dict"]["congestion"] += 1
                 bandwidth = current_request["bandwidth"]
                 self.engine_props.stats_obj.stats_props["block_bw_dict"][bandwidth] += 1
                 return
         else:
             forced_index = None
 
-        forced_modulation_format = self.route_obj.route_props.modulation_formats_matrix[
-            0
-        ]
+        forced_modulation_format = self.route_obj.route_props.modulation_formats_matrix[0]
         self.engine_props.handle_arrival(
             current_time=current_time,
             force_route_matrix=self.rl_props.chosen_path_list,
@@ -249,9 +222,7 @@ class CoreUtilHelpers:
         # Convert dict to SDNProps object
         for key, value in sdn_props.items():
             setattr(sdn_props_obj, key, value)
-        spectrum_obj = SpectrumAssignment(
-            engine_props=engine_props, sdn_props=sdn_props_obj, route_props=route_props
-        )
+        spectrum_obj = SpectrumAssignment(engine_props=engine_props, sdn_props=sdn_props_obj, route_props=route_props)
 
         spectrum_obj.spectrum_props.forced_index = None
         spectrum_obj.spectrum_props.forced_core = None
@@ -307,13 +278,9 @@ class CoreUtilHelpers:
 
         for request_time in self.engine_props.reqs_dict:
             if self.engine_props.reqs_dict[request_time]["request_type"] == "arrival":
-                self.rl_props.arrival_list.append(
-                    self.engine_props.reqs_dict[request_time]
-                )
+                self.rl_props.arrival_list.append(self.engine_props.reqs_dict[request_time])
             else:
-                self.rl_props.depart_list.append(
-                    self.engine_props.reqs_dict[request_time]
-                )
+                self.rl_props.depart_list.append(self.engine_props.reqs_dict[request_time])
 
 
 # NOTE: Current implementation is limited to 's1' simulation thread

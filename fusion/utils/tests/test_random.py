@@ -225,10 +225,7 @@ class TestGenerateExponentialRandomVariable:
         num_samples = 1000
 
         # Act
-        samples = [
-            generate_exponential_random_variable(scale_param)
-            for _ in range(num_samples)
-        ]
+        samples = [generate_exponential_random_variable(scale_param) for _ in range(num_samples)]
         mean = np.mean(samples)
 
         # Assert - mean should be approximately 1/scale_param
@@ -247,23 +244,15 @@ class TestGenerateExponentialRandomVariable:
         num_samples = 100
 
         # Act
-        small_scale_samples = [
-            generate_exponential_random_variable(small_scale)
-            for _ in range(num_samples)
-        ]
+        small_scale_samples = [generate_exponential_random_variable(small_scale) for _ in range(num_samples)]
         set_random_seed(42)
-        large_scale_samples = [
-            generate_exponential_random_variable(large_scale)
-            for _ in range(num_samples)
-        ]
+        large_scale_samples = [generate_exponential_random_variable(large_scale) for _ in range(num_samples)]
 
         # Assert
         assert np.mean(small_scale_samples) > np.mean(large_scale_samples)
 
     @patch("fusion.utils.random.generate_uniform_random_variable")
-    def test_generate_exponential_uses_inverse_transform(
-        self, mock_uniform: Mock
-    ) -> None:
+    def test_generate_exponential_uses_inverse_transform(self, mock_uniform: Mock) -> None:
         """Test that exponential uses inverse transform method."""
         # Arrange
         mock_uniform.return_value = 0.5

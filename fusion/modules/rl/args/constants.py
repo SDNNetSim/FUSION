@@ -63,9 +63,7 @@ DEEP_RL_ALGORITHMS: tuple[str, ...] = (
 )
 
 # Algorithms suitable for path selection
-PATH_SELECTION_ALGORITHMS: tuple[str, ...] = (
-    TRADITIONAL_RL_ALGORITHMS + DEEP_RL_ALGORITHMS
-)
+PATH_SELECTION_ALGORITHMS: tuple[str, ...] = TRADITIONAL_RL_ALGORITHMS + DEEP_RL_ALGORITHMS
 
 # Algorithms suitable for core network decisions
 CORE_DECISION_ALGORITHMS: tuple[str, ...] = TRADITIONAL_RL_ALGORITHMS

@@ -3,14 +3,13 @@
 ## Purpose
 Command-line interface entry points and argument parsing for the FUSION optical network simulator. Provides a clean CLI architecture with modern Python practices, comprehensive error handling, and maintainable code organization.
 
-**Example**: *This module handles CLI entry points for simulation, training, and GUI operations with centralized argument parsing and proper error handling.*
+**Example**: *This module handles CLI entry points for simulation and training operations with centralized argument parsing and proper error handling.*
 
 ## Key Components
 
 ### Core Files
 - `run_sim.py`: Main network simulation runner with multiprocessing support
 - `run_train.py`: Machine learning and reinforcement learning agent training entry point
-- `run_gui.py`: Graphical user interface launcher with dependency management
 - `main_parser.py`: Centralized parser construction with modern naming conventions
 - `config_setup.py`: Configuration management with proper error handling and validation
 - `constants.py`: Shared CLI constants including exit codes and settings
@@ -40,9 +39,6 @@ python -m fusion.cli.run_sim run_sim --config_path config.ini
 
 # Train an agent
 python -m fusion.cli.run_train --agent_type rl --config_path config.ini
-
-# Launch GUI
-python -m fusion.cli.run_gui --debug
 ```
 
 ## Dependencies
@@ -51,7 +47,6 @@ python -m fusion.cli.run_gui --debug
 - `fusion.utils.logging_config`: Standardized logging setup
 - `fusion.configs`: Configuration management and validation
 - `fusion.sim`: Simulation and training pipeline modules
-- `fusion.gui`: Graphical user interface components
 
 ### External Dependencies
 - `argparse`: Command-line argument parsing (built-in)
@@ -90,7 +85,6 @@ pytest --cov=fusion.cli fusion/cli/tests/
 ### Main Functions
 - `build_main_argument_parser()`: Build the main CLI argument parser with all subcommands
 - `create_training_argument_parser()`: Create and parse arguments for training simulations
-- `create_gui_argument_parser()`: Create and parse arguments for GUI operations
 - `setup_config_from_cli()`: Set up configuration from command line input
 
 ### Key Classes
@@ -99,7 +93,6 @@ pytest --cov=fusion.cli fusion/cli/tests/
 ### Entry Points
 - `run_sim.main()`: Entry point for running network simulations
 - `run_train.main()`: Entry point for training ML/RL agents
-- `run_gui.main()`: Entry point for launching the GUI interface
 
 ## Examples
 
@@ -133,16 +126,6 @@ debug_mode = config_manager.get_value('debug', default=False)
 - **Modern Error Handling**: User-friendly error messages with logging for debugging
 - **Backward Compatibility**: Legacy function names maintained through compatibility aliases
 
-### Known Limitations
-- GUI dependencies are optional and may require separate installation
-- Some ML/RL training features require additional dependencies
-- Configuration validation is basic and may need enhancement for complex scenarios
-
-### Performance Considerations
-- CLI startup is optimized with lazy loading of heavy modules
-- Configuration parsing is cached to avoid repeated file reads
-- Multiprocessing support for simulation scalability
-
 ---
 
 ## Architecture
@@ -168,4 +151,3 @@ This CLI module integrates with:
 - **Simulation Engine**: Through `fusion.sim` pipeline modules
 - **Configuration System**: Using `fusion.configs` for validation and loading
 - **Logging System**: Via `fusion.utils.logging_config` for consistent logging
-- **GUI Framework**: Through `fusion.gui` for graphical interface operations

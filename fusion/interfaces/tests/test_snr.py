@@ -198,9 +198,7 @@ class TestAbstractSNRMeasurerInitialization:
             def supports_multicore(self) -> bool:
                 return False
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 20.0
 
             def calculate_link_snr(
@@ -219,14 +217,10 @@ class TestAbstractSNRMeasurerInitialization:
             ) -> float:
                 return 0.01
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {"sci": 0.1, "xci": 0.05}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 return 15.0
 
             def is_snr_acceptable(
@@ -284,9 +278,7 @@ class TestConcreteSNRMeasurerImplementation:
             def supports_multicore(self) -> bool:
                 return True
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 20.5
 
             def calculate_link_snr(
@@ -305,14 +297,10 @@ class TestConcreteSNRMeasurerImplementation:
             ) -> float:
                 return 0.02
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {"sci": 0.15, "xci": 0.08, "xpm": 0.03}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 return 18.0
 
             def is_snr_acceptable(
@@ -387,9 +375,7 @@ class TestAbstractSNRMeasurerReset:
             def supports_multicore(self) -> bool:
                 return False
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 20.0
 
             def calculate_link_snr(
@@ -408,14 +394,10 @@ class TestAbstractSNRMeasurerReset:
             ) -> float:
                 return 0.01
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 return 15.0
 
             def is_snr_acceptable(
@@ -499,9 +481,7 @@ class TestAbstractSNRMeasurerEdgeCases:
             def supports_multicore(self) -> bool:
                 return False
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 20.0
 
             def calculate_link_snr(
@@ -520,14 +500,10 @@ class TestAbstractSNRMeasurerEdgeCases:
             ) -> float:
                 return 0.01
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 return 15.0
 
             def is_snr_acceptable(
@@ -572,9 +548,7 @@ class TestAbstractSNRMeasurerEdgeCases:
             def supports_multicore(self) -> bool:
                 return False
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 20.0
 
             def calculate_link_snr(
@@ -593,14 +567,10 @@ class TestAbstractSNRMeasurerEdgeCases:
             ) -> float:
                 return 0.01
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {"sci": 0.1, "xci": 0.05, "xpm": 0.02, "fwm": 0.01}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 return 15.0
 
             def is_snr_acceptable(
@@ -647,9 +617,7 @@ class TestAbstractSNRMeasurerEdgeCases:
             def supports_multicore(self) -> bool:
                 return False
 
-            def calculate_snr(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> float:
+            def calculate_snr(self, path: list[Any], spectrum_info: dict[str, Any]) -> float:
                 return 20.0
 
             def calculate_link_snr(
@@ -668,14 +636,10 @@ class TestAbstractSNRMeasurerEdgeCases:
             ) -> float:
                 return 0.01
 
-            def calculate_nonlinear_noise(
-                self, path: list[Any], spectrum_info: dict[str, Any]
-            ) -> dict[str, float]:
+            def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
                 return {}
 
-            def get_required_snr_threshold(
-                self, modulation: str, reach: float
-            ) -> float:
+            def get_required_snr_threshold(self, modulation: str, reach: float) -> float:
                 thresholds = {"QPSK": 10.0, "16QAM": 15.0, "64QAM": 20.0}
                 return thresholds.get(modulation, 15.0)
 

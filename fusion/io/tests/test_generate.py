@@ -215,9 +215,7 @@ class TestCreatePt:
         """Test creating topology with large network."""
         # Arrange
         cores_per_link = 2
-        network_spectrum_dict = {
-            (f"Node{i}", f"Node{i + 1}"): float(i * 10) for i in range(20)
-        }
+        network_spectrum_dict = {(f"Node{i}", f"Node{i + 1}"): float(i * 10) for i in range(20)}
 
         # Act
         result = create_pt(cores_per_link, network_spectrum_dict)
@@ -232,9 +230,7 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_valid_mod_assumption_returns_dict(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_valid_mod_assumption_returns_dict(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test loading valid modulation assumption returns dict."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -242,9 +238,7 @@ class TestCreateBwInfo:
             "assumption1": {"100G": {"slots": 4, "reach": 1000}},
             "assumption2": {"200G": {"slots": 8, "reach": 500}},
         }
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("assumption1")
@@ -266,30 +260,22 @@ class TestCreateBwInfo:
         mock_find_project_root.return_value = "/fake/root"
         mock_is_absolute.return_value = True
         mod_data = {"test_assumption": {"50G": {"slots": 2, "reach": 2000}}}
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
-        result = create_bw_info(
-            "test_assumption", mod_assumptions_path="/custom/path.json"
-        )
+        result = create_bw_info("test_assumption", mod_assumptions_path="/custom/path.json")
 
         # Assert
         assert result == {"50G": {"slots": 2, "reach": 2000}}
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_none_path_uses_default(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_none_path_uses_default(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test None path uses default modulation formats file."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
         mod_data = {"default": {"100G": {"slots": 4, "reach": 1000}}}
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("default", mod_assumptions_path=None)
@@ -299,16 +285,12 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_none_string_path_uses_default(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_none_string_path_uses_default(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test "None" string path uses default modulation formats file."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
         mod_data = {"test": {"100G": {"slots": 4, "reach": 1000}}}
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("test", mod_assumptions_path="None")
@@ -318,16 +300,12 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_unknown_assumption_raises_not_implemented_error(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_unknown_assumption_raises_not_implemented_error(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test unknown modulation assumption raises NotImplementedError."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
         mod_data = {"known_assumption": {"100G": {"slots": 4, "reach": 1000}}}
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act & Assert
         with pytest.raises(NotImplementedError, match="Unknown modulation assumption"):
@@ -335,9 +313,7 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_file_not_found_raises_file_not_found_error(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_file_not_found_raises_file_not_found_error(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test missing modulation file raises FileNotFoundError."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -349,15 +325,11 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_invalid_json_raises_file_not_found_error(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_invalid_json_raises_file_not_found_error(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test invalid JSON raises FileNotFoundError with parse message."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data="invalid json {"
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data="invalid json {").return_value
 
         # Act & Assert
         with pytest.raises(FileNotFoundError, match="Could not parse JSON"):
@@ -377,9 +349,7 @@ class TestCreateBwInfo:
         mock_find_project_root.return_value = "/fake/root"
         mock_is_absolute.return_value = False
         mod_data = {"test": {"100G": {"slots": 4, "reach": 1000}}}
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("test", mod_assumptions_path="relative/path.json")
@@ -389,9 +359,7 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_returns_dict_of_dicts(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_returns_dict_of_dicts(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test function returns dict of dicts structure."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -401,9 +369,7 @@ class TestCreateBwInfo:
                 "200G": {"slots": 8, "reach": 500},
             }
         }
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("test")
@@ -416,9 +382,7 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_multiple_assumptions_returns_correct_one(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_multiple_assumptions_returns_correct_one(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test selecting specific assumption from multiple options."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -427,9 +391,7 @@ class TestCreateBwInfo:
             "assumption_b": {"100G": {"slots": 6, "reach": 800}},
             "assumption_c": {"100G": {"slots": 8, "reach": 600}},
         }
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("assumption_b")
@@ -439,16 +401,12 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_empty_assumption_dict_returns_empty_dict(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_empty_assumption_dict_returns_empty_dict(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test modulation assumption with empty dict returns empty dict."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
         mod_data: dict[str, dict[str, Any]] = {"empty_assumption": {}}
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("empty_assumption")
@@ -458,9 +416,7 @@ class TestCreateBwInfo:
 
     @patch("fusion.io.generate.find_project_root")
     @patch("fusion.io.generate.Path.open")
-    def test_with_nested_dict_structure_returns_correctly(
-        self, mock_path_open: Mock, mock_find_project_root: Mock
-    ) -> None:
+    def test_with_nested_dict_structure_returns_correctly(self, mock_path_open: Mock, mock_find_project_root: Mock) -> None:
         """Test nested dict structure is returned correctly."""
         # Arrange
         mock_find_project_root.return_value = "/fake/root"
@@ -473,9 +429,7 @@ class TestCreateBwInfo:
                 }
             }
         }
-        mock_path_open.return_value.__enter__.return_value = mock_open(
-            read_data=json.dumps(mod_data)
-        ).return_value
+        mock_path_open.return_value.__enter__.return_value = mock_open(read_data=json.dumps(mod_data)).return_value
 
         # Act
         result = create_bw_info("complex")

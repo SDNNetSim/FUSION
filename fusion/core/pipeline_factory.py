@@ -14,8 +14,6 @@ Usage:
     >>> config = SimulationConfig.from_engine_props(engine_props)
     >>> pipelines = PipelineFactory.create_pipeline_set(config)
     >>> orchestrator = PipelineFactory.create_orchestrator(config)
-
-Phase: P3.1 - Pipeline Factory Scaffolding
 """
 
 from __future__ import annotations
@@ -50,31 +48,14 @@ class PipelineSet:
     This dataclass holds references to pipeline implementations that
     will be called by the orchestrator during request handling.
 
-    Required pipelines (always present):
-        routing: Finds candidate paths between nodes
-        spectrum: Finds available spectrum slots along paths
+    Required pipelines (routing, spectrum) are always present.
+    Optional pipelines (grooming, snr, slicing) may be None if disabled.
 
-    Optional pipelines (may be None if feature disabled):
-        grooming: Grooms requests onto existing lightpaths
-        snr: Validates signal quality
-        slicing: Slices large requests across multiple lightpaths
-
-    Attributes:
-        routing: RoutingPipeline implementation (required)
-        spectrum: SpectrumPipeline implementation (required)
-        grooming: GroomingPipeline or None if disabled
-        snr: SNRPipeline or None if disabled
-        slicing: SlicingPipeline or None if disabled
-
-    Example:
-        >>> config = SimulationConfig.from_engine_props(engine_props)
-        >>> pipelines = PipelineFactory.create_pipeline_set(config)
-        >>> print(pipelines.routing)
-        <RoutingAdapter>
-        >>> print(pipelines.grooming)
-        None  # if grooming_enabled=False
-
-    Phase: P3.1 - Pipeline Factory Scaffolding
+    :ivar routing: RoutingPipeline implementation (required)
+    :ivar spectrum: SpectrumPipeline implementation (required)
+    :ivar grooming: GroomingPipeline or None if disabled
+    :ivar snr: SNRPipeline or None if disabled
+    :ivar slicing: SlicingPipeline or None if disabled
     """
 
     # Required pipelines
@@ -134,26 +115,8 @@ class PipelineFactory:
 
     This factory uses lazy imports to avoid circular dependencies and
     selects between legacy adapters and new pipeline implementations
-    based on configuration values.
-
-    Selection Rules:
-        - Routing: ProtectedRoutingPipeline for 1+1, else RoutingAdapter
-        - Spectrum: SpectrumAdapter (default)
-        - Grooming: GroomingAdapter if enabled, else None
-        - SNR: SNRAdapter if enabled, else None
-        - Slicing: StandardSlicingPipeline if enabled, else None
-
-    Design Notes:
-        - All methods are static or class methods (stateless)
-        - Imports are done inside methods (lazy) to avoid circular deps
-        - Factory does not store any state
-
-    Example:
-        >>> config = SimulationConfig.from_engine_props(engine_props)
-        >>> pipelines = PipelineFactory.create_pipeline_set(config)
-        >>> orchestrator = PipelineFactory.create_orchestrator(config)
-
-    Phase: P3.1 - Pipeline Factory Scaffolding
+    based on configuration values. All methods are static or class methods
+    (stateless factory pattern).
     """
 
     @staticmethod
@@ -161,15 +124,12 @@ class PipelineFactory:
         """
         Create routing pipeline based on config.
 
-        Selection Logic:
-            - route_method == "1plus1_protection" -> ProtectedRoutingPipeline
-            - Any other route_method -> RoutingAdapter (wraps legacy)
+        Returns ProtectedRoutingPipeline for 1+1 protection, otherwise RoutingAdapter.
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            RoutingPipeline implementation
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: RoutingPipeline implementation
+        :rtype: RoutingPipeline
         """
         route_method = getattr(config, "route_method", "k_shortest_path")
 
@@ -190,13 +150,11 @@ class PipelineFactory:
         Create spectrum pipeline based on config.
 
         Currently always returns SpectrumAdapter (wraps legacy).
-        Future: May add BestFitSpectrumPipeline for allocation_method=="best_fit".
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            SpectrumPipeline implementation
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: SpectrumPipeline implementation
+        :rtype: SpectrumPipeline
         """
         allocation_method = getattr(config, "allocation_method", "first_fit")
 
@@ -212,15 +170,12 @@ class PipelineFactory:
         """
         Create grooming pipeline if enabled.
 
-        Selection Logic:
-            - grooming_enabled == False -> None
-            - grooming_enabled == True -> GroomingAdapter (wraps legacy)
+        Returns GroomingAdapter if grooming_enabled, otherwise None.
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            GroomingPipeline if enabled, None otherwise
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: GroomingPipeline if enabled, None otherwise
+        :rtype: GroomingPipeline | None
         """
         grooming_enabled = getattr(config, "grooming_enabled", False)
 
@@ -238,15 +193,12 @@ class PipelineFactory:
         """
         Create SNR pipeline if enabled.
 
-        Selection Logic:
-            - snr_enabled == False -> None
-            - snr_enabled == True -> SNRAdapter (wraps legacy)
+        Returns SNRAdapter if snr_enabled, otherwise None.
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            SNRPipeline if enabled, None otherwise
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: SNRPipeline if enabled, None otherwise
+        :rtype: SNRPipeline | None
         """
         snr_enabled = getattr(config, "snr_enabled", False)
 
@@ -264,15 +216,12 @@ class PipelineFactory:
         """
         Create slicing pipeline if enabled.
 
-        Selection Logic:
-            - slicing_enabled == False -> None
-            - slicing_enabled == True -> StandardSlicingPipeline
+        Returns StandardSlicingPipeline if slicing_enabled, otherwise None.
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            SlicingPipeline if enabled, None otherwise
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: SlicingPipeline if enabled, None otherwise
+        :rtype: SlicingPipeline | None
         """
         slicing_enabled = getattr(config, "slicing_enabled", False)
 
@@ -290,21 +239,13 @@ class PipelineFactory:
         """
         Create complete pipeline set from configuration.
 
-        Creates all pipelines based on configuration settings.
-        Required pipelines (routing, spectrum) are always created.
-        Optional pipelines may be None based on feature flags.
+        Creates all pipelines based on configuration settings. Required pipelines
+        (routing, spectrum) are always created. Optional pipelines may be None.
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            PipelineSet with all pipelines configured
-
-        Example:
-            >>> config = SimulationConfig.from_engine_props(engine_props)
-            >>> pipelines = PipelineFactory.create_pipeline_set(config)
-            >>> print(pipelines)
-            PipelineSet(routing=RoutingAdapter, spectrum=SpectrumAdapter)
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: PipelineSet with all pipelines configured
+        :rtype: PipelineSet
         """
         logger.info("Creating pipeline set from configuration")
 
@@ -317,28 +258,17 @@ class PipelineFactory:
         )
 
     @classmethod
-    def create_orchestrator(cls, config: SimulationConfig) -> "SDNOrchestrator":
+    def create_orchestrator(cls, config: SimulationConfig) -> SDNOrchestrator:
         """
         Create orchestrator with configured pipelines.
 
         Convenience method that creates both pipeline set and orchestrator.
-        The orchestrator is the main entry point for request handling
-        in the new v5 architecture.
+        The orchestrator is the main entry point for request handling.
 
-        Args:
-            config: Simulation configuration
-
-        Returns:
-            SDNOrchestrator instance with configured pipelines
-
-        Example:
-            >>> config = SimulationConfig.from_engine_props(engine_props)
-            >>> orchestrator = PipelineFactory.create_orchestrator(config)
-            >>> result = orchestrator.handle_request(request, network_state)
-
-        Note:
-            SDNOrchestrator is implemented in Phase 3.2. This method
-            will raise ImportError until P3.2 is complete.
+        :param config: Simulation configuration
+        :type config: SimulationConfig
+        :return: SDNOrchestrator instance with configured pipelines
+        :rtype: SDNOrchestrator
         """
         from fusion.core.orchestrator import SDNOrchestrator
 

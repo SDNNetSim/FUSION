@@ -54,9 +54,7 @@ class TestAbstractSpectrumAssignerAbstractMethods:
         abstract_methods = {
             method
             for method in dir(AbstractSpectrumAssigner)
-            if hasattr(
-                getattr(AbstractSpectrumAssigner, method), "__isabstractmethod__"
-            )
+            if hasattr(getattr(AbstractSpectrumAssigner, method), "__isabstractmethod__")
             and getattr(AbstractSpectrumAssigner, method).__isabstractmethod__
         }
 

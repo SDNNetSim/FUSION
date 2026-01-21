@@ -6,7 +6,7 @@ with its metadata. It is used by the RLSimulationAdapter for:
 - Observation building (path features)
 - Action application (path selection)
 
-Phase: P4.1 - RLSimulationAdapter Scaffolding
+RLSimulationAdapter Scaffolding
 """
 
 from __future__ import annotations
@@ -22,30 +22,57 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class PathOption:
-    """Represents a candidate path for RL action selection.
+    """
+    Represents a candidate path for RL action selection.
 
     This dataclass encapsulates all information about a candidate path
     that an RL agent needs to make a routing decision. The is_feasible
     field is computed from REAL spectrum pipeline checks, not mocked.
 
-    Attributes:
-        path_index: Index in the k-paths list (0 to k-1)
-        path: Sequence of node IDs representing the path (immutable tuple)
-        weight_km: Total path length in kilometers
-        num_hops: Number of links in the path
-        modulation: Selected modulation format (e.g., "QPSK", "16-QAM")
-        slots_needed: Number of contiguous spectrum slots required
-        is_feasible: True if path can be allocated (from real spectrum check)
-        congestion: Congestion metric in [0, 1], higher = more congested
-        available_slots: Ratio of available slots on most constrained link
-        spectrum_start: Start slot if feasible, None otherwise
-        spectrum_end: End slot if feasible, None otherwise
-        core_index: Core index if multi-core, None for single-core
-        band: Spectrum band (e.g., "C", "L") if multi-band, None otherwise
-        frag_indicator: Path fragmentation indicator [0, 1], 0 = no fragmentation
-        failure_mask: Whether path passes through failed links (disaster scenarios)
-        dist_to_disaster: Normalized distance from path to disaster centroid [0, 1]
-        min_residual_slots: Minimum residual slots along path, normalized [0, 1]
+    :ivar path_index: Index in the k-paths list (0 to k-1)
+    :vartype path_index: int
+    :ivar path: Sequence of node IDs representing the path (immutable tuple)
+    :vartype path: tuple[str, ...]
+    :ivar weight_km: Total path length in kilometers
+    :vartype weight_km: float
+    :ivar num_hops: Number of links in the path
+    :vartype num_hops: int
+    :ivar modulation: Selected modulation format (e.g., "QPSK", "16-QAM")
+    :vartype modulation: str | None
+    :ivar slots_needed: Number of contiguous spectrum slots required
+    :vartype slots_needed: int
+    :ivar is_feasible: True if path can be allocated (from real spectrum check)
+    :vartype is_feasible: bool
+    :ivar congestion: Congestion metric in [0, 1], higher = more congested
+    :vartype congestion: float
+    :ivar available_slots: Ratio of available slots on most constrained link
+    :vartype available_slots: float
+    :ivar spectrum_start: Start slot if feasible, None otherwise
+    :vartype spectrum_start: int | None
+    :ivar spectrum_end: End slot if feasible, None otherwise
+    :vartype spectrum_end: int | None
+    :ivar core_index: Core index if multi-core, None for single-core
+    :vartype core_index: int | None
+    :ivar band: Spectrum band (e.g., "C", "L") if multi-band, None otherwise
+    :vartype band: str | None
+    :ivar frag_indicator: Path fragmentation indicator [0, 1], 0 = no fragmentation
+    :vartype frag_indicator: float
+    :ivar failure_mask: Whether path passes through failed links (disaster scenarios)
+    :vartype failure_mask: bool
+    :ivar dist_to_disaster: Normalized distance from path to disaster centroid [0, 1]
+    :vartype dist_to_disaster: float
+    :ivar min_residual_slots: Minimum residual slots along path, normalized [0, 1]
+    :vartype min_residual_slots: float
+    :ivar backup_path: Backup path for 1+1 protection, None if unprotected
+    :vartype backup_path: tuple[str, ...] | None
+    :ivar backup_feasible: Whether backup path has available spectrum
+    :vartype backup_feasible: bool | None
+    :ivar backup_weight_km: Backup path length in kilometers
+    :vartype backup_weight_km: float | None
+    :ivar backup_modulation: Backup path modulation format
+    :vartype backup_modulation: str | None
+    :ivar is_protected: Whether this is a 1+1 protected path pair
+    :vartype is_protected: bool
     """
 
     # Core fields (required)
@@ -79,7 +106,11 @@ class PathOption:
     is_protected: bool = False
 
     def __post_init__(self) -> None:
-        """Validate invariants after initialization."""
+        """
+        Validate invariants after initialization.
+
+        :raises ValueError: If any field violates its constraints
+        """
         if self.path_index < 0:
             raise ValueError("path_index must be non-negative")
         if self.weight_km < 0:
@@ -97,13 +128,14 @@ class PathOption:
 
     @property
     def both_paths_feasible(self) -> bool:
-        """Check if both primary and backup paths are feasible.
+        """
+        Check if both primary and backup paths are feasible.
 
         For unprotected paths, returns the primary path's feasibility.
         For protected paths, returns True only if both paths have spectrum.
 
-        Returns:
-            True if allocation can proceed (considering protection status)
+        :return: True if allocation can proceed (considering protection status)
+        :rtype: bool
         """
         if not self.is_protected:
             return self.is_feasible
@@ -111,10 +143,11 @@ class PathOption:
 
     @property
     def total_weight_km(self) -> float:
-        """Total path length (primary + backup if protected).
+        """
+        Total path length (primary + backup if protected).
 
-        Returns:
-            Combined length for protected paths, primary length otherwise
+        :return: Combined length for protected paths, primary length otherwise
+        :rtype: float
         """
         if self.is_protected and self.backup_weight_km is not None:
             return self.weight_km + self.backup_weight_km
@@ -122,7 +155,12 @@ class PathOption:
 
     @property
     def backup_hop_count(self) -> int | None:
-        """Number of hops in backup path, or None if unprotected."""
+        """
+        Number of hops in backup path, or None if unprotected.
+
+        :return: Number of hops in the backup path
+        :rtype: int | None
+        """
         if self.backup_path is None:
             return None
         return len(self.backup_path) - 1
@@ -136,23 +174,27 @@ class PathOption:
         congestion: float,
         available_slots: float,
     ) -> PathOption:
-        """Create PathOption from V4 pipeline results.
+        """
+        Create PathOption from pipeline results.
 
         Factory method to construct a PathOption from routing and spectrum
         pipeline results. This provides a clean interface between the
         pipeline layer and the RL adapter.
 
-        Args:
-            path_index: Index in k-paths list
-            route_result: Result from routing pipeline with path, weight_km,
-                modulation attributes
-            spectrum_result: Result from spectrum pipeline with is_free,
-                start_slot, end_slot, core, band attributes (or None)
-            congestion: Pre-computed congestion metric [0, 1]
-            available_slots: Pre-computed available slots ratio [0, 1]
-
-        Returns:
-            PathOption instance
+        :param path_index: Index in k-paths list
+        :type path_index: int
+        :param route_result: Result from routing pipeline with path, weight_km,
+            modulation attributes
+        :type route_result: Any
+        :param spectrum_result: Result from spectrum pipeline with is_free,
+            start_slot, end_slot, core, band attributes (or None)
+        :type spectrum_result: Any | None
+        :param congestion: Pre-computed congestion metric [0, 1]
+        :type congestion: float
+        :param available_slots: Pre-computed available slots ratio [0, 1]
+        :type available_slots: float
+        :return: PathOption instance
+        :rtype: PathOption
         """
         # Extract path - handle both list and tuple
         path = route_result.path
@@ -223,28 +265,39 @@ class PathOption:
         slots_needed: int,
         congestion: float,
         available_slots: float = 1.0,
-    ) -> "PathOption":
-        """Factory method to create PathOption for 1+1 protected path pair.
+    ) -> PathOption:
+        """
+        Factory method to create PathOption for 1+1 protected path pair.
 
         This method provides a convenient way to construct a protected
         PathOption from separate primary and backup path information.
 
-        Args:
-            path_index: Index in the options list
-            primary_path: Primary path node sequence
-            backup_path: Backup (disjoint) path node sequence
-            primary_weight: Primary path length in km
-            backup_weight: Backup path length in km
-            primary_feasible: Primary path spectrum availability
-            backup_feasible: Backup path spectrum availability
-            primary_modulation: Primary path modulation format
-            backup_modulation: Backup path modulation format
-            slots_needed: Spectrum slots required (same for both paths)
-            congestion: Combined congestion metric
-            available_slots: Available slots ratio (default 1.0)
-
-        Returns:
-            PathOption configured for 1+1 protection
+        :param path_index: Index in the options list
+        :type path_index: int
+        :param primary_path: Primary path node sequence
+        :type primary_path: list[str]
+        :param backup_path: Backup (disjoint) path node sequence
+        :type backup_path: list[str]
+        :param primary_weight: Primary path length in km
+        :type primary_weight: float
+        :param backup_weight: Backup path length in km
+        :type backup_weight: float
+        :param primary_feasible: Primary path spectrum availability
+        :type primary_feasible: bool
+        :param backup_feasible: Backup path spectrum availability
+        :type backup_feasible: bool
+        :param primary_modulation: Primary path modulation format
+        :type primary_modulation: str | None
+        :param backup_modulation: Backup path modulation format
+        :type backup_modulation: str | None
+        :param slots_needed: Spectrum slots required (same for both paths)
+        :type slots_needed: int
+        :param congestion: Combined congestion metric
+        :type congestion: float
+        :param available_slots: Available slots ratio (default 1.0)
+        :type available_slots: float
+        :return: PathOption configured for 1+1 protection
+        :rtype: PathOption
         """
         return cls(
             path_index=path_index,
@@ -274,21 +327,28 @@ class PathOption:
         slots_needed: int,
         congestion: float,
         available_slots: float = 1.0,
-    ) -> "PathOption":
-        """Factory method to create PathOption for unprotected route.
+    ) -> PathOption:
+        """
+        Factory method to create PathOption for unprotected route.
 
-        Args:
-            path_index: Index in the options list
-            path: Path node sequence
-            weight_km: Path length in km
-            is_feasible: Spectrum availability
-            modulation: Modulation format
-            slots_needed: Required spectrum slots
-            congestion: Path congestion metric
-            available_slots: Available slots ratio (default 1.0)
-
-        Returns:
-            PathOption configured for unprotected route
+        :param path_index: Index in the options list
+        :type path_index: int
+        :param path: Path node sequence
+        :type path: list[str]
+        :param weight_km: Path length in km
+        :type weight_km: float
+        :param is_feasible: Spectrum availability
+        :type is_feasible: bool
+        :param modulation: Modulation format
+        :type modulation: str | None
+        :param slots_needed: Required spectrum slots
+        :type slots_needed: int
+        :param congestion: Path congestion metric
+        :type congestion: float
+        :param available_slots: Available slots ratio (default 1.0)
+        :type available_slots: float
+        :return: PathOption configured for unprotected route
+        :rtype: PathOption
         """
         return cls(
             path_index=path_index,
@@ -309,17 +369,18 @@ ActionMask: TypeAlias = np.ndarray  # Shape: (k_paths,), dtype: bool
 
 
 def compute_action_mask(options: list[PathOption], k_paths: int) -> np.ndarray:
-    """Generate action mask from path options.
+    """
+    Generate action mask from path options.
 
     Creates a boolean mask where True indicates a valid (feasible) action.
     This is used by action-masked RL algorithms like MaskablePPO.
 
-    Args:
-        options: List of PathOption instances
-        k_paths: Total number of possible actions (action space size)
-
-    Returns:
-        Boolean array of shape (k_paths,) where True = action is valid
+    :param options: List of PathOption instances
+    :type options: list[PathOption]
+    :param k_paths: Total number of possible actions (action space size)
+    :type k_paths: int
+    :return: Boolean array of shape (k_paths,) where True = action is valid
+    :rtype: np.ndarray
     """
     mask = np.zeros(k_paths, dtype=bool)
     for opt in options:

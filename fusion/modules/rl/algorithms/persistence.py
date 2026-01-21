@@ -58,18 +58,13 @@ class BanditModelPersistence:
             return
 
         # Convert tuples to strings and arrays to lists for JSON format
-        state_values_dict = {
-            str(key): value.tolist() for key, value in state_values_dict.items()
-        }
+        state_values_dict = {str(key): value.tolist() for key, value in state_values_dict.items()}
 
         if is_path:
-            filename = (
-                f"state_vals_e{erlang}_routes_c{cores_per_link}_t{trial + 1}.json"
-            )
+            filename = f"state_vals_e{erlang}_routes_c{cores_per_link}_t{trial + 1}.json"
         else:
             raise AlgorithmNotFoundError(
-                "Core agent bandit model saving is not yet implemented. "
-                "Only path agent bandit models are currently supported."
+                "Core agent bandit model saving is not yet implemented. Only path agent bandit models are currently supported."
             )
 
         save_path = Path.cwd() / save_dir / filename
@@ -114,22 +109,16 @@ class QLearningModelPersistence:  # pylint: disable=too-few-public-methods
         """
         if "cores" in base_str:
             raise AlgorithmNotFoundError(
-                "Core Q-learning model saving is not yet implemented. "
-                "Only routes Q-learning models are currently supported."
+                "Core Q-learning model saving is not yet implemented. Only routes Q-learning models are currently supported."
             )
 
         # Save numpy array
-        filename_npy = (
-            f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}_"
-            f"iter_{iteration}.npy"
-        )
+        filename_npy = f"rewards_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}_iter_{iteration}.npy"
         save_path_npy = Path(save_dir) / filename_npy
         np.save(save_path_npy, rewards_avg)
 
         # Save JSON dictionary
-        json_filename = (
-            f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
-        )
+        json_filename = f"state_vals_e{erlang}_{base_str}_c{cores_per_link}_t{trial + 1}.json"
         save_path_json = Path(save_dir) / json_filename
         with open(save_path_json, "w", encoding="utf-8") as file_obj:
             json.dump(q_dict, file_obj)

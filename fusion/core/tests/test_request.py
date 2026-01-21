@@ -87,9 +87,7 @@ class TestRequestDistributionValidation:
             ({"50GHz": 0.33, "100GHz": 0.67}, 3, False),  # 0.99 + 2.01 ≠ 3
         ],
     )
-    def test_validate_request_distribution_parametrized_cases(
-        self, distribution: Any, num_requests: Any, expected: Any
-    ) -> None:
+    def test_validate_request_distribution_parametrized_cases(self, distribution: Any, num_requests: Any, expected: Any) -> None:
         """Test validation with various distribution scenarios."""
         result = validate_request_distribution(distribution, num_requests)
         assert result == expected
@@ -129,11 +127,7 @@ class TestRequestGenerationCore:
         # Create a cycle of values to avoid StopIteration
         arrival_times = [float(i) for i in range(1, 50)]
         holding_times = [5.0] * 50
-        mock_exponential.side_effect = [
-            val
-            for pair in zip(arrival_times, holding_times, strict=False)
-            for val in pair
-        ]
+        mock_exponential.side_effect = [val for pair in zip(arrival_times, holding_times, strict=False) for val in pair]
 
         # Create enough uniform values for node and bandwidth selection
         mock_uniform.side_effect = [0, 1, 0] * 50
@@ -174,9 +168,7 @@ class TestRequestGenerationCore:
         assert request_types.count(DEFAULT_REQUEST_TYPE_ARRIVAL) == 2
         assert request_types.count(DEFAULT_REQUEST_TYPE_RELEASE) == 2
 
-    def test_generate_simulation_requests_with_core_nodes_only_uses_core_nodes(
-        self, basic_engine_props: Any
-    ) -> None:
+    def test_generate_simulation_requests_with_core_nodes_only_uses_core_nodes(self, basic_engine_props: Any) -> None:
         """Test request generation when is_only_core_node is False."""
         # Arrange
         basic_engine_props["is_only_core_node"] = False
@@ -237,9 +229,7 @@ class TestRequestGenerationCore:
         with pytest.raises(ValueError, match="No core nodes found"):
             generate_simulation_requests(42, engine_props)
 
-    def test_generate_simulation_requests_with_invalid_distribution_raises_error(
-        self, basic_engine_props: Any
-    ) -> None:
+    def test_generate_simulation_requests_with_invalid_distribution_raises_error(self, basic_engine_props: Any) -> None:
         """Test error handling with invalid request distribution."""
         # Arrange
         basic_engine_props["request_distribution"] = {"50GHz": 0.33, "100GHz": 0.33}
@@ -356,9 +346,7 @@ class TestRequestStructure:
     @patch("fusion.core.request.set_random_seed")
     @patch("fusion.core.request.generate_exponential_random_variable")
     @patch("fusion.core.request.generate_uniform_random_variable")
-    def test_generated_requests_respect_bandwidth_distribution(
-        self, mock_uniform: Any, mock_exponential: Any, mock_seed: Any
-    ) -> None:
+    def test_generated_requests_respect_bandwidth_distribution(self, mock_uniform: Any, mock_exponential: Any, mock_seed: Any) -> None:
         """Test that bandwidth distribution is respected."""
         # Arrange
         engine_props = {
@@ -381,11 +369,7 @@ class TestRequestStructure:
         requests = generate_simulation_requests(42, engine_props)
 
         # Assert
-        bandwidths = [
-            req["bandwidth"]
-            for req in requests.values()
-            if req["request_type"] == DEFAULT_REQUEST_TYPE_ARRIVAL
-        ]
+        bandwidths = [req["bandwidth"] for req in requests.values() if req["request_type"] == DEFAULT_REQUEST_TYPE_ARRIVAL]
         assert bandwidths.count("50GHz") == 1  # 25% of 4
         assert bandwidths.count("100GHz") == 3  # 75% of 4
 
@@ -395,9 +379,7 @@ class TestLegacyCompatibility:
 
     @patch("fusion.core.request.generate_simulation_requests")
     @patch("fusion.core.request.logger")
-    def test_get_requests_calls_new_function_and_logs_warning(
-        self, mock_logger: Any, mock_generate_requests: Any
-    ) -> None:
+    def test_get_requests_calls_new_function_and_logs_warning(self, mock_logger: Any, mock_generate_requests: Any) -> None:
         """Test that legacy function calls new function and logs deprecation warning."""
         # Arrange
         seed = 42
@@ -410,9 +392,7 @@ class TestLegacyCompatibility:
 
         # Assert
         mock_generate_requests.assert_called_once_with(seed, engine_props)
-        mock_logger.warning.assert_called_once_with(
-            "get_requests is deprecated. Use generate_simulation_requests instead."
-        )
+        mock_logger.warning.assert_called_once_with("get_requests is deprecated. Use generate_simulation_requests instead.")
         assert result == expected_result
 
 
@@ -492,9 +472,7 @@ class TestRequestGenerationEdgeCases:
             generate_simulation_requests(42, engine_props)
 
     @patch("fusion.core.request.set_random_seed")
-    def test_generate_requests_with_zero_requests_returns_empty_dict(
-        self, mock_seed: Any
-    ) -> None:
+    def test_generate_requests_with_zero_requests_returns_empty_dict(self, mock_seed: Any) -> None:
         """Test generation with zero requests returns empty dictionary."""
         # Arrange
         engine_props = {

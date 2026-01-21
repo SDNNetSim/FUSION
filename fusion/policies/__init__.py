@@ -6,24 +6,22 @@ protocol defined in fusion.interfaces.control_policy.
 
 Current implementations:
 
-Heuristic Policies (P5.2):
+Heuristic Policies:
 - FirstFeasiblePolicy: Select first feasible path
 - ShortestFeasiblePolicy: Select shortest feasible path by distance
 - LeastCongestedPolicy: Select least congested feasible path
 - RandomFeasiblePolicy: Random selection among feasible paths
 - LoadBalancedPolicy: Balance path length and congestion
 
-ML Policies (P5.3):
+ML Policies:
 - MLControlPolicy: Pre-trained ML models (PyTorch, sklearn, ONNX)
 
-RL Policies (P5.1):
+RL Policies:
 - RLPolicy: Wrapper for pre-trained Stable-Baselines3 models
 
-Factory (P5.5):
+Factory:
 - PolicyFactory: Instantiate policies from configuration
 - PolicyConfig: Configuration dataclass for policy creation
-
-Phase: P5.5 - Orchestrator Integration
 """
 
 from fusion.interfaces.control_policy import ControlPolicy, PolicyAction
@@ -57,7 +55,7 @@ __all__ = [
     # RL policies
     "RLPolicy",
     "RLControlPolicy",
-    # Factory (P5.5)
+    # Factory
     "PolicyFactory",
     "PolicyConfig",
 ]

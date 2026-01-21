@@ -24,9 +24,7 @@ logger = get_logger(__name__)
 __all__ = ["generate_simulation_requests", "validate_request_distribution"]
 
 
-def validate_request_distribution(
-    request_distribution: dict[str, float], number_of_requests: int
-) -> bool:
+def validate_request_distribution(request_distribution: dict[str, float], number_of_requests: int) -> bool:
     """
     Validate that request distribution can be properly allocated.
 
@@ -45,10 +43,7 @@ def validate_request_distribution(
         >>> validate_request_distribution(distribution, 100)
         True
     """
-    bandwidth_count_dict = {
-        bandwidth: int(percentage * number_of_requests)
-        for bandwidth, percentage in request_distribution.items()
-    }
+    bandwidth_count_dict = {bandwidth: int(percentage * number_of_requests) for bandwidth, percentage in request_distribution.items()}
 
     total_allocated = sum(bandwidth_count_dict.values())
     return total_allocated == number_of_requests
@@ -65,24 +60,16 @@ def _select_random_node_pair(nodes_list: list[str]) -> tuple[str, str]:
     :return: Tuple of (source_node, destination_node)
     :rtype: Tuple[str, str]
     """
-    source = nodes_list[
-        int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))
-    ]
-    destination = nodes_list[
-        int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))
-    ]
+    source = nodes_list[int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))]
+    destination = nodes_list[int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))]
 
     while destination == source:
-        destination = nodes_list[
-            int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))
-        ]
+        destination = nodes_list[int(generate_uniform_random_variable(scale_parameter=len(nodes_list)))]
 
     return source, destination
 
 
-def _generate_request_times(
-    arrival_rate: float, holding_time: float, current_time: float
-) -> tuple[float, float]:
+def _generate_request_times(arrival_rate: float, holding_time: float, current_time: float) -> tuple[float, float]:
     """
     Generate arrival and departure times for a request.
 
@@ -97,12 +84,8 @@ def _generate_request_times(
     :return: Tuple of (arrival_time, departure_time)
     :rtype: Tuple[float, float]
     """
-    arrival_time = current_time + generate_exponential_random_variable(
-        scale_parameter=arrival_rate
-    )
-    departure_time = arrival_time + generate_exponential_random_variable(
-        scale_parameter=1 / holding_time
-    )
+    arrival_time = current_time + generate_exponential_random_variable(scale_parameter=arrival_rate)
+    departure_time = arrival_time + generate_exponential_random_variable(scale_parameter=1 / holding_time)
 
     return arrival_time, departure_time
 
@@ -154,9 +137,7 @@ def _create_request_entry(
     }
 
 
-def generate_simulation_requests(
-    seed: int, engine_properties: dict[str, Any]
-) -> dict[tuple[int, float], dict[str, Any]]:
+def generate_simulation_requests(seed: int, engine_properties: dict[str, Any]) -> dict[tuple[int, float], dict[str, Any]]:
     """
     Generate requests for a single simulation run.
 
@@ -176,8 +157,8 @@ def generate_simulation_requests(
         - request_distribution: Bandwidth distribution percentages
         - mod_per_bw: Modulation formats per bandwidth
     :type engine_properties: Dict[str, Any]
-    :return: Dictionary mapping simulation times to request events
-    :rtype: Dict[float, Dict[str, Any]]
+    :return: Dictionary mapping (request_id, time) tuples to request events
+    :rtype: Dict[tuple[int, float], Dict[str, Any]]
     :raises ValueError: If no nodes available or distribution invalid
 
     Example:
@@ -195,7 +176,7 @@ def generate_simulation_requests(
     logger.debug("Generating requests with seed %s", seed)
 
     # Initialize variables
-    requests_dict: dict[float, dict[str, Any]] = {}
+    requests_dict: dict[tuple[int, float], dict[str, Any]] = {}
     current_time = 0.0
     request_id = 1
 
@@ -210,9 +191,7 @@ def generate_simulation_requests(
         if engine_properties["is_only_core_node"]:
             topology_keys = list(engine_properties.get("topology_info", {}).keys())
             node_keys = (
-                list(engine_properties.get("topology_info", {}).get("nodes", {}).keys())
-                if "topology_info" in engine_properties
-                else []
+                list(engine_properties.get("topology_info", {}).get("nodes", {}).keys()) if "topology_info" in engine_properties else []
             )
             error_msg = (
                 f"No nodes found in topology_info. "
@@ -233,18 +212,13 @@ def generate_simulation_requests(
 
     # Calculate bandwidth allocation counts
     bandwidth_count_dict = {
-        bandwidth: int(
-            engine_properties["request_distribution"][bandwidth]
-            * engine_properties["num_requests"]
-        )
+        bandwidth: int(engine_properties["request_distribution"][bandwidth] * engine_properties["num_requests"])
         for bandwidth in engine_properties["mod_per_bw"]
     }
     bandwidth_list = list(engine_properties["mod_per_bw"].keys())
 
     # Validate distribution
-    if not validate_request_distribution(
-        engine_properties["request_distribution"], engine_properties["num_requests"]
-    ):
+    if not validate_request_distribution(engine_properties["request_distribution"], engine_properties["num_requests"]):
         error_msg = (
             "The number of requests could not be distributed according to the "
             "specified percentages. Please adjust either the number of requests "
@@ -271,13 +245,7 @@ def generate_simulation_requests(
         # Select bandwidth for this request
         chosen_bandwidth = None
         while chosen_bandwidth is None:
-            candidate_bandwidth = bandwidth_list[
-                int(
-                    generate_uniform_random_variable(
-                        scale_parameter=len(bandwidth_list)
-                    )
-                )
-            ]
+            candidate_bandwidth = bandwidth_list[int(generate_uniform_random_variable(scale_parameter=len(bandwidth_list)))]
             if bandwidth_count_dict[candidate_bandwidth] > 0:
                 bandwidth_count_dict[candidate_bandwidth] -= 1
                 chosen_bandwidth = candidate_bandwidth
@@ -296,14 +264,14 @@ def generate_simulation_requests(
 
         # Create departure event
         requests_dict[(request_id, departure_time)] = _create_request_entry(
-                request_id=request_id,
-                source=source,
-                destination=destination,
-                arrival_time=arrival_time,
-                departure_time=departure_time,
-                request_type=DEFAULT_REQUEST_TYPE_RELEASE,
-                bandwidth=chosen_bandwidth,
-                modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
+            request_id=request_id,
+            source=source,
+            destination=destination,
+            arrival_time=arrival_time,
+            departure_time=departure_time,
+            request_type=DEFAULT_REQUEST_TYPE_RELEASE,
+            bandwidth=chosen_bandwidth,
+            modulation_formats=engine_properties["mod_per_bw"][chosen_bandwidth],
         )
 
         request_id += 1
@@ -320,7 +288,7 @@ def generate_simulation_requests(
 
 
 # Maintain backward compatibility with old function name
-def get_requests(seed: int, engine_props: dict) -> dict[float, dict[str, Any]]:
+def get_requests(seed: int, engine_props: dict) -> dict[tuple[int, float], dict[str, Any]]:
     """
     Legacy function name for backward compatibility.
 
@@ -332,9 +300,7 @@ def get_requests(seed: int, engine_props: dict) -> dict[float, dict[str, Any]]:
     :param engine_props: Engine properties dictionary
     :type engine_props: dict
     :return: Generated requests dictionary
-    :rtype: Dict[float, Dict[str, Any]]
+    :rtype: Dict[tuple[int, float], Dict[str, Any]]
     """
-    logger.warning(
-        "get_requests is deprecated. Use generate_simulation_requests instead."
-    )
+    logger.warning("get_requests is deprecated. Use generate_simulation_requests instead.")
     return generate_simulation_requests(seed, engine_props)

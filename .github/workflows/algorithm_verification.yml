@@ -1,0 +1,53 @@
+name: Algorithm Results Verification
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  pull_request_target:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.11" ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          chmod +x install.sh
+          ./install.sh
+
+      - name: Run comparison tests
+        run: |
+          python tests/run_comparison.py

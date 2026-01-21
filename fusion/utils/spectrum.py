@@ -185,9 +185,7 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dic
 
                         # The final core overlaps with all other cores
                         if core_num == num_cores - 1:
-                            result_array = np.isin(
-                                current_channel, slots_dict[sub_core]
-                            )
+                            result_array = np.isin(current_channel, slots_dict[sub_core])
                         else:
                             # Only certain cores neighbor each other on a fiber
                             first_neighbor = 5 if core_num == 0 else core_num - 1
@@ -213,14 +211,10 @@ def get_channel_overlaps(free_channels_dict: dict, free_slots_dict: dict) -> dic
                             )
 
                         if result_array is False:
-                            response[link]["overlapped_dict"][band][core_num].append(
-                                current_channel
-                            )
+                            response[link]["overlapped_dict"][band][core_num].append(current_channel)
                             break
 
-                    response[link]["non_over_dict"][band][core_num].append(
-                        current_channel
-                    )
+                    response[link]["non_over_dict"][band][core_num].append(current_channel)
 
     return response
 
@@ -340,10 +334,10 @@ def adjacent_core_indices(core_id: int, cores_per_link: int) -> list[int]:
     elif cores_per_link == 4:
         # 4-core layout: 2x2 grid
         adjacency_map = {
-            0: [1, 2],    # top-left
-            1: [0, 3],    # top-right
-            2: [0, 3],    # bottom-left
-            3: [1, 2],    # bottom-right
+            0: [1, 2],  # top-left
+            1: [0, 3],  # top-right
+            2: [0, 3],  # bottom-left
+            3: [1, 2],  # bottom-right
         }
         return adjacency_map.get(core_id, [])
     elif cores_per_link == 13:
@@ -393,7 +387,7 @@ def adjacent_core_indices(core_id: int, cores_per_link: int) -> list[int]:
         return []
 
 
-def edge_set(path: list, bidirectional: bool = True) -> set[tuple]:
+def edge_set(path: list, _bidirectional: bool = True) -> set[tuple]:
     """
     Return normalized set of links from a path.
 
@@ -409,7 +403,7 @@ def edge_set(path: list, bidirectional: bool = True) -> set[tuple]:
     :rtype: set[tuple]
     """
     # Always normalize edges like V5 - sort to collapse direction
-    return {tuple(sorted((u, v))) for u, v in zip(path, path[1:])}
+    return {tuple(sorted((u, v))) for u, v in zip(path, path[1:], strict=False)}
 
 
 def get_overlapping_lightpaths(
@@ -418,7 +412,7 @@ def get_overlapping_lightpaths(
     *,
     cores_per_link: int,
     include_adjacent_cores: bool = True,
-    include_all_bands: bool = True,
+    _include_all_bands: bool = True,
     bidirectional_links: bool = True,
 ) -> list[dict]:
     """

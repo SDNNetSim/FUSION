@@ -111,8 +111,4 @@ class CanonicalData:
 
     def __repr__(self) -> str:
         """Return detailed representation."""
-        return (
-            f"CanonicalData(version={self.version}, "
-            f"blocking={self.blocking_probability}, "
-            f"iterations={len(self.iterations)})"
-        )
+        return f"CanonicalData(version={self.version}, blocking={self.blocking_probability}, iterations={len(self.iterations)})"

@@ -77,9 +77,7 @@ class AbstractSNRMeasurer(ABC):
         """
 
     @abstractmethod
-    def calculate_link_snr(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_link_snr(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> float:
         """
          Calculate the SNR for a single link.
 
@@ -94,9 +92,7 @@ class AbstractSNRMeasurer(ABC):
         """
 
     @abstractmethod
-    def calculate_crosstalk(
-        self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]
-    ) -> float:
+    def calculate_crosstalk(self, path: list[Any], core_num: int, spectrum_info: dict[str, Any]) -> float:
         """
         Calculate crosstalk noise for the given path and core.
 
@@ -111,9 +107,7 @@ class AbstractSNRMeasurer(ABC):
         """
 
     @abstractmethod
-    def calculate_nonlinear_noise(
-        self, path: list[Any], spectrum_info: dict[str, Any]
-    ) -> dict[str, float]:
+    def calculate_nonlinear_noise(self, path: list[Any], spectrum_info: dict[str, Any]) -> dict[str, float]:
         """
         Calculate nonlinear noise components.
 
@@ -143,9 +137,7 @@ class AbstractSNRMeasurer(ABC):
         """
 
     @abstractmethod
-    def is_snr_acceptable(
-        self, calculated_snr: float, required_snr: float, margin: float = 0.0
-    ) -> bool:
+    def is_snr_acceptable(self, calculated_snr: float, required_snr: float, margin: float = 0.0) -> bool:
         """
         Check if calculated SNR meets the requirement with optional margin.
 
@@ -160,9 +152,7 @@ class AbstractSNRMeasurer(ABC):
         """
 
     @abstractmethod
-    def update_link_state(
-        self, source: Any, destination: Any, spectrum_info: dict[str, Any]
-    ) -> None:
+    def update_link_state(self, source: Any, destination: Any, spectrum_info: dict[str, Any]) -> None:
         """
         Update link state based on new spectrum allocation.
 

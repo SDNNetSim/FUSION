@@ -1,15 +1,14 @@
 from typing import Any
 
 import numpy as np
-import torch.nn as nn  # pylint: disable=consider-using-from-import
+import torch.nn as nn
 from optuna.trial import Trial
 
 from fusion.modules.rl.algorithms.bandits import get_q_table
 from fusion.modules.rl.args.general_args import EPISODIC_STRATEGIES
 from fusion.modules.rl.utils.errors import HyperparameterError
 
-# NOTE: Future refactoring should consolidate hyperparameter handling
-# across DRL algorithms
+# NOTE: Future refactoring should consolidate hyperparameter handling across DRL algorithms
 # to reduce code duplication and improve maintainability
 
 
@@ -18,9 +17,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
     Controls all hyperparameter starts, ends, and episodic/time step modifications.
     """
 
-    def __init__(
-        self, engine_props: dict[str, Any], rl_props: Any, is_path: bool
-    ) -> None:
+    def __init__(self, engine_props: dict[str, Any], rl_props: Any, is_path: bool) -> None:
         from fusion.modules.rl.algorithms.algorithm_props import BanditProps
 
         self.props = BanditProps()
@@ -40,10 +37,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         self.alpha_strategy = engine_props["alpha_update"]
         self.epsilon_strategy = engine_props["epsilon_update"]
 
-        if (
-            self.alpha_strategy not in EPISODIC_STRATEGIES
-            or self.epsilon_strategy not in EPISODIC_STRATEGIES
-        ):
+        if self.alpha_strategy not in EPISODIC_STRATEGIES or self.epsilon_strategy not in EPISODIC_STRATEGIES:
             self.fully_episodic = False
         else:
             self.fully_episodic = True
@@ -140,11 +134,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         State visitation epsilon update.
         """
-        if (
-            self.counts is not None
-            and self.state_action_pair is not None
-            and self.action_index is not None
-        ):
+        if self.counts is not None and self.state_action_pair is not None and self.action_index is not None:
             self.counts[self.state_action_pair][self.action_index] += 1
             total_visits = self.counts[self.state_action_pair][self.action_index]
             self.current_epsilon = self.epsilon_start / (1 + total_visits)
@@ -153,11 +143,7 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         """
         State visitation alpha update.
         """
-        if (
-            self.counts is not None
-            and self.state_action_pair is not None
-            and self.action_index is not None
-        ):
+        if self.counts is not None and self.state_action_pair is not None and self.action_index is not None:
             self.counts[self.state_action_pair][self.action_index] += 1
             total_visits = self.counts[self.state_action_pair][self.action_index]
             self.current_alpha = 1 / (1 + total_visits)
@@ -179,24 +165,16 @@ class HyperparamConfig:  # pylint: disable=too-few-public-methods
         Linear decay epsilon update.
         """
         self.current_epsilon = self.epsilon_end + (
-            (self.epsilon_start - self.epsilon_end)
-            * (self.total_iters - self.iteration)
-            / self.total_iters
+            (self.epsilon_start - self.epsilon_end) * (self.total_iters - self.iteration) / self.total_iters
         )
 
     def _linear_alpha(self) -> None:
         """
         Linear decay alpha update.
         """
-        self.current_alpha = self.alpha_end + (
-            (self.alpha_start - self.alpha_end)
-            * (self.total_iters - self.iteration)
-            / self.total_iters
-        )
+        self.current_alpha = self.alpha_end + ((self.alpha_start - self.alpha_end) * (self.total_iters - self.iteration) / self.total_iters)
 
-    def update_timestep_data(
-        self, state_action_pair: tuple[Any, ...], action_index: int
-    ) -> None:
+    def update_timestep_data(self, state_action_pair: tuple[Any, ...], action_index: int) -> None:
         """
         Updates data structures used for updating alpha and epsilon.
         """
@@ -257,15 +235,10 @@ def _get_activation(trial: Trial) -> type[nn.Module]:
     return activation_map[name]
 
 
-def _mlp_arch(
-    trial: Trial, prefix: str, min_layers: int = 2, max_layers: int = 3
-) -> list[int]:
+def _mlp_arch(trial: Trial, prefix: str, min_layers: int = 2, max_layers: int = 3) -> list[int]:
     layer_choices = [32, 64, 128, 256, 512]
     n_layers = trial.suggest_int(f"{prefix}_n_layers", min_layers, max_layers)
-    return [
-        trial.suggest_categorical(f"{prefix}_layer_{i + 1}", layer_choices)
-        for i in range(n_layers)
-    ]
+    return [trial.suggest_categorical(f"{prefix}_layer_{i + 1}", layer_choices) for i in range(n_layers)]
 
 
 def _policy_kwargs_actor_critic(trial: Trial) -> dict[str, Any]:
@@ -284,35 +257,21 @@ def _ppo_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, Any]:
     params: dict[str, Any] = {}
     params["normalize"] = trial.suggest_categorical("normalize", [True, False])
     params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
-    params["policy"] = trial.suggest_categorical(
-        "policy", ["MultiInputPolicy", "MlpPolicy"]
-    )
-    params["n_steps"] = trial.suggest_categorical(
-        "n_steps", [128, 256, 512, 1024, 2048]
-    )
+    params["policy"] = trial.suggest_categorical("policy", ["MultiInputPolicy", "MlpPolicy"])
+    params["n_steps"] = trial.suggest_categorical("n_steps", [128, 256, 512, 1024, 2048])
     params["batch_size"] = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
     params["n_epochs"] = trial.suggest_int("n_epochs", 3, 20)
     params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999)
     params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0)
     params["clip_range"] = trial.suggest_float("clip_range", 0.1, 0.4)
     params["clip_range_vf"] = trial.suggest_float("clip_range_vf", 0.0, 0.4)
-    params["normalize_advantage"] = trial.suggest_categorical(
-        "normalize_advantage", [True, False]
-    )
+    params["normalize_advantage"] = trial.suggest_categorical("normalize_advantage", [True, False])
     params["vf_coef"] = trial.suggest_float("vf_coef", 0.2, 1.0)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.3, 1.0)
-    params["alpha_start"] = trial.suggest_float(
-        "learning_rate_start", 1e-5, 1e-3, log=True
-    )
-    params["alpha_end"] = trial.suggest_float(
-        "learning_rate_end", 1e-6, params["alpha_start"], log=True
-    )
-    params["epsilon_start"] = trial.suggest_float(
-        "ent_coef_start", 1e-4, 1e-1, log=True
-    )
-    params["epsilon_end"] = trial.suggest_float(
-        "ent_coef_end", 1e-5, params["epsilon_start"], log=True
-    )
+    params["alpha_start"] = trial.suggest_float("learning_rate_start", 1e-5, 1e-3, log=True)
+    params["alpha_end"] = trial.suggest_float("learning_rate_end", 1e-6, params["alpha_start"], log=True)
+    params["epsilon_start"] = trial.suggest_float("ent_coef_start", 1e-4, 1e-1, log=True)
+    params["epsilon_end"] = trial.suggest_float("ent_coef_end", 1e-5, params["epsilon_start"], log=True)
     params["learning_rate"] = params["alpha_start"]
     params["ent_coef"] = params["epsilon_start"]
     params["decay_rate"] = trial.suggest_float("decay_rate", 0.10, 0.9999, log=True)
@@ -326,26 +285,16 @@ def _a2c_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, Any]:
     params: dict[str, Any] = {}
     params["normalize"] = trial.suggest_categorical("normalize", [True, False])
     params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
-    params["policy"] = trial.suggest_categorical(
-        "policy", ["MultiInputPolicy", "MlpPolicy"]
-    )
+    params["policy"] = trial.suggest_categorical("policy", ["MultiInputPolicy", "MlpPolicy"])
     params["n_steps"] = trial.suggest_categorical("n_steps", [5, 16, 32, 64, 128])
     params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999)
     params["gae_lambda"] = trial.suggest_float("gae_lambda", 0.8, 1.0)
     params["vf_coef"] = trial.suggest_float("vf_coef", 0.2, 1.0)
     params["max_grad_norm"] = trial.suggest_float("max_grad_norm", 0.1, 1.0)
-    params["alpha_start"] = trial.suggest_float(
-        "learning_rate_start", 1e-5, 1e-2, log=True
-    )
-    params["alpha_end"] = trial.suggest_float(
-        "learning_rate_end", 1e-6, params["alpha_start"], log=True
-    )
-    params["epsilon_start"] = trial.suggest_float(
-        "ent_coef_start", 1e-4, 1e-1, log=True
-    )
-    params["epsilon_end"] = trial.suggest_float(
-        "ent_coef_end", 1e-5, params["epsilon_start"], log=True
-    )
+    params["alpha_start"] = trial.suggest_float("learning_rate_start", 1e-5, 1e-2, log=True)
+    params["alpha_end"] = trial.suggest_float("learning_rate_end", 1e-6, params["alpha_start"], log=True)
+    params["epsilon_start"] = trial.suggest_float("ent_coef_start", 1e-4, 1e-1, log=True)
+    params["epsilon_end"] = trial.suggest_float("ent_coef_end", 1e-5, params["epsilon_start"], log=True)
     params["learning_rate"] = params["alpha_start"]
     params["ent_coef"] = params["epsilon_start"]
     params["decay_rate"] = trial.suggest_float("decay_rate", 0.10, 0.9999, log=True)
@@ -359,35 +308,21 @@ def _dqn_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, Any]:
     params: dict[str, Any] = {}
     params["normalize"] = trial.suggest_categorical("normalize", [True, False])
     params["n_timesteps"] = sim_dict["num_requests"] * sim_dict["max_iters"]
-    params["policy"] = trial.suggest_categorical(
-        "policy", ["MultiInputPolicy", "MlpPolicy"]
-    )
-    params["alpha_start"] = trial.suggest_float(
-        "learning_rate_start", 1e-5, 1e-2, log=True
-    )
-    params["alpha_end"] = trial.suggest_float(
-        "learning_rate_end", 1e-6, params["alpha_start"], log=True
-    )
+    params["policy"] = trial.suggest_categorical("policy", ["MultiInputPolicy", "MlpPolicy"])
+    params["alpha_start"] = trial.suggest_float("learning_rate_start", 1e-5, 1e-2, log=True)
+    params["alpha_end"] = trial.suggest_float("learning_rate_end", 1e-6, params["alpha_start"], log=True)
     params["learning_rate"] = params["alpha_start"]
     params["buffer_size"] = trial.suggest_int("buffer_size", 50000, 500000, step=50000)
-    params["learning_starts"] = trial.suggest_int(
-        "learning_starts", 1000, 10000, step=1000
-    )
+    params["learning_starts"] = trial.suggest_int("learning_starts", 1000, 10000, step=1000)
     params["batch_size"] = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
     params["tau"] = trial.suggest_float("tau", 0.005, 1.0, log=True)
     params["gamma"] = trial.suggest_float("gamma", 0.90, 0.999)
     params["train_freq"] = trial.suggest_categorical("train_freq", [1, 2, 4])
     params["gradient_steps"] = trial.suggest_int("gradient_steps", 1, 8)
-    params["target_update_interval"] = trial.suggest_int(
-        "target_update_interval", 500, 5000, step=500
-    )
+    params["target_update_interval"] = trial.suggest_int("target_update_interval", 500, 5000, step=500)
     params["exploration_initial_eps"] = 1.0
-    params["exploration_fraction"] = trial.suggest_float(
-        "exploration_fraction", 0.05, 0.3
-    )
-    params["exploration_final_eps"] = trial.suggest_float(
-        "exploration_final_eps", 0.01, 0.1
-    )
+    params["exploration_fraction"] = trial.suggest_float("exploration_fraction", 0.05, 0.3)
+    params["exploration_final_eps"] = trial.suggest_float("exploration_final_eps", 0.01, 0.1)
     params["max_grad_norm"] = trial.suggest_int("max_grad_norm", 5, 20)
     params["policy_kwargs"] = _policy_kwargs_dqn(trial, "dqn")
     return params
@@ -432,46 +367,27 @@ def get_optuna_hyperparams(sim_dict: dict[str, Any], trial: Trial) -> dict[str, 
 
     # There is no alpha in bandit algorithms
     if "bandit" not in sim_dict["path_algorithm"]:
-        resp_dict["alpha_start"] = trial.suggest_float(
-            "alpha_start", low=0.01, high=0.5, log=False, step=0.01
-        )
-        resp_dict["alpha_end"] = trial.suggest_float(
-            "alpha_end", low=0.01, high=0.1, log=False, step=0.01
-        )
-        resp_dict["cong_cutoff"] = trial.suggest_float(
-            "cong_cutoff", low=0.1, high=0.9, log=False, step=0.1
-        )
+        resp_dict["alpha_start"] = trial.suggest_float("alpha_start", low=0.01, high=0.5, log=False, step=0.01)
+        resp_dict["alpha_end"] = trial.suggest_float("alpha_end", low=0.01, high=0.1, log=False, step=0.01)
+        resp_dict["cong_cutoff"] = trial.suggest_float("cong_cutoff", low=0.1, high=0.9, log=False, step=0.1)
     else:
         resp_dict["alpha_start"], resp_dict["alpha_end"] = None, None
 
     if "ucb" in sim_dict["path_algorithm"]:
-        resp_dict["conf_param"] = trial.suggest_float(
-            "conf_param (c)", low=1.0, high=5.0, log=False, step=0.01
-        )
+        resp_dict["conf_param"] = trial.suggest_float("conf_param (c)", low=1.0, high=5.0, log=False, step=0.01)
         resp_dict["epsilon_start"] = None
         resp_dict["epsilon_end"] = None
     else:
-        resp_dict["epsilon_start"] = trial.suggest_float(
-            "epsilon_start", low=0.01, high=0.5, log=False, step=0.01
-        )
-        resp_dict["epsilon_end"] = trial.suggest_float(
-            "epsilon_end", low=0.01, high=0.1, log=False, step=0.01
-        )
+        resp_dict["epsilon_start"] = trial.suggest_float("epsilon_start", low=0.01, high=0.5, log=False, step=0.01)
+        resp_dict["epsilon_end"] = trial.suggest_float("epsilon_end", low=0.01, high=0.1, log=False, step=0.01)
 
     if "q_learning" in (sim_dict["path_algorithm"]):
-        resp_dict["discount_factor"] = trial.suggest_float(
-            "discount_factor", low=0.8, high=1.0, step=0.01
-        )
+        resp_dict["discount_factor"] = trial.suggest_float("discount_factor", low=0.8, high=1.0, step=0.01)
     else:
         resp_dict["discount_factor"] = None
 
-    if (
-        "exp_decay" in (sim_dict["epsilon_update"], sim_dict["alpha_update"])
-        and "ucb" not in sim_dict["path_algorithm"]
-    ):
-        resp_dict["decay_rate"] = trial.suggest_float(
-            "decay_rate", low=0.1, high=0.5, step=0.01
-        )
+    if "exp_decay" in (sim_dict["epsilon_update"], sim_dict["alpha_update"]) and "ucb" not in sim_dict["path_algorithm"]:
+        resp_dict["decay_rate"] = trial.suggest_float("decay_rate", low=0.1, high=0.5, step=0.01)
     else:
         resp_dict["decay_rate"] = None
 

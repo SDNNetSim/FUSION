@@ -9,7 +9,7 @@ import os
 from typing import Any
 
 import torch
-import torch.nn as nn  # pylint: disable=consider-using-from-import
+import torch.nn as nn
 
 from fusion.modules.rl.args.registry_args import get_algorithm_registry
 from fusion.modules.rl.errors import (
@@ -55,9 +55,7 @@ def _parse_policy_kwargs(string: str) -> dict[str, Any]:
         ) from exc
 
 
-def get_model(
-    sim_dict: dict[str, Any], device: str, env: Any, yaml_dict: dict[str, Any] | None
-) -> tuple[Any, dict[str, Any]]:
+def get_model(sim_dict: dict[str, Any], device: str, env: Any, yaml_dict: dict[str, Any] | None) -> tuple[Any, dict[str, Any]]:
     """
     Build and return a Stable-Baselines3 model with configuration.
 
@@ -79,14 +77,13 @@ def get_model(
     model_type = determine_model_type(sim_dict)
     algorithm = sim_dict[model_type]
 
-    # TODO: Ensure this is consistent acoss the board (other cli, files, etc.)
-    #   We might want to find a better way to do this
+    # TODO(v6.1): Standardize hyperparameter file discovery across CLI and modules.
+    #   Current approach hardcodes path to fusion/configs/hyperparams/{algorithm}_{network}.yml.
+    #   Should use a centralized config lookup or registry pattern instead.
     if yaml_dict is None:
         logger.debug("Current working directory: %s", os.getcwd())
 
-        yml = os.path.join(
-            "fusion", "configs", "hyperparams", f"{algorithm}_{sim_dict['network']}.yml"
-        )
+        yml = os.path.join("fusion", "configs", "hyperparams", f"{algorithm}_{sim_dict['network']}.yml")
         yaml_dict = parse_yaml_file(yml)
         env_name = next(iter(yaml_dict))
         parameters = yaml_dict[env_name]
@@ -112,9 +109,7 @@ def get_model(
     algorithm_registry = get_algorithm_registry()
     setup_func = algorithm_registry[algorithm]["setup"]
     if setup_func is None:
-        raise RLConfigurationError(
-            f"Setup function not implemented for algorithm '{algorithm}'"
-        )
+        raise RLConfigurationError(f"Setup function not implemented for algorithm '{algorithm}'")
     model = setup_func(env=env, device=device)
     return model, parameters
 
@@ -141,51 +136,32 @@ def get_trained_model(env: Any, sim_dict: dict[str, Any]) -> Any:
     algorithm_info = sim_dict.get(model_type)
 
     if algorithm_info is None:
-        raise RLConfigurationError(
-            f"No algorithm info found for model type '{model_type}'"
-        )
+        raise RLConfigurationError(f"No algorithm info found for model type '{model_type}'")
 
     if not isinstance(algorithm_info, str):
-        raise RLConfigurationError(
-            f"Algorithm info must be a string, got {type(algorithm_info).__name__}"
-        )
+        raise RLConfigurationError(f"Algorithm info must be a string, got {type(algorithm_info).__name__}")
 
     if "_" not in algorithm_info:
-        raise RLConfigurationError(
-            f"Algorithm info '{algorithm_info}' must include both algorithm "
-            "and agent type (e.g., 'ppo_path')."
-        )
+        raise RLConfigurationError(f"Algorithm info '{algorithm_info}' must include both algorithm and agent type (e.g., 'ppo_path').")
     algorithm, agent_type = algorithm_info.split("_", 1)
 
     algorithm_registry = get_algorithm_registry()
     if algorithm not in algorithm_registry:
-        raise AlgorithmNotFoundError(
-            f"Algorithm '{algorithm}' is not registered. "
-            f"Available algorithms: {list(algorithm_registry.keys())}"
-        )
+        raise AlgorithmNotFoundError(f"Algorithm '{algorithm}' is not registered. Available algorithms: {list(algorithm_registry.keys())}")
 
     model_key = f"{agent_type}_model"
-    model_path = os.path.join(
-        "logs", sim_dict[model_key], f"{algorithm_info}_model.zip"
-    )
+    model_path = os.path.join("logs", sim_dict[model_key], f"{algorithm_info}_model.zip")
 
     if not os.path.exists(model_path):
-        raise ModelLoadError(
-            f"Model file not found at '{model_path}'. "
-            f"Please ensure the model has been trained and saved."
-        )
+        raise ModelLoadError(f"Model file not found at '{model_path}'. Please ensure the model has been trained and saved.")
 
     try:
         load_func = algorithm_registry[algorithm]["load"]
         if load_func is None:
-            raise ModelLoadError(
-                f"Model loading not implemented for algorithm '{algorithm}'"
-            )
+            raise ModelLoadError(f"Model loading not implemented for algorithm '{algorithm}'")
         model = load_func(model_path, env=env)
     except Exception as exc:
-        raise ModelLoadError(
-            f"Failed to load model from '{model_path}': {exc}"
-        ) from exc
+        raise ModelLoadError(f"Failed to load model from '{model_path}': {exc}") from exc
 
     return model
 
@@ -212,14 +188,9 @@ def save_model(sim_dict: dict[str, Any], env: Any, model: Any) -> None:
     if algorithm is None:
         raise RLConfigurationError(f"No algorithm found for model type '{model_type}'")
     if not isinstance(algorithm, str):
-        raise RLConfigurationError(
-            f"Algorithm must be a string, got {type(algorithm).__name__}"
-        )
+        raise RLConfigurationError(f"Algorithm must be a string, got {type(algorithm).__name__}")
     if "_" not in algorithm:
-        raise RLConfigurationError(
-            f"Algorithm info '{algorithm}' must include both algorithm "
-            "and agent type (e.g., 'ppo_path')."
-        )
+        raise RLConfigurationError(f"Algorithm info '{algorithm}' must include both algorithm and agent type (e.g., 'ppo_path').")
 
     save_fp = os.path.join(
         "logs",

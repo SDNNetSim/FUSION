@@ -1,10 +1,12 @@
 # Feature Extractors Module
 
-This module provides graph neural network (GNN) based feature extractors for processing graph-structured observations in reinforcement learning environments.
+This module provides graph neural network (GNN) based feature extractors for processing graph-structured observations in 
+reinforcement learning environments.
 
 ## Overview
 
-The feature extractors transform variable-sized graph observations into fixed-size feature vectors suitable for standard RL algorithms. All extractors are compatible with StableBaselines3.
+The feature extractors transform variable-sized graph observations into fixed-size feature vectors suitable for standard 
+RL algorithms. All extractors are compatible with StableBaselines3.
 
 ## Available Feature Extractors
 

@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 88
+line-length = 140
 target-version = "py311"
 exclude = ["venv", "build", "dist", "fusion/gui"]
 
@@ -14,6 +14,9 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = ["E203"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["fusion"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -15,15 +15,11 @@ from fusion.modules.rl.utils import sim_data as sd
 # helpers                                                             #
 # ------------------------------------------------------------------ #
 def _patch_isdir(always: bool = True) -> Any:
-    return mock.patch(
-        "fusion.modules.rl.utils.sim_data.os.path.isdir", return_value=always
-    )
+    return mock.patch("fusion.modules.rl.utils.sim_data.os.path.isdir", return_value=always)
 
 
 def _patch_exists(always: bool = True) -> Any:
-    return mock.patch(
-        "fusion.modules.rl.utils.sim_data.os.path.exists", return_value=always
-    )
+    return mock.patch("fusion.modules.rl.utils.sim_data.os.path.exists", return_value=always)
 
 
 # ------------------------------------------------------------------ #
@@ -45,9 +41,7 @@ class TestExtractTrafficLabel:
     def test_returns_empty_when_none_found(self) -> None:
         """No matching file yields empty string."""
         with (
-            mock.patch(
-                "fusion.modules.rl.utils.sim_data.os.listdir", return_value=["run1"]
-            ),
+            mock.patch("fusion.modules.rl.utils.sim_data.os.listdir", return_value=["run1"]),
             _patch_isdir(),
         ):
             label = sd._extract_traffic_label("path")
@@ -61,19 +55,13 @@ class TestFilenameTrafficLabel:
         """
         Test parsing numeric part from filename.
         """
-        assert (
-            sd._extract_traffic_label_from_filename("state_vals_e123.5.json", "x")
-            == "123.5"
-        )
+        assert sd._extract_traffic_label_from_filename("state_vals_e123.5.json", "x") == "123.5"
 
     def test_fallback_when_no_match(self) -> None:
         """
         Test fallback when no match is found.
         """
-        assert (
-            sd._extract_traffic_label_from_filename("state_vals.json", "fallback")
-            == "fallback"
-        )
+        assert sd._extract_traffic_label_from_filename("state_vals.json", "fallback") == "fallback"
 
 
 class TestLoadMemoryUsage:
@@ -89,12 +77,8 @@ class TestLoadMemoryUsage:
             "arr": np.array([1, 2]),
         }
 
-    @mock.patch(
-        "fusion.modules.rl.utils.sim_data.np.load", return_value=np.array([1, 2])
-    )
-    @mock.patch(
-        "fusion.modules.rl.utils.sim_data._extract_traffic_label", return_value="400"
-    )
+    @mock.patch("fusion.modules.rl.utils.sim_data.np.load", return_value=np.array([1, 2]))
+    @mock.patch("fusion.modules.rl.utils.sim_data._extract_traffic_label", return_value="400")
     @_patch_exists(True)
     def test_file_found_loads_numpy(
         self,
@@ -148,17 +132,13 @@ class TestLoadAllRewards:
             "reward_arr": np.array([0.5]),
         }
 
-    @mock.patch(
-        "fusion.modules.rl.utils.sim_data.np.load", return_value=np.array([0.5])
-    )
+    @mock.patch("fusion.modules.rl.utils.sim_data.np.load", return_value=np.array([0.5]))
     @mock.patch(
         "fusion.modules.rl.utils.sim_data.os.listdir",
         return_value=["rewards_e400.0_routes_c2_t1_iter_3.npy"],
     )
     @_patch_exists(True)
-    @mock.patch(
-        "fusion.modules.rl.utils.sim_data._extract_traffic_label", return_value="400"
-    )
+    @mock.patch("fusion.modules.rl.utils.sim_data._extract_traffic_label", return_value="400")
     def test_regex_parses_indices_and_stores(
         self,
         _mock_extract: mock.MagicMock,

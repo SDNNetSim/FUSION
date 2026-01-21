@@ -25,17 +25,11 @@ class TestFreeSlotDetection:
         :rtype: dict
         """
         return {
-            (0, 1): {
-                "cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}
-            },
-            (3, 4): {
-                "cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}
-            },
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}},
+            (3, 4): {"cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}},
         }
 
-    def test_find_free_slots_with_mixed_allocation_returns_correct_indexes(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_free_slots_with_mixed_allocation_returns_correct_indexes(self, network_spectrum: dict) -> None:
         """Test finding free slots on partially allocated link.
 
         :param network_spectrum: Network spectrum state
@@ -47,9 +41,7 @@ class TestFreeSlotDetection:
         expected_core1 = np.array([0, 1, 3])
 
         # Act
-        result = find_free_slots(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert np.array_equal(result["c"][0], expected_core0)
@@ -65,9 +57,7 @@ class TestFreeSlotDetection:
         expected = np.array([0, 1, 2, 3, 4])
 
         # Act
-        result = find_free_slots(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert np.array_equal(result["c"][0], expected)
@@ -82,16 +72,12 @@ class TestFreeSlotDetection:
         expected = np.array([])
 
         # Act
-        result = find_free_slots(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert np.array_equal(result["c"][0], expected)
 
-    def test_find_free_slots_with_legacy_parameter_works(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_free_slots_with_legacy_parameter_works(self, network_spectrum: dict) -> None:
         """Test backward compatibility with legacy parameter name.
 
         :param network_spectrum: Network spectrum state
@@ -101,9 +87,7 @@ class TestFreeSlotDetection:
         link_tuple = (0, 1)
 
         # Act
-        result = find_free_slots(
-            network_spectrum_dict=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_free_slots(network_spectrum_dict=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert "c" in result
@@ -127,14 +111,10 @@ class TestFreeChannelDetection:
         :rtype: dict
         """
         return {
-            (0, 1): {
-                "cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}
-            },
+            (0, 1): {"cores_matrix": {"c": np.array([[0, 1, 0, 0, 1], [0, 0, 1, 0, 1]])}},
         }
 
-    def test_find_free_channels_with_sufficient_slots_returns_channels(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_free_channels_with_sufficient_slots_returns_channels(self, network_spectrum: dict) -> None:
         """Test finding free channels with available contiguous slots.
 
         :param network_spectrum: Network spectrum state
@@ -157,9 +137,7 @@ class TestFreeChannelDetection:
         assert result["c"][0] == expected_core0
         assert result["c"][1] == expected_core1
 
-    def test_find_free_channels_with_insufficient_slots_returns_empty(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_free_channels_with_insufficient_slots_returns_empty(self, network_spectrum: dict) -> None:
         """Test finding channels when no contiguous slots available.
 
         :param network_spectrum: Network spectrum state
@@ -202,9 +180,7 @@ class TestFreeChannelDetection:
         # Assert
         assert result["c"][0] == expected
 
-    def test_find_free_channels_with_legacy_parameters_works(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_find_free_channels_with_legacy_parameters_works(self, network_spectrum: dict) -> None:
         """Test backward compatibility with legacy parameter names.
 
         :param network_spectrum: Network spectrum state
@@ -238,18 +214,14 @@ class TestTakenChannelDetection:
         """Test finding taken channels with one allocated block."""
         # Arrange
         network_spectrum = {
-            (3, 4): {
-                "cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}
-            },
+            (3, 4): {"cores_matrix": {"c": np.array([[0, 0, 1, 1, -1], [0, 0, 0, 0, 0]])}},
         }
         link_tuple = (3, 4)
         expected_core0 = [[1, 1]]
         expected_core1: list = []
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert result["c"][0] == expected_core0
@@ -265,9 +237,7 @@ class TestTakenChannelDetection:
         expected = [[1, 1], [2, 2]]
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert result["c"][0] == expected
@@ -282,9 +252,7 @@ class TestTakenChannelDetection:
         expected: list = []
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert result["c"][0] == expected
@@ -298,9 +266,7 @@ class TestTakenChannelDetection:
         link_tuple = (0, 1)
 
         # Act
-        result = find_taken_channels(
-            network_spectrum=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_taken_channels(network_spectrum=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert len(result["c"][0]) == 1
@@ -315,9 +281,7 @@ class TestTakenChannelDetection:
         link_tuple = (0, 1)
 
         # Act
-        result = find_taken_channels(
-            network_spectrum_dict=network_spectrum, link_tuple=link_tuple
-        )
+        result = find_taken_channels(network_spectrum_dict=network_spectrum, link_tuple=link_tuple)
 
         # Assert
         assert "c" in result
@@ -432,9 +396,7 @@ class TestShannonEntropyFragmentation:
             (2, 3): {"cores_matrix": {"c": np.zeros((1, 8))}},
         }
 
-    def test_get_shannon_entropy_fragmentation_with_empty_spectrum_returns_arrays(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_get_shannon_entropy_fragmentation_with_empty_spectrum_returns_arrays(self, network_spectrum: dict) -> None:
         """Test Shannon entropy calculation on empty spectrum.
 
         :param network_spectrum: Network spectrum state
@@ -447,22 +409,16 @@ class TestShannonEntropyFragmentation:
         slots_needed = 3
         spectral_slots = 8
         expected_sc_matrix = np.array([[0, 3], [1, 4], [2, 5], [3, 6], [4, 7]])
-        expected_frag_array = np.array(
-            [1.386, -np.inf, -np.inf, -np.inf, 1.386, np.inf, np.inf, np.inf]
-        )
+        expected_frag_array = np.array([1.386, -np.inf, -np.inf, -np.inf, 1.386, np.inf, np.inf, np.inf])
 
         # Act
-        sc_matrix, frag_array = get_shannon_entropy_fragmentation(
-            path_list, core_num, band, slots_needed, spectral_slots, network_spectrum
-        )
+        sc_matrix, frag_array = get_shannon_entropy_fragmentation(path_list, core_num, band, slots_needed, spectral_slots, network_spectrum)
 
         # Assert
         assert np.array_equal(sc_matrix, expected_sc_matrix)
         assert np.array_equal(frag_array, expected_frag_array)
 
-    def test_get_shannon_entropy_fragmentation_with_none_core_uses_zero(
-        self, network_spectrum: dict
-    ) -> None:
+    def test_get_shannon_entropy_fragmentation_with_none_core_uses_zero(self, network_spectrum: dict) -> None:
         """Test that None core_num defaults to 0.
 
         :param network_spectrum: Network spectrum state
@@ -476,9 +432,7 @@ class TestShannonEntropyFragmentation:
         spectral_slots = 8
 
         # Act
-        sc_matrix, frag_array = get_shannon_entropy_fragmentation(
-            path_list, core_num, band, slots_needed, spectral_slots, network_spectrum
-        )
+        sc_matrix, frag_array = get_shannon_entropy_fragmentation(path_list, core_num, band, slots_needed, spectral_slots, network_spectrum)
 
         # Assert
         assert len(sc_matrix) > 0
@@ -499,9 +453,7 @@ class TestShannonEntropyFragmentation:
         spectral_slots = 8
 
         # Act
-        sc_matrix, frag_array = get_shannon_entropy_fragmentation(
-            path_list, core_num, band, slots_needed, spectral_slots, network_spectrum
-        )
+        sc_matrix, frag_array = get_shannon_entropy_fragmentation(path_list, core_num, band, slots_needed, spectral_slots, network_spectrum)
 
         # Assert
         assert len(sc_matrix) > 0

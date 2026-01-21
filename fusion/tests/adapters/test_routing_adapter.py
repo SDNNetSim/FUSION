@@ -6,7 +6,6 @@ Phase: P2.4 - Legacy Adapters
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import networkx as nx
@@ -58,9 +57,7 @@ def network_state(simple_topology: nx.Graph, config: SimulationConfig) -> Networ
 class TestSDNPropsProxy:
     """Tests for SDNPropsProxy."""
 
-    def test_from_network_state(
-        self, network_state: NetworkState, simple_topology: nx.Graph
-    ) -> None:
+    def test_from_network_state(self, network_state: NetworkState, simple_topology: nx.Graph) -> None:
         """Test creating proxy from NetworkState."""
         proxy = SDNPropsProxy.from_network_state(
             network_state=network_state,

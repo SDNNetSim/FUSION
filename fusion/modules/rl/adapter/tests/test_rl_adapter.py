@@ -1,11 +1,4 @@
-"""Tests for RLSimulationAdapter.
-
-Phase: P4.1 - RLSimulationAdapter Scaffolding
-Chunk: 2 - Adapter skeleton
-Chunk: 3 - get_path_options method
-Chunk: 4 - apply_action method
-Chunk: 5 - compute_reward method
-"""
+"""Tests for RLSimulationAdapter."""
 
 from unittest.mock import MagicMock
 
@@ -96,7 +89,7 @@ class TestAdapterProperties:
         adapter = RLSimulationAdapter(mock_orchestrator)
 
         # Can call methods on the returned pipeline
-        result = adapter.routing.some_method()
+        result = adapter.routing.some_method()  # type: ignore[attr-defined]
         assert result == "routing_result"
 
     def test_spectrum_property_returns_pipeline(self) -> None:
@@ -110,7 +103,7 @@ class TestAdapterProperties:
         adapter = RLSimulationAdapter(mock_orchestrator)
 
         # Can call methods on the returned pipeline
-        result = adapter.spectrum.some_method()
+        result = adapter.spectrum.some_method()  # type: ignore[attr-defined]
         assert result == "spectrum_result"
 
     def test_orchestrator_property_returns_orchestrator(self) -> None:
@@ -156,6 +149,7 @@ class TestGetPathOptions:
         end_slot: int = 4,
         core: int = 0,
         band: str = "c",
+        modulation: str = "QPSK",
     ) -> MagicMock:
         """Create a mock SpectrumResult."""
         mock = MagicMock()
@@ -165,6 +159,15 @@ class TestGetPathOptions:
         mock.end_slot = end_slot if is_free else None
         mock.core = core if is_free else None
         mock.band = band if is_free else None
+        mock.modulation = modulation if is_free else None
+        return mock
+
+    def _create_mock_network_state(self) -> MagicMock:
+        """Create a mock NetworkState with proper return values."""
+        mock = MagicMock()
+        # Return numeric values to avoid MagicMock comparison issues
+        mock.get_link_utilization.return_value = 0.0
+        mock.get_available_slots.return_value = 320
         return mock
 
     def _create_adapter_with_mocks(self) -> tuple[RLSimulationAdapter, MagicMock, MagicMock]:
@@ -175,6 +178,22 @@ class TestGetPathOptions:
         mock_orchestrator.routing = mock_routing
         mock_orchestrator.spectrum = mock_spectrum
 
+        # Mock the config.mod_per_bw to avoid MagicMock comparison issues
+        # This provides modulation reach info needed by get_path_modulation
+        # Must include QPSK, 16-QAM, and 64-QAM as expected by get_path_modulation
+        mock_orchestrator.config.mod_per_bw = {
+            "100": {
+                "QPSK": {"max_length": 5000.0},
+                "16-QAM": {"max_length": 2500.0},
+                "64-QAM": {"max_length": 1000.0},
+            },
+            "200": {
+                "QPSK": {"max_length": 5000.0},
+                "16-QAM": {"max_length": 2500.0},
+                "64-QAM": {"max_length": 1000.0},
+            },
+        }
+
         adapter = RLSimulationAdapter(mock_orchestrator)
         return adapter, mock_routing, mock_spectrum
 
@@ -183,16 +202,14 @@ class TestGetPathOptions:
         adapter, mock_routing, _ = self._create_adapter_with_mocks()
 
         # Setup routing to return empty result
-        mock_routing.find_routes.return_value = self._create_mock_route_result(
-            paths=[], weights_km=[], modulations=[]
-        )
+        mock_routing.find_routes.return_value = self._create_mock_route_result(paths=[], weights_km=[], modulations=[])
 
         mock_request = MagicMock()
         mock_request.source = "A"
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         options = adapter.get_path_options(mock_request, mock_network_state)
 
@@ -211,16 +228,14 @@ class TestGetPathOptions:
         )
 
         # Setup spectrum to return feasible for all
-        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(
-            is_free=True, slots_needed=4
-        )
+        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(is_free=True, slots_needed=4)
 
         mock_request = MagicMock()
         mock_request.source = "A"
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         options = adapter.get_path_options(mock_request, mock_network_state)
 
@@ -253,7 +268,7 @@ class TestGetPathOptions:
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         options = adapter.get_path_options(mock_request, mock_network_state)
 
@@ -293,7 +308,7 @@ class TestGetPathOptions:
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         options = adapter.get_path_options(mock_request, mock_network_state)
 
@@ -310,16 +325,14 @@ class TestGetPathOptions:
         """Routing pipeline should be called with request parameters."""
         adapter, mock_routing, mock_spectrum = self._create_adapter_with_mocks()
 
-        mock_routing.find_routes.return_value = self._create_mock_route_result(
-            paths=[], weights_km=[], modulations=[]
-        )
+        mock_routing.find_routes.return_value = self._create_mock_route_result(paths=[], weights_km=[], modulations=[])
 
         mock_request = MagicMock()
         mock_request.source = "NodeA"
         mock_request.destination = "NodeB"
         mock_request.bandwidth_gbps = 200
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         adapter.get_path_options(mock_request, mock_network_state)
 
@@ -340,16 +353,14 @@ class TestGetPathOptions:
             modulations=[("QPSK",), ("16-QAM",)],
         )
 
-        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(
-            is_free=True
-        )
+        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(is_free=True)
 
         mock_request = MagicMock()
         mock_request.source = "A"
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         adapter.get_path_options(mock_request, mock_network_state)
 
@@ -370,7 +381,7 @@ class TestGetPathOptions:
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         options = adapter.get_path_options(mock_request, mock_network_state)
 
@@ -390,16 +401,14 @@ class TestGetPathOptions:
             modulations=[("QPSK",)],
         )
 
-        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(
-            is_free=True
-        )
+        mock_spectrum.find_spectrum.return_value = self._create_mock_spectrum_result(is_free=True)
 
         mock_request = MagicMock()
         mock_request.source = "A"
         mock_request.destination = "B"
         mock_request.bandwidth_gbps = 100
 
-        mock_network_state = MagicMock()
+        mock_network_state = self._create_mock_network_state()
 
         options = adapter.get_path_options(mock_request, mock_network_state)
 

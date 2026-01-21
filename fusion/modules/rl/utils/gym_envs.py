@@ -31,7 +31,7 @@ def create_environment(
 
     flat_dict = setup_rl_sim(config_path=config_path)
 
-    # 🩹 Patch: Ensure SimEnv always receives a dict with sim_dict["s1"]
+    # Ensure SimEnv always receives a dict with sim_dict["s1"]
     wrapped_dict = {"s1": flat_dict} if "s1" not in flat_dict else flat_dict
 
     env = SimEnv(render_mode=None, custom_callback=ep_call_obj, sim_dict=wrapped_dict)

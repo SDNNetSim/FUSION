@@ -1,6 +1,6 @@
 """RLSimulationAdapter - coordination layer between RL and V4 simulation.
 
-This module provides the adapter that connects RL environments to the V4
+This module provides the adapter that connects RL environments to the v6.0
 simulation stack (SDNOrchestrator, pipelines). The adapter ensures RL agents
 use the SAME pipeline instances as the orchestrator, eliminating duplicated
 simulation logic.
@@ -11,7 +11,7 @@ Key Invariants:
 - Read-only queries: get_path_options() doesn't allocate
 - Write-through: apply_action() routes through orchestrator
 
-Phase: P4.1 - RLSimulationAdapter Scaffolding
+RLSimulationAdapter Scaffolding
 """
 
 from __future__ import annotations
@@ -38,22 +38,35 @@ if TYPE_CHECKING:
 
 @dataclass
 class RLConfig:
-    """RL-specific configuration.
+    """
+    RL-specific configuration.
 
-    Attributes:
-        k_paths: Number of candidate paths to consider
-        rl_success_reward: Reward for successful allocation
-        rl_block_penalty: Penalty for blocked request
-        rl_grooming_bonus: Bonus for groomed allocation
-        rl_slicing_penalty: Penalty for sliced allocation
-        rl_bandwidth_weighted: Whether to weight reward by bandwidth
-        max_holding_time: Maximum holding time for normalization
-        num_nodes: Number of nodes in network (for observation space)
-        total_slots: Total spectrum slots per link
-        use_gnn_obs: Whether to include GNN features (adjacency, node features)
-        num_node_features: Number of features per node for GNN mode
-        obs_space: Observation space configuration (obs_1 through obs_8)
-        num_bandwidth_classes: Number of bandwidth classes for one-hot encoding
+    :ivar k_paths: Number of candidate paths to consider
+    :vartype k_paths: int
+    :ivar rl_success_reward: Reward for successful allocation
+    :vartype rl_success_reward: float
+    :ivar rl_block_penalty: Penalty for blocked request
+    :vartype rl_block_penalty: float
+    :ivar rl_grooming_bonus: Bonus for groomed allocation
+    :vartype rl_grooming_bonus: float
+    :ivar rl_slicing_penalty: Penalty for sliced allocation
+    :vartype rl_slicing_penalty: float
+    :ivar rl_bandwidth_weighted: Whether to weight reward by bandwidth
+    :vartype rl_bandwidth_weighted: bool
+    :ivar max_holding_time: Maximum holding time for normalization
+    :vartype max_holding_time: float
+    :ivar num_nodes: Number of nodes in network (for observation space)
+    :vartype num_nodes: int
+    :ivar total_slots: Total spectrum slots per link
+    :vartype total_slots: int
+    :ivar use_gnn_obs: Whether to include GNN features (adjacency, node features)
+    :vartype use_gnn_obs: bool
+    :ivar num_node_features: Number of features per node for GNN mode
+    :vartype num_node_features: int
+    :ivar obs_space: Observation space configuration (obs_1 through obs_8)
+    :vartype obs_space: str
+    :ivar num_bandwidth_classes: Number of bandwidth classes for one-hot encoding
+    :vartype num_bandwidth_classes: int
     """
 
     k_paths: int = 3
@@ -73,17 +86,22 @@ class RLConfig:
 
 @dataclass(frozen=True)
 class DisasterState:
-    """Immutable disaster state information for survivability scenarios.
+    """
+    Immutable disaster state information for survivability scenarios.
 
     This dataclass captures disaster information needed by offline RL
     policies (BC, IQL) that were trained on survivability experiments.
 
-    Attributes:
-        active: Whether a disaster is currently active
-        centroid: Geographic centroid (x, y) of disaster area
-        radius: Affected radius from centroid in km
-        failed_links: Set of failed link tuples (frozen for hashability)
-        network_diameter: Max distance across network for normalization
+    :ivar active: Whether a disaster is currently active
+    :vartype active: bool
+    :ivar centroid: Geographic centroid (x, y) of disaster area
+    :vartype centroid: tuple[float, float] | None
+    :ivar radius: Affected radius from centroid in km
+    :vartype radius: float
+    :ivar failed_links: Set of failed link tuples (frozen for hashability)
+    :vartype failed_links: frozenset[tuple[str, str]]
+    :ivar network_diameter: Max distance across network for normalization
+    :vartype network_diameter: float
     """
 
     active: bool
@@ -94,18 +112,21 @@ class DisasterState:
 
 
 class RLSimulationAdapter:
-    """Adapter layer between RL environments and V4 simulation stack.
+    """
+    Adapter layer between RL environments and simulation stack.
 
     This adapter provides RL agents with access to routing and spectrum
     pipelines WITHOUT duplicating any simulation logic. It uses the SAME
     pipeline instances as the SDNOrchestrator.
 
     Key Invariants:
+
     - Adapter shares pipeline references with orchestrator (identity, not copy)
     - Adapter never stores NetworkState (receives per-call)
     - Adapter never directly mutates spectrum (goes through orchestrator)
 
-    Example:
+    Example::
+
         orchestrator = SDNOrchestrator(config, pipelines)
         adapter = RLSimulationAdapter(orchestrator)
 
@@ -113,9 +134,8 @@ class RLSimulationAdapter:
         assert adapter.routing is orchestrator.routing
         assert adapter.spectrum is orchestrator.spectrum
 
-    Attributes:
-        routing: Reference to shared routing pipeline
-        spectrum: Reference to shared spectrum pipeline
+    :ivar routing: Reference to shared routing pipeline
+    :ivar spectrum: Reference to shared spectrum pipeline
     """
 
     def __init__(
@@ -123,17 +143,17 @@ class RLSimulationAdapter:
         orchestrator: SDNOrchestrator,
         config: RLConfig | None = None,
     ) -> None:
-        """Initialize adapter with orchestrator reference.
+        """
+        Initialize adapter with orchestrator reference.
 
         The adapter stores references to the orchestrator's pipelines,
         ensuring RL code uses the exact same instances as non-RL simulation.
 
-        Args:
-            orchestrator: SDNOrchestrator instance (shares pipelines)
-            config: RL configuration settings (uses defaults if None)
-
-        Raises:
-            ValueError: If orchestrator is None
+        :param orchestrator: SDNOrchestrator instance (shares pipelines)
+        :type orchestrator: SDNOrchestrator
+        :param config: RL configuration settings (uses defaults if None)
+        :type config: RLConfig | None
+        :raises ValueError: If orchestrator is None
         """
         if orchestrator is None:
             raise ValueError("orchestrator cannot be None")
@@ -148,22 +168,42 @@ class RLSimulationAdapter:
 
     @property
     def routing(self) -> RoutingPipeline:
-        """Access to shared routing pipeline (same instance as orchestrator)."""
+        """
+        Access to shared routing pipeline (same instance as orchestrator).
+
+        :return: Routing pipeline reference
+        :rtype: RoutingPipeline
+        """
         return self._routing
 
     @property
     def spectrum(self) -> SpectrumPipeline:
-        """Access to shared spectrum pipeline (same instance as orchestrator)."""
+        """
+        Access to shared spectrum pipeline (same instance as orchestrator).
+
+        :return: Spectrum pipeline reference
+        :rtype: SpectrumPipeline
+        """
         return self._spectrum
 
     @property
     def orchestrator(self) -> SDNOrchestrator:
-        """Access to the underlying orchestrator."""
+        """
+        Access to the underlying orchestrator.
+
+        :return: SDN orchestrator reference
+        :rtype: SDNOrchestrator
+        """
         return self._orchestrator
 
     @property
     def config(self) -> RLConfig:
-        """Access to RL configuration."""
+        """
+        Access to RL configuration.
+
+        :return: RL configuration object
+        :rtype: RLConfig
+        """
         return self._config
 
     def get_path_options(
@@ -171,23 +211,23 @@ class RLSimulationAdapter:
         request: Request,
         network_state: NetworkState,
     ) -> PathOptionList:
-        """Get candidate paths with feasibility information.
+        """
+        Get candidate paths with feasibility information.
 
         This method is READ-ONLY. It queries routing and spectrum pipelines
         but does NOT allocate any spectrum or modify network state.
 
-        Args:
-            request: Current request to route
-            network_state: Current network state (not stored by adapter)
+        :param request: Current request to route
+        :type request: Request
+        :param network_state: Current network state (not stored by adapter)
+        :type network_state: NetworkState
+        :return: List of PathOption, one per candidate path, with path geometry
+            (nodes, length, hops), modulation and slots needed, feasibility from
+            real spectrum check, and congestion/availability metrics
+        :rtype: PathOptionList
 
-        Returns:
-            List of PathOption, one per candidate path, with:
-            - Path geometry (nodes, length, hops)
-            - Modulation and slots needed
-            - Feasibility from real spectrum check
-            - Congestion and availability metrics
+        .. note::
 
-        Note:
             The number of options returned may be less than k_paths
             if routing cannot find enough paths.
         """
@@ -220,6 +260,7 @@ class RLSimulationAdapter:
             # This ensures we pick the appropriate modulation for the path distance.
             if valid_mods:
                 from fusion.utils.network import get_path_modulation
+
                 # Get mod_per_bw from orchestrator's config
                 mod_per_bw = self._orchestrator.config.mod_per_bw
                 bw_key = str(request.bandwidth_gbps)
@@ -230,7 +271,7 @@ class RLSimulationAdapter:
                     )
                     # get_path_modulation returns False if path too long
                     if single_mod and single_mod is not False:
-                        valid_mods = [single_mod]
+                        valid_mods = [str(single_mod)]
                     else:
                         valid_mods = []  # Path too long for any modulation
 
@@ -294,10 +335,17 @@ class RLSimulationAdapter:
         path: tuple[str, ...],
         network_state: NetworkState,
     ) -> float:
-        """Compute congestion metric for a path.
+        """
+        Compute congestion metric for a path.
 
         Congestion = max link utilization along the path.
-        Returns value in [0, 1].
+
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: Congestion value in [0, 1]
+        :rtype: float
         """
         if len(path) < 2:
             return 0.0
@@ -305,15 +353,16 @@ class RLSimulationAdapter:
         max_util = 0.0
         for i in range(len(path) - 1):
             src, dst = path[i], path[i + 1]
+            link = (src, dst)
             # Try to get utilization from network state
             if hasattr(network_state, "get_link_utilization"):
-                util = network_state.get_link_utilization(src, dst)
+                util = network_state.get_link_utilization(link)
                 max_util = max(max_util, util)
             # Fallback: compute from available slots
             elif hasattr(network_state, "get_available_slots"):
                 total = self._config.total_slots
                 if total > 0:
-                    avail = network_state.get_available_slots(src, dst)
+                    avail = network_state.get_available_slots(link)
                     util = 1.0 - (avail / total)
                     max_util = max(max_util, util)
 
@@ -324,10 +373,17 @@ class RLSimulationAdapter:
         path: tuple[str, ...],
         network_state: NetworkState,
     ) -> float:
-        """Compute available slots ratio for a path.
+        """
+        Compute available slots ratio for a path.
 
         Returns min(available/total) across all links.
-        Value in [0, 1] where 1 = fully available.
+
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: Available slots ratio in [0, 1] where 1 = fully available
+        :rtype: float
         """
         if len(path) < 2:
             return 1.0
@@ -353,25 +409,27 @@ class RLSimulationAdapter:
         network_state: NetworkState,
         options: PathOptionList,
     ) -> AllocationResult:
-        """Apply the selected action via orchestrator.
+        """
+        Apply the selected action via orchestrator.
 
         This method routes through the SDNOrchestrator with a forced path,
         ensuring all allocation logic (spectrum assignment, SNR validation,
         grooming, slicing) uses the same code paths as non-RL simulation.
 
-        Args:
-            action: Index of selected path (corresponds to PathOption.path_index)
-            request: Current request to allocate
-            network_state: Current network state
-            options: PathOption list from get_path_options()
+        :param action: Index of selected path (corresponds to PathOption.path_index)
+        :type action: int
+        :param request: Current request to allocate
+        :type request: Request
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param options: PathOption list from get_path_options()
+        :type options: PathOptionList
+        :return: AllocationResult from orchestrator indicating success/failure
+        :rtype: AllocationResult
+        :raises ValueError: If action is negative
 
-        Returns:
-            AllocationResult from orchestrator indicating success/failure
+        .. note::
 
-        Raises:
-            ValueError: If action is negative
-
-        Note:
             If action doesn't match any PathOption.path_index, returns
             a failed AllocationResult (no paths available for that action).
         """
@@ -421,9 +479,11 @@ class RLSimulationAdapter:
         result: AllocationResult,
         request: Request | None = None,
     ) -> float:
-        """Compute reward signal from allocation result.
+        """
+        Compute reward signal from allocation result.
 
         Reward structure (configurable via RLConfig):
+
         - Success: +config.rl_success_reward (default: 1.0)
         - Failure: +config.rl_block_penalty (default: -1.0)
         - Grooming bonus: +config.rl_grooming_bonus (default: 0.1)
@@ -431,31 +491,40 @@ class RLSimulationAdapter:
 
         Optional bandwidth weighting scales reward by request size.
 
-        Args:
-            result: AllocationResult from apply_action()
-            request: Original request (for bandwidth weighting if enabled)
-
-        Returns:
-            Scalar reward value
+        :param result: AllocationResult from apply_action()
+        :type result: AllocationResult
+        :param request: Original request (for bandwidth weighting if enabled)
+        :type request: Request | None
+        :return: Scalar reward value
+        :rtype: float
         """
         if not result.success:
             return self._config.rl_block_penalty
 
-        # Legacy bandit algorithms use raw reward/penalty without modifiers
-        # Slicing/grooming bonuses and bandwidth weighting are for DRL only
-        return self._config.rl_success_reward
+        # Start with base success reward
+        reward = self._config.rl_success_reward
+
+        # Apply grooming bonus if allocation was groomed
+        if getattr(result, "is_groomed", False):
+            reward += self._config.rl_grooming_bonus
+
+        # Apply slicing penalty if allocation required slicing
+        if getattr(result, "is_sliced", False):
+            reward += self._config.rl_slicing_penalty
+
+        return reward
 
     def get_action_mask(self, options: PathOptionList) -> ActionMask:
-        """Generate action mask from path options.
+        """
+        Generate action mask from path options.
 
         Creates a boolean mask where True indicates a valid (feasible) action.
         This is used by action-masked RL algorithms like MaskablePPO.
 
-        Args:
-            options: List of PathOption from get_path_options()
-
-        Returns:
-            Boolean array of shape (k_paths,) where True = feasible
+        :param options: List of PathOption from get_path_options()
+        :type options: PathOptionList
+        :return: Boolean array of shape (k_paths,) where True = feasible
+        :rtype: ActionMask
         """
         return compute_action_mask(options, self._config.k_paths)
 
@@ -465,18 +534,20 @@ class RLSimulationAdapter:
         options: PathOptionList,
         network_state: NetworkState,
     ) -> dict[str, Any]:
-        """Build observation dictionary for RL agent.
+        """
+        Build observation dictionary for RL agent.
 
         Constructs observation from domain objects (Request, PathOption,
         NetworkState) without accessing raw numpy arrays or engine_props.
 
-        Args:
-            request: Current request
-            options: PathOption list from get_path_options()
-            network_state: Current network state
-
-        Returns:
-            Dict matching the standard observation space specification
+        :param request: Current request
+        :type request: Request
+        :param options: PathOption list from get_path_options()
+        :type options: PathOptionList
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: Dict matching the standard observation space specification
+        :rtype: dict[str, Any]
         """
         k = self._config.k_paths
         num_nodes = self._config.num_nodes
@@ -532,19 +603,22 @@ class RLSimulationAdapter:
         network_state: NetworkState,
         disaster_state: DisasterState | None = None,
     ) -> dict[str, Any]:
-        """Build state dict for offline RL policies (BC, IQL).
+        """
+        Build state dict for offline RL policies (BC, IQL).
 
         This method creates the flattened state dictionary expected by
         BC and IQL policies trained on heuristic behavior logs.
 
-        Args:
-            request: Current request
-            options: Available path options
-            network_state: Current network state
-            disaster_state: Optional disaster information
-
-        Returns:
-            State dict compatible with BCPolicy/IQLPolicy
+        :param request: Current request
+        :type request: Request
+        :param options: Available path options
+        :type options: PathOptionList
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param disaster_state: Optional disaster information
+        :type disaster_state: DisasterState | None
+        :return: State dict compatible with BCPolicy/IQLPolicy
+        :rtype: dict[str, Any]
         """
         state: dict[str, Any] = {
             "src": request.source,
@@ -561,9 +635,7 @@ class RLSimulationAdapter:
                 "min_residual_slots": self._compute_min_residual(opt.path, network_state),
                 "frag_indicator": self._compute_fragmentation(opt.path, network_state),
                 "failure_mask": self._compute_failure_mask(opt.path, disaster_state),
-                "dist_to_disaster_centroid": self._compute_disaster_distance(
-                    opt.path, network_state, disaster_state
-                ),
+                "dist_to_disaster_centroid": self._compute_disaster_distance(opt.path, network_state, disaster_state),
             }
             state["paths"].append(path_features)
 
@@ -576,14 +648,28 @@ class RLSimulationAdapter:
     # --- Private helper methods ---
 
     def _get_min_slots_needed(self, options: PathOptionList) -> float:
-        """Get minimum slots needed across all feasible paths."""
+        """
+        Get minimum slots needed across all feasible paths.
+
+        :param options: List of path options
+        :type options: PathOptionList
+        :return: Minimum slots needed, or -1.0 if no feasible paths
+        :rtype: float
+        """
         feasible = [o for o in options if o.is_feasible]
         if not feasible:
             return -1.0
         return float(min(o.slots_needed for o in feasible))
 
     def _normalize_holding_time(self, holding_time: float) -> float:
-        """Normalize holding time to [0, 1]."""
+        """
+        Normalize holding time to [0, 1].
+
+        :param holding_time: Raw holding time value
+        :type holding_time: float
+        :return: Normalized holding time in [0, 1]
+        :rtype: float
+        """
         max_ht = self._config.max_holding_time
         if max_ht <= 0:
             return 0.0
@@ -594,7 +680,16 @@ class RLSimulationAdapter:
         path: tuple[str, ...],
         network_state: NetworkState,
     ) -> float:
-        """Compute minimum residual slots along path, normalized to [0, 1]."""
+        """
+        Compute minimum residual slots along path, normalized to [0, 1].
+
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: Minimum residual slots normalized to [0, 1]
+        :rtype: float
+        """
         if len(path) < 2:
             return 0.0
 
@@ -622,7 +717,16 @@ class RLSimulationAdapter:
         path: tuple[str, ...],
         network_state: NetworkState,
     ) -> float:
-        """Compute path fragmentation indicator, normalized to [0, 1]."""
+        """
+        Compute path fragmentation indicator, normalized to [0, 1].
+
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: Fragmentation indicator in [0, 1]
+        :rtype: float
+        """
         # Check if network_state has fragmentation tracker
         if hasattr(network_state, "fragmentation_tracker"):
             tracker = network_state.fragmentation_tracker
@@ -639,9 +743,15 @@ class RLSimulationAdapter:
         path: tuple[str, ...],
         disaster_state: DisasterState | None,
     ) -> float:
-        """Compute whether path passes through failed links.
+        """
+        Compute whether path passes through failed links.
 
-        Returns 1.0 if any link is failed, 0.0 otherwise.
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param disaster_state: Optional disaster state information
+        :type disaster_state: DisasterState | None
+        :return: 1.0 if any link is failed, 0.0 otherwise
+        :rtype: float
         """
         if disaster_state is None or not disaster_state.active:
             return 0.0
@@ -660,9 +770,17 @@ class RLSimulationAdapter:
         network_state: NetworkState,
         disaster_state: DisasterState | None,
     ) -> float:
-        """Compute normalized distance from path to disaster centroid.
+        """
+        Compute normalized distance from path to disaster centroid.
 
-        Returns value in [0, 1] where 0 = at disaster, 1 = max distance.
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :param disaster_state: Optional disaster state information
+        :type disaster_state: DisasterState | None
+        :return: Value in [0, 1] where 0 = at disaster, 1 = max distance
+        :rtype: float
         """
         if disaster_state is None or not disaster_state.active:
             return 1.0  # No disaster = max safety
@@ -685,14 +803,23 @@ class RLSimulationAdapter:
         if max_distance <= 0:
             return 1.0
 
-        return min(distance / max_distance, 1.0)
+        return float(min(distance / max_distance, 1.0))
 
     def _compute_path_centroid(
         self,
         path: tuple[str, ...],
         network_state: NetworkState,
     ) -> tuple[float, float] | None:
-        """Compute geographic centroid of path nodes."""
+        """
+        Compute geographic centroid of path nodes.
+
+        :param path: Tuple of node IDs representing the path
+        :type path: tuple[str, ...]
+        :param network_state: Current network state
+        :type network_state: NetworkState
+        :return: Centroid coordinates (x, y) or None if unavailable
+        :rtype: tuple[float, float] | None
+        """
         # Check if network_state has node coordinates
         if not hasattr(network_state, "get_node_coords"):
             return None
@@ -711,7 +838,12 @@ class RLSimulationAdapter:
         return (x, y)
 
     def _dummy_path_features(self) -> dict[str, float]:
-        """Return dummy features for padding."""
+        """
+        Return dummy features for padding.
+
+        :return: Dict with dummy path features (masked/infeasible)
+        :rtype: dict[str, float]
+        """
         return {
             "path_hops": 0,
             "min_residual_slots": 0.0,
@@ -722,7 +854,8 @@ class RLSimulationAdapter:
 
 
 class OfflinePolicyAdapter:
-    """Adapter to use offline RL policies (BC, IQL) with UnifiedSimEnv.
+    """
+    Adapter to use offline RL policies (BC, IQL) with UnifiedSimEnv.
 
     This adapter bridges the gap between the Gymnasium observation space
     used by online RL and the flattened state format expected by offline
@@ -733,7 +866,8 @@ class OfflinePolicyAdapter:
     This adapter converts the environment state to that format before
     calling the policy.
 
-    Example:
+    Example::
+
         # Load offline policy
         bc_policy = BCPolicy("models/bc_model.pt", device="cpu")
 
@@ -760,9 +894,8 @@ class OfflinePolicyAdapter:
             if terminated or truncated:
                 break
 
-    Attributes:
-        policy: The offline RL policy (BC or IQL)
-        rl_adapter: RLSimulationAdapter for building offline state
+    :ivar policy: The offline RL policy (BC or IQL)
+    :ivar rl_adapter: RLSimulationAdapter for building offline state
     """
 
     def __init__(
@@ -770,23 +903,35 @@ class OfflinePolicyAdapter:
         policy: Any,
         rl_adapter: RLSimulationAdapter,
     ) -> None:
-        """Initialize offline policy adapter.
+        """
+        Initialize offline policy adapter.
 
-        Args:
-            policy: Offline RL policy with select_path method
-            rl_adapter: RLSimulationAdapter for state building
+        :param policy: Offline RL policy with select_path method
+        :type policy: Any
+        :param rl_adapter: RLSimulationAdapter for state building
+        :type rl_adapter: RLSimulationAdapter
         """
         self._policy = policy
         self._rl_adapter = rl_adapter
 
     @property
     def policy(self) -> Any:
-        """Access to underlying offline policy."""
+        """
+        Access to underlying offline policy.
+
+        :return: The offline RL policy
+        :rtype: Any
+        """
         return self._policy
 
     @property
     def rl_adapter(self) -> RLSimulationAdapter:
-        """Access to RL simulation adapter."""
+        """
+        Access to RL simulation adapter.
+
+        :return: The RL simulation adapter
+        :rtype: RLSimulationAdapter
+        """
         return self._rl_adapter
 
     def select_action(
@@ -797,20 +942,24 @@ class OfflinePolicyAdapter:
         action_mask: ActionMask | list[bool] | None = None,
         disaster_state: DisasterState | None = None,
     ) -> int:
-        """Select action using offline policy.
+        """
+        Select action using offline policy.
 
         Converts the current state to the offline format expected by
         BC/IQL policies and returns the selected action.
 
-        Args:
-            request: Current request
-            options: Path options from adapter
-            network_state: Network state
-            action_mask: Optional action mask (uses feasibility if None)
-            disaster_state: Optional disaster state for survivability
-
-        Returns:
-            Selected action index (path index)
+        :param request: Current request
+        :type request: Request
+        :param options: Path options from adapter
+        :type options: PathOptionList
+        :param network_state: Network state
+        :type network_state: NetworkState
+        :param action_mask: Optional action mask (uses feasibility if None)
+        :type action_mask: ActionMask | list[bool] | None
+        :param disaster_state: Optional disaster state for survivability
+        :type disaster_state: DisasterState | None
+        :return: Selected action index (path index)
+        :rtype: int
         """
         # Build offline state format
         offline_state = self._rl_adapter.build_offline_state(
@@ -834,34 +983,33 @@ class OfflinePolicyAdapter:
         # Call offline policy
         # Most offline policies have a select_path method
         if hasattr(self._policy, "select_path"):
-            return self._policy.select_path(offline_state, mask_list)
+            return int(self._policy.select_path(offline_state, mask_list))
         elif hasattr(self._policy, "predict"):
             # Alternative: some policies use predict
             action, _ = self._policy.predict(offline_state, action_masks=mask_list)
             return int(action)
-        elif hasattr(self._policy, "__call__"):
+        elif callable(self._policy):
             # Fallback: callable policy
             return int(self._policy(offline_state, mask_list))
         else:
             raise TypeError(
-                f"Policy {type(self._policy)} does not have a recognized "
-                "action selection method (select_path, predict, or __call__)"
+                f"Policy {type(self._policy)} does not have a recognized action selection method (select_path, predict, or __call__)"
             )
 
 
 def create_disaster_state_from_engine(
     engine_props: dict[str, Any],
 ) -> DisasterState | None:
-    """Create DisasterState from legacy engine_props dict.
+    """
+    Create DisasterState from legacy engine_props dict.
 
     Factory function to convert legacy engine_props dictionary format
     to the new DisasterState dataclass.
 
-    Args:
-        engine_props: Legacy engine properties dict containing disaster info
-
-    Returns:
-        DisasterState if disaster is active, None otherwise
+    :param engine_props: Legacy engine properties dict containing disaster info
+    :type engine_props: dict[str, Any]
+    :return: DisasterState if disaster is active, None otherwise
+    :rtype: DisasterState | None
     """
     if not engine_props.get("is_disaster", False):
         return None

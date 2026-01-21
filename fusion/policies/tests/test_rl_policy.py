@@ -1,10 +1,7 @@
-"""Tests for RLPolicy wrapper.
-
-Phase: P5.1 - ControlPolicy Protocol + RLPolicy Adapter
-"""
+"""Tests for RLPolicy wrapper."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -13,6 +10,10 @@ import pytest
 from fusion.interfaces.control_policy import ControlPolicy
 from fusion.modules.rl.adapter import PathOption
 from fusion.policies.rl_policy import RLPolicy
+
+if TYPE_CHECKING:
+    from fusion.domain.network_state import NetworkState
+    from fusion.domain.request import Request
 
 
 @dataclass
@@ -32,6 +33,16 @@ class MockNetworkState:
     """Mock NetworkState for testing."""
 
     pass
+
+
+def mock_request() -> "Request":
+    """Create a mock request cast to Request type for testing."""
+    return cast("Request", MockRequest())
+
+
+def mock_network_state() -> "NetworkState":
+    """Create a mock network state cast to NetworkState type for testing."""
+    return cast("NetworkState", MockNetworkState())
 
 
 def create_path_option(
@@ -128,7 +139,7 @@ class TestRLPolicySelectAction:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert mock_model.predict.called
         assert action == 1
@@ -145,7 +156,7 @@ class TestRLPolicySelectAction:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 2
 
@@ -161,7 +172,7 @@ class TestRLPolicySelectAction:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 1  # First feasible
 
@@ -171,11 +182,9 @@ class TestRLPolicySelectAction:
         mock_model.predict.return_value = (0, None)
 
         policy = RLPolicy(mock_model)
-        infeasible_options = [
-            create_path_option(path_index=i, is_feasible=False) for i in range(3)
-        ]
+        infeasible_options = [create_path_option(path_index=i, is_feasible=False) for i in range(3)]
 
-        action = policy.select_action(MockRequest(), infeasible_options, MockNetworkState())
+        action = policy.select_action(mock_request(), infeasible_options, mock_network_state())
 
         assert action == -1
 
@@ -186,7 +195,7 @@ class TestRLPolicySelectAction:
 
         policy = RLPolicy(mock_model)
 
-        action = policy.select_action(MockRequest(), [], MockNetworkState())
+        action = policy.select_action(mock_request(), [], mock_network_state())
 
         assert action == -1
 
@@ -198,7 +207,7 @@ class TestRLPolicySelectAction:
         policy = RLPolicy(mock_model)
         options = [create_path_option(path_index=0, is_feasible=True)]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -250,14 +259,12 @@ class TestRLPolicyActionMasking:
             create_path_option(path_index=2, is_feasible=False),
         ]
 
-        policy.select_action(MockRequest(), options, MockNetworkState())
+        policy.select_action(mock_request(), options, mock_network_state())
 
         # Check that action_masks was passed
         call_kwargs = mock_model.predict.call_args[1]
         assert "action_masks" in call_kwargs
-        np.testing.assert_array_equal(
-            call_kwargs["action_masks"], np.array([True, True, False])
-        )
+        np.testing.assert_array_equal(call_kwargs["action_masks"], np.array([True, True, False]))
 
 
 class TestRLPolicyUpdate:
@@ -271,7 +278,7 @@ class TestRLPolicyUpdate:
         policy = RLPolicy(mock_model)
 
         # Should not raise
-        policy.update(MockRequest(), 1, 1.0)
+        policy.update(mock_request(), 1, 1.0)
 
         # Model should not be modified
         assert not mock_model.learn.called
@@ -343,7 +350,6 @@ class TestRLPolicyFromFile:
             },
         ):
             # Need to re-import to use patched modules
-            import importlib
 
             with patch("importlib.import_module") as mock_import:
 
@@ -397,7 +403,7 @@ class TestRLPolicyObservationBuilding:
             create_path_option(path_index=1, is_feasible=False),
         ]
 
-        obs = policy._build_observation(MockRequest(), options, MockNetworkState())
+        obs = policy._build_observation(mock_request(), options, mock_network_state())
 
         assert isinstance(obs, np.ndarray)
         assert obs.dtype == np.float32
@@ -414,7 +420,7 @@ class TestRLPolicyObservationBuilding:
         policy = RLPolicy(mock_model, adapter=mock_adapter)
         options = [create_path_option(path_index=0, is_feasible=True)]
 
-        obs = policy._build_observation(MockRequest(), options, MockNetworkState())
+        obs = policy._build_observation(mock_request(), options, mock_network_state())
 
         mock_adapter.build_observation.assert_called_once()
         np.testing.assert_array_equal(obs, expected_obs)

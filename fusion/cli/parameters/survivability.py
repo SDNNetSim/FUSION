@@ -1,6 +1,20 @@
 """
 CLI arguments for survivability experiments.
-Handles failure injection, protection mechanisms, RL policies, and dataset logging.
+
+This module provides arguments for the survivability experiment pipeline, which
+is separate from the general SDN Orchestrator (see policy.py). The survivability
+pipeline focuses on:
+
+- Failure injection (link, node, SRLG, geographic failures)
+- Offline RL training data generation
+- Specialized policies for survivability research (ksp_ff, one_plus_one, bc, iql)
+
+NOTE: This module uses underscore-style arguments (e.g., --policy_type) while
+policy.py uses dash-style arguments (e.g., --policy-type). The two systems serve
+different purposes:
+
+- survivability.py: Survivability experiment pipeline (failure injection, offline RL)
+- policy.py: General SDN Orchestrator path selection (v6.0.0)
 """
 
 import argparse
@@ -10,8 +24,13 @@ def add_failure_args(parser: argparse.ArgumentParser) -> None:
     """
     Add failure injection configuration arguments to the parser.
 
-    :param parser: Argument parser to add failure arguments to
+    Configures failure type (link, node, SRLG, geographic), timing,
+    and failure-specific parameters for survivability experiments.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     failure_group = parser.add_argument_group("Failure Settings")
     failure_group.add_argument(
@@ -75,8 +94,13 @@ def add_protection_args(parser: argparse.ArgumentParser) -> None:
     """
     Add protection mechanism configuration arguments to the parser.
 
-    :param parser: Argument parser to add protection arguments to
+    Configures 1+1 protection switchover latency, restoration latency,
+    and path reversion behavior for survivability experiments.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     protection_group = parser.add_argument_group("Protection Settings")
     protection_group.add_argument(
@@ -100,10 +124,16 @@ def add_protection_args(parser: argparse.ArgumentParser) -> None:
 
 def add_offline_rl_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add RL policy configuration arguments to the parser.
+    Add offline RL policy configuration arguments to the parser.
 
-    :param parser: Argument parser to add RL policy arguments to
+    Configures policy selection for survivability experiments, including
+    heuristic baselines (ksp_ff, one_plus_one) and offline RL policies
+    (bc, iql) with model paths and device settings.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     rl_group = parser.add_argument_group("RL Policy Settings")
     rl_group.add_argument(
@@ -145,8 +175,13 @@ def add_dataset_logging_args(parser: argparse.ArgumentParser) -> None:
     """
     Add offline dataset logging configuration arguments to the parser.
 
-    :param parser: Argument parser to add dataset logging arguments to
+    Configures dataset generation for offline RL training, including
+    output paths and epsilon-mixing for behavior diversity.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     dataset_group = parser.add_argument_group("Dataset Logging")
     dataset_group.add_argument(
@@ -172,8 +207,13 @@ def add_recovery_timing_args(parser: argparse.ArgumentParser) -> None:
     """
     Add recovery timing configuration arguments to the parser.
 
-    :param parser: Argument parser to add recovery timing arguments to
+    Configures failure window analysis for calculating blocking
+    probability during and after failure events.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     recovery_group = parser.add_argument_group("Recovery Timing")
     recovery_group.add_argument(
@@ -188,8 +228,13 @@ def add_reporting_args(parser: argparse.ArgumentParser) -> None:
     """
     Add results reporting configuration arguments to the parser.
 
-    :param parser: Argument parser to add reporting arguments to
+    Configures CSV export, multi-seed aggregation, and other
+    output options for survivability experiment results.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     reporting_group = parser.add_argument_group("Survivability Reporting")
     reporting_group.add_argument(
@@ -219,12 +264,16 @@ def add_reporting_args(parser: argparse.ArgumentParser) -> None:
 
 def add_survivability_args(parser: argparse.ArgumentParser) -> None:
     """
-    Add all survivability-related arguments to the parser.
-    Convenience function that adds failure, protection, RL policy,
-    dataset logging, recovery timing, and reporting arguments.
+    Add all survivability-related argument groups to the parser.
 
-    :param parser: Argument parser to add all survivability arguments to
+    Convenience function that adds failure, protection, RL policy,
+    dataset logging, recovery timing, and reporting arguments in
+    a single call.
+
+    :param parser: ArgumentParser instance to add arguments to
     :type parser: argparse.ArgumentParser
+    :return: None
+    :rtype: None
     """
     add_failure_args(parser)
     add_protection_args(parser)

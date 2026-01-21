@@ -1,9 +1,7 @@
-"""Tests for heuristic policies.
-
-Phase: P5.2 - Heuristic Policies
-"""
+"""Tests for heuristic policies."""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -17,6 +15,10 @@ from fusion.policies.heuristic_policy import (
     RandomFeasiblePolicy,
     ShortestFeasiblePolicy,
 )
+
+if TYPE_CHECKING:
+    from fusion.domain.network_state import NetworkState
+    from fusion.domain.request import Request
 
 
 @dataclass
@@ -36,6 +38,16 @@ class MockNetworkState:
     """Mock NetworkState for testing."""
 
     pass
+
+
+def mock_request() -> "Request":
+    """Create a mock request cast to Request type for testing."""
+    return cast("Request", MockRequest())
+
+
+def mock_network_state() -> "NetworkState":
+    """Create a mock network state cast to NetworkState type for testing."""
+    return cast("NetworkState", MockNetworkState())
 
 
 def create_path_option(
@@ -125,7 +137,7 @@ class TestFirstFeasiblePolicy:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 1
 
@@ -138,7 +150,7 @@ class TestFirstFeasiblePolicy:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 0
 
@@ -150,7 +162,7 @@ class TestFirstFeasiblePolicy:
             create_path_option(path_index=1, is_feasible=False),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -158,7 +170,7 @@ class TestFirstFeasiblePolicy:
         """Should return -1 when options list is empty."""
         policy = FirstFeasiblePolicy()
 
-        action = policy.select_action(MockRequest(), [], MockNetworkState())
+        action = policy.select_action(mock_request(), [], mock_network_state())
 
         assert action == -1
 
@@ -180,7 +192,7 @@ class TestShortestFeasiblePolicy:
             create_path_option(path_index=2, is_feasible=True, weight_km=150.0),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 1
 
@@ -193,7 +205,7 @@ class TestShortestFeasiblePolicy:
             create_path_option(path_index=2, is_feasible=True, weight_km=150.0),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 2
 
@@ -206,7 +218,7 @@ class TestShortestFeasiblePolicy:
             create_path_option(path_index=2, is_feasible=True, weight_km=100.0),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 0
 
@@ -217,7 +229,7 @@ class TestShortestFeasiblePolicy:
             create_path_option(path_index=0, is_feasible=False, weight_km=100.0),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -239,7 +251,7 @@ class TestLeastCongestedPolicy:
             create_path_option(path_index=2, is_feasible=True, congestion=0.8),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 1
 
@@ -252,7 +264,7 @@ class TestLeastCongestedPolicy:
             create_path_option(path_index=2, is_feasible=True, congestion=0.3),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 2
 
@@ -264,7 +276,7 @@ class TestLeastCongestedPolicy:
             create_path_option(path_index=1, is_feasible=True, congestion=0.3),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 0
 
@@ -275,7 +287,7 @@ class TestLeastCongestedPolicy:
             create_path_option(path_index=0, is_feasible=False, congestion=0.1),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -300,7 +312,7 @@ class TestRandomFeasiblePolicy:
         # Run multiple times - should always return 1
         for _ in range(10):
             policy.reset_rng(seed=42)
-            action = policy.select_action(MockRequest(), options, MockNetworkState())
+            action = policy.select_action(mock_request(), options, mock_network_state())
             assert action == 1
 
     def test_reproducibility_with_seed(self) -> None:
@@ -314,14 +326,8 @@ class TestRandomFeasiblePolicy:
         policy1 = RandomFeasiblePolicy(seed=12345)
         policy2 = RandomFeasiblePolicy(seed=12345)
 
-        actions1 = [
-            policy1.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(20)
-        ]
-        actions2 = [
-            policy2.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(20)
-        ]
+        actions1 = [policy1.select_action(mock_request(), options, mock_network_state()) for _ in range(20)]
+        actions2 = [policy2.select_action(mock_request(), options, mock_network_state()) for _ in range(20)]
 
         assert actions1 == actions2
 
@@ -338,14 +344,8 @@ class TestRandomFeasiblePolicy:
         policy1 = RandomFeasiblePolicy(seed=111)
         policy2 = RandomFeasiblePolicy(seed=222)
 
-        actions1 = [
-            policy1.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(50)
-        ]
-        actions2 = [
-            policy2.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(50)
-        ]
+        actions1 = [policy1.select_action(mock_request(), options, mock_network_state()) for _ in range(50)]
+        actions2 = [policy2.select_action(mock_request(), options, mock_network_state()) for _ in range(50)]
 
         # Very unlikely to be identical with different seeds
         assert actions1 != actions2
@@ -360,17 +360,11 @@ class TestRandomFeasiblePolicy:
         ]
 
         # Get first sequence
-        first_actions = [
-            policy.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(10)
-        ]
+        first_actions = [policy.select_action(mock_request(), options, mock_network_state()) for _ in range(10)]
 
         # Reset and get second sequence
         policy.reset_rng()
-        second_actions = [
-            policy.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(10)
-        ]
+        second_actions = [policy.select_action(mock_request(), options, mock_network_state()) for _ in range(10)]
 
         assert first_actions == second_actions
 
@@ -385,17 +379,11 @@ class TestRandomFeasiblePolicy:
 
         # Get sequence with seed 42
         policy.reset_rng(seed=42)
-        actions_42 = [
-            policy.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(20)
-        ]
+        actions_42 = [policy.select_action(mock_request(), options, mock_network_state()) for _ in range(20)]
 
         # Get sequence with seed 99
         policy.reset_rng(seed=99)
-        actions_99 = [
-            policy.select_action(MockRequest(), options, MockNetworkState())
-            for _ in range(20)
-        ]
+        actions_99 = [policy.select_action(mock_request(), options, mock_network_state()) for _ in range(20)]
 
         assert actions_42 != actions_99
 
@@ -407,7 +395,7 @@ class TestRandomFeasiblePolicy:
             create_path_option(path_index=1, is_feasible=False),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -415,7 +403,7 @@ class TestRandomFeasiblePolicy:
         """Should return -1 when options list is empty."""
         policy = RandomFeasiblePolicy(seed=42)
 
-        action = policy.select_action(MockRequest(), [], MockNetworkState())
+        action = policy.select_action(mock_request(), [], mock_network_state())
 
         assert action == -1
 
@@ -447,15 +435,11 @@ class TestLoadBalancedPolicy:
         """alpha=0 should behave like LeastCongestedPolicy."""
         policy = LoadBalancedPolicy(alpha=0.0)
         options = [
-            create_path_option(
-                path_index=0, is_feasible=True, weight_km=50.0, congestion=0.8
-            ),
-            create_path_option(
-                path_index=1, is_feasible=True, weight_km=200.0, congestion=0.1
-            ),
+            create_path_option(path_index=0, is_feasible=True, weight_km=50.0, congestion=0.8),
+            create_path_option(path_index=1, is_feasible=True, weight_km=200.0, congestion=0.1),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Should select least congested (index 1) despite longer path
         assert action == 1
@@ -464,15 +448,11 @@ class TestLoadBalancedPolicy:
         """alpha=1 should behave like ShortestFeasiblePolicy."""
         policy = LoadBalancedPolicy(alpha=1.0)
         options = [
-            create_path_option(
-                path_index=0, is_feasible=True, weight_km=50.0, congestion=0.9
-            ),
-            create_path_option(
-                path_index=1, is_feasible=True, weight_km=200.0, congestion=0.1
-            ),
+            create_path_option(path_index=0, is_feasible=True, weight_km=50.0, congestion=0.9),
+            create_path_option(path_index=1, is_feasible=True, weight_km=200.0, congestion=0.1),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Should select shortest (index 0) despite higher congestion
         assert action == 0
@@ -502,7 +482,7 @@ class TestLoadBalancedPolicy:
             ),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Index 2 has best score (0.225)
         assert action == 2
@@ -511,15 +491,11 @@ class TestLoadBalancedPolicy:
         """Should handle paths with zero weight without division error."""
         policy = LoadBalancedPolicy(alpha=0.5)
         options = [
-            create_path_option(
-                path_index=0, is_feasible=True, weight_km=0.0, congestion=0.5
-            ),
-            create_path_option(
-                path_index=1, is_feasible=True, weight_km=0.0, congestion=0.3
-            ),
+            create_path_option(path_index=0, is_feasible=True, weight_km=0.0, congestion=0.5),
+            create_path_option(path_index=1, is_feasible=True, weight_km=0.0, congestion=0.3),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         # Should not raise - with all zero weights, congestion determines
         assert action == 1
@@ -528,15 +504,11 @@ class TestLoadBalancedPolicy:
         """Should ignore infeasible paths."""
         policy = LoadBalancedPolicy(alpha=0.5)
         options = [
-            create_path_option(
-                path_index=0, is_feasible=False, weight_km=10.0, congestion=0.1
-            ),
-            create_path_option(
-                path_index=1, is_feasible=True, weight_km=100.0, congestion=0.5
-            ),
+            create_path_option(path_index=0, is_feasible=False, weight_km=10.0, congestion=0.1),
+            create_path_option(path_index=1, is_feasible=True, weight_km=100.0, congestion=0.5),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 1
 
@@ -547,7 +519,7 @@ class TestLoadBalancedPolicy:
             create_path_option(path_index=0, is_feasible=False),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == -1
 
@@ -585,9 +557,9 @@ class TestHeuristicPolicyUpdate:
         policy = policy_class()
 
         # Should not raise
-        policy.update(MockRequest(), 1, 1.0)
-        policy.update(MockRequest(), 0, -1.0)
-        policy.update(MockRequest(), 2, 0.0)
+        policy.update(mock_request(), 1, 1.0)
+        policy.update(mock_request(), 0, -1.0)
+        policy.update(mock_request(), 2, 0.0)
 
 
 class TestHeuristicPolicyEdgeCases:
@@ -608,7 +580,7 @@ class TestHeuristicPolicyEdgeCases:
         policy = policy_class()
         options = [create_path_option(path_index=0, is_feasible=True)]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 0
 
@@ -631,7 +603,7 @@ class TestHeuristicPolicyEdgeCases:
             create_path_option(path_index=2, is_feasible=True),
         ]
 
-        action = policy.select_action(MockRequest(), options, MockNetworkState())
+        action = policy.select_action(mock_request(), options, mock_network_state())
 
         assert action == 2
 

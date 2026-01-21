@@ -56,38 +56,22 @@ class BaseAgent:
             raise ValueError("engine_props must be set before calling setup_env")
 
         self.reward_penalty_list = np.zeros(self.engine_props["max_iters"])
-        self.hyperparam_obj = HyperparamConfig(
-            engine_props=self.engine_props, rl_props=self.rl_props, is_path=True
-        )
+        self.hyperparam_obj = HyperparamConfig(engine_props=self.engine_props, rl_props=self.rl_props, is_path=True)
 
         if self.algorithm == "q_learning":
-            self.algorithm_obj = QLearning(
-                rl_props=self.rl_props, engine_props=self.engine_props
-            )
+            self.algorithm_obj = QLearning(rl_props=self.rl_props, engine_props=self.engine_props)
         elif self.algorithm == "epsilon_greedy_bandit":
-            self.algorithm_obj = EpsilonGreedyBandit(
-                rl_props=self.rl_props, engine_props=self.engine_props, is_path=is_path
-            )
+            self.algorithm_obj = EpsilonGreedyBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=is_path)
         elif self.algorithm == "ucb_bandit":
-            self.algorithm_obj = UCBBandit(
-                rl_props=self.rl_props, engine_props=self.engine_props, is_path=is_path
-            )
+            self.algorithm_obj = UCBBandit(rl_props=self.rl_props, engine_props=self.engine_props, is_path=is_path)
         elif self.algorithm == "ppo":
-            self.algorithm_obj = PPO(
-                rl_props=self.rl_props, engine_obj=self.engine_props
-            )
+            self.algorithm_obj = PPO(rl_props=self.rl_props, engine_obj=self.engine_props)
         elif self.algorithm == "a2c":
-            self.algorithm_obj = A2C(
-                rl_props=self.rl_props, engine_obj=self.engine_props
-            )
+            self.algorithm_obj = A2C(rl_props=self.rl_props, engine_obj=self.engine_props)
         elif self.algorithm == "dqn":
-            self.algorithm_obj = DQN(
-                rl_props=self.rl_props, engine_obj=self.engine_props
-            )
+            self.algorithm_obj = DQN(rl_props=self.rl_props, engine_obj=self.engine_props)
         elif self.algorithm == "qr_dqn":
-            self.algorithm_obj = QrDQN(
-                rl_props=self.rl_props, engine_obj=self.engine_props
-            )
+            self.algorithm_obj = QrDQN(rl_props=self.rl_props, engine_obj=self.engine_props)
         else:
             raise AlgorithmNotFoundError(
                 f"Algorithm '{self.algorithm}' is not supported. "
@@ -126,9 +110,7 @@ class BaseAgent:
             raise ValueError("engine_props must be set before calculating reward")
         decay_factor = 1 + self.engine_props["decay_factor"] * core_index
         core_decay = self.engine_props["reward"] / decay_factor
-        request_ratio = (
-            self.engine_props["num_requests"] - req_id
-        ) / self.engine_props["num_requests"]
+        request_ratio = (self.engine_props["num_requests"] - req_id) / self.engine_props["num_requests"]
         request_weight = request_ratio ** self.engine_props["core_beta"]
         return float(core_decay * request_weight)
 
@@ -159,20 +141,14 @@ class BaseAgent:
         if was_allocated:
             if dynamic:
                 if core_index is None or req_id is None:
-                    raise ValueError(
-                        "core_index and req_id must be provided for dynamic "
-                        "reward calculation"
-                    )
+                    raise ValueError("core_index and req_id must be provided for dynamic reward calculation")
                 return self.calculate_dynamic_reward(core_index, req_id)
 
             return float(self.engine_props["reward"])
 
         if dynamic:
             if core_index is None or req_id is None:
-                raise ValueError(
-                    "core_index and req_id must be provided for dynamic "
-                    "penalty calculation"
-                )
+                raise ValueError("core_index and req_id must be provided for dynamic penalty calculation")
             return self.calculate_dynamic_penalty(core_index, req_id)
 
         return float(self.engine_props["penalty"])
@@ -194,11 +170,7 @@ class BaseAgent:
             model_file = f"{file_prefix}_e{kwargs['erlang']}_c{kwargs['num_cores']}.npy"
             full_path = os.path.join("logs", model_path, model_file)
             if self.algorithm_obj is None:
-                raise ValueError(
-                    "algorithm_obj must be initialized before loading model"
-                )
+                raise ValueError("algorithm_obj must be initialized before loading model")
             # Type narrowing: for q_learning, algorithm_obj is QLearning
             if hasattr(self.algorithm_obj, "props"):
-                self.algorithm_obj.props.cores_matrix = np.load(
-                    full_path, allow_pickle=True
-                )
+                self.algorithm_obj.props.cores_matrix = np.load(full_path, allow_pickle=True)

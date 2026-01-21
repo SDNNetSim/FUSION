@@ -34,31 +34,22 @@ FUSION (Flexible Unified System for Intelligent Optical Networking) is an open-s
 - Use `__init__.py` to define public APIs with `__all__`
 - Registry pattern for pluggable algorithms
 
-### Naming Conventions
-- **Standardized names**: `engine_props`, `sim_params`, `network_topology`
-- **No type suffixes**: Use type hints instead of `_dict`, `_list` suffixes
-- **Functions**: Verb phrases in `snake_case`
-- **Classes**: `PascalCase`
-
-### State Management
-- Use `StateWrapper` for mutable configuration objects like `engine_props`
-- Never hardcode paths - use `pathlib.Path` and configuration
-- All RNG operations must be seeded for reproducibility
-
 ## Development Workflow
 
 ### Quality Tools
 - **ruff**: Modern linting and formatting (replaces black, flake8, isort)
 - **mypy**: Type checking with strict configuration
 - **pytest**: Unit testing with coverage reporting
-- **pre-commit**: Automated quality checks on commit
+- **pre-commit**: Automated quality checks on commit (includes ruff, mypy, vulture, bandit)
 
 ### Key Commands
 ```bash
-make format      # Auto-format code
-make lint-new    # Check for issues
-make test-new    # Run tests with coverage
-make check-all   # Full quality check
+make install     # Install all dependencies
+make install-dev # Install development tools only
+make validate    # Run all pre-commit checks + tests (use before PRs)
+make lint        # Run all pre-commit checks on all files
+make test        # Run unit tests with pytest
+make clean       # Clean up generated files
 ```
 
 ## Important Constraints and Guidelines
@@ -68,13 +59,11 @@ make check-all   # Full quality check
 - No print statements - use logging
 - No hardcoded paths - use configuration
 - No broad exception catching
-- No `fusion/gui` module changes (deprecated, requires revamp)
+- The `fusion/gui` module has been removed (deprecated and deleted)
 
 ### What to Follow
 - All functions require type annotations
 - All code must pass ruff and mypy checks
-- Functions should be under 50 lines
-- Files should be under 500 lines
 - Test coverage targets: 80-90% for most modules
 - Use Sphinx-style docstrings
 
@@ -118,19 +107,27 @@ See `fusion/interfaces/factory.py` for algorithm instantiation
 ## Current Development Focus
 
 As of the latest commits, the project is focused on:
-1. Quality improvements: Resolving linting errors and test failures
-2. Configuration system enhancements
-3. Documentation improvements
-4. Survivability experiment features (v1)
-5. Offline RL policy integration
+1. Sphinx documentation: Comprehensive module documentation under `docs/developer/`
+2. Quality improvements: Resolving linting errors and test failures
+3. Survivability experiment features
+4. Offline RL policy integration
+
+## Documentation System
+
+The project uses two documentation systems:
+- **Module READMEs**: Each module has a `README.md` with overview and usage
+- **Sphinx Documentation**: Comprehensive API and developer docs in `docs/`
+  - Developer docs: `docs/developer/fusion/` with per-module documentation
+  - Getting started guides: `docs/getting-started/`
+  - API reference: `docs/api/`
 
 ## Reference Documents
 
 For detailed information, consult:
-- `ARCHITECTURE.md`: System architecture and design
 - `CODING_STANDARDS.md`: Code style and organization
 - `TESTING_STANDARDS.md`: Testing requirements
 - `DEVELOPMENT_WORKFLOW.md`: Development process and tools
+- `DEVELOPMENT_QUICKSTART.md`: Quick start guide for new developers
 - `CONTRIBUTING.md`: Contribution guidelines
 
 ## Working with This Codebase
@@ -141,7 +138,7 @@ When making changes:
 3. Follow the standardized naming conventions
 4. Add tests for new functionality
 5. Update documentation as needed
-6. Run `make check-all` before committing
+6. Run `make validate` before committing
 7. Use the TodoWrite tool to track multi-step tasks
 
 ## Key Files to Know
@@ -151,6 +148,21 @@ When making changes:
 - `fusion/cli/run_sim.py`: CLI entry point
 - `fusion/configs/cli_to_config.py`: Configuration processing
 - `fusion/modules/*/registry.py`: Algorithm registries
+
+## RL Module Structure
+
+The RL module (`fusion/modules/rl/`) has extensive sub-modules:
+- `adapter/`: RL-simulation adapter layer
+- `agents/`: RL agent implementations
+- `algorithms/`: RL algorithm implementations
+- `args/`: Argument parsing and configuration
+- `environments/`: Custom RL environments
+- `feat_extrs/`: Feature extractors for state representation
+- `gymnasium_envs/`: Gymnasium-compatible environment wrappers
+- `policies/`: Policy implementations (BC, IQL, CQL, etc.)
+- `sb3/`: Stable-Baselines3 integration
+- `utils/`: RL utility functions
+- `visualization/`: Training visualization tools
 
 ## Domain Knowledge
 

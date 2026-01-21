@@ -59,9 +59,7 @@ def _mock_trial() -> SimpleNamespace:
 class TestLinearDecay:
     """Linear epsilon / alpha decay."""
 
-    @mock.patch(
-        "fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None)
-    )
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None))
     def test_linear_decay_updates_values(self, _: mock.MagicMock) -> None:
         """_linear_eps / _linear_alpha compute expected value."""
         cfg = hp.HyperparamConfig(_engine_props(), _rl_props(), is_path=True)
@@ -76,9 +74,7 @@ class TestLinearDecay:
 class TestExponentialDecay:
     """Exponential epsilon / alpha decay."""
 
-    @mock.patch(
-        "fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None)
-    )
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None))
     def test_exp_decay(self, _: mock.MagicMock) -> None:
         """exp decay = start * rate**iter."""
         props = _engine_props() | {
@@ -98,9 +94,7 @@ class TestExponentialDecay:
 class TestRewardBased:
     """Reward-based update reduces params when reward diff grows."""
 
-    @mock.patch(
-        "fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None)
-    )
+    @mock.patch("fusion.modules.rl.utils.hyperparams.get_q_table", return_value=(None, None))
     def test_reward_based_updates(self, _: mock.MagicMock) -> None:
         """Greater diff → smaller epsilon/alpha."""
         cfg = hp.HyperparamConfig(_engine_props(), _rl_props(), True)

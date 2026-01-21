@@ -35,10 +35,7 @@ def _validate_bandwidth_consistency(engine_props: dict[str, Any]) -> None:
         return  # No request distribution to validate
 
     if not mod_per_bw:
-        raise ValueError(
-            "mod_per_bw is empty after input setup. "
-            "Check mod_assumption_path configuration."
-        )
+        raise ValueError("mod_per_bw is empty after input setup. Check mod_assumption_path configuration.")
 
     # Check that all bandwidths in request_distribution exist in mod_per_bw
     missing_bandwidths = []
@@ -122,16 +119,12 @@ class NetworkSimulator:
 
         # Set 'erlang' and 'arrival_rate'
         engine_props["erlang"] = erlang
-        engine_props["arrival_rate"] = (
-            engine_props["cores_per_link"] * erlang
-        ) / engine_props["holding_time"]
+        engine_props["arrival_rate"] = (engine_props["cores_per_link"] * erlang) / engine_props["holding_time"]
 
         # Pass how many units of work have been done so far
         engine_props["done_offset"] = done_offset
 
-        engine_props["my_iteration_units"] = self.properties.get(
-            "my_iteration_units", engine_props["max_iters"]
-        )
+        engine_props["my_iteration_units"] = self.properties.get("my_iteration_units", engine_props["max_iters"])
 
         # Create sanitized copy for saving
         clean_engine_props = engine_props.copy()

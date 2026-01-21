@@ -666,17 +666,13 @@ class TestRequestStateTransitions:
         with pytest.raises(ValueError, match="Cannot transition from"):
             sample_request.mark_groomed([2])
 
-    def test_mark_partially_groomed_from_invalid_state(
-        self, sample_request: Request
-    ) -> None:
+    def test_mark_partially_groomed_from_invalid_state(self, sample_request: Request) -> None:
         """Test invalid transition to PARTIALLY_GROOMED."""
         sample_request.mark_allocated([1])  # Already allocated
         with pytest.raises(ValueError, match="Cannot transition from"):
             sample_request.mark_partially_groomed([2])
 
-    def test_mark_partially_groomed_empty_lightpaths(
-        self, sample_request: Request
-    ) -> None:
+    def test_mark_partially_groomed_empty_lightpaths(self, sample_request: Request) -> None:
         """Test mark_partially_groomed requires lightpath_ids."""
         with pytest.raises(ValueError, match="Must provide at least one lightpath_id"):
             sample_request.mark_partially_groomed([])

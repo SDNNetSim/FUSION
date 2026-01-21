@@ -39,9 +39,7 @@ class TestStrToBool:
             ("random", False),
         ],
     )
-    def test_str_to_bool_with_various_inputs_returns_expected(
-        self, input_string: str, expected: bool
-    ) -> None:
+    def test_str_to_bool_with_various_inputs_returns_expected(self, input_string: str, expected: bool) -> None:
         """Test str_to_bool with various string inputs."""
         # Act
         result = str_to_bool(input_string)

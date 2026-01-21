@@ -5,7 +5,6 @@ Follows architecture best practice: entry points should have no logic.
 """
 
 import multiprocessing
-import traceback
 from typing import Any
 
 from fusion.cli.main_parser import build_parser
@@ -40,32 +39,10 @@ def main(stop_flag: Any = None) -> int:
 
     except KeyboardInterrupt:
         logger.info("Simulation interrupted by user")
-        print("\nSimulation interrupted by user")  # User-facing message
         return 1
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        # Custom error handling system pending - see cli/TODO.md for implementation plan
-        # Log detailed error information for debugging
+    except Exception as e:  # noqa: BLE001
+        # TODO (v6.1.0): Replace broad exception with specific error types - see cli/TODO.md
         logger.error(f"Simulation error: {e}", exc_info=True)
-
-        # User-facing error message
-        print(f"Error running simulation: {e}")
-
-        # If it's a runtime error with more context, show the full chain
-        if hasattr(e, "__cause__") and e.__cause__:
-            print(f"  ↳ Caused by: {e.__cause__}")
-            cause = e.__cause__
-            if hasattr(cause, "__cause__") and cause.__cause__:
-                print(f"    ↳ Root cause: {cause.__cause__}")
-
-        # Show exception type for better debugging
-        print(f"  Exception type: {type(e).__name__}")
-
-        # For debugging: show a few lines of traceback
-        print("  Last few calls:")
-        tb_lines = traceback.format_tb(e.__traceback__)
-        for line in tb_lines[-3:]:  # Show last 3 calls
-            print(f"    {line.strip()}")
-
         return 1
 
     return 0

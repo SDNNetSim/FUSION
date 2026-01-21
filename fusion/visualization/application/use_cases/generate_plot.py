@@ -130,9 +130,7 @@ class GeneratePlotUseCase:
             # 4. Process data
             plot.start_processing()
             # Use the first metric from request, or fall back to blocking_probability
-            metric_name = (
-                request.metrics[0] if request.metrics else "blocking_probability"
-            )
+            metric_name = request.metrics[0] if request.metrics else "blocking_probability"
             processed_data = self._process_data(
                 runs=runs,
                 data=data,
@@ -246,9 +244,7 @@ class GeneratePlotUseCase:
             configuration=config,
         )
 
-    def _load_data(
-        self, request: PlotRequestDTO
-    ) -> tuple[list[Run], dict[str, dict[float, CanonicalData]]]:
+    def _load_data(self, request: PlotRequestDTO) -> tuple[list[Run], dict[str, dict[float, CanonicalData]]]:
         """
         Load simulation data.
 
@@ -268,9 +264,7 @@ class GeneratePlotUseCase:
         )
 
         if not runs:
-            raise RepositoryError(
-                f"No runs found for network={request.network}, dates={request.dates}"
-            )
+            raise RepositoryError(f"No runs found for network={request.network}, dates={request.dates}")
 
         # Filter by algorithms if specified
         if request.algorithms:
@@ -287,9 +281,7 @@ class GeneratePlotUseCase:
             # Get available traffic volumes if not specified
             traffic_volumes = request.traffic_volumes
             if not traffic_volumes:
-                traffic_volumes = (
-                    self.simulation_repository.get_available_traffic_volumes(run)
-                )
+                traffic_volumes = self.simulation_repository.get_available_traffic_volumes(run)
 
             # Load data for each traffic volume
             for tv in traffic_volumes:
@@ -297,31 +289,21 @@ class GeneratePlotUseCase:
                     if self.cache and request.cache_enabled:
                         cache_key = f"run_data:{run.id}:{tv}"
                         if self.simulation_repository is None:
-                            raise RepositoryError(
-                                "Simulation repository not configured"
-                            )
+                            raise RepositoryError("Simulation repository not configured")
                         canonical_data = self.cache.get_or_compute(
                             key=cache_key,
-                            compute_fn=partial(
-                                self.simulation_repository.get_run_data, run, tv
-                            ),
+                            compute_fn=partial(self.simulation_repository.get_run_data, run, tv),
                             ttl_seconds=3600,  # 1 hour cache
                         )
                     else:
                         if self.simulation_repository is None:
-                            raise RepositoryError(
-                                "Simulation repository not configured"
-                            )
-                        canonical_data = self.simulation_repository.get_run_data(
-                            run, tv
-                        )
+                            raise RepositoryError("Simulation repository not configured")
+                        canonical_data = self.simulation_repository.get_run_data(run, tv)
 
                     data[run.id][tv] = canonical_data
 
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to load data for run {run.id} at {tv} Erlang: {e}"
-                    )
+                    logger.warning(f"Failed to load data for run {run.id} at {tv} Erlang: {e}")
                     # Continue loading other data
 
         return runs, data
@@ -340,8 +322,7 @@ class GeneratePlotUseCase:
 
         if not self.data_processor.can_process(metric_name):
             raise ProcessingError(
-                f"Processor cannot handle metric: {metric_name}. "
-                f"Supported: {self.data_processor.get_supported_metrics()}"
+                f"Processor cannot handle metric: {metric_name}. Supported: {self.data_processor.get_supported_metrics()}"
             )
 
         return self.data_processor.process(
@@ -352,9 +333,7 @@ class GeneratePlotUseCase:
             include_ci=include_ci,
         )
 
-    def _create_specification(
-        self, request: PlotRequestDTO, processed_data: Any
-    ) -> Any:
+    def _create_specification(self, request: PlotRequestDTO, processed_data: Any) -> Any:
         """Create PlotSpecification from processed data."""
         from fusion.visualization.domain.value_objects.plot_specification import (
             PlotSpecification,
@@ -364,17 +343,14 @@ class GeneratePlotUseCase:
             plot_type=request.plot_type,
             title=request.title or f"{request.plot_type.value} - {request.network}",
             x_label=request.x_label or "Traffic Volume (Erlang)",
-            y_label=request.y_label
-            or request.plot_type.value.replace("_", " ").title(),
+            y_label=request.y_label or request.plot_type.value.replace("_", " ").title(),
             x_data=processed_data.x_data,
             y_data=processed_data.y_data,
             errors=processed_data.errors,
             metadata=processed_data.metadata or {},
         )
 
-    def _failure_result(
-        self, plot_id: str, error: str, started_at: datetime
-    ) -> PlotResultDTO:
+    def _failure_result(self, plot_id: str, error: str, started_at: datetime) -> PlotResultDTO:
         """Create failure result."""
         completed_at = datetime.now()
         return PlotResultDTO(

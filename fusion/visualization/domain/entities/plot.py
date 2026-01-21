@@ -95,9 +95,7 @@ class Plot:
     def start_loading(self) -> None:
         """Mark plot as loading data."""
         if self.state != PlotState.PENDING:
-            raise InvalidStateError(
-                f"Cannot start loading from state {self.state.value}"
-            )
+            raise InvalidStateError(f"Cannot start loading from state {self.state.value}")
         self.state = PlotState.LOADING
 
     def mark_loaded(self) -> None:
@@ -109,9 +107,7 @@ class Plot:
     def start_processing(self) -> None:
         """Mark plot as processing."""
         if self.state != PlotState.LOADED:
-            raise InvalidStateError(
-                f"Cannot start processing from state {self.state.value}"
-            )
+            raise InvalidStateError(f"Cannot start processing from state {self.state.value}")
         self.state = PlotState.PROCESSING
 
     def mark_processed(self, specification: PlotSpecification) -> None:
@@ -122,26 +118,20 @@ class Plot:
             specification: The generated plot specification
         """
         if self.state != PlotState.PROCESSING:
-            raise InvalidStateError(
-                f"Cannot mark processed from state {self.state.value}"
-            )
+            raise InvalidStateError(f"Cannot mark processed from state {self.state.value}")
         self.specification = specification
         self.state = PlotState.PROCESSED
 
     def start_rendering(self) -> None:
         """Mark plot as rendering."""
         if self.state != PlotState.PROCESSED:
-            raise InvalidStateError(
-                f"Cannot start rendering from state {self.state.value}"
-            )
+            raise InvalidStateError(f"Cannot start rendering from state {self.state.value}")
         self.state = PlotState.RENDERING
 
     def mark_completed(self) -> None:
         """Mark plot as completed."""
         if self.state != PlotState.RENDERING:
-            raise InvalidStateError(
-                f"Cannot mark completed from state {self.state.value}"
-            )
+            raise InvalidStateError(f"Cannot mark completed from state {self.state.value}")
         self.state = PlotState.COMPLETED
 
     def mark_failed(self, error: str) -> None:

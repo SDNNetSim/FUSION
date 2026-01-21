@@ -146,11 +146,7 @@ class PluginRegistry:
             # Look for plugin classes
             for name in dir(module):
                 obj = getattr(module, name)
-                if (
-                    isinstance(obj, type)
-                    and issubclass(obj, BasePlugin)
-                    and obj is not BasePlugin
-                ):
+                if isinstance(obj, type) and issubclass(obj, BasePlugin) and obj is not BasePlugin:
                     try:
                         self.register_plugin_class(obj)
                         logger.info(f"Loaded plugin class: {name} from {module_name}")
@@ -177,9 +173,7 @@ class PluginRegistry:
             module_parts = parts[fusion_idx:-1] + (plugin_file.stem,)
             return ".".join(module_parts)
         except ValueError as exc:
-            raise ValueError(
-                f"Could not determine module name for {plugin_file}"
-            ) from exc
+            raise ValueError(f"Could not determine module name for {plugin_file}") from exc
 
     def load_plugin(self, name: str) -> None:
         """Load a specific plugin by name.
@@ -205,9 +199,7 @@ class PluginRegistry:
 
         # Check availability
         if not plugin.is_available():
-            raise PluginLoadError(
-                f"Plugin '{name}' is not available (dependencies not satisfied)"
-            )
+            raise PluginLoadError(f"Plugin '{name}' is not available (dependencies not satisfied)")
 
         # Load the plugin
         try:
@@ -228,20 +220,14 @@ class PluginRegistry:
         """
         for dep_name in plugin.requires:
             if dep_name not in self._plugins:
-                raise PluginDependencyError(
-                    f"Plugin '{plugin.name}' requires '{dep_name}' "
-                    f"which is not registered"
-                )
+                raise PluginDependencyError(f"Plugin '{plugin.name}' requires '{dep_name}' which is not registered")
 
             # Load dependency if not already loaded
             if dep_name not in self._loaded:
                 try:
                     self.load_plugin(dep_name)
                 except PluginLoadError as e:
-                    raise PluginDependencyError(
-                        f"Failed to load dependency '{dep_name}' "
-                        f"for '{plugin.name}': {e}"
-                    ) from e
+                    raise PluginDependencyError(f"Failed to load dependency '{dep_name}' for '{plugin.name}': {e}") from e
 
     def load_all(self) -> None:
         """Load all registered plugins."""

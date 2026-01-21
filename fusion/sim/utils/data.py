@@ -42,9 +42,7 @@ def update_matrices(info_dict: dict[str, Any]) -> dict[str, list]:
     return response
 
 
-def sort_nested_dict_values(
-    original_dict: dict[str, Any], nested_key: str
-) -> dict[str, Any]:
+def sort_nested_dict_values(original_dict: dict[str, Any], nested_key: str) -> dict[str, Any]:
     """
     Sort a dictionary by a value which belongs to a nested key.
 
@@ -151,9 +149,7 @@ def min_max_scale(value: float, min_value: float, max_value: float) -> float:
     return (value - min_value) / (max_value - min_value)
 
 
-def update_dict_from_list(
-    input_dict: dict[str, Any], updates_list: list[tuple[str, Any]]
-) -> dict[str, Any]:
+def update_dict_from_list(input_dict: dict[str, Any], updates_list: list[tuple[str, Any]]) -> dict[str, Any]:
     """
     Update the input dictionary with values from the updates list.
 

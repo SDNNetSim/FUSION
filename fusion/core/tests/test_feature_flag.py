@@ -7,7 +7,7 @@ and dual-path operation in SimulationEngine.
 
 import os
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -222,9 +222,7 @@ class TestSimulationEngineFeatureFlag:
             "stop_flag": None,
         }
 
-    def test_engine_init_defaults_to_legacy_mode(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_engine_init_defaults_to_legacy_mode(self, basic_engine_props: dict[str, Any]) -> None:
         """Test SimulationEngine defaults to legacy mode."""
         # Arrange
         if ENV_VAR_USE_ORCHESTRATOR in os.environ:
@@ -239,9 +237,7 @@ class TestSimulationEngineFeatureFlag:
         assert engine._sim_config is None
         assert engine._network_state is None
 
-    def test_engine_init_with_orchestrator_flag_in_props(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_engine_init_with_orchestrator_flag_in_props(self, basic_engine_props: dict[str, Any]) -> None:
         """Test SimulationEngine with use_orchestrator in engine_props."""
         # Arrange
         basic_engine_props["use_orchestrator"] = True
@@ -252,9 +248,7 @@ class TestSimulationEngineFeatureFlag:
         # Assert
         assert engine.use_orchestrator is True
 
-    def test_engine_init_with_orchestrator_env_var(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_engine_init_with_orchestrator_env_var(self, basic_engine_props: dict[str, Any]) -> None:
         """Test SimulationEngine with FUSION_USE_ORCHESTRATOR env var."""
         # Arrange
         os.environ[ENV_VAR_USE_ORCHESTRATOR] = "true"
@@ -268,9 +262,7 @@ class TestSimulationEngineFeatureFlag:
         finally:
             del os.environ[ENV_VAR_USE_ORCHESTRATOR]
 
-    def test_engine_init_validates_config_in_orchestrator_mode(
-        self, basic_engine_props: dict[str, Any]
-    ) -> None:
+    def test_engine_init_validates_config_in_orchestrator_mode(self, basic_engine_props: dict[str, Any]) -> None:
         """Test SimulationEngine validates config when orchestrator mode enabled."""
         # Arrange
         basic_engine_props["use_orchestrator"] = True
@@ -328,9 +320,7 @@ class TestSimulationEngineDualPath:
             "cores_per_link": 4,
         }
 
-    def test_create_topology_initializes_orchestrator_path(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_create_topology_initializes_orchestrator_path(self, topology_engine_props: dict[str, Any]) -> None:
         """Test create_topology initializes v5 components when orchestrator enabled."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -343,9 +333,7 @@ class TestSimulationEngineDualPath:
         assert engine._network_state is not None
         assert engine._orchestrator is not None
 
-    def test_create_topology_legacy_mode_skips_orchestrator_init(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_create_topology_legacy_mode_skips_orchestrator_init(self, topology_engine_props: dict[str, Any]) -> None:
         """Test create_topology skips v5 init when in legacy mode."""
         # Arrange
         topology_engine_props["use_orchestrator"] = False
@@ -357,9 +345,7 @@ class TestSimulationEngineDualPath:
         # Assert
         assert engine._orchestrator is None
 
-    def test_handle_arrival_uses_orchestrator_when_enabled(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_handle_arrival_uses_orchestrator_when_enabled(self, topology_engine_props: dict[str, Any]) -> None:
         """Test handle_arrival delegates to orchestrator when enabled."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -393,7 +379,11 @@ class TestSimulationEngineDualPath:
         mock_result.end_slots = (10,)
         mock_result.bandwidth_allocations = (100,)
         mock_result.lightpath_bandwidths = (100,)
+        mock_result.total_bandwidth_allocated_gbps = 100  # Required for stats calc
         mock_result.block_reason = None
+        mock_result.failed_attempt_snr_values = ()  # Prevent Mock auto-creation
+        mock_result.path_index = 0  # Prevent Mock comparison error
+        mock_result.snr_values = None  # Prevent Mock subscript error
 
         engine._orchestrator = Mock()
         engine._orchestrator.handle_arrival.return_value = mock_result
@@ -401,9 +391,16 @@ class TestSimulationEngineDualPath:
         # Mock network_state entirely (get_lightpath is read-only on real NetworkState)
         mock_lightpath = Mock()
         mock_lightpath.path = ["A", "B", "C"]
+        mock_lightpath.total_bandwidth_gbps = 100  # Prevent Mock being passed to int()
+        mock_lightpath.modulation = "QPSK"
+        mock_lightpath.core = 0
+        mock_lightpath.band = "c"
+        mock_lightpath.snr_db = None
+        mock_lightpath.path_weight_km = None
         mock_network_state = Mock()
         mock_network_state.get_lightpath.return_value = mock_lightpath
         mock_network_state.network_spectrum_dict = engine.network_spectrum_dict
+        mock_network_state.topology = None  # Avoid subscript error in path length calc
         engine._network_state = mock_network_state
 
         # Act
@@ -412,16 +409,14 @@ class TestSimulationEngineDualPath:
         # Assert
         engine._orchestrator.handle_arrival.assert_called_once()
 
-    def test_handle_arrival_uses_legacy_when_disabled(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_handle_arrival_uses_legacy_when_disabled(self, topology_engine_props: dict[str, Any]) -> None:
         """Test handle_arrival uses SDNController when orchestrator disabled."""
         # Arrange
         topology_engine_props["use_orchestrator"] = False
         engine = SimulationEngine(topology_engine_props)
         engine.create_topology()
         engine.reqs_dict = {
-            1.0: {
+            (0, 1.0): {
                 "req_id": 1,
                 "source": "A",
                 "destination": "C",
@@ -442,14 +437,12 @@ class TestSimulationEngineDualPath:
         engine.stats_obj = Mock()
 
         # Act
-        engine.handle_arrival(current_time=1.0)
+        engine.handle_arrival(current_time=(0, 1.0))
 
         # Assert
         engine.sdn_obj.handle_event.assert_called_once()
 
-    def test_reset_clears_v5_state_in_orchestrator_mode(
-        self, topology_engine_props: dict[str, Any]
-    ) -> None:
+    def test_reset_clears_v5_state_in_orchestrator_mode(self, topology_engine_props: dict[str, Any]) -> None:
         """Test reset clears v5 request cache when in orchestrator mode."""
         # Arrange
         engine = SimulationEngine(topology_engine_props)
@@ -505,9 +498,7 @@ class TestDualPathStatsUpdate:
         engine.create_topology()
         return engine
 
-    def test_stats_updated_on_successful_allocation(
-        self, engine_with_topology: SimulationEngine
-    ) -> None:
+    def test_stats_updated_on_successful_allocation(self, engine_with_topology: SimulationEngine) -> None:
         """Test stats are updated correctly on successful allocation."""
         # Arrange
         engine_with_topology.reqs_dict = {
@@ -538,24 +529,24 @@ class TestDualPathStatsUpdate:
         mock_result.end_slots = (10,)
         mock_result.bandwidth_allocations = (100,)
         mock_result.lightpath_bandwidths = (100,)
+        mock_result.total_bandwidth_allocated_gbps = 100  # Required for stats calc
         mock_result.block_reason = None
+        mock_result.failed_attempt_snr_values = ()  # Prevent Mock auto-creation
+        mock_result.path_index = 0  # Prevent Mock comparison error
+        mock_result.snr_values = None  # Prevent Mock subscript error
 
         initial_bit_rate = engine_with_topology.stats_obj.bit_rate_request
         initial_blocked = engine_with_topology.stats_obj.blocked_requests
 
         # Act
-        engine_with_topology._update_stats_from_result(
-            (1, 1.0), mock_request, mock_result
-        )
+        engine_with_topology._update_stats_from_result((1, 1.0), mock_request, mock_result)
 
         # Assert - success means bit_rate_request updated but blocked_requests unchanged
         assert engine_with_topology.stats_obj.bit_rate_request == initial_bit_rate + 100
         assert engine_with_topology.stats_obj.blocked_requests == initial_blocked
         assert 1 in engine_with_topology.reqs_status_dict
 
-    def test_stats_updated_on_blocked_allocation(
-        self, engine_with_topology: SimulationEngine
-    ) -> None:
+    def test_stats_updated_on_blocked_allocation(self, engine_with_topology: SimulationEngine) -> None:
         """Test stats are updated correctly on blocked allocation."""
         # Arrange
         engine_with_topology.reqs_dict = {
@@ -583,9 +574,7 @@ class TestDualPathStatsUpdate:
         initial_bit_rate_blocked = engine_with_topology.stats_obj.bit_rate_blocked
 
         # Act
-        engine_with_topology._update_stats_from_result(
-            (1, 1.0), mock_request, mock_result
-        )
+        engine_with_topology._update_stats_from_result((1, 1.0), mock_request, mock_result)
 
         # Assert
         assert engine_with_topology.stats_obj.blocked_requests == initial_blocked + 1

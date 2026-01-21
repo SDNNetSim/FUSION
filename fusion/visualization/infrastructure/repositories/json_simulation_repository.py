@@ -101,15 +101,11 @@ class JsonSimulationRepository(SimulationRepository):
                         runs.append(run)
 
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to load metadata for {run_dir}: {e}. Skipping."
-                        )
+                        logger.warning(f"Failed to load metadata for {run_dir}: {e}. Skipping.")
                         continue
 
             except PermissionError as e:
-                raise RepositoryError(
-                    f"Permission denied accessing {date_path}: {e}"
-                ) from e
+                raise RepositoryError(f"Permission denied accessing {date_path}: {e}") from e
 
         return runs
 
@@ -165,9 +161,7 @@ class JsonSimulationRepository(SimulationRepository):
             return canonical_data
 
         except Exception as e:
-            raise DataFormatError(
-                f"Failed to convert data to canonical format: {e}"
-            ) from e
+            raise DataFormatError(f"Failed to convert data to canonical format: {e}") from e
 
     def get_run_data_batch(
         self,
@@ -229,9 +223,7 @@ class JsonSimulationRepository(SimulationRepository):
                     if tv not in traffic_volumes:
                         traffic_volumes.append(tv)
                 except ValueError:
-                    logger.warning(
-                        f"Could not parse traffic volume from filename: {file_path}"
-                    )
+                    logger.warning(f"Could not parse traffic volume from filename: {file_path}")
                     continue
 
         return sorted(traffic_volumes)
@@ -255,9 +247,7 @@ class JsonSimulationRepository(SimulationRepository):
                 result = self.metadata_repository.get_run_metadata(run_path)
                 return dict(result)
             except Exception as e:
-                logger.debug(
-                    f"Metadata repository failed, falling back to direct load: {e}"
-                )
+                logger.debug(f"Metadata repository failed, falling back to direct load: {e}")
 
         # Try multiple metadata file locations
         metadata_files = [

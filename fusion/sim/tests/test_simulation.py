@@ -28,9 +28,7 @@ class TestLogMessage:
         mock_queue.put.assert_called_once_with(message)
 
     @patch("fusion.sim.utils.simulation.logger")
-    def test_log_message_without_queue_uses_logger(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_log_message_without_queue_uses_logger(self, mock_logger: MagicMock) -> None:
         """Test that logger is used when queue is None."""
         # Arrange
         message = "Test message"
@@ -47,9 +45,7 @@ class TestGetStartTime:
 
     @patch("fusion.sim.utils.simulation.time.sleep")
     @patch("fusion.sim.utils.simulation.Path.exists")
-    def test_get_start_time_sets_date_and_time(
-        self, mock_exists: MagicMock, mock_sleep: MagicMock
-    ) -> None:
+    def test_get_start_time_sets_date_and_time(self, mock_exists: MagicMock, mock_sleep: MagicMock) -> None:
         """Test that date and sim_start are set correctly."""
         # Arrange
         sim_dict = {"s1": {"network": "test_network", "date": None, "sim_start": None}}
@@ -71,9 +67,7 @@ class TestGetStartTime:
     @patch("fusion.sim.utils.simulation.time.sleep")
     @patch("fusion.sim.utils.simulation.Path.exists")
     @patch("fusion.sim.utils.simulation.logger")
-    def test_get_start_time_retries_on_duplicate(
-        self, mock_logger: MagicMock, mock_exists: MagicMock, mock_sleep: MagicMock
-    ) -> None:
+    def test_get_start_time_retries_on_duplicate(self, mock_logger: MagicMock, mock_exists: MagicMock, mock_sleep: MagicMock) -> None:
         """Test that function retries when path already exists."""
         # Arrange
         sim_dict = {"s1": {"network": "test_network", "date": None, "sim_start": None}}
@@ -131,9 +125,7 @@ class TestRunSimulationForErlangs:
         trial = None
 
         # Act
-        result = run_simulation_for_erlangs(
-            mock_env, erlang_list, sim_dict, mock_run_func, callback_list, trial
-        )
+        result = run_simulation_for_erlangs(mock_env, erlang_list, sim_dict, mock_run_func, callback_list, trial)
 
         # Assert
         # First erlang: arrival_rate = 10 * 100 / 5 = 200
@@ -154,9 +146,7 @@ class TestRunSimulationForErlangs:
         trial = None
 
         # Act
-        result = run_simulation_for_erlangs(
-            mock_env, erlang_list, sim_dict, mock_run_func, callback_list, trial
-        )
+        result = run_simulation_for_erlangs(mock_env, erlang_list, sim_dict, mock_run_func, callback_list, trial)
 
         # Assert
         assert result == 0.5  # Mean of [0.3, 0.5, 0.7]
@@ -187,14 +177,10 @@ class TestSaveStudyResults:
         best_sim_start = 43200
 
         # Act
-        save_study_results(
-            study, mock_env, study_name, best_params, best_reward, best_sim_start
-        )
+        save_study_results(study, mock_env, study_name, best_params, best_reward, best_sim_start)
 
         # Assert
-        expected_dir = os.path.join(
-            "logs", "q_learning", "test_network", "2025-01-01", "12:00:00"
-        )
+        expected_dir = os.path.join("logs", "q_learning", "test_network", "2025-01-01", "12:00:00")
         mock_makedirs.assert_called_once_with(expected_dir, exist_ok=True)
         mock_pickle.assert_called_once()
 
@@ -220,9 +206,7 @@ class TestSaveStudyResults:
         best_sim_start = 43200
 
         # Act
-        save_study_results(
-            study, mock_env, study_name, best_params, best_reward, best_sim_start
-        )
+        save_study_results(study, mock_env, study_name, best_params, best_reward, best_sim_start)
 
         # Assert
         # Check that best_hyperparams.txt was opened for writing

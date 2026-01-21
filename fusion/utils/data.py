@@ -23,9 +23,7 @@ def sort_dict_keys(dictionary: dict[str, Any]) -> dict[str, Any]:
     return sorted_dict
 
 
-def sort_nested_dict_values(
-    original_dict: dict[str, Any], nested_key: str
-) -> dict[str, Any]:
+def sort_nested_dict_values(original_dict: dict[str, Any], nested_key: str) -> dict[str, Any]:
     """
     Sort a dictionary by a value which belongs to a nested key.
 

@@ -98,16 +98,12 @@ def test_failure_mask_set_correctly(sample_topology: nx.Graph) -> None:
 
     # Path using failed link
     path_with_failure = [0, 1, 2, 3]
-    features = cache.get_path_features(
-        path_with_failure, network_spectrum_dict, failure_manager
-    )
+    features = cache.get_path_features(path_with_failure, network_spectrum_dict, failure_manager)
     assert features["failure_mask"] == 1
 
     # Path avoiding failed link
     path_without_failure = [0, 5, 6, 3]
-    features = cache.get_path_features(
-        path_without_failure, network_spectrum_dict, failure_manager
-    )
+    features = cache.get_path_features(path_without_failure, network_spectrum_dict, failure_manager)
     assert features["failure_mask"] == 0
 
 
@@ -280,9 +276,7 @@ def test_path_features_without_failure_manager(sample_topology: nx.Graph) -> Non
         network_spectrum_dict[(u, v)] = {"slots": [0] * 40}
 
     path = [0, 1, 2]
-    features = cache.get_path_features(
-        path, network_spectrum_dict, failure_manager=None
-    )
+    features = cache.get_path_features(path, network_spectrum_dict, failure_manager=None)
 
     assert features["failure_mask"] == 0
     assert features["dist_to_disaster_centroid"] == 0
@@ -306,9 +300,7 @@ def test_dist_to_disaster_centroid(sample_topology: nx.Graph) -> None:
 
     # Path close to failure
     path_close = [0, 1, 6]
-    features = cache.get_path_features(
-        path_close, network_spectrum_dict, failure_manager
-    )
+    features = cache.get_path_features(path_close, network_spectrum_dict, failure_manager)
     dist_close = features["dist_to_disaster_centroid"]
 
     # Path far from failure

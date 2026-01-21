@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any
 
-
 # =============================================================================
 # Request Type Enum
 # =============================================================================
@@ -26,9 +25,8 @@ class RequestType(Enum):
     """
     Type of request event in the simulation.
 
-    Values:
-        ARRIVAL: Request arriving, needs resource allocation
-        RELEASE: Request departing, resources to be freed
+    ARRIVAL indicates a request arriving that needs resource allocation.
+    RELEASE indicates a request departing where resources should be freed.
     """
 
     ARRIVAL = "arrival"
@@ -39,11 +37,10 @@ class RequestType(Enum):
         """
         Convert legacy string to enum.
 
-        Args:
-            value: Legacy string "arrival" or "release"
-
-        Returns:
-            Corresponding RequestType enum value
+        :param value: Legacy string "arrival" or "release".
+        :type value: str
+        :return: Corresponding RequestType enum value.
+        :rtype: RequestType
         """
         mapping = {
             "arrival": cls.ARRIVAL,
@@ -55,8 +52,8 @@ class RequestType(Enum):
         """
         Convert enum to legacy string.
 
-        Returns:
-            String value compatible with legacy code.
+        :return: String value compatible with legacy code.
+        :rtype: str
         """
         return self.value
 
@@ -70,7 +67,12 @@ class RequestStatus(Enum):
     """
     Request lifecycle status.
 
-    State Machine:
+    Initial state is PENDING. Processing states are ROUTING, SPECTRUM_SEARCH,
+    SNR_CHECK. Terminal success states are ALLOCATED, GROOMED, PARTIALLY_GROOMED.
+    Terminal failure state is BLOCKED. Release states are RELEASING and RELEASED.
+
+    State Machine::
+
         PENDING --> ROUTING --> SPECTRUM_SEARCH --> SNR_CHECK
                         |              |               |
                         v              v               v
@@ -91,13 +93,6 @@ class RequestStatus(Enum):
                                        |
                                        v
                                    RELEASED
-
-    State Categories:
-        Initial: PENDING
-        Processing: ROUTING, SPECTRUM_SEARCH, SNR_CHECK
-        Success (terminal): ALLOCATED, GROOMED, PARTIALLY_GROOMED
-        Failure (terminal): BLOCKED
-        Release: RELEASING, RELEASED (terminal)
     """
 
     # Initial state
@@ -166,11 +161,10 @@ class RequestStatus(Enum):
         """
         Check if transition to target state is valid.
 
-        Args:
-            target: The state to transition to
-
-        Returns:
-            True if the transition is valid, False otherwise
+        :param target: The state to transition to.
+        :type target: RequestStatus
+        :return: True if the transition is valid, False otherwise.
+        :rtype: bool
         """
         valid_transitions: dict[RequestStatus, set[RequestStatus]] = {
             # From initial state
@@ -217,15 +211,10 @@ class ProtectionStatus(Enum):
     """
     Protection state for 1+1 protected connections.
 
-    States:
-        UNPROTECTED: No protection (normal request)
-        ESTABLISHING: Setting up protection paths
-        ACTIVE_PRIMARY: Protected, using primary path
-        ACTIVE_BACKUP: Protected, using backup path (after switchover)
-        SWITCHOVER_IN_PROGRESS: Switching between paths
-        PRIMARY_FAILED: Primary path failed, on backup
-        BACKUP_FAILED: Backup path failed, on primary
-        BOTH_FAILED: Both paths failed (connection lost)
+    States include UNPROTECTED (normal request), ESTABLISHING (setting up paths),
+    ACTIVE_PRIMARY (using primary), ACTIVE_BACKUP (using backup after switchover),
+    SWITCHOVER_IN_PROGRESS, PRIMARY_FAILED (on backup), BACKUP_FAILED (on primary),
+    and BOTH_FAILED (connection lost).
     """
 
     UNPROTECTED = auto()
@@ -277,18 +266,16 @@ class ProtectionStatus(Enum):
         return self != ProtectionStatus.UNPROTECTED
 
     @classmethod
-    def from_legacy(
-        cls, is_protected: bool, active_path: str | None
-    ) -> ProtectionStatus:
+    def from_legacy(cls, is_protected: bool, active_path: str | None) -> ProtectionStatus:
         """
         Convert legacy protection fields to enum.
 
-        Args:
-            is_protected: Legacy is_protected flag
-            active_path: Legacy active_path string ("primary" or "backup")
-
-        Returns:
-            Corresponding ProtectionStatus enum value
+        :param is_protected: Legacy is_protected flag.
+        :type is_protected: bool
+        :param active_path: Legacy active_path string ("primary" or "backup").
+        :type active_path: str | None
+        :return: Corresponding ProtectionStatus enum value.
+        :rtype: ProtectionStatus
         """
         if not is_protected:
             return cls.UNPROTECTED
@@ -300,8 +287,8 @@ class ProtectionStatus(Enum):
         """
         Convert to legacy active_path string.
 
-        Returns:
-            "primary" or "backup" based on current state
+        :return: "primary" or "backup" based on current state.
+        :rtype: str
         """
         if self in {ProtectionStatus.ACTIVE_BACKUP, ProtectionStatus.PRIMARY_FAILED}:
             return "backup"
@@ -312,13 +299,11 @@ class BlockReason(Enum):
     """
     Reasons for request blocking.
 
-    Categories:
-        Path-related: NO_PATH, DISTANCE
-        Spectrum-related: CONGESTION
-        Quality-related: SNR_THRESHOLD, XT_THRESHOLD
-        Feature-specific: GROOMING_FAIL, SLICING_FAIL, PROTECTION_FAIL
-        Failure-related: LINK_FAILURE, NODE_FAILURE, FAILURE
-        Resource limits: TRANSPONDER_LIMIT, MAX_SEGMENTS
+    Path-related reasons are NO_PATH and DISTANCE. Spectrum-related is CONGESTION.
+    Quality-related are SNR_THRESHOLD and XT_THRESHOLD. Feature-specific are
+    GROOMING_FAIL, SLICING_FAIL, and PROTECTION_FAIL. Failure-related are
+    LINK_FAILURE, NODE_FAILURE, and FAILURE. Resource limits are TRANSPONDER_LIMIT
+    and MAX_SEGMENTS.
     """
 
     # Path-related blocking
@@ -374,11 +359,10 @@ class BlockReason(Enum):
         """
         Convert legacy block reason string to enum.
 
-        Args:
-            reason: Legacy string like "distance", "congestion", etc.
-
-        Returns:
-            Corresponding BlockReason or None if reason is None/empty.
+        :param reason: Legacy string like "distance", "congestion", etc.
+        :type reason: str | None
+        :return: Corresponding BlockReason or None if reason is None/empty.
+        :rtype: BlockReason | None
         """
         if reason is None or reason == "":
             return None
@@ -417,8 +401,8 @@ class BlockReason(Enum):
         """
         Convert to legacy block reason string.
 
-        Returns:
-            String value compatible with legacy code.
+        :return: String value compatible with legacy code.
+        :rtype: str
         """
         return self.value
 
@@ -473,25 +457,23 @@ class Request:
     It tracks the full lifecycle from arrival through allocation to release.
 
     Attributes:
-        Identity (immutable after creation):
-            request_id: Unique identifier
-            source: Source node ID
-            destination: Destination node ID
-            bandwidth_gbps: Requested bandwidth in Gbps
-            arrive_time: Simulation time of arrival
-            depart_time: Simulation time of departure
-            modulation_formats: Available modulation formats for this request
-
-        State (mutable during processing):
-            status: Current lifecycle state (PENDING -> ROUTED/BLOCKED -> RELEASED)
-            lightpath_ids: IDs of lightpaths serving this request
-            block_reason: Reason for blocking (if status == BLOCKED)
-
-        Feature flags (mutable):
-            is_groomed: Fully served by existing lightpath capacity
-            is_partially_groomed: Partially served by existing lightpath
-            is_sliced: Split across multiple lightpaths
-            is_protected: Has 1+1 path protection
+        request_id: Unique identifier (immutable after creation).
+        source: Source node ID (immutable after creation).
+        destination: Destination node ID (immutable after creation).
+        bandwidth_gbps: Requested bandwidth in Gbps (immutable after creation).
+        arrive_time: Simulation time of arrival (immutable after creation).
+        depart_time: Simulation time of departure (immutable after creation).
+        modulation_formats: Available modulation formats for this request.
+        status: Current lifecycle state (PENDING -> ROUTED/BLOCKED -> RELEASED).
+        lightpath_ids: IDs of lightpaths serving this request.
+        block_reason: Reason for blocking (if status == BLOCKED).
+        is_groomed: Fully served by existing lightpath capacity.
+        is_partially_groomed: Partially served by existing lightpath.
+        is_sliced: Split across multiple lightpaths.
+        protection_status: Protection state for 1+1 protected connections.
+        primary_path: Primary path for protected requests.
+        backup_path: Backup path for protected requests.
+        last_switchover_time: Time of last protection switchover.
 
     Example:
         >>> request = Request(
@@ -591,7 +573,8 @@ class Request:
         """
         Canonical endpoint pair for lightpath matching.
 
-        Returns sorted tuple to ensure (A, B) == (B, A) for endpoint matching.
+        :return: Sorted tuple to ensure (A, B) == (B, A) for endpoint matching.
+        :rtype: tuple[str, str]
         """
         return tuple(sorted([self.source, self.destination]))  # type: ignore[return-value]
 
@@ -632,11 +615,9 @@ class Request:
         """
         Mark request as successfully allocated to new lightpath(s).
 
-        Args:
-            lightpath_ids: IDs of lightpaths allocated for this request
-
-        Raises:
-            ValueError: If transition is invalid or no lightpaths provided
+        :param lightpath_ids: IDs of lightpaths allocated for this request.
+        :type lightpath_ids: list[int]
+        :raises ValueError: If transition is invalid or no lightpaths provided.
         """
         if not self.status.can_transition_to(RequestStatus.ALLOCATED):
             raise ValueError(f"Cannot transition from {self.status} to ALLOCATED")
@@ -651,11 +632,9 @@ class Request:
         """
         Mark request as successfully groomed onto existing lightpath(s).
 
-        Args:
-            lightpath_ids: IDs of lightpaths used for grooming
-
-        Raises:
-            ValueError: If transition is invalid or no lightpaths provided
+        :param lightpath_ids: IDs of lightpaths used for grooming.
+        :type lightpath_ids: list[int]
+        :raises ValueError: If transition is invalid or no lightpaths provided.
         """
         if not self.status.can_transition_to(RequestStatus.GROOMED):
             raise ValueError(f"Cannot transition from {self.status} to GROOMED")
@@ -671,16 +650,12 @@ class Request:
         """
         Mark request as partially groomed (some traffic on existing LP, rest new).
 
-        Args:
-            lightpath_ids: IDs of all lightpaths (existing and new)
-
-        Raises:
-            ValueError: If transition is invalid or no lightpaths provided
+        :param lightpath_ids: IDs of all lightpaths (existing and new).
+        :type lightpath_ids: list[int]
+        :raises ValueError: If transition is invalid or no lightpaths provided.
         """
         if not self.status.can_transition_to(RequestStatus.PARTIALLY_GROOMED):
-            raise ValueError(
-                f"Cannot transition from {self.status} to PARTIALLY_GROOMED"
-            )
+            raise ValueError(f"Cannot transition from {self.status} to PARTIALLY_GROOMED")
         if not lightpath_ids:
             raise ValueError("Must provide at least one lightpath_id")
 
@@ -696,11 +671,9 @@ class Request:
         This method provides backwards compatibility with code that uses
         the simplified PENDING -> ROUTED -> RELEASED flow.
 
-        Args:
-            lightpath_ids: IDs of lightpaths allocated for this request
-
-        Raises:
-            ValueError: If transition is invalid or no lightpaths provided
+        :param lightpath_ids: IDs of lightpaths allocated for this request.
+        :type lightpath_ids: list[int]
+        :raises ValueError: If transition is invalid or no lightpaths provided.
         """
         self.mark_allocated(lightpath_ids)
 
@@ -708,11 +681,9 @@ class Request:
         """
         Mark request as blocked.
 
-        Args:
-            reason: Reason for blocking
-
-        Raises:
-            ValueError: If transition is invalid
+        :param reason: Reason for blocking.
+        :type reason: BlockReason
+        :raises ValueError: If transition is invalid.
         """
         if not self.status.can_transition_to(RequestStatus.BLOCKED):
             raise ValueError(f"Cannot transition from {self.status} to BLOCKED")
@@ -724,8 +695,7 @@ class Request:
         """
         Mark request as releasing (resources being freed).
 
-        Raises:
-            ValueError: If transition is invalid
+        :raises ValueError: If transition is invalid.
         """
         if not self.status.can_transition_to(RequestStatus.RELEASING):
             raise ValueError(f"Cannot transition from {self.status} to RELEASING")
@@ -738,8 +708,7 @@ class Request:
 
         If currently in a success state, transitions through RELEASING first.
 
-        Raises:
-            ValueError: If transition is invalid
+        :raises ValueError: If transition is invalid.
         """
         # Allow direct transition from success states by going through RELEASING
         if self.status.is_success():
@@ -756,11 +725,9 @@ class Request:
 
         Use this for processing state transitions (ROUTING, SPECTRUM_SEARCH, etc.).
 
-        Args:
-            status: The target status
-
-        Raises:
-            ValueError: If transition is invalid
+        :param status: The target status.
+        :type status: RequestStatus
+        :raises ValueError: If transition is invalid.
         """
         if not self.status.can_transition_to(status):
             raise ValueError(f"Cannot transition from {self.status} to {status}")
@@ -768,6 +735,7 @@ class Request:
 
     # =========================================================================
     # Legacy Adapters
+    # TODO(v6.1): Remove legacy adapter methods once migration is complete.
     # =========================================================================
     @classmethod
     def from_legacy_dict(
@@ -782,21 +750,17 @@ class Request:
         The legacy format stores requests in a dict indexed by (request_id, time).
         Each entry contains fields like "req_id", "source", "bandwidth", etc.
 
-        Args:
-            time_key: Tuple of (request_id, time) used as dict key
-            request_dict: Legacy request dictionary with fields:
-                - "req_id": int - Request identifier
-                - "source": str - Source node ID
-                - "destination": str - Destination node ID
-                - "arrive": float - Arrival time
-                - "depart": float - Departure time
-                - "bandwidth": str - Bandwidth like "50Gbps" or "100Gbps"
-                - "mod_formats": dict - Modulation formats (optional)
-                - "request_type": str - "arrival" or "release" (optional)
-            request_id: Override request_id (default: from time_key[0] or req_id)
-
-        Returns:
-            New Request instance in PENDING state
+        :param time_key: Tuple of (request_id, time) used as dict key.
+        :type time_key: tuple[int, float]
+        :param request_dict: Legacy request dictionary with fields req_id (int),
+            source (str), destination (str), arrive (float), depart (float),
+            bandwidth (str like "50Gbps"), mod_formats (dict, optional),
+            request_type (str "arrival"/"release", optional).
+        :type request_dict: dict[str, Any]
+        :param request_id: Override request_id (default: from time_key[0] or req_id).
+        :type request_id: int | None
+        :return: New Request instance in PENDING state.
+        :rtype: Request
 
         Example:
             >>> legacy = {
@@ -821,9 +785,7 @@ class Request:
         bandwidth_raw = request_dict.get("bandwidth", "0Gbps")
         if isinstance(bandwidth_raw, str):
             # Handle formats like "100Gbps", "50 Gbps", "100"
-            bandwidth_gbps = int(
-                bandwidth_raw.lower().replace("gbps", "").replace(" ", "")
-            )
+            bandwidth_gbps = int(bandwidth_raw.lower().replace("gbps", "").replace(" ", ""))
         else:
             bandwidth_gbps = int(bandwidth_raw)
 
@@ -857,16 +819,11 @@ class Request:
         This enables interoperability with legacy code that expects
         request dictionaries during the migration period.
 
-        Returns:
-            Dictionary compatible with legacy request consumers:
-                - "req_id": int - Request identifier
-                - "source": str - Source node ID
-                - "destination": str - Destination node ID
-                - "arrive": float - Arrival time
-                - "depart": float - Departure time
-                - "bandwidth": str - Bandwidth as string (e.g., "100Gbps")
-                - "mod_formats": dict - Modulation formats
-                - "request_type": str - "arrival" or "release"
+        :return: Dictionary compatible with legacy request consumers with keys
+            req_id (int), source (str), destination (str), arrive (float),
+            depart (float), bandwidth (str like "100Gbps"), mod_formats (dict),
+            request_type (str "arrival"/"release").
+        :rtype: dict[str, Any]
 
         Example:
             >>> request = Request(
@@ -903,10 +860,9 @@ class Request:
         """
         Generate legacy dictionary key for this request.
 
-        Returns:
-            Tuple of (request_id, time) where time depends on status:
-            - PENDING/ROUTED/BLOCKED: arrive_time
-            - RELEASED: depart_time
+        :return: Tuple of (request_id, time) where time depends on status:
+            PENDING/ROUTED/BLOCKED uses arrive_time, RELEASED uses depart_time.
+        :rtype: tuple[int, float]
         """
         if self.status == RequestStatus.RELEASED:
             return (self.request_id, self.depart_time)

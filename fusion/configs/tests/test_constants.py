@@ -177,6 +177,4 @@ class TestConstants:
         ]
 
         for constant in expected_constants:
-            assert hasattr(constants_module, constant), (
-                f"Constant '{constant}' not found in module"
-            )
+            assert hasattr(constants_module, constant), f"Constant '{constant}' not found in module"

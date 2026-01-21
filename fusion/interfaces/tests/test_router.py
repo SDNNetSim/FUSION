@@ -52,9 +52,7 @@ class TestAbstractRoutingAlgorithmAbstractMethods:
         abstract_methods = {
             method
             for method in dir(AbstractRoutingAlgorithm)
-            if hasattr(
-                getattr(AbstractRoutingAlgorithm, method), "__isabstractmethod__"
-            )
+            if hasattr(getattr(AbstractRoutingAlgorithm, method), "__isabstractmethod__")
             and getattr(AbstractRoutingAlgorithm, method).__isabstractmethod__
         }
 
@@ -165,9 +163,7 @@ class TestAbstractRoutingAlgorithmInitialization:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:
@@ -214,9 +210,7 @@ class TestConcreteRoutingAlgorithmImplementation:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 self.route_props.paths_matrix = [[source, destination]]
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return [[source, destination]]
 
             def update_weights(self, topology: Any) -> None:
@@ -282,9 +276,7 @@ class TestAbstractRoutingAlgorithmReset:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:
@@ -366,9 +358,7 @@ class TestAbstractRoutingAlgorithmEdgeCases:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:
@@ -404,9 +394,7 @@ class TestAbstractRoutingAlgorithmEdgeCases:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:
@@ -442,9 +430,7 @@ class TestAbstractRoutingAlgorithmEdgeCases:
             def route(self, source: Any, destination: Any, request: Any) -> None:
                 pass
 
-            def get_paths(
-                self, source: Any, destination: Any, k: int = 1
-            ) -> list[list[Any]]:
+            def get_paths(self, source: Any, destination: Any, k: int = 1) -> list[list[Any]]:
                 return []
 
             def update_weights(self, topology: Any) -> None:

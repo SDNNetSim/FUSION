@@ -69,10 +69,7 @@ class DataAdapterRegistry:
 
         # No adapter found
         supported_versions = ", ".join(str(a.version) for a in self._adapters)
-        raise UnsupportedDataFormatError(
-            f"No adapter found for data format. "
-            f"Supported versions: {supported_versions}"
-        )
+        raise UnsupportedDataFormatError(f"No adapter found for data format. Supported versions: {supported_versions}")
 
     def get_adapter_by_version(self, version: DataVersion) -> DataAdapter | None:
         """

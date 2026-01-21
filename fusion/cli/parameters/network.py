@@ -56,12 +56,8 @@ def add_link_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Use constant link weights for routing",
     )
-    link_group.add_argument(
-        "--bi_directional", action="store_true", help="Enable bidirectional links"
-    )
-    link_group.add_argument(
-        "--multi_fiber", action="store_true", help="Enable multi-fiber links"
-    )
+    link_group.add_argument("--bi_directional", action="store_true", help="Enable bidirectional links")
+    link_group.add_argument("--multi_fiber", action="store_true", help="Enable multi-fiber links")
 
 
 def add_node_args(parser: argparse.ArgumentParser) -> None:
@@ -146,7 +142,6 @@ def add_network_args(parser: argparse.ArgumentParser) -> None:
     add_spectrum_bands_args(parser)
 
 
-# TODO: This function seems useless
 def add_all_network_args(parser: argparse.ArgumentParser) -> None:
     """
     Add all network-related argument groups to the parser.

@@ -2,12 +2,11 @@
 Unit tests for routing strategies.
 
 Tests cover:
+
 - RouteConstraints creation and manipulation
 - KShortestPathStrategy route selection
 - LoadBalancedStrategy utilization scoring
 - ProtectionAwareStrategy disjoint path finding
-
-Phase: P3.1.e - Routing Strategy Pattern (Gap Analysis)
 """
 
 from __future__ import annotations
@@ -22,7 +21,6 @@ from fusion.pipelines.routing_strategies import (
     ProtectionAwareStrategy,
     RouteConstraints,
 )
-
 
 # =============================================================================
 # RouteConstraints Tests
@@ -121,11 +119,10 @@ class TestKShortestPathStrategy:
 
         with patch("networkx.shortest_simple_paths") as mock_paths:
             import networkx as nx
+
             mock_paths.side_effect = nx.NetworkXNoPath()
 
-            result = strategy.select_routes(
-                "A", "Z", 100, mock_network_state
-            )
+            result = strategy.select_routes("A", "Z", 100, mock_network_state)
 
         assert result.is_empty
         assert result.strategy_name == "k_shortest_3"
@@ -146,14 +143,14 @@ class TestKShortestPathStrategy:
         mock_network_state.config = MagicMock()
 
         with patch("networkx.shortest_simple_paths") as mock_paths:
-            mock_paths.return_value = iter([
-                ["A", "B", "Z"],
-                ["A", "C", "Z"],
-            ])
-
-            result = strategy.select_routes(
-                "A", "Z", 100, mock_network_state
+            mock_paths.return_value = iter(
+                [
+                    ["A", "B", "Z"],
+                    ["A", "C", "Z"],
+                ]
             )
+
+            result = strategy.select_routes("A", "Z", 100, mock_network_state)
 
         assert not result.is_empty
         assert len(result.paths) == 2
@@ -178,14 +175,14 @@ class TestKShortestPathStrategy:
 
         with patch("networkx.shortest_simple_paths") as mock_paths:
             # First path has 2 hops, second has 3 hops
-            mock_paths.return_value = iter([
-                ["A", "B", "Z"],  # 2 hops - OK
-                ["A", "B", "C", "Z"],  # 3 hops - filtered
-            ])
-
-            result = strategy.select_routes(
-                "A", "Z", 100, mock_network_state, constraints
+            mock_paths.return_value = iter(
+                [
+                    ["A", "B", "Z"],  # 2 hops - OK
+                    ["A", "B", "C", "Z"],  # 3 hops - filtered
+                ]
             )
+
+            result = strategy.select_routes("A", "Z", 100, mock_network_state, constraints)
 
         assert len(result.paths) == 1
         assert result.paths[0] == ("A", "B", "Z")
@@ -229,15 +226,12 @@ class TestLoadBalancedStrategy:
         mock_network_state.config = MagicMock()
         mock_network_state.get_link_utilization.return_value = 0.0
 
-        with patch.object(
-            KShortestPathStrategy, "select_routes"
-        ) as mock_ksp:
+        with patch.object(KShortestPathStrategy, "select_routes") as mock_ksp:
             from fusion.domain.results import RouteResult
+
             mock_ksp.return_value = RouteResult.empty()
 
-            result = strategy.select_routes(
-                "A", "Z", 100, mock_network_state
-            )
+            result = strategy.select_routes("A", "Z", 100, mock_network_state)
 
         assert result.is_empty
         assert result.strategy_name == "load_balanced"
@@ -274,11 +268,10 @@ class TestProtectionAwareStrategy:
 
         with patch.object(strategy, "select_routes") as mock_select:
             from fusion.domain.results import RouteResult
+
             mock_select.return_value = RouteResult.empty()
 
-            working, protection = strategy.find_disjoint_pair(
-                "A", "Z", 100, mock_network_state
-            )
+            working, protection = strategy.find_disjoint_pair("A", "Z", 100, mock_network_state)
 
         assert working.is_empty
         assert protection.is_empty
@@ -309,7 +302,7 @@ class TestProtectionAwareStrategy:
 
         call_count = 0
 
-        def mock_select(*args, **kwargs):
+        def mock_select(*args: object, **kwargs: object) -> RouteResult:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -317,9 +310,7 @@ class TestProtectionAwareStrategy:
             return protection_result
 
         with patch.object(strategy, "select_routes", side_effect=mock_select):
-            working, protection = strategy.find_disjoint_pair(
-                "A", "Z", 100, mock_network_state
-            )
+            working, protection = strategy.find_disjoint_pair("A", "Z", 100, mock_network_state)
 
         assert not working.is_empty
         assert working.best_path == ("A", "B", "Z")

@@ -116,9 +116,7 @@ def run_simulation_for_erlangs(
         env.engine_obj.engine_props["arrival_rate"] = arrival_rate
         env.engine_obj.engine_props["arrival_rate"] /= sim_dict["holding_time"]
 
-        sum_returns = run_func(
-            env=env, sim_dict=env.sim_dict, callback_list=callback_list, trial=trial
-        )
+        sum_returns = run_func(env=env, sim_dict=env.sim_dict, callback_list=callback_list, trial=trial)
         total_rewards.append(sum_returns)
 
     return float(np.mean(total_rewards))
@@ -155,9 +153,7 @@ def save_study_results(
         env.engine_obj.engine_props["date"],
         env.engine_obj.engine_props["sim_start"],
     )
-    save_dir = os.path.join(
-        "logs", env.engine_obj.engine_props["path_algorithm"], date_time
-    )
+    save_dir = os.path.join("logs", env.engine_obj.engine_props["path_algorithm"], date_time)
     os.makedirs(save_dir, exist_ok=True)
 
     save_filepath = os.path.join(save_dir, study_name)

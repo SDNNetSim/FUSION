@@ -167,9 +167,7 @@ class TestNetworkSimulator:
         assert mock_engine.run.call_count == 3
 
     @patch("fusion.sim.network_simulator.run")
-    def test_run_sim_sets_properties_and_calls_run_generic(
-        self, mock_run: MagicMock, sample_engine_props: dict
-    ) -> None:
+    def test_run_sim_sets_properties_and_calls_run_generic(self, mock_run: MagicMock, sample_engine_props: dict) -> None:
         """Test that run_sim sets up properties and delegates to run_generic_sim."""
         # Arrange
         simulator = NetworkSimulator()
@@ -195,9 +193,7 @@ class TestRunFunction:
 
     @patch("fusion.sim.network_simulator.Process")
     @patch("fusion.sim.network_simulator.logger")
-    def test_run_creates_process_for_each_simulation(
-        self, mock_logger: MagicMock, mock_process: MagicMock
-    ) -> None:
+    def test_run_creates_process_for_each_simulation(self, mock_logger: MagicMock, mock_process: MagicMock) -> None:
         """Test that run creates a process for each simulation config."""
         # Arrange
         sims_dict = {
@@ -226,9 +222,7 @@ class TestRunFunction:
 
     @patch("fusion.sim.network_simulator.Process")
     @patch("fusion.sim.network_simulator.datetime")
-    def test_run_generates_sim_start_when_missing(
-        self, mock_datetime: MagicMock, mock_process: MagicMock
-    ) -> None:
+    def test_run_generates_sim_start_when_missing(self, mock_datetime: MagicMock, mock_process: MagicMock) -> None:
         """Test that run generates sim_start when not provided."""
         # Arrange
         sims_dict = {"s1": {"network": "test_net"}}
@@ -244,9 +238,7 @@ class TestRunFunction:
         mock_datetime.now.assert_called()
 
     @patch("fusion.sim.network_simulator.Process")
-    def test_run_uses_existing_sim_start_when_provided(
-        self, mock_process: MagicMock
-    ) -> None:
+    def test_run_uses_existing_sim_start_when_provided(self, mock_process: MagicMock) -> None:
         """Test that run uses existing sim_start and date when provided."""
         # Arrange
         sims_dict = {

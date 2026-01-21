@@ -58,10 +58,7 @@ class PathGNNEncoder(torch.nn.Module):
         }
 
         if gnn_type not in convolution_mapping:
-            raise ValueError(
-                f"Unknown GNN type: {gnn_type}. "
-                f"Valid types: {list(convolution_mapping.keys())}"
-            )
+            raise ValueError(f"Unknown GNN type: {gnn_type}. Valid types: {list(convolution_mapping.keys())}")
 
         convolution_class = convolution_mapping[gnn_type]
         # Assert shape exists and has expected dimensions for type safety
@@ -71,12 +68,7 @@ class PathGNNEncoder(torch.nn.Module):
 
         # Build convolution layers
         self.convolution_layers = torch.nn.ModuleList(
-            [
-                convolution_class(
-                    input_dimension if layer_idx == 0 else emb_dim, emb_dim
-                )
-                for layer_idx in range(layers)
-            ]
+            [convolution_class(input_dimension if layer_idx == 0 else emb_dim, emb_dim) for layer_idx in range(layers)]
         )
 
         # Readout layer
@@ -107,9 +99,7 @@ class PathGNNEncoder(torch.nn.Module):
 
         # Compute edge embeddings
         source_indices, destination_indices = edge_index
-        edge_embeddings = (
-            node_embeddings[source_indices] + node_embeddings[destination_indices]
-        ) * EDGE_EMBEDDING_SCALE_FACTOR
+        edge_embeddings = (node_embeddings[source_indices] + node_embeddings[destination_indices]) * EDGE_EMBEDDING_SCALE_FACTOR
 
         # Aggregate path embeddings
         path_embeddings = path_masks @ edge_embeddings

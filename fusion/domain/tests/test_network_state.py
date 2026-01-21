@@ -19,14 +19,12 @@ Tests cover:
 
 from __future__ import annotations
 
-import numpy as np
 import networkx as nx
+import numpy as np
 import pytest
 
 from fusion.domain.config import SimulationConfig
-from fusion.domain.lightpath import Lightpath
 from fusion.domain.network_state import LinkSpectrum, NetworkState
-
 
 # =============================================================================
 # Test Fixtures
@@ -41,7 +39,7 @@ def create_test_config(
 ) -> SimulationConfig:
     """Create a test SimulationConfig with minimal required fields."""
     if band_slots is None:
-        band_slots = {band: 320 for band in band_list}
+        band_slots = dict.fromkeys(band_list, 320)
 
     return SimulationConfig(
         network_name="test_network",
@@ -239,9 +237,7 @@ class TestLinkSpectrumAllocate:
         assert np.all(ls.cores_matrix["c"][0, 10:20] == 0)
         assert np.all(ls.cores_matrix["c"][0, 20:30] == 2)
 
-    def test_allocation_fails_if_not_free(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_allocation_fails_if_not_free(self, simple_config: SimulationConfig) -> None:
         """Allocation should fail if range is occupied."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
         ls.allocate_range(0, 10, 0, "c", lightpath_id=1)
@@ -249,18 +245,14 @@ class TestLinkSpectrumAllocate:
         with pytest.raises(ValueError, match="not free"):
             ls.allocate_range(5, 15, 0, "c", lightpath_id=2)
 
-    def test_allocation_fails_with_zero_id(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_allocation_fails_with_zero_id(self, simple_config: SimulationConfig) -> None:
         """Allocation should fail with zero lightpath_id."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
 
         with pytest.raises(ValueError, match="must be positive"):
             ls.allocate_range(0, 10, 0, "c", lightpath_id=0)
 
-    def test_allocation_fails_with_negative_id(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_allocation_fails_with_negative_id(self, simple_config: SimulationConfig) -> None:
         """Allocation should fail with negative lightpath_id."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
 
@@ -290,9 +282,7 @@ class TestLinkSpectrumRelease:
         assert ls.is_range_free(0, 12, 0, "c")
         assert np.all(ls.cores_matrix["c"][0, 0:12] == 0)
 
-    def test_usage_count_clamps_to_zero(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_usage_count_clamps_to_zero(self, simple_config: SimulationConfig) -> None:
         """Usage count should not go negative."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
         ls.release_range(0, 10, 0, "c")  # Release on empty
@@ -303,9 +293,7 @@ class TestLinkSpectrumRelease:
 class TestLinkSpectrumReleaseByLightpathId:
     """Tests for release_by_lightpath_id method."""
 
-    def test_release_by_id_finds_and_clears(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_release_by_id_finds_and_clears(self, simple_config: SimulationConfig) -> None:
         """Release by ID should find and clear all slots."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
         ls.allocate_range(10, 22, 0, "c", lightpath_id=5, guard_slots=2)
@@ -316,9 +304,7 @@ class TestLinkSpectrumReleaseByLightpathId:
         assert ls.is_range_free(10, 22, 0, "c")
         assert ls.usage_count == 0
 
-    def test_release_by_id_returns_none_if_not_found(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_release_by_id_returns_none_if_not_found(self, simple_config: SimulationConfig) -> None:
         """Release by ID should return None if not found."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
 
@@ -330,18 +316,14 @@ class TestLinkSpectrumReleaseByLightpathId:
 class TestLinkSpectrumFragmentation:
     """Tests for fragmentation calculation."""
 
-    def test_empty_spectrum_no_fragmentation(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_empty_spectrum_no_fragmentation(self, simple_config: SimulationConfig) -> None:
         """Empty spectrum should have no fragmentation."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
 
         frag = ls.get_fragmentation_ratio("c", 0)
         assert frag == 0.0
 
-    def test_full_spectrum_no_fragmentation(
-        self, simple_config: SimulationConfig
-    ) -> None:
+    def test_full_spectrum_no_fragmentation(self, simple_config: SimulationConfig) -> None:
         """Full spectrum should have no fragmentation (no free slots)."""
         ls = LinkSpectrum.from_config(("A", "B"), simple_config)
         ls.cores_matrix["c"][0, :] = 1
@@ -1957,7 +1939,7 @@ class TestLightpathQueriesWithData:
             bandwidth_gbps=100,
             path_weight_km=250.0,
         )
-        lp2 = state.create_lightpath(
+        _lp2 = state.create_lightpath(
             path=["B", "C"],
             start_slot=20,
             end_slot=30,

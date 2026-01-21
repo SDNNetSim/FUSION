@@ -30,10 +30,7 @@ class ValidationResult:
         status = "valid" if self.is_valid else "invalid"
         error_count = len(self.errors)
         warning_count = len(self.warnings)
-        return (
-            f"ValidationResult({status}, "
-            f"errors={error_count}, warnings={warning_count})"
-        )
+        return f"ValidationResult({status}, errors={error_count}, warnings={warning_count})"
 
 
 class DataValidationService:
@@ -106,10 +103,7 @@ class DataValidationService:
 
         # At least one of these should be present
         if not any(field in data for field in common_fields):
-            result.add_warning(
-                "Data does not contain any common simulation fields. "
-                "Expected at least one of: " + ", ".join(common_fields)
-            )
+            result.add_warning("Data does not contain any common simulation fields. Expected at least one of: " + ", ".join(common_fields))
 
         # Check deprecated fields
         deprecated_fields = {
@@ -130,10 +124,7 @@ class DataValidationService:
                 # V1 format validation
                 for key, value in iter_stats.items():
                     if not isinstance(value, dict):
-                        result.add_error(
-                            f"iter_stats[{key}] should be a dict, "
-                            f"got {type(value).__name__}"
-                        )
+                        result.add_error(f"iter_stats[{key}] should be a dict, got {type(value).__name__}")
 
         # Validate iterations structure if present
         if "iterations" in data:
@@ -167,10 +158,7 @@ class DataValidationService:
             # Handle type checking
             if isinstance(expected_type, type):
                 if not isinstance(value, expected_type):
-                    result.add_error(
-                        f"Field '{field_name}' should be {expected_type.__name__}, "
-                        f"got {actual_type}"
-                    )
+                    result.add_error(f"Field '{field_name}' should be {expected_type.__name__}, got {actual_type}")
 
     def validate_metric_path(self, path: str) -> ValidationResult:
         """
@@ -190,9 +178,7 @@ class DataValidationService:
 
         # Basic validation (can be expanded)
         if not path.startswith("$") and not path.split(".")[0].isalnum():
-            result.add_warning(
-                f"Metric path '{path}' does not look like a valid JSONPath"
-            )
+            result.add_warning(f"Metric path '{path}' does not look like a valid JSONPath")
 
         return result
 

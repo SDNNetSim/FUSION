@@ -1,9 +1,10 @@
 """
-CLI entry point for training FUSION agents (RL or ML).
+CLI entry point for training FUSION agents.
 
-This module provides the command-line interface for training machine learning
-and reinforcement learning agents. It supports multiple training algorithms
-and provides detailed error handling with helpful guidance for common issues.
+This module provides the command-line interface for training reinforcement
+learning (RL) and supervised learning (SL) agents. It supports multiple
+training algorithms and provides detailed error handling with helpful
+guidance for common issues.
 """
 
 from fusion.cli.constants import ERROR_EXIT_CODE, INTERRUPT_EXIT_CODE, SUCCESS_EXIT_CODE
@@ -17,11 +18,11 @@ logger = get_logger(__name__)
 
 def main() -> int:
     """
-    Train FUSION agents using RL or ML algorithms.
+    Train FUSION agents using RL or SL algorithms.
 
     Parses command line arguments and delegates training execution to the
-    appropriate training pipeline module. Supports both reinforcement learning
-    and machine learning workflows with proper error handling and user feedback.
+    appropriate training pipeline module. Supports both reinforcement learning (RL)
+    and supervised learning (SL) workflows with proper error handling and user feedback.
 
     :return: Exit code (0 for success, 1 for error or interruption)
     :rtype: int
@@ -29,35 +30,22 @@ def main() -> int:
     """
     try:
         training_arguments = create_training_argument_parser()
-
         run_training_pipeline(training_arguments)
 
     except KeyboardInterrupt:
-        logger.info("Training interrupted by user")
-        print("\nTraining interrupted by user")  # User-facing message
-        print("Training progress has been saved where possible")
+        logger.info("Training interrupted by user. Training progress has been saved where possible.")
         return INTERRUPT_EXIT_CODE
     except (ImportError, ModuleNotFoundError) as e:
-        logger.error(f"Missing training dependencies: {e}")
-        print(f"Missing training dependencies: {e}")  # User-facing message
-        print("Try installing ML/RL dependencies with: pip install -e .[ml,rl]")
+        logger.error(f"Missing training dependencies: {e}. Try: pip install -e .[rl]")
         return ERROR_EXIT_CODE
     except OSError as e:
-        logger.error(f"File system error during training: {e}")
-        print(f"File system error during training: {e}")  # User-facing message
-        print("Check file permissions and available disk space for model storage")
+        logger.error(f"File system error during training: {e}. Check file permissions and disk space.")
         return ERROR_EXIT_CODE
     except (ValueError, TypeError) as e:
-        logger.error(f"Training configuration error: {e}")
-        print(f"Training configuration error: {e}")  # User-facing message
-        print("Check your training parameters and agent configuration")
+        logger.error(f"Training configuration error: {e}. Check training parameters and agent configuration.")
         return ERROR_EXIT_CODE
     except (RuntimeError, MemoryError) as e:
-        logger.error(f"Training runtime error: {e}")
-        print(f"Training runtime error: {e}")  # User-facing message
-        print(
-            "Consider reducing batch size, model complexity, or check system resources"
-        )
+        logger.error(f"Training runtime error: {e}. Consider reducing batch size or model complexity.")
         return ERROR_EXIT_CODE
 
     return SUCCESS_EXIT_CODE

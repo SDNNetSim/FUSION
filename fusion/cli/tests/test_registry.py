@@ -118,9 +118,7 @@ class TestArgumentRegistry:
         registry = ArgumentRegistry()
         registry.register_group("test_group", Mock())
 
-        parser = registry.create_parser_with_groups(
-            "Custom description", ["test_group"]
-        )
+        parser = registry.create_parser_with_groups("Custom description", ["test_group"])
 
         assert parser.description == "Custom description"
 
@@ -214,9 +212,7 @@ class TestArgumentRegistry:
 
         compatibility_groups = ["simulation", "network", "traffic"]
         for group in compatibility_groups:
-            assert registry.has_group(group), (
-                f"Compatibility group '{group}' not registered"
-            )
+            assert registry.has_group(group), f"Compatibility group '{group}' not registered"
 
     def test_registry_registers_training_groups(self) -> None:
         """Test that registry registers expected training groups."""

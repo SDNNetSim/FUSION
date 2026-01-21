@@ -31,7 +31,8 @@ topology_dict = create_pt(cores_per_link=12, network_spectrum_dict=network_dict)
 ### Advanced Usage
 ```python
 # Custom export formats
-from fusion.io import ExporterRegistry, BaseExporter
+from fusion.io import ExporterRegistry
+from fusion.io.exporter import BaseExporter
 
 class CustomExporter(BaseExporter):
     def export(self, data, output_path):
@@ -89,7 +90,7 @@ DEFAULT_TOPOLOGY_PATH = "data/raw/"
 ### Main Classes
 - `SimulationDataExporter`: Primary interface for exporting simulation data
 - `ExporterRegistry`: Registry for managing export format handlers
-- `BaseExporter`: Abstract base class for custom exporters
+- `BaseExporter`: Abstract base class for custom exporters (import from `fusion.io.exporter`)
 
 ### Key Functions
 - `create_network()`: Build network structure from topology files

@@ -9,8 +9,8 @@ Phase: P3.2 - SDN Orchestrator Creation
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, PropertyMock, patch
+from typing import TYPE_CHECKING, Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -69,7 +69,7 @@ def mock_network_state() -> MagicMock:
 
 
 @pytest.fixture
-def orchestrator(mock_config: MagicMock, mock_pipelines: MagicMock) -> "SDNOrchestrator":
+def orchestrator(mock_config: MagicMock, mock_pipelines: MagicMock) -> SDNOrchestrator:
     """Create orchestrator with mock dependencies."""
     from fusion.core.orchestrator import SDNOrchestrator
 
@@ -84,9 +84,7 @@ def orchestrator(mock_config: MagicMock, mock_pipelines: MagicMock) -> "SDNOrche
 class TestSDNOrchestratorInit:
     """Tests for SDNOrchestrator initialization."""
 
-    def test_init_stores_config(
-        self, mock_config: MagicMock, mock_pipelines: MagicMock
-    ) -> None:
+    def test_init_stores_config(self, mock_config: MagicMock, mock_pipelines: MagicMock) -> None:
         """Orchestrator stores config reference."""
         from fusion.core.orchestrator import SDNOrchestrator
 
@@ -94,9 +92,7 @@ class TestSDNOrchestratorInit:
 
         assert orchestrator.config is mock_config
 
-    def test_init_extracts_pipelines(
-        self, mock_config: MagicMock, mock_pipelines: MagicMock
-    ) -> None:
+    def test_init_extracts_pipelines(self, mock_config: MagicMock, mock_pipelines: MagicMock) -> None:
         """Orchestrator extracts pipelines from PipelineSet."""
         from fusion.core.orchestrator import SDNOrchestrator
 
@@ -108,9 +104,7 @@ class TestSDNOrchestratorInit:
         assert orchestrator.snr is mock_pipelines.snr
         assert orchestrator.slicing is mock_pipelines.slicing
 
-    def test_init_does_not_store_network_state(
-        self, mock_config: MagicMock, mock_pipelines: MagicMock
-    ) -> None:
+    def test_init_does_not_store_network_state(self, mock_config: MagicMock, mock_pipelines: MagicMock) -> None:
         """Orchestrator does not have network_state attribute."""
         from fusion.core.orchestrator import SDNOrchestrator
 
@@ -130,7 +124,8 @@ class TestHandleArrivalBasicPath:
 
     def test_returns_success_when_allocation_succeeds(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -142,7 +137,8 @@ class TestHandleArrivalBasicPath:
         route_result.modulations = (("QPSK", "8QAM"),)
         route_result.weights_km = (100.0,)
         route_result.has_protection = False
-        orchestrator.routing.find_routes.return_value = route_result
+        route_result.connection_index = None
+        mock_pipelines.routing.find_routes.return_value = route_result
 
         # Setup spectrum result
         spectrum_result = MagicMock()
@@ -152,30 +148,34 @@ class TestHandleArrivalBasicPath:
         spectrum_result.core = 0
         spectrum_result.band = "c"
         spectrum_result.modulation = "QPSK"
-        orchestrator.spectrum.find_spectrum.return_value = spectrum_result
+        spectrum_result.achieved_bandwidth_gbps = None
+        spectrum_result.snr_db = None
+        mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
         # Setup lightpath creation
         mock_lightpath = MagicMock()
         mock_lightpath.lightpath_id = 1
         mock_lightpath.request_allocations = {}
+        mock_lightpath.snr_db = None
         mock_network_state.create_lightpath.return_value = mock_lightpath
 
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 
         assert result.success is True
-        orchestrator.routing.find_routes.assert_called_once()
-        orchestrator.spectrum.find_spectrum.assert_called()
+        mock_pipelines.routing.find_routes.assert_called_once()
+        mock_pipelines.spectrum.find_spectrum.assert_called()
 
     def test_returns_failure_when_no_routes(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
         """handle_arrival returns failure when no routes found."""
         route_result = MagicMock()
         route_result.is_empty = True
-        orchestrator.routing.find_routes.return_value = route_result
+        mock_pipelines.routing.find_routes.return_value = route_result
 
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 
@@ -184,7 +184,8 @@ class TestHandleArrivalBasicPath:
 
     def test_returns_failure_when_no_spectrum(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -196,12 +197,14 @@ class TestHandleArrivalBasicPath:
         route_result.modulations = (("QPSK",),)
         route_result.weights_km = (100.0,)
         route_result.has_protection = False
-        orchestrator.routing.find_routes.return_value = route_result
+        route_result.connection_index = None
+        mock_pipelines.routing.find_routes.return_value = route_result
 
         # Setup spectrum result - no free spectrum
         spectrum_result = MagicMock()
         spectrum_result.is_free = False
-        orchestrator.spectrum.find_spectrum.return_value = spectrum_result
+        spectrum_result.achieved_bandwidth_gbps = None
+        mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 
@@ -209,11 +212,12 @@ class TestHandleArrivalBasicPath:
 
     def test_tries_multiple_modulations(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
-        """handle_arrival tries all modulations before failing."""
+        """handle_arrival passes all modulations to spectrum pipeline."""
         # Setup route result with multiple modulations
         route_result = MagicMock()
         route_result.is_empty = False
@@ -221,33 +225,35 @@ class TestHandleArrivalBasicPath:
         route_result.modulations = (("16QAM", "QPSK", "BPSK"),)
         route_result.weights_km = (100.0,)
         route_result.has_protection = False
-        orchestrator.routing.find_routes.return_value = route_result
+        route_result.connection_index = None
+        mock_pipelines.routing.find_routes.return_value = route_result
 
-        # First two modulations fail, third succeeds
-        spectrum_results = [
-            MagicMock(is_free=False),
-            MagicMock(is_free=False),
-            MagicMock(
-                is_free=True,
-                start_slot=0,
-                end_slot=10,
-                core=0,
-                band="c",
-                modulation="BPSK",
-            ),
-        ]
-        orchestrator.spectrum.find_spectrum.side_effect = spectrum_results
+        # Spectrum pipeline receives all modulations and finds spectrum
+        # (internal modulation selection happens within spectrum pipeline)
+        spectrum_result = MagicMock(
+            is_free=True,
+            start_slot=0,
+            end_slot=10,
+            core=0,
+            band="c",
+            modulation="BPSK",
+            achieved_bandwidth_gbps=None,
+            snr_db=None,
+        )
+        mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
         # Setup lightpath
         mock_lightpath = MagicMock()
         mock_lightpath.lightpath_id = 1
         mock_lightpath.request_allocations = {}
+        mock_lightpath.snr_db = None
         mock_network_state.create_lightpath.return_value = mock_lightpath
 
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 
         assert result.success is True
-        assert orchestrator.spectrum.find_spectrum.call_count == 3
+        # Called once per path (1 path), passing all modulations
+        assert mock_pipelines.spectrum.find_spectrum.call_count == 1
 
 
 # =============================================================================
@@ -418,23 +424,30 @@ class TestHandleArrivalWithSNR:
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
-        """handle_arrival releases lightpath when SNR validation fails."""
+        """handle_arrival releases lightpath when SNR validation fails (protection mode)."""
         from fusion.core.orchestrator import SDNOrchestrator
 
+        # SNR validation via snr.validate() only happens in protection mode
         mock_config.snr_enabled = True
+        mock_config.protection_enabled = True
+        mock_request.protection_required = True
         mock_snr = MagicMock()
         mock_pipelines.snr = mock_snr
 
-        # Setup route result
+        # Setup route result for protection (needs working and backup paths)
         route_result = MagicMock()
         route_result.is_empty = False
         route_result.paths = (("A", "B", "C"),)
+        route_result.backup_paths = (("A", "D", "C"),)
         route_result.modulations = (("QPSK",),)
+        route_result.backup_modulations = (("QPSK",),)
         route_result.weights_km = (100.0,)
-        route_result.has_protection = False
+        route_result.backup_weights_km = (100.0,)
+        route_result.has_protection = True
+        route_result.connection_index = None
         mock_pipelines.routing.find_routes.return_value = route_result
 
-        # Setup spectrum result
+        # Setup spectrum results for working and backup
         spectrum_result = MagicMock()
         spectrum_result.is_free = True
         spectrum_result.start_slot = 0
@@ -442,14 +455,20 @@ class TestHandleArrivalWithSNR:
         spectrum_result.core = 0
         spectrum_result.band = "c"
         spectrum_result.modulation = "QPSK"
+        spectrum_result.achieved_bandwidth_gbps = None
+        spectrum_result.snr_db = None
         mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
-        # Setup lightpath creation
-        mock_lightpath = MagicMock()
-        mock_lightpath.lightpath_id = 1
-        mock_network_state.create_lightpath.return_value = mock_lightpath
+        # Setup lightpath creation for working and backup
+        mock_working_lp = MagicMock()
+        mock_working_lp.lightpath_id = 1
+        mock_working_lp.snr_db = None
+        mock_backup_lp = MagicMock()
+        mock_backup_lp.lightpath_id = 2
+        mock_backup_lp.snr_db = None
+        mock_network_state.create_lightpath.side_effect = [mock_working_lp, mock_backup_lp]
 
-        # Setup SNR failure
+        # Setup SNR failure on working lightpath
         snr_result = MagicMock()
         snr_result.passed = False
         mock_snr.validate.return_value = snr_result
@@ -457,8 +476,8 @@ class TestHandleArrivalWithSNR:
         orchestrator = SDNOrchestrator(mock_config, mock_pipelines)
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 
-        # Should release lightpath after SNR failure
-        mock_network_state.release_lightpath.assert_called_with(1)
+        # Should release both lightpaths after SNR failure
+        assert mock_network_state.release_lightpath.call_count == 2
         assert result.success is False
 
     def test_congestion_check_releases_on_recheck_failure(
@@ -483,6 +502,7 @@ class TestHandleArrivalWithSNR:
         route_result.modulations = (("QPSK",),)
         route_result.weights_km = (100.0,)
         route_result.has_protection = False
+        route_result.connection_index = None
         mock_pipelines.routing.find_routes.return_value = route_result
 
         # Setup spectrum result
@@ -493,11 +513,14 @@ class TestHandleArrivalWithSNR:
         spectrum_result.core = 0
         spectrum_result.band = "c"
         spectrum_result.modulation = "QPSK"
+        spectrum_result.achieved_bandwidth_gbps = None
+        spectrum_result.snr_db = None
         mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
         # Setup lightpath
         mock_lightpath = MagicMock()
         mock_lightpath.lightpath_id = 1
+        mock_lightpath.snr_db = None
         mock_network_state.create_lightpath.return_value = mock_lightpath
 
         # SNR validation passes
@@ -550,6 +573,7 @@ class TestHandleArrivalWithProtection:
         route_result.backup_modulations = (("QPSK",),)
         route_result.weights_km = (100.0,)
         route_result.backup_weights_km = (120.0,)
+        route_result.connection_index = None
         mock_pipelines.routing.find_routes.return_value = route_result
 
         # Setup spectrum for both paths
@@ -560,13 +584,19 @@ class TestHandleArrivalWithProtection:
         spectrum_result.core = 0
         spectrum_result.band = "c"
         spectrum_result.modulation = "QPSK"
+        spectrum_result.achieved_bandwidth_gbps = None
+        spectrum_result.snr_db = None
         mock_pipelines.spectrum.find_spectrum.return_value = spectrum_result
 
         # Setup lightpath creation
         working_lp = MagicMock()
         working_lp.lightpath_id = 1
+        working_lp.snr_db = None
+        working_lp.protection_lp_id = None
         backup_lp = MagicMock()
         backup_lp.lightpath_id = 2
+        backup_lp.snr_db = None
+        backup_lp.working_lp_id = None
         mock_network_state.create_lightpath.side_effect = [working_lp, backup_lp]
 
         orchestrator = SDNOrchestrator(mock_config, mock_pipelines)
@@ -625,6 +655,7 @@ class TestHandleArrivalWithProtection:
         route_result.backup_modulations = (("QPSK",),)
         route_result.weights_km = (100.0,)
         route_result.backup_weights_km = (120.0,)
+        route_result.connection_index = None
         mock_pipelines.routing.find_routes.return_value = route_result
 
         # Working spectrum succeeds, backup fails
@@ -635,6 +666,8 @@ class TestHandleArrivalWithProtection:
         working_spectrum.core = 0
         working_spectrum.band = "c"
         working_spectrum.modulation = "QPSK"
+        working_spectrum.achieved_bandwidth_gbps = None
+        working_spectrum.snr_db = None
 
         backup_spectrum = MagicMock()
         backup_spectrum.is_free = False  # Backup fails
@@ -647,6 +680,7 @@ class TestHandleArrivalWithProtection:
         # Setup working lightpath
         working_lp = MagicMock()
         working_lp.lightpath_id = 1
+        working_lp.snr_db = None
         mock_network_state.create_lightpath.return_value = working_lp
 
         orchestrator = SDNOrchestrator(mock_config, mock_pipelines)
@@ -667,7 +701,7 @@ class TestHandleRelease:
 
     def test_releases_all_lightpaths(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -694,7 +728,7 @@ class TestHandleRelease:
 
     def test_releases_empty_lightpaths(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -707,6 +741,13 @@ class TestHandleRelease:
         mock_lp.request_allocations = {1: 100}  # Only this request
         mock_lp.remaining_bandwidth_gbps = 0
         mock_lp.protection_lp_id = None  # No protection LP
+
+        # Simulate release_bandwidth clearing the allocation
+        def release_bw_side_effect(*args: Any, **kwargs: Any) -> None:
+            mock_lp.request_allocations = {}
+
+        mock_lp.release_bandwidth.side_effect = release_bw_side_effect
+
         mock_network_state.get_lightpath.return_value = mock_lp
 
         orchestrator.handle_release(mock_request, mock_network_state)
@@ -716,7 +757,7 @@ class TestHandleRelease:
 
     def test_does_not_release_shared_lightpath(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -747,7 +788,7 @@ class TestEdgeCases:
 
     def test_handles_missing_lightpath_gracefully(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -770,7 +811,8 @@ class TestEdgeCases:
 
     def test_skips_grooming_when_disabled(
         self,
-        orchestrator: "SDNOrchestrator",
+        orchestrator: SDNOrchestrator,
+        mock_pipelines: MagicMock,
         mock_request: MagicMock,
         mock_network_state: MagicMock,
     ) -> None:
@@ -778,7 +820,7 @@ class TestEdgeCases:
         # Route fails immediately
         route_result = MagicMock()
         route_result.is_empty = True
-        orchestrator.routing.find_routes.return_value = route_result
+        mock_pipelines.routing.find_routes.return_value = route_result
 
         result = orchestrator.handle_arrival(mock_request, mock_network_state)
 

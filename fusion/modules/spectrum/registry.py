@@ -38,9 +38,7 @@ class SpectrumRegistry:
                 cast(type[AbstractSpectrumAssigner], algorithm_class),
             )
 
-    def register(
-        self, name: str, algorithm_class: type[AbstractSpectrumAssigner]
-    ) -> None:
+    def register(self, name: str, algorithm_class: type[AbstractSpectrumAssigner]) -> None:
         """
         Register a spectrum assignment algorithm.
 
@@ -50,9 +48,7 @@ class SpectrumRegistry:
         :raises ValueError: If name is already registered
         """
         if not issubclass(algorithm_class, AbstractSpectrumAssigner):
-            raise TypeError(
-                f"{algorithm_class.__name__} must implement AbstractSpectrumAssigner"
-            )
+            raise TypeError(f"{algorithm_class.__name__} must implement AbstractSpectrumAssigner")
 
         if name in self._algorithms:
             raise ValueError(f"Spectrum algorithm '{name}' is already registered")
@@ -68,16 +64,11 @@ class SpectrumRegistry:
         :raises KeyError: If algorithm is not found
         """
         if name not in self._algorithms:
-            raise KeyError(
-                f"Spectrum assignment algorithm '{name}' not found. "
-                f"Available algorithms: {list(self._algorithms.keys())}"
-            )
+            raise KeyError(f"Spectrum assignment algorithm '{name}' not found. Available algorithms: {list(self._algorithms.keys())}")
 
         return self._algorithms[name]
 
-    def create(
-        self, name: str, engine_props: dict, sdn_props: SDNProps, route_props: object
-    ) -> AbstractSpectrumAssigner:
+    def create(self, name: str, engine_props: dict, sdn_props: SDNProps, route_props: object) -> AbstractSpectrumAssigner:
         """
         Create an instance of a spectrum assignment algorithm.
 
@@ -115,9 +106,7 @@ class SpectrumRegistry:
             "class": algorithm_class.__name__,
             "module": algorithm_class.__module__,
             "supports_multiband": temp_instance.supports_multiband,
-            "description": algorithm_class.__doc__.strip()
-            if algorithm_class.__doc__
-            else "No description",
+            "description": algorithm_class.__doc__.strip() if algorithm_class.__doc__ else "No description",
         }
 
     def get_multiband_algorithms(self) -> list[str]:
@@ -141,9 +130,7 @@ _registry = SpectrumRegistry()
 
 
 # Convenience functions for global registry access
-def register_spectrum_algorithm(
-    name: str, algorithm_class: type[AbstractSpectrumAssigner]
-) -> None:
+def register_spectrum_algorithm(name: str, algorithm_class: type[AbstractSpectrumAssigner]) -> None:
     """Register a spectrum algorithm in the global registry."""
     _registry.register(name, algorithm_class)
 
@@ -153,9 +140,7 @@ def get_spectrum_algorithm(name: str) -> type[AbstractSpectrumAssigner]:
     return _registry.get(name)
 
 
-def create_spectrum_algorithm(
-    name: str, engine_props: dict, sdn_props: SDNProps, route_props: object
-) -> AbstractSpectrumAssigner:
+def create_spectrum_algorithm(name: str, engine_props: dict, sdn_props: SDNProps, route_props: object) -> AbstractSpectrumAssigner:
     """Create a spectrum algorithm instance from the global registry."""
     return _registry.create(name, engine_props, sdn_props, route_props)
 

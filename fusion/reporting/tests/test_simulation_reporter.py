@@ -257,9 +257,7 @@ class TestReportSimulationComplete(unittest.TestCase):
     def test_report_simulation_complete_with_confidence_interval_logs_ci(self) -> None:
         """Test completion report includes confidence interval when provided."""
         # Act
-        self.reporter.report_simulation_complete(
-            erlang=100.0, iterations_completed=50, confidence_interval=95.5
-        )
+        self.reporter.report_simulation_complete(erlang=100.0, iterations_completed=50, confidence_interval=95.5)
 
         # Assert
         self.mock_logger.info.assert_called_once()
@@ -271,9 +269,7 @@ class TestReportSimulationComplete(unittest.TestCase):
     def test_report_simulation_complete_without_ci_logs_max_iterations(self) -> None:
         """Test completion report without CI logs maximum iterations message."""
         # Act
-        self.reporter.report_simulation_complete(
-            erlang=100.0, iterations_completed=100, confidence_interval=None
-        )
+        self.reporter.report_simulation_complete(erlang=100.0, iterations_completed=100, confidence_interval=None)
 
         # Assert
         self.mock_logger.info.assert_called_once()

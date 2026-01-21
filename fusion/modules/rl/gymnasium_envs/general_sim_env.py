@@ -7,7 +7,7 @@ The environment handles simulation setup, state management, and reward calculati
 for network resource allocation problems.
 
 .. deprecated:: 4.0
-    SimEnv (GeneralSimEnv) is deprecated and will be removed in v5.0.
+    SimEnv (GeneralSimEnv) is deprecated and will be removed in v6.X.
     Use UnifiedSimEnv instead for better accuracy and unified code paths.
     See migration guide: docs/migration/rl_to_unified_env.md
 """
@@ -69,7 +69,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         super().__init__()
 
         # Emit deprecation warning unless suppressed
-        if not os.environ.get("SUPPRESS_SIMENV_DEPRECATION", "").lower() in (
+        if os.environ.get("SUPPRESS_SIMENV_DEPRECATION", "").lower() not in (
             "1",
             "true",
             "yes",
@@ -128,27 +128,15 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         # Used to get config variables into the observation space
         self.reset(options={"save_sim": DEFAULT_SAVE_SIMULATION})
 
-        obs_space = get_obs_space(
-            sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
-        )
+        obs_space = get_obs_space(sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj)
         # Ensure observation_space is properly typed
-        self.observation_space: gym.Space[Any] = (
-            obs_space
-            if obs_space is not None
-            else gym.spaces.Box(low=0, high=1, shape=(1,))
-        )
+        self.observation_space: gym.Space[Any] = obs_space if obs_space is not None else gym.spaces.Box(low=0, high=1, shape=(1,))
 
-        action_space = get_action_space(
-            sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj
-        )
+        action_space = get_action_space(sim_dict=self.sim_dict, rl_props=self.rl_props, engine_props=self.engine_obj)
         # Ensure action_space is properly typed
-        self.action_space: gym.Space[Any] = (
-            action_space if action_space is not None else gym.spaces.Discrete(2)
-        )
+        self.action_space: gym.Space[Any] = action_space if action_space is not None else gym.spaces.Discrete(2)
 
-    def reset(
-        self, seed: int | None = None, options: dict[str, Any] | None = None
-    ) -> tuple[Any, dict[str, Any]]:  # pylint: disable=arguments-differ
+    def reset(self, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:  # pylint: disable=arguments-differ
         """
         Resets necessary variables after each iteration of the simulation.
 
@@ -181,10 +169,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Ensure arrival_list is properly typed and arrival_count exists
         arrival_count = getattr(self.rl_props, "arrival_count", 0)
-        if (
-            hasattr(self.rl_props, "arrival_list")
-            and len(self.rl_props.arrival_list) > arrival_count
-        ):
+        if hasattr(self.rl_props, "arrival_list") and len(self.rl_props.arrival_list) > arrival_count:
             req_info_dict = self.rl_props.arrival_list[arrival_count]
             if isinstance(req_info_dict, dict):
                 bandwidth = req_info_dict["bandwidth"]
@@ -196,9 +181,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
             # Fallback values if arrival_list is not properly initialized
             bandwidth = 0.0
             holding_time = 0.0
-        obs = self.step_helper.get_obs(
-            bandwidth=str(bandwidth), holding_time=holding_time
-        )
+        obs = self.step_helper.get_obs(bandwidth=str(bandwidth), holding_time=holding_time)
         info = self._get_info()
         return obs, info
 
@@ -281,16 +264,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         """
         # Ensure engine_obj is available
         if self.engine_obj is not None:
-            self.step_helper.handle_step(
-                action=action, is_drl_agent=self.engine_obj.engine_props["is_drl_agent"]
-            )
+            self.step_helper.handle_step(action=action, is_drl_agent=self.engine_obj.engine_props["is_drl_agent"])
 
         # Get arrival_count safely
         arrival_count = getattr(self.rl_props, "arrival_count", 0)
-        if (
-            hasattr(self.rl_props, "arrival_list")
-            and len(self.rl_props.arrival_list) > arrival_count
-        ):
+        if hasattr(self.rl_props, "arrival_list") and len(self.rl_props.arrival_list) > arrival_count:
             req_info_dict = self.rl_props.arrival_list[arrival_count]
             if isinstance(req_info_dict, dict):
                 req_id = req_info_dict["req_id"]
@@ -324,9 +302,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Ensure trial is not None
         trial_value = self.trial if self.trial is not None else 0
-        self.step_helper.handle_test_train_step(
-            was_allocated=was_allocated, path_length=path_length, trial=trial_value, req_id=req_id
-        )
+        self.step_helper.handle_test_train_step(was_allocated=was_allocated, path_length=path_length, trial=trial_value, req_id=req_id)
         self.rl_help_obj.update_snapshots()
 
         # Safely get reward values
@@ -342,9 +318,7 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
         current_count = getattr(self.rl_props, "arrival_count", 0)
         self.rl_props.arrival_count = current_count + 1  # type: ignore[attr-defined]
         terminated = self.step_helper.check_terminated()
-        new_obs = self.step_helper.get_obs(
-            bandwidth=str(bandwidth), holding_time=holding_time
-        )
+        new_obs = self.step_helper.get_obs(bandwidth=str(bandwidth), holding_time=holding_time)
         truncated = False
         info = self._get_info()
 
@@ -387,15 +361,11 @@ class SimEnv(gym.Env):  # pylint: disable=abstract-method
 
         # Ensure engine_obj is available before accessing its properties
         if self.engine_obj is not None:
-            self.engine_obj.engine_props["erlang"] = float(
-                self.sim_dict["erlang_start"]
-            )
+            self.engine_obj.engine_props["erlang"] = float(self.sim_dict["erlang_start"])
             cores_per_link = self.engine_obj.engine_props["cores_per_link"]
             erlang = self.engine_obj.engine_props["erlang"]
             holding_time = self.engine_obj.engine_props["holding_time"]
-            self.engine_obj.engine_props["arrival_rate"] = (
-                cores_per_link * erlang
-            ) / holding_time
+            self.engine_obj.engine_props["arrival_rate"] = (cores_per_link * erlang) / holding_time
             self.engine_obj.engine_props["band_list"] = SUPPORTED_SPECTRAL_BANDS
 
     def _setup_agents(self) -> None:

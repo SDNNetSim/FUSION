@@ -160,9 +160,7 @@ class TestConfigRegistry:
         assert "Template 'nonexistent' not found" in str(exc_info.value)
 
     @patch.object(ConfigRegistry, "load_template")
-    def test_create_custom_config_default_template(
-        self, mock_load_template: Mock
-    ) -> None:
+    def test_create_custom_config_default_template(self, mock_load_template: Mock) -> None:
         """Test creating custom config with default template."""
         mock_config_manager = Mock()
         mock_load_template.return_value = mock_config_manager
@@ -174,9 +172,7 @@ class TestConfigRegistry:
         assert result is mock_config_manager
 
     @patch.object(ConfigRegistry, "load_template")
-    def test_create_custom_config_with_overrides(
-        self, mock_load_template: Mock
-    ) -> None:
+    def test_create_custom_config_with_overrides(self, mock_load_template: Mock) -> None:
         """Test creating custom config with overrides."""
         mock_config_manager = Mock()
         mock_load_template.return_value = mock_config_manager
@@ -190,12 +186,8 @@ class TestConfigRegistry:
         registry.create_custom_config("test_template", overrides)
 
         mock_load_template.assert_called_once_with("test_template")
-        mock_config_manager.update_config.assert_any_call(
-            "general_settings", "max_iters", 5
-        )
-        mock_config_manager.update_config.assert_any_call(
-            "general_settings", "holding_time", 15
-        )
+        mock_config_manager.update_config.assert_any_call("general_settings", "max_iters", 5)
+        mock_config_manager.update_config.assert_any_call("general_settings", "holding_time", 15)
 
     def test_validate_config_success(self) -> None:
         """Test successful configuration validation."""
@@ -261,9 +253,7 @@ class TestConfigRegistry:
         assert "Profile 'nonexistent_profile' not found" in str(exc_info.value)
 
     @patch.object(ConfigRegistry, "create_custom_config")
-    def test_create_profile_config_with_additional_overrides(
-        self, mock_create_custom: Mock
-    ) -> None:
+    def test_create_profile_config_with_additional_overrides(self, mock_create_custom: Mock) -> None:
         """Test creating profile config with additional overrides."""
         mock_config_manager = Mock()
         mock_create_custom.return_value = mock_config_manager
@@ -283,9 +273,7 @@ class TestConfigRegistry:
         mock_config_manager = Mock()
 
         registry = ConfigRegistry(self.templates_dir, self.schemas_dir)
-        result_path = registry.export_config_template(
-            mock_config_manager, "exported_template", "Test description"
-        )
+        result_path = registry.export_config_template(mock_config_manager, "exported_template", "Test description")
 
         expected_path = os.path.join(self.templates_dir, "exported_template.ini")
         assert result_path == expected_path

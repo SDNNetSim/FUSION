@@ -125,9 +125,7 @@ def load_model(engine_properties: dict[str, Any]) -> Any:
         raise FileNotFoundError(f"Model file not found: {model_filepath}")
 
     model = joblib.load(filename=model_filepath)
-    logger.info(
-        "Loaded %s model from: %s", engine_properties["ml_model"], model_filepath
-    )
+    logger.info("Loaded %s model from: %s", engine_properties["ml_model"], model_filepath)
 
     return model
 
@@ -169,9 +167,7 @@ def load_model_with_metadata(
     return model, metadata
 
 
-def save_model_ensemble(
-    models: list[Any], simulation_dict: dict[str, Any], ensemble_name: str, erlang: str
-) -> str:
+def save_model_ensemble(models: list[Any], simulation_dict: dict[str, Any], ensemble_name: str, erlang: str) -> str:
     """
     Save an ensemble of models.
 
@@ -190,9 +186,7 @@ def save_model_ensemble(
         >>> models = [model1, model2, model3]
         >>> path = save_model_ensemble(models, sim_dict, "voting_ensemble", "1000")
     """
-    base_filepath = os.path.join(
-        "logs", ensemble_name, simulation_dict["train_file_path"]
-    )
+    base_filepath = os.path.join("logs", ensemble_name, simulation_dict["train_file_path"])
     create_directory(directory_path=base_filepath)
 
     ensemble_data = {
@@ -268,18 +262,13 @@ def export_model_for_deployment(
 
     elif model_format == "pmml":
         if not HAS_PMML:
-            logger.error(
-                "sklearn2pmml not installed. Install with: pip install sklearn2pmml"
-            )
+            logger.error("sklearn2pmml not installed. Install with: pip install sklearn2pmml")
             raise ImportError("sklearn2pmml not installed")
 
         try:
             sklearn2pmml(model, export_path)
         except (ImportError, AttributeError) as e:
-            logger.error(
-                "sklearn2pmml not installed or incompatible. "
-                "Install with: pip install sklearn2pmml"
-            )
+            logger.error("sklearn2pmml not installed or incompatible. Install with: pip install sklearn2pmml")
             raise ImportError("sklearn2pmml not available") from e
     else:
         raise ValueError(f"Export format '{model_format}' not supported")
@@ -288,9 +277,7 @@ def export_model_for_deployment(
     return export_path
 
 
-def check_model_compatibility(
-    model_path: str, expected_features: list[str]
-) -> dict[str, Any]:
+def check_model_compatibility(model_path: str, expected_features: list[str]) -> dict[str, Any]:
     """
     Check if saved model is compatible with current feature set.
 

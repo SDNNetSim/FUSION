@@ -168,9 +168,7 @@ for network in NETWORK_LIST:
             ],
         }
 
-        sims_info_dict = find_times(
-            dates_dict={"1014": network, "1015": network}, filter_dict=filter_dict
-        )
+        sims_info_dict = find_times(dates_dict={"1014": network, "1015": network}, filter_dict=filter_dict)
 
         is_empty = True  # pylint: disable=invalid-name
         for _, data_list in sims_info_dict.items():
@@ -182,9 +180,7 @@ for network in NETWORK_LIST:
             print(f"No file matches for: {filter_dict}")
             continue
 
-        helpers_obj = PlotHelpers(
-            plot_props=PlotProps(), net_names_list=sims_info_dict["networks_matrix"]
-        )
+        helpers_obj = PlotHelpers(plot_props=PlotProps(), net_names_list=sims_info_dict["networks_matrix"])
         helpers_obj.get_file_info(sims_info_dict=sims_info_dict)
 
         counter = 0  # pylint: disable=invalid-name
@@ -195,9 +191,7 @@ for network in NETWORK_LIST:
         create_directory(directory_path=save_fp)
         csv_file = os.path.join(save_fp, f"{network}_analysis_{arrival_rate / 0.2}.csv")
 
-        def read_files(
-            date: Any, run_time: Any, erlang: Any, network: Any
-        ) -> tuple[dict[str, Any] | bool, dict[str, Any] | bool]:
+        def read_files(date: Any, run_time: Any, erlang: Any, network: Any) -> tuple[dict[str, Any] | bool, dict[str, Any] | bool]:
             """
             Reads a file from a single reinforcement learning simulation run.
 
@@ -249,9 +243,7 @@ for network in NETWORK_LIST:
 
             return input_dict, output_dict
 
-        def calculate_baseline_reductions(
-            tmp_dict: dict[str, Any], network: str, arrival_rate: float
-        ) -> None:
+        def calculate_baseline_reductions(tmp_dict: dict[str, Any], network: str, arrival_rate: float) -> None:
             """
             Calculates percentage reductions compared to baselines.
             Updates tmp_dict in-place.
@@ -263,9 +255,7 @@ for network in NETWORK_LIST:
             # Calculate percentage reductions compared to SPF baseline
             spf_baseline = spf_baselines.get((network, arrival_rate))
             if spf_baseline is not None and spf_baseline != 0:
-                spf_reduction = (
-                    (spf_baseline - tmp_dict["Blocking"]) / spf_baseline
-                ) * 100
+                spf_reduction = ((spf_baseline - tmp_dict["Blocking"]) / spf_baseline) * 100
                 tmp_dict["SPF Reduction (%)"] = spf_reduction
             else:
                 tmp_dict["SPF Reduction (%)"] = np.inf
@@ -273,9 +263,7 @@ for network in NETWORK_LIST:
             # Calculate percentage reductions compared to KSP baseline
             ksp_baseline = ksp_baselines.get((network, arrival_rate))
             if ksp_baseline is not None and ksp_baseline != 0:
-                ksp_reduction = (
-                    (ksp_baseline - tmp_dict["Blocking"]) / ksp_baseline
-                ) * 100
+                ksp_reduction = ((ksp_baseline - tmp_dict["Blocking"]) / ksp_baseline) * 100
                 tmp_dict["KSP Reduction (%)"] = ksp_reduction
             else:
                 tmp_dict["KSP Reduction (%)"] = np.inf
@@ -283,9 +271,7 @@ for network in NETWORK_LIST:
             # Calculate percentage reductions compared to KSP-Inf baseline
             inf_baseline = inf_baselines.get((network, arrival_rate))
             if inf_baseline is not None and inf_baseline != 0:
-                inf_reduction = (
-                    (inf_baseline - tmp_dict["Blocking"]) / inf_baseline
-                ) * 100
+                inf_reduction = ((inf_baseline - tmp_dict["Blocking"]) / inf_baseline) * 100
                 tmp_dict["KSP-Inf Reduction (%)"] = inf_reduction
             else:
                 tmp_dict["KSP-Inf Reduction (%)"] = np.inf
@@ -312,12 +298,8 @@ for network in NETWORK_LIST:
             if iter_stats is None:
                 return tmp_dict
             last_key = list(iter_stats.keys())[-1]
-            tmp_dict["Blocking"] = np.mean(
-                output_dict["iter_stats"][last_key]["sim_block_list"][-10:]
-            )
-            tmp_dict["Completed Iters"] = len(
-                output_dict["iter_stats"][last_key]["sim_block_list"]
-            )
+            tmp_dict["Blocking"] = np.mean(output_dict["iter_stats"][last_key]["sim_block_list"][-10:])
+            tmp_dict["Completed Iters"] = len(output_dict["iter_stats"][last_key]["sim_block_list"])
             tmp_dict["Sim Start"] = input_dict["sim_start"].split("_")[-1]
 
             tmp_dict["Alpha Start"] = input_dict["alpha_start"]
@@ -356,15 +338,11 @@ for network in NETWORK_LIST:
                 print(f"No data found in dictionary. Skipping: {run_time}")
                 continue
 
-            input_dict_result, output_dict_result = read_files(
-                date, run_time, erlang, network
-            )
+            input_dict_result, output_dict_result = read_files(date, run_time, erlang, network)
 
             if not input_dict_result or not output_dict_result:
                 continue
-            if isinstance(input_dict_result, bool) or isinstance(
-                output_dict_result, bool
-            ):
+            if isinstance(input_dict_result, bool) or isinstance(output_dict_result, bool):
                 continue
 
             input_dict: dict[str, Any] = input_dict_result
@@ -386,9 +364,7 @@ for network in NETWORK_LIST:
             if counter == BATCH_SIZE:
                 print(f"Completed one batch of {BATCH_SIZE}, appending to a CSV!")
                 df_to_write = pd.concat([pd.DataFrame(d, index=[0]) for d in dict_list])
-                df_to_write.to_csv(
-                    csv_file, mode="a", index=False, header=HEADER, encoding="utf-8"
-                )
+                df_to_write.to_csv(csv_file, mode="a", index=False, header=HEADER, encoding="utf-8")
                 counter = 0  # pylint: disable=invalid-name
                 dict_list = []
                 HEADER = False

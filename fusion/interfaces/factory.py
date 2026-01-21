@@ -18,9 +18,7 @@ class AlgorithmFactory:
     """Factory for creating algorithm instances using the interface system."""
 
     @staticmethod
-    def create_routing_algorithm(
-        name: str, engine_props: dict, sdn_props: SDNProps
-    ) -> AbstractRoutingAlgorithm:
+    def create_routing_algorithm(name: str, engine_props: dict, sdn_props: SDNProps) -> AbstractRoutingAlgorithm:
         """
         Create a routing algorithm instance.
 
@@ -49,14 +47,10 @@ class AlgorithmFactory:
                 "nli_aware",
                 "xt_aware",
             ]
-            raise ValueError(
-                f"Unknown routing algorithm '{name}'. Available: {available}"
-            ) from e
+            raise ValueError(f"Unknown routing algorithm '{name}'. Available: {available}") from e
 
     @staticmethod
-    def create_spectrum_algorithm(
-        name: str, engine_props: dict, sdn_props: SDNProps, route_props: object
-    ) -> AbstractSpectrumAssigner:
+    def create_spectrum_algorithm(name: str, engine_props: dict, sdn_props: SDNProps, route_props: object) -> AbstractSpectrumAssigner:
         """
         Create a spectrum assignment algorithm instance.
 
@@ -76,9 +70,7 @@ class AlgorithmFactory:
             return create_spectrum_algorithm(name, engine_props, sdn_props, route_props)
         except KeyError as e:
             available = ["first_fit", "best_fit", "last_fit"]
-            raise ValueError(
-                f"Unknown spectrum algorithm '{name}'. Available: {available}"
-            ) from e
+            raise ValueError(f"Unknown spectrum algorithm '{name}'. Available: {available}") from e
 
     @staticmethod
     def create_snr_algorithm(
@@ -106,14 +98,10 @@ class AlgorithmFactory:
         :raises ValueError: If algorithm name is not found
         """
         try:
-            return create_snr_algorithm(
-                name, engine_props, sdn_props, spectrum_props, route_props
-            )
+            return create_snr_algorithm(name, engine_props, sdn_props, spectrum_props, route_props)
         except KeyError as e:
             available = ["standard_snr"]
-            raise ValueError(
-                f"Unknown SNR algorithm '{name}'. Available: {available}"
-            ) from e
+            raise ValueError(f"Unknown SNR algorithm '{name}'. Available: {available}") from e
 
 
 class SimulationPipeline:
@@ -207,16 +195,12 @@ class SimulationPipeline:
             if hasattr(self.routing_algorithm, "get_metrics"):
                 metrics["routing"] = self.routing_algorithm.get_metrics()
             else:
-                metrics["routing"] = {
-                    "error": "routing algorithm missing get_metrics method"
-                }
+                metrics["routing"] = {"error": "routing algorithm missing get_metrics method"}
 
             if hasattr(self.spectrum_algorithm, "get_metrics"):
                 metrics["spectrum"] = self.spectrum_algorithm.get_metrics()
             else:
-                metrics["spectrum"] = {
-                    "error": "spectrum algorithm missing get_metrics method"
-                }
+                metrics["spectrum"] = {"error": "spectrum algorithm missing get_metrics method"}
 
             if hasattr(self.snr_algorithm, "get_metrics"):
                 metrics["snr"] = self.snr_algorithm.get_metrics()
@@ -227,9 +211,7 @@ class SimulationPipeline:
         except (AttributeError, TypeError) as e:
             return {"error": f"Failed to collect metrics: {str(e)}"}
 
-    def process_request(
-        self, source: Any, destination: Any, request: Any
-    ) -> dict[str, Any]:
+    def process_request(self, source: Any, destination: Any, request: Any) -> dict[str, Any]:
         """
         Process a single network request through the complete pipeline.
 
@@ -276,9 +258,7 @@ class SimulationPipeline:
 
         return result
 
-    def _process_pipeline(
-        self, result: dict[str, Any], source: Any, destination: Any, request: Any
-    ) -> None:
+    def _process_pipeline(self, result: dict[str, Any], source: Any, destination: Any, request: Any) -> None:
         """Process request through the complete pipeline."""
         # Step 1: Routing
         if not hasattr(self.routing_algorithm, "route"):
@@ -325,41 +305,27 @@ class SimulationPipeline:
         # Get modulation format for SNR threshold
         modulation = request.modulation if hasattr(request, "modulation") else "QPSK"
         topology: Any = self.engine_props.get("topology")
-        if (
-            topology is None
-            and self.sdn_props is not None
-            and hasattr(self.sdn_props, "topology")
-        ):
+        if topology is None and self.sdn_props is not None and hasattr(self.sdn_props, "topology"):
             topology = self.sdn_props.topology
         if topology is None:
             result["failure_reason"] = "No topology available"
             return
-        path_length = sum(
-            topology[path[i]][path[i + 1]]["length"] for i in range(len(path) - 1)
-        )
+        path_length = sum(topology[path[i]][path[i + 1]]["length"] for i in range(len(path) - 1))
 
         if not hasattr(self.snr_algorithm, "get_required_snr_threshold"):
-            result["failure_reason"] = (
-                "SNR algorithm missing get_required_snr_threshold method"
-            )
+            result["failure_reason"] = "SNR algorithm missing get_required_snr_threshold method"
             return
         if not hasattr(self.snr_algorithm, "is_snr_acceptable"):
             result["failure_reason"] = "SNR algorithm missing is_snr_acceptable method"
             return
 
-        required_snr = self.snr_algorithm.get_required_snr_threshold(
-            modulation, path_length
-        )
+        required_snr = self.snr_algorithm.get_required_snr_threshold(modulation, path_length)
         snr_margin = self.config.get("snr_margin", 1.0)
 
         if self.snr_algorithm.is_snr_acceptable(snr_value, required_snr, snr_margin):
-            self._allocate_spectrum(
-                result, path, spectrum_assignment, request, required_snr, snr_value
-            )
+            self._allocate_spectrum(result, path, spectrum_assignment, request, required_snr, snr_value)
         else:
-            result["failure_reason"] = (
-                f"SNR too low ({snr_value:.1f} dB < {required_snr:.1f} dB)"
-            )
+            result["failure_reason"] = f"SNR too low ({snr_value:.1f} dB < {required_snr:.1f} dB)"
 
     def _allocate_spectrum(
         self,
@@ -372,14 +338,10 @@ class SimulationPipeline:
     ) -> None:
         """Allocate spectrum for the request."""
         if not hasattr(self.spectrum_algorithm, "allocate_spectrum"):
-            result["failure_reason"] = (
-                "Spectrum algorithm missing allocate_spectrum method"
-            )
+            result["failure_reason"] = "Spectrum algorithm missing allocate_spectrum method"
             return
 
-        request_id = getattr(
-            request, "id", hash((result["source"], result["destination"]))
-        )
+        request_id = getattr(request, "id", hash((result["source"], result["destination"])))
         success = self.spectrum_algorithm.allocate_spectrum(
             path,
             spectrum_assignment["start_slot"],

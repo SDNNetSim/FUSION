@@ -62,9 +62,4 @@ class DataSource:
 
     def __repr__(self) -> str:
         """Return detailed representation."""
-        return (
-            f"DataSource(type={self.source_type.value}, "
-            f"format={self.format.value}, "
-            f"version={self.version}, "
-            f"location={self.location})"
-        )
+        return f"DataSource(type={self.source_type.value}, format={self.format.value}, version={self.version}, location={self.location})"

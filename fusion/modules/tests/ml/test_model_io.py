@@ -21,9 +21,7 @@ class TestSaveModel:
     @patch("fusion.modules.ml.model_io.create_directory")
     @patch("fusion.modules.ml.model_io.joblib.dump")
     @patch("builtins.open", new_callable=mock_open)
-    def test_save_model_creates_directory(
-        self, mock_file: Mock, mock_dump: Mock, mock_create_dir: Mock
-    ) -> None:
+    def test_save_model_creates_directory(self, mock_file: Mock, mock_dump: Mock, mock_create_dir: Mock) -> None:
         """Test that save_model creates necessary directories."""
         # Arrange
         sim_dict = {"train_file_path": "experiment_001"}
@@ -40,9 +38,7 @@ class TestSaveModel:
     @patch("fusion.modules.ml.model_io.create_directory")
     @patch("fusion.modules.ml.model_io.joblib.dump")
     @patch("builtins.open", new_callable=mock_open)
-    def test_save_model_dumps_model_file(
-        self, mock_file: Mock, mock_dump: Mock, mock_create_dir: Mock
-    ) -> None:
+    def test_save_model_dumps_model_file(self, mock_file: Mock, mock_dump: Mock, mock_create_dir: Mock) -> None:
         """Test that save_model saves the model using joblib."""
         # Arrange
         sim_dict = {"train_file_path": "experiment_001"}
@@ -60,9 +56,7 @@ class TestSaveModel:
     @patch("fusion.modules.ml.model_io.create_directory")
     @patch("fusion.modules.ml.model_io.joblib.dump")
     @patch("builtins.open", new_callable=mock_open)
-    def test_save_model_with_metadata_saves_metadata_file(
-        self, mock_file: Mock, mock_dump: Mock, mock_create_dir: Mock
-    ) -> None:
+    def test_save_model_with_metadata_saves_metadata_file(self, mock_file: Mock, mock_dump: Mock, mock_create_dir: Mock) -> None:
         """Test that metadata is saved when provided."""
         # Arrange
         sim_dict = {"train_file_path": "experiment_001"}
@@ -79,9 +73,7 @@ class TestSaveModel:
 
     @patch("fusion.modules.ml.model_io.create_directory")
     @patch("fusion.modules.ml.model_io.joblib.dump")
-    def test_save_model_returns_model_path(
-        self, mock_dump: Mock, mock_create_dir: Mock
-    ) -> None:
+    def test_save_model_returns_model_path(self, mock_dump: Mock, mock_create_dir: Mock) -> None:
         """Test that save_model returns the path where model was saved."""
         # Arrange
         sim_dict = {"train_file_path": "experiment_001"}
@@ -103,9 +95,7 @@ class TestLoadModel:
 
     @patch("fusion.modules.ml.model_io.os.path.exists")
     @patch("fusion.modules.ml.model_io.joblib.load")
-    def test_load_model_loads_from_correct_path(
-        self, mock_load: Mock, mock_exists: Mock
-    ) -> None:
+    def test_load_model_loads_from_correct_path(self, mock_load: Mock, mock_exists: Mock) -> None:
         """Test that load_model loads from the correct file path."""
         # Arrange
         mock_exists.return_value = True
@@ -125,9 +115,7 @@ class TestLoadModel:
         assert result is mock_model
 
     @patch("fusion.modules.ml.model_io.os.path.exists")
-    def test_load_model_raises_error_when_file_not_found(
-        self, mock_exists: Mock
-    ) -> None:
+    def test_load_model_raises_error_when_file_not_found(self, mock_exists: Mock) -> None:
         """Test that FileNotFoundError is raised when model file missing."""
         # Arrange
         mock_exists.return_value = False
@@ -150,9 +138,7 @@ class TestLoadModelWithMetadata:
     @patch("fusion.modules.ml.model_io.os.path.exists")
     @patch("fusion.modules.ml.model_io.joblib.load")
     @patch("builtins.open", new_callable=mock_open, read_data='{"accuracy": 0.95}')
-    def test_load_with_metadata_returns_model_and_metadata(
-        self, mock_file: Mock, mock_load: Mock, mock_exists: Mock
-    ) -> None:
+    def test_load_with_metadata_returns_model_and_metadata(self, mock_file: Mock, mock_load: Mock, mock_exists: Mock) -> None:
         """Test that both model and metadata are loaded."""
         # Arrange
         mock_exists.return_value = True
@@ -173,9 +159,7 @@ class TestLoadModelWithMetadata:
 
     @patch("fusion.modules.ml.model_io.os.path.exists")
     @patch("fusion.modules.ml.model_io.joblib.load")
-    def test_load_without_metadata_returns_empty_dict(
-        self, mock_load: Mock, mock_exists: Mock
-    ) -> None:
+    def test_load_without_metadata_returns_empty_dict(self, mock_load: Mock, mock_exists: Mock) -> None:
         """Test that empty dict is returned when metadata missing."""
 
         # Arrange
@@ -205,9 +189,7 @@ class TestSaveModelEnsemble:
 
     @patch("fusion.modules.ml.model_io.create_directory")
     @patch("fusion.modules.ml.model_io.joblib.dump")
-    def test_save_ensemble_saves_all_models(
-        self, mock_dump: Mock, mock_create_dir: Mock
-    ) -> None:
+    def test_save_ensemble_saves_all_models(self, mock_dump: Mock, mock_create_dir: Mock) -> None:
         """Test that ensemble saves all models in a list."""
         # Arrange
         models = [Mock(), Mock(), Mock()]
@@ -226,9 +208,7 @@ class TestSaveModelEnsemble:
 
     @patch("fusion.modules.ml.model_io.create_directory")
     @patch("fusion.modules.ml.model_io.joblib.dump")
-    def test_save_ensemble_returns_path(
-        self, mock_dump: Mock, mock_create_dir: Mock
-    ) -> None:
+    def test_save_ensemble_returns_path(self, mock_dump: Mock, mock_create_dir: Mock) -> None:
         """Test that save_model_ensemble returns save path."""
         # Arrange
         models = [Mock()]
@@ -249,9 +229,7 @@ class TestExportModelForDeployment:
 
     @patch("fusion.modules.ml.model_io.pickle.dump")
     @patch("builtins.open", new_callable=mock_open)
-    def test_export_pickle_format_creates_pickle_file(
-        self, mock_file: Mock, mock_pickle_dump: Mock
-    ) -> None:
+    def test_export_pickle_format_creates_pickle_file(self, mock_file: Mock, mock_pickle_dump: Mock) -> None:
         """Test that pickle format exports correctly."""
         # Arrange
         model = Mock()
@@ -312,9 +290,7 @@ class TestCheckModelCompatibility:
         assert result["n_features_model"] == 5
 
     @patch("fusion.modules.ml.model_io.joblib.load")
-    def test_check_compatibility_with_mismatched_features(
-        self, mock_load: Mock
-    ) -> None:
+    def test_check_compatibility_with_mismatched_features(self, mock_load: Mock) -> None:
         """Test compatibility check with mismatched feature count."""
         # Arrange
         mock_model = Mock(spec=["n_features_in_"])

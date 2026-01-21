@@ -87,9 +87,7 @@ class TestGetLinkUsageSummary:
     def test_link_key_preserves_direction(self) -> None:
         """Test that link keys preserve the direction of the link."""
         # Arrange
-        network_spectrum = {
-            ("Z", "A"): {"usage_count": 5, "throughput": 50.0, "link_num": 2}
-        }
+        network_spectrum = {("Z", "A"): {"usage_count": 5, "throughput": 50.0, "link_num": 2}}
 
         # Act
         result = NetworkAnalyzer.get_link_usage_summary(network_spectrum)
@@ -202,9 +200,7 @@ class TestAnalyzeNetworkCongestion:
         specific_paths = [("A", "B")]
 
         # Act
-        result = NetworkAnalyzer.analyze_network_congestion(
-            network_spectrum, specific_paths
-        )
+        result = NetworkAnalyzer.analyze_network_congestion(network_spectrum, specific_paths)
 
         # Assert
         assert result["links_analyzed"] == 1
@@ -356,9 +352,7 @@ class TestIdentifyBottleneckLinks:
         network_spectrum = {("A", "B"): {"cores_matrix": [core]}}
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.5
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.5)
 
         # Assert
         assert len(result) == 0
@@ -377,9 +371,7 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.8
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.8)
 
         # Assert
         assert len(result) == 1
@@ -403,18 +395,14 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.9
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.9)
 
         # Assert
         assert len(result) == 1
         assert result[0]["utilization"] == 1.0
 
     @patch("fusion.analysis.network_analysis.logger")
-    def test_bottlenecks_sorted_by_utilization_descending(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_bottlenecks_sorted_by_utilization_descending(self, mock_logger: MagicMock) -> None:
         """Test that bottlenecks are sorted by utilization in descending order."""
         # Arrange
         core_90 = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 0])  # 90%
@@ -428,9 +416,7 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.8
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.8)
 
         # Assert
         assert len(result) == 3
@@ -449,9 +435,7 @@ class TestIdentifyBottleneckLinks:
         }
 
         # Act
-        result = NetworkAnalyzer.identify_bottleneck_links(
-            network_spectrum, threshold=0.8
-        )
+        result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum, threshold=0.8)
 
         # Assert
         assert len(result) == 1
@@ -474,14 +458,10 @@ class TestIdentifyBottleneckLinks:
         assert mock_logger.info.called
 
     @patch("fusion.analysis.network_analysis.logger")
-    def test_empty_cores_matrix_handled_gracefully(
-        self, mock_logger: MagicMock
-    ) -> None:
+    def test_empty_cores_matrix_handled_gracefully(self, mock_logger: MagicMock) -> None:
         """Test that empty cores matrix is handled gracefully."""
         # Arrange
-        network_spectrum: dict[tuple[str, str], dict[str, Any]] = {
-            ("A", "B"): {"cores_matrix": []}
-        }
+        network_spectrum: dict[tuple[str, str], dict[str, Any]] = {("A", "B"): {"cores_matrix": []}}
 
         # Act
         result = NetworkAnalyzer.identify_bottleneck_links(network_spectrum)

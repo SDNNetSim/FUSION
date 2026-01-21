@@ -120,10 +120,7 @@ class BatchRunner:
             current_params["seeds"] = None  # Will use iteration number as seed
 
         # Log simulation start message
-        log_message(
-            f"Starting simulation for {erlang} Erlang "
-            f"(load {erlang_index + 1}/{total_erlangs})"
-        )
+        log_message(f"Starting simulation for {erlang} Erlang (load {erlang_index + 1}/{total_erlangs})")
 
         # Create and run simulation engine
         engine = SimulationEngine(current_params)
@@ -173,10 +170,7 @@ class BatchRunner:
         if num_processes is None:
             num_processes = multiprocessing.cpu_count()
 
-        log_message(
-            f"Running batch simulation with {len(erlangs)} loads "
-            f"across {num_processes} processes"
-        )
+        log_message(f"Running batch simulation with {len(erlangs)} loads across {num_processes} processes")
 
         with multiprocessing.Pool(processes=num_processes) as pool:
             # Create tasks for parallel execution
@@ -190,9 +184,7 @@ class BatchRunner:
 
         return results
 
-    def run_sequential_batch(
-        self, erlangs: list[float], sim_params: dict
-    ) -> list[dict]:
+    def run_sequential_batch(self, erlangs: list[float], sim_params: dict) -> list[dict]:
         """
         Run multiple Erlang simulations sequentially.
 
@@ -211,9 +203,7 @@ class BatchRunner:
 
         return results
 
-    def run(
-        self, parallel: bool = False, num_processes: int | None = None
-    ) -> list[dict]:
+    def run(self, parallel: bool = False, num_processes: int | None = None) -> list[dict]:
         """
         Execute batch simulation run.
 
@@ -284,10 +274,7 @@ class BatchRunner:
 
         if missing:
             available = list(mod_per_bw.keys())
-            raise ValueError(
-                f"Bandwidth mismatch: {missing} not in mod_per_bw. "
-                f"Available: {available}"
-            )
+            raise ValueError(f"Bandwidth mismatch: {missing} not in mod_per_bw. Available: {available}")
 
     def _log_summary(self, results: list[dict]) -> None:
         """Log summary of batch run results."""
@@ -310,9 +297,7 @@ class BatchRunner:
         log_message("=" * 60)
 
 
-def run_batch_simulation(
-    config: dict, parallel: bool = False, num_processes: int | None = None
-) -> list[dict]:
+def run_batch_simulation(config: dict, parallel: bool = False, num_processes: int | None = None) -> list[dict]:
     """
     Convenience function to run batch simulation.
 
@@ -329,9 +314,7 @@ def run_batch_simulation(
     return runner.run(parallel=parallel, num_processes=num_processes)
 
 
-def run_multi_seed_experiment(
-    config: dict[str, Any], seed_list: list[int], output_dir: str = "results"
-) -> list[dict[str, Any]]:
+def run_multi_seed_experiment(config: dict[str, Any], seed_list: list[int], output_dir: str = "results") -> list[dict[str, Any]]:
     """
     Run simulation with multiple seeds for statistical analysis.
 
@@ -382,18 +365,12 @@ def run_multi_seed_experiment(
             "seed": seed,
             "return_code": return_code,
             # Add stats if available
-            "stats": engine.stats_obj.to_dict()
-            if hasattr(engine.stats_obj, "to_dict")
-            else {},
+            "stats": engine.stats_obj.to_dict() if hasattr(engine.stats_obj, "to_dict") else {},
         }
         results.append(result)
 
         stats_dict = result.get("stats", {})
-        bp = (
-            stats_dict.get("blocking_probability", 0)
-            if isinstance(stats_dict, dict)
-            else 0
-        )
+        bp = stats_dict.get("blocking_probability", 0) if isinstance(stats_dict, dict) else 0
         log_message(f"Seed {seed} complete: BP={bp:.4f}")
 
     return results

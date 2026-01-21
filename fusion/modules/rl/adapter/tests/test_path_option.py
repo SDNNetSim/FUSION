@@ -1,10 +1,7 @@
-"""Tests for PathOption dataclass.
-
-Phase: P4.1 - RLSimulationAdapter Scaffolding
-Chunk: 1 - PathOption dataclass
-"""
+"""Tests for PathOption dataclass."""
 
 from dataclasses import FrozenInstanceError
+from typing import Any
 
 import numpy as np
 import pytest
@@ -15,9 +12,9 @@ from fusion.modules.rl.adapter import (
 )
 
 
-def create_valid_path_option(**kwargs) -> PathOption:
+def create_valid_path_option(**kwargs: Any) -> PathOption:
     """Helper to create a valid PathOption with defaults."""
-    defaults = {
+    defaults: dict[str, Any] = {
         "path_index": 0,
         "path": ("0", "1", "2"),
         "weight_km": 100.0,
@@ -240,7 +237,7 @@ class TestComputeActionMask:
 
 
 class TestPathOptionProtection:
-    """Tests for PathOption protection fields (P5.1)."""
+    """Tests for PathOption protection fields."""
 
     def test_unprotected_default_values(self) -> None:
         """Unprotected PathOption has None backup fields."""
@@ -408,9 +405,7 @@ class TestPathOptionProtection:
 
     def test_validation_is_protected_requires_backup_feasible(self) -> None:
         """is_protected=True requires backup_feasible."""
-        with pytest.raises(
-            ValueError, match="is_protected=True requires backup_feasible"
-        ):
+        with pytest.raises(ValueError, match="is_protected=True requires backup_feasible"):
             PathOption(
                 path_index=0,
                 path=("A", "B"),

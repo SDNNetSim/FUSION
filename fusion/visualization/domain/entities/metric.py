@@ -62,9 +62,7 @@ class MetricDefinition:
         try:
             jp.parse(self.source_path)
         except Exception as e:
-            raise InvalidMetricPathError(
-                f"Invalid JSONPath expression '{self.source_path}': {e}"
-            ) from e
+            raise InvalidMetricPathError(f"Invalid JSONPath expression '{self.source_path}': {e}") from e
 
     def extract_from(self, data: dict[str, Any]) -> MetricValue:
         """
@@ -85,9 +83,7 @@ class MetricDefinition:
             matches = expr.find(data)
 
             if not matches:
-                raise MetricExtractionError(
-                    f"No data found at path '{self.source_path}'"
-                )
+                raise MetricExtractionError(f"No data found at path '{self.source_path}'")
 
             # Extract value from first match
             value = matches[0].value
@@ -104,15 +100,8 @@ class MetricDefinition:
             )
 
         except Exception as e:
-            raise MetricExtractionError(
-                f"Failed to extract metric '{self.name}' from path "
-                f"'{self.source_path}': {e}"
-            ) from e
+            raise MetricExtractionError(f"Failed to extract metric '{self.name}' from path '{self.source_path}': {e}") from e
 
     def __repr__(self) -> str:
         """Return detailed representation."""
-        return (
-            f"MetricDefinition(name='{self.name}', "
-            f"type={self.data_type.value}, "
-            f"path='{self.source_path}')"
-        )
+        return f"MetricDefinition(name='{self.name}', type={self.data_type.value}, path='{self.source_path}')"
