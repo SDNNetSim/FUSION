@@ -112,7 +112,7 @@ class SnrMeasurements:
         :return: The cross-talk normalized by the number of adjacent cores.
         :rtype: float
         """
-        mean_xt = 3.78e-9
+        mean_xt = 1e-9
         resp_xt = 1 - math.exp(-2 * mean_xt * link_length * 1e3)
         resp_xt /= (1 + math.exp(-2 * mean_xt * link_length * 1e3))
 
