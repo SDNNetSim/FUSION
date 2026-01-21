@@ -1,0 +1,17 @@
+# FUSION GUI Dependencies
+# Install with: pip install -r requirements-gui.txt
+
+# Web Framework
+fastapi~=0.115.0
+uvicorn[standard]~=0.34.0
+
+# Settings Management
+pydantic-settings~=2.7.0
+
+# Server-Sent Events
+sse-starlette~=2.2.0
+
+# Async File I/O
+aiofiles~=24.1.0
+
+# Note: SQLAlchemy is already in requirements.txt
