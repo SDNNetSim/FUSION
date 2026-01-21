@@ -5,6 +5,7 @@ import { NewRunPage } from '@/pages/NewRunPage'
 import { RunDetailPage } from '@/pages/RunDetailPage'
 import { ConfigEditorPage } from '@/pages/ConfigEditorPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { TopologyPage } from '@/pages/TopologyPage'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="runs/new" element={<NewRunPage />} />
         <Route path="runs/:runId" element={<RunDetailPage />} />
         <Route path="config" element={<ConfigEditorPage />} />
+        <Route path="topology" element={<TopologyPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

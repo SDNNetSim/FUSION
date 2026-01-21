@@ -6,8 +6,9 @@ Each module defines routes for a specific resource:
 - configs: Configuration templates
 - artifacts: Run output files
 - system: Health checks and system info
+- topology: Network topology visualization
 """
 
-from . import artifacts, configs, runs, system
+from . import artifacts, configs, runs, system, topology
 
-__all__ = ["runs", "configs", "artifacts", "system"]
+__all__ = ["runs", "configs", "artifacts", "system", "topology"]

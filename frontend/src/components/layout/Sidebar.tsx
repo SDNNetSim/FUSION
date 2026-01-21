@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Play, Settings, FileCode } from 'lucide-react'
+import { LayoutDashboard, Play, Settings, FileCode, Network } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Runs' },
   { to: '/runs/new', icon: Play, label: 'New Run' },
   { to: '/config', icon: FileCode, label: 'Config Editor' },
+  { to: '/topology', icon: Network, label: 'Topology' },
 ]
 
 export function Sidebar() {

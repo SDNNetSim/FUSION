@@ -70,3 +70,36 @@ export interface VersionResponse {
   api_version: string
   fusion_version: string
 }
+
+// Topology types
+export interface TopologyNode {
+  id: string
+  label: string
+  x: number
+  y: number
+  type: string
+}
+
+export interface TopologyLink {
+  id: string
+  source: string
+  target: string
+  length_km: number
+  utilization: number
+}
+
+export interface TopologyResponse {
+  name: string
+  nodes: TopologyNode[]
+  links: TopologyLink[]
+}
+
+export interface TopologyListItem {
+  name: string
+  node_count: number
+  link_count: number
+}
+
+export interface TopologyListResponse {
+  topologies: TopologyListItem[]
+}

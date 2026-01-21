@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Trash2, FolderOpen, FileText, Search, ChevronUp, ChevronDown, X } from 'lucide-react'
-import { runsApi, artifactsApi } from '@/api/client'
+import { ArrowLeft, Download, Trash2, FolderOpen, FileText, Search, ChevronUp, ChevronDown, X, Network } from 'lucide-react'
+import { runsApi, artifactsApi, topologyApi } from '@/api/client'
 import { RunStatusBadge } from '@/components/runs/RunStatusBadge'
+import { NetworkGraph } from '@/components/topology/NetworkGraph'
+import { UtilizationLegend } from '@/components/topology/UtilizationLegend'
 import { formatDate, formatBytes } from '@/lib/utils'
 import type { ArtifactEntry } from '@/api/types'
 
 export function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'logs' | 'artifacts'>('logs')
+  const [activeTab, setActiveTab] = useState<'logs' | 'artifacts' | 'topology'>('logs')
   const [logs, setLogs] = useState('')
   const [artifactPath, setArtifactPath] = useState('')
   const logsEndRef = useRef<HTMLDivElement>(null)
@@ -30,6 +32,21 @@ export function RunDetailPage() {
     queryKey: ['artifacts', runId, artifactPath],
     queryFn: () => artifactsApi.list(runId!, artifactPath),
     enabled: !!runId && activeTab === 'artifacts',
+  })
+
+  // Fetch topology list to get the first available topology for visualization
+  const { data: topologyList } = useQuery({
+    queryKey: ['topologies'],
+    queryFn: topologyApi.list,
+    enabled: activeTab === 'topology',
+  })
+
+  // Get the topology associated with the run (use first available for now)
+  const selectedTopologyName = topologyList?.topologies[0]?.name
+  const { data: topology, isLoading: topologyLoading } = useQuery({
+    queryKey: ['topology', selectedTopologyName],
+    queryFn: () => topologyApi.get(selectedTopologyName!),
+    enabled: !!selectedTopologyName && activeTab === 'topology',
   })
 
   const cancelMutation = useMutation({
@@ -273,6 +290,17 @@ export function RunDetailPage() {
             <FolderOpen className="mr-2 inline h-4 w-4" />
             Artifacts
           </button>
+          <button
+            onClick={() => setActiveTab('topology')}
+            className={`border-b-2 px-1 py-2 text-sm font-medium ${
+              activeTab === 'topology'
+                ? 'border-fusion-500 text-fusion-600 dark:text-fusion-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+          >
+            <Network className="mr-2 inline h-4 w-4" />
+            Topology
+          </button>
         </nav>
       </div>
 
@@ -382,6 +410,64 @@ export function RunDetailPage() {
                     )}
                   </button>
                 ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'topology' && (
+          <div className="flex gap-4">
+            <div className="flex-1">
+              {topologyLoading ? (
+                <div className="flex h-[500px] items-center justify-center rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <Network className="h-5 w-5 animate-pulse" />
+                    Loading topology...
+                  </div>
+                </div>
+              ) : topology ? (
+                <NetworkGraph
+                  nodes={topology.nodes}
+                  links={topology.links}
+                  width={700}
+                  height={500}
+                />
+              ) : (
+                <div className="flex h-[500px] items-center justify-center rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No topology available
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="w-48">
+              <UtilizationLegend />
+              {topology && (
+                <div className="mt-4 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                  <h4 className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Network Info
+                  </h4>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Topology:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {topology.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Nodes:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {topology.nodes.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Links:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {topology.links.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>

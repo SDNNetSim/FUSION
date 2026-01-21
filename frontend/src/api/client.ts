@@ -8,6 +8,8 @@ import type {
   ArtifactListResponse,
   HealthResponse,
   VersionResponse,
+  TopologyListResponse,
+  TopologyResponse,
 } from './types'
 
 const api = axios.create({
@@ -80,6 +82,19 @@ export const systemApi = {
 
   version: async () => {
     const { data } = await api.get<VersionResponse>('/version')
+    return data
+  },
+}
+
+// Topology API
+export const topologyApi = {
+  list: async () => {
+    const { data } = await api.get<TopologyListResponse>('/topology')
+    return data
+  },
+
+  get: async (name: string) => {
+    const { data } = await api.get<TopologyResponse>(`/topology/${name}`)
     return data
   },
 }
