@@ -1,0 +1,112 @@
+FUSION GUI Architecture
+=======================
+
+                                    BROWSER
+    ┌─────────────────────────────────────────────────────────────┐
+    │                                                             │
+    │   React SPA (TypeScript + Tailwind)                         │
+    │   ┌───────────────────────────────────────────────────────┐ │
+    │   │                                                       │ │
+    │   │  Pages          Components        State               │ │
+    │   │  ├─RunList      ├─LogViewer       ├─TanStack Query    │ │
+    │   │  ├─RunDetail    ├─FileBrowser       (server state)    │ │
+    │   │  ├─NewRun       ├─NetworkGraph    ├─Zustand           │ │
+    │   │  ├─ConfigEdit   ├─ProgressBar       (UI state)        │ │
+    │   │  └─Topology     └─ConfigEditor                        │ │
+    │   │                                                       │ │
+    │   └───────────────────────────────────────────────────────┘ │
+    │                           │                                 │
+    └───────────────────────────┼─────────────────────────────────┘
+                                │
+                     HTTP (REST + SSE)
+                         Port 8765
+                                │
+    ┌───────────────────────────┼─────────────────────────────────┐
+    │                           │                                 │
+    │   FastAPI Server          ▼                                 │
+    │   ┌───────────────────────────────────────────────────────┐ │
+    │   │                                                       │ │
+    │   │  Routes              Services           Database      │ │
+    │   │  ├─/api/runs         ├─RunManager       ┌──────────┐  │ │
+    │   │  ├─/api/configs      ├─ConfigService    │ SQLite   │  │ │
+    │   │  ├─/api/artifacts    ├─ArtifactService  │ runs.db  │  │ │
+    │   │  ├─/api/topology     └─ProgressWatcher  └──────────┘  │ │
+    │   │  └─/api/health                                        │ │
+    │   │                                                       │ │
+    │   │  Static Files (built React)                           │ │
+    │   │  └─/index.html, /assets/*                             │ │
+    │   │                                                       │ │
+    │   └───────────────────────────────────────────────────────┘ │
+    │                           │                                 │
+    │                           │ subprocess.Popen()              │
+    │                           │ start_new_session=True          │
+    │                           │                                 │
+    │   PYTHON SERVER           ▼                                 │
+    └───────────────────────────┼─────────────────────────────────┘
+                                │
+    ┌───────────────────────────┼─────────────────────────────────┐
+    │                           │                                 │
+    │   Simulation Process      ▼                  FILESYSTEM     │
+    │   (New Session/PGID)                                        │
+    │   ┌─────────────────────────────────┐   ┌────────────────┐  │
+    │   │                                 │   │                │  │
+    │   │  fusion-sim (Parent)            │   │ data/gui_runs/ │  │
+    │   │  PID: 2000, PGID: 2000          │──▶│ └─{run_id}/    │  │
+    │   │           │                     │   │   ├─config.ini │  │
+    │   │           ├─Worker (PID 2001)   │   │   ├─logs/      │  │
+    │   │           ├─Worker (PID 2002)   │   │   │ └─sim.log  │  │
+    │   │           ├─Worker (PID 2003)   │   │   ├─progress.  │  │
+    │   │           └─Worker (PID 2004)   │   │   │  jsonl     │  │
+    │   │                                 │   │   └─output/    │  │
+    │   │  (multiprocessing.Pool)         │   │                │  │
+    │   │                                 │   │                │  │
+    │   └─────────────────────────────────┘   └────────────────┘  │
+    │                                                             │
+    │   SIMULATION SUBPROCESS                                     │
+    └─────────────────────────────────────────────────────────────┘
+
+
+Data Flow
+=========
+
+1. CREATE RUN
+   Browser ──POST /api/runs──▶ FastAPI ──subprocess──▶ fusion-sim
+                                  │
+                                  └──▶ SQLite (status=RUNNING)
+
+2. STREAM LOGS
+   Browser ◀──SSE──┐
+                   │
+   FastAPI ────tail logs/sim.log────▶ File written by subprocess
+
+3. STREAM PROGRESS
+   Browser ◀──SSE──┐
+                   │
+   FastAPI ────watch progress.jsonl──▶ File written by subprocess
+
+4. CANCEL RUN
+   Browser ──DELETE /api/runs/{id}──▶ FastAPI ──os.killpg(PGID)──▶ Kill tree
+
+
+Key Design Decisions
+====================
+
+1. SUBPROCESS ISOLATION
+   - Simulation runs in separate process session
+   - Server stays stable if simulation crashes
+   - Clean cancellation via process group kill
+
+2. FILE-BASED IPC
+   - stdout/stderr ──▶ sim.log (avoids pipe deadlock)
+   - progress ──▶ progress.jsonl (structured, not log parsing)
+   - SSE tails files for real-time updates
+
+3. SINGLE PORT
+   - API + static files served by FastAPI
+   - No CORS issues in production
+   - Simple deployment: `fusion gui`
+
+4. SQLITE PERSISTENCE
+   - Run metadata survives server restart
+   - Orphan detection on startup
+   - Zero configuration for users
