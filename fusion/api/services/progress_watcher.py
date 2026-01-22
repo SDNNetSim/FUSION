@@ -10,7 +10,7 @@ import logging
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
 from ..config import settings
 from ..db.database import SessionLocal
@@ -121,7 +121,7 @@ def parse_progress_file(progress_path: Path) -> list[dict]:
     :param progress_path: Path to the progress.jsonl file.
     :returns: List of progress event dictionaries.
     """
-    events = []
+    events: list[dict] = []
     if not progress_path.exists():
         return events
 

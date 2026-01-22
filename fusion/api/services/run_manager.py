@@ -23,7 +23,7 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from pathlib import Path
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -92,7 +92,8 @@ class RunManager:
         :param run_id: The run identifier.
         :returns: The Run object or None if not found.
         """
-        return self.db.query(Run).filter(Run.id == run_id).first()
+        result: Run | None = self.db.query(Run).filter(Run.id == run_id).first()
+        return result
 
     def cancel_or_delete(self, run_id: str) -> Run | None:
         """
@@ -101,7 +102,7 @@ class RunManager:
         :param run_id: The run identifier.
         :returns: The Run object or None if not found.
         """
-        run = self.db.query(Run).filter(Run.id == run_id).first()
+        run: Run | None = self.db.query(Run).filter(Run.id == run_id).first()
         if not run:
             return None
 
@@ -152,7 +153,7 @@ class RunManager:
                     cmd,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
-                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,  # type: ignore[attr-defined]
                 )
                 run.pgid = None  # Windows doesn't use pgid
             else:
@@ -183,7 +184,7 @@ class RunManager:
         try:
             if platform.system() == "Windows":
                 # Windows: use taskkill to kill process tree
-                subprocess.run(
+                subprocess.run(  # nosec B607
                     ["taskkill", "/T", "/F", "/PID", str(run.pid)],
                     capture_output=True,
                 )
@@ -262,7 +263,7 @@ def _is_process_alive(pid: int | None, pgid: int | None) -> bool:
     if platform.system() == "Windows":
         # Windows: check if process exists
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 ["tasklist", "/FI", f"PID eq {pid}"],
                 capture_output=True,
                 check=True,

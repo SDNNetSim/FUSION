@@ -25,7 +25,7 @@ def get_version() -> dict:
     Returns the current API version and FUSION version.
     """
     try:
-        from fusion import __version__ as fusion_version
+        from fusion import __version__ as fusion_version  # type: ignore[attr-defined]
     except ImportError:
         fusion_version = "unknown"
 

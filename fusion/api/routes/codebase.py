@@ -59,15 +59,15 @@ def _get_module_description(path: Path) -> str | None:
                 content = init_file.read_text()
                 tree = ast.parse(content)
                 return ast.get_docstring(tree)
-            except Exception:
-                pass
+            except Exception:  # nosec B110
+                pass  # Silently ignore unparseable files
     elif path.suffix == ".py":
         try:
             content = path.read_text()
             tree = ast.parse(content)
             return ast.get_docstring(tree)
-        except Exception:
-            pass
+        except Exception:  # nosec B110
+            pass  # Silently ignore unparseable files
     return None
 
 
@@ -125,9 +125,7 @@ def _count_modules(node: ModuleNode) -> tuple[int, int]:
     return modules, files
 
 
-def _parse_python_file(path: Path) -> tuple[
-    list[ClassInfo], list[FunctionInfo], list[str], str | None
-]:
+def _parse_python_file(path: Path) -> tuple[list[ClassInfo], list[FunctionInfo], list[str], str | None]:
     """Parse a Python file and extract classes, functions, and imports."""
     content = path.read_text()
     tree = ast.parse(content)
@@ -193,8 +191,8 @@ def _parse_python_file(path: Path) -> tuple[
 
 def _get_attribute_name(node: ast.Attribute) -> str:
     """Get the full name of an attribute access."""
-    parts = []
-    current = node
+    parts: list[str] = []
+    current: ast.expr = node
     while isinstance(current, ast.Attribute):
         parts.append(current.attr)
         current = current.value
@@ -288,7 +286,7 @@ def get_file_content(path: str) -> FileContent:
         if not str(file_path).startswith(str(fusion_root.resolve())):
             raise HTTPException(status_code=403, detail="Access denied")
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid path")
+        raise HTTPException(status_code=400, detail="Invalid path") from None
 
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
@@ -325,9 +323,9 @@ def get_file_content(path: str) -> FileContent:
     if suffix == ".py":
         try:
             classes, functions, imports, docstring = _parse_python_file(file_path)
-        except SyntaxError:
+        except SyntaxError:  # nosec B110
             pass  # Invalid Python syntax, just return content
-        except Exception:
+        except Exception:  # nosec B110
             pass  # Other parsing errors
 
     return FileContent(
@@ -373,12 +371,14 @@ def search_codebase(q: str, limit: int = 20) -> list[dict]:
 
             # Match file name
             if query in file.lower():
-                results.append({
-                    "type": "file",
-                    "name": file,
-                    "path": rel_path,
-                    "match": "filename",
-                })
+                results.append(
+                    {
+                        "type": "file",
+                        "name": file,
+                        "path": rel_path,
+                        "match": "filename",
+                    }
+                )
 
             # For Python files, also search classes and functions
             if file.endswith(".py") and len(results) < limit:
@@ -389,24 +389,28 @@ def search_codebase(q: str, limit: int = 20) -> list[dict]:
                     for node in ast.iter_child_nodes(tree):
                         if isinstance(node, ast.ClassDef):
                             if query in node.name.lower():
-                                results.append({
-                                    "type": "class",
-                                    "name": node.name,
-                                    "path": rel_path,
-                                    "line": node.lineno,
-                                    "match": "class",
-                                })
+                                results.append(
+                                    {
+                                        "type": "class",
+                                        "name": node.name,
+                                        "path": rel_path,
+                                        "line": node.lineno,
+                                        "match": "class",
+                                    }
+                                )
                         elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                             if query in node.name.lower():
-                                results.append({
-                                    "type": "function",
-                                    "name": node.name,
-                                    "path": rel_path,
-                                    "line": node.lineno,
-                                    "match": "function",
-                                })
-                except Exception:
-                    pass
+                                results.append(
+                                    {
+                                        "type": "function",
+                                        "name": node.name,
+                                        "path": rel_path,
+                                        "line": node.lineno,
+                                        "match": "function",
+                                    }
+                                )
+                except Exception:  # nosec B110
+                    pass  # Skip files that can't be parsed
 
             if len(results) >= limit:
                 break

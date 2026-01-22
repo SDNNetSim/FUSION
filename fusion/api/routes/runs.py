@@ -4,6 +4,8 @@ Run management endpoints.
 Provides CRUD operations for simulation runs and log streaming.
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
@@ -13,6 +15,9 @@ from ..db.models import Run
 from ..schemas.run import RunCreate, RunListResponse, RunProgress, RunResponse
 from ..services.progress_watcher import stream_progress
 from ..services.run_manager import RunManager, stream_run_logs
+
+# Type alias for dependency injection
+DBSession = Annotated[Session, Depends(get_db)]
 
 router = APIRouter()
 
@@ -52,7 +57,7 @@ def _run_to_response(run: Run) -> RunResponse:
 @router.post("", response_model=RunResponse, status_code=status.HTTP_201_CREATED)
 def create_run(
     data: RunCreate,
-    db: Session = Depends(get_db),
+    db: DBSession,
 ) -> RunResponse:
     """
     Create and start a new simulation run.
@@ -65,17 +70,17 @@ def create_run(
     try:
         run = manager.create_run(data)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     return _run_to_response(run)
 
 
 @router.get("", response_model=RunListResponse)
 def list_runs(
+    db: DBSession,
     status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
 ) -> RunListResponse:
     """
     List all runs with optional filtering.
@@ -104,7 +109,7 @@ def list_runs(
 
 
 @router.get("/{run_id}", response_model=RunResponse)
-def get_run(run_id: str, db: Session = Depends(get_db)) -> RunResponse:
+def get_run(run_id: str, db: DBSession) -> RunResponse:
     """
     Get details for a specific run.
 
@@ -119,7 +124,7 @@ def get_run(run_id: str, db: Session = Depends(get_db)) -> RunResponse:
 
 
 @router.delete("/{run_id}", response_model=RunResponse)
-def cancel_run(run_id: str, db: Session = Depends(get_db)) -> RunResponse:
+def cancel_run(run_id: str, db: DBSession) -> RunResponse:
     """
     Cancel a running job or delete a completed one.
 
@@ -137,8 +142,8 @@ def cancel_run(run_id: str, db: Session = Depends(get_db)) -> RunResponse:
 @router.get("/{run_id}/logs")
 async def stream_logs(
     run_id: str,
+    db: DBSession,
     from_start: bool = Query(True, description="Whether to send existing content"),
-    db: Session = Depends(get_db),
 ) -> EventSourceResponse:
     """
     Stream logs via Server-Sent Events.
@@ -158,7 +163,7 @@ async def stream_logs(
 @router.get("/{run_id}/progress")
 async def stream_run_progress(
     run_id: str,
-    db: Session = Depends(get_db),
+    db: DBSession,
 ) -> EventSourceResponse:
     """
     Stream progress events via Server-Sent Events.
