@@ -91,7 +91,7 @@ The simulator uses `multiprocessing.Pool` internally, spawning child processes. 
 
 The simulator writes structured progress to `progress.jsonl`:
 
-```jsonl
+```text
 {"type":"start","timestamp":"2024-01-15T10:00:00Z","total_erlangs":10,"total_iterations":100}
 {"type":"erlang_start","timestamp":"2024-01-15T10:00:01Z","erlang":50,"erlang_index":0}
 {"type":"iteration","timestamp":"2024-01-15T10:00:05Z","erlang":50,"iteration":1,"blocking_prob":0.023}

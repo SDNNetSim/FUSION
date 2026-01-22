@@ -443,7 +443,7 @@ describe('useSSE', () => {
 
 ### Component Structure
 
-```typescript
+```text
 // components/runs/RunCard.tsx
 import { memo } from 'react';
 import { Card, CardHeader, CardContent } from '../ui/card';
@@ -496,7 +496,7 @@ export const RunCard = memo(function RunCard({ run, onClick }: RunCardProps) {
 
 Wrap pages in error boundaries:
 
-```typescript
+```text
 // components/ErrorBoundary.tsx
 import { Component, ReactNode } from 'react';
 import { Button } from './ui/button';

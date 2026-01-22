@@ -77,7 +77,7 @@ Structured progress events in JSON Lines format. One JSON object per line.
 
 **Event Types:**
 
-```jsonl
+```text
 {"type":"start","ts":"2024-01-15T10:00:00Z","config":{"total_erlangs":16,"total_iterations":100,"erlang_start":50,"erlang_stop":200,"erlang_step":10}}
 {"type":"erlang_start","ts":"2024-01-15T10:00:01Z","erlang":50,"erlang_index":0,"total_erlangs":16}
 {"type":"iteration","ts":"2024-01-15T10:00:05Z","erlang":50,"iteration":1,"total_iterations":100,"metrics":{"blocking_prob":0.0234,"mean_hops":2.3}}

@@ -272,7 +272,7 @@ E2E tests use a fake simulator (`FUSION_GUI_FAKE_SIMULATOR=true`) for fast, dete
 ### Adding a New UI Component
 
 1. **Create component** in `frontend/src/components/<category>/`:
-   ```typescript
+   ```text
    // MyComponent.tsx
    interface MyComponentProps {
      value: string;
@@ -319,7 +319,7 @@ What are the positive and negative outcomes?
 
 ## Makefile Targets
 
-```makefile
+```bash
 # Development
 make api-dev          # Run backend with hot reload
 make frontend-dev     # Run frontend with hot reload

@@ -167,6 +167,11 @@ Choose Your Path
 
        Start: :doc:`getting-started/installation`, then see :doc:`developer/fusion/unity/index`
 
+   * - **GUI User**
+     - Prefer a visual interface over the command line.
+
+       Start: :doc:`getting-started/installation`, then :doc:`getting-started/gui/index`
+
 ----
 
 Quickstart: Your First Simulation
@@ -204,6 +209,33 @@ Run your first simulation in under 10 minutes:
 
 ----
 
+Web-Based GUI
+=============
+
+.. tip::
+
+   **New in v6.1**: FUSION includes a web-based interface for managing
+   simulations, visualizing topologies, and exploring the codebase.
+
+Launch the GUI with:
+
+.. code-block:: bash
+
+   python -m fusion.cli.run_gui
+
+Open http://127.0.0.1:8765 in your browser.
+
+**Features:**
+
+- Real-time log streaming for running simulations
+- Interactive network topology visualization
+- Configuration editor with syntax highlighting
+- Codebase explorer with guided architecture tour
+
+:doc:`Learn more <getting-started/gui/index>`
+
+----
+
 Common Tasks
 ============
 
@@ -213,6 +245,8 @@ Common Tasks
 
    * - Task
      - Documentation
+   * - Launch the GUI
+     - :doc:`GUI Getting Started <getting-started/gui/index>`
    * - Run a basic simulation
      - :doc:`Core Tutorial Part 1 <developer/fusion/core/tutorial>`
    * - Create a custom configuration
@@ -330,6 +364,7 @@ Project Status
 
 **Actively Developed**
 
+- Web-based GUI (v6.1)
 - Sphinx documentation (this site)
 - Orchestrator pipeline architecture
 - RL module (UnifiedSimEnv environment)
@@ -343,7 +378,6 @@ Project Status
 
 **Planned**
 
-- GUI support (v6.1+)
 - Replace adapters with native orchestrator implementations
 - Multi-band RL support (L-band)
 - Multi-process RL training
@@ -456,6 +490,7 @@ If you use FUSION in your research, please cite:
    :hidden:
 
    getting-started/installation
+   getting-started/gui/index
    getting-started/git-github/index
    getting-started/claude-code/index
    manifesto

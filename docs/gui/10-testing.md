@@ -715,7 +715,7 @@ export const server = setupServer(...handlers);
 
 ### Test Utilities
 
-```typescript
+```text
 // frontend/src/test/utils.tsx
 import { ReactElement } from "react";
 import { render, RenderOptions } from "@testing-library/react";

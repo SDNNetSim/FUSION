@@ -101,7 +101,7 @@ GET /api/runs/{run_id}
 ```
 
 **Response (200 OK):**
-```json
+```text
 {
   "id": "a1b2c3d4e5f6",
   "name": "My Simulation",
@@ -300,7 +300,7 @@ Returns file content for preview (text, JSON, CSV, images).
 | `max_size` | int | Limit bytes (default: 1MB) |
 
 **Response (200 OK):**
-```json
+```text
 {
   "path": "output/sim/0/50_erlang.json",
   "type": "json",
@@ -499,7 +499,7 @@ GET /api/runs/{run_id}/topology
 Returns topology with current utilization from a running or completed simulation.
 
 **Response (200 OK):**
-```json
+```text
 {
   "name": "nsfnet",
   "nodes": [...],
