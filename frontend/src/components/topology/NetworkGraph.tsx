@@ -1,11 +1,9 @@
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import type { TopologyNode, TopologyLink } from '@/api/types'
 
 interface NetworkGraphProps {
   nodes: TopologyNode[]
   links: TopologyLink[]
-  width?: number
-  height?: number
   onNodeClick?: (node: TopologyNode) => void
   onLinkClick?: (link: TopologyLink) => void
 }
@@ -30,12 +28,12 @@ function getUtilizationColor(utilization: number): string {
 export function NetworkGraph({
   nodes,
   links,
-  width = 800,
-  height = 600,
   onNodeClick,
   onLinkClick,
 }: NetworkGraphProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [tooltip, setTooltip] = useState<TooltipState>({
     visible: false,
     x: 0,
@@ -45,6 +43,26 @@ export function NetworkGraph({
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+
+  // Track container size for responsiveness
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const updateDimensions = () => {
+      setDimensions({
+        width: container.clientWidth,
+        height: container.clientHeight,
+      })
+    }
+
+    updateDimensions()
+
+    const resizeObserver = new ResizeObserver(updateDimensions)
+    resizeObserver.observe(container)
+
+    return () => resizeObserver.disconnect()
+  }, [])
 
   // Create a map for quick node lookup
   const nodeMap = useMemo(() => {
@@ -129,7 +147,7 @@ export function NetworkGraph({
   }, [])
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative h-full w-full">
       {/* Controls */}
       <div className="absolute right-2 top-2 z-10 flex gap-1">
         <button
@@ -168,10 +186,10 @@ export function NetworkGraph({
       {/* SVG Canvas */}
       <svg
         ref={svgRef}
-        width={width}
-        height={height}
+        width={dimensions.width}
+        height={dimensions.height}
         viewBox={`${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`}
-        className="cursor-grab rounded-lg border border-gray-200 bg-white active:cursor-grabbing dark:border-gray-700 dark:bg-gray-800"
+        className="cursor-grab bg-white active:cursor-grabbing dark:bg-gray-800"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

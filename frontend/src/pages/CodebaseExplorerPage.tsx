@@ -12,15 +12,10 @@ import {
   Database,
   Layers,
   Terminal,
-  Brain,
-  Shield,
   Cog,
   BookOpen,
-  Play,
   ArrowLeft,
-  ExternalLink,
   ChevronDown,
-  Sparkles,
 } from 'lucide-react'
 import Editor from '@monaco-editor/react'
 import { codebaseApi } from '@/api/client'
@@ -151,10 +146,31 @@ export function CodebaseExplorerPage() {
     enabled: !!selectedFile,
   })
 
-  // Get module node from tree
-  const getModuleNode = useCallback((moduleName: string): ModuleNode | null => {
+  // Get module node from tree - supports nested paths like "modules/rl"
+  const getModuleNode = useCallback((modulePath: string): ModuleNode | null => {
     if (!tree) return null
-    return tree.root.children.find(c => c.name === moduleName) || null
+
+    // Helper to recursively find a node by its full path
+    const findNode = (node: ModuleNode, targetPath: string): ModuleNode | null => {
+      const fullPath = node.path.replace('fusion/', '')
+      if (fullPath === targetPath) return node
+      for (const child of node.children) {
+        const found = findNode(child, targetPath)
+        if (found) return found
+      }
+      return null
+    }
+
+    // First try direct child lookup for top-level modules
+    const directChild = tree.root.children.find(c => c.name === modulePath)
+    if (directChild) return directChild
+
+    // Otherwise search recursively for nested paths
+    for (const child of tree.root.children) {
+      const found = findNode(child, modulePath)
+      if (found) return found
+    }
+    return null
   }, [tree])
 
   const selectedModuleNode = selectedModule ? getModuleNode(selectedModule) : null
@@ -289,7 +305,6 @@ export function CodebaseExplorerPage() {
               onClick={startTour}
               className="flex items-center gap-2 rounded-lg bg-fusion-600 px-4 py-2 text-sm font-medium text-white hover:bg-fusion-700"
             >
-              <Sparkles className="h-4 w-4" />
               Take a Tour
             </button>
           )}
@@ -437,29 +452,35 @@ export function CodebaseExplorerPage() {
         )}
 
         {/* Module View */}
-        {viewMode === 'module' && selectedModuleNode && moduleInfo && (
+        {viewMode === 'module' && selectedModuleNode && (
           <div>
             {/* Module Header Card */}
-            <div className={`mb-6 rounded-xl border-2 p-6 ${moduleInfo.bgColor}`}>
+            <div className={`mb-6 rounded-xl border-2 p-6 ${moduleInfo?.bgColor || 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
               <div className="flex items-start gap-4">
-                <moduleInfo.icon className={`h-12 w-12 ${moduleInfo.color}`} />
+                {moduleInfo ? (
+                  <moduleInfo.icon className={`h-12 w-12 ${moduleInfo.color}`} />
+                ) : (
+                  <Layers className="h-12 w-12 text-gray-600" />
+                )}
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {selectedModule}
+                    {selectedModuleNode.name}
                   </h2>
                   <p className="mt-1 text-gray-600 dark:text-gray-300">
-                    {moduleInfo.description}
+                    {moduleInfo?.description || selectedModuleNode.description || `Explore the ${selectedModuleNode.name} module`}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {moduleInfo.highlights.map((h) => (
-                      <span
-                        key={h}
-                        className="rounded-full bg-white/80 px-3 py-1 text-sm font-medium text-gray-700 dark:bg-gray-800/80 dark:text-gray-300"
-                      >
-                        {h}
-                      </span>
-                    ))}
-                  </div>
+                  {moduleInfo?.highlights && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {moduleInfo.highlights.map((h) => (
+                        <span
+                          key={h}
+                          className="rounded-full bg-white/80 px-3 py-1 text-sm font-medium text-gray-700 dark:bg-gray-800/80 dark:text-gray-300"
+                        >
+                          {h}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

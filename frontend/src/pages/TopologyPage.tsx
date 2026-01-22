@@ -133,8 +133,6 @@ export function TopologyPage() {
             <NetworkGraph
               nodes={topology.nodes}
               links={topology.links}
-              width={800}
-              height={550}
               onNodeClick={setSelectedNode}
               onLinkClick={setSelectedLink}
             />

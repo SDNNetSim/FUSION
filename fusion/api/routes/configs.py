@@ -37,13 +37,22 @@ def list_templates() -> TemplateListResponse:
 
     templates = []
     for path in sorted(templates_dir.glob("*.ini")):
-        # Extract description from first comment line if present
+        # Extract description from comment lines, skipping separator lines
         description = None
         try:
             with open(path) as f:
-                first_line = f.readline().strip()
-                if first_line.startswith(";") or first_line.startswith("#"):
-                    description = first_line.lstrip(";# ").strip()
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if not (line.startswith(";") or line.startswith("#")):
+                        break
+                    # Strip comment markers and whitespace
+                    content = line.lstrip(";# ").strip()
+                    # Skip separator lines (all =, -, or similar)
+                    if content and not all(c in "=-~*#" for c in content):
+                        description = content
+                        break
         except OSError:
             pass
 
@@ -74,7 +83,7 @@ def get_template(name: str) -> dict:
     try:
         content = template_path.read_text()
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to read template: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to read template: {e}") from e
 
     return {"name": name, "content": content}
 
