@@ -15,7 +15,6 @@ import {
   Cog,
   BookOpen,
   ArrowLeft,
-  ChevronDown,
 } from 'lucide-react'
 import Editor from '@monaco-editor/react'
 import { codebaseApi } from '@/api/client'

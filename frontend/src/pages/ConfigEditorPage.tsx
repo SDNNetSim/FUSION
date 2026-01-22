@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, Link, useNavigate } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Check, AlertTriangle, Save, FileCode, ChevronDown, FileText } from 'lucide-react'
 import Editor from '@monaco-editor/react'
@@ -15,7 +15,6 @@ interface ValidationResult {
 
 export function ConfigEditorPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
   const templateName = searchParams.get('template') || 'default'
   const { isDark } = useUI()
 

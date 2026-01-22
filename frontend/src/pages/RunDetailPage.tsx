@@ -429,8 +429,6 @@ export function RunDetailPage() {
                 <NetworkGraph
                   nodes={topology.nodes}
                   links={topology.links}
-                  width={700}
-                  height={500}
                 />
               ) : (
                 <div className="flex h-[500px] items-center justify-center rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
