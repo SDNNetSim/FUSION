@@ -34,10 +34,12 @@ Modules
    :caption: fusion/
 
    fusion/analysis/index
+   fusion/api/index
    fusion/cli/index
    fusion/configs/index
    fusion/core/index
    fusion/domain/index
+   fusion/frontend/index
    fusion/interfaces/index
    fusion/io/index
    fusion/modules/index
@@ -58,3 +60,14 @@ Documentation for the ``data/`` directory and its contents.
    :maxdepth: 2
 
    data/index
+
+GUI Design Documentation
+========================
+
+Detailed design documentation for the web-based GUI, including architecture
+decisions, API specifications, and coding standards.
+
+.. toctree::
+   :maxdepth: 1
+
+   /gui/index
