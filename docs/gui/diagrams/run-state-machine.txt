@@ -1,0 +1,159 @@
+Run Lifecycle State Machine
+===========================
+
+
+                              ┌─────────────────────────────────┐
+                              │                                 │
+                              │           USER ACTION           │
+                              │         POST /api/runs          │
+                              │                                 │
+                              └────────────────┬────────────────┘
+                                               │
+                                               │ create run directory
+                                               │ write config.ini
+                                               │ insert DB record
+                                               ▼
+                              ┌─────────────────────────────────┐
+                              │                                 │
+                              │            PENDING              │
+                              │                                 │
+                              │  • Run created                  │
+                              │  • Config written               │
+                              │  • Not yet started              │
+                              │                                 │
+                              └────────────────┬────────────────┘
+                                               │
+                   ┌───────────────────────────┼───────────────────────────┐
+                   │                           │                           │
+                   │ DELETE /api/runs/{id}     │ start subprocess          │
+                   │ (user cancels before      │ (automatic or manual)     │
+                   │  start)                   │                           │
+                   │                           │                           │
+                   ▼                           ▼                           │
+    ┌──────────────────────────┐    ┌─────────────────────────────────┐    │
+    │                          │    │                                 │    │
+    │        CANCELLED         │    │            RUNNING              │    │
+    │                          │    │                                 │    │
+    │  • User cancelled        │    │  • subprocess active            │    │
+    │  • No process started    │    │  • PID/PGID stored in DB        │    │
+    │  • Directory cleaned up  │    │  • logs streaming to sim.log    │    │
+    │                          │    │  • progress → progress.jsonl    │    │
+    │                          │    │                                 │    │
+    │       (TERMINAL)         │    └───────────────┬─────────────────┘    │
+    │                          │                    │                      │
+    └──────────────────────────┘    ┌───────────────┼───────────────┐      │
+                                    │               │               │      │
+                                    │               │               │      │
+                   ┌────────────────┘               │               └──────┼───────────────┐
+                   │                                │                      │               │
+                   │ exit_code == 0                 │ exit_code != 0       │               │
+                   │ (success)                      │ (error/crash)        │ DELETE request│
+                   │                                │                    ──│ (user cancel) │
+                   ▼                                ▼                    │                ▼
+    ┌──────────────────────────┐    ┌──────────────────────────┐         │  ┌──────────────────────────┐
+    │                          │    │                          │         │  │                          │
+    │        COMPLETED         │    │          FAILED          │         │  │        CANCELLED         │
+    │                          │    │                          │         │  │                          │
+    │  • Simulation finished   │    │  • Simulation crashed    │         │  │  • User requested stop   │
+    │  • All artifacts saved   │    │  • Error in error_message│         │  │  • os.killpg(PGID, TERM) │
+    │  • Results available     │    │  • Partial artifacts     │         │  │  • Process tree killed   │
+    │                          │    │    may exist             │         │  │  • Partial artifacts     │
+    │       (TERMINAL)         │    │                          │         │  │                          │
+    │                          │    │       (TERMINAL)         │         │  │       (TERMINAL)         │
+    └──────────────────────────┘    └──────────────────────────┘         │  └──────────────────────────┘
+                                                                         │
+                                                                         │
+                                    ┌────────────────────────────────────┘
+                                    │
+                                    │ Server restart while RUNNING
+                                    │ (process no longer exists)
+                                    │
+                                    ▼
+                     ┌──────────────────────────┐
+                     │                          │
+                     │          FAILED          │
+                     │                          │
+                     │  • Orphan detected       │
+                     │  • error_message =       │
+                     │    "Server restarted..." │
+                     │                          │
+                     │       (TERMINAL)         │
+                     │                          │
+                     └──────────────────────────┘
+
+
+State Transitions Summary
+=========================
+
+  From        To          Trigger                  Action
+  ────        ──          ───────                  ──────
+  (none)      PENDING     POST /api/runs           Create directory, write config
+  PENDING     RUNNING     Auto-start               Start subprocess with new session
+  PENDING     CANCELLED   DELETE /api/runs/{id}    Remove directory
+  RUNNING     COMPLETED   exit_code == 0           Update DB, artifacts complete
+  RUNNING     FAILED      exit_code != 0           Update DB, store error message
+  RUNNING     CANCELLED   DELETE /api/runs/{id}    os.killpg(PGID, SIGTERM)
+  RUNNING     FAILED      Server restart           Orphan detection on startup
+
+
+Database Fields by State
+========================
+
+  State       pid    pgid   started_at   completed_at   error_message
+  ─────       ───    ────   ──────────   ────────────   ─────────────
+  PENDING     null   null   null         null           null
+  RUNNING     set    set    set          null           null
+  COMPLETED   set    set    set          set            null
+  FAILED      set    set    set          set            set
+  CANCELLED   set*   set*   set*         set            null
+
+  * May be null if cancelled before start
+
+
+Process Management
+==================
+
+  CREATE (PENDING → RUNNING):
+
+    process = subprocess.Popen(
+        ["python", "-m", "fusion.cli.run_sim", ...],
+        stdout=log_file,           # NOT PIPE (avoid deadlock)
+        stderr=subprocess.STDOUT,
+        start_new_session=True,    # Creates new PGID
+    )
+    run.pid = process.pid
+    run.pgid = os.getpgid(process.pid)
+
+
+  CANCEL (RUNNING → CANCELLED):
+
+    os.killpg(run.pgid, signal.SIGTERM)  # Kill entire tree
+    time.sleep(2)                         # Grace period
+    os.killpg(run.pgid, signal.SIGKILL)  # Force if needed
+
+
+  RECOVERY (on server startup):
+
+    for run in db.query(Run).filter(status="RUNNING"):
+        if not is_process_alive(run.pgid):
+            run.status = "FAILED"
+            run.error_message = "Server restarted"
+
+
+Progress Events (RUNNING state)
+===============================
+
+  progress.jsonl written by simulator:
+
+    ├─ {"type":"start", ...}
+    ├─ {"type":"erlang_start", "erlang":50, ...}
+    ├─ {"type":"iteration", "iteration":1, ...}
+    ├─ {"type":"iteration", "iteration":2, ...}
+    ├─ ...
+    ├─ {"type":"erlang_complete", "erlang":50, ...}
+    ├─ {"type":"erlang_start", "erlang":60, ...}
+    ├─ ...
+    └─ {"type":"complete", "exit_code":0}  ← triggers COMPLETED
+
+  Backend watches file, updates DB progress cache,
+  streams events via SSE to frontend.

@@ -56,6 +56,11 @@ def add_output_args(parser: argparse.ArgumentParser) -> None:
     :rtype: None
     """
     parser.add_argument("--output_dir", type=str, help="Directory to save output files")
+    parser.add_argument(
+        "--progress_file",
+        type=str,
+        help="Path to write progress events (JSONL format) for GUI monitoring",
+    )
     parser.add_argument("--save_results", action="store_true", help="Save simulation results to file")
     parser.add_argument("--save_snapshots", action="store_true", help="Save simulation snapshots")
     parser.add_argument("--snapshot_step", type=int, help="Step interval for saving snapshots")

@@ -1,7 +1,7 @@
 # FUSION Project Makefile
 # Provides convenient commands for development and validation
 
-.PHONY: help install lint test validate clean check-env precommit-install precommit-run
+.PHONY: help install lint test validate clean check-env precommit-install precommit-run lint-frontend validate-frontend
 
 # Default target
 help:
@@ -16,8 +16,10 @@ help:
 	@echo "  check-env          Check if virtual environment is activated"
 	@echo ""
 	@echo "Validation (run before submitting PR):"
-	@echo "  validate           Run all pre-commit checks on all files"
+	@echo "  validate           Run all checks (backend + frontend + tests)"
 	@echo "  lint               Run pre-commit checks on all files"
+	@echo "  lint-frontend      Run frontend linting (ESLint)"
+	@echo "  validate-frontend  Run frontend lint + TypeScript build"
 	@echo "  precommit-run      Run pre-commit on staged files only"
 	@echo "  test               Run unit tests with pytest"
 	@echo ""
@@ -86,13 +88,42 @@ precommit-run: check-env
 	@echo "🔍 Running pre-commit checks on staged files..."
 	pre-commit run
 
+# Frontend linting
+lint-frontend:
+	@echo "Running frontend ESLint..."
+	@if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then \
+		cd frontend && npm run lint; \
+	else \
+		echo "Frontend directory not found, skipping..."; \
+	fi
+
+# Frontend validation (lint + build)
+validate-frontend:
+	@echo "Running frontend validation (lint + TypeScript build)..."
+	@if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then \
+		cd frontend && npm run lint && npm run build; \
+	else \
+		echo "Frontend directory not found, skipping..."; \
+	fi
+
 # Full PR validation - run all pre-commit checks on all files
 validate: check-env
-	@echo "🚀 Running complete validation (pre-commit + tests)..."
-	@echo "Running pre-commit checks on all files..."
+	@echo "Running complete validation (backend + frontend + tests)..."
+	@echo ""
+	@echo "=== Backend: Pre-commit checks ==="
 	pre-commit run --all-files
-	@echo "Running unit tests..."
+	@echo ""
+	@echo "=== Frontend: Lint + TypeScript build ==="
+	@if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then \
+		cd frontend && npm run lint && npm run build; \
+	else \
+		echo "Frontend directory not found, skipping..."; \
+	fi
+	@echo ""
+	@echo "=== Running unit tests ==="
 	python -m pytest
+	@echo ""
+	@echo "Validation complete!"
 
 # Lint only - run all pre-commit checks
 lint: check-env
