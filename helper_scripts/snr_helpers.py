@@ -21,7 +21,7 @@ def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict
         key = (core_num, cores_per_link)
 
     base_path = os.path.join('data', 'pre_calc', network)
-    file_mapping = file_mapping_dict[network]
+    file_mapping = file_mapping_dict[0][network]
 
     if key in file_mapping:
         mf_path = os.path.join(base_path, 'modulations', file_mapping[key]['mf'])
