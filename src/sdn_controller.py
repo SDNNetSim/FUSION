@@ -490,8 +490,13 @@ class SDNController:
                 # TODO: This must be fixed
                 self.route_obj.route_props.weights_list = [0]
         route_time = time.time() - start_time
-
-        segment_slicing = False
+        
+        if self.sdn_props.was_partially_groomed:
+            if not self.engine_props["dynamic_lps"]:
+                raise BufferError("Attempted to slice the request while it's not allowed.")
+            segment_slicing = True
+        else:
+            segment_slicing = False
         # TODO: Improve SDN controller's structure
         while True:  # pylint: disable=too-many-nested-blocks
             for path_index, path_list in enumerate(route_matrix):
