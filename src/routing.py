@@ -251,7 +251,7 @@ class Routing:
                                                              nested_key='max_length')
                     mod_formats_list = list(mod_formats_dict.keys())
                     self.route_props.paths_matrix.append(temp_path)
-                    self.route_props.mod_formats_matrix.append(mod_formats_list[::-1])
+                    self.route_props.mod_formats_matrix.append(mod_formats_list)
                     self.route_props.weights_list.append(path_len)
                     self.route_props.path_index_list.append(paths_calculated)
 
