@@ -471,8 +471,9 @@ class SnrMeasurements:
             num_adjacent = 0
         else:
             num_adjacent = self.find_num_adjacent_cores()
+        band_key = ''.join(sorted(b.upper() for b in self.engine_props['band_list']))
         loaded_data, loaded_data_gsnr = get_loaded_files(
-            num_adjacent, self.engine_props['cores_per_link'],
+            num_adjacent, self.engine_props['cores_per_link'], band_key,
             self.snr_props.file_mapping_dict,
             network=self.engine_props['network'],
         )
@@ -504,8 +505,9 @@ class SnrMeasurements:
             num_adjacent = 0
         else:
             num_adjacent = self.find_num_adjacent_cores()
+        band_key = ''.join(sorted(b.upper() for b in self.engine_props['band_list']))
         loaded_data, loaded_data_gsnr = get_loaded_files(
-            num_adjacent, self.engine_props['cores_per_link'],
+            num_adjacent, self.engine_props['cores_per_link'], band_key,
             self.snr_props.file_mapping_dict,
             network=self.engine_props['network']
         )
@@ -541,8 +543,9 @@ class SnrMeasurements:
             num_adjacent = 0
         else:
             num_adjacent = self.find_num_adjacent_cores()
+        band_key = ''.join(sorted(b.upper() for b in self.engine_props['band_list']))
         loaded_data, _ = get_loaded_files(
-            num_adjacent, self.engine_props['cores_per_link'],
+            num_adjacent, self.engine_props['cores_per_link'], band_key,
             self.snr_props.file_mapping_dict,
             self.engine_props['network']
         )
