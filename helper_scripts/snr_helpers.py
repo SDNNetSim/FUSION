@@ -4,12 +4,13 @@ import numpy as np
 
 
 #TODO Ensure Geometry data matches requirements for 13 and 19 cores
-def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict, network: str):
+def get_loaded_files(core_num: int, cores_per_link: int, band_key: str,  file_mapping_dict: dict, network: str):
     """
     Fetch the appropriate modulation format and GSNR files based on core_num and cores_per_link.
 
     :param core_num: The core number being used.
     :param cores_per_link: The total number of cores per link.
+    :param band_key: The optical band combination used (e.g., 'C', 'CL', 'CS', 'CLS').
     :param file_mapping_dict: A dictionary mapping (core_num, cores_per_link) to file paths.
     :param network: The current network.
     :return: The loaded modulation format and GSNR data.
@@ -18,7 +19,7 @@ def get_loaded_files(core_num: int, cores_per_link: int, file_mapping_dict: dict
     if core_num == 0:
         key = 'multi_fiber'
     else:
-        key = (core_num, cores_per_link)
+        key = (core_num, cores_per_link, band_key)
 
     base_path = os.path.join('data', 'pre_calc', network)
     file_mapping = file_mapping_dict[0][network]
@@ -43,11 +44,30 @@ def get_slot_index(curr_band, start_slot, engine_props):
     :return: The computed slot index.
     :rtype: int
     """
-    band_offset = {
-        'l': 0,
-        'c': engine_props['l_band'],
-        's': engine_props['l_band'] + engine_props['c_band'],
-    }
+    band_key = ''.join(sorted(b.upper() for b in engine_props['band_list']))  # 'C', 'CL', 'CS', 'CLS'
+
+    if band_key == 'C':
+        band_offset = {
+            'c': 0,
+        }
+    elif band_key == 'CL':
+        band_offset = {
+            'l': 0,
+            'c': engine_props['l_band'],
+        }
+    elif band_key == 'CS':
+        band_offset = {
+            'c': 0,
+            's': engine_props['c_band'],
+        }
+    elif band_key == 'CLS':
+        band_offset = {
+            'l': 0,
+            'c': engine_props['l_band'],
+            's': engine_props['l_band'] + engine_props['c_band'],
+        }
+    else:
+        raise ValueError(f"Unsupported band selection: {engine_props['band_list']} -> {band_key}")
     if curr_band not in band_offset:
         raise ValueError(f"Unexpected band: {curr_band}")
     return band_offset[curr_band] + start_slot
