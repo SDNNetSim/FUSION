@@ -25,13 +25,13 @@ def create_pt(cores_per_link: int, network_spectrum_dict: dict[tuple, float]) ->
         "mode_coupling_co": 4.0e-4,
         "propagation_const": 4e6,
         "core_pitch": 4e-5,
-        # Optical band frequency ranges (in Hz) - standard ITU-T specifications
-        "frequency_start_c": 3e8 / 1565e-9,  # C-band start from 1565nm wavelength (~191.69 THz)
-        "frequency_end_c": (3e8 / 1565e-9) + 6.0e12,  # C-band end (match v5)
-        "frequency_start_l": 3e8 / 1620e-9,  # L-band start: from 1620nm wavelength
-        "frequency_end_l": (3e8 / 1620e-9) + 6.0e12,  # L-band end (match v5)
-        "frequency_start_s": 185.0e12,  # S-band start: 185.0 THz (~1460 nm)
-        "frequency_end_s": 190.0e12,  # S-band end: 190.0 THz (~1530 nm)
+        # Optical band frequency ranges (in Hz) 
+        "frequency_start_c": 3e8 / 1572e-9,  # C-band start from 1565nm wavelength (~190.84 THz)
+        "frequency_end_c": (3e8 / 1572e-9) + 6.0e12,  # C-band end (match v5)
+        "frequency_start_l": 3e8 / 1626e-9,  # L-band start: from 1626nm wavelength
+        "frequency_end_l": (3e8 / 1626e-9) + 6.0e12,  # L-band end (match v5)
+        "frequency_start_s": (3e8 / 1524e-9),  # S-band start: 196.850 THz (~1524 nm)
+        "frequency_end_s": (3e8 / 1524e-9) + 8.1e12 ,  # S-band end: 204.950 THz (~1463.8 nm)
         "c_band_bw": 6.0e12,
         # Multi-band GSNR parameters (ported from v5 for C+L band calculations)
         "raman_gain_slope": 0.028 / 1e3 / 1e12,  # C_r Raman gain slope
