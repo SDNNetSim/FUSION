@@ -22,10 +22,10 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
         'mode_coupling_co': 4.0e-4,
         'propagation_const': 4e6,
         'core_pitch': 4e-5,
-        'frequency_start_c': 3e8 / 1565e-9,
-        'frequency_end_c':  ((3e8 / 1565e-9)+ 6.0e12),
-        'frequency_start_l': 3e8 / 1620e-9,
-        'frequency_end_l':  ((3e8 / 1620e-9)+ 6.0e12),
+        'frequency_start_c': 3e8 / 1572e-9,
+        'frequency_end_c':  ((3e8 / 1572e-9)+ 6.0e12),
+        'frequency_start_l': 3e8 / 1626e-9,
+        'frequency_end_l':  ((3e8 / 1626e-9)+ 6.0e12),
         'c_band_bw': 6.0e12,
         'raman_gain_slope': 0.028 / (1e3)/ (1e12),           #C_r
         'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),      # beta2
