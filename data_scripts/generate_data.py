@@ -26,6 +26,8 @@ def create_pt(cores_per_link: int, net_spec_dict: dict):
         'frequency_end_c':  ((3e8 / 1572e-9)+ 6.0e12),
         'frequency_start_l': 3e8 / 1626e-9,
         'frequency_end_l':  ((3e8 / 1626e-9)+ 6.0e12),
+        "frequency_start_s": (3e8 / 1524e-9),  # S-band start: 196.850 THz (~1524 nm)
+        "frequency_end_s": (3e8 / 1524e-9) + 8.1e12 ,  # S-band end: 204.950 THz (~1463.8 nm)
         'c_band_bw': 6.0e12,
         'raman_gain_slope': 0.028 / (1e3)/ (1e12),           #C_r
         'gvd': (-22.6) * ((1e-12) * (1e-12)) / ( 1e3),      # beta2
