@@ -852,8 +852,13 @@ class SnrMeasurements:
                     * sum_phi
                     * self.snr_props.bandwidth
                 )
-                gsnr_span_ase_nli_db.append(10 * np.log10(self.engine_props_dict["input_power"] / (p_ase_span + p_nli_span)))
-                gsnr_link_ase_nli += (self.engine_props_dict["input_power"] / (p_ase_span + p_nli_span)) ** -1
+                if self.engine_props_dict["cores_per_link"] > 1 and not self.engine_props_dict["multi_fiber"]:
+                    num_adjacent = self.check_adjacent_cores(link_tuple=(source, dest))
+                    p_xt_span = self.calculate_xt(number_of_adjacent_cores = num_adjacent, link_length = self.snr_props.length) * self.engine_props_dict['input_power']
+                else:
+                    p_xt_span = 0
+                gsnr_span_ase_nli_db.append(10 * np.log10(self.engine_props_dict["input_power"] / (p_ase_span + p_nli_span + p_xt_span)))
+                gsnr_link_ase_nli += (self.engine_props_dict["input_power"] / (p_ase_span + p_nli_span + p_xt_span)) ** -1
 
             gsnr_link_ase_nli_db.append(10 * np.log10(gsnr_link_ase_nli**-1))
             gsnr_path_ase_nli += gsnr_link_ase_nli
@@ -871,6 +876,10 @@ class SnrMeasurements:
             for mod in force_mod_format:
                 req_snr_val = self.snr_props.req_snr[mod]
                 meets_req = gsnr_db >= req_snr_val
+                if self.engine_props_dict["cores_per_link"] > 1 and not self.engine_props_dict["multi_fiber"]:
+                    xt_check, xt_val = self.check_xt()
+                    if not xt_check:
+                        meets_req = False
                 if meets_req:
                     resp = mod
                     bw_resp = bw_mapping[mod]
@@ -882,6 +891,10 @@ class SnrMeasurements:
 
             req_snr_threshold = self.snr_props.req_snr[self.spectrum_props.modulation]
             resp = gsnr_db >= req_snr_threshold
+            if self.engine_props_dict["cores_per_link"] > 1 and not self.engine_props_dict["multi_fiber"]:
+                xt_check, xt_val = self.check_xt()
+                if not xt_check:
+                    resp = False
             # INSTRUMENTATION: GSNR threshold comparison
             bw_resp = 0
 
