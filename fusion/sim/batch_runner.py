@@ -108,7 +108,7 @@ class BatchRunner:
         # Update parameters for this Erlang value
         current_params = sim_params.copy()
         current_params["erlang"] = erlang
-        current_params["arrival_rate"] = erlang / current_params["holding_time"]
+        current_params["arrival_rate"] = current_params['cores_per_link'] * erlang / current_params["holding_time"]
 
         # Add stop_flag if not present (required by SimulationEngine)
         if "stop_flag" not in current_params:
