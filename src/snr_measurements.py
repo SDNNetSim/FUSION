@@ -120,7 +120,7 @@ class SnrMeasurements:
 
 
 
-    def _calc_intercore_icxt_mu_mbeon(
+    def _calculate_crosstalk_mb_wcmcf(
         self,
         fi_hz: float,
         length_m: float,
@@ -128,9 +128,10 @@ class SnrMeasurements:
         return_db: bool = True,
     ):
         """
-        Compute average inter-core crosstalk (mu_icxt) for a single channel.
+        Compute average inter-core crosstalk (mu_icxt) for a single channel in weakly coupled multi-core fibers (WC-MCFs), Eq. 15-22 in https://doi.org/10.1364/JOCN.596435.
 
         All physical parameters are read directly from self.snr_props["icxt"].
+        
         """
 
         icxt = self.snr_props.icxt_mb_params_dict
@@ -139,7 +140,6 @@ class SnrMeasurements:
         c_mps = float(icxt["c_mps"])
         n_core = float(icxt["n_core"])
         delta1 = float(icxt["delta1"])
-        n_param = float(icxt["n_param"])
         rb_m = float(icxt["rb_m"][num_core])
         lambda_m = float(icxt["lambda_m"][num_core])
         r1_m = float(icxt["r1_m"][num_core])
@@ -150,7 +150,7 @@ class SnrMeasurements:
         fi = float(fi_hz)
 
         # =========================
-        # Eq. (3): kappa(fi)
+        # Eq. (17): kappa(fi)
         # =========================
         v1 = (
             2.0
@@ -167,7 +167,7 @@ class SnrMeasurements:
 
         u1_sq = (
             (2.0 * np.pi * fi * r1_m) / (n_core * c_mps)
-        ) ** 2 * (n_param**4 - 1.0)
+        ) ** 2 * (n_core**4 - 1.0)
 
         gamma = w1 / (
             w1 + (1.2 * (1.0 + v1) * w_tr_m) / lambda_m
@@ -176,7 +176,7 @@ class SnrMeasurements:
         kappa = (
             (np.sqrt(gamma * delta1) / r1_m)
             * (u1_sq / (v1**3 * (k1**2)))
-            * (np.sqrt(np.pi * r1_m) / (w1 * lambda_m))
+            * (np.sqrt((np.pi * r1_m) / (w1 * lambda_m)))
             * np.exp(
                 -(
                     w1 * lambda_m
@@ -187,17 +187,16 @@ class SnrMeasurements:
         )
 
         # =========================
-        # Eq. (2): omega(fi)
+        # Eq. (16): omega(fi)
         # =========================
         omega = (
             c_mps
             * (kappa**2)
             * rb_m
-            * n_core
-        ) / (np.pi * fi * lambda_m)
+        ) / (np.pi * fi * lambda_m * n_core)
 
         # =========================
-        # Eq. (1): mu_icxt(fi)
+        # Eq. (15): mu_icxt(fi)
         # =========================
         exp_term = np.exp(
             -(num_adjacent_cores + 1.0) * omega * length_m
@@ -639,8 +638,6 @@ class SnrMeasurements:
                 p_nli_span = (self.engine_props['input_power'] / self.snr_props.bandwidth)**3 * (8 / (27 * np.pi * abs(self.snr_props.link_dict['dispersion']))) * self.snr_props.link_dict['non_linearity']**2 * l_eff * sum_phi * self.snr_props.bandwidth
                 if self.engine_props["cores_per_link"] > 1 and not self.engine_props["multi_fiber"]:
                     num_adjacent = self.check_adjacent_cores(link_tuple=(source, dest))
-                    if num_adjacent>0:
-                        print("here")
                     p_xt_span = self.calculate_xt(num_adjacent = num_adjacent, link_length = self.snr_props.length) * self.engine_props['input_power']
                 else:
                     p_xt_span = 0
@@ -827,6 +824,7 @@ class SnrMeasurements:
         """
         snr_nli_inv = 0.0
         snr_ase_inv = 0.0
+        snr_xt_inv = 0.0
         snr_lp_inv = 0.0
         for link_num in range(0, len(self.spectrum_props.path_list) - 1):
             source = self.spectrum_props.path_list[link_num]
@@ -846,7 +844,19 @@ class SnrMeasurements:
             snr_ase_inv_l = self._compute_ase_mb(source, dest, p_total)
             snr_nli_inv += snr_nli_inv_l
             snr_ase_inv += snr_ase_inv_l
-        snr_lp_inv += (snr_nli_inv + snr_ase_inv)
+            if self.engine_props["cores_per_link"] > 1 and not self.engine_props["multi_fiber"]:
+                fi_hz = self.snr_props.link_dict['frequency_start_' + self.spectrum_props.curr_band] + self.spectrum_props.start_slot * self.engine_props['bw_per_slot'] * 10 ** 9
+                fi_hz = fi_hz + (
+                    self.num_slots * self.engine_props['bw_per_slot'] * 1e9 / 2
+                )
+                mu = self._calculate_crosstalk_mb_wcmcf(
+                                                        fi_hz,
+                                                        length_m = self.engine_props['topology_info']['links'][self.link_id]['length'],
+                                                        num_adjacent_cores = self.find_num_adjacent_cores(),
+                                                        return_db=False,
+                                            )
+                snr_xt_inv += mu
+        snr_lp_inv += (snr_nli_inv + snr_ase_inv + snr_xt_inv)
         gsnr = 1 / snr_lp_inv
         return gsnr
 
@@ -866,10 +876,18 @@ class SnrMeasurements:
         "QPSK": 400,
         "BPSK": 200
         }
-
-        gsnr = self._gsnr_calc_mb()
-        gsnr_db = 10 * np.log10(gsnr)
-        resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.engine_props['snr_margin'] 
+        if self.engine_props["cores_per_link"] > 1 and not self.engine_props["multi_fiber"]:
+            resp_xt,_,_ = self.check_xt_wc_mb()
+        else:
+            resp_xt = True
+        if resp_xt:
+            gsnr = self._gsnr_calc_mb()
+            gsnr_db = 10 * np.log10(gsnr)
+            resp = gsnr_db >= self.snr_props.req_snr[self.spectrum_props.modulation] + self.engine_props['snr_margin']
+        else:
+            resp = False
+            gsnr_db = None
+            
         bw_resp = 0
         if resp:
             if self.engine_props['fixed_grid']:
@@ -898,31 +916,40 @@ class SnrMeasurements:
         return resp, gsnr_db, bw_resp
 
 
-    def _check_xt(self):
+    def check_xt_wc_mb(self):
+        """
+            Checks the amount of cross-talk interference on a single request in weakly coupled multi-core fibers (WCMCFs).
+            
+
+            :return: Whether the cross-talk interference threshold can be met
+            :rtype: bool
+        """
+        
         self.snr_props.link_dict = self.engine_props['topology_info']['links'][1]['fiber']
-        xt= {}
-        # self._calculate_pxt(3)
-        # self.calculate_xt(num_adjacent=3, link_length = 500)
-        for band in self.engine_props['band_list']:
-            for slot_index in range(self.engine_props[band + '_band']):
-                fi_hz = self.snr_props.link_dict['frequency_start_' + band] + slot_index * self.engine_props['bw_per_slot'] * 10 ** 9
-                fi_hz = fi_hz + ((((self.engine_props['bw_per_slot'])) * 10 ** 9)/2)
-                length_m = 500 * 1e3
-                num_adjacent_cores = 6 #self.find_num_adjacent_cores()
-                # mu = self.calculate_xt(num_adjacent=3, link_length = 500)
-                
-                mu, mu_db, omega = self._calc_intercore_icxt_mu_mbeon(
-                                                    fi_hz,
-                                                    length_m,
-                                                    num_adjacent_cores,
-                                                    return_db=True,
-                )
-                xt[fi_hz] = {}
-                xt[fi_hz].update({"mu": mu_db}) #10*np.log10(mu)
-                xt[fi_hz].update({"omega": 10*np.log10(omega)})
-        import json
-        with open("xt_CL_7_6.json", "w") as json_file:
-            json.dump(xt, json_file, indent=4)  # indent=4 makes it pretty-printedimport math
+        xt_path = 0
+        for link_num in range(0, len(self.spectrum_props.path_list) - 1):
+            source = self.spectrum_props.path_list[link_num]
+            dest = self.spectrum_props.path_list[link_num + 1]
+            self.link_id = self.sdn_props.net_spec_dict[(source, dest)]['link_num']
+            fi_hz = self.snr_props.link_dict['frequency_start_' + self.spectrum_props.curr_band] + self.spectrum_props.start_slot * self.engine_props['bw_per_slot'] * 10 ** 9
+            fi_hz = fi_hz + (
+                self.num_slots * self.engine_props['bw_per_slot'] * 1e9 / 2
+            )
+            mu, mu_db, omega = self._calculate_crosstalk_mb_wcmcf(
+                                                                fi_hz,
+                                                                length_m = self.engine_props['topology_info']['links'][self.link_id]['length'],
+                                                                num_adjacent_cores = self.find_num_adjacent_cores(),
+                                                                return_db=True,
+                            )
+            xt_path += mu
+        xt_path_db = 10*np.log10(xt_path)
+        response = xt_path_db <= self.engine_props['requested_xt'][self.spectrum_props.modulation]
+        if self.spectrum_props.slicing_flag:
+            bw_resp = None
+        else:
+            bw_resp = int(self.sdn_props.bandwidth)
+        return response, xt_path_db, bw_resp
+
         
     def handle_snr(self, path_index):
         """
