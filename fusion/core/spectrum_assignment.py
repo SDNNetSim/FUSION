@@ -577,9 +577,6 @@ class SpectrumAssignment:
         Called after spectrum is allocated to track the new lightpath
         for future grooming operations and dynamic slicing bandwidth tracking.
         """
-        # Only skip if both grooming and dynamic_lps are disabled
-        if not self.engine_props_dict.get("is_grooming_enabled", False) and not self.engine_props_dict.get("dynamic_lps", False):
-            return
 
         if self.sdn_props.source is None or self.sdn_props.destination is None:
             raise ValueError("Source and destination must be initialized")
