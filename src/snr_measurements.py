@@ -567,15 +567,17 @@ class SnrMeasurements:
         :return: Whether the SNR threshold can be met, SNR value, Suppoted bitrate.
         :rtyp
         """
-
-        bw_mapping = {
-        "64-QAM": 800,
-        "32-QAM": 700,
-        "16-QAM": 600,
-        "8-QAM": 500,
-        "QPSK": 400,
-        "BPSK": 200
-        }
+        if self.engine_props['bw_per_slot'] == 112.5:
+            bw_mapping = {
+            "64-QAM": 800,
+            "32-QAM": 700,
+            "16-QAM": 600,
+            "8-QAM": 500,
+            "QPSK": 400,
+            "BPSK": 200
+            }
+        elif self.engine_props['bw_per_slot'] == 75.0:
+            bw_mapping = self.snr_props.bw_mapping_dict
 
         gsnr_path_ase_nli = 0
         gsnr_link_ase_nli_db = []
@@ -868,14 +870,17 @@ class SnrMeasurements:
         :rtype: tuple
         """
 
-        bw_mapping = {
-        "64-QAM": 800,
-        "32-QAM": 700,
-        "16-QAM": 600,
-        "8-QAM": 500,
-        "QPSK": 400,
-        "BPSK": 200
-        }
+        if self.engine_props['bw_per_slot'] == 112.5:
+            bw_mapping = {
+            "64-QAM": 800,
+            "32-QAM": 700,
+            "16-QAM": 600,
+            "8-QAM": 500,
+            "QPSK": 400,
+            "BPSK": 200
+            }
+        elif self.engine_props['bw_per_slot'] == 75.0:
+            bw_mapping = self.snr_props.bw_mapping_dict
         if self.engine_props["cores_per_link"] > 1 and not self.engine_props["multi_fiber"]:
             resp_xt,_,_ = self.check_xt_wc_mb()
         else:
