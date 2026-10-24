@@ -72,42 +72,6 @@ class Engine:
                 # TODO: Update
                 "band": sdn_props.band_list,
             }})
-            import json
-            with open("req.json", "r") as fle:
-                data = json.load(fle)
-            data.update({self.reqs_dict[curr_time]['req_id']: {
-                            "mod_format": sdn_props.modulation_list,
-                            "path": sdn_props.path_list,
-                            "is_sliced": sdn_props.is_sliced,
-                            "was_routed": sdn_props.was_routed,
-                            "core_list": sdn_props.core_list,
-                            "band": sdn_props.band_list,
-                            "start_slot_list": sdn_props.start_slot_list,
-                            "end_slot_list": sdn_props.end_slot_list,
-                            "bandwidth_list": sdn_props.bandwidth_list,}})
-            def numpy_to_json(obj):
-                if isinstance(obj, np.ndarray):
-                    return obj.tolist()
-
-                if isinstance(obj, np.integer):
-                    return int(obj)
-
-                if isinstance(obj, np.floating):
-                    return float(obj)
-
-                if isinstance(obj, np.bool_):
-                    return bool(obj)
-
-                raise TypeError(
-                    f"Object of type {type(obj).__name__} is not JSON serializable"
-                )
-            with open("req.json", "w") as fle:
-                json.dump(
-                    data,
-                    fle,
-                    indent=4,
-                    default=numpy_to_json
-                )
 
         
         if sdn_props.was_new_lp_established:
