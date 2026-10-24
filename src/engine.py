@@ -422,8 +422,6 @@ class Engine:
             self.init_iter(iteration=iteration, seed=seed)
             req_num = 1
             for curr_time in self.reqs_dict:
-                if req_num == 6:
-                    print("here")
                 self.handle_request(curr_time=curr_time, req_num=req_num)
 
                 if self.reqs_dict[curr_time]['request_type'] == 'arrival':
