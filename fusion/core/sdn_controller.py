@@ -6,12 +6,17 @@ allocation in software-defined optical networks.
 """
 
 import copy
+import json
+import math
 import time
+from contextlib import contextmanager
+from types import MappingProxyType
 from typing import Any
 
 import numpy as np
 
 from fusion.core.grooming import Grooming
+from fusion.core.hcf import HCFCandidate, HCFMode, dbm_to_watts, hcf_power_objective
 from fusion.core.properties import SDNProps
 from fusion.core.routing import Routing
 from fusion.core.snr_measurements import SnrMeasurements
@@ -58,6 +63,311 @@ class SDNController:
         # FailureManager reference for path feasibility checking
         # (set by SimulationEngine)
         self.failure_manager: Any | None = None
+
+        # Separate, opt-in HCF state; the legacy handle_event path is unchanged.
+        self.hcf_power_used: dict[tuple, float] = {}
+        self.hcf_allocations: dict[int, HCFCandidate] = {}
+        self.hcf_last_result: dict[str, Any] = {}
+
+    def _hcf_settings(self) -> tuple[list[HCFMode], list[float]]:
+        """Validate the deliberately narrow single-carrier HCF experiment contract."""
+        props = self.engine_props
+        required = {"fixed_grid": True, "hollow_core_fiber": True}
+        if any(props.get(key) != value for key, value in required.items()):
+            raise ValueError("HCF allocation requires fixed_grid and hollow_core_fiber=True")
+        bidirectional = props.get("bi_directional", props.get("topology_settings", {}).get("bi_directional", False))
+        if bidirectional is not True:
+            raise ValueError("HCF allocation requires bi_directional=True")
+        if props.get("cores_per_link") != 1 or props.get("guard_slots", 0) != 0 or props.get("max_segments", 1) != 1:
+            raise ValueError("HCF allocation requires one core, zero guard slots and max_segments=1")
+        disabled = ("snr_recheck", "dynamic_lps", "is_grooming_enabled", "can_partially_serve", "transponder_usage_per_node")
+        if any(props.get(key, False) for key in disabled):
+            raise ValueError("HCF allocation does not support rechecks, slicing, grooming, partial service or transponder limits")
+        if props.get("route_method") not in ("shortest_path", "k_shortest_path") or props.get("protection_enabled", False):
+            raise ValueError("HCF allocation requires unprotected shortest/k-shortest paths")
+        if self.failure_manager is not None:
+            raise ValueError("HCF allocation does not support failure/recovery experiments")
+        if props.get("hcf_selection_policy", "joint") not in ("joint", "power", "first_feasible", "first_channel_ranked", "power_spectrum"):
+            raise ValueError("Unknown hcf_selection_policy")
+        objective = hcf_power_objective(props)
+        if objective == "fixed":
+            fixed_power = float(props.get("input_power", 0))
+            if not math.isfinite(fixed_power) or fixed_power <= 0:
+                raise ValueError("HCF fixed input_power must be finite and positive watts")
+        weight = float(props.get("hcf_power_weight", 0.5))
+        margin = float(props.get("hcf_margin_db", 0.0))
+        if not 0 <= weight <= 1 or not math.isfinite(margin) or margin < 0:
+            raise ValueError("HCF power weight must be in [0,1] and margin finite and nonnegative")
+        modes_data = props.get("hcf_modes")
+        powers_data = props.get("hcf_power_levels_dbm", [])
+        modes_data = json.loads(modes_data) if isinstance(modes_data, str) else modes_data
+        powers_data = json.loads(powers_data) if isinstance(powers_data, str) else powers_data
+        if modes_data is None:
+            # Reuse the simulator's existing rate/threshold/symbol mappings.
+            snr = self.spectrum_obj.snr_measurements.snr_props
+            capacities = snr.bandwidth_mapping_dict[float(props["bw_per_slot"])]
+            modes = [HCFMode(name, rate, rate / (2 * snr.bits_per_symbol[name]), snr.req_snr[name]) for name, rate in capacities.items()]
+        else:
+            modes = [HCFMode(**item) for item in modes_data]
+        powers = sorted({dbm_to_watts(float(value)) for value in powers_data})
+        if not modes or (objective == "discrete" and not powers) or len({mode.name for mode in modes}) != len(modes):
+            raise ValueError("HCF modes must be nonempty and unique; discrete power requires a nonempty grid")
+        if float(props.get("bw_per_slot", 0)) <= 0:
+            raise ValueError("HCF channel spacing must be positive")
+        if int(props.get("k_paths", 1)) < 1:
+            raise ValueError("HCF k_paths must be positive")
+        if props.get("hcf_amplifier_budget_dbm") is None:
+            raise ValueError("Provide hcf_amplifier_budget_dbm: per-band signal output budgets")
+        return modes, powers
+
+    def _hcf_link(self, source: Any, destination: Any) -> dict[str, Any]:
+        network = self.sdn_props.network_spectrum_dict
+        if network is None:
+            raise ValueError("HCF spectrum state is not initialized")
+        link_id = network[(source, destination)]["link_num"]
+        return self.engine_props["topology_info"]["links"][link_id]
+
+    def _hcf_paths(self, source: Any, destination: Any) -> list[list[Any]]:
+        """Use the existing KSP implementation for probe endpoint pairs."""
+        k = 1 if self.engine_props["route_method"] == "shortest_path" else int(self.engine_props.get("k_paths", 3))
+        algorithm = self.route_obj._get_algorithm_for_method("k_shortest_path")
+        return algorithm.get_paths(source, destination, k=k)
+
+
+
+
+    @contextmanager
+    def _hcf_transaction(self, candidate: HCFCandidate):
+        """Restore touched resources and bookkeeping if allocation or release fails."""
+        props, spectrum = self.sdn_props, self.spectrum_obj.spectrum_props
+        persistent = {"network_spectrum_dict", "topology", "lightpath_status_dict", "transponder_usage_dict", "allocated_requests"}
+        request_before = {key: copy.deepcopy(value) for key, value in vars(props).items() if key not in persistent}
+        spectrum_before = copy.deepcopy(vars(spectrum))
+        endpoint = tuple(sorted((candidate.path[0], candidate.path[-1])))
+        statuses = props.lightpath_status_dict
+        status_before = None if statuses is None or endpoint not in statuses else copy.deepcopy(statuses[endpoint])
+        tracking_before = copy.deepcopy(props.allocated_requests.get(props.request_id))
+        cells = []
+        for source, destination in zip(candidate.path, candidate.path[1:], strict=False):
+            for edge in ((source, destination), (destination, source)):
+                link = props.network_spectrum_dict[edge]
+                array = link["cores_matrix"][candidate.band][0]
+                cells.append((link, array, array[candidate.channel], link["usage_count"], link["throughput"]))
+        try:
+            yield
+        except Exception:
+            for link, array, old_value, usage, throughput in cells:
+                array[candidate.channel] = old_value
+                link["usage_count"], link["throughput"] = usage, throughput
+            for key, value in request_before.items():
+                setattr(props, key, value)
+            vars(spectrum).clear()
+            vars(spectrum).update(spectrum_before)
+            if statuses is None:
+                props.lightpath_status_dict = None
+            elif status_before is None:
+                statuses.pop(endpoint, None)
+            else:
+                statuses[endpoint] = status_before
+            if tracking_before is None:
+                props.allocated_requests.pop(props.request_id, None)
+            else:
+                props.allocated_requests[props.request_id] = tracking_before
+            raise
+
+    def _commit_hcf_candidate(self, candidate: HCFCandidate, path_index: int, route_time: float, score: float) -> None:
+        """Commit exactly one channel and its power; never invoke a GSNR recheck."""
+        channel_available = candidate.channel in self.spectrum_obj.get_hcf_free_channels(candidate.path, candidate.band)
+        if not channel_available or not self.spectrum_obj.hcf_power_fits(candidate, self.hcf_power_used):
+            raise BufferError("HCF resources changed before commitment")
+        with self._hcf_transaction(candidate):
+            props, spectrum = self.sdn_props, self.spectrum_obj.spectrum_props
+            props.path_list = list(candidate.path)
+            props.path_index = path_index
+            props.path_weight = sum(self._hcf_link(a, b)["length"] for a, b in zip(candidate.path, candidate.path[1:], strict=False))
+            props.route_time = route_time
+            spectrum.path_list = list(candidate.path)
+            spectrum.backup_path = None
+            spectrum.slots_needed = 1
+            spectrum.start_slot = spectrum.end_slot = candidate.channel
+            spectrum.core_number = 0
+            spectrum.current_band = candidate.band
+            spectrum.modulation = candidate.mode.name
+            spectrum.lightpath_bandwidth = candidate.mode.net_rate_gbps
+            spectrum.crosstalk_cost = candidate.gsnr_db
+            spectrum.is_free = True
+            spectrum.lightpath_id = props.get_lightpath_id()
+            props.was_new_lp_established = [spectrum.lightpath_id]
+            props.spectrum_object = spectrum
+            props.is_sliced = False
+            self.allocate()
+            self._update_request_statistics(parse_bandwidth(props.bandwidth))
+            self.spectrum_obj._update_lightpath_status()
+            metadata = {"launch_power_w": candidate.power_w, "gsnr_db": candidate.gsnr_db, "hcf_score": score}
+            endpoint = tuple(sorted((candidate.path[0], candidate.path[-1])))
+            props.lightpath_status_dict[endpoint][spectrum.lightpath_id].update(metadata)
+            props.allocated_requests[props.request_id].update(metadata)
+            props.block_reason = None
+            props.was_routed = True
+            # No fallible callbacks after the ledger is committed.
+            for key, power, _ in candidate.demands:
+                self.hcf_power_used[key] = self.hcf_power_used.get(key, 0.0) + power
+            self.hcf_allocations[spectrum.lightpath_id] = candidate
+
+    def reset_hcf_state(self) -> None:
+        """Clear HCF resources at an independent iteration boundary before ID reuse."""
+        for lp_id, candidate in self.hcf_allocations.items():
+            endpoint = tuple(sorted((candidate.path[0], candidate.path[-1])))
+            if self.sdn_props.lightpath_status_dict:
+                self.sdn_props.lightpath_status_dict.get(endpoint, {}).pop(lp_id, None)
+            network = self.sdn_props.network_spectrum_dict
+            if network:
+                for source, destination in zip(candidate.path, candidate.path[1:], strict=False):
+                    for edge in ((source, destination), (destination, source)):
+                        array = network[edge]["cores_matrix"][candidate.band][0]
+                        if array[candidate.channel] == lp_id:
+                            array[candidate.channel] = 0
+        self.sdn_props.allocated_requests.clear()
+        self.hcf_allocations.clear()
+        self.hcf_power_used.clear()
+        self.hcf_last_result = {}
+        self.spectrum_obj.clear_hcf_probe_cache()
+        self.spectrum_obj.clear_hcf_transmission_cache()
+        self.spectrum_obj.snr_measurements.clear_hcf_physical_cache()
+
+    def handle_hcf_event(
+        self,
+        request_dict: dict[str, Any],
+        request_type: str,
+        force_slicing: bool = False,
+        force_route_matrix: list[Any] | None = None,
+        forced_index: int | None = None,
+        force_core: int | None = None,
+        ml_model: Any | None = None,
+        force_mod_format: str | list[str] | None = None,
+        forced_band: str | None = None,
+    ) -> None:
+        """Full-HCF dynamic WDM allocation: path -> wavelength -> candidate GSNR.
+
+        Existing policies commit on the first feasible path. first_channel_ranked
+        compares the first common-free channel of every path before commitment.
+        Modes and power levels are inspected inside the wavelength loop. Established
+        channels are neither retuned nor re-evaluated. SimulationEngine prepares
+        SDNProps before calling, exactly as for the unchanged handle_event().
+        """
+        if request_type == "release":
+            ids = self.sdn_props.lightpath_id_list
+            if not ids or all(lp_id not in self.hcf_allocations for lp_id in ids):
+                return
+            if len(ids) != 1:
+                raise ValueError("HCF release expects one lightpath per request")
+            lp_id = ids[0]
+            candidate = self.hcf_allocations[lp_id]
+            with self._hcf_transaction(candidate):
+                self.sdn_props.path_list = list(candidate.path)
+                self.handle_event(request_dict, request_type="release")
+                self.sdn_props.allocated_requests.pop(self.sdn_props.request_id, None)
+            for key, power, _ in candidate.demands:
+                remaining = self.hcf_power_used[key] - power
+                if remaining <= power * 1e-12:
+                    self.hcf_power_used.pop(key, None)
+                else:
+                    self.hcf_power_used[key] = remaining
+            del self.hcf_allocations[lp_id]
+            return
+        if request_type != "arrival":
+            raise ValueError(f"Unsupported HCF event: {request_type}")
+        modes, powers = self._hcf_settings()
+        if force_slicing or ml_model is not None or force_core not in (None, 0):
+            raise ValueError("HCF allocation supports core 0, no slicing and no ML overrides")
+        if forced_band is not None and forced_band not in self.engine_props["band_list"]:
+            raise ValueError("Forced HCF band is not configured")
+        started = time.perf_counter()
+        self._initialize_request_statistics()
+        self.sdn_props.was_routed = False
+        self.sdn_props.block_reason = None
+        self.sdn_props.is_protected = False
+        self.sdn_props.backup_path = None
+        self.sdn_props.number_of_transponders = 1
+        self.spectrum_obj.spectrum_props.is_free = False
+        paths, route_time = self._setup_routing(force_route_matrix, force_mod_format)
+        rate = parse_bandwidth(self.sdn_props.bandwidth)
+        if not math.isfinite(rate) or rate <= 0:
+            raise ValueError("HCF request bitrate must be positive and finite")
+        allowed = None if force_mod_format is None else ([force_mod_format] if isinstance(force_mod_format, str) else force_mod_format)
+        eligible = [m for m in modes if m.net_rate_gbps >= rate and (allowed is None or m.name in allowed)]
+        diagnostics = {"free_channels": 0, "qot_feasible_channels": 0, "power_rejections": 0}
+        self.hcf_last_result = diagnostics
+
+        def valid_paths():
+            for path_index, path in enumerate(paths):
+                if path is False:
+                    continue
+                if (
+                    len(path) < 2 or len(set(path)) != len(path)
+                    or path[0] != self.sdn_props.source or path[-1] != self.sdn_props.destination
+                ):
+                    raise ValueError("HCF paths must be simple and match the request endpoints")
+                yield path_index, path
+
+        search_args = {
+            "power_used": MappingProxyType(self.hcf_power_used), "get_probe_paths": self._hcf_paths,
+            "probe_modes": modes, "forced_index": forced_index, "forced_band": forced_band,
+        }
+        ranked = self.engine_props.get("hcf_selection_policy") in ("first_channel_ranked", "power_spectrum")
+        if ranked:
+            results = self.spectrum_obj.rank_hcf_first_channels(list(valid_paths()), eligible, powers, **search_args)
+            for _, result in results:
+                for key in ("free_channels", "qot_feasible_channels", "power_rejections"):
+                    diagnostics[key] += getattr(result, key)
+            diagnostics["ranked_candidates"] = sum(result.candidate is not None for _, result in results)
+        else:
+            # Keep existing policies lazy: do not evaluate paths after acceptance.
+            results = (
+                (index, self.spectrum_obj.get_spectrum_hcf(path, eligible, powers, **search_args))
+                for index, path in valid_paths()
+            )
+        stale_reason = None
+        for rank, (path_index, result) in enumerate(results, 1):
+            if not ranked:
+                for key in ("free_channels", "qot_feasible_channels", "power_rejections"):
+                    diagnostics[key] += getattr(result, key)
+            best = result.candidate
+            if best is not None:
+                if ranked:
+                    # Revalidate resources only, never established-channel GSNR.
+                    # Normally the first rank succeeds in the sequential event loop.
+                    if best.channel not in self.spectrum_obj.get_hcf_free_channels(best.path, best.band):
+                        stale_reason = "congestion"
+                        continue
+                    if not self.spectrum_obj.hcf_power_fits(best, self.hcf_power_used):
+                        stale_reason = "hcf_power"
+                        continue
+                self._commit_hcf_candidate(best, path_index, route_time, result.score)
+                if ranked:
+                    diagnostics["selected_rank"] = rank
+                diagnostics.update(
+                    {
+                        "accepted": True, "score": result.score, "launch_power_w": best.power_w, "gsnr_db": best.gsnr_db,
+                        "path": list(best.path), "band": best.band, "channel": best.channel, "mode": best.mode.name,
+                        "requested_rate_gbps": rate, "carrier_rate_gbps": best.mode.net_rate_gbps,
+                        "gsnr_margin_db": best.gsnr_db - best.mode.threshold_db - float(self.engine_props.get("hcf_margin_db", 0)),
+                    }
+                )
+                break
+        if not self.sdn_props.was_routed:
+            reason = "xt_threshold"
+            if not diagnostics["free_channels"]:
+                reason = "congestion"
+            elif diagnostics["qot_feasible_channels"]:
+                reason = "hcf_power"
+            if stale_reason is not None:
+                reason = stale_reason
+            if not eligible or not paths:
+                reason = "distance"
+            self.sdn_props.block_reason = reason
+            diagnostics.update({"accepted": False, "block_reason": reason})
+        diagnostics["allocation_time_seconds"] = time.perf_counter() - started
 
     def _update_throughput(self) -> None:
         """
