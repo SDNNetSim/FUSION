@@ -49,6 +49,18 @@ class CLIToConfigMapper:
             # CORE PARAMETERS (used by both legacy engine and orchestrator)
             # =================================================================
             # General settings
+            "traffic_matrix_sheet": ("general_settings", "traffic_matrix_sheet"),
+            "traffic_matrix_direction": (
+                "general_settings",
+                "traffic_matrix_direction",
+            ),
+            "traffic_type": ("general_settings", "traffic_type"),
+            "request_sort": ("general_settings", "request_sort"),
+            "request_sort_order": ("general_settings", "request_sort_order"),
+            "traffic_matrix_file": ("general_settings", "traffic_matrix_file"),
+            "traffic_matrix_format": ("general_settings", "traffic_matrix_format"),
+            "traffic_matrix_scale": ("general_settings", "traffic_matrix_scale"),
+            "traffic_node_map_file": ("general_settings", "traffic_node_map_file"),
             "holding_time": ("general_settings", "holding_time"),
             "mod_assumption": ("general_settings", "mod_assumption"),
             "mod_assumption_path": ("general_settings", "mod_assumption_path"),
@@ -75,6 +87,8 @@ class CLIToConfigMapper:
             "save_start_end_slots": ("general_settings", "save_start_end_slots"),
             # Topology settings
             "network": ("topology_settings", "network"),
+            "topology_file": ("topology_settings", "topology_file"),
+            "topology_name": ("topology_settings", "topology_name"),
             "bw_per_slot": ("topology_settings", "bw_per_slot"),
             "cores_per_link": ("topology_settings", "cores_per_link"),
             "const_link_weight": ("topology_settings", "const_link_weight"),
@@ -159,7 +173,10 @@ class CLIToConfigMapper:
             # Protection settings (v6.0+ orchestrator)
             "protection_enabled": ("protection_settings", "protection_enabled"),
             "disjointness_type": ("protection_settings", "disjointness_type"),
-            "protection_switchover_ms": ("protection_settings", "protection_switchover_ms"),
+            "protection_switchover_ms": (
+                "protection_settings",
+                "protection_switchover_ms",
+            ),
             "restoration_latency_ms": ("protection_settings", "restoration_latency_ms"),
         }
 

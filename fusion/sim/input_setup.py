@@ -12,6 +12,8 @@ import time
 
 from fusion.io.generate import create_bw_info, create_pt
 from fusion.io.structure import create_network
+from fusion.io.topologybench import load_topologybench
+from fusion.io.traffic_matrix import prepare_traffic_matrix
 from fusion.utils.os import create_directory, find_project_root
 
 PROJECT_ROOT = find_project_root()
@@ -71,18 +73,43 @@ def create_input(base_fp: str, engine_props: dict) -> dict:
     else:
         raise RuntimeError(f"File {save_path} is empty or invalid after multiple attempts")
 
-    network_dict, core_nodes_list = create_network(
-        base_fp=os.path.join(PROJECT_ROOT, base_fp),
-        const_weight=engine_props["const_link_weight"],
-        net_name=engine_props["network"],
-        is_only_core_node=engine_props["is_only_core_node"],
-    )
+    imported = None
+    if engine_props.get("topology_file"):
+        imported = load_topologybench(
+            engine_props["topology_file"],
+            engine_props.get("topology_name", ""),
+            constant_weight=engine_props["const_link_weight"],
+        )
+        network_dict = imported.links
+        # TopologyBench's real networks represent core networks, so every node
+        # is eligible under either legacy core-node selection setting.
+        core_nodes_list = list(imported.nodes)
+        engine_props["topology_import_summary"] = imported.summary
+    else:
+        network_dict, core_nodes_list = create_network(
+            base_fp=os.path.join(PROJECT_ROOT, base_fp),
+            const_weight=engine_props["const_link_weight"],
+            net_name=engine_props["network"],
+            is_only_core_node=engine_props["is_only_core_node"],
+        )
     engine_props["topology_info"] = create_pt(
         cores_per_link=engine_props["cores_per_link"],
         network_spectrum_dict=network_dict,
     )
     engine_props["core_nodes"] = core_nodes_list
+    if imported is not None:
+        for node, attributes in imported.nodes.items():
+            engine_props["topology_info"]["nodes"][node].update(attributes)
+        # The batch CLI does not save sim_input, so persist the imported network
+        # here as well for reproducible experiments through either entry point.
+        save_input(
+            base_fp=base_fp,
+            properties=engine_props,
+            file_name=f"topology_import_{engine_props['thread_num']}.json",
+            data_dict={"summary": imported.summary, "topology_info": engine_props["topology_info"]},
+        )
 
+    prepare_traffic_matrix(engine_props)
     return engine_props
 
 

@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any
 
+from fusion.utils.bandwidth import parse_bandwidth
+
 # =============================================================================
 # Request Type Enum
 # =============================================================================
@@ -496,7 +498,7 @@ class Request:
     request_id: int
     source: str
     destination: str
-    bandwidth_gbps: int
+    bandwidth_gbps: int | float
     arrive_time: float
     depart_time: float
     modulation_formats: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -781,13 +783,13 @@ class Request:
         if request_id is None:
             request_id = request_dict.get("req_id", time_key[0])
 
-        # Parse bandwidth string to integer
+        # Preserve fractional bandwidths from imported traffic
         bandwidth_raw = request_dict.get("bandwidth", "0Gbps")
         if isinstance(bandwidth_raw, str):
             # Handle formats like "100Gbps", "50 Gbps", "100"
-            bandwidth_gbps = int(bandwidth_raw.lower().replace("gbps", "").replace(" ", ""))
+            bandwidth_gbps = parse_bandwidth(bandwidth_raw.lower().replace("gbps", "").replace(" ", ""))
         else:
-            bandwidth_gbps = int(bandwidth_raw)
+            bandwidth_gbps = parse_bandwidth(bandwidth_raw)
 
         # Handle modulation formats (may be None)
         mod_formats = request_dict.get("mod_formats")

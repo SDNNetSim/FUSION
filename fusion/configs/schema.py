@@ -73,6 +73,7 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "const_link_weight": str_to_bool,
         "is_only_core_node": str_to_bool,
         "multi_fiber": str_to_bool,
+        "hollow_core_fiber": str_to_bool,
     },
     "spectrum_settings": {
         "c_band": int,
@@ -90,6 +91,7 @@ SIM_REQUIRED_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
         "snr_recheck": str_to_bool,
         "recheck_adjacent_cores": str_to_bool,
         "recheck_crossband": str_to_bool,
+        "optimized_power": str_to_bool,
     },
     "file_settings": {
         "file_type": str,
@@ -105,6 +107,27 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     # CORE OPTIONAL PARAMETERS (used by both legacy engine and orchestrator)
     # =========================================================================
     "general_settings": {
+        "traffic_type": str,
+        "resource_allocation_mode": str,
+        "hcf_modes": str,
+        "hcf_power_levels_dbm": str,
+        "hcf_amplifier_budget_dbm": str,
+        "hcf_selection_policy": str,
+        "hcf_power_objective": str,
+        "hcf_power_weight": float,
+        "hcf_margin_db": float,
+        "hcf_transceiver_snr_db": float,
+        "hcf_probes": str,
+        "hcf_probe_count": int,
+        "hcf_probe_seed": int,
+        "request_sort": str,
+        "request_sort_order": str,
+        "traffic_matrix_file": str,
+        "traffic_matrix_sheet": str,
+        "traffic_matrix_direction": str,
+        "traffic_matrix_format": str,
+        "traffic_matrix_scale": float,
+        "traffic_node_map_file": str,
         "filter_mods": bool,
         "request_distribution": str,
         "fragmentation_metrics": str,
@@ -113,6 +136,8 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     "topology_settings": {
         "bi_directional": str_to_bool,
         "is_only_core_node": str_to_bool,
+        "topology_file": str,
+        "topology_name": str,
     },
     "spectrum_settings": {
         "o_band": int,

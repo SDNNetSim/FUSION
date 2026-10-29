@@ -173,6 +173,12 @@ def generate_simulation_requests(seed: int, engine_properties: dict[str, Any]) -
         ... }
         >>> requests = generate_simulation_requests(42, engine_props)
     """
+    from fusion.core.traffic import generate_design_requests, validate_traffic_options
+
+    validate_traffic_options(engine_properties)
+    if engine_properties.get("traffic_type", "dynamic") != "dynamic" or engine_properties.get("traffic_matrix_file"):
+        return generate_design_requests(seed, engine_properties)
+
     logger.debug("Generating requests with seed %s", seed)
 
     # Initialize variables
@@ -206,6 +212,9 @@ def generate_simulation_requests(seed: int, engine_properties: dict[str, Any]) -
             )
         logger.error(error_msg)
         raise ValueError(error_msg)
+
+    if len(set(nodes_list)) < 2:
+        raise ValueError("Traffic generation requires at least two distinct eligible nodes")
 
     # Set random seed for reproducibility
     set_random_seed(seed_value=seed)

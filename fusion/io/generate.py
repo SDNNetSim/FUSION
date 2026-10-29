@@ -37,6 +37,22 @@ def create_pt(cores_per_link: int, network_spectrum_dict: dict[tuple, float]) ->
         "raman_gain_slope": 0.028 / 1e3 / 1e12,  # C_r Raman gain slope
         "gvd": -22.6 * (1e-12 * 1e-12) / 1e3,  # beta2 - Group velocity dispersion
         "gvd_slope": 0.14 * (1e-12 * 1e-12 * 1e-12) / 1e3,  # beta3 - GVD slope
+        
+        "hcf": {
+            # Fiber parameters
+            "attenuation": 0.11,                 # dB/km
+            "inter_modal_interference": -60.0,   # dB/km
+
+            # Physical-layer parameters (not numerically specified in the paper)
+            "dispersion": -2.55e-27,            # s^2/m
+            "non_linearity": 5e-7,              # 1/(W*m)
+    
+
+            # Optical amplification
+            "noise_figure": 5.0,                # dB
+            "max_amplifier_gain": 32.0,          # dB
+        }
+
     }
 
     topology_dict = {

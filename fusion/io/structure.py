@@ -83,6 +83,7 @@ def create_network(
     # Map network names to file paths
     network_files = {
         "USNet": "us_network.txt",
+        "Japan12": "jpn_12.txt",
         "NSFNet": "nsf_network.txt",
         "Pan-European": "europe_network.txt",
         "USbackbone60": "USB6014.txt",

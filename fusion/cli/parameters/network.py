@@ -20,6 +20,14 @@ def add_topology_args(parser: argparse.ArgumentParser) -> None:
     """
     network_group = parser.add_argument_group("Network Topology Configuration")
     network_group.add_argument(
+        "--topology_file",
+        help="Local TopologyBench .xlsx workbook or real_topologies.zip",
+    )
+    network_group.add_argument(
+        "--topology_name",
+        help="Exact workbook filename or stem to select inside a TopologyBench archive",
+    )
+    network_group.add_argument(
         "--network",
         type=str,
         help="Network topology name (e.g., 'NSFNet', 'USbackbone60')",

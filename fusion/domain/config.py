@@ -150,6 +150,19 @@ class SimulationConfig:
     # =========================================================================
     # Topology Constraints (from RoutingProps, SDNProps)
     # =========================================================================
+    traffic_type: str = "dynamic"
+    topology_file: str = ""
+    topology_name: str = ""
+    request_sort: str = "none"
+    request_sort_order: str = "ascending"
+    traffic_matrix_file: str = ""
+    traffic_matrix_sheet: str = ""
+    traffic_matrix_direction: str = "directed"
+
+    traffic_matrix_format: str = "auto"
+    traffic_matrix_scale: float = 1.0
+    traffic_node_map_file: str = ""
+
     span_length: float = DEFAULT_SPAN_LENGTH
     max_link_length: float | None = None
     max_span: int | None = None
@@ -235,6 +248,15 @@ class SimulationConfig:
         if self.guard_slots < 0:
             raise ValueError("guard_slots must be >= 0")
 
+        from fusion.core.traffic import validate_traffic_options
+
+        validate_traffic_options(
+            {
+                "traffic_type": self.traffic_type,
+                "request_sort": self.request_sort,
+                "request_sort_order": self.request_sort_order,
+            }
+        )
         # Validate traffic config
         if self.num_requests < 1:
             raise ValueError("num_requests must be >= 1")
@@ -348,6 +370,8 @@ class SimulationConfig:
         return cls(
             # Network
             network_name=engine_props["network"],
+            topology_file=engine_props.get("topology_file", ""),
+            topology_name=engine_props.get("topology_name", ""),
             cores_per_link=engine_props.get("cores_per_link", 1),
             band_list=band_list,
             band_slots=band_slots,
@@ -361,7 +385,16 @@ class SimulationConfig:
             # Topology info (physical topology for SNR calculations)
             topology_info=engine_props.get("topology_info", {}),
             # Traffic
+            traffic_matrix_sheet=engine_props.get("traffic_matrix_sheet", ""),
+            traffic_matrix_direction=engine_props.get("traffic_matrix_direction", "directed"),
             num_requests=engine_props.get("num_requests", 1000),
+            traffic_type=engine_props.get("traffic_type", "dynamic"),
+            request_sort=engine_props.get("request_sort", "none"),
+            request_sort_order=engine_props.get("request_sort_order", "ascending"),
+            traffic_matrix_file=engine_props.get("traffic_matrix_file", ""),
+            traffic_matrix_format=engine_props.get("traffic_matrix_format", "auto"),
+            traffic_matrix_scale=engine_props.get("traffic_matrix_scale", 1.0),
+            traffic_node_map_file=engine_props.get("traffic_node_map_file", ""),
             erlang=erlang,
             holding_time=holding_time,
             # Routing
@@ -425,6 +458,8 @@ class SimulationConfig:
         props: dict[str, Any] = {
             # Network
             "network": self.network_name,
+            "topology_file": self.topology_file,
+            "topology_name": self.topology_name,
             "cores_per_link": self.cores_per_link,
             "band_list": list(self.band_list),  # Convert tuple back to list
             "guard_slots": self.guard_slots,
@@ -438,6 +473,15 @@ class SimulationConfig:
             "topology_info": self.topology_info,
             # Traffic
             "num_requests": self.num_requests,
+            "traffic_type": self.traffic_type,
+            "request_sort": self.request_sort,
+            "request_sort_order": self.request_sort_order,
+            "traffic_matrix_file": self.traffic_matrix_file,
+            "traffic_matrix_sheet": self.traffic_matrix_sheet,
+            "traffic_matrix_direction": self.traffic_matrix_direction,
+            "traffic_matrix_format": self.traffic_matrix_format,
+            "traffic_matrix_scale": self.traffic_matrix_scale,
+            "traffic_node_map_file": self.traffic_node_map_file,
             "arrival_rate": self.arrival_rate,  # Computed property
             "holding_time": self.holding_time,
             # Routing

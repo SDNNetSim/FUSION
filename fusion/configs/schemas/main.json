@@ -4,6 +4,15 @@
     "general_settings": {
       "type": "object",
       "properties": {
+        "traffic_type": {"type": "string", "enum": ["dynamic", "static", "semi_static"]},
+        "request_sort": {"type": "string", "enum": ["none", "bandwidth", "shortest_path", "hop_count", "bandwidth_distance"]},
+        "request_sort_order": {"type": "string", "enum": ["ascending", "descending"]},
+        "traffic_matrix_sheet": {"type": "string"},
+        "traffic_matrix_direction": {"type": "string", "enum": ["directed", "undirected"]},
+        "traffic_matrix_file": {"type": "string"},
+        "traffic_matrix_format": {"type": "string", "enum": ["auto", "csv", "json", "matrix_csv", "matrix_xlsx", "sndlib"]},
+        "traffic_matrix_scale": {"type": "number", "exclusiveMinimum": 0},
+        "traffic_node_map_file": {"type": "string"},
         "holding_time": {"type": "number", "minimum": 0},
         "mod_assumption": {"type": "string", "enum": ["DEFAULT", "CUSTOM"]},
         "mod_assumption_path": {"type": "string"},
@@ -34,7 +43,9 @@
     "topology_settings": {
       "type": "object",
       "properties": {
-        "network": {"type": "string", "enum": ["NSFNet", "Pan-European", "USbackbone60"]},
+        "network": {"type": "string", "minLength": 1},
+        "topology_file": {"type": "string"},
+        "topology_name": {"type": "string"},
         "bw_per_slot": {"type": "number", "minimum": 0},
         "cores_per_link": {"type": "integer", "minimum": 1},
         "const_link_weight": {"type": "boolean"},

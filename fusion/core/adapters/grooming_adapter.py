@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from fusion.interfaces.pipelines import GroomingPipeline
+from fusion.utils.bandwidth import parse_bandwidth
 
 if TYPE_CHECKING:
     from fusion.domain.config import SimulationConfig
@@ -282,7 +283,9 @@ class GroomingAdapter(GroomingPipeline):
         # Determine grooming outcome
         if was_fully_groomed:
             # Fully groomed - no new lightpath needed
-            bandwidth_groomed = sum(int(float(bw)) for bw in sdn_props.bandwidth_list) if sdn_props.bandwidth_list else original_bandwidth
+            bandwidth_groomed = (
+                sum(parse_bandwidth(bw) for bw in sdn_props.bandwidth_list) if sdn_props.bandwidth_list else original_bandwidth
+            )
 
             return GroomingResult.full(
                 bandwidth_gbps=bandwidth_groomed,
@@ -295,9 +298,9 @@ class GroomingAdapter(GroomingPipeline):
             # Partially groomed - some bandwidth still needs allocation
             remaining = sdn_props.remaining_bw
             if isinstance(remaining, str):
-                remaining = int(float(remaining)) if remaining else 0
+                remaining = parse_bandwidth(remaining) if remaining else 0
             else:
-                remaining = int(remaining) if remaining else 0
+                remaining = parse_bandwidth(remaining) if remaining else 0
 
             bandwidth_groomed = original_bandwidth - remaining
 
@@ -354,12 +357,12 @@ class GroomingAdapter(GroomingPipeline):
 
                     # Sync remaining_bandwidth
                     new_remaining = float(lp_info.get("remaining_bandwidth", 0))
-                    lightpath.remaining_bandwidth_gbps = int(new_remaining)
+                    lightpath.remaining_bandwidth_gbps = parse_bandwidth(new_remaining)
 
                     # Sync requests_dict (which requests are using this LP)
                     requests_dict = lp_info.get("requests_dict", {})
                     if request_id in requests_dict:
-                        bw_used = int(float(requests_dict[request_id]))
+                        bw_used = parse_bandwidth(requests_dict[request_id])
                         lightpath.request_allocations[request_id] = bw_used
 
                     # Sync time_bw_usage for utilization tracking

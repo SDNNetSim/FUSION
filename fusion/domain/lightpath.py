@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from fusion.utils.bandwidth import parse_bandwidth
+
 
 @dataclass
 class Lightpath:
@@ -83,10 +85,10 @@ class Lightpath:
     # =========================================================================
     # Capacity
     # =========================================================================
-    total_bandwidth_gbps: int
-    remaining_bandwidth_gbps: int
+    total_bandwidth_gbps: int | float
+    remaining_bandwidth_gbps: int | float
     path_weight_km: float = 0.0
-    request_allocations: dict[int, int] = field(default_factory=dict)
+    request_allocations: dict[int, int | float] = field(default_factory=dict)
     time_bw_usage: dict[float, float] = field(default_factory=dict)
 
     # =========================================================================
@@ -386,7 +388,7 @@ class Lightpath:
         """
         # Parse request allocations (convert float -> int if needed)
         requests_dict = lp_info.get("requests_dict", {})
-        request_allocations = {int(req_id): int(bw) for req_id, bw in requests_dict.items()}
+        request_allocations = {int(req_id): parse_bandwidth(bw) for req_id, bw in requests_dict.items()}
 
         # Handle protection fields
         backup_path = lp_info.get("backup_path")
@@ -404,8 +406,8 @@ class Lightpath:
             core=int(lp_info["core"]),
             band=lp_info["band"],
             modulation=lp_info.get("mod_format", lp_info.get("modulation", "")),
-            total_bandwidth_gbps=int(lp_info.get("lightpath_bandwidth", lp_info.get("total_bandwidth_gbps", 0))),
-            remaining_bandwidth_gbps=int(lp_info.get("remaining_bandwidth", lp_info.get("remaining_bandwidth_gbps", 0))),
+            total_bandwidth_gbps=parse_bandwidth(lp_info.get("lightpath_bandwidth", lp_info.get("total_bandwidth_gbps", 0))),
+            remaining_bandwidth_gbps=parse_bandwidth(lp_info.get("remaining_bandwidth", lp_info.get("remaining_bandwidth_gbps", 0))),
             path_weight_km=float(lp_info.get("path_weight", lp_info.get("path_weight_km", 0.0))),
             request_allocations=request_allocations,
             snr_db=lp_info.get("snr_cost", lp_info.get("snr_db")),

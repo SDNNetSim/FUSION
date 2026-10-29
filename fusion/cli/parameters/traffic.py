@@ -21,6 +21,24 @@ def add_request_args(parser: argparse.ArgumentParser) -> None:
     Add request handling arguments to the parser.
     """
     request_group = parser.add_argument_group("Request Configuration")
+    request_group.add_argument("--traffic_matrix_sheet", default=None, help="Excel matrix worksheet name")
+    request_group.add_argument(
+        "--traffic_matrix_direction",
+        choices=("directed", "undirected"),
+        default=None,
+        help="Undirected reads each symmetric matrix pair once",
+    )
+    request_group.add_argument("--traffic_type", choices=("dynamic", "static", "semi_static"), default=None)
+    request_group.add_argument(
+        "--request_sort", choices=("none", "bandwidth", "shortest_path", "hop_count", "bandwidth_distance"), default=None
+    )
+    request_group.add_argument("--request_sort_order", choices=("ascending", "descending"), default=None)
+    request_group.add_argument("--traffic_matrix_file", default=None, help="Local traffic file; relative paths use the config directory")
+    request_group.add_argument(
+        "--traffic_matrix_format", choices=("auto", "csv", "json", "matrix_csv", "matrix_xlsx", "sndlib"), default=None
+    )
+    request_group.add_argument("--traffic_matrix_scale", type=float, default=None, help="Multiply imported bandwidth values")
+    request_group.add_argument("--traffic_node_map_file", default=None, help="JSON mapping dataset nodes to topology nodes")
     request_group.add_argument(
         "--holding_time",
         type=float,

@@ -21,10 +21,13 @@ from fusion.core.ml_metrics import MLMetricsCollector
 from fusion.core.persistence import StatsPersistence
 from fusion.core.request import get_requests
 from fusion.core.sdn_controller import SDNController
+from fusion.core.traffic import validate_traffic_options
+from fusion.io.traffic_matrix import prepare_traffic_matrix
 from fusion.modules.failures import FailureManager
 from fusion.modules.ml import load_model
 from fusion.reporting.dataset_logger import DatasetLogger
 from fusion.reporting.simulation_reporter import SimulationReporter
+from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.logging_config import get_logger, log_message
 from fusion.utils.os import create_directory
 
@@ -271,6 +274,8 @@ class SimulationEngine:
     """
 
     def __init__(self, engine_props: dict[str, Any]) -> None:
+        validate_traffic_options(engine_props)
+        prepare_traffic_matrix(engine_props)
         self.engine_props = engine_props
         self.network_spectrum_dict: dict[tuple[Any, Any], dict[str, Any]] = {}
         self.reqs_dict: dict[tuple[int, float], dict[str, Any]] | None = None
@@ -285,6 +290,11 @@ class SimulationEngine:
         )
 
         self.use_orchestrator = _resolve_use_orchestrator(engine_props)
+        allocation_mode = engine_props.get("resource_allocation_mode", "legacy")
+        if allocation_mode not in ("legacy", "hcf_power_opportunity"):
+            raise ValueError(f"Unknown resource_allocation_mode: {allocation_mode}")
+        if allocation_mode == "hcf_power_opportunity" and self.use_orchestrator:
+            raise ValueError("HCF controller allocation requires the legacy engine (FUSION_USE_ORCHESTRATOR=0)")
         if self.use_orchestrator:
             _validate_orchestrator_config(engine_props)
 
@@ -300,6 +310,8 @@ class SimulationEngine:
         # FailureManager reference will be set after topology creation
         self.sdn_obj.failure_manager = None
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
+        if allocation_mode == "hcf_power_opportunity":
+            self.stats_obj.stats_props.hcf_decisions_list = []
         self.reporter = SimulationReporter(logger=logger)
         self.persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
 
@@ -466,7 +478,12 @@ class SimulationEngine:
                 value=request_value,
             )
 
-        self.sdn_obj.handle_event(
+        event_handler = (
+            self.sdn_obj.handle_hcf_event
+            if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity"
+            else self.sdn_obj.handle_event
+        )
+        event_handler(
             self.reqs_dict[current_time],
             request_type="arrival",
             force_route_matrix=force_route_matrix,
@@ -479,6 +496,11 @@ class SimulationEngine:
         if self.sdn_obj.sdn_props.network_spectrum_dict is not None:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
+        if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity":
+            decision = dict(self.sdn_obj.hcf_last_result)
+            decision["request_id"] = self.sdn_obj.sdn_props.request_id
+            self.stats_obj.stats_props.hcf_decisions_list.append(decision)
+            self.stats_obj.record_decision_time(decision["allocation_time_seconds"] * 1000)
 
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
@@ -686,7 +708,12 @@ class SimulationEngine:
             if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
-            self.sdn_obj.handle_event(self.reqs_dict[current_time], request_type="release")
+            event_handler = (
+                self.sdn_obj.handle_hcf_event
+                if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity"
+                else self.sdn_obj.handle_event
+            )
+            event_handler(self.reqs_dict[current_time], request_type="release")
 
             # Update lightpath bandwidth utilization statistics
             # For non-grooming cases, populate utilization from reqs_status_dict if not already done
@@ -1073,6 +1100,8 @@ class SimulationEngine:
         if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
             self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
         # Reset lightpath ID counter each iteration
+        if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity":
+            self.sdn_obj.reset_hcf_state()
         self.sdn_obj.sdn_props.reset_lightpath_id_counter()
 
         # Reset grooming structures if enabled
@@ -1080,6 +1109,52 @@ class SimulationEngine:
             if hasattr(self.sdn_obj, "grooming_obj"):
                 self.sdn_obj.grooming_obj.grooming_props.lightpath_status_dict = {}
             logger.debug("Reset grooming structures for new iteration")
+
+    def _record_design_utilization(self) -> None:
+        """Record final occupied lightpath capacity for permanent-demand designs.
+
+        These lightpaths never release, so release-time averages do not apply.
+        Record a final snapshot without releasing resources or advancing to infinity.
+        """
+        from fusion.analysis.network_analysis import NetworkAnalyzer
+
+        utilization = {}
+        carried_paths = []
+        if self.use_orchestrator and self._network_state is not None:
+            for lp in self._network_state.iter_lightpaths():
+                utilization[lp.lightpath_id] = {
+                    "band": lp.band,
+                    "core": lp.core,
+                    "bit_rate": lp.total_bandwidth_gbps,
+                    "utilization": lp.utilization * 100.0,
+                }
+                carried_paths.append((lp.path, lp.total_bandwidth_gbps - lp.remaining_bandwidth_gbps))
+        else:
+            for lightpaths in self.sdn_obj.sdn_props.lightpath_status_dict.values():
+                for lp_id, lp in lightpaths.items():
+                    capacity = float(lp["lightpath_bandwidth"])
+                    utilization[lp_id] = {
+                        "band": lp["band"],
+                        "core": lp["core"],
+                        "bit_rate": capacity,
+                        "utilization": 100.0 * (capacity - float(lp["remaining_bandwidth"])) / capacity,
+                    }
+                    carried_paths.append((lp.get("path", []), capacity - float(lp["remaining_bandwidth"])))
+        # Final carried Gbps for design experiments, rather than infinite Gbps-seconds.
+        for link in self.network_spectrum_dict.values():
+            link["throughput"] = 0.0
+        for path, bandwidth in carried_paths:
+            for source, destination in zip(path, path[1:], strict=False):
+                # The orchestrator shares one dict across both link directions.
+                link_objects = {
+                    id(self.network_spectrum_dict[link]): self.network_spectrum_dict[link]
+                    for link in ((source, destination), (destination, source))
+                    if link in self.network_spectrum_dict
+                }
+                for link_data in link_objects.values():
+                    link_data["throughput"] += bandwidth
+        self.stats_obj.stats_props.link_usage_dict = NetworkAnalyzer.get_link_usage_summary(self.network_spectrum_dict)
+        self.stats_obj.update_utilization_dict(utilization)
 
     def end_iter(self, iteration: int, print_flag: bool = True, base_file_path: str | None = None) -> bool:
         """
@@ -1094,6 +1169,8 @@ class SimulationEngine:
         :return: Whether confidence interval has been reached
         :rtype: bool
         """
+        if self.engine_props.get("traffic_type", "dynamic") != "dynamic":
+            self._record_design_utilization()
         self.stats_obj.calculate_blocking_statistics()
         self.stats_obj.finalize_iteration_statistics()
 
@@ -1289,7 +1366,7 @@ class SimulationEngine:
         failure_type = self.engine_props.get("failure_type", "none")
 
         # Get actual arrival times from generated requests
-        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"])
+        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"], key=lambda t: t[1])
 
         if not arrival_times:
             logger.warning("No arrival times available to schedule failure")
@@ -1306,7 +1383,7 @@ class SimulationEngine:
         t_fail_arrival_index = max(0, min(t_fail_arrival_index, len(arrival_times) - 1))
 
         # Get actual failure time
-        t_fail = arrival_times[t_fail_arrival_index]
+        t_fail = arrival_times[t_fail_arrival_index][1]
 
         # Determine repair time
         t_repair_after_arrivals = self.engine_props.get("t_repair_after_arrivals", 2)
@@ -1326,7 +1403,7 @@ class SimulationEngine:
                 f"{t_repair_arrival_index + 1} requests."
             )
 
-        t_repair = arrival_times[t_repair_arrival_index]
+        t_repair = arrival_times[t_repair_arrival_index][1]
 
         logger.info(
             f"Scheduling {failure_type} failure at arrival index "
@@ -1685,7 +1762,7 @@ class SimulationEngine:
 
         # Update bit rate blocking if bandwidth info available
         if request_info.get("bandwidth") is not None:
-            bandwidth = int(request_info["bandwidth"])
+            bandwidth = parse_bandwidth(request_info["bandwidth"])
             self.stats_obj.bit_rate_blocked += bandwidth
             # Note: bit_rate_request was already incremented when request was initially allocated
 
@@ -1912,7 +1989,7 @@ class SimulationEngine:
             return None
 
         # Get sorted arrival times
-        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"])
+        arrival_times = sorted([t for t, req in self.reqs_dict.items() if req.get("request_type") == "arrival"], key=lambda t: t[1])
 
         # Find next unprocessed request using _rl_request_index
         if not hasattr(self, "_rl_request_index"):

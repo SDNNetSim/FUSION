@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
 from fusion.interfaces.pipelines import SpectrumPipeline
+from fusion.utils.bandwidth import parse_bandwidth
 
 if TYPE_CHECKING:
     from fusion.domain.config import SimulationConfig
@@ -294,7 +295,7 @@ class SpectrumAdapter(SpectrumPipeline):
                     modulation = str(result_mod)
                 # Store achieved bandwidth in spectrum_props for later retrieval
                 if result_bw and result_bw is not False:
-                    legacy_spectrum.spectrum_props.lightpath_bandwidth = int(result_bw)
+                    legacy_spectrum.spectrum_props.lightpath_bandwidth = parse_bandwidth(result_bw)
             else:
                 # Standard mode: modulation/bandwidth specified upfront
                 # Support both single modulation and list of modulations (like legacy)
@@ -535,7 +536,7 @@ class SpectrumAdapter(SpectrumPipeline):
 
         # Get achieved bandwidth from dynamic slicing (may be less than requested)
         achieved_bw = getattr(spectrum_props, "lightpath_bandwidth", None)
-        achieved_bandwidth_gbps = int(achieved_bw) if achieved_bw is not None else None
+        achieved_bandwidth_gbps = parse_bandwidth(achieved_bw) if achieved_bw is not None else None
 
         # Get SNR value from spectrum assignment (crosstalk_cost)
         # This is calculated during spectrum assignment, not after lightpath creation

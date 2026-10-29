@@ -179,6 +179,8 @@ def _process_optional_options(
                         config_dict[DEFAULT_THREAD_NAME][category][option] = final_value
 
                 except ConfigTypeConversionError:
+                    if option.startswith(("traffic_", "request_sort")):
+                        raise
                     # Skip options that can't be converted - they're optional
                     continue
 
@@ -266,6 +268,43 @@ def load_config(config_path: str | None, args_dict: dict[str, Any] | None = None
                 args_dict=args_dict,
             )
 
+        # Apply traffic CLI options even when absent from an older INI file.
+        from fusion.core.traffic import validate_traffic_options
+
+        traffic_defaults = {
+            "traffic_type": "dynamic",
+            "request_sort": "none",
+            "request_sort_order": "ascending",
+            "traffic_matrix_file": "",
+            "traffic_matrix_sheet": "",
+            "traffic_matrix_direction": "directed",
+            "traffic_matrix_format": "auto",
+            "traffic_matrix_scale": 1.0,
+            "traffic_node_map_file": "",
+        }
+        for properties in config_dict.values():
+            for option in ("topology_file", "topology_name"):
+                value = args_dict.get(option)
+                if value is None:
+                    value = properties.get(option, properties.get("topology_settings", {}).get(option, ""))
+                properties[option] = str(value).strip()
+            if properties["topology_name"] and not properties["topology_file"]:
+                raise ValueError("topology_name requires topology_file")
+            if properties["topology_file"]:
+                path = Path(properties["topology_file"]).expanduser()
+                properties["topology_file"] = str((Path(resolved_path).parent / path).resolve())
+            for option, default in traffic_defaults.items():
+                raw = args_dict.get(option)
+                if raw is None:
+                    raw = properties.get(option, default)
+                converter = OPTIONAL_OPTIONS_DICT["general_settings"][option]
+                properties[option] = safe_type_convert(str(raw), converter, option)
+            for option in ("traffic_matrix_file", "traffic_node_map_file"):
+                value = properties[option]
+                if value:
+                    path = Path(value).expanduser()
+                    properties[option] = str((Path(resolved_path).parent / path).resolve())
+            validate_traffic_options(properties)
         return config_dict or {}
 
     except (
@@ -312,6 +351,8 @@ def _setup_threads(
                 cli_value = args_dict.get(key)
                 config_dict[new_thread][key] = apply_cli_override(converted_value, cli_value, type_obj)
             except ConfigTypeConversionError:
+                if key.startswith(("traffic_", "request_sort")):
+                    raise
                 # Skip options that can't be converted in threads
                 continue
 

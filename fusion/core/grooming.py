@@ -8,6 +8,7 @@ multiple requests onto existing lightpaths, improving resource utilization.
 from typing import Any
 
 from fusion.core.properties import GroomingProps
+from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -108,7 +109,7 @@ class Grooming:
         if not max_path_group or max_path_group["total_remaining_bandwidth"] == 0:
             return False
 
-        remaining_bw = int(self.sdn_props.bandwidth)
+        remaining_bw = parse_bandwidth(self.sdn_props.bandwidth)
 
         for lp_id in max_path_group["lp_id_list"]:
             lp_info = self.sdn_props.lightpath_status_dict[light_id][lp_id]
@@ -190,7 +191,7 @@ class Grooming:
 
         # Initialize remaining_bw for release tracking (not restored from arrival)
         if self.sdn_props.remaining_bw is None:
-            self.sdn_props.remaining_bw = int(self.sdn_props.bandwidth)
+            self.sdn_props.remaining_bw = parse_bandwidth(self.sdn_props.bandwidth)
 
         for lp_id in self.sdn_props.lightpath_id_list[:]:
             index = self.sdn_props.lightpath_id_list.index(lp_id)
@@ -202,7 +203,7 @@ class Grooming:
             # Remove request from lightpath
             lp_info["requests_dict"].pop(self.sdn_props.request_id)
             lp_info["remaining_bandwidth"] += req_bw
-            self.sdn_props.remaining_bw = int(self.sdn_props.remaining_bw) - req_bw
+            self.sdn_props.remaining_bw = parse_bandwidth(self.sdn_props.remaining_bw) - req_bw
 
             # Clean up tracking lists
             self.sdn_props.lightpath_id_list.pop(index)

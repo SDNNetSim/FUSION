@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 
+from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.data import sort_dict_keys
 from fusion.utils.logging_config import get_logger
 from fusion.utils.network import find_path_length, get_path_modulation
@@ -84,7 +85,7 @@ class LightPathSlicingManager:
 
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
-            if int(bandwidth) >= int(effective_bandwidth):
+            if parse_bandwidth(bandwidth) >= parse_bandwidth(effective_bandwidth):
                 continue
 
             path_len = find_path_length(path_list=path_list, topology=self.engine_props["topology"])
@@ -93,7 +94,7 @@ class LightPathSlicingManager:
                 continue
 
             self.sdn_props.was_routed = True
-            num_segments = int(int(effective_bandwidth) / int(bandwidth))
+            num_segments = int(parse_bandwidth(effective_bandwidth) / parse_bandwidth(bandwidth))
 
             if num_segments > self.engine_props["max_segments"]:
                 self.sdn_props.was_routed = False
@@ -148,7 +149,7 @@ class LightPathSlicingManager:
 
         for bandwidth, mods_dict in bandwidth_modulation_dict.items():
             # We can't slice to a larger or equal bandwidth
-            if int(bandwidth) >= int(effective_bandwidth):
+            if parse_bandwidth(bandwidth) >= parse_bandwidth(effective_bandwidth):
                 continue
 
             path_len = find_path_length(path_list=path_list, topology=self.engine_props["topology"])
@@ -157,7 +158,7 @@ class LightPathSlicingManager:
                 continue
 
             self.sdn_props.was_routed = True
-            num_segments = int(int(effective_bandwidth) / int(bandwidth))
+            num_segments = int(parse_bandwidth(effective_bandwidth) / parse_bandwidth(bandwidth))
 
             if num_segments > self.engine_props["max_segments"]:
                 self.sdn_props.was_routed = False
@@ -194,7 +195,7 @@ class LightPathSlicingManager:
                     sdn_controller._update_req_stats(bandwidth=bandwidth)
                 else:
                     # Rollback previously allocated segments
-                    remaining_bw = int(effective_bandwidth) - (segment_idx * int(bandwidth))
+                    remaining_bw = parse_bandwidth(effective_bandwidth) - (segment_idx * parse_bandwidth(bandwidth))
 
                     # FEATURE: Support partial serving (v5 behavior)
                     # If can_partially_serve is enabled and SOME segments were allocated, accept partial service
@@ -243,7 +244,7 @@ class LightPathSlicingManager:
         :rtype: bool
         """
         # Use remaining_bw if grooming occurred, otherwise use full bandwidth (matches v5)
-        remaining_bw = self.sdn_props.remaining_bw if self.sdn_props.was_partially_groomed else int(self.sdn_props.bandwidth)
+        remaining_bw = self.sdn_props.remaining_bw if self.sdn_props.was_partially_groomed else parse_bandwidth(self.sdn_props.bandwidth)
 
         _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
         bw_mod_dict = sort_dict_keys(self.engine_props["mod_per_bw"])
@@ -308,7 +309,7 @@ class LightPathSlicingManager:
                     break
             else:
                 if self.engine_props.get("can_partially_serve", False):
-                    initial_bw = int(self.sdn_props.bandwidth)
+                    initial_bw = parse_bandwidth(self.sdn_props.bandwidth)
                     if remaining_bw != initial_bw:
                         if self.sdn_props.was_partially_groomed or self.sdn_props.path_index >= self.engine_props.get("k_paths", 1) - 1:
                             self.sdn_props.is_sliced = True
@@ -329,11 +330,11 @@ class LightPathSlicingManager:
         sdn_controller: Any,
     ) -> bool:
         """Handle flex-grid dynamic slicing."""
-        initial_bw = int(self.sdn_props.bandwidth)
+        initial_bw = parse_bandwidth(self.sdn_props.bandwidth)
 
         for bandwidth_str, mods_dict in bw_mod_dict.items():
             # Skip bandwidth tiers >= request bandwidth
-            if int(bandwidth_str) >= initial_bw:
+            if parse_bandwidth(bandwidth_str) >= initial_bw:
                 continue
 
             # Track excluded modulations for this tier (v5.5 behavior)
@@ -343,7 +344,7 @@ class LightPathSlicingManager:
 
             iteration = 0
             while remaining_bw > 0:
-                if remaining_bw < int(bandwidth_str):
+                if remaining_bw < parse_bandwidth(bandwidth_str):
                     break
 
                 # Filter out excluded modulations
@@ -360,7 +361,7 @@ class LightPathSlicingManager:
                     mod_format_dict=available_mods,
                 )
                 # In flex-grid slicing, bandwidth is pre-calculated from the tier
-                bw = int(bandwidth_str)
+                bw = parse_bandwidth(bandwidth_str)
 
                 if self.spectrum_obj.spectrum_props.is_free:
                     lp_id = self.sdn_props.get_lightpath_id()
@@ -450,12 +451,12 @@ class LightPathSlicingManager:
         """
         self.sdn_props.number_of_transponders = num_segments
         self.spectrum_obj.spectrum_props.path_list = path_list
-        remaining_bw = int(float(self.sdn_props.bandwidth))
+        remaining_bw = parse_bandwidth(float(self.sdn_props.bandwidth))
         mod_format_list = [mod_format]
         for _ in range(num_segments):
             self.spectrum_obj.get_spectrum(mod_format_list=mod_format_list, slice_bandwidth=bandwidth)
             if self.spectrum_obj.spectrum_props.is_free:
-                remaining_bw -= int(float(bandwidth))
+                remaining_bw -= parse_bandwidth(bandwidth)
 
                 # Generate unique lightpath ID for this segment
                 lp_id = self.sdn_props.get_lightpath_id()
@@ -467,7 +468,9 @@ class LightPathSlicingManager:
                 sdn_controller._update_req_stats(bandwidth=bandwidth, remaining=str(remaining_bw))
             else:
                 # Rollback previously allocated segments
-                remaining_bw_calc = int(float(self.sdn_props.bandwidth)) - (int(float(self.sdn_props.bandwidth)) - remaining_bw)
+                remaining_bw_calc = parse_bandwidth(float(self.sdn_props.bandwidth)) - (
+                    parse_bandwidth(float(self.sdn_props.bandwidth)) - remaining_bw
+                )
                 sdn_controller._handle_congestion(remaining_bw=remaining_bw_calc)
                 break
 
@@ -487,7 +490,7 @@ class LightPathSlicingManager:
         :param forced_segments: Number of segments to force (unused)
         :type forced_segments: int
         """
-        remaining_bw = int(self.sdn_props.bandwidth)
+        remaining_bw = parse_bandwidth(self.sdn_props.bandwidth)
         _ = find_path_len(path_list=path_list, topology=self.engine_props["topology"])
         _ = sort_dict_keys(self.engine_props["mod_per_bw"])
 

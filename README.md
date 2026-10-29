@@ -254,3 +254,11 @@ Pre-commit hooks check:
 6. Submit your PR - all checks should pass
 
 For more details, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+See [Static and semi-static traffic design](docs/traffic-design.md) for permanent demands, request ordering, and traffic-matrix imports.
+
+## TopologyBench imports
+
+Use real optical-network Excel workbooks or select networks directly from the
+published ZIP archive. See [TopologyBench import](docs/topologybench.md) for
+download commands, configuration and dataset validation details.

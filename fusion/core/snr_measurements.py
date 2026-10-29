@@ -24,8 +24,10 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
+from fusion.core.hcf import HCFPhysicalCache
 from fusion.core.properties import RoutingProps, SDNProps, SNRProps, SpectrumProps
 from fusion.modules.snr.utils import compute_response, get_loaded_files, get_slot_index
+from fusion.utils.bandwidth import parse_bandwidth
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,7 @@ class SnrMeasurements:
         self.channels_list: list[float] | None = None
         self.link_id: int | None = None
         self.number_of_slots: int | None = None
+        self._hcf_physical_cache = HCFPhysicalCache()
 
     def _calculate_sci_psd(self) -> float:
         """
@@ -696,7 +699,7 @@ class SnrMeasurements:
             supported_bandwidth = 0
         else:
             modulation_format = self.snr_props.modulation_format_mapping_dict[modulation_format_key]
-            supported_bandwidth = self.snr_props.bandwidth_mapping_dict[modulation_format]
+            supported_bandwidth = self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]][modulation_format]
 
         # Retrieve SNR value
         snr_value = loaded_data_gsnr[self.route_props.connection_index][slot_index][path_index]
@@ -750,7 +753,7 @@ class SnrMeasurements:
         """
         from fusion.utils.data import sort_nested_dict_values
 
-        bw_mapping = {"64-QAM": 800, "32-QAM": 700, "16-QAM": 600, "8-QAM": 500, "QPSK": 400, "BPSK": 200}
+        bw_mapping = self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]]
 
         gsnr_path_ase_nli = 0
         gsnr_link_ase_nli_db = []
@@ -903,7 +906,7 @@ class SnrMeasurements:
                     raise ValueError("bandwidth must be initialized for GSNR response calculation")
                 if self.engine_props_dict["fixed_grid"]:
                     if not self.spectrum_props.slicing_flag:
-                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        if bw_mapping[self.spectrum_props.modulation] >= parse_bandwidth(self.sdn_props.bandwidth):
                             bw_resp = bw_mapping[self.spectrum_props.modulation]
                         else:
                             resp = False
@@ -913,7 +916,7 @@ class SnrMeasurements:
                     if self.spectrum_props.slicing_flag:
                         bw_resp = 0
                     else:
-                        bw_resp = int(self.sdn_props.bandwidth)
+                        bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
 
         return resp, gsnr_db, bw_resp
 
@@ -1216,7 +1219,7 @@ class SnrMeasurements:
                     raise ValueError("bandwidth must be initialized for GSNR response calculation")
                 if self.engine_props_dict["fixed_grid"]:
                     if not self.spectrum_props.slicing_flag:
-                        if bw_mapping[self.spectrum_props.modulation] >= int(self.sdn_props.bandwidth):
+                        if bw_mapping[self.spectrum_props.modulation] >= parse_bandwidth(self.sdn_props.bandwidth):
                             bw_resp = bw_mapping[self.spectrum_props.modulation]
                         else:
                             resp = False
@@ -1226,7 +1229,7 @@ class SnrMeasurements:
                     if self.spectrum_props.slicing_flag:
                         bw_resp = 0
                     else:
-                        bw_resp = int(self.sdn_props.bandwidth)
+                        bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
 
         # Dynamic modulation selection for slicing with dynamic lightpaths
         if _is_dyn:
@@ -1273,7 +1276,7 @@ class SnrMeasurements:
         if self.spectrum_props.slicing_flag:
             bw_resp = None
         else:
-            bw_resp = int(self.sdn_props.bandwidth)
+            bw_resp = parse_bandwidth(self.sdn_props.bandwidth)
         return response, xt_path_db, bw_resp
     
     # -------------------------------------------------------------------------
@@ -1327,8 +1330,8 @@ class SnrMeasurements:
         # Calculate lightpath bandwidth from modulation format
         lp_bandwidth = 0.0
         if self.spectrum_props.modulation is not None:
-            if self.spectrum_props.modulation in self.snr_props.bandwidth_mapping_dict:
-                lp_bandwidth = float(self.snr_props.bandwidth_mapping_dict[self.spectrum_props.modulation])
+            if self.spectrum_props.modulation in self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]]:
+                lp_bandwidth = float(self.snr_props.bandwidth_mapping_dict[self.engine_props_dict["bw_per_slot"]][self.spectrum_props.modulation])
             elif (
                 self.sdn_props.modulation_formats_dict is not None
                 and self.spectrum_props.modulation in self.sdn_props.modulation_formats_dict
@@ -1554,6 +1557,450 @@ class SnrMeasurements:
 
         return total_snr
 
+    def clear_hcf_physical_cache(self) -> None:
+        """Release numeric reuse at an independent iteration boundary."""
+        self._hcf_physical_cache.clear()
+
+    @staticmethod
+    def _hcf_profile_key(profile: dict[str, Any]) -> tuple:
+        """Only parameters consumed by the noise equations, excluding budgets."""
+        return (
+            profile["noise_figure"], profile["dispersion"], profile["non_linearity"],
+            profile["inter_modal_interference"], profile["attenuation"],
+            profile.get("max_amplifier_gain", math.inf),
+        )
+
+    def _hcf_path_physical_key(
+        self, kind: str, path: list[Any] | tuple[Any, ...], band: str, channel: int,
+        baud: float, spacing: float, n_ch: int, extra: tuple = (),
+    ) -> bytes:
+        """Fingerprint resolved physical values in traversal order, not occupancy.
+
+        Equal physical paths can share a result. Changed topology mappings,
+        lengths, band/channel profiles, grids or comb sizes produce a new key.
+        """
+        links = []
+        for source, destination in zip(path, path[1:], strict=False):
+            link_id = self.sdn_props.network_spectrum_dict[(source, destination)]["link_num"]
+            link = self.engine_props_dict["topology_info"]["links"][link_id]
+            fiber = link["fiber"]
+            profile = dict(fiber["hcf"])
+            profile.update(profile.get("band_profiles", {}).get(band, {}))
+            profile = {key: value[channel] if isinstance(value, list) else value for key, value in profile.items()}
+            frequency = float(fiber[f"frequency_start_{band}"]) + (channel + 0.5) * spacing * 1e9
+            links.append((float(link["length"]), float(link["span_length"]), frequency, self._hcf_profile_key(profile)))
+        return self._hcf_physical_cache.key(kind, baud, spacing, n_ch, self.snr_props.planck_constant, tuple(links), extra)
+
+    def _hcf_noise_coefficients(
+        self,
+        n_ch: int,
+        n_span: int,
+        l_span_km: float,
+        r_ch_tbaud: float,
+        delta_f_hz: float,
+        center_frequency_hz: float,
+        *,
+        fiber: dict[str, Any],
+    ) -> tuple[float, float, float] | None:
+        """Reuse numeric span coefficients; include every model input in the key."""
+        profile = fiber["hcf"]
+        key = self._hcf_physical_cache.key(
+            "span", n_ch, n_span, l_span_km, r_ch_tbaud, delta_f_hz, center_frequency_hz,
+            self.snr_props.planck_constant, self._hcf_profile_key(profile),
+        )
+        found, result = self._hcf_physical_cache.get(key)
+        if found:
+            return result
+        result = self._compute_hcf_noise_coefficients(
+            n_ch, n_span, l_span_km, r_ch_tbaud, delta_f_hz, center_frequency_hz, fiber=fiber,
+        )
+        self._hcf_physical_cache.put(key, result)
+        return result
+
+    def _compute_hcf_noise_coefficients(
+        self,
+        n_ch: int,
+        n_span: int,
+        l_span_km: float,
+        r_ch_tbaud: float,
+        delta_f_hz: float,
+        center_frequency_hz: float,
+        *,
+        fiber: dict[str, Any],
+    ) -> tuple[float, float, float] | None:
+        """Return ASE watts, NLI coefficient and IMI coupling per km.
+
+        Reuse the same noise equations for link evaluation and common path-power
+        optimization. None denotes an amplifier-gain violation.
+        """
+        link_dict = fiber["hcf"]
+        noise_figure_db = link_dict["noise_figure"]
+        beta2 = abs(link_dict["dispersion"])
+        gamma = link_dict["non_linearity"]
+        imi_db_km = link_dict["inter_modal_interference"]
+        r_ch_hz = r_ch_tbaud * 1e12
+        noise_figure_linear = 10.0 ** (noise_figure_db / 10.0)
+        alpha = link_dict["attenuation"] * np.log(10.0) / (20.0 * 1e3)
+        if min(beta2, alpha, r_ch_hz, l_span_km, delta_f_hz, center_frequency_hz) <= 0 or gamma < 0:
+            raise ValueError("Invalid HCF dispersion, attenuation, nonlinear coefficient, rate or span parameters")
+        if link_dict["attenuation"] * l_span_km > link_dict.get("max_amplifier_gain", math.inf):
+            return None
+        l_span_m = l_span_km * 1e3
+        gain_minus_one = np.expm1(2.0 * alpha * l_span_m)
+
+        p_ase = n_span * self.snr_props.planck_constant * center_frequency_hz * noise_figure_linear * r_ch_hz * gain_minus_one
+
+        eta_prefactor = n_span * 4.0 * gamma**2 / (27.0 * np.pi * beta2 * alpha * r_ch_hz**2)
+
+        asinh_argument = (np.pi**2 * beta2 / (4.0 * alpha)) * r_ch_hz**2 * n_ch ** (2 * r_ch_hz / delta_f_hz)
+
+        eta = eta_prefactor * np.arcsinh(asinh_argument)
+
+        kappa = 0.0 if imi_db_km is None else 10.0 ** (imi_db_km / 10.0)
+        return p_ase, eta, kappa
+
+    def calculate_hcf_snr_link(
+        self,
+        n_ch: int,
+        n_span: int,
+        l_span_km: float,
+        r_ch_tbaud: float,
+        delta_f_hz: float,
+        center_frequency_hz: float,
+        *,
+        power_w: float | None = None,
+        fiber: dict[str, Any] | None = None,
+    ) -> tuple[float, float, float]:
+        """
+        Calculate SNR for a Hollow-Core Fiber (HCF/NANF) link using
+        Eqs. (2)-(7) from: DOI: https://doi.org/10.1109/JLT.2021.3140114
+
+
+
+        Parameters
+        ----------
+        n_ch : int
+            Number of WDM channels.
+        n_span : int
+            Number of identical, loss-compensated fiber spans.
+        l_span_km : float
+            Length of each span [km].
+        r_ch_tbaud : float
+            Channel symbol rate [TBaud].
+        delta_f_hz : float
+            WDM channel spacing [Hz].
+        center_frequency_hz : float
+            Center frequency of the WDM comb [Hz].
+        power_w : float, optional
+            Explicit candidate launch power [W], overriding internal optimization.
+        fiber : dict, optional
+            Explicit fiber parameters; otherwise use the existing link state.
+
+        Returns
+        -------
+        tuple[float, float, float]
+            Linear SNR, its reciprocal, and selected launch power in watts.
+            Amplifier-gain rejection returns (0.0, math.inf, 0.0); the zero
+            power is an infeasible-result placeholder, not an allocated power.
+        """
+        # Explicit candidate inputs avoid temporarily changing shared SNR/config state.
+        # Omitted keywords retain the existing state-based calling convention.
+        coefficients = self._hcf_noise_coefficients(
+            n_ch, n_span, l_span_km, r_ch_tbaud, delta_f_hz, center_frequency_hz,
+            fiber=fiber if fiber is not None else self.snr_props.link_dictionary,
+        )
+        if coefficients is None:
+            return 0.0, math.inf, 0.0
+        p_ase, eta, kappa = coefficients
+
+        if power_w is not None:
+            p_ch_w = power_w
+        elif self.engine_props_dict["optimized_power"] and eta > 0:
+            p_ch_w = (p_ase / (2.0 * eta)) ** (1.0 / 3.0)
+        else:
+            p_ch_w = self.engine_props_dict["input_power"]
+        if not math.isfinite(p_ch_w) or p_ch_w <= 0:
+            raise ValueError("HCF launch power must be finite and positive")
+
+        p_nli = eta * p_ch_w**3
+
+        total_length_km = n_span * l_span_km
+
+        p_imi = kappa * p_ch_w * total_length_km
+
+        total_noise = p_ase + p_nli + p_imi
+
+        snr_linear = p_ch_w / total_noise
+        snr_linear_inv = 1 / snr_linear
+
+        return snr_linear, snr_linear_inv, p_ch_w
+
+
+
+    def _hcf_path_noise_coefficients(
+        self,
+        *,
+        path: list[Any] | tuple[Any, ...],
+        band: str,
+        channel: int,
+        modulation: str,
+        bit_rate_gbps: float,
+        baud_rate_gbaud: float,
+        threshold_db: float,
+        margin_db: float = 0.0,
+        transceiver_snr_db: float | None = None,
+    ) -> tuple[float, float, float] | None:
+        """Accumulate ASE, NLI and IMI coefficients for one directional path."""
+        # Ensure the HCF model is used only with fixed-grid networks
+        if not self.engine_props_dict["fixed_grid"]:
+            raise ValueError(
+                "Hollow-core fiber support is currently implemented only for fixed-grid networks."
+            )
+
+        if len(path) < 2 or channel < 0:
+            raise ValueError("HCF GSNR requires a path and nonnegative channel index")
+        if band not in self.engine_props_dict["band_list"]:
+            raise ValueError("HCF candidate band is not configured")
+        if not all(math.isfinite(v) for v in (bit_rate_gbps, baud_rate_gbaud, threshold_db, margin_db)):
+            raise ValueError("HCF rates, threshold and margin must be finite")
+        if min(bit_rate_gbps, baud_rate_gbaud) <= 0:
+            raise ValueError("HCF rates must be positive")
+        if transceiver_snr_db is not None and not math.isfinite(transceiver_snr_db):
+            raise ValueError("Transceiver SNR must be finite")
+
+        spacing = float(self.engine_props_dict["bw_per_slot"])
+        if not math.isfinite(spacing) or spacing <= 0:
+            raise ValueError("HCF channel spacing must be finite and positive")
+        n_ch = sum(self.engine_props_dict[f"{name}_band"] for name in self.engine_props_dict["band_list"])
+        cache_key = self._hcf_path_physical_key("path_coefficients", path, band, channel, baud_rate_gbaud, spacing, n_ch)
+        found, result = self._hcf_physical_cache.get(cache_key)
+        if found:
+            return result
+        total_ase = total_eta = total_imi = 0.0
+        reference_frequency = None
+        for source, destination in zip(path, path[1:], strict=False):
+            link_id = self.sdn_props.network_spectrum_dict[(source, destination)]["link_num"]
+            link = self.engine_props_dict["topology_info"]["links"][link_id]
+            fiber = link["fiber"]
+            profile = dict(fiber["hcf"])
+            profile.update(profile.get("band_profiles", {}).get(band, {}))
+            profile = {key: value[channel] if isinstance(value, list) else value for key, value in profile.items()}
+            frequency = float(fiber[f"frequency_start_{band}"]) + (channel + 0.5) * spacing * 1e9
+            if reference_frequency is not None and not math.isclose(frequency, reference_frequency, rel_tol=1e-12):
+                raise ValueError("HCF frequency grid must match across the path")
+            reference_frequency = frequency
+            length, span_length = float(link["length"]), float(link["span_length"])
+            if not all(math.isfinite(v) and v > 0 for v in (length, span_length)):
+                raise ValueError("HCF link/span lengths must be finite and positive")
+            for span in range(math.ceil(length / span_length)):
+                actual_length = min(span_length, length - span * span_length)
+                coefficients = self._hcf_noise_coefficients(
+                    n_ch, 1, actual_length, baud_rate_gbaud / 1000, spacing * 1e9, frequency,
+                    fiber={"hcf": profile},
+                )
+                if coefficients is None:
+                    self._hcf_physical_cache.put(cache_key, None)
+                    return None
+                ase, eta, kappa = coefficients
+                total_ase += ase
+                total_eta += eta
+                total_imi += kappa * actual_length
+
+        result = (total_ase, total_eta, total_imi)
+        self._hcf_physical_cache.put(cache_key, result)
+        return result
+
+    def check_gsnr_hcf_optimized_power(
+        self,
+        *,
+        path: list[Any] | tuple[Any, ...],
+        band: str,
+        channel: int,
+        modulation: str,
+        bit_rate_gbps: float,
+        baud_rate_gbaud: float,
+        threshold_db: float,
+        margin_db: float = 0.0,
+        transceiver_snr_db: float | None = None,
+    ) -> tuple[bool, float, float, float]:
+        """Return the existing maximum-GSNR common launch power for a directional path."""
+        coefficients = self._hcf_path_noise_coefficients(
+            path=path, band=band, channel=channel, modulation=modulation,
+            bit_rate_gbps=bit_rate_gbps, baud_rate_gbaud=baud_rate_gbaud,
+            threshold_db=threshold_db, margin_db=margin_db, transceiver_snr_db=transceiver_snr_db,
+        )
+        if coefficients is None:
+            return False, -math.inf, float(bit_rate_gbps), 0.0
+        total_ase, total_eta, total_imi = coefficients
+        # One common power on every span of this directional path.
+        # IMI and transceiver noise are constant terms in inverse GSNR.
+        if total_eta > 0:
+            power = (total_ase / (2.0 * total_eta)) ** (1.0 / 3.0)
+        else:
+            # No finite unconstrained optimum exists without NLI; retain the
+            # existing calculator's configured-power fallback.
+            power = float(self.engine_props_dict["input_power"])
+        if not math.isfinite(power) or power <= 0:
+            raise ValueError("HCF launch power must be finite and positive")
+        inverse = total_ase / power + total_eta * power**2 + total_imi
+        if transceiver_snr_db is not None:
+            inverse += 10 ** (-transceiver_snr_db / 10)
+        snr_db = math.inf if inverse == 0 else -10 * math.log10(inverse)
+        return snr_db >= threshold_db + margin_db, snr_db, float(bit_rate_gbps), float(power)
+
+    def check_gsnr_hcf_minimum_power(
+        self,
+        *,
+        path: list[Any] | tuple[Any, ...],
+        band: str,
+        channel: int,
+        modulation: str,
+        bit_rate_gbps: float,
+        baud_rate_gbaud: float,
+        threshold_db: float,
+        margin_db: float = 0.0,
+        transceiver_snr_db: float | None = None,
+    ) -> tuple[bool, float, float, float]:
+        """Find the least common launch power satisfying threshold plus margin.
+
+        Compute path coefficients once, then bisect the scalar inverse GSNR
+        expression on its decreasing branch. Return the feasible upper endpoint
+        after at most 64 steps. A zero-NLI path has a closed-form solution.
+        Infeasibility returns zero power. No live allocations are modified.
+        """
+        coefficients = self._hcf_path_noise_coefficients(
+            path=path, band=band, channel=channel, modulation=modulation,
+            bit_rate_gbps=bit_rate_gbps, baud_rate_gbaud=baud_rate_gbaud,
+            threshold_db=threshold_db, margin_db=margin_db, transceiver_snr_db=transceiver_snr_db,
+        )
+        if coefficients is None:
+            return False, -math.inf, float(bit_rate_gbps), 0.0
+        total_ase, total_eta, total_imi = coefficients
+        if transceiver_snr_db is not None:
+            total_imi += 10 ** (-transceiver_snr_db / 10)
+        target_db = threshold_db + margin_db
+        target_inverse = 10 ** (-target_db / 10)
+        gap = target_inverse - total_imi
+        if gap <= 0:
+            ceiling_db = -10 * math.log10(total_imi)
+            return False, ceiling_db, float(bit_rate_gbps), 0.0
+
+        def gsnr_at(power: float) -> float:
+            inverse = total_ase / power + total_eta * power**2 + total_imi
+            return math.inf if inverse == 0 else -10 * math.log10(inverse)
+
+        if total_eta == 0:
+            power = total_ase / gap
+            # Round toward feasibility at the analytical threshold boundary.
+            power *= 1.0 + 1e-12
+            snr_db = gsnr_at(power)
+            return snr_db >= target_db, snr_db, float(bit_rate_gbps), float(power)
+
+        upper = (total_ase / (2.0 * total_eta)) ** (1.0 / 3.0)
+        peak_db = gsnr_at(upper)
+        if peak_db < target_db:
+            return False, peak_db, float(bit_rate_gbps), 0.0
+        lower = 0.0
+        for _ in range(64):
+            midpoint = (lower + upper) / 2
+            if midpoint == lower or midpoint == upper:
+                break
+            if gsnr_at(midpoint) >= target_db:
+                upper = midpoint
+            else:
+                lower = midpoint
+        return True, gsnr_at(upper), float(bit_rate_gbps), float(upper)
+
+    def check_gsnr_hcf(
+        self,
+        *,
+        path: list[Any] | tuple[Any, ...] | None = None,
+        band: str | None = None,
+        channel: int | None = None,
+        modulation: str | None = None,
+        power_w: float | None = None,
+        bit_rate_gbps: float | None = None,
+        baud_rate_gbaud: float | None = None,
+        threshold_db: float | None = None,
+        margin_db: float = 0.0,
+        transceiver_snr_db: float | None = None,
+    ) -> tuple[bool, float, float]:
+        """
+        Calculate and check the GSNR of a lightpath using the hollow-core fiber (HCF) model.
+
+        The model accounts for ASE noise, nonlinear interference (NLI), and
+        intermodal interference (IMI). Currently supports fixed-grid networks only.
+
+        Optional keyword inputs evaluate a candidate without changing spectrum,
+        link or engine state. Omitted inputs retain the original no-argument API.
+        Each link/span delegates to calculate_hcf_snr_link; the WDM channel count
+        remains the configured comb size, independent of current occupancy.
+
+        :return: Whether the GSNR threshold is met, GSNR in dB, and supported bit rate.
+        :rtype: tuple[bool, float, int]
+        """
+        # Ensure the HCF model is used only with fixed-grid networks
+        if not self.engine_props_dict["fixed_grid"]:
+            raise ValueError("Hollow-core fiber support is currently implemented only for fixed-grid networks.")
+
+        path = self.spectrum_props.path_list if path is None else path
+        band = (self.spectrum_props.current_band or "c") if band is None else band
+        channel = self.spectrum_props.start_slot if channel is None else channel
+        modulation = self.spectrum_props.modulation if modulation is None else modulation
+        if path is None or len(path) < 2 or channel is None or channel < 0:
+            raise ValueError("HCF GSNR requires a path and nonnegative channel index")
+        spacing = float(self.engine_props_dict["bw_per_slot"])
+        bit_rate = self.snr_props.bandwidth_mapping_dict[spacing][modulation] if bit_rate_gbps is None else bit_rate_gbps
+        baud = bit_rate / (2 * self.snr_props.bits_per_symbol[modulation]) if baud_rate_gbaud is None else baud_rate_gbaud
+        threshold = self.snr_props.req_snr[modulation] if threshold_db is None else threshold_db
+        if not all(math.isfinite(v) for v in (spacing, bit_rate, baud, threshold, margin_db)) or min(spacing, bit_rate, baud) <= 0:
+            raise ValueError("HCF channel rates, spacing and threshold must be finite; rates must be positive")
+        if transceiver_snr_db is not None and not math.isfinite(transceiver_snr_db):
+            raise ValueError("Transceiver SNR must be finite")
+        # Preserve the existing fixed, fully populated WDM comb assumption.
+        # n_ch depends on configured capacity, never live occupancy.
+        n_ch = sum(self.engine_props_dict[f"{name}_band"] for name in self.engine_props_dict["band_list"])
+        power_key = (("explicit", power_w) if power_w is not None else
+                     ("legacy", self.engine_props_dict["optimized_power"], self.engine_props_dict["input_power"]))
+        cache_key = self._hcf_path_physical_key(
+            "path_gsnr", path, band, channel, baud, spacing, n_ch, (power_key, transceiver_snr_db),
+        )
+        found, result = self._hcf_physical_cache.get(cache_key)
+        if found:
+            snr_db = result[0]
+            return snr_db >= threshold + margin_db, snr_db, float(bit_rate)
+        inverse = 0.0 if transceiver_snr_db is None else 10 ** (-transceiver_snr_db / 10)
+        reference_frequency = None
+        for source, destination in zip(path, path[1:], strict=False):
+            link_id = self.sdn_props.network_spectrum_dict[(source, destination)]["link_num"]
+            link = self.engine_props_dict["topology_info"]["links"][link_id]
+            fiber = link["fiber"]
+            profile = dict(fiber["hcf"])
+            profile.update(profile.get("band_profiles", {}).get(band, {}))
+            profile = {key: value[channel] if isinstance(value, list) else value for key, value in profile.items()}
+            frequency = float(fiber[f"frequency_start_{band}"]) + (channel + 0.5) * spacing * 1e9
+            if reference_frequency is not None and not math.isclose(frequency, reference_frequency, rel_tol=1e-12):
+                raise ValueError("HCF frequency grid must match across the path")
+            reference_frequency = frequency
+            length, span_length = float(link["length"]), float(link["span_length"])
+            if not all(math.isfinite(v) and v > 0 for v in (length, span_length)):
+                raise ValueError("HCF link/span lengths must be finite and positive")
+            for span in range(math.ceil(length / span_length)):
+                _, span_inverse, p_ch_w = self.calculate_hcf_snr_link(
+                    n_ch,
+                    1,
+                    min(span_length, length - span * span_length),
+                    baud / 1000,
+                    spacing * 1e9,
+                    frequency,
+                    power_w=power_w,
+                    fiber={"hcf": profile},
+                )
+                inverse += span_inverse
+        snr_db = math.inf if inverse == 0 else -10 * math.log10(inverse)
+        self._hcf_physical_cache.put(cache_key, (snr_db,))
+        return snr_db >= threshold + margin_db, snr_db, float(bit_rate)
+
     def handle_snr_dynamic_slicing(self, path_index: int) -> tuple[bool | str, float, float]:
         """
         Controls the methods of this class.
@@ -1568,6 +2015,8 @@ class SnrMeasurements:
         self.number_of_slots = self.spectrum_props.end_slot - self.spectrum_props.start_slot + 1
         if self.engine_props_dict["snr_type"] == "snr_e2e_external_resources":
             modulation_format, bandwidth, snr_value = self.check_snr_ext_slicing(path_index)
+        elif self.engine_props_dict["snr_type"] == "gsnr" and self.engine_props_dict["hollow_core_fiber"]:
+            gsnr_result, snr_value, bandwidth = self.check_gsnr_hcf()
         elif self.engine_props_dict["snr_type"] == "gsnr":
             # GSNR (Generalized SNR) for dynamic slicing
             if self.engine_props_dict["band_list"] == ["c"]:

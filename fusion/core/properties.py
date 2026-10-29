@@ -185,15 +185,35 @@ class SNRProps:
             2: "QPSK",
             1: "BPSK",
         }
-
-        self.bandwidth_mapping_dict: dict[str, int] = {
-            "64-QAM": 600,
-            "32-QAM": 500,
-            "16-QAM": 400,
-            "8-QAM": 300,
-            "QPSK": 200,
-            "BPSK": 100,
+        
+        self.bits_per_symbol: dict[str, int] = {
+            "64-QAM": 6,
+            "32-QAM": 5,
+            "16-QAM": 4,
+            "8-QAM": 3,
+            "QPSK": 2,
+            "BPSK": 1,
         }
+
+        self.bandwidth_mapping_dict: dict[float, dict[str, int]] = {
+            75.0: {
+                "64-QAM": 600,
+                "32-QAM": 500,
+                "16-QAM": 400,
+                "8-QAM": 300,
+                "QPSK": 200,
+                "BPSK": 100,
+            },
+            112.5: {
+                "64-QAM": 800,
+                "32-QAM": 700,
+                "16-QAM": 600,
+                "8-QAM": 500,
+                "QPSK": 400,
+                "BPSK": 200,
+            },
+        }
+        
 
         self.icxt_mb_params_dict= {
                                         # common parameters
