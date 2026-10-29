@@ -1,6 +1,9 @@
 """Unit tests for fusion/sim/run_simulation.py module."""
 
+from argparse import Namespace
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from fusion.sim.run_simulation import run_simulation, run_simulation_pipeline
 
@@ -54,6 +57,25 @@ class TestRunSimulation:
 
 class TestRunSimulationPipeline:
     """Tests for run_simulation_pipeline function."""
+
+    @pytest.mark.parametrize("enabled", [True, False])
+    def test_pipeline_honors_loaded_thread_erlangs(self, enabled):
+        config = {"s1": {"thread_erlangs": enabled}}
+        with (
+            patch("fusion.cli.config_setup.load_and_validate_config", return_value=config),
+            patch("fusion.sim.run_simulation.run_batch_simulation", return_value=[]) as runner,
+        ):
+            run_simulation_pipeline(Namespace())
+        runner.assert_called_once_with(config, parallel=enabled, num_processes=None)
+
+    def test_explicit_sequential_override_takes_precedence(self):
+        config = {"s1": {"thread_erlangs": True}}
+        with (
+            patch("fusion.cli.config_setup.load_and_validate_config", return_value=config),
+            patch("fusion.sim.run_simulation.run_batch_simulation", return_value=[]) as runner,
+        ):
+            run_simulation_pipeline(Namespace(parallel=False))
+        runner.assert_called_once_with(config, parallel=False, num_processes=None)
 
     @patch("fusion.sim.run_simulation.run_batch_simulation")
     @patch("fusion.cli.config_setup.load_and_validate_config")
