@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from fusion.core.simulation import SimulationEngine
-from fusion.sim.input_setup import create_input
+from fusion.sim.input_setup import create_input, save_input
 from fusion.utils.logging_config import log_message as _log_message
 
 
@@ -77,15 +77,20 @@ class BatchRunner:
 
         # Save input files if requested
         if sim_params.get("save_files", True):
-            pass  # Save input implementation pending
+            save_input(
+                base_fp=base_fp,
+                properties=sim_params,
+                file_name=f"sim_input_{sim_params['thread_num']}.json",
+                data_dict=sim_params,
+            )
 
         # Validate bandwidth consistency
         self._validate_bandwidth_config(sim_params)
 
         return sim_params
 
+    @staticmethod
     def run_single_erlang(
-        self,
         erlang: float,
         sim_params: dict,
         erlang_index: int,
@@ -138,7 +143,12 @@ class BatchRunner:
         stats = {}
         if hasattr(engine, "stats_obj") and engine.stats_obj:
             try:
-                stats = engine.stats_obj.__dict__
+                stats = engine.stats_obj.__dict__.copy()
+                # A worker-local multiprocessing.Event cannot be serialized
+                # back through the result queue. Keep it in the live engine,
+                # but omit it from the returned configuration snapshot.
+                if isinstance(stats.get("engine_props"), dict):
+                    stats["engine_props"] = {key: value for key, value in stats["engine_props"].items() if key != "stop_flag"}
             except AttributeError:
                 stats = {"blocking_probability": 0, "total_requests": 0}
 
@@ -168,7 +178,7 @@ class BatchRunner:
         :rtype: list[dict]
         """
         if num_processes is None:
-            num_processes = multiprocessing.cpu_count()
+            num_processes = min(len(erlangs), multiprocessing.cpu_count())
 
         log_message(f"Running batch simulation with {len(erlangs)} loads across {num_processes} processes")
 
