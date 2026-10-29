@@ -99,6 +99,9 @@ def find_free_channels(
                         current_channel_list.pop(0)
                 else:
                     current_channel_list = [free_index]
+                    if len(current_channel_list) == slots_needed:
+                        channels_list.append(current_channel_list.copy())
+                        current_channel_list.pop(0)
 
             response[band].update({core_num: channels_list})
 
