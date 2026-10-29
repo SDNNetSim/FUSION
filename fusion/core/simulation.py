@@ -290,6 +290,11 @@ class SimulationEngine:
         )
 
         self.use_orchestrator = _resolve_use_orchestrator(engine_props)
+        allocation_mode = engine_props.get("resource_allocation_mode", "legacy")
+        if allocation_mode not in ("legacy", "hcf_power_opportunity"):
+            raise ValueError(f"Unknown resource_allocation_mode: {allocation_mode}")
+        if allocation_mode == "hcf_power_opportunity" and self.use_orchestrator:
+            raise ValueError("HCF controller allocation requires the legacy engine (FUSION_USE_ORCHESTRATOR=0)")
         if self.use_orchestrator:
             _validate_orchestrator_config(engine_props)
 
@@ -305,6 +310,8 @@ class SimulationEngine:
         # FailureManager reference will be set after topology creation
         self.sdn_obj.failure_manager = None
         self.stats_obj = SimStats(engine_props=self.engine_props, sim_info=self.sim_info)
+        if allocation_mode == "hcf_power_opportunity":
+            self.stats_obj.stats_props.hcf_decisions_list = []
         self.reporter = SimulationReporter(logger=logger)
         self.persistence = StatsPersistence(engine_props=self.engine_props, sim_info=self.sim_info)
 
@@ -471,7 +478,12 @@ class SimulationEngine:
                 value=request_value,
             )
 
-        self.sdn_obj.handle_event(
+        event_handler = (
+            self.sdn_obj.handle_hcf_event
+            if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity"
+            else self.sdn_obj.handle_event
+        )
+        event_handler(
             self.reqs_dict[current_time],
             request_type="arrival",
             force_route_matrix=force_route_matrix,
@@ -484,6 +496,11 @@ class SimulationEngine:
         if self.sdn_obj.sdn_props.network_spectrum_dict is not None:
             self.network_spectrum_dict = self.sdn_obj.sdn_props.network_spectrum_dict
         self.update_arrival_params(current_time=current_time)
+        if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity":
+            decision = dict(self.sdn_obj.hcf_last_result)
+            decision["request_id"] = self.sdn_obj.sdn_props.request_id
+            self.stats_obj.stats_props.hcf_decisions_list.append(decision)
+            self.stats_obj.record_decision_time(decision["allocation_time_seconds"] * 1000)
 
         # Log dataset transition if enabled
         self._log_dataset_transition(current_time=current_time)
@@ -691,7 +708,12 @@ class SimulationEngine:
             if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
                 self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
 
-            self.sdn_obj.handle_event(self.reqs_dict[current_time], request_type="release")
+            event_handler = (
+                self.sdn_obj.handle_hcf_event
+                if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity"
+                else self.sdn_obj.handle_event
+            )
+            event_handler(self.reqs_dict[current_time], request_type="release")
 
             # Update lightpath bandwidth utilization statistics
             # For non-grooming cases, populate utilization from reqs_status_dict if not already done
@@ -1078,6 +1100,8 @@ class SimulationEngine:
         if self.sdn_obj.sdn_props.lp_bw_utilization_dict is None:
             self.sdn_obj.sdn_props.lp_bw_utilization_dict = {}
         # Reset lightpath ID counter each iteration
+        if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity":
+            self.sdn_obj.reset_hcf_state()
         self.sdn_obj.sdn_props.reset_lightpath_id_counter()
 
         # Reset grooming structures if enabled
