@@ -50,8 +50,12 @@ def run_simulation_pipeline(args: Any, stop_flag: Any = None) -> list[dict]:  # 
     # Convert args to config dictionary
     config_dict = load_and_validate_config(args)
 
-    # Determine if parallel execution is requested
-    parallel = args.parallel if hasattr(args, "parallel") else False
+    # Honor the loaded config (including --thread_erlangs overrides). Some
+    # programmatic callers also supply an explicit parallel override.
+    sim_params = config_dict.get("s1", config_dict)
+    parallel = getattr(args, "parallel", None)
+    if parallel is None:
+        parallel = sim_params.get("thread_erlangs", False)
     num_processes = args.num_processes if hasattr(args, "num_processes") else None
 
     # Run using the new batch runner
