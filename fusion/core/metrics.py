@@ -1,3 +1,4 @@
+import json
 import math
 from statistics import mean, stdev, variance
 from typing import Any
@@ -5,7 +6,7 @@ from typing import Any
 import numpy as np
 
 from fusion.analysis.network_analysis import NetworkAnalyzer
-from fusion.core.properties import SNAP_KEYS_LIST, SDNProps, StatsProps
+from fusion.core.properties import SNAP_KEYS_LIST, SDNProps, SNRProps, StatsProps
 from fusion.utils.bandwidth import bandwidth_key as normalize_bandwidth
 from fusion.utils.bandwidth import parse_bandwidth
 from fusion.utils.logging_config import get_logger
@@ -129,6 +130,22 @@ class SimStats:
             for key in SNAP_KEYS_LIST:
                 self.stats_props.snapshots_dict[req_num][key] = []
 
+    def _statistics_modulation_catalog(self) -> dict[str, Any]:
+        """Include HCF carrier capacities, which may exceed the demand bitrate."""
+        catalog = self.engine_props["mod_per_bw"]
+        if self.engine_props.get("resource_allocation_mode") != "hcf_power_opportunity":
+            return catalog
+        catalog = {str(rate): dict(modes) for rate, modes in catalog.items()}
+        modes = self.engine_props.get("hcf_modes")
+        modes = json.loads(modes) if isinstance(modes, str) else modes
+        if modes is None:
+            capacities = SNRProps().bandwidth_mapping_dict[float(self.engine_props["bw_per_slot"])]
+            modes = [{"name": name, "net_rate_gbps": rate} for name, rate in capacities.items()]
+        for mode in modes:
+            rate = normalize_bandwidth(mode["net_rate_gbps"])
+            catalog.setdefault(rate, {})[mode["name"]] = {}
+        return catalog
+
     def _init_mods_weights_bws(self) -> None:
         # Initialize weights_dict and modulations_used_dict as nested dicts
         if not isinstance(self.stats_props.weights_dict, dict):
@@ -141,7 +158,7 @@ class SimStats:
         # Initialize demand_realization_ratio with overall key
         self.stats_props.demand_realization_ratio["overall"] = []
 
-        for bandwidth, obj in self.engine_props["mod_per_bw"].items():
+        for bandwidth, obj in self._statistics_modulation_catalog().items():
             # Convert bandwidth to string to match tracking logic
             bandwidth_key = str(bandwidth)
             # Ensure bandwidth keys exist as dicts
@@ -220,7 +237,7 @@ class SimStats:
         if not isinstance(self.stats_props.lp_bw_utilization_dict, dict):
             self.stats_props.lp_bw_utilization_dict = {}
 
-        for bandwidth, _obj in self.engine_props["mod_per_bw"].items():
+        for bandwidth, _obj in self._statistics_modulation_catalog().items():
             bandwidth_key = str(bandwidth)
             self.stats_props.lp_bw_utilization_dict[bandwidth_key] = {}
             for band in self.engine_props["band_list"]:
@@ -256,6 +273,8 @@ class SimStats:
                     "congestion": 0,
                     "xt_threshold": 0,
                 }
+                if self.engine_props.get("resource_allocation_mode") == "hcf_power_opportunity":
+                    self.stats_props.block_reasons_dict["hcf_power"] = 0
             elif stat_key == "link_usage_dict":
                 self.stats_props.link_usage_dict = {}
             elif stat_key != "iter_stats":
