@@ -108,6 +108,18 @@ OPTIONAL_OPTIONS_DICT: dict[str, dict[str, Callable[..., Any]]] = {
     # =========================================================================
     "general_settings": {
         "traffic_type": str,
+        "resource_allocation_mode": str,
+        "hcf_modes": str,
+        "hcf_power_levels_dbm": str,
+        "hcf_amplifier_budget_dbm": str,
+        "hcf_selection_policy": str,
+        "hcf_power_objective": str,
+        "hcf_power_weight": float,
+        "hcf_margin_db": float,
+        "hcf_transceiver_snr_db": float,
+        "hcf_probes": str,
+        "hcf_probe_count": int,
+        "hcf_probe_seed": int,
         "request_sort": str,
         "request_sort_order": str,
         "traffic_matrix_file": str,
