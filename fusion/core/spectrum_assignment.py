@@ -6,11 +6,16 @@ for optical network requests in software-defined optical networks.
 """
 
 import itertools
+import json
+import math
+import random
+from collections.abc import Callable, Mapping
 from operator import itemgetter
 from typing import Any
 
 import numpy as np
 
+from fusion.core.hcf import HCFCandidate, HCFMode, HCFPhysicalCache, HCFSpectrumResult, dbm_to_watts, hcf_power_objective
 from fusion.core.properties import RoutingProps, SDNProps, SpectrumProps
 from fusion.core.snr_measurements import SnrMeasurements
 from fusion.modules.spectrum.utils import SpectrumHelpers
@@ -58,6 +63,416 @@ class SpectrumAssignment:
             engine_props=self.engine_props_dict,
             sdn_props=self.sdn_props,
             spectrum_props=self.spectrum_props,
+        )
+
+        # A single prepared probe set per iteration, independent of live resources.
+        self._hcf_probe_cache: list[tuple[list[list[Any]], float, float]] | None = None
+        self._hcf_transmission_cache = HCFPhysicalCache(max_entries=4096)
+
+    def clear_hcf_probe_cache(self) -> None:
+        """Discard prepared probes when the iteration/configuration/topology changes."""
+        self._hcf_probe_cache = None
+
+    def get_hcf_free_channels(self, path: tuple | list, band: str, virtual: HCFCandidate | None = None) -> list[int]:
+        """Reuse common-spectrum search, then apply an optional virtual reservation."""
+        network = self.sdn_props.network_spectrum_dict
+        if network is None:
+            return []
+        channels = find_common_channels_on_paths(network, [list(path), list(reversed(path))], slots_needed=1, band=band, core=0)
+        virtual_edges = set()
+        if virtual is not None and band == virtual.band:
+            for source, destination in zip(virtual.path, virtual.path[1:], strict=False):
+                virtual_edges.update(((source, destination), (destination, source)))
+            if any(edge in virtual_edges for edge in zip(path, path[1:], strict=False)):
+                channels = [channel for channel in channels if channel != virtual.channel]
+        return [int(channel) for channel in channels]
+
+    def clear_hcf_transmission_cache(self) -> None:
+        """Discard compact transmission options at an independent iteration boundary."""
+        self._hcf_transmission_cache.clear()
+
+    def _hcf_transmission_context(self, modes: list[HCFMode], powers: list[float]) -> dict[str, Any]:
+        """Resolve settings once for an entire opportunity evaluation."""
+        spacing = float(self.engine_props_dict["bw_per_slot"])
+        margin = float(self.engine_props_dict.get("hcf_margin_db", 0))
+        trx_db = self.engine_props_dict.get("hcf_transceiver_snr_db")
+        if trx_db is not None and not math.isfinite(float(trx_db)):
+            raise ValueError("HCF transceiver SNR must be finite")
+        objective = hcf_power_objective(self.engine_props_dict)
+        optimized = objective in ("max_gsnr", "minimum_required")
+        search_powers = (None,) if optimized else tuple(powers)
+        if objective == "fixed":
+            fixed_power = float(self.engine_props_dict["input_power"])
+            if not math.isfinite(fixed_power) or fixed_power <= 0:
+                raise ValueError("HCF fixed input_power must be finite and positive watts")
+            search_powers = (fixed_power,)
+        catalog = tuple((m.name, m.net_rate_gbps, m.baud_rate_gbaud, m.threshold_db, m.roll_off) for m in modes)
+        key = self._hcf_transmission_cache.key(
+            objective, search_powers, spacing, margin, trx_db, catalog,
+            self.engine_props_dict.get("input_power"),
+        )
+        return {"objective": objective, "optimized": optimized, "powers": search_powers,
+                "spacing": spacing, "margin": margin, "trx_db": trx_db, "key": key}
+
+    def _hcf_transmission_options(
+        self, path: tuple | list, band: str, channel: int, modes: list[HCFMode], powers: list[float],
+        context: dict[str, Any] | None = None,
+    ) -> tuple[float, ...]:
+        """Return flat (mode index, forward W, reverse W, min GSNR dB) records.
+
+        No candidate objects, amplifier demands, live budgets or feasibility
+        scores are retained. Both directional physical signatures and every
+        transmission setting are included in the bounded cache key.
+        """
+        context = self._hcf_transmission_context(modes, powers) if context is None else context
+        snr = self.snr_measurements
+        directions = (tuple(path), tuple(reversed(path)))
+        n_ch = sum(self.engine_props_dict[f"{name}_band"] for name in self.engine_props_dict["band_list"])
+        # The complete baud-rate catalog is in context["key"]; zero is a tag
+        # placeholder here because this signature describes geometry/physics.
+        signatures = tuple(snr._hcf_path_physical_key(
+            "transmission", direction, band, channel, 0.0, context["spacing"], n_ch,
+        ) for direction in directions)
+        cache_key = self._hcf_transmission_cache.key(context["key"], *signatures)
+        found, options = self._hcf_transmission_cache.get(cache_key)
+        if found:
+            assert options is not None
+            return options
+        optimizer = (snr.check_gsnr_hcf_minimum_power if context["objective"] == "minimum_required"
+                     else snr.check_gsnr_hcf_optimized_power)
+        values = []
+        for mode_index, mode in enumerate(modes):
+            if mode.baud_rate_gbaud * (1 + mode.roll_off) > context["spacing"]:
+                continue
+            for power in context["powers"]:
+                direction_snr = []
+                direction_power = []
+                for direction in directions:
+                    kwargs = {
+                        "path": direction, "band": band, "channel": channel, "modulation": mode.name,
+                        "bit_rate_gbps": mode.net_rate_gbps, "baud_rate_gbaud": mode.baud_rate_gbaud,
+                        "threshold_db": mode.threshold_db, "margin_db": context["margin"],
+                        "transceiver_snr_db": context["trx_db"],
+                    }
+                    if context["optimized"]:
+                        feasible, gsnr, _, launch_power = optimizer(**kwargs)
+                    else:
+                        launch_power = power
+                        feasible, gsnr, _ = snr.check_gsnr_hcf(**kwargs, power_w=launch_power)
+                    if not feasible:
+                        break
+                    direction_snr.append(gsnr)
+                    direction_power.append(launch_power)
+                if len(direction_snr) == 2:
+                    values.extend((mode_index, direction_power[0], direction_power[1], min(direction_snr)))
+        options = tuple(values)
+        self._hcf_transmission_cache.put(cache_key, options)
+        return options
+
+    def _hcf_amplifier_layout(self, path: tuple | list, band: str) -> tuple[tuple, tuple]:
+        """Read current amplifier identities and budgets once per path and band."""
+        budgets = self.engine_props_dict["hcf_amplifier_budget_dbm"]
+        budgets = json.loads(budgets) if isinstance(budgets, str) else budgets
+        layouts = []
+        for direction in (tuple(path), tuple(reversed(path))):
+            layout = []
+            for source, destination in zip(direction, direction[1:], strict=False):
+                link_id = self.sdn_props.network_spectrum_dict[(source, destination)]["link_num"]
+                link = self.engine_props_dict["topology_info"]["links"][link_id]
+                profile = dict(link["fiber"]["hcf"])
+                profile.update(profile.get("band_profiles", {}).get(band, {}))
+                budget = dbm_to_watts(float(profile.get("power_budget_dbm", budgets[band])))
+                for span in range(math.ceil(float(link["length"]) / float(link["span_length"]))):
+                    layout.append(((source, destination, span, band), budget))
+            layouts.append(tuple(layout))
+        return layouts[0], layouts[1]
+
+    def get_hcf_candidates(
+        self, path: tuple | list, band: str, channel: int, modes: list[HCFMode], powers: list[float]
+    ) -> tuple[HCFCandidate, ...]:
+        """Materialize real-request candidates from reusable transmission options."""
+        options = self._hcf_transmission_options(path, band, channel, modes, powers)
+        if not options:
+            return ()
+        forward, reverse = self._hcf_amplifier_layout(path, band)
+        candidates = []
+        for offset in range(0, len(options), 4):
+            mode_index, forward_power, reverse_power, gsnr = options[offset:offset + 4]
+            demands = tuple((key, forward_power, budget) for key, budget in forward)
+            demands += tuple((key, reverse_power, budget) for key, budget in reverse)
+            candidates.append(HCFCandidate(
+                tuple(path), band, channel, modes[int(mode_index)], reverse_power, gsnr, demands,
+            ))
+        return tuple(candidates)
+
+    def _hcf_probe_headroom(
+        self, path: tuple | list, band: str, power_used: Mapping[tuple, float], additions: Mapping[tuple, float],
+    ) -> tuple[float, float]:
+        """Minimum live residual per direction, including the virtual candidate.
+
+        Each option uses one common power on every amplifier in a direction,
+        so these two minima are exactly equivalent to checking every demand.
+        """
+        forward, reverse = self._hcf_amplifier_layout(path, band)
+        return (
+            min(budget - power_used.get(key, 0.0) - additions.get(key, 0.0) for key, budget in forward),
+            min(budget - power_used.get(key, 0.0) - additions.get(key, 0.0) for key, budget in reverse),
+        )
+
+    def hcf_power_fits(
+        self, candidate: HCFCandidate, power_used: Mapping[tuple, float], virtual: HCFCandidate | None = None
+    ) -> bool:
+        """Check span/band budgets against the controller-owned power ledger without changing it."""
+        additions = {} if virtual is None else {key: power for key, power, _ in virtual.demands}
+        for key, power, budget in candidate.demands:
+            residual = budget - power_used.get(key, 0.0) - additions.get(key, 0.0)
+            if residual <= 0 or power > residual * (1 + 1e-12):
+                return False
+        return True
+
+    def _hcf_probes(
+        self, get_probe_paths: Callable[[Any, Any], list[list[Any]]]
+    ) -> list[tuple[list[list[Any]], float, float]]:
+        """Prepare probes once per iteration; never cache live feasibility or scores.
+
+        Topology, routing settings and probe configuration are fixed within an
+        iteration. The controller clears this single cached set on reset.
+        """
+        if self._hcf_probe_cache is not None:
+            return self._hcf_probe_cache
+        probes = self.engine_props_dict.get("hcf_probes")
+        probes = json.loads(probes) if isinstance(probes, str) else probes
+        if probes is None:
+            distribution = self.engine_props_dict.get("request_distribution", {})
+            distribution = json.loads(distribution) if isinstance(distribution, str) else distribution
+            rates = [parse_bandwidth(rate) for rate in distribution]
+            weights = [float(value) for value in distribution.values()]
+            if not rates or any(not math.isfinite(w) or w < 0 for w in weights) or sum(weights) <= 0:
+                raise ValueError("HCF automatic probes require a valid request_distribution")
+            topology = self.engine_props_dict.get("topology", self.sdn_props.topology)
+            nodes = sorted(topology.nodes, key=str)
+            count = int(self.engine_props_dict.get("hcf_probe_count", 8))
+            if count < 1 or len(nodes) < 2:
+                raise ValueError("HCF probes require positive count and at least two nodes")
+            rng = random.Random(int(self.engine_props_dict.get("hcf_probe_seed", 0)))
+            probes = []
+            for _ in range(count):
+                source, destination = rng.sample(nodes, 2)
+                probes.append({"source": source, "destination": destination, "bandwidth": rng.choices(rates, weights)[0], "weight": 1.0})
+        prepared = []
+        for probe in probes:
+            weight = float(probe.get("weight", 1.0))
+            rate = parse_bandwidth(probe["bandwidth"])
+            if not math.isfinite(weight) or weight < 0 or not math.isfinite(rate) or rate <= 0:
+                raise ValueError("HCF probe weights must be nonnegative and rates positive")
+            prepared.append((get_probe_paths(probe["source"], probe["destination"]), rate, weight))
+        total = sum(weight for _, _, weight in prepared)
+        if total <= 0:
+            raise ValueError("HCF opportunity scoring requires probes with positive total weight")
+        self._hcf_probe_cache = [(paths, rate, weight / total) for paths, rate, weight in prepared]
+        return self._hcf_probe_cache
+
+    def _hcf_opportunity(
+        self, modes: list[HCFMode], powers: list[float], power_used: Mapping[tuple, float],
+        get_probe_paths: Callable[[Any, Any], list[list[Any]]], virtual: HCFCandidate | None = None,
+    ) -> float:
+        """Count the same feasible placements, without materializing probe candidates."""
+        context = self._hcf_transmission_context(modes, powers)
+        additions = {} if virtual is None else {key: power for key, power, _ in virtual.demands}
+        value = 0.0
+        for paths, rate, weight in self._hcf_probes(get_probe_paths):
+            count = 0
+            for path in paths:
+                for band in self.engine_props_dict["band_list"]:
+                    channels = self.get_hcf_free_channels(path, band, virtual)
+                    if not channels:
+                        continue
+                    forward, reverse = self._hcf_probe_headroom(path, band, power_used, additions)
+                    if forward <= 0 or reverse <= 0:
+                        continue
+                    forward_limit, reverse_limit = forward * (1 + 1e-12), reverse * (1 + 1e-12)
+                    for channel in channels:
+                        options = self._hcf_transmission_options(path, band, channel, modes, powers, context)
+                        for offset in range(0, len(options), 4):
+                            if (modes[int(options[offset])].net_rate_gbps >= rate
+                                    and options[offset + 1] <= forward_limit and options[offset + 2] <= reverse_limit):
+                                count += 1
+                                break
+            value += weight * math.log1p(count)
+        return value
+
+    def _hcf_power_spectrum_score(self, candidate: HCFCandidate, power_used: Mapping[tuple, float]) -> float:
+        """Price amplifier headroom and link wavelength scarcity without probes.
+
+        Power costs include both directions and each actual span. Spectrum
+        counts wavelengths free in both directions, once per physical hop.
+        Wavelength continuity is enforced by the existing spectrum search.
+        """
+        weight = float(self.engine_props_dict.get("hcf_power_weight", 0.5))
+        power_cost = 0.0
+        for key, power, budget in candidate.demands:
+            residual = budget - power_used.get(key, 0.0)
+            if residual <= 0:
+                return math.inf
+            power_cost += power / residual
+        spectrum_cost = 0.0
+        network = self.sdn_props.network_spectrum_dict
+        for source, destination in zip(candidate.path, candidate.path[1:], strict=False):
+            forward = network[(source, destination)]["cores_matrix"][candidate.band][0]
+            reverse = network[(destination, source)]["cores_matrix"][candidate.band][0]
+            free = int(np.count_nonzero((forward == 0) & (reverse == 0)))
+            if free == 0:
+                return math.inf
+            spectrum_cost += 1.0 / free
+        return weight * power_cost + (1.0 - weight) * spectrum_cost
+
+    def rank_hcf_first_channels(
+        self,
+        paths: list[tuple[int, list[Any]]],
+        modes: list[HCFMode],
+        powers: list[float],
+        *,
+        power_used: Mapping[tuple, float],
+        get_probe_paths: Callable[[Any, Any], list[list[Any]]],
+        probe_modes: list[HCFMode],
+        forced_index: int | None = None,
+        forced_band: str | None = None,
+    ) -> list[tuple[int, HCFSpectrumResult]]:
+        """Rank one common-free channel per path using the configured scoring policy.
+
+        Paths retain their routing indices. Infeasible results are returned last
+        so callers can aggregate diagnostics for the entire restricted search.
+        A failed first channel does not trigger a search of later channels.
+        """
+        policy = self.engine_props_dict.get("hcf_selection_policy")
+        if policy not in ("first_channel_ranked", "power_spectrum"):
+            raise ValueError("First-channel ranking requires first_channel_ranked or power_spectrum policy")
+        weight = float(self.engine_props_dict.get("hcf_power_weight", 0.5))
+        before = 0.0
+        if paths and modes and weight < 1 and policy == "first_channel_ranked":
+            before = self._hcf_opportunity(probe_modes, powers, power_used, get_probe_paths)
+        results = [
+            (index, self.get_spectrum_hcf(
+                path, modes, powers, power_used=power_used, get_probe_paths=get_probe_paths,
+                probe_modes=probe_modes, forced_index=forced_index, forced_band=forced_band,
+                opportunity_before=before,
+            ))
+            for index, path in paths
+        ]
+        # Score first, then lower launch power, then existing routing order.
+        return sorted(results, key=lambda item: (
+            item[1].candidate is None,
+            item[1].score,
+            item[1].candidate.power_w if item[1].candidate is not None else math.inf,
+            item[0],
+        ))
+
+    def get_spectrum_hcf(
+        self,
+        path: list[Any] | tuple[Any, ...],
+        modes: list[HCFMode],
+        powers: list[float],
+        *,
+        power_used: Mapping[tuple, float],
+        get_probe_paths: Callable[[Any, Any], list[list[Any]]],
+        probe_modes: list[HCFMode],
+        forced_index: int | None = None,
+        forced_band: str | None = None,
+        opportunity_before: float | None = None,
+    ) -> HCFSpectrumResult:
+        """Search one path: common wavelength -> candidate GSNR -> feasible selection.
+
+        Reuse the common-channel helper and this object's existing SNR calculator.
+        Power feasibility, probe generation and opportunity scoring live here.
+        The controller provides a read-only power ledger and its existing KSP
+        adapter for probe routes, then commits the returned result.
+        modes contains formats eligible for the current request; probe_modes
+        is the full catalog, since probes can request different bitrates.
+        This search never publishes spectrum properties or reserves resources.
+        first_channel_ranked and power_spectrum restrict this search to one free
+        channel. Only first_channel_ranked computes a shared probe baseline.
+        """
+        if not self.engine_props_dict.get("fixed_grid") or self.engine_props_dict.get("cores_per_link") != 1:
+            raise ValueError("HCF spectrum search requires fixed grid and one core")
+        if self.engine_props_dict.get("guard_slots", 0) != 0:
+            raise ValueError("HCF spectrum search requires zero additional guard slots")
+        if len(path) < 2 or len(set(path)) != len(path):
+            raise ValueError("HCF spectrum search requires a simple path with at least two nodes")
+        bands = self.engine_props_dict["band_list"]
+        if forced_band is not None and forced_band not in bands:
+            raise ValueError("Forced HCF band is not configured")
+        # Reuse the existing fixed-grid slot calculation, without mutating props.
+        if any(self._calculate_slots_needed(mode.name) != 1 for mode in modes):
+            raise ValueError("Each HCF carrier must occupy one fixed-grid channel")
+        policy = self.engine_props_dict.get("hcf_selection_policy", "joint")
+        if policy not in ("joint", "power", "first_feasible", "first_channel_ranked", "power_spectrum"):
+            raise ValueError("Unknown hcf_selection_policy")
+        weight = float(self.engine_props_dict.get("hcf_power_weight", 0.5))
+        joint_score = policy in ("joint", "first_channel_ranked")
+        use_opportunity = joint_score and weight < 1
+        before = 0.0
+        if use_opportunity:
+            before = opportunity_before
+            if before is None:
+                before = self._hcf_opportunity(probe_modes, powers, power_used, get_probe_paths)
+
+        def score_candidate(candidate: HCFCandidate) -> float:
+            if policy == "power_spectrum":
+                return self._hcf_power_spectrum_score(candidate, power_used)
+            scarcity = sum(power / (budget - power_used.get(key, 0.0)) for key, power, budget in candidate.demands)
+            scarcity /= len(candidate.demands)
+            loss = 0.0
+            if use_opportunity and before > 0:
+                loss = (before - self._hcf_opportunity(probe_modes, powers, power_used, get_probe_paths, candidate)) / before
+            return weight * scarcity + (1 - weight) * loss if joint_score else scarcity
+
+        best, best_rank = None, None
+        free_channels = qot_feasible_channels = power_rejections = 0
+        for band_index, band in enumerate(bands):
+            if forced_band is not None and band != forced_band:
+                continue
+            available = self.get_hcf_free_channels(path, band)
+            channels = available if forced_index is None else [forced_index] if forced_index in available else []
+            if policy in ("first_channel_ranked", "power_spectrum"):
+                channels = sorted(channels)[:1]
+            for channel in channels:
+                free_channels += 1
+                choices = self.get_hcf_candidates(path, band, channel, modes, powers)
+                if not choices:
+                    continue
+                qot_feasible_channels += 1
+                if hcf_power_objective(self.engine_props_dict) in ("max_gsnr", "minimum_required") or policy == "power_spectrum":
+                    # A smaller scalar power need not mean lower demand in both
+                    # directions. Check each optimized profile before selection.
+                    choices = tuple(c for c in choices if self.hcf_power_fits(c, power_used))
+                    if not choices:
+                        power_rejections += 1
+                        continue
+                # For discrete powers, keep the original lowest-power selection.
+                # Optimized choices have already passed every amplifier budget.
+                if policy == "power_spectrum":
+                    candidate = min(choices, key=lambda c: (score_candidate(c), c.power_w, c.mode.net_rate_gbps, c.mode.name))
+                elif hcf_power_objective(self.engine_props_dict) == "minimum_required":
+                    candidate = min(choices, key=lambda c: (sum(p for _, p, _ in c.demands), c.mode.net_rate_gbps, c.mode.name))
+                else:
+                    candidate = min(choices, key=lambda c: (c.power_w, c.mode.net_rate_gbps, c.mode.name))
+                if not self.hcf_power_fits(candidate, power_used):
+                    power_rejections += 1
+                    continue
+                score = score_candidate(candidate)
+                rank = (score, candidate.power_w, band_index, channel, candidate.mode.net_rate_gbps, candidate.mode.name)
+                if best_rank is None or rank < best_rank:
+                    best, best_rank = candidate, rank
+                if policy == "first_feasible":
+                    break
+            # Stop even if this first free channel failed GSNR or power. Band
+            # order is part of first-fit: at most one channel across all bands.
+            if channels and policy in ("first_channel_ranked", "power_spectrum"):
+                break
+            if best is not None and policy == "first_feasible":
+                break
+        return HCFSpectrumResult(
+            best, 0.0 if best_rank is None else best_rank[0], free_channels, qot_feasible_channels, power_rejections
         )
 
     def _allocate_best_fit_spectrum(self, candidate_channels_list: list[dict[str, Any]]) -> None:
