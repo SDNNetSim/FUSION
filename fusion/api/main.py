@@ -5,16 +5,15 @@ Configures the app, routes, middleware, and static file serving.
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import settings
 from .db.database import init_db
 from .routes import artifacts, codebase, configs, runs, system, topology
 from .services.run_manager import recover_orphaned_runs

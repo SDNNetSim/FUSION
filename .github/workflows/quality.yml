@@ -41,7 +41,7 @@ jobs:
         pip install torch==2.2.2
         pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
         pip install -r requirements.txt
-        pip install mypy pytest-cov pre-commit ruff vulture pydeps graphviz snakeviz py-spy memory-profiler bandit
+        pip install mypy pytest-cov pre-commit ruff==0.13.1 vulture pydeps graphviz snakeviz py-spy memory-profiler bandit
 
     - name: Cache pre-commit hooks
       uses: actions/cache@v3

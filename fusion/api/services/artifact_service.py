@@ -39,9 +39,7 @@ def get_safe_path(run_id: str, relative_path: str) -> Path:
 
     # Security: ensure resolved path is within run directory
     if not requested.is_relative_to(base):
-        raise HTTPException(
-            status_code=403, detail="Access denied: path escapes run directory"
-        )
+        raise HTTPException(status_code=403, detail="Access denied: path escapes run directory")
 
     if not requested.exists():
         raise HTTPException(status_code=404, detail="File not found")

@@ -309,6 +309,7 @@ class TestSDNController(unittest.TestCase):
         # Slicing calls _update_req_stats with both bandwidth and remaining params
         mock_update_req_stats.assert_called_with(bandwidth="50.0", remaining="0")
 
+    @patch("fusion.core.spectrum_assignment.SpectrumAssignment._update_lightpath_status")
     @patch("fusion.core.sdn_controller.SDNController.allocate")
     @patch("fusion.core.sdn_controller.SDNController._update_req_stats")
     @patch("fusion.core.routing.Routing.get_route")
@@ -319,6 +320,7 @@ class TestSDNController(unittest.TestCase):
         mock_get_route: Any,
         mock_update_stats: Any,
         mock_allocate: Any,
+        mock_update_lp_status: Any,
     ) -> None:
         """Test handle event with arrival request and successful allocation."""
         mock_get_route.return_value = None
@@ -332,6 +334,7 @@ class TestSDNController(unittest.TestCase):
         self.controller.handle_event({}, request_type="arrival")
 
         mock_allocate.assert_called_once()
+        mock_update_lp_status.assert_called_once()
         self.assertTrue(self.controller.sdn_props.was_routed)
 
     def test_handle_dynamic_slicing_with_valid_parameters(self) -> None:
@@ -361,11 +364,13 @@ class TestSDNController(unittest.TestCase):
                 "fusion.modules.spectrum.light_path_slicing.find_path_len",
                 return_value=100,
             ) as mock_find_path_len,
+            patch.object(self.controller.spectrum_obj, "_update_lightpath_status") as mock_update_lp_status,
         ):
             self.controller._handle_dynamic_slicing(path_list=["A", "B", "C"], path_index=0, forced_segments=1)
 
             mock_get_spectrum.assert_called()
             mock_allocate.assert_called()
+            mock_update_lp_status.assert_called()
             mock_update_stats.assert_called_with(bandwidth="50")
             mock_find_path_len.assert_called_with(
                 path_list=["A", "B", "C"],

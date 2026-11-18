@@ -49,9 +49,7 @@ def _load_topology_graph(name: str) -> nx.Graph:
 
     file_path = _get_raw_data_path() / TOPOLOGY_FILES[name]
     if not file_path.exists():
-        raise HTTPException(
-            status_code=404, detail=f"Topology file not found: {file_path}"
-        )
+        raise HTTPException(status_code=404, detail=f"Topology file not found: {file_path}")
 
     graph = nx.Graph()
 
@@ -78,9 +76,7 @@ def _compute_layout(graph: nx.Graph, scale: float = 400) -> dict[str, tuple[floa
     """
     # Use spring layout with edge weights based on link length
     # Shorter links should have stronger attraction
-    max_length = max(
-        (d.get("length", 100) for _, _, d in graph.edges(data=True)), default=100
-    )
+    max_length = max((d.get("length", 100) for _, _, d in graph.edges(data=True)), default=100)
 
     # Create weight dict (inverse of length, normalized)
     weights = {}

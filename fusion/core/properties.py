@@ -175,6 +175,7 @@ class SNRProps:
 
         # Link information
         self.link_dictionary: dict[str, Any] | None = None
+        self.link_dict: dict[str, Any] = {}
 
         # Modulation format mappings
         self.modulation_format_mapping_dict: dict[int, str] = {
@@ -195,40 +196,39 @@ class SNRProps:
             "BPSK": 100,
         }
 
-        self.icxt_mb_params_dict= {
-                                        # common parameters
-                                        "c_mps": 3.0e8,
-                                        "n_core": 1.44,
-                                        "delta1": 0.0035,
-                                        "n_param": 1.0035, #1.44
+        self.icxt_mb_params_dict: dict[str, Any] = {
+            # common parameters
+            "c_mps": 3.0e8,
+            "n_core": 1.44,
+            "delta1": 0.0035,
+            "n_param": 1.0035,  # 1.44
+            # core-dependent parameters (dicts)
+            "rb_m": {
+                4: 144e-3,
+                7: 144e-3,
+                13: 140e-3,
+                19: 140e-3,
+            },
+            "lambda_m": {
+                4: 43e-6,
+                7: 51e-6,
+                13: 40e-6,
+                19: 35e-6,
+            },
+            "r1_m": {
+                4: 4.5e-6,
+                7: 4.5e-6,
+                13: 4.1e-6,
+                19: 3.6e-6,
+            },
+            "w_tr_m": {
+                4: 1.5 * 4.5e-6,
+                7: 1.5 * 4.5e-6,
+                13: 1.5 * 4.1e-6,
+                19: 1.5 * 3.6e-6,
+            },
+        }
 
-                                        # core-dependent parameters (dicts)
-                                        "rb_m": {
-                                            4: 144e-3,
-                                            7: 144e-3,
-                                            13: 140e-3,
-                                            19: 140e-3,
-                                        },
-                                        "lambda_m": {
-                                            4: 43e-6,
-                                            7: 51e-6,
-                                            13: 40e-6,
-                                            19: 35e-6,
-                                        },
-                                        "r1_m": {
-                                            4: 4.5e-6,
-                                            7: 4.5e-6,
-                                            13: 4.1e-6,
-                                            19: 3.6e-6,
-                                        },
-                                        "w_tr_m": {
-                                            4: 1.5 * 4.5e-6,
-                                            7: 1.5 * 4.5e-6,
-                                            13: 1.5 * 4.1e-6,
-                                            19: 1.5 * 3.6e-6,
-                                        },
-                                    }
-        
         # Pre-calculated SNR file mappings
         self._initialize_file_mappings()
 

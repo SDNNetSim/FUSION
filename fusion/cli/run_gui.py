@@ -80,10 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         import uvicorn
     except ImportError:
-        logger.error(
-            "uvicorn is not installed. Install the GUI dependencies with: "
-            "pip install fusion[gui]"
-        )
+        logger.error("uvicorn is not installed. Install the GUI dependencies with: pip install fusion[gui]")
         return 1
 
     logger.info("Starting FUSION GUI at http://%s:%d", args.host, args.port)

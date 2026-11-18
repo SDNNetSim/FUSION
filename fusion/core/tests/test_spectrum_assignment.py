@@ -577,14 +577,35 @@ class TestSpectrumAssignment(unittest.TestCase):
         self.assertEqual(lp_entry["requests_dict"], {1: 200})
         self.assertIn(1000.0, lp_entry["time_bw_usage"])
 
-    def test_update_lightpath_status_skipped_when_grooming_disabled(self) -> None:
-        """Test _update_lightpath_status is skipped when grooming disabled."""
+    def test_update_lightpath_status_when_grooming_disabled_tracks_lightpath(self) -> None:
+        """Test _update_lightpath_status records lightpaths in all configurations."""
         self.spec_assign.engine_props_dict["is_grooming_enabled"] = False
-        self.spec_assign.sdn_props.lightpath_status_dict = {}
+        self.spec_assign.engine_props_dict["dynamic_lps"] = False
+        self.sdn_props.lightpath_status_dict = {}
+        self.sdn_props.source = "A"
+        self.sdn_props.destination = "B"
+        self.sdn_props.path_list = [0, 1, 2]
+        self.sdn_props.path_weight = 100.0
+        self.sdn_props.arrive = 1000.0
+        self.sdn_props.was_new_lp_established = [1]
+        self.sdn_props.modulation_formats_dict = {"QPSK": {"bandwidth": 200, "slots_needed": 3}}
+        self.sdn_props.request_id = 1
+        self.sdn_props.bandwidth_list = [200]
+        self.spec_assign.spectrum_props.lightpath_id = 1
+        self.spec_assign.spectrum_props.lightpath_bandwidth = None
+        self.spec_assign.spectrum_props.modulation = "QPSK"
+        self.spec_assign.spectrum_props.core_number = 0
+        self.spec_assign.spectrum_props.current_band = "c"
+        self.spec_assign.spectrum_props.start_slot = 5
+        self.spec_assign.spectrum_props.end_slot = 8
+        self.spec_assign.spectrum_props.crosstalk_cost = 0.5
 
         self.spec_assign._update_lightpath_status()
 
-        self.assertEqual(self.spec_assign.sdn_props.lightpath_status_dict, {})
+        lp_status_dict = self.spec_assign.sdn_props.lightpath_status_dict
+        assert lp_status_dict is not None  # Type narrowing for mypy
+        self.assertIn(("A", "B"), lp_status_dict)
+        self.assertIn(1, lp_status_dict[("A", "B")])
 
 
 if __name__ == "__main__":
